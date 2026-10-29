@@ -146,3 +146,24 @@ retry_fragmented_capacity.py先绑定当前821项CPU/1879份来源、独立Agent
 仍使用原七项参数、V230全部3674请求、V311工具时间、18项目、
 Device805198/Host200GB、running/decode24及seed21；不重采native、
 不重跑V345或KVFlow，不做消融。实际重试结果尚待执行。
+
+## 当前修复重试已实际启动
+
+冻结d9f795b7/native131d的十二个当前来源GPU场景全部通过，
+实际组件PID1156002退出并完成清理。新的24请求model/position也通过，
+24项均原生停止，running1/8/24 sampler校准保留原生采样器和seed21。
+其watcher1156645及server实际退出后，完整重试在18707运行：
+`ops/tokencake_fragmented_capacity_20261029_r1.registration.json`。
+
+observe_fragmented_retry.py/live_start.json独立核验nice0 watcher1159588、
+server1160394、driver1161949和唯一GPU scheduler1160723，以及821项
+来源一致、两项修复实际安装、七个实际参数、新鲜prefix/十二场景资格、
+24次原生停止与采样校准。封存首批3个精确完成回执，不是完整3674项
+或性能结论。所有工作量、V311时间、容量、seed及正常尾部合同不变。
+旧失败2922前缀保留，没有合并或续跑；无另一个GPU作业排队。
+
+完整结果reader现在接受显式registration/figures-dir/report-dir，
+默认仍指向原始记录。实际CPU precheck接受三个已完成control并拒绝
+这个未完成重试；只在完整成功、两次新鲜idle和实际进程清理后生成
+相应的新比较与图。通用匹配器及精确三引擎合同没有放宽。Agentix
+整模型/正式baseline及全baseline目标仍未完成。

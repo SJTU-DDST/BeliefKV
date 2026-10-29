@@ -3127,3 +3127,14 @@
   physical scenes, then fresh24-request model/position and1/8/24 sampling
   before its distinct complete18707 arm. Preserve the failed2922 prefix,
   parameters/work/timing/tails and completed Full/KVFlow/V345 controls.
+- Current TokenCake twelve-scene GPU and fresh24-request model/position pass
+  fromd9f795b7/131d, with24 native stops and1/8/24 sampling. The new full
+  repaired arm is actually running at18707, registration
+  ops/tokencake_fragmented_capacity_20261029_r1.registration.json.
+  Independent fragmented_retry_20261029/live_start.json verifies nice0
+  watcher1159588/server1160394/driver1161949/sole GPU1160723 and the first3
+  exact receipts, both installed repairs, seven parameters and all shared
+  work/timing/capacity/seeds. Preserve the running frozen sources and failed
+  2922 prefix. Explicit complete-reader paths retain original defaults and
+  reject the live arm; no complete performance follows. No competing GPU job
+  is queued. Agentix model/formal work and the global goal remain incomplete.

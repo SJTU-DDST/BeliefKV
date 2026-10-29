@@ -1,0 +1,24 @@
+{
+  "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+  "dirty": true,
+  "excluded_provenance_paths": [],
+  "tracked_change_paths": [
+    "python/sglang/srt/managers/cache_controller.py",
+    "python/sglang/srt/managers/schedule_batch.py",
+    "python/sglang/srt/managers/scheduler.py",
+    "python/sglang/srt/mem_cache/allocator/token.py",
+    "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+    "test/srt/test_beliefkv_transfer_receipts.py"
+  ],
+  "untracked_paths": [],
+  "tracked_change_tree_sha256": "e877ab6dce9be575d29fd3710de729c381a0fc0fc86397ec5136a6996b80a5da",
+  "canonical_patch": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-tokencake-fragmented-entry-20261029/patches/sglang-tokencake-scheduler-runtime-20261028.patch",
+    "sha256": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6",
+    "expected_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+    "actual_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "state_sha256": "2b3df6d2a42aa546dfd2039f82720ae8617441581e2c5120708dfe0664cb703a"
+}

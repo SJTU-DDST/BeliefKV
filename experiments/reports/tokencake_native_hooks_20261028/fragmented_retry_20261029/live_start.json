@@ -1,0 +1,975 @@
+{
+  "observed_at": "2026-10-29T07:21:27.478953+00:00",
+  "scope": "sealed_collecting_prefix_not_complete_performance",
+  "registration": "/home/longhao/experiment/ops/tokencake_fragmented_capacity_20261029_r1.registration.json",
+  "registration_sha256": "3af278251c6fed85e59fdd3898c85e41c1b0aead4ac4306159e75e65a12f5482",
+  "collection_code_commit": "d9f795b7181f4712f160ee1cf41bc631dc934b8c",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed",
+  "actual_live_processes": {
+    "watcher": {
+      "pid": 1159588,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "742842936",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-d9f795b7181f/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/tokencake_fragmented_capacity_20261029_r1.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 1160394,
+      "state": "S",
+      "ppid": 1159588,
+      "start_ticks": "742849013",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18707",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "4096",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18707.sock"
+      ]
+    },
+    "driver": {
+      "pid": 1161949,
+      "state": "S",
+      "ppid": 1159588,
+      "start_ticks": "742863985",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-d9f795b7181f/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/replay",
+        "--base-url",
+        "http://127.0.0.1:18707",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/.worktrees/beliefkv-tokencake-fragmented-entry-20261029/experiments/reports/v311_v230_categorized_network_timing_cpu_20261027.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18707.sock"
+      ]
+    }
+  },
+  "expected_requests": 3674,
+  "exact_completed_receipts": 3,
+  "expected_receipts": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/replay/native_requests.jsonl",
+    "sha256": "971780ae36bbc6dd99de53bcc5bb26a0d909baeba4dcd9ce4e28dc22f05bab73"
+  },
+  "sampled_logical_budgets": null,
+  "sampled_block_reasons": null,
+  "decode_prefix": {
+    "batches": 55,
+    "request_steps": 440,
+    "worker_ms": 1323.8126561045647,
+    "request_step_ms": 10590.501248836517,
+    "output_tokens": 437,
+    "context_tokens": 36803897,
+    "graph_batches": 55,
+    "graph_request_steps": 440,
+    "configured_bucket_rows": 440,
+    "batches_needing_padding": 0,
+    "worker_ms_in_batches_needing_padding": 0.0,
+    "mean_batch": 8.0,
+    "worker_weighted_mean_batch": 8.0,
+    "worker_interval_sum_s": 1.3238126561045647,
+    "mean_worker_interval_ms": 24.069321020082995,
+    "output_tokens_per_worker_interval_second": 330.1071325952654,
+    "mean_observed_request_context_tokens": 83645.22045454546,
+    "graph_batch_fraction": 1.0,
+    "configured_padding_rows_per_real_graph_row": 0.0
+  },
+  "worker_interval_sum_ms_by_phase": {
+    "prefill": 74139.97633196414,
+    "decode": 1323.8126561045647
+  },
+  "latest_runtime_snapshot": {
+    "event": "admission_runtime_state",
+    "ts_ms": 1793258486400.6243,
+    "monotonic_ms": 7428749501.202477,
+    "clock_sample_span_ms": 0.0003032684326171875,
+    "final": false,
+    "counts": {
+      "admission_rank_dependencies_preserved": 38,
+      "native_physical_completed": 0
+    },
+    "physical_disabled": false,
+    "internal_comparison_mode": "scheduler_only",
+    "custom_kv_management": false,
+    "paper_baseline": {
+      "scope": "paper_strategy_observed_metadata_native_adaptation",
+      "author_commit": "1901ebf31fdf63590148e61d5c2f65e9fb7ec010",
+      "program_identity": "invocation_id",
+      "future_information_used": false,
+      "native_capacity_authority_preserved": true,
+      "complete_baseline": true,
+      "generation_budget_source": "separately_declared_serving_budget",
+      "generation_budget": 16384,
+      "context_limit": 262144,
+      "scheduler_steps": 263,
+      "partition_adjustment_steps": 500,
+      "partition_clock": "native_scheduler_step",
+      "pending_requests": 18,
+      "counts": {
+        "preservation_wall_ns": 3785626081,
+        "preservation_max_wall_ns": 522447,
+        "partition_updates": 3,
+        "queue_plans": 263,
+        "plan_wall_ns": 126523635,
+        "plan_max_wall_ns": 2508538,
+        "registered": 23,
+        "control_steps": 261,
+        "control_wall_ns": 35352235,
+        "control_max_wall_ns": 361494,
+        "guard_wall_ns": 141228605,
+        "guard_max_wall_ns": 899339,
+        "admitted": 11,
+        "capacity_candidates_deferred": 1093,
+        "completed": 5
+      },
+      "capacity_counts": {
+        "admission_probes": 2528,
+        "admission_stages": 11,
+        "private_admission_slots_staged": 28003,
+        "private_admission_slots_materialized": 28003,
+        "physical_commits": 653,
+        "split_extents": 1,
+        "requests_released": 5
+      },
+      "remaining": [
+        "matched_full_population_comparison",
+        "paired_repetitions"
+      ],
+      "policy": "tokencake_paper_observed_metadata",
+      "runtime_implementation_complete": true,
+      "graph_information_source": "observed_events_or_explicit_application_metadata",
+      "original_application_declared_graph_available": false,
+      "temporal_policy": "paper_first_fit_and_deadline_progressive_upload",
+      "predictive_upload_enabled": true,
+      "temporal_parameters": {
+        "running_limit": 24,
+        "prefill_token_budget": 16384,
+        "chunked_prefill_tokens": 4096,
+        "policy_block_tokens": 1,
+        "eviction_window_tokens": 128
+      },
+      "transfer_observer_error": null,
+      "preservation_counts": {
+        "decode_throughput_samples": 60,
+        "generation_completions": 8,
+        "stall_start_conflict": 5,
+        "stall_finish_late_finish": 5,
+        "d2h_bandwidth_samples": 16
+      },
+      "lifecycle_counts": {
+        "associated": 23,
+        "completed": 8,
+        "reset": 5,
+        "conflict": 5,
+        "late_finish": 5
+      },
+      "transfer_counts": {
+        "native_commands_completed": 0
+      },
+      "upload_priority": "normalized_current_request_score_plus_normalized_deadline_urgency",
+      "upload_capacity": "paper_equations_3_4_and_native_fixed_generation_commitments",
+      "upload_reservations": 0,
+      "observed_decode_tokens_per_second": 149.64549126912144,
+      "serving_generation_budget_source": "separately_declared_not_recorded_output_length",
+      "pressure_release": "optional_upload_reservation_before_native_request_preemption"
+    },
+    "agent_admission": null,
+    "agent_admission_enabled": false,
+    "agent_join_free_admission": false,
+    "agent_join_blocked_handoff": false,
+    "agent_free_continuation_admission": false,
+    "full_prefix_migration": null,
+    "join_parent_priority": false,
+    "join_last_child_priority": false,
+    "prefill_scheduling_policy": "workflow",
+    "tool_continuity": false,
+    "tool_continuity_grace_ms": 0.0,
+    "tool_residency_grace": null,
+    "tool_continuity_policy": null,
+    "join_priority_order": "aged_fifo_then_native;independent_four_admission_quota",
+    "restore_priority_scope": "same_causal_class;no_aged_head_bypass",
+    "prefetch_residency_protection": false,
+    "prefetch_protection_revocable_on_pressure": true,
+    "join_priority_ordinary_quota": 4,
+    "join_priority_pending_parents": 0,
+    "join_only_priority_ordinary_quota": 4,
+    "join_only_priority_allows_aged_head_after_quota": true,
+    "join_only_pending_parents": 0,
+    "final_stage_prefetch": false,
+    "final_stage_priority": false,
+    "prepare_host": false,
+    "background_prepare": false,
+    "idle_host_mirror_recycle": false,
+    "terminal_child_reclaim": false,
+    "subagent_retention": null,
+    "h2d_opportunity_sampling": false,
+    "prepare_pool_scope": "missing_full_session_path",
+    "spawn_full_prepare": {
+      "pending_contexts": 0,
+      "max_batch_bytes": 4294967296,
+      "max_merged_nodes": 64
+    },
+    "idle_full_prepare": {
+      "interval_ms": 200.0,
+      "queued_owner_backup": false,
+      "native": null
+    },
+    "latest_full_session_branches_retired": 0,
+    "resident_first": false,
+    "prefill_ordering_mode": "workflow",
+    "workflow_attained_work": false,
+    "workflow_work_metric": "completed_request_output_tokens",
+    "workflow_work_accounts": 0,
+    "workflow_completion_focus": null,
+    "workflow_completion_quantum": null,
+    "execution_handoff": false,
+    "overlap_prefetch_supported": true,
+    "execution_handoff_request_id": null,
+    "tool_timing_only": false,
+    "tool_predictor_configured": false,
+    "online_tool_timing": false,
+    "tool_timing_prior_sha256": null,
+    "predicted_tool_offload": false,
+    "tool_offload_before_admission": false,
+    "layer_handoff_enabled": false,
+    "layer_handoff_d2h_layers": 1,
+    "layer_handoff_h2d_layers": 1,
+    "tool_offload_policy": null,
+    "idle_prepare_io_backend": "native",
+    "tool_offload_min_survival": 0.9,
+    "host_demand_reserve_bytes": 0,
+    "online_tool_timing_revision": null,
+    "report_length_calibration_samples": 0,
+    "selective_join_prefetch": {
+      "min_full_bytes": 536870912,
+      "interval_ms": 200.0,
+      "max_candidates": 4,
+      "enabled": false,
+      "max_advance_ms": 1000.0,
+      "eos_to_native_arrival_window_ms": 50.0,
+      "eos_to_native_arrival_samples": 0,
+      "window_statistic": "max(configured_protocol_floor, online_p10_after_4_samples)",
+      "service_semantics": "controller_submit_to_ack_plus_enqueue; not exposed GPU wait"
+    },
+    "borrowable_parent_headroom": false,
+    "tool_predictor_disabled": false,
+    "tool_prefetch": false,
+    "tool_restore_mode": "speculative",
+    "execution_frontier_restore": false,
+    "frontier_restore_ordinary_quota": 4,
+    "frontier_cold_reclaim": false,
+    "frontier_cold_reclaim_policy": "waiting",
+    "frontier_cold_reclaim_max_nodes": 16,
+    "restore_tiers": "complete",
+    "restore_tiers_supported": false,
+    "restore_tiers_native": {},
+    "native_free_page_h2d_fence": {
+      "requested": true,
+      "enabled": true,
+      "supported": true,
+      "counts": {
+        "free_boundary_events": 9
+      }
+    },
+    "native_prefetch_batch_dependencies": {
+      "checks": 0,
+      "unrelated_waits_skipped": 0
+    },
+    "idle_prepare_policy": "cold",
+    "tool_prefetch_planning_slack_ms": 250.0,
+    "prefetch_lead_ms": 1000.0,
+    "tool_prefetch_priority_ms": 0.0,
+    "join_prefetch_min_advance_ms": 0.0,
+    "tool_prefetch_min_advance_ms": 0.0,
+    "parallel_wait_prefetch": true,
+    "wait_prefetch_contexts": 2,
+    "tool_inflight_contexts": 0,
+    "join_inflight_contexts": 0,
+    "prediction_maintenance_interval_ms": 100.0,
+    "semantic_work_statistic": "center",
+    "final_admission_policy": "remaining_report_work",
+    "eos_protocol_window_ms": 50.0,
+    "eos_prefetch_evidence_window_ms": 1000.0,
+    "terminal_cache_diagnostics": false,
+    "profile_shared_path": false,
+    "demand_prefill_pipeline": false,
+    "demand_prefill_pipeline_installed": false,
+    "demand_prefill_pipeline_progress_probe": false,
+    "h2d_seed_samples": 0,
+    "h2d_service_samples": 0,
+    "prefetch_residency_budget": {
+      "request_slots": 4,
+      "byte_limit": 1073741824,
+      "reserve_full_tokens": 0,
+      "reserve_mamba_slots": 0,
+      "source": "legacy_capacity_unavailable",
+      "evictable_full_tokens": 0,
+      "evictable_mamba_slots": 0
+    },
+    "prefetch_request_counts_at_budget": null,
+    "prefetch_residency_headroom": null,
+    "prefetch_locked_count": 0,
+    "prefetch_locked_contexts_by_role": {
+      "demand": 0,
+      "speculative": 0
+    },
+    "prefetch_protected_bytes": 0,
+    "semantic_worker_configured": false,
+    "join_prefetch_trigger": "observed_eos",
+    "semantic_worker_error": "",
+    "shared_path_timing": {
+      "schema_version": 2,
+      "enabled": false,
+      "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "sampling": "every Nth root call per phase, starting with the first; descendants inherit",
+      "scope": "Measured completed samples only; exclusive values subtract measured children. No expansion to whole-run cost, exposed GPU idle or removable JCT.",
+      "elapsed_ms": 112920.571751,
+      "bucket_upper_ms": [
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.25,
+        0.5,
+        1.0,
+        2.5,
+        5.0,
+        10.0,
+        25.0,
+        50.0,
+        100.0,
+        250.0,
+        1000.0,
+        null
+      ],
+      "phases": {}
+    },
+    "control_timing_sample_every": null,
+    "opportunity_writer_timing": {
+      "schema_version": 1,
+      "sample_every": 64,
+      "snapshot_ts_ms": 1793258486400.7595,
+      "cpu_clock": "thread_time_ns",
+      "wall_clock": "perf_counter_ns",
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "categories": {
+        "admission_runtime_state": {
+          "records_seen": 101,
+          "samples": 2,
+          "sampled_cpu_ms": 0.348916,
+          "sampled_wall_ms": 0.344765,
+          "mean_sample_cpu_ms": 0.174458,
+          "mean_sample_wall_ms": 0.1723825,
+          "max_sample_cpu_ms": 0.208101,
+          "max_sample_wall_ms": 0.205223
+        }
+      }
+    }
+  },
+  "native_status_observation": {
+    "background_writer_timing": {
+      "categories": {
+        "audit:gpu_service_sample": {
+          "max_sample_cpu_ms": 0.199496,
+          "max_sample_wall_ms": 0.19404,
+          "mean_sample_cpu_ms": 0.083806,
+          "mean_sample_wall_ms": 0.0822128,
+          "records_seen": 259,
+          "sampled_cpu_ms": 0.41903,
+          "sampled_wall_ms": 0.411064,
+          "samples": 5
+        },
+        "audit:prefill_turnover_sample": {
+          "max_sample_cpu_ms": 0.478325,
+          "max_sample_wall_ms": 0.471717,
+          "mean_sample_cpu_ms": 0.478325,
+          "mean_sample_wall_ms": 0.471717,
+          "records_seen": 13,
+          "sampled_cpu_ms": 0.478325,
+          "sampled_wall_ms": 0.471717,
+          "samples": 1
+        },
+        "events:record": {
+          "max_sample_cpu_ms": 0.213072,
+          "max_sample_wall_ms": 0.210355,
+          "mean_sample_cpu_ms": 0.213072,
+          "mean_sample_wall_ms": 0.210355,
+          "records_seen": 16,
+          "sampled_cpu_ms": 0.213072,
+          "sampled_wall_ms": 0.210355,
+          "samples": 1
+        },
+        "eviction_attribution:context_prefix_probe": {
+          "max_sample_cpu_ms": 0.397548,
+          "max_sample_wall_ms": 0.402228,
+          "mean_sample_cpu_ms": 0.397548,
+          "mean_sample_wall_ms": 0.402228,
+          "records_seen": 11,
+          "sampled_cpu_ms": 0.397548,
+          "sampled_wall_ms": 0.402228,
+          "samples": 1
+        },
+        "eviction_attribution:served_context_prefix": {
+          "max_sample_cpu_ms": 0.261916,
+          "max_sample_wall_ms": 0.261524,
+          "mean_sample_cpu_ms": 0.261916,
+          "mean_sample_wall_ms": 0.261524,
+          "records_seen": 5,
+          "sampled_cpu_ms": 0.261916,
+          "sampled_wall_ms": 0.261524,
+          "samples": 1
+        },
+        "host_pool:host_pool_transfer_ack": {
+          "max_sample_cpu_ms": 0.016589,
+          "max_sample_wall_ms": 0.016816,
+          "mean_sample_cpu_ms": 0.016589,
+          "mean_sample_wall_ms": 0.016816,
+          "records_seen": 15,
+          "sampled_cpu_ms": 0.016589,
+          "sampled_wall_ms": 0.016816,
+          "samples": 1
+        },
+        "host_pool:host_pool_usage": {
+          "max_sample_cpu_ms": 0.198312,
+          "max_sample_wall_ms": 0.196614,
+          "mean_sample_cpu_ms": 0.198312,
+          "mean_sample_wall_ms": 0.196614,
+          "records_seen": 63,
+          "sampled_cpu_ms": 0.198312,
+          "sampled_wall_ms": 0.196614,
+          "samples": 1
+        },
+        "transfer:transfer_telemetry": {
+          "max_sample_cpu_ms": 0.047066,
+          "max_sample_wall_ms": 0.0467,
+          "mean_sample_cpu_ms": 0.047066,
+          "mean_sample_wall_ms": 0.0467,
+          "records_seen": 16,
+          "sampled_cpu_ms": 0.047066,
+          "sampled_wall_ms": 0.0467,
+          "samples": 1
+        }
+      },
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "schema_version": 1,
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "snapshot_ts_ms": 1793258486390.9973,
+      "wall_clock": "perf_counter_ns"
+    },
+    "checkpoint_path_shadow": false,
+    "collection_mode": "admission_observation",
+    "context_prefix_reuse_evidence": {
+      "counts": {
+        "request_probes": 11,
+        "without_prior_served_prompt": 11
+      },
+      "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+      "tracked_context_count": 5,
+      "tracking_limit": 1024
+    },
+    "dropped_records": 0,
+    "failed_records": 0,
+    "gpu_restore_wait_probe": {
+      "counts": {},
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "host_block_eviction_attribution": {
+      "available": true,
+      "counts": {},
+      "evicted_units_by_pool": {},
+      "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+      "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+      "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+      "pending_blocks_by_pool": {},
+      "pending_latest_evicted_units_by_pool": {},
+      "probe_prefix_length_overflow": 0,
+      "recomputed_full_units": 0,
+      "reused_full_units": 0
+    },
+    "host_pool_evidence": {
+      "full": {
+        "bytes_per_unit": 98304,
+        "capacity_units": 2034506,
+        "d2h_ack_units": 33493,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {
+          "used_bytes": 3292495872,
+          "used_units": 33493
+        }
+      },
+      "mamba": {
+        "bytes_per_unit": null,
+        "capacity_units": null,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {}
+      }
+    },
+    "host_tier_enabled": true,
+    "pending_batch_count": 1,
+    "pending_request_count": 18,
+    "prefill_turnover_probe": {
+      "counts": {
+        "completed_samples": 13,
+        "eligible_prefills": 207,
+        "selected_samples": 13
+      },
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "record_counts": {
+      "audit": 372,
+      "events": 16,
+      "eviction_attribution": 16,
+      "host_pool": 78,
+      "transfer": 16
+    },
+    "record_output_token_ids": true,
+    "replay_token_capture": false,
+    "request_cache_evidence": {
+      "after_first_full_host_eviction": {},
+      "after_first_host_eviction": {},
+      "after_first_mamba_host_eviction": {},
+      "all": {
+        "cached_tokens_device": 5463,
+        "cached_tokens_host": 0,
+        "mamba_host_hit_slots": 0,
+        "prompt_tokens": 880345,
+        "request_count": 11,
+        "requests_with_full_host_hit": 0,
+        "requests_with_mamba_host_hit": 0,
+        "uncached_prompt_tokens": 874882
+      }
+    },
+    "request_cache_evidence_semantics": {
+      "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+      "full_host_hit": "cached_tokens_host input-token count",
+      "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+    },
+    "schema_version": 1,
+    "snapshot_ts_ms": 1793258486390.9934,
+    "source": "native_sglang_v0520",
+    "write_back_batch": {
+      "counts": {
+        "attempts": 0,
+        "batches": 0,
+        "enqueue_failed": 0,
+        "full_tokens": 0,
+        "no_chain": 0,
+        "no_planner": 0,
+        "nodes": 0,
+        "partial_batches": 0,
+        "planned_nodes": 0,
+        "unsupported_or_queued": 0
+      },
+      "max_nodes": 1
+    },
+    "writer_error": null,
+    "writer_queue_depth": 2
+  },
+  "native_status_sha256": "76a4f45d801aa4b89e7226c0c6b792117f1c2a360e5fd64b3ee0db475a0ce56e",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 9867,
+      "complete_prefix_sha256": "a84a19ad90055e0aa9d0c94aead613c9ab09ad8342a2c0d609cecf2b569348ad",
+      "first_read_limit_bytes": 9867
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 808272,
+      "complete_prefix_sha256": "9c8f79b4820be9139421ca4daf13fe96033bb8db6721e1eae1ef6e2b448be877",
+      "first_read_limit_bytes": 808272
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 18005,
+      "complete_prefix_sha256": "9a5afc99192bd205ace215ef22f9607424ac7876d8c4c6551481c63d06deaf7f",
+      "first_read_limit_bytes": 18005
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 834862,
+      "complete_prefix_sha256": "1941f023b26227737c46e360be7d76acd410bb26734f4586882db5e1ffc0f28c",
+      "first_read_limit_bytes": 834862
+    }
+  },
+  "analysis_source_sha256": {
+    "scripts/audit_collecting_agent_pipeline.py": "c1c14eff358fe325f9aab997988451077cf65ed0648ceb5f7b467f59bc48201f",
+    "scripts/audit_agent_budget_composition.py": "99f8dac99620337c53189f19b07b9d03d85fd818dcdd3c425af5cabbed43c71e",
+    "scripts/audit_decode_batch_efficiency.py": "ff56129a6fa56c01612240bde92f11bbc441a79cf13756d7ccb69796dd760fc7",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46",
+    "scripts/run_causal_comparison.py": "40a5d22361a235cd07f3ed4f866a598579e7402ecc80c539b048fd8e96f53639"
+  },
+  "limitations": [
+    "Independent first-read complete JSONL prefixes are not an atomic cross-file snapshot.",
+    "Logical budget, decode and receipt prefixes can cover different end times.",
+    "Decode worker intervals include runtime and waiting; they are not pure GPU kernel durations.",
+    "No completed-only subset JCT or whole-run throughput is calculated.",
+    "This observation does not establish final correctness, performance or prediction quality."
+  ],
+  "performance_accepted": false,
+  "actual_owned_nice_zero_processes": {
+    "watcher": {
+      "pid": 1159588,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "742842936",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-d9f795b7181f/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/tokencake_fragmented_capacity_20261029_r1.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 1160394,
+      "state": "S",
+      "ppid": 1159588,
+      "start_ticks": "742849013",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18707",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "4096",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18707.sock"
+      ]
+    },
+    "driver": {
+      "pid": 1161949,
+      "state": "S",
+      "ppid": 1159588,
+      "start_ticks": "742863985",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-d9f795b7181f/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/replay",
+        "--base-url",
+        "http://127.0.0.1:18707",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/.worktrees/beliefkv-tokencake-fragmented-entry-20261029/experiments/reports/v311_v230_categorized_network_timing_cpu_20261027.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18707.sock"
+      ]
+    },
+    "gpu_scheduler": {
+      "pid": 1160723,
+      "state": "R",
+      "ppid": 1160394,
+      "start_ticks": "742850321",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    }
+  },
+  "sole_native_gpu_pid": 1160723,
+  "actual_tokencake_parameters": {
+    "generation_budget": 16384,
+    "context_limit": 262144,
+    "running_limit": 24,
+    "prefill_token_budget": 16384,
+    "chunked_prefill_tokens": 4096,
+    "policy_block_tokens": 1,
+    "eviction_window_tokens": 128
+  },
+  "fresh_physical_qualifiers": {
+    "prefix": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/native_prefix_qualification/summary.json",
+      "sha256": "b49d99016c7fdd2eaebe1c34d9b496aa3334a48bcdd7c4eec096eeb6e7cae15e"
+    },
+    "lifecycle": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1/tokencake_paper_observed/native_tokencake_qualification/summary.json",
+      "sha256": "8d8bb8a8936a5159f0e080ce5adf170c97145041fb35cf3a55debaef85f90063"
+    }
+  },
+  "native_scheduler_hooks": {
+    "common_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "exact_optional_hooks_projection_verified": true,
+    "prefill_guard_before_native_input": true,
+    "decode_victim_and_before_release_bound": true,
+    "native_compute_or_copy_implementation_changed": false,
+    "source_sha256": {
+      "python/sglang/srt/managers/scheduler.py": "0ceab8b945d0ea3163de13bc949404ab5a4fb61e412e1ac4fd10b276e467aefe",
+      "python/sglang/srt/managers/schedule_batch.py": "38790e4f56d95c84f2d070ab5073bc6fe163d187c711f65c1e818e1bb3c6fd5c"
+    }
+  },
+  "fresh_position_smoke": {
+    "gpu_process_verified": true,
+    "native_data_plane_sample_verified": true,
+    "native_position_sampling_verified": true,
+    "sampling_mode": "position",
+    "requests": 24,
+    "native_stop_requests": 24,
+    "native_requests": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_position_20261029_r1/smoke/native_requests.jsonl",
+    "native_requests_sha256": "846bd67a22b53a3439dddcc23082941b9e46a9fa5fc62bdd7ad1f2bd081819b9",
+    "server_registration": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_position_20261029_r1/server_registration.json",
+    "server_registration_sha256": "84edb90f51fdc08c3aa498a1cd335b2a6a2f342463410f366c92f8d5c7853270",
+    "client_registration": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_position_20261029_r1/client_registration.json",
+    "client_registration_sha256": "9de345463c5d27898e8df0b9814d8b661e75c4550bfe77275a1a55543a8c3200",
+    "performance_accepted": false,
+    "scope": "Bounded exact token/stop/session GPU check, not a complete JCT result."
+  },
+  "fresh_sampler_calibration": {
+    "schema_version": 1,
+    "samples": 11,
+    "cycles": 64,
+    "position_dispatch_included": true,
+    "sampling_profile": "qwen3_coder",
+    "native_sampler_preserved": true,
+    "forcing_boundary": "after_native_sampling",
+    "gpu_name": "NVIDIA H200 NVL",
+    "torch_version": "2.13.0+cu130",
+    "model_config_sha256": "e2c8d8eea39471785cd93379d8b48241ad7dcda299013155dd02526e34a0de62",
+    "native_sampler": "/home/longhao/experiment/.worktrees/sglang-r1-position-131d175450fe-d9f795b7181f/python/sglang/srt/layers/sampler.py",
+    "native_sampler_sha256": "7fbd8ee623b472d0b11a31854e123229fb984fd11ffdd87a7724c44a57178d92",
+    "benchmark_sha256": "6f93118e0566251c635d013f1b5182adfecd607e55c93f95704ca614cb52a55b",
+    "forcing_sha256": "02cb882f75e9637304055542b8e84e7719af0af19981c54292fee712886f43ab",
+    "seed": 21,
+    "cases": [
+      {
+        "batch_size": 1,
+        "vocabulary": 151936,
+        "logits_dtype": "float32",
+        "cost_per_step": {
+          "native_coding": {
+            "wall_ms": {
+              "samples": 11,
+              "mean_ms": 0.23578574147727271,
+              "median_ms": 0.238948171875,
+              "min_ms": 0.22373796875,
+              "max_ms": 0.245486984375
+            },
+            "device_stream_ms": {
+              "samples": 11,
+              "mean_ms": 0.23552004451101477,
+              "median_ms": 0.23869149386882782,
+              "min_ms": 0.2234649956226349,
+              "max_ms": 0.2452230006456375
+            }
+          },
+          "position_native_sampling": {
+            "wall_ms": {
+              "samples": 11,
+              "mean_ms": 0.24483766477272728,
+              "median_ms": 0.245028078125,
+              "min_ms": 0.21635384375,
+              "max_ms": 0.26471840625
+            },
+            "device_stream_ms": {
+              "samples": 11,
+              "mean_ms": 0.24456690793687647,
+              "median_ms": 0.2447499930858612,
+              "min_ms": 0.21608850359916687,
+              "max_ms": 0.2644619941711426
+            }
+          }
+        },
+        "native_dispatch_increment_mean_wall_ms": 0.009051923295454567
+      },
+      {
+        "batch_size": 8,
+        "vocabulary": 151936,
+        "logits_dtype": "float32",
+        "cost_per_step": {
+          "native_coding": {
+            "wall_ms": {
+              "samples": 11,
+              "mean_ms": 0.3523934715909091,
+              "median_ms": 0.35255025,
+              "min_ms": 0.33530203125,
+              "max_ms": 0.365638375
+            },
+            "device_stream_ms": {
+              "samples": 11,
+              "mean_ms": 0.3521335910667073,
+              "median_ms": 0.3522905111312866,
+              "min_ms": 0.3350585103034973,
+              "max_ms": 0.36536848545074463
+            }
+          },
+          "position_native_sampling": {
+            "wall_ms": {
+              "samples": 11,
+              "mean_ms": 0.3558303565340909,
+              "median_ms": 0.355241046875,
+              "min_ms": 0.35117915625,
+              "max_ms": 0.361107578125
+            },
+            "device_stream_ms": {
+              "samples": 11,
+              "mean_ms": 0.3555634075945074,
+              "median_ms": 0.35495200753211975,
+              "min_ms": 0.3509199917316437,
+              "max_ms": 0.36083900928497314
+            }
+          }
+        },
+        "native_dispatch_increment_mean_wall_ms": 0.003436884943181784
+      },
+      {
+        "batch_size": 24,
+        "vocabulary": 151936,
+        "logits_dtype": "float32",
+        "cost_per_step": {
+          "native_coding": {
+            "wall_ms": {
+              "samples": 11,
+              "mean_ms": 0.4175110284090909,
+              "median_ms": 0.418662390625,
+              "min_ms": 0.40404640625,
+              "max_ms": 0.4277546875
+            },
+            "device_stream_ms": {
+              "samples": 11,
+              "mean_ms": 0.4172504110769792,
+              "median_ms": 0.4184044897556305,
+              "min_ms": 0.40380001068115234,
+              "max_ms": 0.42750000953674316
+            }
+          },
+          "position_native_sampling": {
+            "wall_ms": {
+              "samples": 11,
+              "mean_ms": 0.42743350142045455,
+              "median_ms": 0.42817275,
+              "min_ms": 0.41117628125,
+              "max_ms": 0.44525734375
+            },
+            "device_stream_ms": {
+              "samples": 11,
+              "mean_ms": 0.4271625009450046,
+              "median_ms": 0.4278950095176697,
+              "min_ms": 0.41090598702430725,
+              "max_ms": 0.44498300552368164
+            }
+          }
+        },
+        "native_dispatch_increment_mean_wall_ms": 0.009922473011363675
+      }
+    ],
+    "performance_accepted": false,
+    "scope": "Actual native softmax/top-k/top-p sampling, followed by recorded-ID override in the replay variant, on synthetic batch sizes [1, 8, 24] logits. All variants include the same logits reset. No model forward, delayed-sampling comparison, token transport, KV migration or workflow JCT is measured. The increment is a component cost, not a correction to subtract from end-to-end measurements."
+  },
+  "same_complete_work_timing_capacity_seeds_and_native_stopping": true,
+  "failed_2922_prefix_preserved_and_not_resumed": true,
+  "current_cpu_qualified_repairs_installed": true,
+  "cpu_manifest": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/fragmented_capacity_cpu.sources.json",
+    "sha256": "42948dd2ef2330123ce5cbb1b386c60b42cd361ce4a3a49e0ef7636acdef0002"
+  },
+  "fresh_position_inputs_sha256": {
+    "/home/longhao/experiment/ops/tokencake_fragmented_capacity_position_20261029_r1.registration.json": "5b1de81ab1794096d15269f88246007aa4a6ffde1b41032ce73c5b65ebad2310",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_position_20261029_r1/gpu_smoke.json": "f87cd4233396c9184c0dce816ebb6960a8be823a3068320334af1156dc9dbef0",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_position_20261029_r1/sampling_calibration.json": "887853914cd482a8e08b7599eacd6a080cdf78d9de89fa410c0e229a7ca992f9"
+  },
+  "operator_sha256": "59ee1211cc9a7c4b19ef3e65ee6d07c1a51718199542e4f1439575fa1997f279",
+  "complete_workload_or_performance_verified": false
+}

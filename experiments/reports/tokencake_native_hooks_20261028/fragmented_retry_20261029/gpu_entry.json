@@ -1,0 +1,80 @@
+{
+  "observed_at": "2026-10-29T07:10:53.918955+00:00",
+  "application": {
+    "commit": "d9f795b7181f4712f160ee1cf41bc631dc934b8c",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "a55927c4df5350a348046cb98928006efb6e956d196edbcb2c3d5e7c18a5d013"
+  },
+  "native_engine": {
+    "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/schedule_batch.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/mem_cache/allocator/token.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "test/srt/test_beliefkv_transfer_receipts.py"
+    ],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e877ab6dce9be575d29fd3710de729c381a0fc0fc86397ec5136a6996b80a5da",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-tokencake-fragmented-entry-20261029/patches/sglang-tokencake-scheduler-runtime-20261028.patch",
+      "sha256": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6",
+      "expected_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+      "actual_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+      "matches_worktree": true,
+      "covered_untracked_paths": []
+    },
+    "state_sha256": "2b3df6d2a42aa546dfd2039f82720ae8617441581e2c5120708dfe0664cb703a"
+  },
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-29T15:10:43.656537+08:00"
+  },
+  "cpu_cases": 821,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/retry_fragmented_capacity.py": "e78b7a630e530f20778430c771bd6e7a41a59a1b6da23ef59aefc7c93ead2f3d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/fragmented_capacity_cpu.json": "bdd0f93e4c5a228409540a9faafddc566972ab83738fc20b56d88fa3e6ce64ee",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/fragmented_capacity_cpu.sources.json": "42948dd2ef2330123ce5cbb1b386c60b42cd361ce4a3a49e0ef7636acdef0002",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/fragmented_capacity_cpu.xml": "13756db434cc5e79399e986a31b292e9b69948c7f7a965b509af862d2e17b28d",
+    "/home/longhao/experiment/.worktrees/beliefkv-tokencake-fragmented-entry-20261029/patches/sglang-tokencake-scheduler-runtime-20261028.patch": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6",
+    "/home/longhao/experiment/ops/tokencake_locobench_native_hooks_20261028_r1.registration.json": "1e4485bb351afcf0796eda7882464eb7f84cc6070565d56a11558f3b3ea92d4c",
+    "/home/longhao/experiment/ops/tokencake_locobench_native_hooks_20261028_r1.registration.state.json": "4f948eb0bac7c584989746c8182d154e2378ace410fc6f67fa172e4265b7426b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1/tokencake_paper_observed/owned_process_cleanup.json": "5ffd80475df570a9c312c793702432ac4727afac21136967a7c8eb5f9b95a604",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/summary.json": "bd7fcf1e3510aaea8fdf10f40018c84582d96da3834e863b93fa69345566176f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/gpu_native_consumers_r3/owned_process_cleanup.json": "ecb0b6ccfe914b1997452a5aac2926092d61633cd983920903ea5427b58f9ddc",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/formal_native_hooks_failure.json": "556ad16a506416417dc7db024911e75851490da626b61ac282dd604bb2407b1d"
+  },
+  "performance_accepted": false,
+  "same_complete_work_and_all_normal_tails": true,
+  "native_and_thunderagent_reruns_registered": false,
+  "component_process": {
+    "pid": 1156002,
+    "state": "R",
+    "ppid": 1155799,
+    "start_ticks": "742811701",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-tokencake-fragmented-entry-20261029/scripts/qualify_tokencake_runtime.py",
+      "run",
+      "--engine",
+      "/home/longhao/experiment/.worktrees/sglang-tokencake-hooks-prepared-20261028",
+      "--native-patch",
+      "/home/longhao/experiment/.worktrees/beliefkv-tokencake-fragmented-entry-20261029/patches/sglang-tokencake-scheduler-runtime-20261028.patch",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/fragmented_retry_20261029/gpu_components"
+    ]
+  },
+  "components": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/fragmented_retry_20261029/gpu_components/summary.json",
+    "sha256": "04459d393fa6bd6d094d3d45bac5dc9a71256e4bf1d86bedf86d10afc1545e4a"
+  },
+  "status": "current_twelve_gpu_scenes_qualified"
+}

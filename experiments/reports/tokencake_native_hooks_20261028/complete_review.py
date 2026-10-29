@@ -58,16 +58,21 @@ def validate_contracts(plans):
             raise ValueError("complete work, tools, seeds, capacity or reviewed native engine differs")
 
 
-def precheck():
-    plans = {name: causal.load(path) for name, path, _ in SPECS}
+def arm_specs(registration):
+    return (*SPECS[:-1], ("TokenCake", registration, "tokencake_paper_observed"))
+
+
+def precheck(registration=REGISTRATION):
+    specs = arm_specs(registration)
+    plans = {name: causal.load(path) for name, path, _ in specs}
     validate_contracts(plans)
-    for name, path, label in SPECS[:-1]:
+    for name, path, label in specs[:-1]:
         BASE.completed(plans[name], path, label, TREES[name])
-    state = causal.load(REGISTRATION.with_suffix(".state.json"))
-    if state["status"] == "completed":
+    state = causal.load(registration.with_suffix(".state.json"))
+    if state["status"] == "collected_performance_review_pending":
         raise ValueError("use complete review after terminal completion")
     try:
-        BASE.completed(plans["TokenCake"], REGISTRATION, SPECS[-1][2], TOKENCAKE_TREE)
+        BASE.completed(plans["TokenCake"], registration, specs[-1][2], TOKENCAKE_TREE)
     except ValueError:
         return {
             "common_complete_work_contract_matches": True,
@@ -78,14 +83,15 @@ def precheck():
     raise ValueError("incomplete TokenCake was accepted as a complete comparison")
 
 
-def main():
-    output = HERE / "complete_review.json"
-    if output.exists() or FIGURES.exists():
+def main(registration=REGISTRATION, figures_dir=FIGURES, report_dir=HERE):
+    output = report_dir / "complete_review.json"
+    if output.exists() or figures_dir.exists():
         raise FileExistsError("preserve original complete TokenCake review and figures")
-    plans = {name: causal.load(path) for name, path, _ in SPECS}
+    specs = arm_specs(registration)
+    plans = {name: causal.load(path) for name, path, _ in specs}
     validate_contracts(plans)
     work, proofs, inputs, summaries = None, {}, {}, {}
-    for name, path, label in SPECS:
+    for name, path, label in specs:
         plan = plans[name]
         BASE.completed(plan, path, label, TREES[name])
         arm = Path(plan["run_root"]) / label
@@ -115,9 +121,9 @@ def main():
     ):
         raise ValueError("complete shared population changed")
     plan = plans["TokenCake"]
-    arm, frozen = Path(plan["run_root"]) / SPECS[-1][2], Path(plan["execution_checkout"])
+    arm, frozen = Path(plan["run_root"]) / specs[-1][2], Path(plan["execution_checkout"])
     runtime = causal.qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
-    validate_state(SPECS[-1][2], runtime)
+    validate_state(specs[-1][2], runtime)
     parameters = tokencake_parameters(plan["reference_environment"])
     validate_tokencake_parameters(runtime["paper_baseline"], parameters)
     hooks = verify_native_hooks(Path(plan["engine_checkout"]))
@@ -138,7 +144,7 @@ def main():
     if sha256_file(PRIOR_FIGURES) != prior["inputs_sha256"][str(PRIOR_FIGURES)]:
         raise ValueError("complete control figures changed")
     cached = json.loads(gzip.decompress(PRIOR_FIGURES.read_bytes()))["arms"]
-    arms = {name: cached[name] for name, _, _ in SPECS[:-1]}
+    arms = {name: cached[name] for name, _, _ in specs[:-1]}
     for name, row in arms.items():
         if row["match_contract"] != plotting.match_contract(plans[name], work):
             raise ValueError("cached control result belongs to another complete contract")
@@ -147,7 +153,7 @@ def main():
             if sha256_file(Path(source)) != digest:
                 raise ValueError("cached complete control input changed")
             inputs[source] = digest
-    current = plotting.extract("TokenCake", REGISTRATION, arm, bin_s=60)
+    current = plotting.extract("TokenCake", registration, arm, bin_s=60)
     arms["TokenCake"] = current
     for name, row in arms.items():
         if row["match_contract"]["engine_tree"] != TREES[name]:
@@ -178,26 +184,26 @@ def main():
                 full["end_to_end_output_tokens_per_s"] / baseline["end_to_end_output_tokens_per_s"] - 1.
             ),
         }
-    FIGURES.mkdir(parents=True)
+    figures_dir.mkdir(parents=True)
     plotted = {name: arms[name] for name in (
         "Full ACK repair", "TokenCake", "ThunderAgent decay",
     )}
     figures = plotting.render(
-        plotted, FIGURES, bin_s=60,
+        plotted, figures_dir, bin_s=60,
         title="Complete V230/V311: Full / TokenCake / ThunderAgent (reviewed engines differ)",
     )
     for filename, field in (("time_bins.csv", "bins"), ("geometry.csv", "geometry")):
-        BASE.write_csv(FIGURES / filename, [
+        BASE.write_csv(figures_dir / filename, [
             {"arm": name, **row} for name, data in arms.items() for row in data[field]
         ])
-    with (FIGURES / "evidence.json.gz").open("xb") as stream:
+    with (figures_dir / "evidence.json.gz").open("xb") as stream:
         stream.write(gzip.compress(json.dumps({
             "arms": arms, "figures": figures, "all_normal_tails_retained": True,
             "reviewed_native_engines": TREES, "plotted_arms": list(plotted),
             "performance_accepted": False,
         }, indent=2, allow_nan=False).encode(), mtime=0))
     inputs.update(current["evidence_sha256"])
-    for source in (Path(__file__), Path(BASE.__file__), PRIOR_REVIEW, PRIOR_FIGURES, *FIGURES.iterdir()):
+    for source in (Path(__file__), Path(BASE.__file__), PRIOR_REVIEW, PRIOR_FIGURES, *figures_dir.iterdir()):
         inputs[str(source)] = sha256_file(source)
     result = {
         "observed_at": datetime.now(timezone.utc).isoformat(),
@@ -226,8 +232,11 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--precheck", action="store_true")
+    parser.add_argument("--registration", type=Path, default=REGISTRATION)
+    parser.add_argument("--figures-dir", type=Path, default=FIGURES)
+    parser.add_argument("--report-dir", type=Path, default=HERE)
     arguments = parser.parse_args()
     if arguments.precheck:
-        print(json.dumps(precheck(), indent=2))
+        print(json.dumps(precheck(arguments.registration), indent=2))
     else:
-        main()
+        main(arguments.registration, arguments.figures_dir, arguments.report_dir)
