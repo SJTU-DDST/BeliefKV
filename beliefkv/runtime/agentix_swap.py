@@ -354,18 +354,36 @@ class AgentixNativeSwap:
         if pin is None:
             return False
         self._validate_tokens(pin.proof, req)
-        if not req.kv.holds_kv or len(req.prefix_indices) < pin.proof.committed:
+        required, consumer_leaf = pin.proof.committed, pin.leaf
+        logprob_start = getattr(req, "logprob_start_len", -1)
+        if req.return_logprob and 0 <= logprob_start < required:
+            # Native output-logprob requests replay the generated suffix on
+            # retraction. Validate their actual prefix without changing that cursor.
+            required = logprob_start
+            if required == 0:
+                raise ValueError("Agentix logprob resumption has no reusable native prefix")
+            path = self.transfers.resolve(pin.snapshot, owner=self._owner(pin.proof))
+            covered, consumer_leaf = 0, None
+            for node in path or ():
+                covered += len(node.key)
+                if covered == required:
+                    consumer_leaf = node.id
+                    break
+            if consumer_leaf is None:
+                raise ValueError("Agentix native logprob prefix lacks its protected checkpoint anchor")
+        if not req.kv.holds_kv or len(req.prefix_indices) < required:
             raise ValueError("Agentix paused prefix was not restored at actual native admission")
         receipt = req.lock_receipt
         if (
-            req.last_node != pin.leaf or receipt.node_id != pin.leaf
+            req.last_node != consumer_leaf or receipt.node_id != consumer_leaf
             or ComponentType.FULL in receipt.skipped_lock_components
-            or req.kv.kv_allocated_len < pin.proof.committed
-            or req.effective_kv_committed_len() < pin.proof.committed
+            or req.kv.kv_allocated_len < required
+            or req.effective_kv_committed_len() < required
         ):
             raise ValueError("Agentix resumption requires the actual native consumer lock and allocation")
         self.release(req.rid)
         self.counts["resumed_requests"] += 1
+        self.counts["native_logprob_suffix_replayed_tokens"] += pin.proof.committed - required
         return True
 
     @_cache_authority

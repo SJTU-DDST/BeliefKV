@@ -1,6 +1,7 @@
 """Agentix checkpoints for actual full-prompt native radix sessions."""
 
 from array import array
+from dataclasses import replace
 from types import SimpleNamespace as NS
 
 import pytest
@@ -74,6 +75,45 @@ def test_native_session_checkpoint_restores_through_real_prefill_consumer(swap):
     cache.loading_check(finish_count=1)
     assert (req.session_id, req.session_generation) == namespace
     assert (tuple(req.origin_input_ids), tuple(req.output_ids), req.sampling_params) == original
+
+
+def test_output_logprob_request_consumes_its_native_shorter_restored_prefix(swap):
+    from sglang.srt.managers.schedule_policy import PrefillAdder
+    import torch
+
+    actor, cache, allocator, _, loads, _, _ = swap
+    req = running_session(cache)
+    req.return_logprob = True
+    req.logprob_start_len = len(req.origin_input_ids)
+    original = tuple(req.origin_input_ids), tuple(req.output_ids), req.sampling_params
+    actor.prepare([req], running_batch=NS(reqs=[req]))
+    ack(cache)
+    actor.commit()
+    pin = actor.paused[req.rid]
+    assert pin.proof.committed == 5
+    cache.load_back_threshold = 1
+    req.init_next_round_input(cache, cow_mamba=False)
+    adder = PrefillAdder(1, cache, allocator, None, 0., 64, 64, max_running_requests=4)
+    adder.add_one_req(req, has_chunked_req=False, truncation_align_size=None)
+    assert req in adder.can_run_list and len(req.prefix_indices) == 4
+    assert cache.req_to_token_pool.alloc([req]) is not None
+    private = allocator.alloc(req.extend_range.length)
+    assert private is not None
+    indices = torch.cat((req.prefix_indices, private))
+    cache.req_to_token_pool.write((req.kv.req_pool_idx, slice(0, len(indices))), indices)
+    req.kv.kv_allocated_len = req.kv.kv_committed_len = len(indices)
+    receipt = req.lock_receipt
+    req.lock_receipt = replace(receipt, node_id=pin.leaf)
+    with pytest.raises(ValueError, match="native consumer lock"):
+        actor.resumed(req)
+    assert pin.lease in actor.transfers._host_leases
+    req.lock_receipt = receipt
+    assert actor.resumed(req)
+    assert actor.counts["native_logprob_suffix_replayed_tokens"] == 1
+    assert pin.lease not in actor.transfers._host_leases and loads
+    assert (tuple(req.origin_input_ids), tuple(req.output_ids), req.sampling_params) == original
+    cache.cache_controller.start_loading()
+    cache.loading_check(finish_count=1)
 
 
 def test_two_native_sessions_share_checkpoint_pages_and_keep_both_owners(swap):

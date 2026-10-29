@@ -1,5 +1,6 @@
 """Run frozen-source CPU, physical GPU, then actual model checks sequentially."""
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -12,7 +13,14 @@ PREDECESSOR = ROOT.parent / "ops/tokencake_fragmented_capacity_20261029_r1.regis
 
 
 def main():
-    frozen = json.loads((HERE / "lifecycle_diagnostic_frozen_r2.json").read_bytes())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--frozen", type=Path, default=HERE / "lifecycle_diagnostic_frozen_r2.json")
+    parser.add_argument("--name", default="diagnostic_cycle_r1")
+    parser.add_argument("--port", type=int, default=18710)
+    args = parser.parse_args()
+    if Path(args.name).name != args.name:
+        raise ValueError("validation cycle name must be a basename")
+    frozen = json.loads(args.frozen.read_bytes())
     application, engine = Path(frozen["checkout"]), Path(frozen["engine_checkout"])
     sys.path.insert(0, str(application))
     from beliefkv.experiments.source_provenance import sha256_file
@@ -20,7 +28,7 @@ def main():
     from scripts import run_causal_comparison as controls
     from scripts.qualify_agentix_locobench_model import completed_predecessor
 
-    run = HERE / "diagnostic_cycle_r1"
+    run = HERE / args.name
     if run.exists():
         raise FileExistsError("preserve every prior validation cycle")
     run.mkdir()
@@ -32,7 +40,7 @@ def main():
         raise ValueError("GPU cycle supervisor must use nice0")
     if not completed_predecessor(PREDECESSOR, allow_failed=True):
         raise ValueError("skipped predecessor still owns live processes")
-    for old in HERE.glob("roomy_r*/owned_process_cleanup.json"):
+    for old in HERE.glob("**/owned_process_cleanup.json"):
         cleanup = controls.load(old)
         if cleanup["remaining_processes"] or any(
             controls.reservation.alive(row) for row in cleanup["identities"]
@@ -63,7 +71,7 @@ def main():
     previous = controls.load(PREDECESSOR)
     plan = {
         **frozen, "output_dir": str(gpu), "predecessor": str(PREDECESSOR),
-        "hold_file": previous["hold_file"], "port": 18710,
+        "hold_file": previous["hold_file"], "port": args.port,
         "reference_environment": previous["reference_environment"],
         "cpu_manifest": evidence["source_manifest"]["path"],
         "failed_predecessor_skipped_by_user": True,
@@ -85,7 +93,7 @@ def main():
             "--predecessor", str(PREDECESSOR), "--application", str(application),
             "--engine", str(engine), "--components", str(gpu / "summary.json"),
             "--cpu-evidence", str(cpu / "native_consumer_cpu.json"),
-            "--output-dir", str(run / "model"), "--fixture", "roomy", "--port", "18710",
+            "--output-dir", str(run / "model"), "--fixture", "roomy", "--port", str(args.port),
             "--allow-failed-predecessor",
         ], cwd=application, env={**os.environ, "PYTHONHASHSEED": "21"},
             stdout=log, stderr=subprocess.STDOUT, check=True)

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="6.979" timestamp="2026-10-29T02:26:45.802324-07:00" hostname="ddst-12"><testcase classname="tests.test_agentix_native_sessions" name="test_output_logprob_request_consumes_its_native_shorter_restored_prefix" time="6.500"><failure message="ValueError: Agentix paused prefix was not restored at actual native admission">tests/test_agentix_native_sessions.py:104: in test_output_logprob_request_consumes_its_native_shorter_restored_prefix
+    assert actor.resumed(req)
+           ^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:20: in invoke
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:358: in resumed
+    raise ValueError("Agentix paused prefix was not restored at actual native admission")
+E   ValueError: Agentix paused prefix was not restored at actual native admission</failure></testcase></testsuite></testsuites>

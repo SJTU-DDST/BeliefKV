@@ -43,6 +43,18 @@ diagnostic_cycle_r1 的冻结应用 e5cf6233fc9f 实际通过 781 项 CPU、保�
 模型检查，并核验真实 server_info 的该参数。物理 server 与四项 GPU 证据
 保持不变；没有放宽 Agentix 对未注册请求、sampler 或 namespace 的检查。
 
+去除额外 warmup 后的 roomy_skip_warmup_r1 实际执行到恢复，暴露另一个
+边界：原生将默认 output-logprob 的 logprob_start_len 设为 prompt 长度，
+因此重入时的缓存匹配截在 prompt 末端，按原生语义重算很短的生成后缀。
+Agentix 原来却要求它持有整个旧 checkpoint leaf 的锁，合法短前缀被误拒绝。
+真实 Req/PrefillAdder 的新用例在修复前复现相同错误，修复后相关 42 项通过。
+
+现在仅在这个原生 logprob 边界存在时，按受保护 checkpoint 路径确定真正
+consumer ancestor，继续核验完整旧输入/输出/sampler、对应原生 FULL 锁与
+实际分配，再交接 Host pin。错误 consumer receipt 仍拒绝且不释放保护。
+额外重算后缀单独累计，不宣称整段 checkpoint 都被复用；无 logprob 的
+正式 token 重放仍要求原来的完整 checkpoint。新的实际模型数值验证待完成。
+
 ## 为什么 0.5 接近突发
 
 当前完整可比工作量是 18 个原项目、3674 请求、549671 个输出 token。
