@@ -90,7 +90,22 @@ Full；复用完整 ThunderAgent decay 与原 2s Full 对照，不再采集 nati
 `ops/workflow_dispatch_position_20261029.registration.json` 已实际启动资格检查，
 watcher 1688208，执行源码冻结在 `aedfe19b`，端口 18894。
 实际服务参数为 2048/mixed-off/running24/seed21、805198-token device pool、
-200GB Host。当前进入真实 token/session/停止条件检查，尚未报告通过；
-通过后才会注册 `ops/workflow_dispatch_20261029_r1.registration.json` 并启动
-`experiments/raw/workflow_dispatch_20261029_r1/full`。本段不表示新 Full 已完成、
-性能改善或已满足全局目标。
+200GB Host。资格随后实际通过 24 次 token/session 校验，24 次均由原生停止，
+batch 1/8/24 的 position sampling 检查也通过。原资格进程正常退出后，
+已注册 `ops/workflow_dispatch_20261029_r1.registration.json` 并实际启动
+`experiments/raw/workflow_dispatch_20261029_r1/full`。
+
+`workflow_dispatch_r1/live_start_r1.json` 在 2026-10-29 22:19:19 UTC
+独立核对 watcher1691395、server1692256、driver1694887、scheduler1692611：
+所有实验进程 nice0、GPU 唯一所有者、冻结源码及资格绑定输入均保持一致。
+实际控制 2000ms、补位 500ms，策略范围为
+`paused_periodic_and_bounded_free_dispatch`。实际模型指纹为
+`3fe51fb34e9189a081087083d2d2a7169fcabca1baff8b5bcec2afb47872b45c`。
+观察时有 11 个实际到达 workflow、15 份精确完成回执；各文件是独立读取的
+运行前缀，不是原子快照、完整实验或性能改善证明。
+
+CPU-only `workflow_dispatch_r1/review_worker_r1` 已实际启动，watcher1692001、
+nice19，等待完整 Full、遥测排空和实际 owned exit 后生成对 ThunderAgent
+及原 2s Full 的完整对比、decode 趋势及分布。该进程不注册进一步 GPU 实验。
+本次是修复后模型与有界补位组合的验证，不能单独归因预测器、500ms 周期
+或排序。全局性能目标仍未完成，其他 baseline 继续等待。

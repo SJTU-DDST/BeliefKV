@@ -3773,3 +3773,14 @@
   It precedes ops/workflow_dispatch_20261029_r1.registration.json;do not
   confuse qualification with a completed Full or claim superiority.
   Keep user worktree edits and all earlier negative results;no deferred baseline.
+- Workflow-dispatch position qualification now passes24exact token/session/
+  native-stop requests(all24 native stops)and native sampler1/8/24. Its original
+  supervisor actually exits;Full ops/workflow_dispatch_20261029_r1 now actually
+  serves from frozenaedfe19b on18894. live_start_r1 at22:19:19UTC verifies sole
+  GPU scheduler1692611,nice0 watcher1691395/server1692256/driver1694887,
+  exact2048/mixed-off/running24/seed21,2000ms control/500ms dispatch,and live
+  model3fe51fb34e9189a081087083d2d2a7169fcabca1baff8b5bcec2afb47872b45c.
+  Prefix15exact receipts/11arrivals is not complete work or performance.
+  CPU reviewer1692001 actually waits atnice19 using existing complete Thunder/
+  originalFull and registers no further GPU action. Preserve all normal tails,
+  frozen inputs and negative results;wait complete review before superiority.
