@@ -1,0 +1,43 @@
+{
+  "actual_requests": 11,
+  "actual_output_tokens": 88,
+  "same_inputs_sampling_and_request_histories": true,
+  "independent_native_namespaces_and_sessions": true,
+  "maximum_logprob_deltas": {
+    "b_handoff": 0.0,
+    "a_recovered": 0.0,
+    "b_initial": 0.0,
+    "a_seed": 0.0,
+    "a_initial": 0.0
+  },
+  "all_raw_outputs_match_normalized_report": true,
+  "actual_owned_cleanup_verified": true,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_b_initial.json": "7313b31ed26c1115ecd59c38fe773a8b75bca49d02caa53b781c1b71e1f09348",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_b_initial.json": "170d8895ca7610a88943ccaa4bf21a63d5d3519194b62c026cdebf55353c8d34",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_c.json": "91a5592c2c50936ce1a1187830a71ff373ab27d5517af0111729d2399d48f0bd",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_c.json": "369e7d283f675073e92ce0a6aee061f37278d58c0a7c8f49c07cb8460ad0cba5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_a_seed.json": "9f5aac385db5a85502d520c52b24e245b76a7bdf280726a8aa07fdcb2993a844",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_a_seed.json": "c44fe5fd5cc53e59e35d6a9b5a7501a72dc70cb18da501cc119254176c6c42d0",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_a_initial.json": "098863b404024e9b67ec201db9147474d8c211b990d04f56856d0db1b98d25b7",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_a_initial.json": "332d4da2972e62aba8f9223397dd1642592f509064f22cb47eb4137d28a4c96a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_b_handoff.json": "ca5104873f4a542092ab9a73cdf7083336985e4963cd5e2036403aa307ef5acf",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_b_handoff.json": "1333789bba3b390d272284c4e41be838543251db1f1190c81e41d6f3794ed487",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_b_reference_initial.json": "9c80d24960ea16b9d01c72407e2fbfb7995537052d570a5df665dd4dc64233bb",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_b_reference_initial.json": "0f40bb1788c682859891c1799f8615977a4e6dbca25b5aada9c2e25aa233af54",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_b_reference.json": "731111c153a4b953f6faa8830e6cf26cc80e35d943d6a1d06810ad368f978838",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_b_reference.json": "b5675b8e2abba2657425b8c639e77caf3c842352ee60442d25501a52fb4d9a9c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_a_recovered.json": "2f86e9a0c9a5773cffc5f9ad45c76ef86ffc034d84ac593bff90c2076fa24fa7",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_a_recovered.json": "e645597653f787458aa108b8a7996f498700475389bd40ee256359a190895cb5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_a_reference_seed.json": "ab23892f248c0fbc4f0dd08757a2dde6995a75bcbce27798f5358f088150a04b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_a_reference_seed.json": "deac83b96945f6167d5716af7f9b5ac8f20d2e18acb2301a22fb749d4e355ac7",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_a_reference_initial.json": "13dc9f17ed3e94f2fac77c252c01f9dacbe3551022077bdb4103e8561d0692f0",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_a_reference_initial.json": "174933fae726a0690e490606ddab6a6bddef3c7fae021b0eee27b9eb9ac5fd28",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/request_a_reference.json": "e8e2ea1aa3afe06b19c19eaf29ced98ce604a0a322fba9cdfe0e8137ca692083",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/response_a_reference.json": "7ca4313c18d1db1284a9497ed0a0c77641371f2f5b5b68576b8414650cee74a7",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/report.json": "2f6f10dfc9b0c798b5334452e04b5ee8c5a75d3ffb262eb66feb058980804078",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r3/model/owned_process_cleanup.json": "b87442dfcdae18b03d3439917d53907010d182f369ecfa5ee1f5080427f45d03"
+  },
+  "whole_workload_performance_qualified": false,
+  "performance_accepted": false
+}

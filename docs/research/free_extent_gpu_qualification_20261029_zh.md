@@ -71,3 +71,34 @@ prefill 完整历史，分块和初始 decode 路径不同。下一次独立参�
 生成结果；保留 token 完全相同、logprob 差异不超过 0.05 的原门槛。
 新 CPU 用例确保仅后续输出相同不能掩盖初始独立历史错误。
 这是对参考序列的修正，不修改正式 workload、原生传输或采样算法。
+
+## 模型 R3 及新 Full
+
+冻结应用 `e5f77eff` 的完整回归 4713 项及 6 子测试通过，保留此前全部
+4712 个身份。模型 R3 实际完成 11 次普通贪心调用，新增容量交接仍为
+10247+2049→12296 token。五组比较 B 恢复、A 恢复、B initial、A seed、
+A initial 的生成 token 均完全相同，最大 logprob 差异全部为零。
+原始请求与响应的独立 reader 另外核验同组输入、采样参数和历史序列相同，
+参考与被测方的 extra_key、cache_salt、native session 均不同。
+R2 的差异在匹配参考序列后不再出现，未放宽门槛。
+
+随后 `free_extent_position_20261029_r1` 完成 24 请求的真实 GPU
+token/session/native-stop 检查，24 次停止均验证；batch1/8/24 的普通
+native sampler 和 position 路径检查也通过。原采样器保持不变，
+不是使用冻结输出声明数学正确。
+
+正式 Full 已注册并进入运行：
+`/home/longhao/experiment/ops/warm_start_free_extent_20261029_r1.registration.json`，
+端口 18861，冻结应用 `e5f77eff` / 原生树 `434c35dd`。
+总请求、token、依赖、931 项分类工具时间、种子、805198-token HBM、
+200GB Host、running/decode24、prefill4096/mixed-off、全部正常尾部
+和新到达表均与完整 ThunderAgent 对照相同。
+不重跑 native、不启动 Agentix/TokenCake，也不据运行前缀宣称 JCT 收益。
+
+独立 `full_live_start.json` 已核验 251/3674 个完成请求的输入、输出及
+原生停止条件，与新 ThunderAgent 的完整回执逐项相同；15 个 workflow
+实际到达，包含 10 个 offset0 的初始组。实际 nice0 watcher1325143、
+server1325666、driver1326959 和唯一 GPU scheduler1326025 由 PID、
+start ticks、所有权及原始进程查询核验。新的 free-extent 开关、
+demand pipeline 均实际生效，工具预取和普通前沿预取均关闭。
+这些是本次运行的启动证据，完整 JCT、吞吐、迁移与重算比较仍待结束。

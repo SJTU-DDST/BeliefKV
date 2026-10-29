@@ -3304,3 +3304,25 @@
   Formal Full stays unregistered until the actual new model proof and fresh
   position/sampling checks pass. Preserve both failed model attempts and their
   actual cleanup; prepared registration native bytes equal the clean C5 tree.
+- ModelR3 on frozene5f77eff/C5 now actually passes11 unforced calls and all
+  five independent token/logprob comparisons withzero deltas, including the
+  matched6144-prefix/initial histories. Raw_model_review also verifies all22
+  raw request/response files, identical inputs/sampling and distinct reference
+  namespaces/sessions; old failedR1/R2 remain preserved. CPU4713+6 retains
+  all4712 prior IDs on1916 unchanged inputs. Fresh position24/native-stop24
+  and sampler1/8/24 then pass. Registration
+  ops/warm_start_free_extent_20261029_r1.registration.json now runs Full
+  frome5f77eff/tree434c35dd at18861 after actual Thunder/model exit/cleanup.
+  Preserve its frozen code and sole GPU use. Same complete work/tools/arrivals/
+  capacity as the completed warm-start Thunder control; native is not rerun.
+  All complete Full performance and applicable-baseline superiority remain
+  pending. Do not infer gains from the model fixture or live prefixes.
+- The new Full is actually running, not just queued. Independent
+  layer_free_extent_20261029/full_live_start.json verifies251 exact receipts/
+  15 actual arrivals (10 initial), all13 shared work/arrival/capacity fields
+  against complete warm-start Thunder, nice0 watcher1325143/server1325666/
+  driver1326959/sole GPU1326025 with source and ownership checks. New free-
+  extent and demand pipeline are on; tool/frontier prefetch off. Preserve
+  running frozen e5f77eff and its prepared native source. Do not queue other
+  GPU work or claim complete Full JCT/throughput until all3674 normal requests,
+  fresh drain and actual owned exit have been independently reviewed.

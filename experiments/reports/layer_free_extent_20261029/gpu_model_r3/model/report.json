@@ -1,0 +1,478 @@
+{
+  "status": "unforced_layer_handoff_model_qualified",
+  "performance_accepted": false,
+  "native_engine": {
+    "commit": "c5ad39a1e1285532335139fa3bc33d49c7eabcf6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "03e7a9feb460455fe1a214d4f15a9444e66512002360ce05b37a5ad7ccefc2d6"
+  },
+  "component_sha256": "563e41100f86707eb9b423aa4a9ddaa2808cb98dbc73fb3963f26309871b90a3",
+  "source_requests": [
+    "beliefkv:01a177b9-c215-7ea0-ba14-0de09c4f8a9c",
+    "beliefkv:01a177bb-6df3-7023-8614-561913e62059",
+    "beliefkv:01a177be-76cd-70b0-b0e6-d3f300c18ba6"
+  ],
+  "fixture": {
+    "device_tokens": 49152,
+    "host_gb": 8,
+    "warm_tools": 8,
+    "warm_tool_seconds": 4.0,
+    "donor_tool_seconds": 20,
+    "speculative_tool_prefetch": false,
+    "readiness_endpoint": "/ready",
+    "model_inputs": [
+      24576,
+      16384,
+      16384
+    ],
+    "sampling": {
+      "generated_tokens": 8,
+      "sampling_seed": 21
+    },
+    "max_logprob_delta": 0.05,
+    "free_extent_restore_required": true,
+    "donor_initial_checkpoint_tokens": 6144,
+    "independent_references_repeat_prefix_and_initial_generation": true
+  },
+  "operator_sha256": "51c84e900cc5ba334e9e37818b43f743c93708a5f0ef4ea4fe67c240bbe47248",
+  "configuration": "/home/longhao/experiment/.worktrees/beliefkv-free-extent-e5f77eff/experiments/reports/layer_free_extent_20261029/full_warm_start.json",
+  "configuration_sha256": "7527f1c2e56d3e84d9201f65f9ee7d7a0f0bdb75b4154f109190395a5829ef90",
+  "server": {
+    "pid": 1319802,
+    "state": "R",
+    "ppid": 1319777,
+    "start_ticks": "744715831",
+    "argv": [
+      "bash",
+      "/home/longhao/experiment/.worktrees/beliefkv-free-extent-e5f77eff/scripts/launch_qwen35_native_v0520.sh",
+      "--enable-beliefkv-admission",
+      "--beliefkv-event-socket-path",
+      "/tmp/bkv-layer-model-18863.sock",
+      "--max-total-tokens",
+      "49152"
+    ]
+  },
+  "model": {
+    "requests": {
+      "b_initial": {
+        "request_id": "layer-model:b_initial",
+        "prompt_tokens": 24576,
+        "output_token_ids": [
+          151644,
+          198,
+          27,
+          1688,
+          37162,
+          9995,
+          397,
+          27
+        ],
+        "output_logprobs": [
+          -0.0001248043408850208,
+          -0.050808168947696686,
+          -2.992108420585282e-05,
+          -1.1920928244535389e-07,
+          -0.5251299738883972,
+          -2.4914430468925275e-05,
+          -1.1920928244535389e-07,
+          0.0
+        ],
+        "cached_tokens": 0,
+        "cached_tokens_details": {},
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "c": {
+        "request_id": "layer-model:c",
+        "prompt_tokens": 16384,
+        "output_token_ids": [
+          438,
+          3438,
+          510,
+          256,
+          220,
+          17,
+          19,
+          17
+        ],
+        "output_logprobs": [
+          -3.2066785934148356e-05,
+          -1.0728830375228426e-06,
+          -0.000296310376143083,
+          -0.16183072328567505,
+          -3.290122185717337e-05,
+          0.0,
+          -1.1920928244535389e-07,
+          -5.960462772236497e-07
+        ],
+        "cached_tokens": 0,
+        "cached_tokens_details": {},
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "a_seed": {
+        "request_id": "layer-model:a_seed",
+        "prompt_tokens": 6144,
+        "output_token_ids": [
+          594,
+          10435,
+          476,
+          2390,
+          16295,
+          624,
+          51296,
+          279
+        ],
+        "output_logprobs": [
+          -0.016503842547535896,
+          -0.8354425430297852,
+          -0.8137770891189575,
+          -1.135409951210022,
+          -0.2940199673175812,
+          -0.6717063188552856,
+          -0.767765462398529,
+          -0.6116586923599243
+        ],
+        "cached_tokens": 0,
+        "cached_tokens_details": {},
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "a_initial": {
+        "request_id": "layer-model:a_initial",
+        "prompt_tokens": 16384,
+        "output_token_ids": [
+          13437,
+          14,
+          20660,
+          14,
+          59424,
+          7197,
+          198,
+          522
+        ],
+        "output_logprobs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cached_tokens": 6145,
+        "cached_tokens_details": {
+          "device": 6145,
+          "host": 0
+        },
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "b_handoff": {
+        "request_id": "layer-model:b_handoff",
+        "prompt_tokens": 24584,
+        "output_token_ids": [
+          16181,
+          28,
+          14339,
+          397,
+          5047,
+          22139,
+          198,
+          522
+        ],
+        "output_logprobs": [
+          0.0,
+          -8.928377064876258e-05,
+          -2.3841855067985307e-07,
+          -2.3841855067985307e-07,
+          -0.8055292963981628,
+          0.0,
+          -8.67805938469246e-05,
+          0.0
+        ],
+        "cached_tokens": 24583,
+        "cached_tokens_details": {
+          "device": 24583,
+          "host": 0
+        },
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "b_reference_initial": {
+        "request_id": "layer-model:b_reference_initial",
+        "prompt_tokens": 24576,
+        "output_token_ids": [
+          151644,
+          198,
+          27,
+          1688,
+          37162,
+          9995,
+          397,
+          27
+        ],
+        "output_logprobs": [
+          -0.0001248043408850208,
+          -0.050808168947696686,
+          -2.992108420585282e-05,
+          -1.1920928244535389e-07,
+          -0.5251299738883972,
+          -2.4914430468925275e-05,
+          -1.1920928244535389e-07,
+          0.0
+        ],
+        "cached_tokens": 0,
+        "cached_tokens_details": {},
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "b_reference": {
+        "request_id": "layer-model:b_reference",
+        "prompt_tokens": 24584,
+        "output_token_ids": [
+          16181,
+          28,
+          14339,
+          397,
+          5047,
+          22139,
+          198,
+          522
+        ],
+        "output_logprobs": [
+          0.0,
+          -8.928377064876258e-05,
+          -2.3841855067985307e-07,
+          -2.3841855067985307e-07,
+          -0.8055292963981628,
+          0.0,
+          -8.67805938469246e-05,
+          0.0
+        ],
+        "cached_tokens": 24583,
+        "cached_tokens_details": {
+          "device": 24583,
+          "host": 0
+        },
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "a_recovered": {
+        "request_id": "layer-model:a_recovered",
+        "prompt_tokens": 16392,
+        "output_token_ids": [
+          16181,
+          397,
+          27,
+          16181,
+          28,
+          3176,
+          397,
+          18
+        ],
+        "output_logprobs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.3132617473602295,
+          -1.1920928244535389e-07,
+          -1.7881377516459906e-06
+        ],
+        "cached_tokens": 16391,
+        "cached_tokens_details": {
+          "device": 0,
+          "host": 16391
+        },
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "a_reference_seed": {
+        "request_id": "layer-model:a_reference_seed",
+        "prompt_tokens": 6144,
+        "output_token_ids": [
+          594,
+          10435,
+          476,
+          2390,
+          16295,
+          624,
+          51296,
+          279
+        ],
+        "output_logprobs": [
+          -0.016503842547535896,
+          -0.8354425430297852,
+          -0.8137770891189575,
+          -1.135409951210022,
+          -0.2940199673175812,
+          -0.6717063188552856,
+          -0.767765462398529,
+          -0.6116586923599243
+        ],
+        "cached_tokens": 0,
+        "cached_tokens_details": {},
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "a_reference_initial": {
+        "request_id": "layer-model:a_reference_initial",
+        "prompt_tokens": 16384,
+        "output_token_ids": [
+          13437,
+          14,
+          20660,
+          14,
+          59424,
+          7197,
+          198,
+          522
+        ],
+        "output_logprobs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "cached_tokens": 6145,
+        "cached_tokens_details": {
+          "device": 6145,
+          "host": 0
+        },
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      },
+      "a_reference": {
+        "request_id": "layer-model:a_reference",
+        "prompt_tokens": 16392,
+        "output_token_ids": [
+          16181,
+          397,
+          27,
+          16181,
+          28,
+          3176,
+          397,
+          18
+        ],
+        "output_logprobs": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.3132617473602295,
+          -1.1920928244535389e-07,
+          -1.7881377516459906e-06
+        ],
+        "cached_tokens": 16391,
+        "cached_tokens_details": {
+          "device": 16391,
+          "host": 0
+        },
+        "native_finish_reason": {
+          "type": "length",
+          "length": 8
+        },
+        "unforced_sampling": true
+      }
+    },
+    "handoffs": [
+      {
+        "event": "layer_kv_handoff_submitted",
+        "ts_ms": 1793276984385.4893,
+        "workflow_id": "layer-model",
+        "invocation_id": "a",
+        "context_id": "a",
+        "context_epoch": 0,
+        "session_id": "beliefkv-57cf49a1ccd777c8551c957697971e76",
+        "session_generation": 3,
+        "beneficiary_request_id": "layer-model:b_handoff",
+        "beneficiary_invocation_id": "b",
+        "beneficiary_context_id": "b",
+        "beneficiary_context_epoch": 0,
+        "beneficiary_session_id": "beliefkv-26762559fa9ca363f8ae9a00d7e14843",
+        "beneficiary_session_generation": 1,
+        "capacity_effect": "reserved_extent;no_free_page_credit",
+        "reserved_input_tokens": 8,
+        "reserved_growth_tokens": 24,
+        "checkpoint_missing_tokens": 12288,
+        "restored_decode_tail_tokens": 8,
+        "speculative_reserve_tokens": 4120,
+        "logical_admission_changed": false,
+        "donor_node_id": 31,
+        "consumer_node_id": 18,
+        "donor_tokens": 10247,
+        "reused_tokens": 10247,
+        "restored_tokens": 12296,
+        "free_extent_tokens": 2049,
+        "reserved_tail_tokens": 0,
+        "consumer_index": 0,
+        "donor_nodes": 4,
+        "consumer_nodes": 4,
+        "donor_group_layers": 8,
+        "consumer_group_layers": 4,
+        "remaining_threshold_ms": 1000.0,
+        "cold_transfer_cost": true,
+        "minimum_remaining_survival": 0.75,
+        "predicted_completion_probability_within_threshold": 0.0,
+        "backup_tokens_budgeted": 10247,
+        "restore_tokens_budgeted": 10247,
+        "beneficiary_restore_bytes_budgeted": 1208745984,
+        "logical_handover_budget_ms": 0.0,
+        "dispatch_stage": "before_native_admission"
+      }
+    ],
+    "maximum_logprob_delta": {
+      "b_handoff": 0.0,
+      "a_recovered": 0.0,
+      "b_initial": 0.0,
+      "a_seed": 0.0,
+      "a_initial": 0.0
+    }
+  },
+  "observed_at": "2026-10-29T12:30:05.487705+00:00",
+  "whole_workload_qualified": false,
+  "server_exit_code": -9
+}

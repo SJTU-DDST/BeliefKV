@@ -1,7 +1,8 @@
 # 逐层交接组合私有 donor 与真实空闲页
 
-2026-10-29。与新的 warm-start ThunderAgent 实验并行开发的 CPU 候选。
-冻结对照仍使用原共同引擎和源码；本候选没有启动 GPU 实验。
+2026-10-29。与新的 warm-start ThunderAgent 对照并行开发的候选。
+现已完成 4713 项 CPU 检查、103 项原生检查、四个真实 GPU 组件场景及
+11 次真实模型调用；同到达表的 Full 已启动，完整性能结果仍待收集。
 
 ## 处理的限制
 
@@ -76,9 +77,22 @@ ThunderAgent CPU 报告的全部 4627 个并集身份；绑定 1910 份输入，
 8/4、4/8、5/3、3/5，核验不同方向粒度及所有被覆盖层的依赖。
 原生提交树为 `434c35dd66211d0a230717c88bf1452056769a40`，
 seal 核验精确五文件差分及反向 apply 检查，未将此树加入正式启动白名单。
+该句保留首次 CPU seal 时点的边界。后续累计补丁
+`sglang-layer-free-extent-runtime-20261029.patch` 将相同精确树接入
+`layer_free_extent` flavor，保留默认关闭及新组件、模型、位置/采样检查。
+累计补丁 SHA256 为
+`c3a287b69d8f400f722996930fb6aad6ddabaf1f8859fc98e794f556887b1e15`。
 
 CPU 用例使用真实原生 radix、allocator、session 和锁，拷贝与完成事件
 使用替身。它们不能证明 GPU 字节、真实跨流并发、非强制模型数值或
-完整 workflow 性能。本候选尚未加入正式启动引擎白名单。
-ThunderAgent 完成且实际清理后，先做对应 GPU 组件与模型验证，再决定
-是否进入同到达表的完整比较；负收益继续按用户要求关闭或回退。
+完整 workflow 性能。后续真实 GPU 与模型证据单独记录在
+`../research/free_extent_gpu_qualification_20261029_zh.md`，
+不将 CPU 替身结果当作实际 DMA 结果。
+
+模型 R3 通过了独立 namespace/session 中的五组生成结果比较，生成 token
+和 logprob 均完全相同；原始 11 对请求/响应已再独立核对。
+新的 24 请求位置/停止检查及 batch1/8/24 采样检查通过后，正式
+`warm_start_free_extent_20261029_r1` 从冻结 `e5f77eff` 启动，端口 18861。
+使用与新 ThunderAgent 相同的完整工作、工具时间、10+8 到达表和容量。
+它仍是组合系统比较，不是单独 handoff 的性能归因；负收益继续按用户
+要求关闭或回退。
