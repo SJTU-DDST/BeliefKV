@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "status": "waiting_for_baseline_completion",
+  "arrival_rate_per_second": 0.5,
+  "arrival_seed": 21,
+  "workflow_arrivals": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/poisson_0.5_seed21.json",
+    "sha256": "a292e8cdc92b3eba64328ca4d00fc95f9192ca1f474803d6012b64414a913b40"
+  },
+  "deferred_arrival_rates_per_second": [
+    0.2,
+    0.35
+  ],
+  "execution_prerequisites": {
+    "complete_before_gpu_execution": [
+      "TokenCake",
+      "Agentix"
+    ],
+    "completion_boundary": "complete_formal_workload_and_actual_owned_exit",
+    "component_qualification_is_not_formal_completion": true
+  },
+  "first_candidate": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/rate05_after_baselines/chunk2048.json",
+  "conditional_followups": [
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/rate05_after_baselines/chunk1024.json",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/rate05_after_baselines/chunk2048_mixed.json"
+  ],
+  "gpu_experiments_registered": false,
+  "historical_cpu_bound_candidates_unchanged": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/chunk2048.json": "4af04da3e3a48dda52fb8f40761317c5db621c8f01377c9e2b57ec43779466b4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/chunk1024.json": "866b0ac38a50b7592eef772b4b25cefb45da13ce42f3dc4ab3acd08055e1b0f2",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_arrival_20261029/chunk2048_mixed.json": "c5d5e4a03942d5c3298d552ad6aea5047e8979087a5f8c661a76363dc4443e78"
+  },
+  "fresh_gpu_parameter_and_model_checks_required": true
+}

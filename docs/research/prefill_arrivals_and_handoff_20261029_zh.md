@@ -136,7 +136,7 @@ JCT 从计划到达时刻计至正常 WORKFLOW_END，保留计划释放后的 dr
    原生 lock receipt、session/attempt、共享前缀 fence 与取消路径。
    已持有 request row 的后续 chunk 仍走原生路径，不声称覆盖全部 chunk。
 4. 已准备 `chunk2048.json`、`chunk1024.json`、`chunk2048_mixed.json`，
-   默认配 λ=0.35 的同一到达表。它们未登记 GPU 实验；先验证
+   初始 CPU 绑定版本配 λ=0.35 的同一到达表。它们未登记 GPU 实验；先验证
    2048/mixed-off，再依据结果选择 1024 或单独的 mixed，避免展开网格。
 
 真实 native CPU 选批用例覆盖初始 chunk 暂存、ACK、重新准入和请求行
@@ -158,3 +158,16 @@ running/decode24；先验证分块与 mixed，再决定是否需要新的组批�
 验收继续使用全部 workflow 的平均/尾部 JCT、全程输出吞吐和服务间隔，
 同时核对 CPU 成本、实际 mixed 服务、H2D 等待、重复复制与旧输入重算。
 通用分块/mixed 优化不计作 agent 调度创新。整体优化目标仍未完成。
+
+## 2026-10-29 后续执行顺序更新
+
+按用户最新要求，先完成 TokenCake 和 Agentix 的完整实验及实际进程清理，
+再启动新的到达实验。Agentix 组件或模型资格不等同于完整 baseline 完成。
+后续仅采用 **λ=0.5 workflow/s、arrival seed21**；0.2 和 0.35 暂缓，
+不登记、不排队执行，也不作为自动参数扫描。
+
+原到达表与三份 CPU 绑定候选保留。当前待执行配置移至同实验证据目录的
+`rate05_after_baselines/`，`active_plan.json` 记录前序完成条件和首个
+`chunk2048.json`。1024 与 mixed 仍为依据结果决定的后续候选，未批量排队。
+新派生配置只更新到达表和执行计划，模型、18 个项目、token、工具时间、
+容量、停止、工具预取关闭及概率门槛不变。当前没有因此启动新 GPU 任务。

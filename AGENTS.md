@@ -3156,3 +3156,12 @@
   for these changes is pending; preserve current frozen TokenCake and do not
   overlap it. No new formal GPU job is registered by this CPU work. See
   docs/research/prefill_arrivals_and_handoff_20261029_zh.md.
+- The latest user order defers new arrival/prefill GPU experiments until both
+  TokenCake and Agentix complete their full formal workloads and actual owned
+  cleanup. Component/model qualification alone is not Agentix completion.
+  Use only Poisson rate0.5 workflow/s with independent arrival seed21 afterward;
+  defer0.2/0.35 and do not queue an arrival-rate sweep. Preserve historical
+  CPU-bound0.35 candidates and all generated arrival tables. Active pending
+  candidates are in experiments/reports/prefill_arrival_20261029/rate05_after_baselines/,
+  with chunk2048/mixed-off first and other prefill profiles conditional on its
+  results. All methods retain identical arrivals, work and complete JCT clocks.
