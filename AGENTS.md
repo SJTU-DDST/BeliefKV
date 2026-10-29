@@ -3294,3 +3294,13 @@
   output/logprob equivalence. The exact C5 cumulative patch is now explicitly
   selectable for qualification; model/position/sampling and complete Full
   remain unqualified. No new full GPU comparison is registered yet.
+- ModelR2 actually exercises10247 donor+2049 newly allocated slots restoring
+  12296 tokens, with8 input/24 growth reserve. B's8 greedy tokens/logprobs
+  exactly match; A's8 tokens match but one logprob differs.186333701, so keep
+  it failed under the unchanged.05 bound. Do not attribute cause without
+  evidence. Next independent reference must repeat the same6144-prefix,
+  initial16K and continuation sequence in its own native namespace, also
+  comparing both initial histories and the seed. CPU19 focused checks pass.
+  Formal Full stays unregistered until the actual new model proof and fresh
+  position/sampling checks pass. Preserve both failed model attempts and their
+  actual cleanup; prepared registration native bytes equal the clean C5 tree.

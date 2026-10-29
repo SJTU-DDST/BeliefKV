@@ -5,6 +5,7 @@ import argparse
 import asyncio
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -178,6 +179,8 @@ async def probe(directory, port, prompts, pulse, *, require_free_extent=False):
                 validate_free_extent_model(handoffs[0])
             await send(Kind.RETURN, "b", attributes={"context_retired": False})
             await create("b_reference")
+            if require_free_extent:
+                await call("b_reference_initial", "b_reference", prompts[0])
             await call("b_reference", "b_reference", prompts[0] + b_output)
             await send(Kind.RETURN, "b_reference", attributes={"context_retired": False})
             await a_timer
@@ -185,6 +188,9 @@ async def probe(directory, port, prompts, pulse, *, require_free_extent=False):
             await call("a_recovered", "a", prompts[2] + a_output)
             await send(Kind.RETURN, "a", attributes={"context_retired": False})
             await create("a_reference")
+            if require_free_extent:
+                await call("a_reference_seed", "a_reference", prompts[2][:6144])
+                await call("a_reference_initial", "a_reference", prompts[2])
             await call("a_reference", "a_reference", prompts[2] + a_output)
             await send(Kind.RETURN, "a_reference", attributes={"context_retired": False})
             for session in {body["session_id"] for body in bodies.values()}:
@@ -198,17 +204,33 @@ async def probe(directory, port, prompts, pulse, *, require_free_extent=False):
                 and row.get("agent_admission", {}).get("programs") == 0
                 for row in evidence
             ))
+    deltas = compare_probe_outputs(rows, require_free_extent=require_free_extent)
+    return {"requests": rows, "handoffs": handoffs, "maximum_logprob_delta": deltas}
+
+
+def compare_probe_outputs(rows, *, require_free_extent=False):
+    pairs = [("b_handoff", "b_reference"), ("a_recovered", "a_reference")]
+    if require_free_extent:
+        pairs += [
+            ("b_initial", "b_reference_initial"), ("a_seed", "a_reference_seed"),
+            ("a_initial", "a_reference_initial"),
+        ]
     deltas = {}
-    for label, reference in (("b_handoff", "b_reference"), ("a_recovered", "a_reference")):
+    for label, reference in pairs:
         if rows[label]["output_token_ids"] != rows[reference]["output_token_ids"]:
             raise ValueError("actual unforced greedy output changed after handoff: " + label)
+        values = [
+            value for name in (label, reference) for value in rows[name]["output_logprobs"]
+        ]
+        if not values or any(not math.isfinite(value) for value in values):
+            raise ValueError("unforced output logprobs are non-finite or empty: " + label)
         delta = max(abs(a - b) for a, b in zip(
             rows[label]["output_logprobs"], rows[reference]["output_logprobs"], strict=True,
         ))
         if delta > .05:
             raise ValueError("unforced output logprob delta exceeds 0.05: " + label)
         deltas[label] = delta
-    return {"requests": rows, "handoffs": handoffs, "maximum_logprob_delta": deltas}
+    return deltas
 
 
 def validate_direction_groups(configuration, component):
@@ -354,6 +376,7 @@ def main():
             "sampling": DOCUMENT, "max_logprob_delta": .05,
             "free_extent_restore_required": free_extent,
             "donor_initial_checkpoint_tokens": 6144 if free_extent else 0,
+            "independent_references_repeat_prefix_and_initial_generation": free_extent,
         },
         "operator_sha256": sha256_file(Path(__file__)),
         "configuration": str(args.configuration.resolve()),

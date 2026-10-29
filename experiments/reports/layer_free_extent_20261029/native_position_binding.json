@@ -1,0 +1,24 @@
+{
+  "native_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml",
+    "report_sha256": "06bb7dcf7576f720a835ec98dacd6b8d7126e7a68f10a7e955f885deb2709b5e",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_position_sources.json",
+    "sources_sha256": "bd59076cf0e8f07795e3ba34725a0a2b3e806a5acbacfedcbdf6d9c6e7f51c00",
+    "tree": "434c35dd66211d0a230717c88bf1452056769a40",
+    "passing_cases": 103,
+    "gpu_validation_pending": true
+  },
+  "clean_cpu_native": {
+    "commit": "c5ad39a1e1285532335139fa3bc33d49c7eabcf6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "03e7a9feb460455fe1a214d4f15a9444e66512002360ce05b37a5ad7ccefc2d6"
+  },
+  "same_complete_native_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+  "cpu_executed_on_clean_commit_same_prepared_bytes": true,
+  "GPU_model_and_position_validation_pending": true,
+  "performance_accepted": false
+}

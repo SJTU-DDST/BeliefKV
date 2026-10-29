@@ -1,0 +1,75 @@
+{
+  "status": "failed",
+  "stage": "model",
+  "application": {
+    "commit": "5bbc2363773799bd248ac564601d7a761c72fc34",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "4b149aea8b155e1ba2e2f6556ec3bcc1e57da06b4be89205b078ea9d1de56bae"
+  },
+  "native_source": {
+    "commit": "c5ad39a1e1285532335139fa3bc33d49c7eabcf6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "03e7a9feb460455fe1a214d4f15a9444e66512002360ce05b37a5ad7ccefc2d6"
+  },
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-29T20:11:42.041568+08:00"
+  },
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-free-extent-5bbc2363/scripts/qualify_layer_handoff_model.py",
+    "--configuration",
+    "/home/longhao/experiment/.worktrees/beliefkv-free-extent-5bbc2363/experiments/reports/layer_free_extent_20261029/full_warm_start.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r2/model",
+    "--predecessor",
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json",
+    "--components",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_components_r1/report.json",
+    "--port",
+    "18859"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/complete_r4/evidence.json": "27f5c8e96565a5e5eb2bd0e8263f6c5637fa33b91851c6c3acb760a0a76ebc74",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/complete_r4/sources.json": "62f3c0eb23dc24224d69587d37d40c902a3ec28a7a4a4e0db789fe90f9fee656",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/complete_r4/bound_cpu.xml": "c7d7424a7d12e6029a64cdb86bcd94269cb9c744edcb3f30ce04f7d1c8cea434",
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json": "6c939970b66ad2559200658cd5b0c173b8e8231d22f1e08d31182639b50040c8",
+    "/home/longhao/experiment/.worktrees/beliefkv-free-extent-5bbc2363/experiments/reports/layer_free_extent_20261029/full_warm_start.json": "7527f1c2e56d3e84d9201f65f9ee7d7a0f0bdb75b4154f109190395a5829ef90",
+    "/home/longhao/experiment/.worktrees/beliefkv-free-extent-5bbc2363/experiments/reports/layer_free_extent_20261029/run_gpu.py": "3e1c33389699d8cd1b5252ac4b3e2b694ebd95bf7f05390eb5a7b037fb47a7e6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_components_r1/report.json": "563e41100f86707eb9b423aa4a9ddaa2808cb98dbc73fb3963f26309871b90a3"
+  },
+  "performance_accepted": false,
+  "child": {
+    "pid": 1310697,
+    "state": "R",
+    "ppid": 1310461,
+    "start_ticks": "744616526",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-free-extent-5bbc2363/scripts/qualify_layer_handoff_model.py",
+      "--configuration",
+      "/home/longhao/experiment/.worktrees/beliefkv-free-extent-5bbc2363/experiments/reports/layer_free_extent_20261029/full_warm_start.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_model_r2/model",
+      "--predecessor",
+      "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json",
+      "--components",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/gpu_components_r1/report.json",
+      "--port",
+      "18859"
+    ]
+  },
+  "error": "ValueError('actual GPU stage failed; preserve its report and log')",
+  "observed_at": "2026-10-29T12:13:39.309940+00:00",
+  "returncode": 1,
+  "actual_child_exited": true
+}

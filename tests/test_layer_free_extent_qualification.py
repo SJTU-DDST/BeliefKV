@@ -9,7 +9,7 @@ import pytest
 from beliefkv.experiments.native_engine_variant import FREE_EXTENT_TREE, engine_patch
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from scripts.qualify_layer_handoff_model import (
-    validate_free_extent_components, validate_free_extent_model,
+    compare_probe_outputs, validate_free_extent_components, validate_free_extent_model,
 )
 
 
@@ -121,3 +121,25 @@ def test_prepared_candidate_changes_only_handoff_implementation_and_keeps_arriva
     assert candidate["order"] == ["full"]
     assert after["TOOL_PREFETCH"] == after["EXECUTION_FRONTIER_RESTORE"] == "0"
     assert candidate["gpu_execution"]["registered"] is False
+
+
+def test_matching_continuations_cannot_hide_changed_independent_initial_histories():
+    names = (
+        "b_handoff", "b_reference", "a_recovered", "a_reference", "b_initial",
+        "b_reference_initial", "a_seed", "a_reference_seed", "a_initial", "a_reference_initial",
+    )
+    rows = {
+        name: {"output_token_ids": [3, 5], "output_logprobs": [-.2, -.3]}
+        for name in names
+    }
+    assert len(compare_probe_outputs(rows, require_free_extent=True)) == 5
+    rows["a_reference_initial"]["output_token_ids"][0] = 7
+    with pytest.raises(ValueError, match="greedy"):
+        compare_probe_outputs(rows, require_free_extent=True)
+    rows["a_reference_initial"]["output_token_ids"][0] = 3
+    rows["b_reference_initial"]["output_logprobs"][0] = -.5
+    with pytest.raises(ValueError, match="logprob"):
+        compare_probe_outputs(rows, require_free_extent=True)
+    rows["b_reference_initial"]["output_logprobs"][0] = float("nan")
+    with pytest.raises(ValueError, match="non-finite"):
+        compare_probe_outputs(rows, require_free_extent=True)
