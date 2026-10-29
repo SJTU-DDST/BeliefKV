@@ -3653,3 +3653,12 @@
   further GPU action. Preserve the live source,all normal tails and both
   frozen roots;this live prefix is not completion,prediction or performance
   qualification. Global goal remains active.
+- Read-only paused_first_choice_opportunity_r1 audits the existing input-bound
+  profile model within original categories,one minimum-context representative
+  per workflow.593 sampled groups have112 model first-choice changes,
+  40 smaller/72 larger true remaining-work selections. First observations of
+  220 distinct candidate request sets give41 changes/21 better/20 worse;
+  true-class-only diagnostic would change72. This shows possible ranking
+  opportunity,not physical feasibility,actual admission or JCT counterfactual.
+  Candidate sets are not independent workflows. Keep matched6 capture/CPU
+  finisher running unchanged;no new performance or baseline run follows.
