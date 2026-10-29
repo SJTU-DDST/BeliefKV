@@ -1,4 +1,4 @@
-"""Evaluate causal call-boundary predictions on observed paused candidate sets."""
+"""Evaluate causal boundary or native-stream predictions on paused candidate sets."""
 
 import argparse
 from collections import Counter, defaultdict
@@ -13,10 +13,12 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.predictor.workflow_work import WorkflowProgress, WorkflowWorkModel, execution_control_text
+from beliefkv.predictor.workflow_work import (
+    FEATURES, WorkflowProgress, WorkflowWorkModel, execution_control_text,
+)
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.run_causal_gpu_replay import source_plan
-from scripts.train_workflow_work import write
+from scripts.train_workflow_work import native_decode_progress, write
 
 
 def pair_metrics(samples):
@@ -95,7 +97,7 @@ def continuous_pair_metrics(samples):
     }
 
 
-def audit(arm, source, dataset_path, model_path):
+def audit(arm, source, dataset_path, model_path, *, native_progress=False):
     import numpy as np
 
     dataset = json.loads(dataset_path.read_bytes())
@@ -136,6 +138,19 @@ def audit(arm, source, dataset_path, model_path):
         ))
     ):
         raise ValueError("paused audit requires complete drained telemetry")
+    observations = [(event.ts_ms, i, event) for i, event in enumerate(events)]
+    if native_progress:
+        native_path = arm / "server/runtime_audit.jsonl"
+        if not native_path.exists():
+            raise ValueError("streaming paused audit requires the native service journal")
+        generated = native_decode_progress(
+            events, read(native_path),
+            {rid: usage[1] for rid, usage in plan.request_usage.items()},
+        )
+        observations.extend(
+            (row["ts_ms"], len(events) + i, row) for i, row in enumerate(generated)
+        )
+        observations.sort(key=lambda item: item[:2])
     progress = {workflow: WorkflowProgress() for workflow in labels}
     projections = {workflow: model.task_projection(value["text"]) for workflow, value in labels.items()}
     pending, steps, cache = {}, Counter(), {}
@@ -146,9 +161,15 @@ def audit(arm, source, dataset_path, model_path):
             if observed["event"] != "admission_runtime_state":
                 continue
             now = observed["monotonic_ms"]
-            while position < len(events) and events[position].ts_ms <= now:
-                event = events[position]
+            while position < len(observations) and observations[position][0] <= now:
+                event = observations[position][2]
                 position += 1
+                if isinstance(event, dict):
+                    progress[event["workflow_id"]].generated(
+                        event["request_id"], event["output_tokens"],
+                    )
+                    counts["native_progress_observations_applied"] += 1
+                    continue
                 state = progress[event.workflow_id]
                 state.event(event)
                 request = event.attributes.get("request_id")
@@ -200,6 +221,8 @@ def audit(arm, source, dataset_path, model_path):
                     "context_tokens": size, "bucket": cache[workflow][1],
                     "true_bucket": int(np.searchsorted(model.thresholds, remaining, side="right")),
                     "remaining_logical_work": remaining,
+                    "attained_logical_work": attained,
+                    "running_invocations": features[FEATURES.index("running")],
                 })
             counts["sampled_states"] += 1
             if len({row["workflow"] for row in sample}) >= 2:
@@ -214,8 +237,13 @@ def audit(arm, source, dataset_path, model_path):
         "model_sha256": sha256_file(model_path), "dataset_sha256": sha256_file(dataset_path),
         "scope": {
             "observed_post_control_paused_sets": True,
-            "features": "causal_replay_call_boundaries; observed_completed_requests_only",
-            "partial_decode_and_background_200ms_cache_emulated": False,
+            "features": (
+                "causal_replay_boundaries_and_observed_native_decode_counts"
+                if native_progress else "causal_replay_call_boundaries; observed_completed_requests_only"
+            ),
+            "partial_decode_observations_included": native_progress,
+            "background_200ms_cache_timing_emulated": False,
+            "completion_callback_timing": "client_result_boundary",
             "native_capacity_or_original_selection_reconstructed": False,
             "future_labels_used_online": False, "performance_counterfactual": False,
         },
@@ -227,9 +255,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("arm", "source", "dataset", "model", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--native-progress", action="store_true")
     args = parser.parse_args()
     try:
-        report = audit(args.arm, args.source, args.dataset, args.model)
+        report = audit(
+            args.arm, args.source, args.dataset, args.model,
+            native_progress=args.native_progress,
+        )
     except Exception as error:
         write(args.output.with_suffix(".error.json"), {
             "error": repr(error), "arguments": {key: str(value) for key, value in vars(args).items()},

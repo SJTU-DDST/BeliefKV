@@ -161,7 +161,7 @@ def main():
         if metric != old_report["calibration" if name == "calibration" else "test"]:
             raise ValueError("metadata binding changed numeric predictions")
     source = Path(next(iter(profiles)))
-    _, expected_tokens, source_evidence = source_plan(source)
+    plan, expected_tokens, source_evidence = source_plan(source)
     tokenizer = AutoTokenizer.from_pretrained(env["MODEL_PATH"], local_files_only=True)
     grouped = {}
     for row in data["evaluation"]["rows"]:
@@ -220,10 +220,7 @@ def main():
                 workflows.append(events)
         native_path = source / "server/runtime_audit.jsonl"
         bound[str(native_path.resolve())] = sha256_file(native_path)
-        output_lengths = {
-            event.attributes["request_id"]: event.attributes["output_tokens"]
-            for events in workflows for event in events if event.kind is Kind.LLM_RESULT
-        }
+        output_lengths = {rid: usage[1] for rid, usage in plan.request_usage.items()}
         observations = defaultdict(list)
         for row in native_decode_progress(
             (event for events in workflows for event in events),

@@ -3736,3 +3736,15 @@
   Actual104 focused tests pass. Keep fixed34/22/18 populations and compact16
   parameters for CPU repair,with actual Worker partial-progress parity.
   No new GPU action follows;keep tool/frontier prefetch and layer handoff off.
+- Native-progress fixed34/22/18 CPU repair now fits once and passes18root/
+  17128snapshot Worker parity,2670partial observations,17110probability checks.
+  Preserve initial missing-client-output-count failure and successful
+  input_binding_r2 retry using verified native source_plan lengths.
+  Bound model3fe51fb34e9189a081087083d2d2a7169fcabca1baff8b5bcec2afb47872b45c
+  is not promoted. Same repaired development data gives macroF1.45728-to.45016,
+  long-to-short.26007-to.19182;streamed paused continuous pairs1358-to1332/1803,
+  first request pairs268-to273/440. Mixed offline results do not establish JCT.
+  Actual106 focused tests pass;repair_review_r1 preserves fixed work/populations
+  and failed attempts. No new GPU registration or deferred baseline;global
+  performance goal remains active. Relax project/task overlap only across
+  independent whole executions,not copied captures or future online labels.

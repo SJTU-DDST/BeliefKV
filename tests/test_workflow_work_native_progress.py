@@ -8,6 +8,7 @@ from beliefkv.core.events import RelationType, RuntimeEvent, RuntimeEventKind as
 from beliefkv.predictor.workflow_work import FEATURES, WorkflowWorkModel
 from beliefkv.runtime.replay_token_capture import encode_tokens
 from beliefkv.runtime.workflow_work_worker import WorkflowWorkWorker
+from experiments.reports.workflow_work_training_20261029 import audit_paused_rank
 from experiments.reports.workflow_work_training_20261029.qualify_input_contract import (
     qualify_progress_observations,
 )
@@ -260,6 +261,69 @@ def test_progress_repair_keeps_fixed_executions_and_total_work(tmp_path, change)
         repaired = replace_observations(original, rows, evidence, rejected)
         assert repaired["rows"] == rows
         assert repaired["progress_observation_contract"] == NATIVE_PROGRESS
+
+
+@pytest.mark.parametrize("streaming", (False, True))
+def test_paused_audit_uses_only_partial_output_observed_before_selection(
+    tmp_path, monkeypatch, streaming,
+):
+    capture = make_capture(tmp_path)
+    rows, _, _ = export_capture(capture, prefill_weight=.01, native_progress=True)
+    dataset = tmp_path / "data.json"
+    dataset.write_text(json.dumps({"rows": rows, "prefill_token_weight": .01}))
+    raw = model_raw()
+    raw["metadata"]["prefill_token_weight"] = .01
+    model = tmp_path / "model.json"
+    model.write_text(json.dumps(raw))
+    replay = capture / "replay"
+    replay.mkdir()
+    events_path = next(capture.glob("client_*/workflows/*/runtime_events.deepagents.jsonl"))
+    (replay / "runtime_events.replay.jsonl").write_bytes(events_path.read_bytes())
+    (capture / "owned_process_cleanup.json").write_text(json.dumps({"remaining_processes": []}))
+    (capture / "telemetry_drain.json").write_text(json.dumps({
+        "previous_zero_snapshot_ts_ms": 10., "drained_status": {"snapshot_ts_ms": 11.},
+    }))
+    (capture / "server/native_telemetry_status.json").write_text(json.dumps({
+        key: 0 for key in (
+            "dropped_records", "failed_records", "writer_queue_depth", "pending_batch_count",
+        )
+    }))
+    opportunities = capture / "opportunities"
+    opportunities.mkdir()
+    (opportunities / "admission_opportunities.jsonl").write_text(json.dumps({
+        "event": "admission_runtime_state", "monotonic_ms": 2.5,
+        "agent_admission": {"paused_pending_invocation_ids": ["root"]},
+    }) + "\n")
+    prompt, output = (1, 2, 3), (4,) * 300
+    values = {
+        "r1": NS(prompt_tokens=prompt, output_tokens=output),
+        "r2": NS(prompt_tokens=prompt + output + (5,), output_tokens=(6,)),
+    }
+
+    class Corpus:
+        evidence = {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def get(self, request):
+            return values[request]
+
+    monkeypatch.setattr(audit_paused_rank, "CapturedTokenCorpus", lambda *_: Corpus())
+    monkeypatch.setattr(audit_paused_rank, "source_plan", lambda *_: (
+        NS(request_usage={"r1": (3, 300), "r2": (304, 1)}), {}, {},
+    ))
+    report = audit_paused_rank.audit(
+        capture, capture, dataset, model, native_progress=streaming,
+    )
+    candidate, = report["candidates"]
+    assert candidate["attained_logical_work"] == (128 if streaming else 0)
+    assert candidate["running_invocations"] == int(streaming)
+    assert report["counts"].get("native_progress_observations_applied", 0) == int(streaming)
+    assert not report["scope"]["background_200ms_cache_timing_emulated"]
 
 
 def test_native_progress_journal_rejects_truncated_tail(tmp_path):
