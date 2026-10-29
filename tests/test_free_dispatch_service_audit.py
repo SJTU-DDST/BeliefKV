@@ -16,19 +16,21 @@ def evidence():
         "required_tokens": 300, "remaining_before_tokens": 500, "remaining_after_tokens": 200,
         "native_capacity_authority_preserved": True,
     }
-    sample = {**key, "workflow_id": "wf", "phase": "prefill"}
+    sample = {**key, "workflow_id": "wf", "phase": "prefill", "output_tokens_before": 0}
     sample.pop("root_workflow_id")
     batch = {
         "event": "gpu_service_sample", "request_samples": [sample],
         "service_start_ts_ms": 1015., "complete_ts_ms": 1100.,
+        "service_start_monotonic_ms": 1015.,
         "complete_monotonic_ms": 1100., "monotonic_clock_domain": "clock",
     }
     submission = {
         "kind": "llm_submit", "ts_ms": 900., "workflow_id": "wf", "invocation_id": "agent",
         "context_id": "ctx", "context_epoch": 2, "attributes": {"request_id": "r", "prompt_tokens": 200},
     }
-    receipt = {"request_id": "r", "native_receipt": {
+    receipt = {"request_id": "r", "native_complete_monotonic_ms": 1200., "native_receipt": {
         "identity": ["wf", "agent", "ctx", 2], "session_id": "session", "session_generation": 3,
+        "complete_monotonic_ms": 1200., "clock_domain": "clock",
     }}
     return [grant], [submission], [batch], [receipt]
 
@@ -89,6 +91,11 @@ def test_invalid_authority_identity_or_clock_is_rejected(change):
         grants[0]["monotonic_s"] = 2.
     else:
         batches[0]["service_start_ts_ms"] = 900.
+        batches[0]["service_start_monotonic_ms"] = 900.
+        result = associate(grants, submits, batches, receipts)
+        assert result["counts"].get("first_native_service_verified", 0) == 0
+        assert result["rows"][0]["status"] == "open_or_cross_stream_coverage_unknown"
+        return
     with pytest.raises(ValueError):
         associate(grants, submits, batches, receipts)
 
@@ -101,3 +108,65 @@ def test_repeated_grants_are_retained_as_episodes_not_independent_requests():
     assert result["counts"]["grant_episodes"] == 2
     assert result["counts"]["unique_granted_request_attempts"] == 1
     assert result["counts"]["repeated_grants_to_same_attempt"] == 1
+
+
+def test_regrant_uses_only_the_first_following_exact_service():
+    grants, submits, batches, receipts = evidence()
+    grants.append(deepcopy(grants[0]))
+    grants[1]["ts_ms"], grants[1]["monotonic_s"] = 1070., 1.07
+    later = deepcopy(batches[0])
+    later.update(service_start_ts_ms=1080., service_start_monotonic_ms=1080.)
+    result = associate(grants, submits, [*batches, later], receipts, complete=True)
+    assert [row["grant_to_first_service_ms"] for row in result["rows"]] == [15., 10.]
+    assert result["counts"]["grant_episodes_with_earlier_exact_service"] == 1
+
+
+def test_old_exact_service_does_not_prove_consumption_of_a_new_grant():
+    grants, submits, batches, receipts = evidence()
+    grants[0]["ts_ms"], grants[0]["monotonic_s"] = 1070., 1.07
+    result = associate(grants, submits, batches, receipts)
+    assert not result["rows"][0]["first_service_observed"]
+    assert result["counts"]["open_or_cross_stream_coverage_unknown"] == 1
+    assert result["grant_to_first_native_service_ms"]["count"] == 0
+    with pytest.raises(ValueError, match="unverified grant"):
+        associate(grants, submits, batches, receipts, complete=True)
+
+
+@pytest.mark.parametrize("completed", (995., 1010.))
+def test_completion_before_grant_or_following_service_cannot_verify_consumption(completed):
+    grants, submits, batches, receipts = evidence()
+    receipts[0]["native_complete_monotonic_ms"] = completed
+    receipts[0]["native_receipt"]["complete_monotonic_ms"] = completed
+    result = associate(grants, submits, batches, receipts)
+    assert not result["rows"][0]["completion_receipt_observed"]
+    assert result["counts"]["open_or_cross_stream_coverage_unknown"] == 1
+    with pytest.raises(ValueError, match="unverified grant"):
+        associate(grants, submits, batches, receipts, complete=True)
+
+
+def test_reentry_context_budget_can_include_exact_already_generated_output():
+    grants, submits, batches, receipts = evidence()
+    grants[0]["programs"][0].update(
+        observed_context_tokens=220, complete_budget_tokens=320,
+    )
+    grants[0].update(required_tokens=320, remaining_after_tokens=180)
+    batches[0]["request_samples"][0]["output_tokens_before"] = 20
+    result = associate(grants, submits, batches, receipts, complete=True)
+    assert result["counts"]["native_input_verified"] == 1
+    assert result["counts"]["observed_reentry_output_verified"] == 1
+    batches[0]["request_samples"][0]["output_tokens_before"] = 19
+    with pytest.raises(ValueError, match="observed reentry output"):
+        associate(grants, submits, batches, receipts)
+
+
+@pytest.mark.parametrize("changed", ("receipt_clock", "duplicate_receipt", "completion_disagreement"))
+def test_receipt_identity_and_completion_clock_are_unambiguous(changed):
+    grants, submits, batches, receipts = evidence()
+    if changed == "receipt_clock":
+        receipts[0]["native_receipt"]["clock_domain"] = "other-clock"
+    elif changed == "duplicate_receipt":
+        receipts.append(deepcopy(receipts[0]))
+    else:
+        receipts[0]["native_complete_monotonic_ms"] = 1199.
+    with pytest.raises(ValueError):
+        associate(grants, submits, batches, receipts)

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Associate free-budget grants with exact native service and completed receipts."""
 
-from collections import Counter
+from bisect import bisect_left
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import argparse
 import json
@@ -36,7 +37,7 @@ def identity(row, *, grant=False):
 
 
 def associate(grants, submissions, batches, receipts, *, complete=False):
-    expanded, first, offsets, domains = [], {}, [], set()
+    expanded, services, offsets, domains = [], defaultdict(list), [], set()
     counts = Counter()
     for grant in grants:
         members = grant.get("programs")
@@ -78,16 +79,27 @@ def associate(grants, submissions, batches, receipts, *, complete=False):
             key = identity(member)
             timestamp = batch.get("service_start_ts_ms")
             wall, monotonic = batch.get("complete_ts_ms"), batch.get("complete_monotonic_ms")
+            start = batch.get("service_start_monotonic_ms")
             domain = batch.get("monotonic_clock_domain")
-            if not all(finite_number(value) for value in (timestamp, wall, monotonic)) or not domain:
+            if (
+                not all(finite_number(value) for value in (timestamp, wall, monotonic, start))
+                or not 0 <= start <= monotonic or timestamp > wall or not domain
+                or abs((wall - monotonic) - (timestamp - start)) > 5.
+            ):
                 raise ValueError("native service clock is unobserved")
             offsets.append(wall - monotonic)
             domains.add(domain)
-            if key not in first or timestamp < first[key]["ts_ms"]:
-                first[key] = {"ts_ms": timestamp, "phase": member["phase"]}
+            services[key].append({
+                "monotonic_ms": start, "ts_ms": timestamp, "phase": member["phase"],
+                "output_tokens_before": member.get("output_tokens_before"),
+            })
     if offsets and (len(domains) != 1 or max(offsets) - min(offsets) > 5.):
         raise ValueError("native service clocks are inconsistent")
     offset = statistics.median(offsets) if offsets else None
+    service_times = {}
+    for key, rows in services.items():
+        rows.sort(key=lambda row: row["monotonic_ms"])
+        service_times[key] = [row["monotonic_ms"] for row in rows]
     indexed_submits = {}
     for submission in submissions:
         if submission.get("kind") != "llm_submit":
@@ -97,37 +109,61 @@ def associate(grants, submissions, batches, receipts, *, complete=False):
             if rid in indexed_submits:
                 raise ValueError("duplicate native grant-recipient submission")
             indexed_submits[rid] = submission
-    indexed_receipts = {row["request_id"]: row for row in receipts}
+    indexed_receipts = {}
+    for receipt in receipts:
+        rid = receipt["request_id"]
+        if rid in indexed_receipts:
+            raise ValueError("duplicate completed native receipt")
+        indexed_receipts[rid] = receipt
     rows = []
     for key, grant, observed, budget in expanded:
         rid, workflow, invocation, context, epoch, attempt, session, generation = key
+        grant_time = grant["monotonic_s"] * 1000.
+        if offset is not None and abs(grant["ts_ms"] - grant_time - offset) > 5.:
+            raise ValueError("grant and native service clock alignment changed")
+        position = bisect_left(service_times.get(key, ()), grant_time)
+        following = services[key][position] if position < len(services[key]) else None
+        if position:
+            counts["grant_episodes_with_earlier_exact_service"] += 1
         row = {
             "request_id": rid, "workflow_id": workflow, "invocation_id": invocation,
             "context_id": context, "context_epoch": epoch, "attempt_id": attempt,
             "session_id": session, "session_generation": generation,
             "grant_ts_ms": grant["ts_ms"], "complete_budget_tokens": budget,
-            "first_service_observed": key in first, "completion_receipt_observed": False,
+            "grant_monotonic_ms": grant_time,
+            "first_service_observed": following is not None,
+            "earlier_exact_services_excluded": position,
+            "completion_receipt_observed": False,
         }
         counts["grant_episodes"] += 1
         submission = indexed_submits.get(rid)
         if submission is not None:
+            prompt = submission["attributes"].get("prompt_tokens")
             if (
                 tuple(submission.get(name) for name in ("workflow_id", "invocation_id", "context_id", "context_epoch"))
                 != (workflow, invocation, context, epoch)
-                or submission["attributes"]["prompt_tokens"] != observed
+                or type(prompt) is not int or not 0 < prompt <= observed
             ):
                 raise ValueError("logical grant differs from actual native input ownership or size")
             row["queue_to_grant_ms"] = grant["ts_ms"] - submission["ts_ms"]
             if row["queue_to_grant_ms"] < -5.:
                 raise ValueError("grant precedes native request registration")
-            counts["native_input_verified"] += 1
-        if key in first:
-            if abs(grant["ts_ms"] - grant["monotonic_s"] * 1000. - offset) > 5.:
-                raise ValueError("grant and native service clock alignment changed")
-            latency = first[key]["ts_ms"] - grant["ts_ms"]
-            if latency < -5.:
-                raise ValueError("native service preceded its same-attempt grant")
-            row.update(grant_to_first_service_ms=max(0., latency), first_service_phase=first[key]["phase"])
+            if observed == prompt:
+                counts["native_input_verified"] += 1
+            elif following is not None:
+                generated = following["output_tokens_before"]
+                if type(generated) is not int or generated < 0 or prompt + generated != observed:
+                    raise ValueError("grant differs from exact observed reentry output")
+                counts["native_input_verified"] += 1
+                counts["observed_reentry_output_verified"] += 1
+            else:
+                counts["observed_reentry_output_unverified"] += 1
+        if following is not None:
+            row.update(
+                grant_to_first_service_ms=following["monotonic_ms"] - grant_time,
+                first_service_phase=following["phase"],
+                first_service_monotonic_ms=following["monotonic_ms"],
+            )
             counts["first_native_service_verified"] += 1
         receipt = indexed_receipts.get(rid)
         if receipt is not None:
@@ -137,8 +173,25 @@ def associate(grants, submissions, batches, receipts, *, complete=False):
                 or native["session_id"] != session or native["session_generation"] != generation
             ):
                 raise ValueError("completed native receipt differs from the grant owner")
-            row["completion_receipt_observed"] = True
-            counts["completed_receipt_verified"] += 1
+            completed = receipt.get("native_complete_monotonic_ms")
+            native_completed, domain = native.get("complete_monotonic_ms"), native.get("clock_domain")
+            if domain is not None and domains and domain not in domains:
+                raise ValueError("receipt and native service clock domains differ")
+            if (
+                completed is not None and native_completed is not None
+                and completed != native_completed
+            ):
+                raise ValueError("receipt completion clocks disagree")
+            if (
+                offset is not None and domain in domains
+                and finite_number(completed) and completed == native_completed
+                and completed >= grant_time
+                and (following is None or completed >= following["monotonic_ms"])
+            ):
+                row["completion_receipt_observed"] = True
+                counts["completed_receipt_verified"] += 1
+            else:
+                counts["completion_time_or_domain_unverified"] += 1
         row["status"] = (
             "service_and_completion_verified"
             if row["first_service_observed"] and row["completion_receipt_observed"] and submission is not None
@@ -156,6 +209,11 @@ def associate(grants, submissions, batches, receipts, *, complete=False):
         "grant_to_first_native_service_ms": distribution([
             row["grant_to_first_service_ms"] for row in rows if row["first_service_observed"]
         ]),
+        "scope": (
+            "First following exact attempt/session service per grant episode; earlier service "
+            "and pre-grant completion cannot establish consumption. Intervening grants, pauses "
+            "and exclusive causal attribution are not reconstructed."
+        ),
         "rows": rows,
     }
 
@@ -210,6 +268,7 @@ def main():
             "Live streams are sealed independently, not atomically. Open observations remain unknown, not failures or absent future service.",
             "Native service is the worker interval boundary, not kernel start; sampled waits and grant latencies are not removable JCT or isolated benefit.",
             "Every grant is retained, including repeated grants. No tail or request is removed.",
+            "Service before a grant is excluded. Completion must follow the grant and matched service in the same native clock domain.",
         ],
     )
     causal.reservation.write_json(args.output, result)

@@ -3784,3 +3784,15 @@
   CPU reviewer1692001 actually waits atnice19 using existing complete Thunder/
   originalFull and registers no further GPU action. Preserve all normal tails,
   frozen inputs and negative results;wait complete review before superiority.
+- Read-only free-dispatch audit now excludes pre-grant exact service and checks
+  completion follows each grant/following service in the same clock domain;
+  rejects duplicate/conflicting receipts and verifies any reentry output growth.
+  Preserve9 initial failing regression cases and44 passing focused cases.
+  Runningaedfe19b Full is unchanged. Strict live prefix1572exact receipts/
+  97grants has97following services/96completion receipts,one open;P50 .14675s/
+  P90 .70206s/max17.03661s is not full JCT or an isolated gain. Two delayed
+  examples are mostly active but have different first-service HBM/Host counters;
+  neither arrival residency nor exposed copy wait follows. Preserve sealed
+  live_periodic_selection_r1 (200controls,0local selected-set changes) and all
+  normal tails. No further GPU action or deferred baseline is authorized by
+  these prefix observations alone.
