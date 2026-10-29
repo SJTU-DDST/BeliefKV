@@ -1,0 +1,38 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "srt/test_beliefkv_cold_full_prepare.py",
+    "srt/test_beliefkv_layer_handoff.py",
+    "srt/test_beliefkv_layer_groups.py",
+    "--tb=short",
+    "--junitxml=/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml"
+  ],
+  "returncode": 0,
+  "tests": 103,
+  "failed_error_skipped_cases": [],
+  "native_source": {
+    "commit": "c5ad39a1e1285532335139fa3bc33d49c7eabcf6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "03e7a9feb460455fe1a214d4f15a9444e66512002360ce05b37a5ad7ccefc2d6"
+  },
+  "sources_unchanged_during_execution": true,
+  "test_sources_sha256": {
+    "srt/test_beliefkv_cold_full_prepare.py": "84d4091bc0f3807495362d2fea7836495d9710d1d9911f14c8e222eb973c44af",
+    "srt/test_beliefkv_layer_handoff.py": "0fe181c6680f6ef94a888c02d99ce0717fd7dc5ca0e254390bf75d9de0d19f5c",
+    "srt/test_beliefkv_layer_groups.py": "cf3efb475123b73e13aa393a5e9a75aab8f8441c829e8afeaf3ead9a1992c9f0"
+  },
+  "operator_sha256": "1e034cba2f57c13d77f5b01be7d5a07279b2b17fa665f92d424b1a9bde95ed4a",
+  "report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml",
+    "sha256": "06bb7dcf7576f720a835ec98dacd6b8d7126e7a68f10a7e955f885deb2709b5e"
+  },
+  "GPU_validation_pending": true,
+  "performance_accepted": false
+}

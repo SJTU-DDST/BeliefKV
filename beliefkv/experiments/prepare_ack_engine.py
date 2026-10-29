@@ -203,7 +203,7 @@ def prepare_ack_engine_compatibility(
     changed = git("diff", "--name-only", original_tree, candidate_tree).splitlines()
     from beliefkv.experiments.native_engine_variant import (
         COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE,
-        DEMAND_PREFILL_PIPELINE_TREE, TOKENCAKE_TREE, AGENTIX_TREE,
+        DEMAND_PREFILL_PIPELINE_TREE, FREE_EXTENT_TREE, TOKENCAKE_TREE, AGENTIX_TREE,
     )
     if candidate_tree == AGENTIX_TREE:
         from beliefkv.experiments.agentix_engine import verify_native_hooks
@@ -245,19 +245,31 @@ def prepare_ack_engine_compatibility(
         }
     if candidate_tree in (
         LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE, DEMAND_PREFILL_PIPELINE_TREE,
+        FREE_EXTENT_TREE,
     ):
         common = prepare_ack_engine_compatibility(
             engine, source, candidate_tree=COMMON_TREE,
         )
-        if candidate_tree == DEMAND_PREFILL_PIPELINE_TREE:
+        if candidate_tree in (DEMAND_PREFILL_PIPELINE_TREE, FREE_EXTENT_TREE):
             from beliefkv.experiments.demand_prefill_pipeline_engine import project_disabled_scheduler
 
             project_disabled_scheduler(
                 git("show", SIBLING_CAPACITY_TREE + ":" + SCHEDULER_FILE),
                 git("show", candidate_tree + ":" + SCHEDULER_FILE),
             )
+        if candidate_tree == FREE_EXTENT_TREE and set(git(
+            "diff", "--name-only", DEMAND_PREFILL_PIPELINE_TREE, candidate_tree,
+        ).splitlines()) != {
+            "python/sglang/srt/mem_cache/beliefkv_layer_handoff.py",
+            "python/sglang/srt/mem_cache/l2_transfer.py",
+            "python/sglang/srt/mem_cache/unified_radix_cache.py",
+            "test/srt/test_beliefkv_layer_handoff.py",
+            "test/srt/test_beliefkv_layer_groups.py",
+        }:
+            raise ValueError("free extent native tree changes unrelated files")
         return {
             "policy": (
+                "explicit_layer_free_extent_engine_variant" if candidate_tree == FREE_EXTENT_TREE else
                 "explicit_native_demand_pipeline_engine_variant"
                 if candidate_tree == DEMAND_PREFILL_PIPELINE_TREE else
                 "explicit_sibling_capacity_engine_variant" if candidate_tree == SIBLING_CAPACITY_TREE else
@@ -271,8 +283,9 @@ def prepare_ack_engine_compatibility(
             "layer_handoff_default_enabled": False,
             **(
                 {"demand_prefill_pipeline_default_enabled": False}
-                if candidate_tree == DEMAND_PREFILL_PIPELINE_TREE else {}
+                if candidate_tree in (DEMAND_PREFILL_PIPELINE_TREE, FREE_EXTENT_TREE) else {}
             ),
+            **({"free_extent_default_enabled": False} if candidate_tree == FREE_EXTENT_TREE else {}),
             "requires_fresh_gpu_components_model_and_position_smoke": True,
             "scope": "Engine identity only; GPU proofs and performance remain separate.",
         }

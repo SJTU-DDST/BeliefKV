@@ -58,7 +58,7 @@ async def wait_evidence(path, ready, pulse, *, timeout=5.):
         await asyncio.sleep(.05)
 
 
-async def probe(directory, port, prompts, pulse):
+async def probe(directory, port, prompts, pulse, *, require_free_extent=False):
     socket = Path(f"/tmp/bkv-layer-model-{port}.sock")
     sequence, rows, bodies = 0, {}, {}
     observations = directory / "arm/opportunities/admission_opportunities.jsonl"
@@ -172,6 +172,8 @@ async def probe(directory, port, prompts, pulse):
             handoffs = [row for row in journal if row.get("event") == "layer_kv_handoff_submitted"]
             if len(handoffs) != 1 or handoffs[0]["beneficiary_request_id"] != "layer-model:b_handoff":
                 raise ValueError("actual model consumer did not execute one predicted layer handoff")
+            if require_free_extent:
+                validate_free_extent_model(handoffs[0])
             await send(Kind.RETURN, "b", attributes={"context_retired": False})
             await create("b_reference")
             await call("b_reference", "b_reference", prompts[0] + b_output)
@@ -218,6 +220,55 @@ def validate_direction_groups(configuration, component):
         raise ValueError("model qualifier requires the actual component-qualified direction groups")
 
 
+def validate_free_extent_model(handoff):
+    donor, reused, restored, additional = (
+        handoff.get(name) for name in (
+            "donor_tokens", "reused_tokens", "restored_tokens", "free_extent_tokens",
+        )
+    )
+    if (
+        any(type(value) is not int or value <= 0 for value in (donor, reused, restored, additional))
+        or donor != reused or restored != reused + additional
+        or handoff.get("reserved_tail_tokens") != 0
+    ):
+        raise ValueError("actual model did not consume a complete donor-plus-free-extent restore")
+
+
+def validate_free_extent_components(configuration, component):
+    required = configuration["common_environment"].get(
+        "BELIEFKV_LAYER_HANDOFF_FREE_EXTENT", "0",
+    ) == "1"
+    if not required:
+        return False
+    scenes = component.get("free_extent_scenarios")
+    if type(scenes) is not list or len(scenes) != 2 or {
+        row.get("delayed_final_donor_layer") for row in scenes
+    } != {False, True}:
+        raise ValueError("free extent model requires both actual component scenarios")
+    for scene in scenes:
+        validate_free_extent_model(scene)
+        if (
+            scene.get("donor_tokens") != 24 or scene.get("restored_tokens") != 32
+            or scene.get("free_extent_tokens") != 8
+            or type(scene.get("delayed_final_donor_layer")) is not bool
+            or scene.get("initial_free_tokens") != 12
+            or scene.get("post_submit_free_tokens") != 4
+            or scene.get("final_free_tokens") != 4
+            or any(scene.get(name) is not True for name in (
+                "all_donor_host_and_consumer_device_kv_verified",
+                "protected_resident_kv_unchanged",
+                "old_donor_reader_completed_before_overwrite",
+                "actual_native_pool_layer_counter_and_accessors_used",
+                "donor_early_return_blocked_until_backup_ack",
+            ))
+            or scene["delayed_final_donor_layer"] and scene.get(
+                "first_consumer_layer_read_before_final_donor_ack",
+            ) is not True
+        ):
+            raise ValueError("free extent component has incomplete native ownership or byte proof")
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -241,6 +292,7 @@ def main():
         raise ValueError("model qualifier requires identical clean component-qualified engine")
     spec = controls.load(args.configuration)
     validate_direction_groups(spec, component)
+    free_extent = validate_free_extent_components(spec, component)
     common.guard_gpu()
     if os.getpriority(os.PRIO_PROCESS, os.getpid()) != 0:
         raise ValueError("model GPU supervisor requires nice0")
@@ -258,7 +310,10 @@ def main():
     with CapturedTokenCorpus(Path(prior["source_arm"]) / "server/request_tokens.jsonl", expected) as corpus:
         prompts = [
             list(corpus.get(request).prompt_tokens[:size])
-            for request, size in zip(selected, (16384, 16384, 24576), strict=True)
+            for request, size in zip(
+                selected, (24576, 16384, 16384) if free_extent else (16384, 16384, 24576),
+                strict=True,
+            )
         ]
     directory.mkdir(parents=True)
     arm = directory / "arm"
@@ -295,6 +350,7 @@ def main():
             "readiness_endpoint": "/ready",
             "model_inputs": [len(tokens) for tokens in prompts],
             "sampling": DOCUMENT, "max_logprob_delta": .05,
+            "free_extent_restore_required": free_extent,
         },
         "operator_sha256": sha256_file(Path(__file__)),
         "configuration": str(args.configuration.resolve()),
@@ -329,7 +385,9 @@ def main():
                 except httpx.HTTPError:
                     pass
                 time.sleep(.5)
-            report["model"] = asyncio.run(probe(directory, args.port, prompts, pulse))
+            report["model"] = asyncio.run(probe(
+                directory, args.port, prompts, pulse, require_free_extent=free_extent,
+            ))
             report.update(
                 status="unforced_layer_handoff_model_qualified",
                 observed_at=datetime.now(timezone.utc).isoformat(),

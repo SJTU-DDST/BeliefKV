@@ -17,7 +17,10 @@ from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts import qualify_free_page_h2d_fence as common
 
 
-def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
+def scenario(
+    engine, *, delayed, donor_group_layers=1, consumer_group_layers=1,
+    free_extent=False,
+):
     import torch
     from sglang.srt.mem_cache.base_prefix_cache import InsertParams
     from sglang.srt.mem_cache.radix_cache import RadixKey
@@ -35,6 +38,10 @@ def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
         "donor_group_layers": donor_group_layers,
         "consumer_group_layers": consumer_group_layers,
     } if (donor_group_layers, consumer_group_layers) != (1, 1) else {})
+    donor_tokens, consumer_tokens = (24 if free_extent else 48), 32
+    initial_free = 12 if free_extent else 4
+    final_free = 4 if free_extent else 20
+    additional = 8 if free_extent else 0
     f = Fixture(engine, enabled=True)
     cache, cc, pool = f.cache, f.controller, f.pool
     host = cc.mem_pool_host.anchor_entry.host_pool
@@ -69,15 +76,17 @@ def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
             raise ValueError("real native MHA pool does not support the declared handoff")
         # Compile the exact two copy shapes before opening the finite proof window.
         warm = f.allocator.alloc(48)
-        warm_donor, warm_consumer = cc.mem_pool_host.alloc(48), cc.mem_pool_host.alloc(32)
-        d_host, d_device = cc.move_indices(warm_donor, warm)
+        warm_donor = cc.mem_pool_host.alloc(donor_tokens)
+        warm_consumer = cc.mem_pool_host.alloc(consumer_tokens)
+        d_host, d_device = cc.move_indices(warm_donor, warm[:donor_tokens])
         h_host, _ = cc.move_indices(warm_consumer, warm[:32])
         boundary = torch.cuda.Event()
         boundary.record()
         completion = cc.l2_transfer_engine.submit_layer_handoff(
             L2Transfer(host, pool, d_host, d_device),
-            L2Transfer(host, pool, h_host, d_device[:32]),
+            L2Transfer(host, pool, h_host, warm[:consumer_tokens]),
             layer_num=f.layers, donor_last_use_event=boundary, **groups,
+            **({"additional_consumer_tokens": additional} if additional else {}),
         )
         completion.donor.finish_event.synchronize()
         completion.consumer.finish_event.synchronize()
@@ -85,7 +94,7 @@ def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
         cc.mem_pool_host.free(warm_donor)
         cc.mem_pool_host.free(warm_consumer)
 
-        a, a_generation = insert(range(1, 49), "donor")
+        a, a_generation = insert(range(1, donor_tokens + 1), "donor")
         b, b_generation = insert(range(101, 133), "consumer")
         resident, _ = insert(range(201, 249), "resident")
         a_expected = save(a.component_data[0].value)
@@ -105,8 +114,8 @@ def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
                 raise TimeoutError("consumer checkpoint did not settle")
             time.sleep(.001)
         cache._demote(b.id, {})
-        blocked = f.allocator.alloc(28)
-        if blocked is None or f.allocator.available_size() != 4:
+        blocked = f.allocator.alloc(44 if free_extent else 28)
+        if blocked is None or f.allocator.available_size() != initial_free:
             raise ValueError("A and B unexpectedly fit together")
         resident_lock = cache.inc_lock_ref(resident.id).to_dec_params()
         reader_done = torch.cuda.Event()
@@ -136,9 +145,18 @@ def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
             consumer_node_id=b.id, consumer_creation_time=b.creation_time,
             consumer_session_id="consumer", consumer_session_generation=b_generation,
             reserve_tokens=4, authorize=lambda *_: True, **groups,
+            **({"allow_free_extent": True} if free_extent else {}),
         )
         if result is None or f.allocator.available_size() != 4:
             raise ValueError("real handoff failed or gave early free capacity")
+        if free_extent and (
+            result.get("free_extent_tokens") != additional
+            or result.get("restored_tokens") != consumer_tokens
+            or result["donor_tokens"] != donor_tokens
+            or result["reused_tokens"] != donor_tokens
+            or result["reserved_tail_tokens"] != 0
+        ):
+            raise ValueError("real handoff did not allocate exactly the missing free extent")
         transaction = cache._beliefkv_layer_handoff
         if not native.blocks_load(cache, a.id) or cache.load_back(a.id):
             raise ValueError("early donor return could consume an incomplete Host checkpoint")
@@ -187,14 +205,14 @@ def scenario(engine, *, delayed, donor_group_layers=1, consumer_group_layers=1):
                 raise ValueError("consumer or protected resident K/V changed")
         cache.writing_check(finish_count=1)
         cache.loading_check(finish_count=1)
-        if cache._beliefkv_layer_handoff is not None or f.allocator.available_size() != 20:
+        if cache._beliefkv_layer_handoff is not None or f.allocator.available_size() != final_free:
             raise ValueError("final native reservation did not settle exactly once")
         cache.dec_lock_ref(resident.id, resident_lock)
         cache.sanity_check()
         return {
             "delayed_final_donor_layer": delayed, **result,
-            "initial_free_tokens": 4, "post_submit_free_tokens": 4,
-            "final_free_tokens": 20, "all_donor_host_and_consumer_device_kv_verified": True,
+            "initial_free_tokens": initial_free, "post_submit_free_tokens": 4,
+            "final_free_tokens": final_free, "all_donor_host_and_consumer_device_kv_verified": True,
             "protected_resident_kv_unchanged": True,
             "old_donor_reader_completed_before_overwrite": True,
             "first_consumer_layer_read_before_final_donor_ack": early,
@@ -213,6 +231,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--donor-group-layers", type=int, choices=range(1, 65), default=1)
     parser.add_argument("--consumer-group-layers", type=int, choices=range(1, 65), default=1)
+    parser.add_argument("--include-free-extent", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve prior component results")
@@ -239,6 +258,13 @@ def main():
                 consumer_group_layers=args.consumer_group_layers,
             ) for delayed in (False, True)
         ]
+        if args.include_free_extent:
+            report["free_extent_scenarios"] = [
+                scenario(
+                    engine, delayed=delayed, donor_group_layers=args.donor_group_layers,
+                    consumer_group_layers=args.consumer_group_layers, free_extent=True,
+                ) for delayed in (False, True)
+            ]
         report.update(
             status="native_gpu_layer_handoff_components_qualified",
             observed_at=datetime.now(timezone.utc).isoformat(),

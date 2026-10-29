@@ -35,6 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--engine", required=True, type=Path)
+    parser.add_argument("--prior", action="append", type=Path, default=[])
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
     report, manifest, evidence = (
@@ -43,6 +44,7 @@ def main():
     paths = (
         ROOT / "experiments/reports/prefill_arrival_20261029/complete_cpu.evidence.json",
         ROOT / "experiments/reports/warm_start_thunder_20261029/cpu_r1/bound_cpu.json",
+        *args.prior,
     )
     prior, inputs, source_names, tests, retained = [], {}, set(), set(), set()
     for path in paths:
@@ -65,8 +67,16 @@ def main():
     source_names |= {
         str(Path(__file__).relative_to(ROOT)),
         "tests/test_layer_handoff_free_extent.py",
+        "tests/test_layer_free_extent_qualification.py",
+        "scripts/qualify_layer_handoff.py", "scripts/qualify_layer_handoff_model.py",
+        "patches/sglang-layer-free-extent-runtime-20261029.patch",
+        "experiments/reports/layer_free_extent_20261029/prepare_qualification.py",
+        "experiments/reports/layer_free_extent_20261029/run_gpu.py",
+        "experiments/reports/layer_free_extent_20261029/run_native_cpu.py",
+        "experiments/reports/layer_free_extent_20261029/full_warm_start.json",
     }
     tests.add("tests/test_layer_handoff_free_extent.py")
+    tests.add("tests/test_layer_free_extent_qualification.py")
     source_names |= tests
     native_tests = [
         str(args.engine / "test/srt" / name) for name in (
