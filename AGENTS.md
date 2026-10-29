@@ -3672,3 +3672,25 @@
   maximum total65088.18;simple beyond-maximum extrapolation is insufficient.
   These read-only artifacts change no predictor weights,thresholds or live
   capture. Wait complete matched6 before inspecting its fixed fit/ranking.
+- Matched6 now actually completes6 natural workflows/1589 exact requests,
+  60161319 full prompt tokens/218354 output,30JOIN/36SPAWN/no nesting.
+  Independent matched6_source_complete_review_r1 rechecks frozen sources,
+  zero runtime errors/completion guards,all6 parallel-JOIN contracts and6
+  disclosed return deferrals,token/causal/fresh drain/actual owned exit;GPU
+  released. Preserve original project/test failures and all normal tails.
+- Fixed34train/22cal/18development compact16 fit now completes with live-bound
+  SHA e010a8c12968cedaafed0ed15d8a873b02528f44999d0a53a04d1ebb0b5ca951.
+  Calibration macroF1 .54484/long-to-short0 passes original numeric gate;
+  development macroF1 .46528/long-to-short .22294 remains imperfect.
+  Same1803 continuous paused comparisons improve context1075-to1360.
+  First440 request pairs give233-to269 correct/41 corrections/5 harms;
+  first220 candidate sets give40 changed choices/35 better/5 worse.
+  Real18-root CPU input/text/features/probability parity passes. Microbench
+  cached inference24.27us,prefix100k2.295ms,8-candidate resume64.82us versus
+  reference39.67us is not measured JCT or end-to-end CPU overhead.
+  These development diagnostics justify one matched Full verification,not
+  superiority. Use input_binding/candidate.json with unchanged complete V230/
+  V311/18projects/10+8mean120/2048/mixed-off/2s and handoff/tool/frontier off.
+  Fresh position/session/native-stop/sampler qualification precedes Full.
+  Reuse complete2048 Thunder and2s Full;no extra native or baseline. Freeze
+  committed sources and recheck exact current CPU binding before registration.

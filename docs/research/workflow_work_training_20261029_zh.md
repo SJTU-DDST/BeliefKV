@@ -261,3 +261,38 @@ JCT、吞吐或调度最优收益的反事实估计。去重后的集合也不�
 总体准确率当作多轮 JOIN 后的可靠短任务判据。全部开发快照的 attained work
 都未超过训练 workflow 最大总量 65,088.18，因此不能仅用超出训练最大总量的
 外推解释误差。这些诊断没有修改模型、运行时输入或阈值。
+
+## 六任务完成与首个可验证排序候选
+
+六任务采集已自然完成，`matched6_source_complete_review_r1.json` 独立核对
+1,589 次请求、60,161,319 个完整 prompt 输入 token、218,354 个输出 token、
+30 次 JOIN、36 次 SPAWN；没有嵌套。六个 root 都完成至少一个双 child JOIN，
+六次原有的终态委派提醒保留记录。零运行时错误、零完成 guard；源 token、
+因果依赖、两份新鲜 idle 快照及所有实际进程退出通过核对，GPU 已释放。
+这不代表原项目的测试或任务已全部正确，原始测试错误继续保留。
+
+固定的 compact16 参数已经完成 34 条训练、22 条校准、18 条开发评测；
+没有更换项目、到达表或参数。校准 macro-F1 为 0.54484，校准 long→short 为零，
+通过原先声明的部署门槛。开发 macro-F1 为 0.46528、long→short 为 22.29%，
+仍有明显误差，不能根据校准合格声称泛化或端到端收益。
+
+`matched6_finish_r1/paused_rank.json` 在同一 1,803 次连续工作量比较中，组合排序
+正确数从原上下文顺序的 1,075 增至 1,360。`deduplicated_rank_review.json`
+按 request 对首次观察去重后，440 对的正确数为 233→269，纠正 41 次、破坏 5 次；
+220 组候选集合有 40 组改变首选，35 组更小、5 组更大。这里仍不包含原生容量
+可行性或 JCT 反事实。训练和模型结构参数在本次补采前已固定，不能将这些开发
+审计描述成独立盲测。
+
+输入绑定模型 SHA256 为
+`e010a8c12968cedaafed0ed15d8a873b02528f44999d0a53a04d1ebb0b5ca951`；
+18 个真实 root 入口的文本、特征、投影和概率再次完全一致。CPU 微基准中，
+缓存推断中位约 24.27µs，100k 前缀核算约 2.295ms；8 个候选时恢复选择中位
+约 64.82µs，原路径约 39.67µs。这不是端到端控制成本或 JCT 测量。
+
+下一步采用 `matched6_finish_r1/input_binding/candidate.json` 做一次独立的 Full
+验证。仅启用 workflow 档位排序及其同档 sibling 协同；沿用 2s control、
+2048/mixed off、18 个不同项目、10 初始加 8 个 mean120 到达、原 V230 全部
+3,674 次请求和 V311 工具时长。继续关闭工具/普通请求预取与物理 layer handoff。
+先做新鲜的 position/session/native-stop 和 sampler 检查，再执行 Full；复用已完成
+的相同 ThunderAgent decay 控制及原 2s Full，不重复 native、ThunderAgent 或其他
+baseline。离线排序改善只支持进行验证，尚未证明性能提升。
