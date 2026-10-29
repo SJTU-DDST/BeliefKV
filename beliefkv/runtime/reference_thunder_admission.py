@@ -421,10 +421,13 @@ def validate_reference_admission(
     join_blocked_handoff=False,
     free_dispatch_interval_ms=0,
     control_interval_ms=5000,
+    workflow_size_resume=False,
+    workflow_work_model_sha256=None,
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
         join_blocked_handoff,
+        workflow_size_resume,
     )):
         raise ValueError("JOIN admission declarations must be booleans")
     if (
@@ -440,6 +443,12 @@ def validate_reference_admission(
         from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 
         admission_type = ReferenceFreeContinuationAdmission
+    if workflow_size_resume:
+        if not free_continuation_admission or not workflow_work_model_sha256:
+            raise ValueError("workflow size reference composition requires its trained model")
+        from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
+
+        admission_type = WorkflowSizeAdmission
     expected = {
         "policy": admission_type.composition_name(
             join_free_admission=join_free_admission,
@@ -466,6 +475,21 @@ def validate_reference_admission(
         "ordinary_restore_reservation_ms": 0,
         "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
     }
+    if workflow_size_resume:
+        expected.update({
+            "workflow_size_resume": True,
+            "workflow_size_resume_scope": "paused_within_original_category",
+            "workflow_size_new_preemption": False,
+        })
+        model = state.get("workflow_work_predictor", {}) if isinstance(state, dict) else {}
+        if (
+            model.get("artifact_sha256") != workflow_work_model_sha256 or model.get("error")
+            or model.get("scheduler_waits_for_inference") is not False
+            or model.get("future_trace_used_online") is not False
+        ):
+            raise ValueError("reference ThunderAgent workflow prediction did not remain healthy")
+    elif isinstance(state, dict) and state.get("workflow_size_resume", False):
+        raise ValueError("reference ThunderAgent cannot silently enable workflow size resume")
     if free_continuation_admission:
         expected.update({
             "free_continuation_admission": True,

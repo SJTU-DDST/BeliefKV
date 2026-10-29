@@ -74,6 +74,7 @@ SERVER_FIELDS = (
     "AGENT_FREE_CONTINUATION_ADMISSION",
     "AGENT_FREE_DISPATCH_INTERVAL_MS",
     "AGENT_CONTROL_INTERVAL_MS",
+    "WORKFLOW_SIZE_RESUME", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",
     "DEMAND_PREFILL_PIPELINE",
     "FREE_PAGE_H2D_FENCE",
 )
@@ -323,6 +324,14 @@ def experiment_source_evidence(spec, quality, smoke_server, arm, roots, running)
 def preflight_runtime(settings, model_path):
     if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
         return {"native_runtime_not_enabled": True}
+    if settings.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0") == "1":
+        from beliefkv.predictor.workflow_work import WorkflowWorkModel
+
+        work_model = WorkflowWorkModel.load(
+            settings["BELIEFKV_WORKFLOW_WORK_MODEL"], settings["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
+        )
+        if work_model.metadata.get("decision_eligible") is not True:
+            raise ValueError("workflow work model has not passed held-out calibration for GPU comparison")
     expected = {
         "profile_shared_path": settings.get("BELIEFKV_PROFILE_SHARED_PATH", "0") == "1",
         "profile_shared_path_sample_every": 64,
@@ -348,6 +357,7 @@ def preflight_runtime(settings, model_path):
             "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS", "0",
         )),
         "agent_control_interval_ms": int(settings.get("BELIEFKV_AGENT_CONTROL_INTERVAL_MS", "5000")),
+        "workflow_size_resume": settings.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0") == "1",
         "coadmit_join_children": settings.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0") == "1",
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
         "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
@@ -916,6 +926,12 @@ def observed_configuration(plan, label, arm, *, final=False):
                     from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 
                     reference_type = ReferenceFreeContinuationAdmission
+                if common.get(
+                    "BELIEFKV_WORKFLOW_SIZE_RESUME", common.get("WORKFLOW_SIZE_RESUME", "0"),
+                ) == "1":
+                    from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
+
+                    reference_type = WorkflowSizeAdmission
                 reference_policy = reference_type.composition_name(
                     join_free_admission=join_free,
                     coadmit_join_children=plan["reference_environment"].get(
@@ -966,6 +982,13 @@ def observed_configuration(plan, label, arm, *, final=False):
                         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS",
                         common.get("AGENT_CONTROL_INTERVAL_MS", "5000"),
                     )),
+                    workflow_size_resume=common.get(
+                        "BELIEFKV_WORKFLOW_SIZE_RESUME", common.get("WORKFLOW_SIZE_RESUME", "0"),
+                    ) == "1",
+                    workflow_work_model_sha256=common.get(
+                        "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256",
+                        common.get("WORKFLOW_WORK_MODEL_SHA256"),
+                    ),
                 )
             if state.get("agent_join_free_admission", False) is not join_free:
                 raise ValueError("effective free-capacity JOIN admission differs from declaration")

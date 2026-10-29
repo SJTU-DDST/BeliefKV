@@ -1,0 +1,412 @@
+"""Export causal progress snapshots and train a project-disjoint CPU work MLP."""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter, defaultdict
+import hashlib
+import json
+import math
+from pathlib import Path
+import random
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
+from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.predictor.workflow_work import (
+    FEATURES, SCHEMA, WorkflowProgress, WorkflowWorkModel, ngrams, task_requirements,
+)
+from beliefkv.runtime.replay_token_capture import decode_tokens
+
+
+def write(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("x") as handle:
+        json.dump(value, handle, ensure_ascii=False, allow_nan=False)
+        handle.write("\n")
+
+
+def export_capture(capture, *, prefill_weight):
+    """Only completed same-context histories contribute past logical KV work."""
+    clients = list(capture.glob("client_*/workflows"))
+    if len(clients) != 1:
+        raise ValueError("capture needs exactly one client workflow population")
+    workflows, evidence, rejected = {}, {}, []
+    for directory in sorted(clients[0].iterdir()):
+        trajectory, events = directory / "trajectory.json", directory / "runtime_events.deepagents.jsonl"
+        if not trajectory.exists() or not events.exists():
+            continue
+        result_path = directory / "result.json"
+        result = json.loads(result_path.read_bytes()) if result_path.exists() else {}
+        control = result.get("agent_control", {})
+        interventions = sum(control.get(name, 0) for name in (
+            "guard_intervened_completions", "guard_intervened_natural_language_returns",
+            "forced_semantic_completions",
+        ))
+        evidence[str(result_path.resolve())] = sha256_file(result_path) if result_path.exists() else None
+        if (
+            result.get("natural_terminal") is not True or result.get("error")
+            or interventions or result.get("semantic_gate_controlled_stop")
+        ):
+            rejected.append({
+                "path": str(directory.resolve()), "natural_terminal": result.get("natural_terminal"),
+                "error": result.get("error"), "interventions": interventions,
+            })
+            continue
+        messages = json.loads(trajectory.read_bytes())
+        first = next((row.get("content", "") for row in messages if row.get("type") == "human"), "")
+        if "Project: " not in first or not task_requirements(first):
+            raise ValueError("source lacks a user task and original project")
+        project = first.split("Project: ", 1)[1].split("\n", 1)[0].strip()
+        rows = [RuntimeEvent.from_dict(json.loads(line)) for line in events.open()]
+        starts = [row for row in rows if row.kind is Kind.WORKFLOW_START]
+        ends = [row for row in rows if row.kind is Kind.WORKFLOW_END]
+        if len(starts) != 1 or len(ends) != 1:
+            continue
+        workflow = starts[0].workflow_id
+        workflows[workflow] = (project, task_requirements(first), rows)
+        evidence[str(events.resolve())] = sha256_file(events)
+        evidence[str(trajectory.resolve())] = sha256_file(trajectory)
+    # The token capture is ordered and delta-compressed. Only its recorded base
+    # is used to decode bytes; the progress/label calculation uses causal events.
+    prompts, outputs = {}, {}
+    token_path = capture / "server/request_tokens.jsonl"
+    for line in token_path.open():
+        row = json.loads(line)
+        if row["event"] == "request_prompt":
+            base = prompts.get(row.get("base_request_id"))
+            prompt = decode_tokens(row, base_tokens=base)
+            prompts[row["request_id"]] = prompt
+        elif row["event"] == "request_output":
+            outputs[row["request_id"]] = decode_tokens(row)
+    evidence[str(token_path.resolve())] = sha256_file(token_path)
+    result = []
+    for workflow, (project, text, events) in workflows.items():
+        progress, snapshots, completed = WorkflowProgress(), [], set()
+        progress.text = text
+        task_hash = hashlib.sha256(text.encode()).hexdigest()
+        for event in events:
+            if event.kind is Kind.WORKFLOW_END:
+                continue
+            progress.event(event)
+            request = event.attributes.get("request_id")
+            if event.kind is Kind.LLM_SUBMIT:
+                if request not in prompts:
+                    raise ValueError("causal submit has no native token capture")
+                progress.started(request, event.invocation_id, event.context_id, prompts[request])
+            elif event.kind is Kind.LLM_RESULT:
+                if request not in outputs or request in completed:
+                    raise ValueError("source has missing or duplicate logical model result")
+                completed.add(request)
+                progress.completed(
+                    request, event.invocation_id, event.context_id,
+                    prompts[request], outputs[request],
+                )
+            if event.kind in (
+                Kind.WORKFLOW_START, Kind.LLM_SUBMIT, Kind.LLM_RESULT,
+                Kind.JOIN_WAIT, Kind.JOIN_SATISFIED, Kind.TOOL_START, Kind.TOOL_END,
+            ):
+                snapshots.append({
+                    "features": progress.features(),
+                    "attained_work": progress.counts["input_tokens"] * prefill_weight
+                                     + progress.counts["output_tokens"],
+                    "event": event.kind.value,
+                })
+        total = progress.counts["input_tokens"] * prefill_weight + progress.counts["output_tokens"]
+        if not completed or any(call not in completed for call in progress.active_calls):
+            raise ValueError("cannot label an incomplete logical workflow")
+        for index, snapshot in enumerate(snapshots):
+            result.append({
+                "workflow": str(capture.resolve()) + ":" + workflow,
+                "project": project, "task_template": task_hash, "text": text,
+                "snapshot": index, **snapshot, "total_work": total,
+                "remaining_work": max(0., total - snapshot["attained_work"]),
+            })
+    return result, evidence, rejected
+
+
+def fit(rows, calibration, *, epochs=300, seed=21):
+    import numpy as np
+    import torch
+
+    torch.set_num_threads(1)
+    torch.use_deterministic_algorithms(True)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    if not rows or not calibration:
+        raise ValueError("training and calibration workflows are required")
+    if {row["project"] for row in rows} & {row["project"] for row in calibration}:
+        raise ValueError("training/calibration projects overlap")
+    if {row["task_template"] for row in rows} & {row["task_template"] for row in calibration}:
+        raise ValueError("training/calibration task templates overlap")
+    texts = {row["workflow"]: row["text"] for row in rows}
+    df = Counter()
+    for text in texts.values():
+        df.update(ngrams(text).keys())
+    vocabulary = sorted(df, key=lambda word: (-df[word], word))[:4096]
+    index = {word: i for i, word in enumerate(vocabulary)}
+    idf = np.asarray([math.log((1 + len(texts)) / (1 + df[word])) + 1 for word in vocabulary])
+
+    def matrix(values):
+        encoded = {}
+        for row in values:
+            if row["workflow"] in encoded:
+                continue
+            counts = ngrams(row["text"])
+            vector = np.zeros(len(vocabulary), np.float32)
+            for word, count in counts.items():
+                if word in index:
+                    vector[index[word]] = (1 + math.log(count)) * idf[index[word]]
+            vector /= max(float(np.linalg.norm(vector)), 1e-12)
+            encoded[row["workflow"]] = vector
+        return np.asarray([encoded[row["workflow"]] for row in values])
+
+    totals = {row["workflow"]: row["total_work"] for row in rows}
+    thresholds = np.quantile(list(totals.values()), (1 / 3, 2 / 3))
+    if not 0 < thresholds[0] < thresholds[1]:
+        raise ValueError("training population cannot define three distinct work classes")
+    numeric = np.log1p(np.asarray([row["features"] for row in rows]))
+    workflow_counts = Counter(row["workflow"] for row in rows)
+    weights = np.asarray([1. / workflow_counts[row["workflow"]] for row in rows])
+    weights /= weights.sum()
+    center = np.average(numeric, axis=0, weights=weights)
+    scale = np.maximum(.25, np.sqrt(np.average((numeric - center) ** 2, axis=0, weights=weights)))
+    task = torch.tensor(matrix(rows), dtype=torch.float32)
+    dynamic = torch.tensor((numeric - center) / scale, dtype=torch.float32)
+    target = torch.tensor(np.searchsorted(thresholds, [row["remaining_work"] for row in rows], side="right"))
+    # Balance work classes inside each workflow, then restore equal workflow
+    # totals. Long trajectories and their dense late/tool snapshots cannot
+    # dominate either the text model or the training objective.
+    labels = target.numpy()
+    class_mass = np.asarray([weights[labels == i].sum() for i in range(3)])
+    balanced = weights / np.maximum(class_mass[labels], 1e-6)
+    totals_by_workflow = defaultdict(float)
+    for row, value in zip(rows, balanced):
+        totals_by_workflow[row["workflow"]] += value
+    balanced = np.asarray([
+        value / totals_by_workflow[row["workflow"]] / len(workflow_counts)
+        for row, value in zip(rows, balanced)
+    ])
+    weight = torch.tensor(balanced, dtype=torch.float32)
+    static_layer = torch.nn.Linear(len(vocabulary), 64, bias=False)
+    dynamic_layer = torch.nn.Linear(len(FEATURES), 64)
+    hidden_layer = torch.nn.Linear(64, 32)
+    output_layer = torch.nn.Linear(32, 3)
+    parameters = list(static_layer.parameters()) + list(dynamic_layer.parameters())
+    parameters += list(hidden_layer.parameters()) + list(output_layer.parameters())
+    optimizer = torch.optim.AdamW(parameters, lr=.003, weight_decay=.03)
+    for _epoch in range(epochs):
+        optimizer.zero_grad()
+        hidden = torch.relu(static_layer(task) + dynamic_layer(dynamic))
+        logits = output_layer(torch.relu(hidden_layer(hidden)))
+        loss = (torch.nn.functional.cross_entropy(logits, target, reduction="none") * weight).sum()
+        loss.backward()
+        optimizer.step()
+
+    def array(tensor):
+        return tensor.detach().numpy().tolist()
+
+    raw = {
+        "schema": SCHEMA, "features": list(FEATURES), "vocabulary": vocabulary,
+        "idf": idf.tolist(), "center": center.tolist(), "scale": scale.tolist(),
+        "static_weight": array(static_layer.weight.T),
+        "dynamic_weight": array(dynamic_layer.weight.T), "bias": array(dynamic_layer.bias),
+        "hidden_weight": array(hidden_layer.weight.T), "hidden_bias": array(hidden_layer.bias),
+        "output_weight": array(output_layer.weight.T), "output_bias": array(output_layer.bias),
+        "work_thresholds": thresholds.tolist(), "temperature": 1.,
+        "metadata": {
+            "calibration_status": "uncalibrated",
+            "training_projects": sorted({row["project"] for row in rows}),
+            "calibration_projects": sorted({row["project"] for row in calibration}),
+            "training_workflows": len(totals), "seed": seed, "epochs": epochs,
+            "loss_weighting": "class_balanced_with_equal_workflow_totals",
+            "target": "same_context_logical_new_prefill_times_weight_plus_decode_tokens",
+            "online_inputs": "task_instructions_and_observed_progress_only",
+        },
+    }
+    model = WorkflowWorkModel(raw)
+    # A single held-out temperature, with workflows equally weighted.
+    predictions = probabilities(model, calibration)
+    labels = np.searchsorted(thresholds, [row["remaining_work"] for row in calibration], side="right")
+    logs = np.log(np.maximum(predictions, 1e-12))
+    counts = Counter(row["workflow"] for row in calibration)
+    weights = np.asarray([1 / counts[row["workflow"]] for row in calibration])
+    weights /= weights.sum()
+    from scipy.optimize import minimize_scalar
+
+    def nll(log_temperature):
+        scores = logs / math.exp(log_temperature)
+        scores -= scores.max(axis=1, keepdims=True)
+        return float(np.sum(weights * (
+            np.log(np.exp(scores).sum(axis=1)) - scores[np.arange(len(labels)), labels]
+        )))
+
+    fitted = minimize_scalar(nll, bounds=(-1.6, 3.), method="bounded")
+    raw["temperature"] = math.exp(float(fitted.x))
+    raw["metadata"]["calibration_status"] = "project_heldout_temperature"
+    raw["metadata"]["calibration_class_workflows"] = [
+        len({row["workflow"] for row, label in zip(calibration, labels) if label == i})
+        for i in range(3)
+    ]
+    raw["metadata"]["calibration_class_projects"] = [
+        len({row["project"] for row, label in zip(calibration, labels) if label == i})
+        for i in range(3)
+    ]
+    return raw
+
+
+def probabilities(model, rows):
+    import numpy as np
+
+    projections = {}
+    results = []
+    for row in rows:
+        if row["workflow"] not in projections:
+            projections[row["workflow"]] = model.task_projection(row["text"])
+        projection = projections[row["workflow"]]
+        results.append(
+            model.predict(projection, row["features"]) if projection is not None else (1 / 3,) * 3,
+        )
+    return np.asarray(results)
+
+
+def evaluate(model, rows):
+    import numpy as np
+
+    scores = probabilities(model, rows)
+    true = np.searchsorted(model.thresholds, [row["remaining_work"] for row in rows], side="right")
+    predicted = scores.argmax(axis=1)
+    counts = Counter(row["workflow"] for row in rows)
+    weights = np.asarray([1 / counts[row["workflow"]] for row in rows])
+    weights /= weights.sum()
+    confusion = np.zeros((3, 3))
+    for left, right, weight in zip(true, predicted, weights):
+        confusion[left, right] += weight
+    f1 = [2 * confusion[i, i] / max(1e-12, confusion[i].sum() + confusion[:, i].sum()) for i in range(3)]
+    support = model.metadata.get("calibration_class_projects", (0, 0, 0))
+    used = (scores.max(axis=1) >= .6) & bool(len(support) == 3 and min(support) > 0)
+    effective = np.where(used, predicted, 1)
+    return {
+        "workflows": len(counts), "projects": len({row["project"] for row in rows}),
+        "snapshots": len(rows), "workflow_equal_weight_accuracy": float(np.sum(weights * (predicted == true))),
+        "macro_f1": float(np.mean(f1)), "weighted_confusion": confusion.tolist(),
+        "model_coverage_at_0_6": float(weights[used].sum()),
+        "effective_bucket_distribution": [float(weights[effective == i].sum()) for i in range(3)],
+        "long_to_short_rate": float(
+            weights[(true == 2) & (effective == 0)].sum() / max(1e-12, weights[true == 2].sum()),
+        ),
+        "initial_accuracy": float(np.mean([
+            predicted[i] == true[i] for i, row in enumerate(rows) if row["snapshot"] == 0
+        ])),
+        "paused_competition_quality": "requires_live_selection_snapshots_not_inferred_from_capture",
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="mode", required=True)
+    export = sub.add_parser("export")
+    export.add_argument("--capture", type=Path, action="append", required=True)
+    export.add_argument("--prefill-token-weight", type=float, required=True)
+    export.add_argument("--output", type=Path, required=True)
+    train = sub.add_parser("fit")
+    train.add_argument("--dataset", type=Path, required=True)
+    train.add_argument("--evaluation-dataset", type=Path, required=True)
+    train.add_argument("--output-dir", type=Path, required=True)
+    train.add_argument("--epochs", type=int, default=300)
+    args = parser.parse_args()
+    if args.mode == "export":
+        if not math.isfinite(args.prefill_token_weight) or args.prefill_token_weight <= 0:
+            raise ValueError("a frozen positive model-work conversion is required")
+        values, evidence, rejections = [], {}, []
+        for capture in args.capture:
+            rows, bound, rejected = export_capture(capture, prefill_weight=args.prefill_token_weight)
+            values.extend(rows)
+            evidence.update(bound)
+            rejections.extend(rejected)
+        write(args.output, {
+            "schema": SCHEMA, "rows": values, "sources_sha256": evidence,
+            "prefill_token_weight": args.prefill_token_weight,
+            "work_unit": "explicit_logical_token_work_proxy_not_calibrated_GPU_seconds",
+            "rejected_non_natural_workflows": rejections,
+        })
+        print({"workflows": len({row["workflow"] for row in values}), "snapshots": len(values)})
+        return
+    dataset, evaluation = (
+        json.loads(path.read_bytes()) for path in (args.dataset, args.evaluation_dataset)
+    )
+    if dataset["prefill_token_weight"] != evaluation["prefill_token_weight"]:
+        raise ValueError("training and evaluation work units differ")
+    test = evaluation["rows"]
+    excluded_projects = {row["project"] for row in test}
+    excluded_templates = {row["task_template"] for row in test}
+    eligible = [
+        row for row in dataset["rows"]
+        if row["project"] not in excluded_projects and row["task_template"] not in excluded_templates
+    ]
+    projects = sorted({row["project"] for row in eligible}, key=lambda value: hashlib.sha256(value.encode()).digest())
+    if len(projects) < 4:
+        raise ValueError("fewer than four eligible projects after full evaluation exclusion")
+    project_work = {
+        project: sorted({
+            row["workflow"]: row["total_work"] for row in eligible if row["project"] == project
+        }.values())
+        for project in projects
+    }
+    ordered_projects = sorted(
+        projects, key=lambda project: (project_work[project][len(project_work[project]) // 2], project),
+    )
+    calibration_projects = {ordered_projects[0], ordered_projects[-1]}
+    training = [row for row in eligible if row["project"] not in calibration_projects]
+    calibration = [row for row in eligible if row["project"] in calibration_projects]
+    raw = fit(training, calibration, epochs=args.epochs)
+    raw["metadata"].update({
+        "prefill_token_weight": dataset["prefill_token_weight"],
+        "training_dataset_sha256": sha256_file(args.dataset),
+        "evaluation_excluded_projects": sorted(excluded_projects),
+        "evaluation_excluded_task_templates": sorted(excluded_templates),
+    })
+    # Deployment checks use calibration projects only. Evaluation labels
+    # cannot turn ranking on or select a checkpoint.
+    calibration_model = WorkflowWorkModel(raw)
+    calibration_metrics = evaluate(calibration_model, calibration)
+    reasons = []
+    if calibration_metrics["macro_f1"] < .5:
+        reasons.append("calibration_macro_f1_below_0_50")
+    if calibration_metrics["long_to_short_rate"] > .1:
+        reasons.append("calibration_long_to_short_above_0_10")
+    if min(raw["metadata"]["calibration_class_projects"]) <= 0:
+        reasons.append("missing_calibration_class_project_support")
+    raw["metadata"]["decision_eligible"] = not reasons
+    raw["metadata"]["decision_rejection_reasons"] = reasons
+    raw["metadata"]["calibration_decision_metrics"] = calibration_metrics
+    model = WorkflowWorkModel(raw)
+    args.output_dir.mkdir(parents=True, exist_ok=False)
+    write(args.output_dir / "model.json", raw)
+    write(args.output_dir / "evaluation.json", {
+        "training_workflows": len({row["workflow"] for row in training}),
+        "training_projects": sorted(set(projects) - calibration_projects),
+        "calibration_projects": sorted(calibration_projects),
+        "test_projects": sorted(excluded_projects),
+        "project_and_task_template_disjoint": True,
+        "all_snapshots_of_a_workflow_kept_together": True,
+        "train": evaluate(model, training), "calibration": evaluate(model, calibration),
+        "test": evaluate(model, test),
+        "deployed_bucket_distribution": (
+            evaluate(model, test)["effective_bucket_distribution"] if not reasons else [0., 1., 0.]
+        ),
+        "decision_eligible": not reasons, "decision_rejection_reasons": reasons,
+        "model_sha256": sha256_file(args.output_dir / "model.json"),
+        "dataset_sha256": sha256_file(args.dataset),
+        "evaluation_dataset_sha256": sha256_file(args.evaluation_dataset),
+        "performance_accepted": False, "GPU_experiment_started": False,
+    })
+    print(json.dumps(evaluate(model, test), indent=2))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,14 @@
+{
+  "scope": "preliminary focused checks, not retained full CPU qualification",
+  "test": "test_actual_paused_competition_uses_one_workflow_bucket_and_real_sibling_index",
+  "expected_priority_order_in_initial_fixture": ["child-0", "child-1"],
+  "actual_priority_order": ["child-1", "child-0"],
+  "cause": "The first child had two observed output tokens; the reference context-size tie breaker correctly preferred the second child inside their common bucket.",
+  "fix": "Correct only the fixture expectation and retain both real sibling eligibility assertions.",
+  "preliminary_result": {
+    "passed": 84,
+    "failed": 1,
+    "skipped_without_native_fixture_environment": 4
+  },
+  "performance_accepted": false
+}

@@ -205,6 +205,27 @@ def arm_environment(
     ):
         raise ValueError("configurable control interval requires reference Full and 500..5000 ms")
     control_interval = str(int(control_interval)) if mode == "full" else "5000"
+    workflow_size = common.get(
+        "BELIEFKV_WORKFLOW_SIZE_RESUME", common.get("WORKFLOW_SIZE_RESUME", "0"),
+    )
+    if workflow_size not in ("0", "1") or (
+        mode == "full" and workflow_size == "1" and (
+            agent_admission != "thunderagent_reference" or continuation_free != "1"
+        )
+    ):
+        raise ValueError("workflow size resume requires reference Full continuation admission")
+    workflow_size = workflow_size if mode == "full" else "0"
+    workflow_model = common.get("BELIEFKV_WORKFLOW_WORK_MODEL", common.get("WORKFLOW_WORK_MODEL", ""))
+    workflow_sha = common.get(
+        "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256", common.get("WORKFLOW_WORK_MODEL_SHA256", ""),
+    )
+    if workflow_size == "1" and (
+        not workflow_model or len(workflow_sha) != 64
+        or any(char not in "0123456789abcdef" for char in workflow_sha)
+    ):
+        raise ValueError("workflow size resume requires a fingerprinted trained model")
+    if workflow_size == "0":
+        workflow_model, workflow_sha = "", ""
     if early_tool_offload == "1" and (
         agent_admission != "thunderagent_reference" or tool_offload != "1"
         or common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") != "demand_cost"
@@ -349,6 +370,12 @@ def arm_environment(
         "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS": dispatch_interval,
         "AGENT_CONTROL_INTERVAL_MS": control_interval,
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS": control_interval,
+        "WORKFLOW_SIZE_RESUME": workflow_size,
+        "BELIEFKV_WORKFLOW_SIZE_RESUME": workflow_size,
+        "WORKFLOW_WORK_MODEL": workflow_model,
+        "BELIEFKV_WORKFLOW_WORK_MODEL": workflow_model,
+        "WORKFLOW_WORK_MODEL_SHA256": workflow_sha,
+        "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256": workflow_sha,
         "AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN": siblings,
         "AGENT_BLOCKED_LENDING": blocked_lending,

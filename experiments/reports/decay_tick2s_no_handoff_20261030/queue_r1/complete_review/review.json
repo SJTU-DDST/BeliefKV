@@ -1,0 +1,150 @@
+{
+  "status": "complete_matched_arrival_pair_reviewed",
+  "observed_at": "2026-10-29T17:27:16.725434+00:00",
+  "metrics": {
+    "ThunderAgent decay": {
+      "mean_jct_s": 1504.0723042904006,
+      "makespan_s": 2305.899186544418,
+      "end_to_end_output_tokens_per_s": 238.37598937867173,
+      "decode": {
+        "batches": 98826,
+        "request_steps": 549514,
+        "worker_ms": 1610155.603799969,
+        "request_step_ms": 12328154.729839414,
+        "output_tokens": 545997,
+        "context_tokens": 30623156603,
+        "graph_batches": 98826,
+        "graph_request_steps": 549514,
+        "configured_bucket_rows": 642578,
+        "batches_needing_padding": 48378,
+        "worker_ms_in_batches_needing_padding": 1071705.7178206742,
+        "mean_batch": 5.560419322850262,
+        "worker_weighted_mean_batch": 7.656498974847497,
+        "worker_interval_sum_s": 1610.155603799969,
+        "mean_worker_interval_ms": 16.292833908080556,
+        "output_tokens_per_worker_interval_second": 339.0957983883337,
+        "mean_observed_request_context_tokens": 55727.70958155752,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.16935692266257085
+      }
+    },
+    "FULL": {
+      "mean_jct_s": 1439.4573238891496,
+      "makespan_s": 2253.756840289116,
+      "end_to_end_output_tokens_per_s": 243.8909957693072,
+      "decode": {
+        "batches": 88752,
+        "request_steps": 549506,
+        "worker_ms": 1575881.2538096681,
+        "request_step_ms": 13111434.868287295,
+        "output_tokens": 545997,
+        "context_tokens": 30623488471,
+        "graph_batches": 88752,
+        "graph_request_steps": 549506,
+        "configured_bucket_rows": 640029,
+        "batches_needing_padding": 45753,
+        "worker_ms_in_batches_needing_padding": 1072002.1087005734,
+        "mean_batch": 6.191477375157743,
+        "worker_weighted_mean_batch": 8.320065256560802,
+        "worker_interval_sum_s": 1575.8812538096681,
+        "mean_worker_interval_ms": 17.756008358230442,
+        "output_tokens_per_worker_interval_second": 346.47090234753466,
+        "mean_observed_request_context_tokens": 55729.12483394176,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.1647352349200919
+      }
+    }
+  },
+  "full_relative_to_thunder": {
+    "mean_jct_reduction_percent": 4.296002274420929,
+    "whole_run_output_throughput_gain_percent": 2.3135746200824814
+  },
+  "streaming_response_metrics": {
+    "ThunderAgent decay": {
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 78158.73273282581,
+        "p50": 69297.97712087631,
+        "p75": 94921.50805163383,
+        "p90": 133759.62525959016,
+        "p95": 145872.19972658152,
+        "p99": 174111.4377144813,
+        "max": 181171.2472114563
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 57592.8287979232,
+        "p50": 39439.933197021484,
+        "p75": 65302.94927573204,
+        "p90": 135999.3375106812,
+        "p95": 160566.8375133991,
+        "p99": 171609.14628380773,
+        "max": 174369.7234764099
+      }
+    },
+    "FULL": {
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 76296.10835266113,
+        "p50": 62567.605112075806,
+        "p75": 95120.13063979149,
+        "p90": 132364.5028199196,
+        "p95": 153330.80280489917,
+        "p99": 169892.7696788692,
+        "max": 174033.26139736176
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 44127.298842959935,
+        "p50": 42637.44636487961,
+        "p75": 65316.73017501831,
+        "p90": 78374.70784206392,
+        "p95": 90274.67881526942,
+        "p99": 111442.80303218836,
+        "max": 116734.83408641815
+      }
+    }
+  },
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "method_specific_qualified_native_trees": {
+    "ThunderAgent decay": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "FULL": "434c35dd66211d0a230717c88bf1452056769a40"
+  },
+  "all_normal_tails_exact_tokens_stopping_drained_telemetry_and_owned_exit_verified": true,
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json": "e4821865066bab8ebdd4a28791ba9dcabd350fe6ce621a03985903fa13147ec4",
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.state.json": "0be2b843bd6a99ff3cb7b744bc97aaf8cb9e1859bbc2c4328c39704718d8ae28",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/telemetry_drain.json": "2e91cfd8ae379b25556d729b00c0bc46b1fc7fb46b448b7a5626d9d5a6278106",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/owned_process_cleanup.json": "7f5dc66005563903679f624e051d2f8a92301f39626750bec4fd979bd4c3a155",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/arrivals.json": "155f5f5c9d8cc207c160656237722d77459eee5cedb89d20499bdd62d1528f61",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/replay/summary.json": "762b2b2af50be659b43ba282d4af1cd86c495004d6713a5ea375e05f35defde8",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/server/server_info.json": "7a8fc5a13a38754ab0a0e79e6037a531aaa931be60658ed2377d99ce0318f12d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/server/native_telemetry_status.json": "6815526d0a6cd65a2c88988995a8984f44a705dcc4d564ebba1d3f57170463c2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/server/native_capacity_census.json": "9b8a95c0a64c87e3dac5ec17a6d127a3a99df8567c6f2289faa3928776cedd18",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": "52795f086af1f0846962acf30e9c7ad830a0923cd01faab0726e52d274d9ca87",
+    "/home/longhao/experiment/ops/decay_tick2s_no_handoff_20261030_r1.registration.json": "6a30b7859bedabf11ff8b98bc3d88272e9dab77c0fd76f90ceeec2488271b4a8",
+    "/home/longhao/experiment/ops/decay_tick2s_no_handoff_20261030_r1.registration.state.json": "4455b99c951b5c395d0975979a74566dbbddfe5c32dc96fec26bebbebd3daf4f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1/full/telemetry_drain.json": "8bf12effbb535365d5d526480ac5351fddfdca742c60da3083cead29e92470a9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1/full/owned_process_cleanup.json": "bfe6cdf10cb14d07311502b6a4b319e7ae0c5d8dda43bd2fcfaa10713a5d65a1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1/full/replay/summary.json": "1078e11ffc848beee73283bff7ab7d255055be33cf0856f200e193528549bfd7",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1/full/server/server_info.json": "3a0bf029ee7e844e7ea6abba3681643ece18e14ca6605761dfd8b694d7705835",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1/full/server/native_telemetry_status.json": "5190fbfe368d5de14590a6419add8dfeb12c77e662dd083c1891021d2d24ed09",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1/full/server/native_capacity_census.json": "4ded826e8335997a6b9a91e992b772cfae255737407136aae5acb93147a8900a",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1/full/opportunities/admission_opportunities.jsonl": "181d4e8654c2adf61fccaba450c44c8137a084e702b8f58f0c53de063855ad63"
+  },
+  "decode_evidence_sha256": "35268de92a3e806e9d5192aee78d32f8725e97dc0cf162fefb602b47159bd1a7",
+  "figures": [
+    "decode_timeline",
+    "decode_distributions",
+    "decode_geometry"
+  ],
+  "performance_accepted": false,
+  "limitations": [
+    "One paired execution is not a repeated-run superiority result.",
+    "Finite warm-start arrivals do not establish stationary capacity.",
+    "Whole-run output rate includes normal arrival gaps and all tails.",
+    "Worker intervals include runtime waits, not exclusive GPU kernel time."
+  ]
+}

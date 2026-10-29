@@ -3513,3 +3513,35 @@
   control and all original work/tails; wait complete control/drain/owned exit
   before fresh current-source Full position/native-stop/sampler qualification.
   New Full GPU qualification/performance and clear superiority remain pending.
+- The frozen2s/no-physical-handoff Full now completes all3674 exact requests/
+  18 normal tails,original exit0,fresh drain and actual owned exit. The existing
+  independent paired reader gives meanJCT1439.457324 vs matched Thunder1504.072304s
+  (-4.2960%),whole-run output243.890996 vs238.375989token/s (+2.3136%).
+  Keep complete_review in decay_tick2s_no_handoff_20261030/queue_r1,including
+  decode trends/distributions. This one pair is not clear/repeated superiority
+  or an isolated2s effect; do not rerun native or enter deferred baselines.
+- The latest user requests workflow remaining-work classes within reference
+  paused recovery,with genuine blocking ALL-JOIN sibling progress. The separate
+  default-off WORKFLOW_SIZE_RESUME composition now implements original category,
+  cached workflow bucket,context size and queue sequence;skip nonfitting agents,
+  retain decay/raw pressure/native capacity/1800s escape and existing event
+  grants. Do not add full-raw-budget resume gating or choose new active victims.
+  Supported predictions permit same-category/bucket ready sibling adjacency;
+  uncertainty retains the original periodic ordering while existing sibling
+  event/native preference remains. Preserve empty-budget fast return.
+  Background CPU task encoding/progress/inference coalesces perworkflow200ms;
+  no future trace/output lengths/tool times enter online features. The current
+  work label is explicitly an uncalibrated0.01-new-input-plus-output token proxy,
+  not exact GPU seconds or cross-context physical prefix-union work.
+  CPU4903+6 now actually passes,retains all4902 prior identities/no skips,
+  binds1974 inputs and the unchanged native source. Preserve the first fixture
+  order failure and all CPU/model diagnostics in workflow_size_join_frontier_
+  20261029. Only six historical non-evaluation projects exist for this model:
+  R3 uses four train/two calibration projects,excludes all18 evaluation projects,
+  and fails calibration macroF1.3274/long-to-short.4103. Its decision_eligible
+  is false;runtime falls back to medium and formal preflight refuses it.
+  Do not register a new GPU comparison or call62.75% overall accuracy a usable
+  ranking result. The separately prepared predictive_workflow_size_resume_
+  20261029 config waits a qualified predictor and actual paused-competition/
+  cost evidence. No new GPU run or global-goal completion follows from this CPU
+  implementation. Keep tool/frontier prefetch and physical layer handoff off.

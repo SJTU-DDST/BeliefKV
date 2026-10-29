@@ -1078,6 +1078,19 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("configurable control interval requires reference Full and 500..5000 ms")
         self.agent_control_interval_ms = int(control_interval)
+        workflow_size = os.environ.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0")
+        if workflow_size not in ("0", "1") or (
+            workflow_size == "1" and (
+                self.internal_comparison_mode != "full"
+                or agent_policy != "thunderagent_reference"
+                or not self.agent_free_continuation_admission or paper_policy
+            )
+        ):
+            raise ValueError("workflow size resume requires reference Full continuation admission")
+        self.workflow_size_resume = workflow_size == "1"
+        self.workflow_work_model = os.environ.get("BELIEFKV_WORKFLOW_WORK_MODEL", "")
+        self.workflow_work_model_sha256 = os.environ.get("BELIEFKV_WORKFLOW_WORK_MODEL_SHA256", "")
+        self.workflow_work_tokenizer_path = model_path
         sibling_setting = os.environ.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0")
         if sibling_setting not in ("0", "1") or (
             sibling_setting == "1"
@@ -1149,7 +1162,11 @@ class NativeAdmissionRuntime:
             if agent_policy == "thunderagent_reference":
                 from beliefkv.runtime.reference_thunder_admission import ReferenceThunderAdmission
 
-                if self.agent_free_continuation_admission:
+                if self.workflow_size_resume:
+                    from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
+
+                    self._agent_admission = WorkflowSizeAdmission(self)
+                elif self.agent_free_continuation_admission:
                     from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 
                     self._agent_admission = ReferenceFreeContinuationAdmission(self)
@@ -2864,6 +2881,10 @@ class NativeAdmissionRuntime:
                 "agent_free_continuation_admission": self.agent_free_continuation_admission,
                 "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
                 "agent_control_interval_ms": self.agent_control_interval_ms,
+                "workflow_size_resume": self.workflow_size_resume,
+                "workflow_work_model_sha256": (
+                    self.workflow_work_model_sha256 if self.workflow_size_resume else None
+                ),
                 "full_prefix_migration": (
                     self._full_prefix_migration.status()
                     if self._full_prefix_migration is not None else None
