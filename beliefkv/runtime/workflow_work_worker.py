@@ -151,6 +151,7 @@ class WorkflowWorkWorker:
                 max(probabilities) >= .6
                 and self.model.metadata.get("calibration_status") in (
                     "project_heldout_temperature", "capture_heldout_temperature",
+                    "workflow_heldout_temperature",
                 )
                 and self.model.metadata.get("decision_eligible") is True
                 and len(self.model.metadata.get("calibration_class_projects", ())) == 3

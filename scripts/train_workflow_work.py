@@ -130,7 +130,10 @@ def export_capture(capture, *, prefill_weight):
     return result, evidence, rejected
 
 
-def fit(rows, calibration, *, epochs=300, seed=21, split_mode="project"):
+def fit(
+    rows, calibration, *, epochs=300, seed=21, split_mode="project",
+    hidden_width=64, vocabulary_size=4096, dropout=0., weight_decay=.03,
+):
     import numpy as np
     import torch
 
@@ -141,21 +144,28 @@ def fit(rows, calibration, *, epochs=300, seed=21, split_mode="project"):
     random.seed(seed)
     if not rows or not calibration:
         raise ValueError("training and calibration workflows are required")
-    if split_mode not in ("project", "capture"):
+    if split_mode not in ("project", "capture", "workflow"):
         raise ValueError("unknown workflow work split mode")
+    if (
+        type(hidden_width) is not int or not 4 <= hidden_width <= 256
+        or type(vocabulary_size) is not int or not 1 <= vocabulary_size <= 16384
+        or not math.isfinite(dropout) or not 0 <= dropout < 1
+        or not math.isfinite(weight_decay) or weight_decay < 0
+    ):
+        raise ValueError("invalid workflow model regularization settings")
     if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
         raise ValueError("training/calibration projects overlap")
     if split_mode == "project" and {row["task_template"] for row in rows} & {row["task_template"] for row in calibration}:
         raise ValueError("training/calibration task templates overlap")
     if {row["workflow"] for row in rows} & {row["workflow"] for row in calibration}:
         raise ValueError("training/calibration workflows overlap")
-    if split_mode == "capture":
-        capture_split(rows, calibration, ())
+    if split_mode in ("capture", "workflow"):
+        capture_split(rows, calibration, (), require_capture_disjoint=split_mode == "capture")
     texts = {row["workflow"]: row["text"] for row in rows}
     df = Counter()
     for text in texts.values():
         df.update(ngrams(text).keys())
-    vocabulary = sorted(df, key=lambda word: (-df[word], word))[:4096]
+    vocabulary = sorted(df, key=lambda word: (-df[word], word))[:vocabulary_size]
     index = {word: i for i, word in enumerate(vocabulary)}
     idf = np.asarray([math.log((1 + len(texts)) / (1 + df[word])) + 1 for word in vocabulary])
 
@@ -200,16 +210,17 @@ def fit(rows, calibration, *, epochs=300, seed=21, split_mode="project"):
         for row, value in zip(rows, balanced)
     ])
     weight = torch.tensor(balanced, dtype=torch.float32)
-    static_layer = torch.nn.Linear(len(vocabulary), 64, bias=False)
-    dynamic_layer = torch.nn.Linear(len(FEATURES), 64)
-    hidden_layer = torch.nn.Linear(64, 32)
-    output_layer = torch.nn.Linear(32, 3)
+    static_layer = torch.nn.Linear(len(vocabulary), hidden_width, bias=False)
+    dynamic_layer = torch.nn.Linear(len(FEATURES), hidden_width)
+    hidden_layer = torch.nn.Linear(hidden_width, max(4, hidden_width // 2))
+    output_layer = torch.nn.Linear(max(4, hidden_width // 2), 3)
     parameters = list(static_layer.parameters()) + list(dynamic_layer.parameters())
     parameters += list(hidden_layer.parameters()) + list(output_layer.parameters())
-    optimizer = torch.optim.AdamW(parameters, lr=.003, weight_decay=.03)
+    optimizer = torch.optim.AdamW(parameters, lr=.003, weight_decay=weight_decay)
     for _epoch in range(epochs):
         optimizer.zero_grad()
         hidden = torch.relu(static_layer(task) + dynamic_layer(dynamic))
+        hidden = torch.nn.functional.dropout(hidden, p=dropout, training=True)
         logits = output_layer(torch.relu(hidden_layer(hidden)))
         loss = (torch.nn.functional.cross_entropy(logits, target, reduction="none") * weight).sum()
         loss.backward()
@@ -231,10 +242,15 @@ def fit(rows, calibration, *, epochs=300, seed=21, split_mode="project"):
             "training_projects": sorted({row["project"] for row in rows}),
             "calibration_projects": sorted({row["project"] for row in calibration}),
             "training_workflows": len(totals), "seed": seed, "epochs": epochs,
+            "training_parameters": {
+                "hidden_width": hidden_width, "vocabulary_size": vocabulary_size,
+                "dropout": dropout, "weight_decay": weight_decay,
+            },
             "split_mode": split_mode,
             "validation_scope": (
                 "unseen_projects" if split_mode == "project"
-                else "known_projects_independent_captures_development"
+                else "known_projects_independent_captures_development" if split_mode == "capture"
+                else "known_projects_independent_executions_development"
             ),
             "training_capture_paths": sorted({row.get("source_capture", "") for row in rows} - {""}),
             "calibration_capture_paths": sorted({row.get("source_capture", "") for row in calibration} - {""}),
@@ -262,9 +278,7 @@ def fit(rows, calibration, *, epochs=300, seed=21, split_mode="project"):
 
     fitted = minimize_scalar(nll, bounds=(-1.6, 3.), method="bounded")
     raw["temperature"] = math.exp(float(fitted.x))
-    raw["metadata"]["calibration_status"] = (
-        "project_heldout_temperature" if split_mode == "project" else "capture_heldout_temperature"
-    )
+    raw["metadata"]["calibration_status"] = split_mode + "_heldout_temperature"
     raw["metadata"]["calibration_class_workflows"] = [
         len({row["workflow"] for row, label in zip(calibration, labels) if label == i})
         for i in range(3)
@@ -323,7 +337,7 @@ def evaluate(model, rows):
     }
 
 
-def capture_split(training, calibration, test):
+def capture_split(training, calibration, test, *, require_capture_disjoint=True):
     """Permit shared projects/tasks; reject the same execution on either side."""
     groups = (training, calibration, test)
     captures, executions = [], []
@@ -339,19 +353,26 @@ def capture_split(training, calibration, test):
         executions.append({row["source_workflow_sha256"] for row in rows})
     for i in range(3):
         for j in range(i):
-            if captures[i] & captures[j]:
+            if require_capture_disjoint and captures[i] & captures[j]:
                 raise ValueError("training/calibration/evaluation captures overlap")
             if executions[i] & executions[j]:
                 raise ValueError("training/calibration/evaluation workflow executions overlap")
     return {
-        "mode": "capture", "validation_scope": "known_projects_independent_captures_development",
+        "mode": "capture" if require_capture_disjoint else "workflow",
+        "validation_scope": (
+            "known_projects_independent_captures_development" if require_capture_disjoint
+            else "known_projects_independent_executions_development"
+        ),
         "training_capture_paths": sorted(captures[0]),
         "calibration_capture_paths": sorted(captures[1]),
         "evaluation_capture_paths": sorted(captures[2]),
         "training_execution_sha256": sorted(executions[0]),
         "calibration_execution_sha256": sorted(executions[1]),
         "evaluation_execution_sha256": sorted(executions[2]),
-        "complete_captures_disjoint": True, "complete_workflows_disjoint": True,
+        "complete_captures_disjoint": not any(
+            captures[i] & captures[j] for i in range(3) for j in range(i)
+        ),
+        "complete_workflows_disjoint": True,
         "project_disjoint_required": False, "unseen_project_generalization_claimed": False,
     }
 
@@ -368,8 +389,12 @@ def main():
     train.add_argument("--evaluation-dataset", type=Path, required=True)
     train.add_argument("--output-dir", type=Path, required=True)
     train.add_argument("--epochs", type=int, default=300)
-    train.add_argument("--split-mode", choices=("project", "capture"), default="project")
+    train.add_argument("--split-mode", choices=("project", "capture", "workflow"), default="project")
     train.add_argument("--calibration-dataset", type=Path)
+    train.add_argument("--hidden-width", type=int, default=64)
+    train.add_argument("--vocabulary-size", type=int, default=4096)
+    train.add_argument("--dropout", type=float, default=0.)
+    train.add_argument("--weight-decay", type=float, default=.03)
     args = parser.parse_args()
     if args.mode == "export":
         if not math.isfinite(args.prefill_token_weight) or args.prefill_token_weight <= 0:
@@ -396,14 +421,16 @@ def main():
     test = evaluation["rows"]
     excluded_projects = {row["project"] for row in test}
     excluded_templates = {row["task_template"] for row in test}
-    if args.split_mode == "capture":
+    if args.split_mode in ("capture", "workflow"):
         if args.calibration_dataset is None:
-            raise ValueError("capture mode requires a separate calibration dataset")
+            raise ValueError("execution holdout requires a separate calibration dataset")
         calibrated = json.loads(args.calibration_dataset.read_bytes())
         if calibrated["prefill_token_weight"] != dataset["prefill_token_weight"]:
             raise ValueError("calibration work units differ")
         training, calibration = dataset["rows"], calibrated["rows"]
-        split_contract = capture_split(training, calibration, test)
+        split_contract = capture_split(
+            training, calibration, test, require_capture_disjoint=args.split_mode == "capture",
+        )
     else:
         if args.calibration_dataset is not None:
             raise ValueError("separate capture calibration requires explicit capture mode")
@@ -430,7 +457,12 @@ def main():
             "mode": "project", "validation_scope": "unseen_projects",
             "project_and_task_template_disjoint": True,
         }
-    raw = fit(training, calibration, epochs=args.epochs, split_mode=args.split_mode)
+    raw = fit(
+        training, calibration, epochs=args.epochs, split_mode=args.split_mode,
+        hidden_width=args.hidden_width, vocabulary_size=args.vocabulary_size,
+        dropout=args.dropout, weight_decay=args.weight_decay,
+    )
+    raw["metadata"]["validation_scope"] = split_contract["validation_scope"]
     raw["metadata"].update({
         "prefill_token_weight": dataset["prefill_token_weight"],
         "training_dataset_sha256": sha256_file(args.dataset),

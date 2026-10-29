@@ -3581,3 +3581,35 @@
   independent18 calibration/18 development evaluation workflows. Its34 focused
   tests include7 completion-boundary cases. It registers no further GPU action;
   complete capture,expanded-model quality and scheduler gains remain pending.
+- Training source now actually completes8 natural workflows/1673 exact requests/
+  34JOINs/no nesting,zero task errors/safety guards and8 declared parallel-
+  return deferrals. source_complete_review_r1 verifies token/causal/fresh drain,
+  source bytes and actual watcher/driver/server/scheduler exit;GPU is released.
+  CPU finish_r1 actually exports32 workflows and fits;current development
+  long-to-short.5364 remains poor despite old-calibration eligibility.
+- Explicit workflow holdout now permits different complete executions within
+  one capture while rejecting shared event fingerprints;project and capture
+  defaults retain their contracts. A declared SHA21 alternating split puts4
+  current workflows in training and4 in calibration:28train/22cal/18evaluation.
+  Three fixed regularization choices select compact16 using calibration only;
+  development macroF1.4572/long-to-short.4607 is still weak. Retain all old
+  splits/models and disclose this as adaptive development,not final blind eval.
+  Actual sampled paused audit has2217states/637cross-workflow states,1027
+  distinct-true-class pair observations involving242distinct request pairs.
+  Compact16 corrects105 and harms83 context-size orders;combined650/1027
+  vs628/1027 is not meaningful proven JCT gain. It uses post-control sets/
+  call-boundary features only,no partial decode/cache emulation or capacity/
+  native-selection counterfactual. Preserve the initial sequence-field CPU
+  failure and passing stable-sort audit;no performance GPU run is registered.
+- New source-bound CPU actually passes4929+6,retains all4913 literal IDs,
+  no skips/errors/failures,1993inputs/native bytes unchanged. The later separate
+  profile_text_r1 CPU prototype is outside that binding and not wired online.
+  Same-task logical work ratio median is1.4483 currentV230/V174 vs.9805 old
+  V171/V174. Recorded old dynamic_nested lacks the current parallel terminal/
+  soft-budget contract;current short_workstreams uses4/8child,8/16root,min2
+  JOIN. Adding these already-known instructions to compact16 input improves
+  initial development accuracy.4444-to.6667/macroF1.4884,but long-to-short
+  remains.4297. No future workload labels enter inputs. Never deploy that
+  prototype without matching the live prefix contract;collect matched-current
+  task executions or qualify better prediction/ranking next. Keep the full
+  performance goal active and tool/frontier prefetch/physical handoff off.

@@ -1,0 +1,8 @@
+{
+  "error": "AttributeError: 'RuntimeEvent' object has no attribute 'sequence'",
+  "phase": "CPU read-only paused competition audit startup",
+  "cause": "The auditor assumed a wire-only sequence field was a RuntimeEvent attribute.",
+  "correction": "Sort stably by timestamp, retaining recorded order for equal timestamps.",
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}

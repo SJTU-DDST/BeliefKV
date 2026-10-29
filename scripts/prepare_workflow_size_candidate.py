@@ -29,14 +29,16 @@ def prepare(base, model, evaluation):
             training & calibration or (training | calibration) & held_out
         ):
             raise ValueError("workflow ranking requires separate training/calibration/evaluation projects")
-    elif split.get("mode") == "capture":
+    elif split.get("mode") in ("capture", "workflow"):
         if split != report.get("split_contract") or (
-            split.get("complete_captures_disjoint") is not True
+            split.get("mode") == "capture" and split.get("complete_captures_disjoint") is not True
             or split.get("complete_workflows_disjoint") is not True
             or split.get("unseen_project_generalization_claimed") is not False
         ):
             raise ValueError("workflow ranking capture holdout contract changed")
         for suffix in ("capture_paths", "execution_sha256"):
+            if suffix == "capture_paths" and split["mode"] == "workflow":
+                continue
             populations = [
                 set(split.get(prefix + suffix, ())) for prefix in (
                     "training_", "calibration_", "evaluation_",
