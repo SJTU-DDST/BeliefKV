@@ -157,10 +157,12 @@ class DemandPrefillPipeline:
         if (
             self.pending is not None or not selected or candidate_count < len(selected)
             or not native_load_queue_was_empty or chunked_req is not None
-            or getattr(adder, "new_chunked_req", None) is not None
             or selected[0] is not req
             or not self.has_decode_work(running_batch)
         ):
+            return False
+        initial_chunk = getattr(adder, "new_chunked_req", None)
+        if initial_chunk is not None and all(initial_chunk is not member for member in selected):
             return False
         controller = self.cache.cache_controller
         if (
@@ -214,8 +216,12 @@ class DemandPrefillPipeline:
         adder.can_run_list.clear()
         self.runtime.counts["demand_restore_staged_requests"] += len(members)
         self.runtime.counts["demand_restore_staged_native_batches"] += 1
+        self.runtime.counts["demand_restore_staged_initial_chunks"] += int(initial_chunk is not None)
         self._record(
             "native_demand_restore_staged", pending,
+            initial_chunk_request_id=(
+                initial_chunk.rid if initial_chunk is not None else None
+            ),
             scope="already_submitted;native_capacity_passed;still_in_native_waiting_queue",
         )
         return True

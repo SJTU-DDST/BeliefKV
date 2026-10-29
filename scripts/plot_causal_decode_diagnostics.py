@@ -19,7 +19,9 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts.audit_causal_jct_paths import first_launches
-from scripts.audit_decode_batch_efficiency import accumulate, summarize
+from scripts.audit_decode_batch_efficiency import (
+    OutputConservation, accumulate, decode_view, summarize,
+)
 from scripts.audit_outstanding_request_throughput import audit_arm
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts import run_causal_comparison as causal
@@ -29,6 +31,7 @@ MATCH_FIELDS = (
     "source_plan", "token_source_sha256", "source_capacity",
     "source_server_parameters", "engine_tree", "sampling_mode",
     "stream_response_metrics", "workflow_ids", "request_timeout_s",
+    "workflow_arrivals",
 )
 CONTEXT_BOUNDS = (32768, 65536, 131072)
 CONTEXT_LABELS = ("<32K", "32K-64K", "64K-128K", ">=128K")
@@ -193,6 +196,7 @@ def extract(label, registration, arm, *, bin_s):
     totals, geometry, worker_rates = Counter(), defaultdict(Counter), []
     forwards, last_complete = set(), -math.inf
     domains, offsets = set(), []
+    conservation = OutputConservation() if info["enable_mixed_chunk"] else None
 
     def samples():
         nonlocal last_complete
@@ -210,15 +214,18 @@ def extract(label, registration, arm, *, bin_s):
             last_complete = complete
             domains.add(row["monotonic_clock_domain"])
             offsets.append(row["complete_ts_ms"] - complete)
-            if row["phase"] == "decode":
+            if conservation is not None:
+                conservation.observe(row)
+            decoded = decode_view(row, mixed_enabled=info["enable_mixed_chunk"])
+            if decoded is not None:
                 options = {"disable_padding": info["disable_cuda_graph_padding"]}
-                accumulate(totals, row, info["cuda_graph_config"]["decode"]["bs"], **options)
-                tokens, elapsed = add_batch(bins, row, anchor_ms=anchor, bin_s=bin_s)
+                accumulate(totals, decoded, info["cuda_graph_config"]["decode"]["bs"], **options)
+                tokens, elapsed = add_batch(bins, decoded, anchor_ms=anchor, bin_s=bin_s)
                 if elapsed:
                     worker_rates.append((tokens * 1000. / elapsed, elapsed))
-                context = sum(item["sequence_tokens_before"] for item in row["request_samples"]) / row["batch_size"]
-                key = row["batch_size"], bisect_right(CONTEXT_BOUNDS, context)
-                accumulate(geometry[key], row, info["cuda_graph_config"]["decode"]["bs"], **options)
+                context = sum(item["sequence_tokens_before"] for item in decoded["request_samples"]) / decoded["batch_size"]
+                key = decoded["batch_size"], bisect_right(CONTEXT_BOUNDS, context)
+                accumulate(geometry[key], decoded, info["cuda_graph_config"]["decode"]["bs"], **options)
             yield row
 
     first_launches(
@@ -260,6 +267,7 @@ def extract(label, registration, arm, *, bin_s):
             registration, summary_path, info_path, status_path, census_path, state_path,
         )},
         "native_request_work": native,
+        "all_mode_output_accounting": conservation.verify(requests) if conservation else None,
     }
 
 

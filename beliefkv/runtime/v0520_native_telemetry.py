@@ -1274,6 +1274,9 @@ class NativeReactiveTelemetry:
             )
         launch = float(batch.launch_ts)
         phase = "prefill" if mode.is_extend() else "decode"
+        decoding_reqs = {
+            id(req) for req in (getattr(batch, "decoding_reqs", None) or ())
+        } if phase == "prefill" else set()
         prefix_lens = getattr(batch, "prefix_lens", None) if phase == "prefill" else None
         extend_lens = getattr(batch, "extend_lens", None) if phase == "prefill" else None
         samples = []
@@ -1393,6 +1396,7 @@ class NativeReactiveTelemetry:
                 self._active.add(rid)
             output_before = len(req.output_ids)
             self._reported_output_tokens.setdefault(rid, output_before)
+            sample_phase = "decode" if id(req) in decoding_reqs else phase
             geometry_source = None
             if phase == "prefill":
                 # Prepared CPU batch lengths include chunking and mixed decode rows.
@@ -1414,12 +1418,14 @@ class NativeReactiveTelemetry:
             samples.append({
                 "request_id": rid,
                 **identity,
-                "phase": phase,
+                "phase": sample_phase,
+                "forward_phase": phase,
                 "sequence_tokens_before": prefix,
                 "output_tokens_before": output_before,
-                "token_delta": extend if phase == "prefill" else 0,
+                "output_token_delta": 0,
+                "token_delta": extend if sample_phase == "prefill" else 0,
                 "token_delta_semantics": (
-                    "prefill_extend_input_len" if phase == "prefill"
+                    "prefill_extend_input_len" if sample_phase == "prefill"
                     else "observed_output_ids_delta"
                 ),
                 **(
@@ -1441,6 +1447,9 @@ class NativeReactiveTelemetry:
                 "launch_mono": launch,
                 "phase": phase,
                 "batch_size": len(batch.reqs),
+                "decode_batch_size": (
+                    len(batch.reqs) if phase == "decode" else len(decoding_reqs)
+                ),
                 "request_samples": samples,
                 "mamba_forward_candidates": mamba_forward_candidates,
             }
@@ -1688,8 +1697,11 @@ class NativeReactiveTelemetry:
                 rid, sample["output_tokens_before"]
             )
             output_after = len(req.output_ids)
-            if descriptor["phase"] == "decode":
-                sample["token_delta"] = max(0, output_after - reported_before)
+            sample["output_token_delta"] = max(0, output_after - reported_before)
+            sample["output_tokens_reported_before"] = reported_before
+            sample["output_tokens_after"] = output_after
+            if sample["phase"] == "decode":
+                sample["token_delta"] = sample["output_token_delta"]
             self._reported_output_tokens[rid] = max(
                 reported_before, output_after
             )
@@ -1741,6 +1753,8 @@ class NativeReactiveTelemetry:
             "sample_id": descriptor["sample_id"],
             "phase": descriptor["phase"],
             "batch_size": descriptor["batch_size"],
+            "decode_batch_size": descriptor["decode_batch_size"],
+            "output_token_accounting": "observed_output_ids_delta_all_forward_modes_v1",
             "cuda_graph_replayed": getattr(result, "can_run_cuda_graph", None),
             "request_samples": descriptor["request_samples"],
             "service_start_ts_ms": complete_wall - (complete_mono - start_mono) * 1000,

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from types import SimpleNamespace as NS
 from unittest.mock import Mock
+from array import array
 
 import pytest
 
@@ -165,3 +166,26 @@ def test_restore_ack_still_obeys_new_native_slot_pressure(staged_native):
     assert len(f.loads) == 2
     for member in f.members[:2]:
         f.cache.dec_lock_ref(member.last_node, member.lock_receipt)
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+def test_native_initial_chunk_stages_without_installing_chunk_owner_then_reselects(staged_native):
+    f = staged_native
+    f.req.origin_input_ids = array("q", range(1, 50))
+    scheduler, construction, invoke = native_scheduler(f, enabled=True)
+    scheduler.chunked_prefill_size = 4
+    scheduler.max_prefill_tokens = 4
+    assert invoke() == (None, f.running)
+    assert scheduler.chunked_req is None
+    assert scheduler.waiting_queue == [f.req] and f.req.kv.req_pool_idx is None
+    assert f.runtime.counts["demand_restore_staged_initial_chunks"] == 1
+    assert len(f.loads) == 1
+    f.complete.ready = True
+    f.cache.loading_check(finish_count=1)
+    with pytest.raises(BatchConstructionReached):
+        invoke()
+    assert construction == [(f.req,)]
+    assert scheduler.chunked_req is f.req and scheduler.waiting_queue == []
+    assert f.req.extend_range.start == 8 and f.req.extend_range.length == 4
+    assert f.req.kv.req_pool_idx is None and len(f.loads) == 1
+    f.cache.dec_lock_ref(f.req.last_node, f.req.lock_receipt)

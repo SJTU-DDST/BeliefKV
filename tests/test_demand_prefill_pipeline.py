@@ -152,9 +152,19 @@ def test_existing_native_row_and_chunked_target_are_never_requeued():
     f.request.kv.req_pool_idx = 0
     assert not stage(f)
     f.request.kv.req_pool_idx = None
-    f.adder.new_chunked_req = f.request
-    assert not stage(f)
+    assert not stage(f, chunked_req=f.request)
     assert f.controller.starts == 0
+
+
+def test_selected_initial_chunk_can_restore_before_allocating_its_native_row():
+    f = fixture()
+    f.adder.new_chunked_req = f.request
+    assert stage(f)
+    assert f.runtime.counts["demand_restore_staged_initial_chunks"] == 1
+    assert f.request.kv.req_pool_idx is None and f.waiting == [f.request]
+    f.finish.ready = True
+    assert not f.pipeline.defer(f.waiting, f.running)
+    assert f.request.lock_receipt is None
 
 
 def test_staging_accounts_actual_loaded_tail_instead_of_clamping_to_logical_host_hit():

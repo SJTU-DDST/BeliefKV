@@ -43,6 +43,62 @@ def padding_bucket(size, buckets, *, graph):
     return buckets[index]
 
 
+def decode_view(row, *, mixed_enabled=False):
+    """Keep a mixed forward's decode rows and charge its shared interval once."""
+    if row["phase"] == "decode":
+        return row
+    samples = row["request_samples"]
+    if mixed_enabled and (
+        row.get("output_token_accounting")
+        != "observed_output_ids_delta_all_forward_modes_v1"
+    ):
+        raise ValueError("mixed serving requires all-mode native output accounting")
+    decoded = [sample for sample in samples if sample.get("phase") == "decode"]
+    if not decoded:
+        return None
+    if row.get("decode_batch_size") != len(decoded):
+        raise ValueError("mixed decode membership differs from the native batch")
+    return {
+        **row, "phase": "decode", "forward_phase": "prefill",
+        "native_batch_size": row["batch_size"], "batch_size": len(decoded),
+        "request_samples": decoded,
+        # Prefill/mixed graph selection does not use ordinary decode buckets.
+        "cuda_graph_replayed": False,
+    }
+
+
+class OutputConservation:
+    """Reconcile measured output ordinals with every exact request receipt."""
+
+    def __init__(self):
+        self.ends, self.tokens, self.rows = {}, Counter(), 0
+
+    def observe(self, row):
+        if row.get("output_token_accounting") != "observed_output_ids_delta_all_forward_modes_v1":
+            raise ValueError("all-mode output accounting is missing")
+        for sample in row["request_samples"]:
+            identity = sample["request_id"]
+            before = sample.get("output_tokens_reported_before")
+            after = sample.get("output_tokens_after")
+            delta = sample.get("output_token_delta")
+            if (
+                any(type(value) is not int or value < 0 for value in (before, after, delta))
+                or before != self.ends.get(identity, 0)
+                or after - before != delta
+            ):
+                raise ValueError("native output ordinals are missing, duplicated or discontinuous")
+            self.ends[identity] = after
+            self.tokens[sample["phase"]] += delta
+        self.rows += 1
+
+    def verify(self, requests):
+        if self.ends != {identity: row["output_tokens"] for identity, row in requests.items()}:
+            raise ValueError("all-mode output does not match the exact replay receipts")
+        return {"forwards": self.rows, "output_tokens_by_service_role": dict(self.tokens),
+                "total_output_tokens": sum(self.tokens.values()),
+                "exact_request_output_conserved": True}
+
+
 def accumulate(counter, row, buckets, *, disable_padding=False):
     size, elapsed = row["batch_size"], row["service_elapsed_ms"]
     requests = row["request_samples"]
@@ -162,6 +218,7 @@ def audit(arm):
     totals, by_batch, by_backlog = Counter(), defaultdict(Counter), defaultdict(Counter)
     phase_counts, phases = Counter(), Counter()
     seen_forwards, domains, offsets = set(), set(), []
+    conservation = OutputConservation() if info["enable_mixed_chunk"] else None
     cursor, pending, last_start = 0, {}, -math.inf
     audit_path = arm / "server/runtime_audit.jsonl"
     for row in reader(audit_path):
@@ -181,7 +238,10 @@ def audit(arm):
         offsets.append(row["complete_ts_ms"] - row["complete_monotonic_ms"])
         phases[phase] += row["service_elapsed_ms"]
         phase_counts[phase] += 1
-        if phase != "decode":
+        if conservation is not None:
+            conservation.observe(row)
+        row = decode_view(row, mixed_enabled=info["enable_mixed_chunk"])
+        if row is None:
             continue
         while cursor < len(changes) and changes[cursor][0] <= when:
             _time, done, identity, invocation = changes[cursor]
@@ -224,6 +284,12 @@ def audit(arm):
         },
         "aging_and_capacity_switch_maximum_counts": dict(aging_counts),
         "input_jsonl_prefixes": reader.prefixes,
+        "all_mode_output_accounting": (
+            conservation.verify({
+                row["request_id"]: row
+                for row in reader(arm / "replay/native_requests.jsonl")
+            }) if conservation else None
+        ),
         "source_sha256": {str(path): sha256_file(path) for path in (status_path, info_path)},
     }
 
@@ -257,6 +323,7 @@ def main():
             "Complete native and replay work only. All recorded decode batches and normal tails remain included.",
             "Worker intervals include runtime and waits; their token rate is not whole-run throughput or pure CUDA throughput.",
             "Token deltas are observed output, including zero-output terminal steps; batch size counts request steps.",
+            "Mixed forwards include only their decode rows in decode geometry, charging the whole shared worker interval once. This time is not additive to prefill time.",
             "Configured graph bucket rows are inferred from single-device non-speculative bucket selection. Extra rows are not proportional GPU time or attainable speedup.",
             "Eligibility is the preceding snapshot held for at most 1500ms. Outstanding means submitted and not completed; it does not prove ready compute or physical headroom.",
             "Pending inactive demand is a diagnostic co-occurrence, not a causal admission attribution or removable JCT. Missing eligibility remains unknown.",

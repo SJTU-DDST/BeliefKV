@@ -480,6 +480,7 @@ def compile_causal_replay(
 
 def evaluate_causal_plan(
     plan: CausalReplayPlan, request_service_ms: Mapping[str, float],
+    *, workflow_arrival_offsets_ms: Mapping[str, float] | None = None,
 ) -> dict:
     """CPU virtual-clock check; supplied service times are never a GPU prediction."""
     if request_service_ms.keys() != plan.request_usage.keys() or any(
@@ -487,12 +488,21 @@ def evaluate_causal_plan(
         for value in request_service_ms.values()
     ):
         raise CausalReplayError("service fixture must cover every request with finite nonnegative time")
+    if workflow_arrival_offsets_ms is not None:
+        from beliefkv.experiments.replay_arrivals import validate_offsets
+
+        validate_offsets(plan, workflow_arrival_offsets_ms)
     nodes = {node.node_id: node for node in plan.nodes}
     completed, releases, workflows = {}, {}, {}
     for key in TopologicalSorter(plan.dependency_graph()).static_order():
         node = nodes[key]
         ready = max((completed[item] for item in node.dependencies), default=0.)
         ready += node.delay_ms
+        if (
+            workflow_arrival_offsets_ms is not None and node.event is not None
+            and node.event.kind is Kind.WORKFLOW_START
+        ):
+            ready = workflow_arrival_offsets_ms[node.workflow_id]
         completed[key] = ready + (
             request_service_ms[node.request_id] if node.request_id is not None else 0.
         )
@@ -523,6 +533,7 @@ async def execute_causal_replay(
     emit_event: Callable[[RuntimeEvent], Awaitable[None]],
     *,
     timing_policy: ReplayTimingPolicy | None = None,
+    workflow_arrival_offsets_ms: Mapping[str, float] | None = None,
 ) -> dict:
     """Release only ready work; a backend must report its actual native completion."""
     nodes = {node.node_id: node for node in plan.nodes}
@@ -534,6 +545,12 @@ async def execute_causal_replay(
         for node in nodes.values()
     ):
         raise CausalReplayError("invalid replay execution graph")
+    if workflow_arrival_offsets_ms is not None:
+        from beliefkv.experiments.replay_arrivals import validate_offsets
+
+        validate_offsets(plan, workflow_arrival_offsets_ms)
+        if timing_policy is not None and timing_policy != ReplayTimingPolicy():
+            raise CausalReplayError("external workflow arrivals cannot use idle timer compression")
     sorter = TopologicalSorter(plan.dependency_graph())
     try:
         sorter.prepare()
@@ -583,17 +600,25 @@ async def execute_causal_replay(
                 "stream_first_chunk_ts_ms",
             }
         }
+        event_ts = now
+        if event.kind is Kind.WORKFLOW_START and workflow_arrival_offsets_ms is not None:
+            event_ts = origin + workflow_arrival_offsets_ms[event.workflow_id]
+            attributes.update(
+                scheduled_arrival_monotonic_ms=event_ts,
+                arrival_delivery_monotonic_ms=now,
+                arrival_delivery_lag_ms=now - event_ts,
+            )
         if event.kind is Kind.TOOL_START:
             tool_started[_tool_key(event)] = now
         elif event.kind is Kind.TOOL_END:
             attributes["duration_ms"] = now - tool_started.pop(_tool_key(event))
-        replayed = replace(event, ts_ms=now, attributes=attributes)
+        replayed = replace(event, ts_ms=event_ts, attributes=attributes)
         await emit_event(replayed)
         if event.kind is Kind.LLM_SUBMIT:
             visible_requests[event.attributes["request_id"]] = replayed
         emitted += 1
         if event.kind is Kind.WORKFLOW_START:
-            workflow_releases[event.workflow_id] = now
+            workflow_releases[event.workflow_id] = event_ts
         elif event.kind is Kind.WORKFLOW_END:
             workflow_elapsed[event.workflow_id] = now - workflow_releases[event.workflow_id]
         return time.monotonic() * 1000.
@@ -605,6 +630,11 @@ async def execute_causal_replay(
                 deadlines[key] = max(
                     (completed[item] for item in node.dependencies), default=origin,
                 ) + node.delay_ms
+                if (
+                    workflow_arrival_offsets_ms is not None and node.event is not None
+                    and node.event.kind is Kind.WORKFLOW_START
+                ):
+                    deadlines[key] = origin + workflow_arrival_offsets_ms[node.workflow_id]
             now = time.monotonic() * 1000.
             busy = {nodes[key].workflow_id for key in running.values()}
             idle_clock.adjust(deadlines, busy, now)
@@ -652,7 +682,7 @@ async def execute_causal_replay(
         timing["no_inflight_external_timer_wait_ms"] / timing["replay_wall_time_ms"]
         if timing["replay_wall_time_ms"] > 0 else 0.
     )
-    return {
+    result = {
         "causal_execution_completed": True,
         "completed_requests": len(dispatched),
         "emitted_events": emitted,
@@ -666,3 +696,9 @@ async def execute_causal_replay(
             "does not establish token/EOS/session fidelity or GPU performance."
         ),
     }
+    if workflow_arrival_offsets_ms is not None:
+        result.update(
+            workflow_arrival_origin_monotonic_ms=origin,
+            workflow_arrival_clock_domain=clock_domain,
+        )
+    return result

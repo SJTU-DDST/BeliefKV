@@ -3138,3 +3138,21 @@
   2922 prefix. Explicit complete-reader paths retain original defaults and
   reject the live arm; no complete performance follows. No competing GPU job
   is queued. Agentix model/formal work and the global goal remain incomplete.
+- The 2026-10-29 prefill/arrival CPU candidate passes4189 unique cases retaining
+  all4102 prior identities, plus6 subtests, bound to1828 inputs. Initial600
+  evidence is retained. Frozen completed Full R1/R2/ACK journals have2/0/8
+  handoffs; all9/5/3 native refusal snapshots lack input/growth free-page reserve.
+  Earlier unjournalled returns remain unknown. Keep handoff8/4 and survival.75;
+  do not remove locks/reserves to force activity. The quoted68.55% is the
+  time-weighted non-evictable KV-pool fraction, not measured GPU utilization.
+  New seeded Poisson arrivals change only root releases and count JCT from
+  scheduled arrival, retaining driver lag and rejecting idle compression.
+  All methods must use identical tables; burst controls are not Poisson controls.
+  Native2048/1024/mixed profiles require fresh actual parameter/model checks.
+  Mixed telemetry includes native decoding_reqs and all-mode output conservation,
+  with the whole mixed interval charged once, never added to prefill time.
+  Demand staging now supports the first chunk before row allocation; existing
+  row-owning chunk continuations stay native. GPU/model/performance validation
+  for these changes is pending; preserve current frozen TokenCake and do not
+  overlap it. No new formal GPU job is registered by this CPU work. See
+  docs/research/prefill_arrivals_and_handoff_20261029_zh.md.

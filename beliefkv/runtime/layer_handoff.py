@@ -13,13 +13,19 @@ def try_handoff(offloader, key, step):
         or offloader.consumer is None
     ):
         return False
+    runtime.counts["layer_handoff_attempts"] += 1
+
+    def refused(reason):
+        runtime.counts["layer_handoff_refused:" + reason] += 1
+        return False
+
     cache = runtime._native_cache
     begin = getattr(cache, "begin_beliefkv_layer_handoff", None)
     if not callable(begin):
         raise RuntimeError("layer handoff requires its separately qualified native engine")
     if getattr(cache, "_beliefkv_layer_handoff", None) is not None:
         runtime.counts["layer_handoff_busy"] += 1
-        return False
+        return refused("busy")
     request, consumer_key = offloader.consumer
     eos = request is None
     # Keep EOS's observed-session proof in the recovery adapter; no synthetic
@@ -29,14 +35,14 @@ def try_handoff(offloader, key, step):
     else:
         allowed = lambda: runtime._agent_admission.allows(consumer_key)
     if not allowed():
-        return False
+        return refused("consumer_not_eligible")
     if eos:
         opportunity = offloader._opportunity
         if (
             opportunity is None or opportunity.anchors.key != consumer_key
             or runtime._residency_pool_bytes is None
         ):
-            return False
+            return refused("eos_opportunity_missing")
         observation = {
             "component_leaves": opportunity.anchors.component_leaves,
             "missing_full_tokens": opportunity.required_full_tokens,
@@ -46,17 +52,21 @@ def try_handoff(offloader, key, step):
         observation = runtime._read_request_reentry(request, key=consumer_key, refresh=True)
         cost = runtime._request_restore_cost(request, observation)
     leaves = dict(observation.get("component_leaves", ())).get(0, ()) if observation else ()
-    if cost is None or len(leaves) != 1 or not offloader._eligible(key):
-        return False
+    if cost is None:
+        return refused("consumer_restore_cost_unavailable")
+    if len(leaves) != 1:
+        return refused("consumer_extent_count")
+    if not offloader._eligible(key):
+        return refused("donor_not_eligible")
     try:
         consumer = cache.tree_core.node_by_id(leaves[0][0])
         anchors = runtime._snapshot_key_session_anchors(cache, key, reusable_input_tokens=None)
         donor_leaves = dict(anchors.component_leaves).get(0, ()) if anchors else ()
         if len(donor_leaves) != 1:
-            return False
+            return refused("donor_extent_count")
         donor = cache.tree_core.node_by_id(donor_leaves[0][0])
     except (KeyError, RuntimeError, ValueError):
-        return False
+        return refused("stale_anchor")
     a, b = donor.component_data[0], consumer.component_data[0]
     missing = observation.get("missing_full_tokens", 0)
     if (
@@ -67,7 +77,7 @@ def try_handoff(offloader, key, step):
         or not missing
     ):
         runtime.counts["layer_handoff_geometry_refused"] += 1
-        return False
+        return refused("geometry")
     try:
         from sglang.srt.mem_cache.radix_cache import RadixKey
 
@@ -75,13 +85,13 @@ def try_handoff(offloader, key, step):
         restore_tokens = len(load.host_indices)
         tail = restore_tokens - missing
         if extras or restore_tokens <= 0:
-            return False
+            return refused("restore_spec")
         if tail:
             # Reentry inspection stops at whole extents before the final input
             # token. Include a cached decode tail only if this request contains
             # that complete private extent; price every transferred token.
             if eos:
-                return False
+                return refused("eos_private_tail")
             target = RadixKey(
                 request.origin_input_ids, extra_key=getattr(request, "extra_key", None),
                 cache_salt=getattr(request, "cache_salt", None),
@@ -93,10 +103,10 @@ def try_handoff(offloader, key, step):
                 )
             ):
                 runtime.counts["layer_handoff_unmatched_decode_tail"] += 1
-                return False
+                return refused("unmatched_decode_tail")
     except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
         runtime.counts["layer_handoff_restore_extent_unavailable"] += 1
-        return False
+        return refused("restore_extent_unavailable")
     budget = runtime._current_residency_budget()
     actual = consumer_input_reserve(
         runtime, budget, cost[1],
@@ -131,12 +141,12 @@ def try_handoff(offloader, key, step):
             if donor_tokens >= restore_tokens:
                 break
             node = node.parent
-        if (
-            donor_tokens < restore_tokens
-            or not authorize(donor_tokens, restore_tokens)
-            or not manager.ensure(donor_tokens, protected=(*donors, consumer.id))
-        ):
-            return False
+        if donor_tokens < restore_tokens:
+            return refused("donor_smaller_than_restore")
+        if not authorize(donor_tokens, restore_tokens):
+            return refused("cost_or_authorization")
+        if not manager.ensure(donor_tokens, protected=(*donors, consumer.id)):
+            return refused("host_destination")
     result = begin(
         donor_node_id=donor.id, donor_creation_time=donor.creation_time,
         donor_session_id=key.session_id, donor_session_generation=key.session_generation,
@@ -177,7 +187,7 @@ def try_handoff(offloader, key, step):
                 "pending_write_acks": len(cc.ack_write_queue),
                 "pending_load_acks": len(cc.ack_load_queue),
             })
-        return False
+        return refused("native")
     after = getattr(offloader, "_after_handoff", offloader._after_eviction)
     after(key, {0: result["donor_tokens"]})
     runtime._invalidate_wait_transfer_observation(key)

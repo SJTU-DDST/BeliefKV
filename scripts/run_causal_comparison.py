@@ -45,6 +45,7 @@ from scripts.benchmark_causal_sampling import calibration_batch_sizes
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.tool_timing_overlay import load_overlay
+from beliefkv.experiments.replay_arrivals import load_arrival_plan, validate_arrival_plan
 
 ORDER = ("full", "native_matched", "join_priority_only", "no_background_prepare")
 DEFAULT_ORDER = ("full", "join_priority_only")
@@ -73,6 +74,15 @@ SERVER_FIELDS = (
     "DEMAND_PREFILL_PIPELINE",
     "FREE_PAGE_H2D_FENCE",
 )
+
+
+def prefill_server_parameters(source, common):
+    """Declare only the two native prefill controls; preserve every other field."""
+    chunk = common.get("CHUNKED_PREFILL_SIZE", "4096")
+    mixed = common.get("ENABLE_MIXED_CHUNK", "0")
+    if chunk not in ("1024", "2048", "4096") or mixed not in ("0", "1"):
+        raise ValueError("prefill candidates require chunk 1024/2048/4096 and mixed 0/1")
+    return {**source, "chunked_prefill_size": int(chunk), "enable_mixed_chunk": mixed == "1"}
 
 
 def environment(
@@ -127,11 +137,12 @@ def environment(
     )
     if not retention:
         settings["BELIEFKV_SUBAGENT_RETENTION"] = "off"
+    prefill = prefill_server_parameters({}, reference["arms"]["full"])
     settings.update(
         PYTHONPATH=f"{checkout}:{plugin}", CUDA_VISIBLE_DEVICES="0",
         SGLANG_SOURCE_CHECKOUT=str(engine), RUN_ROOT=str(arm), PORT=str(port),
         MEM_FRACTION_STATIC="0.94", CONTEXT_LENGTH="262144",
-        CHUNKED_PREFILL_SIZE="4096", ENABLE_SESSION_RADIX_CACHE="1",
+        CHUNKED_PREFILL_SIZE=str(prefill["chunked_prefill_size"]), ENABLE_SESSION_RADIX_CACHE="1",
         HOST_NUMA_NODE="1", HOST_NUMA_MEMORY_POLICY="preferred",
         HICACHE_WRITE_POLICY="write_back", BELIEFKV_FULL_MAMBA_HOST_SPLIT="80:20",
         BELIEFKV_CAUSAL_REPLAY_BRIDGE="1", SGLANG_PLUGINS="beliefkv_causal_replay",
@@ -159,6 +170,8 @@ def environment(
             settings["BELIEFKV_" + target] = str(path)
             settings["BELIEFKV_" + digest] = sha256_file(path)
     flags = ["--enable-custom-logit-processor", *paper_server_flags(mode)]
+    if prefill["enable_mixed_chunk"]:
+        flags.append("--enable-mixed-chunk")
     if not full_only:
         flags = ["--mamba-full-memory-ratio", "0.9", *flags]
     if settings.get("DEVICE_FULL_TOKENS"):
@@ -632,6 +645,7 @@ def validate_result(plan, result, arm, *, live_control):
         or result.get("completed_requests") != plan["source_plan"]["requests"]
         or result.get("source_plan") != plan["source_plan"]
         or result.get("tool_timing_overlay") != plan.get("tool_timing_overlay")
+        or result.get("workflow_arrivals") != plan.get("workflow_arrivals")
         or result.get("benchmark_timing_synthetic", False) is not (
             plan.get("tool_timing_overlay") is not None
         )
@@ -650,7 +664,51 @@ def validate_result(plan, result, arm, *, live_control):
     ):
         raise ValueError("replay receipt population differs from completed work")
     validate_response_metrics(plan, result)
+    validate_arrival_observations(plan, result, arm)
     return work
+
+
+def validate_arrival_observations(plan, result, arm):
+    arrivals = plan.get("workflow_arrivals")
+    if arrivals is None:
+        if result.get("workflow_arrival_origin_monotonic_ms") is not None:
+            raise ValueError("undeclared external arrival clock")
+        return
+    validate_arrival_plan(arrivals, plan["workflow_ids"])
+    origin = result.get("workflow_arrival_origin_monotonic_ms")
+    domain = result.get("workflow_arrival_clock_domain")
+    if (
+        type(origin) not in (int, float) or not math.isfinite(origin)
+        or type(domain) is not str or not domain
+    ):
+        raise ValueError("scheduled arrivals lack a finite identified replay clock")
+    expected = {
+        row["workflow_id"]: origin + row["offset_seconds"] * 1000.
+        for row in arrivals["arrival_schedule"]
+    }
+    observed = set()
+    with (arm / "replay/runtime_events.replay.jsonl").open() as stream:
+        for raw in stream:
+            row = json.loads(raw)
+            if row.get("kind") != "workflow_start":
+                continue
+            workflow, attributes = row["workflow_id"], row["attributes"]
+            when, delivered, lag = (
+                row["ts_ms"], attributes.get("arrival_delivery_monotonic_ms"),
+                attributes.get("arrival_delivery_lag_ms"),
+            )
+            if (
+                workflow in observed or workflow not in expected
+                or any(type(value) not in (int, float) or not math.isfinite(value)
+                       for value in (when, delivered, lag))
+                or abs(when - expected[workflow]) > 1e-6
+                or attributes.get("scheduled_arrival_monotonic_ms") != when
+                or delivered < when or lag != delivered - when
+            ):
+                raise ValueError("observed workflow arrivals differ from the frozen schedule")
+            observed.add(workflow)
+    if observed != set(expected):
+        raise ValueError("observed workflow arrivals are incomplete")
 
 
 def validate_response_metrics(plan, result):
@@ -704,6 +762,9 @@ def replay_command(plan, arm, event_socket):
         command.append("--stream-response-metrics")
     if plan.get("tool_timing_overlay") is not None:
         command += ["--tool-duration-overlay", plan["tool_timing_overlay"]["path"]]
+    if plan.get("workflow_arrivals") is not None:
+        validate_arrival_plan(plan["workflow_arrivals"], plan["workflow_ids"])
+        command += ["--workflow-arrivals", plan["workflow_arrivals_path"]]
     if event_socket is not None:
         command += ["--event-socket", str(event_socket)]
     return command
@@ -1312,6 +1373,25 @@ def register(args):
         graph, overlay_path, natural_baseline,
         maximum_replay_slowdown=args.maximum_replay_slowdown,
     )
+    arrival_path = getattr(args, "workflow_arrivals", None)
+    declared_arrivals = (experiment_spec or {}).get("workflow_arrivals")
+    if declared_arrivals is not None:
+        declared_path = Path(declared_arrivals["path"])
+        if (
+            sha256_file(declared_path) != declared_arrivals["sha256"]
+            or arrival_path is not None and arrival_path.resolve() != declared_path.resolve()
+        ):
+            raise ValueError("external workflow arrivals differ from the declared experiment")
+        arrival_path = declared_path
+    arrivals = None
+    if arrival_path is not None:
+        arrivals = load_arrival_plan(
+            arrival_path, sorted({node.workflow_id for node in graph.nodes}),
+        )
+        if args.maximum_replay_slowdown is not None:
+            raise ValueError("Poisson arrivals cannot use the burst-source speed calibration")
+        # Trace capture remains reusable; its burst JCT is no matched control.
+        native_baseline = None
     validate_timing_prior_contract(reference["arms"]["full"], tool_timing_overlay)
     if overlay_path is not None and not {
         "beliefkv/experiments/tool_timing_overlay.py",
@@ -1321,6 +1401,14 @@ def register(args):
         raise ValueError("empirical tool timing sources lack CPU qualification")
     if smoke_server["source_server_parameters"].get("max_running_requests") != running:
         raise ValueError("comparison running limit differs from the GPU-checked source")
+    qualified_prefill = smoke_server["source_server_parameters"]
+    if prefill_server_parameters(qualified_prefill, reference["arms"]["full"]) != qualified_prefill:
+        raise ValueError("prefill candidate differs from the freshly GPU-checked serving profile")
+    original_prefill = load(args.source_arm / "server/server_info.json")
+    if any(qualified_prefill.get(name) != original_prefill.get(name) for name in (
+        "chunked_prefill_size", "enable_mixed_chunk",
+    )):
+        native_baseline = None
     experiment_evidence = None
     if experiment_spec is not None:
         experiment_evidence = experiment_source_evidence(
@@ -1385,6 +1473,18 @@ def register(args):
     ]
     if overlay_path is not None:
         inputs.append(overlay_path)
+    if arrival_path is not None:
+        inputs.append(arrival_path)
+        if not {
+            "beliefkv/experiments/replay_arrivals.py", "beliefkv/experiments/arrival_schedule.py",
+            "tests/test_causal_replay_arrivals.py",
+        } <= sources.keys():
+            raise ValueError("external workflow arrivals lack CPU qualification")
+    if qualified_prefill["enable_mixed_chunk"] and not {
+        "beliefkv/runtime/v0520_native_telemetry.py",
+        "scripts/audit_decode_batch_efficiency.py", "tests/test_native_mixed_service_accounting.py",
+    } <= sources.keys():
+        raise ValueError("mixed serving output accounting lacks CPU qualification")
     if args.retention_config is not None:
         inputs.append(args.retention_config)
         if not {
@@ -1464,12 +1564,14 @@ def register(args):
         "sampling_mode": args.sampling_mode,
         "request_timeout_s": REPLAY_REQUEST_TIMEOUT_S,
         "tool_timing_overlay": tool_timing_overlay,
+        "workflow_arrivals": arrivals,
+        "workflow_arrivals_path": str(arrival_path.resolve()) if arrival_path is not None else None,
         "stream_response_metrics": getattr(args, "stream_response_metrics", False),
         "maximum_replay_slowdown": args.maximum_replay_slowdown,
         "source_metrics": {
-            "mean_jct_ms": natural_baseline["mean_jct_ms"],
+            "mean_jct_ms": natural_baseline["mean_jct_ms"] if native_baseline else None,
             "replay_duration_ms": quality["duration_seconds"] * 1000.,
-            "timing_comparable_to_replay": tool_timing_overlay is None,
+            "timing_comparable_to_replay": native_baseline is not None,
         },
         "native_baseline": native_baseline,
         "gpu_replay_qualified": False, "performance_accepted": False,
@@ -1819,6 +1921,7 @@ def main():
     parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
     parser.add_argument("--stream-response-metrics", action="store_true")
     parser.add_argument("--tool-duration-overlay", type=Path)
+    parser.add_argument("--workflow-arrivals", type=Path)
     parser.add_argument("--maximum-replay-slowdown", type=float)
     args = parser.parse_args()
     if args.watch:
@@ -1829,6 +1932,7 @@ def main():
             "retention_config",
             "experiment_config",
             "tool_duration_overlay",
+            "workflow_arrivals",
             "tool_prefetch_priority_ms",
             "max_running_requests",
         )):

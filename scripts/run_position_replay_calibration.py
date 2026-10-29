@@ -192,6 +192,12 @@ def comparison_command(plan, run, arm, development):
                 "--tool-duration-overlay",
                 str((development / spec["tool_timing_overlay"]["path"]).resolve()),
             ]
+        if spec.get("workflow_arrivals"):
+            arrivals = spec["workflow_arrivals"]
+            path = Path(arrivals["path"])
+            if sha256_file(path) != arrivals["sha256"]:
+                raise ValueError("declared external workflow arrivals changed")
+            command += ["--workflow-arrivals", str(path)]
         if common.get("TOOL_PREFETCH") == "1" and float(common.get("TOOL_PREFETCH_PRIORITY_MS", "0")) > 0:
             command += ["--tool-prefetch-priority-ms", common["TOOL_PREFETCH_PRIORITY_MS"]]
     else:
@@ -304,6 +310,11 @@ def register(args):
     )
     if spec_path is not None:
         paths += (spec_path, ROOT / spec["common_environment"]["WORKLOAD_MANIFEST"])
+        if spec.get("workflow_arrivals"):
+            arrival_path = Path(spec["workflow_arrivals"]["path"])
+            if sha256_file(arrival_path) != spec["workflow_arrivals"]["sha256"]:
+                raise ValueError("declared external workflow arrivals changed")
+            paths += (arrival_path,)
     if metrics is not None:
         source_root = Path(source["run_root"])
         paths += tuple(source_root / name for name in (
@@ -520,7 +531,9 @@ def watch(registration):
                 time.sleep(1.)
             info = httpx.get(f"http://127.0.0.1:{plan['port']}/server_info", timeout=10.).json()
             source_info = load(arm / "server/server_info.json")
-            parameters = {name: source_info[name] for name in SERVER_FIELDS}
+            parameters = controls.prefill_server_parameters(
+                {name: source_info[name] for name in SERVER_FIELDS}, reference["arms"]["full"],
+            )
             required = {**parameters, "enable_custom_logit_processor": True, "enable_session_radix_cache": True}
             if any(info.get(name) != value for name, value in required.items()):
                 raise ValueError("actual calibration server differs from the native source")

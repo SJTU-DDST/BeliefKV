@@ -27,6 +27,7 @@ from beliefkv.experiments.causal_replay_backend import CausalHTTPBackend
 from beliefkv.experiments.causal_replay_delivery import ReplayEventDelivery
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.replay_arrivals import arrival_offsets_ms, load_arrival_plan
 from beliefkv.experiments.tool_timing_overlay import load_overlay
 from beliefkv.experiments.workflow_metrics import StreamingWorkflowMetrics
 from beliefkv.runtime.event_channel import (
@@ -94,6 +95,14 @@ async def run(args) -> dict:
     tool_timing_overlay = None
     if overlay_path is not None:
         plan, tool_timing_overlay = load_overlay(plan, overlay_path)
+    arrivals_path = getattr(args, "workflow_arrivals", None)
+    arrivals = None
+    if arrivals_path is not None:
+        if agentx:
+            raise ValueError("external arrivals require natural traces without AgentX idle compression")
+        arrivals = load_arrival_plan(
+            arrivals_path, sorted({node.workflow_id for node in plan.nodes}),
+        )
     if not args.base_url.startswith("http://127.0.0.1:"):
         raise ValueError("native replay requires an explicit local server port")
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -134,6 +143,9 @@ async def run(args) -> dict:
             try:
                 result = await execute_causal_replay(
                     plan, backend.execute, backend.emit, timing_policy=timing,
+                    workflow_arrival_offsets_ms=(
+                        arrival_offsets_ms(arrivals) if arrivals is not None else None
+                    ),
                 )
             except BaseException as error:
                 failure = error
@@ -163,6 +175,7 @@ async def run(args) -> dict:
             benchmark_content_synthetic=agentx,
             benchmark_timing_synthetic=tool_timing_overlay is not None,
             tool_timing_overlay=tool_timing_overlay,
+            workflow_arrivals=arrivals,
             streaming_response_metrics_enabled=stream_metrics,
             streaming_response_metrics=response_metrics.summary() if response_metrics else None,
             native_session_http_lifecycle_completed=True,
@@ -193,6 +206,8 @@ async def run(args) -> dict:
                     "beliefkv/experiments/replay_timing.py",
                     "beliefkv/experiments/workflow_metrics.py",
                     "beliefkv/experiments/tool_timing_overlay.py",
+                    "beliefkv/experiments/replay_arrivals.py",
+                    "beliefkv/experiments/arrival_schedule.py",
                 )
             },
             scope=(
@@ -224,6 +239,7 @@ def main():
     parser.add_argument("--request-timeout-s", type=float, default=1800.)
     parser.add_argument("--stream-response-metrics", action="store_true")
     parser.add_argument("--tool-duration-overlay", type=Path)
+    parser.add_argument("--workflow-arrivals", type=Path)
     args = parser.parse_args()
     if not 0 < args.request_timeout_s <= 3600.:
         parser.error("request timeout must be in (0, 3600] seconds")
