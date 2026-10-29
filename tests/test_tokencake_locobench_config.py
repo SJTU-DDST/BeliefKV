@@ -27,6 +27,19 @@ def test_formal_tokencake_preserves_common_work_and_independent_paper_parameters
     assert tokencake_parameters(document["common_environment"]) == paper["parameters"]
 
 
+def test_native_hook_retry_changes_only_the_declared_engine_package():
+    from beliefkv.experiments.native_engine_variant import TOKENCAKE_TREE
+
+    original = json.loads(CONFIG.read_bytes())
+    retry = json.loads((ROOT / "configs/baselines/tokencake_locobench_native_hooks_20261028.json").read_bytes())
+    before, after = original["common_environment"], dict(retry["common_environment"])
+    assert after.pop("SGLANG_PATCH_FLAVOR") == "tokencake_scheduler"
+    assert after == {name: value for name, value in before.items() if name != "SGLANG_PATCH_FLAVOR"}
+    assert retry["comparison_contract"]["native_engine_tree"] == TOKENCAKE_TREE
+    assert retry["tool_timing_overlay"] == original["tool_timing_overlay"]
+    assert retry["order"] == original["order"]
+
+
 def test_real_tokencake_constructor_applies_declared_parameters_without_full_policy(
     tmp_path, monkeypatch,
 ):

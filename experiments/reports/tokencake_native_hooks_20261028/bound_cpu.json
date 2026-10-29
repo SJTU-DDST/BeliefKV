@@ -1,0 +1,88 @@
+{
+  "observed_at": "2026-10-29T05:25:10.863275+00:00",
+  "scope": "Real native scheduler method, Req/PrefillAdder/cache/allocator with copy/event stand-ins.",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_kvflow_native_sessions.py",
+    "tests/test_kvflow_runtime.py",
+    "tests/test_kvflow_native_cache.py",
+    "tests/test_kvflow.py",
+    "tests/test_paper_prefix_transfers.py",
+    "tests/test_progressive_native_restore.py",
+    "tests/test_paper_baseline_runtime.py",
+    "tests/test_paper_baseline_comparison.py",
+    "tests/test_paper_prefix_gpu_qualification.py",
+    "tests/test_tokencake_runtime.py",
+    "tests/test_tokencake_native_capacity.py",
+    "tests/test_tokencake_public_runtime.py",
+    "tests/test_tokencake_paper_runtime.py",
+    "tests/test_tokencake_gpu_qualification.py",
+    "tests/test_tokencake_capacity.py",
+    "tests/test_tokencake_lifecycle.py",
+    "tests/test_paper_baselines.py",
+    "tests/test_tokencake.py",
+    "tests/test_causal_paper_qualification.py",
+    "tests/test_causal_comparison.py",
+    "tests/test_agentx_baseline_operator.py",
+    "tests/test_position_replay_calibration.py",
+    "tests/test_tokencake_native_sessions.py",
+    "tests/test_tokencake_component_queue.py",
+    "tests/test_tokencake_locobench_config.py",
+    "tests/test_tokencake_scheduler_hooks.py",
+    "tests/test_prepare_ack_engine.py",
+    "tests/test_native_engine_variant.py",
+    "--tb=short",
+    "--junitxml=/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.xml"
+  ],
+  "returncode": 0,
+  "totals": {
+    "tests": 812,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "unique_test_identities": 812,
+  "retained_prior_identities": 759,
+  "all_prior_759_identities_retained": true,
+  "native_tree": "131d175450fe2b74d31a0508c2e13c55a3750a56",
+  "native_engine": {
+    "commit": "7424373427c48a0bc363e8f13f6682dd3178246d",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "db0dcaeb4db63014282343a4a65b6f650e19a1dc76d77cc8c90de91e53620dd7"
+  },
+  "native_scheduler_bindings": {
+    "common_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "exact_optional_hooks_projection_verified": true,
+    "prefill_guard_before_native_input": true,
+    "decode_victim_and_before_release_bound": true,
+    "native_compute_or_copy_implementation_changed": false,
+    "source_sha256": {
+      "python/sglang/srt/managers/scheduler.py": "0ceab8b945d0ea3163de13bc949404ab5a4fb61e412e1ac4fd10b276e467aefe",
+      "python/sglang/srt/managers/schedule_batch.py": "38790e4f56d95c84f2d070ab5073bc6fe163d187c711f65c1e818e1bb3c6fd5c"
+    }
+  },
+  "sources_unchanged_during_execution": true,
+  "source_manifest": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.sources.json",
+    "sha256": "8d49d17c59bf2127a4f094f57d488bf056df5c028027958c525c1675c304f5b0"
+  },
+  "report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_native_hooks_20261028/bound_cpu.xml",
+    "sha256": "7d36b81d6588e4ecd9a7d8bb508406c7e1aab6b45f5ab920056b082ce5e46f09"
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/formal_bound_cpu.json": "2bcc41068f383c2597cee9e640fc11a771aad7ffe79fdc35a45e5e56e91e6359",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/formal_bound_cpu.xml": "e46a08c9fb03354f81d9dcb32505ef51c6410e8ef2624928b931a9996d3db270",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/formal_bound_cpu.sources.json": "3223c9eb8afb6e9938598f29f38b31e3c42ea6245c0fa6c426a175808aeff241",
+    "/home/longhao/experiment/BeliefKV/patches/sglang-tokencake-scheduler-runtime-20261028.patch": "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6"
+  },
+  "gpu_experiment_started": false,
+  "performance_accepted": false
+}

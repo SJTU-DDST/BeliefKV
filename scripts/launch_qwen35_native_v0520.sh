@@ -222,6 +222,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     demand_prefill_pipeline)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-demand-prefill-pipeline-runtime-20261028.patch"
       ;;
+    tokencake_scheduler)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-tokencake-scheduler-runtime-20261028.patch"
+      ;;
     *)
       printf 'Unknown SGLang patch flavor: %s\n' "${SGLANG_PATCH_FLAVOR}" >&2
       exit 2

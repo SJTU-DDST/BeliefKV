@@ -203,8 +203,27 @@ def prepare_ack_engine_compatibility(
     changed = git("diff", "--name-only", original_tree, candidate_tree).splitlines()
     from beliefkv.experiments.native_engine_variant import (
         COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE,
-        DEMAND_PREFILL_PIPELINE_TREE,
+        DEMAND_PREFILL_PIPELINE_TREE, TOKENCAKE_TREE,
     )
+    if candidate_tree == TOKENCAKE_TREE:
+        from beliefkv.experiments.tokencake_engine import verify_native_hooks
+
+        hooks = verify_native_hooks(engine)
+        if git("diff", "--name-only", COMMON_TREE, candidate_tree).splitlines() != sorted((
+            SCHEDULER_FILE, "python/sglang/srt/managers/schedule_batch.py",
+        )):
+            raise ValueError("TokenCake engine changes files outside its scheduler hooks")
+        return {
+            "policy": "explicit_tokencake_native_scheduler_hook_variant",
+            "source_engine_tree": original_tree, "candidate_engine_tree": candidate_tree,
+            "common_engine_tree": COMMON_TREE,
+            "common_engine_compatibility": prepare_ack_engine_compatibility(
+                engine, source, candidate_tree=COMMON_TREE,
+            ),
+            "changed_files": changed, "native_scheduler_bindings": hooks,
+            "requires_fresh_gpu_components_model_and_position_smoke": True,
+            "scope": "Optional policy callbacks only; compute and transfer code equal common native.",
+        }
     if candidate_tree in (
         LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE, DEMAND_PREFILL_PIPELINE_TREE,
     ):

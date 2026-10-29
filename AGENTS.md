@@ -3053,3 +3053,19 @@
   Keep frozen6dc4b892 and full work/tails unchanged, no native/V345 rerun or
   ablation, and the overall goal active. See
   docs/research/tokencake_radix_session_20261028_zh.md.
+- KVFlow now completes the exact3674-request V230/V311 population with fresh
+  drain and actual owned exit: meanJCT1739.626663s/output237.259279token/s.
+  Latest repaired Full is6.99747% lower JCT but only0.48308% higher output;
+  KVFlow has better workflow first-output and ready-gap metrics. Retain those
+  tradeoffs and the inspected matched figures; all-baseline acceptance is pending.
+- Preserve TokenCake formalR1's zero-completion native admission-hook failure.
+  Common11b84 reports admission but lacks its sequential guard and retraction
+  bindings. Direct adapter/GPU components did not exercise that scheduler loop.
+  Native7424373/tree131d175450fe2b74d31a0508c2e13c55a3750a56 adds only the
+  original optional TokenCake guard/victim/before-release hooks to common.
+  Its separate canonical patch/flavor, exact AST projection and812-case current
+  CPU binding do not yet qualify GPU/model/performance. Future TokenCake
+  component checks execute actual native scheduler loops and reject old common
+  before GPU startup. Preserve old configurations/failures and qualify the new
+  exact tree before a distinct complete retry; never bypass the capacity guard.
+  See docs/research/tokencake_native_hooks_20261028_zh.md.

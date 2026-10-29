@@ -1,0 +1,253 @@
+diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
+index 92ae767..565a947 100644
+--- a/python/sglang/srt/managers/cache_controller.py
++++ b/python/sglang/srt/managers/cache_controller.py
+@@ -15,6 +15,7 @@ limitations under the License.
+ 
+ 
+ import logging
++import os
+ import threading
+ import time
+ from dataclasses import dataclass
+@@ -408,6 +409,14 @@ class HiCacheController:
+         # Set by the scheduler to the forward stream; gates load-back H2D
+         # behind in-flight forwards (see start_loading).
+         self.load_fence_stream = None
++        from sglang.srt.mem_cache.allocator.token import TokenToKVPoolAllocator
++
++        self.beliefkv_free_page_fence_enabled = (
++            os.environ.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0") == "1"
++            and type(token_to_kv_pool_allocator) is TokenToKVPoolAllocator
++        )
++        self._beliefkv_free_page_boundary = None
++        self.beliefkv_h2d_fence_counts = {}
+         self.ack_write_queue: List[HiCacheAck] = []
+ 
+         self.l2_transfer_engine = L2TransferEngine(io_backend)
+@@ -922,6 +931,54 @@ class HiCacheController:
+     def _num_tokens_by_pool(self, op: CacheOperation) -> dict[str, int]:
+         return {PoolName.KV.value: len(op.device_indices)}
+ 
++    def beliefkv_record_free_page_boundary(self) -> bool:
++        """Fence past writers before a forward can start using other allocated pages."""
++        if not self.beliefkv_free_page_fence_enabled or self.load_fence_stream is None:
++            return False
++        allocator = self.mem_pool_device_allocator
++        generation = allocator.beliefkv_free_generation
++        previous = self._beliefkv_free_page_boundary
++        if previous is not None and previous[:2] == (allocator, generation):
++            return False
++        event = device_module.Event()
++        event.record(stream=self.load_fence_stream)
++        self._beliefkv_free_page_boundary = (allocator, generation, event)
++        counts = self.beliefkv_h2d_fence_counts
++        counts["free_boundary_events"] = counts.get("free_boundary_events", 0) + 1
++        return True
++
++    def _beliefkv_wait_load_fence(self, op) -> None:
++        if self.load_fence_stream is None:
++            return
++        children = getattr(op, "_receipt_ops", (op,))
++        event = getattr(children[0], "_beliefkv_free_page_event", None)
++        if getattr(self, "beliefkv_free_page_fence_enabled", False) and event is not None and all(
++            not child.pool_transfers
++            and getattr(child, "_beliefkv_free_page_event", None) is event
++            for child in children
++        ):
++            self.l2_transfer_engine.host_to_device_stream.wait_event(event)
++            counts = self.beliefkv_h2d_fence_counts
++            counts["free_event_batches"] = counts.get("free_event_batches", 0) + 1
++            return
++        # Newly reclaimed pages may still be written by an in-flight forward.
++        self.l2_transfer_engine.host_to_device_stream.wait_stream(self.load_fence_stream)
++        if getattr(self, "beliefkv_free_page_fence_enabled", False):
++            counts = self.beliefkv_h2d_fence_counts
++            counts["forward_stream_batches"] = counts.get("forward_stream_batches", 0) + 1
++
++    def _beliefkv_bind_free_page_fence(self, op) -> None:
++        boundary = getattr(self, "_beliefkv_free_page_boundary", None)
++        if (
++            getattr(self, "beliefkv_free_page_fence_enabled", False)
++            and not op.pool_transfers
++            and boundary is not None
++            and boundary[0] is self.mem_pool_device_allocator
++            and boundary[1] == self.mem_pool_device_allocator.beliefkv_free_generation
++        ):
++            # Allocations only shrink this free set; any release invalidates its proof.
++            op._beliefkv_free_page_event = boundary[2]
++
+     def load(
+         self,
+         host_indices: torch.Tensor,
+@@ -942,6 +999,7 @@ class HiCacheController:
+             priority,
+             beliefkv_command_id=beliefkv_command_id,
+         )
++        self._beliefkv_bind_free_page_fence(op)
+         self.load_queue.append(op)
+         return device_indices
+ 
+@@ -1058,13 +1116,7 @@ class HiCacheController:
+         producer_event.state_ready_event = None
+         producer_event.start_event.record()
+ 
+-        if self.load_fence_stream is not None:
+-            # in overlap scheduling, reclaimed pages might still be written by the forward thread
+-            # therefore a fence is needed for loading thread to prevent memory corruption
+-            # todo: it's possible to use a finer-grained fence
+-            self.l2_transfer_engine.host_to_device_stream.wait_stream(
+-                self.load_fence_stream
+-            )
++        self._beliefkv_wait_load_fence(op)
+ 
+         unacked_bytes = sum(
+             ack.num_bytes for ack in (*self.ack_write_queue, *self.ack_load_queue)
+diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
+index 5cf4df9..aa7edcb 100755
+--- a/python/sglang/srt/managers/schedule_batch.py
++++ b/python/sglang/srt/managers/schedule_batch.py
+@@ -3195,7 +3195,9 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+             spec_algorithm=self.spec_algorithm,
+         )
+ 
+-    def retract_decode(self) -> Tuple[List[Req], float, List[Req]]:
++    def retract_decode(
++        self, *, select_victim=None, before_release=None
++    ) -> Tuple[List[Req], float, List[Req]]:
+         """Retract the decoding requests when there is not enough memory."""
+         sorted_indices = self._get_decode_retraction_order(self.reqs)
+         sorted_indices = beam_retraction_order(sorted_indices, self.reqs)
+@@ -3211,8 +3213,21 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+                 break
+ 
+             first_iter = False
+-            idx = sorted_indices.pop()
++            selected = (
++                select_victim(self, tuple(sorted_indices))
++                if select_victim is not None
++                else None
++            )
++            if selected is None:
++                idx = sorted_indices.pop()
++            else:
++                if type(selected) is not int or selected not in sorted_indices:
++                    raise ValueError("decode victim is outside the native running batch")
++                sorted_indices.remove(selected)
++                idx = selected
+             req = self.reqs[idx]
++            if before_release is not None:
++                before_release(req, reason="decode_retraction")
+             if req.beam_group is not None:
+                 # Free member rows before release_req: they need the leader's kv
+                 # info, which still carries the lockstep allocated length.
+@@ -3261,6 +3276,8 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+             )
+             reqs_to_abort.append(last_req)
++            if before_release is not None:
++                before_release(last_req, reason="decode_oom_abort")
+             if last_req.beam_group is not None:
+                 free_member_rows(
+                     last_req.beam_group,
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index 160a33f..11ec943 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -620,6 +620,14 @@ class Scheduler(
+                 cache_controller.load_fence_stream = (
+                     self.tp_worker.model_runner.forward_stream
+                 )
++                if (
++                    cache_controller.beliefkv_free_page_fence_enabled
++                    and self.enable_overlap and self.spec_algorithm.is_none()
++                    and self.is_generation
++                ):
++                    self._beliefkv_load_free_boundary = (
++                        cache_controller.beliefkv_record_free_page_boundary
++                    )
+         self.emit_metrics_constants()
+         self.maybe_init_hccl_dp_prewarm()
+ 
+@@ -4335,6 +4343,14 @@ class Scheduler(
+                     # marks the staged span below once it is surfaced.
+                     req.host_hit_is_storage = False
+ 
++            capacity_guard = getattr(
++                self.beliefkv_runtime, "allow_native_prefill_candidate", None
++            )
++            if capacity_guard is not None and not capacity_guard(
++                req, running_batch=running_batch, adder=adder
++            ):
++                continue
++
+             req.init_next_round_input(self.tree_cache)
+             if self.enable_hicache_storage and (
+                 self._prefetch_after_device_hit_loss(req)
+@@ -4576,7 +4592,10 @@ class Scheduler(
+                 if mamba_allocator is not None
+                 else None
+             )
+-            retracted_reqs, new_token_ratio, reqs_to_abort = batch.retract_decode()
++            retracted_reqs, new_token_ratio, reqs_to_abort = batch.retract_decode(
++                select_victim=getattr(runtime, "select_native_decode_victim", None),
++                before_release=getattr(runtime, "before_native_request_release", None),
++            )
+             new_available_tokens = self.token_to_kv_pool_allocator.available_size()
+             new_token_gained = new_available_tokens - old_available_tokens
+             mamba_num_gained = (
+@@ -4703,6 +4722,8 @@ class Scheduler(
+         pp_proxy_tensors: Optional[PPProxyTensors] = None,
+     ) -> Union[GenerationBatchResult, EmbeddingBatchResult]:
+         """Run a batch."""
++        if (boundary := getattr(self, "_beliefkv_load_free_boundary", None)) is not None:
++            boundary()
+         self.metrics_reporter.record_scheduler_active()
+         self.forward_ct += 1
+         batch.forward_iter = self.forward_ct
+diff --git a/python/sglang/srt/mem_cache/allocator/token.py b/python/sglang/srt/mem_cache/allocator/token.py
+index 4782a1d..de1a556 100644
+--- a/python/sglang/srt/mem_cache/allocator/token.py
++++ b/python/sglang/srt/mem_cache/allocator/token.py
+@@ -40,6 +40,7 @@ class TokenToKVPoolAllocator(BaseTokenToKVPoolAllocator):
+         self.clear()
+ 
+     def clear(self):
++        self.beliefkv_free_generation = getattr(self, "beliefkv_free_generation", -1) + 1
+         # The padded slot 0 is used for writing dummy outputs from padded tokens.
+         self.free_pages = torch.arange(
+             1, self.size + 1, dtype=torch.int64, device=self.device
+@@ -65,6 +66,7 @@ class TokenToKVPoolAllocator(BaseTokenToKVPoolAllocator):
+     def free(self, free_index: torch.Tensor):
+         if free_index.numel() == 0:
+             return
++        self.beliefkv_free_generation += 1
+ 
+         if self.free_group is None:
+             if self.need_sort:
+diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
+index cf9273c..acb4980 100644
+--- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
++++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
+@@ -638,6 +638,7 @@ class HybridCacheController(BaseHiCacheController):
+                 if need_load_kv:
+                     full_allocator.free(device_indices)
+                 return None
++        self._beliefkv_bind_free_page_fence(op)
+         self.load_queue.append(op)
+         return device_indices
+ 
+diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
+index 909001c..6f6dcc0 100644
+--- a/test/srt/test_beliefkv_transfer_receipts.py
++++ b/test/srt/test_beliefkv_transfer_receipts.py
+@@ -65,6 +65,9 @@ def controller_classes():
+                 "start_loading",
+                 "resume_beliefkv_loading",
+                 "_beliefkv_split_prefetch_transfers",
++                "_beliefkv_bind_free_page_fence",
++                "_beliefkv_wait_load_fence",
++                "beliefkv_record_free_page_boundary",
+             },
+         )
+     )

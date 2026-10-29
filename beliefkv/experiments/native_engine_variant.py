@@ -1,6 +1,8 @@
 """Explicit immutable native engine variants accepted by replay launchers."""
 
 COMMON_TREE = "11b84f7c31986782be3fbe699bae2574ef092389"
+TOKENCAKE_TREE = "131d175450fe2b74d31a0508c2e13c55a3750a56"
+TOKENCAKE_PATCH_SHA256 = "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6"
 LAYER_TREE = "0d407f981c5179b20859e82e7088d85589cd08b3"
 LAYER_PATCH_SHA256 = "cfdb22efb69b8deecac93d4a675519d9fdd9182197bfc744eec4f43241e09237"
 GROUPED_LAYER_TREE = "2ce5e5389979a718c19f80abb9cc9b381b8cff0e"
@@ -14,6 +16,11 @@ DEMAND_PREFILL_PIPELINE_PATCH_SHA256 = "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22
 def engine_patch(root, tree):
     from beliefkv.experiments.source_provenance import sha256_file
 
+    if tree == TOKENCAKE_TREE:
+        patch = root / "patches/sglang-tokencake-scheduler-runtime-20261028.patch"
+        if sha256_file(patch) != TOKENCAKE_PATCH_SHA256:
+            raise ValueError("TokenCake scheduler patch differs from the reviewed native hooks")
+        return patch
     if tree == LAYER_TREE:
         patch = root / "patches/sglang-layer-handoff-runtime-20261027.patch"
         if sha256_file(patch) != LAYER_PATCH_SHA256:

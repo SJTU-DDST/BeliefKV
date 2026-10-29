@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="8.517" timestamp="2026-10-28T22:07:19.450403-07:00" hostname="ddst-12"><testcase classname="tests.test_tokencake_scheduler_hooks" name="test_actual_scheduler_calls_capacity_guard_before_native_admission" time="6.598"><failure message="ValueError: TokenCake native admission bypassed its capacity guard">tests/test_tokencake_scheduler_hooks.py:36: in test_actual_scheduler_calls_capacity_guard_before_native_admission
+    invoke()
+tests/test_demand_prefill_pipeline_scheduler.py:76: in &lt;lambda&gt;
+    invoke = lambda: scope["_get_new_batch_prefill_raw"](scheduler, None, running)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/managers/scheduler.py:4364: in _get_new_batch_prefill_raw
+    capacity_changed = self.beliefkv_runtime.on_prefill_candidate_result(
+beliefkv/runtime/sglang_v0520_runtime.py:13068: in on_prefill_candidate_result
+    return callback(req, admitted=admitted, result=result)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_baseline.py:712: in candidate_result
+    changed = super().candidate_result(req, admitted=admitted, result=result)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_baseline.py:377: in candidate_result
+    raise ValueError("TokenCake native admission bypassed its capacity guard")
+E   ValueError: TokenCake native admission bypassed its capacity guard</failure></testcase><testcase classname="tests.test_tokencake_scheduler_hooks" name="test_actual_scheduler_capacity_refusal_never_initializes_or_admits_request" time="0.039"><failure message="ValueError: TokenCake native admission bypassed its capacity guard">tests/test_tokencake_scheduler_hooks.py:55: in test_actual_scheduler_capacity_refusal_never_initializes_or_admits_request
+    assert invoke()[0] is None
+           ^^^^^^^^
+tests/test_demand_prefill_pipeline_scheduler.py:76: in &lt;lambda&gt;
+    invoke = lambda: scope["_get_new_batch_prefill_raw"](scheduler, None, running)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/managers/scheduler.py:4364: in _get_new_batch_prefill_raw
+    capacity_changed = self.beliefkv_runtime.on_prefill_candidate_result(
+beliefkv/runtime/sglang_v0520_runtime.py:13068: in on_prefill_candidate_result
+    return callback(req, admitted=admitted, result=result)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_baseline.py:712: in candidate_result
+    changed = super().candidate_result(req, admitted=admitted, result=result)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_baseline.py:377: in candidate_result
+    raise ValueError("TokenCake native admission bypassed its capacity guard")
+E   ValueError: TokenCake native admission bypassed its capacity guard</failure></testcase><testcase classname="tests.test_tokencake_scheduler_hooks" name="test_actual_scheduler_settles_each_member_before_checking_the_next" time="0.037"><failure message="ValueError: TokenCake native admission bypassed its capacity guard">tests/test_tokencake_scheduler_hooks.py:75: in test_actual_scheduler_settles_each_member_before_checking_the_next
+    invoke()
+tests/test_demand_prefill_pipeline_scheduler.py:76: in &lt;lambda&gt;
+    invoke = lambda: scope["_get_new_batch_prefill_raw"](scheduler, None, running)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.worktrees/sglang-tokencake-scheduler-hooks-20261028/python/sglang/srt/managers/scheduler.py:4364: in _get_new_batch_prefill_raw
+    capacity_changed = self.beliefkv_runtime.on_prefill_candidate_result(
+beliefkv/runtime/sglang_v0520_runtime.py:13068: in on_prefill_candidate_result
+    return callback(req, admitted=admitted, result=result)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_baseline.py:712: in candidate_result
+    changed = super().candidate_result(req, admitted=admitted, result=result)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_baseline.py:377: in candidate_result
+    raise ValueError("TokenCake native admission bypassed its capacity guard")
+E   ValueError: TokenCake native admission bypassed its capacity guard</failure></testcase></testsuite></testsuites>

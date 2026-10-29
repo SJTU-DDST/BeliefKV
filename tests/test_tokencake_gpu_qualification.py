@@ -3,6 +3,7 @@ from copy import deepcopy
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.tokencake_engine import NATIVE_SOURCE_SHA256
 from scripts.qualify_tokencake_runtime import (
     QUALIFIED_SOURCES, REQUIRED_EVIDENCE, ROOT, SCENARIOS, validate_report,
 )
@@ -15,9 +16,19 @@ def report():
         "whole_model_or_performance_qualified": False, "performance_accepted": False,
         "source_sha256": {name: sha256_file(ROOT / name) for name in QUALIFIED_SOURCES},
         **dict.fromkeys(REQUIRED_EVIDENCE, True),
+        "native_scheduler_bindings": {
+            "source_sha256": NATIVE_SOURCE_SHA256,
+            "exact_optional_hooks_projection_verified": True,
+            "prefill_guard_before_native_input": True,
+            "decode_victim_and_before_release_bound": True,
+            "native_compute_or_copy_implementation_changed": False,
+        },
         "scenarios": {
             name: {
                 "status": "complete", "final_uncommitted_tokens": 64,
+                "native_scheduler_loop_executions": (
+                    4 if name == "early_h2d" else 3 if name in ("full_upload", "early_d2h") else 2
+                ),
                 "grants": [] if name == "early_d2h" else [4, 2, 1, 1] if name == "full_upload" else [4],
                 "native_ack_tokens": {
                     "d2h": 8,
@@ -118,5 +129,20 @@ def test_session_lifecycle_requires_its_own_complete_native_evidence(change):
         sessions["full_upload"]["native_ack_tokens"]["h2d"] = 4
     else:
         sessions["full_upload"]["grants"] = [8]
+    with pytest.raises(ValueError, match="lifecycle evidence"):
+        validate_report(result, engine_tree="native", patch_sha256="patch")
+
+
+@pytest.mark.parametrize("change", ("missing_binding", "wrong_bytes", "compute_change", "no_loop"))
+def test_manual_adapter_calls_cannot_replace_actual_native_scheduler_bindings(change):
+    result = report()
+    if change == "missing_binding":
+        del result["native_scheduler_bindings"]
+    elif change == "wrong_bytes":
+        result["native_scheduler_bindings"]["source_sha256"] = {}
+    elif change == "compute_change":
+        result["native_scheduler_bindings"]["native_compute_or_copy_implementation_changed"] = True
+    else:
+        result["native_session_scenarios"]["full_upload"]["native_scheduler_loop_executions"] = 0
     with pytest.raises(ValueError, match="lifecycle evidence"):
         validate_report(result, engine_tree="native", patch_sha256="patch")

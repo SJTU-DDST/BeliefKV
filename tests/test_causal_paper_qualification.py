@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from beliefkv.experiments.native_engine_variant import COMMON_TREE
+from beliefkv.experiments.native_engine_variant import COMMON_TREE, TOKENCAKE_TREE
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_agentx_baseline as paper
 from scripts import run_causal_comparison as causal
@@ -24,7 +24,10 @@ def test_paper_components_use_current_native_patch_and_finish_in_order(label, tm
     patch = tmp_path / "native.patch"
     patch.write_text("reviewed-native-bytes")
     monkeypatch.setattr(causal, "engine_patch", lambda *_args: patch)
-    plan = {"engine_tree": COMMON_TREE, "engine_checkout": "/native", "reference_environment": {}}
+    plan = {
+        "engine_tree": TOKENCAKE_TREE if label == "tokencake_paper_observed" else COMMON_TREE,
+        "engine_checkout": "/native", "reference_environment": {},
+    }
     calls, owned = [], []
 
     def prefix(registration, run, *, pulse, owned):
@@ -60,7 +63,7 @@ def test_paper_components_use_current_native_patch_and_finish_in_order(label, tm
 def test_unqualified_native_tree_is_rejected_before_any_component(label, tmp_path, monkeypatch):
     calls = []
     monkeypatch.setattr(paper, "qualify_native_prefix", lambda *_args, **_kwargs: calls.append(1))
-    with pytest.raises(ValueError, match="common native engine"):
+    with pytest.raises(ValueError, match="paper native engine"):
         causal.qualify_paper_components(
             {"engine_tree": "other"}, label, tmp_path, pulse=lambda: None, owned=[],
         )
@@ -83,7 +86,16 @@ def test_prefix_failure_prevents_following_components(label, tmp_path, monkeypat
     )
     with pytest.raises(ValueError, match="exact GPU byte check"):
         causal.qualify_paper_components(
-            {"engine_tree": COMMON_TREE}, label, tmp_path, pulse=lambda: None, owned=[],
+            {"engine_tree": TOKENCAKE_TREE if label == "tokencake_paper_observed" else COMMON_TREE},
+            label, tmp_path, pulse=lambda: None, owned=[],
+        )
+
+
+def test_common_engine_without_token_cake_native_hooks_is_rejected_before_gpu(tmp_path):
+    with pytest.raises(ValueError, match="paper native engine"):
+        causal.qualify_paper_components(
+            {"engine_tree": COMMON_TREE}, "tokencake_paper_observed", tmp_path,
+            pulse=lambda: pytest.fail("unqualified common engine reached GPU startup"), owned=[],
         )
 
 

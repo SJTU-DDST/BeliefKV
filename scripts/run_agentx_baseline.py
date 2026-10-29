@@ -28,6 +28,7 @@ from beliefkv.experiments.paper_baselines import (
     RUNTIME_ARMS, TOKENCAKE_ARMS, TOKENCAKE_PARAMETERS, tokencake_parameters,
 )
 from beliefkv.experiments.source_provenance import _tree_with_patch, git_source_state, sha256_file
+from beliefkv.experiments.native_engine_variant import engine_patch
 from scripts import run_causal_comparison as controls
 from scripts.qualify_paper_prefix_transfers import validate_report as validate_prefix_report
 
@@ -151,7 +152,7 @@ def qualify_native_prefix(registration, run, *, pulse, owned):
         process = subprocess.Popen([
             sys.executable, str(ROOT / "scripts/qualify_paper_prefix_transfers.py"),
             "--engine-checkout", registration["engine_checkout"],
-            "--canonical-patch", str(ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch"),
+            "--canonical-patch", str(engine_patch(ROOT, registration["engine_tree"])),
             "--output-dir", str(output),
         ], cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=log,
             stderr=subprocess.STDOUT, start_new_session=True)
@@ -185,7 +186,7 @@ def qualify_native_tokencake(registration, run, *, pulse, owned):
         process = subprocess.Popen([
             sys.executable, str(ROOT / "scripts/qualify_tokencake_runtime.py"), "run",
             "--engine", registration["engine_checkout"],
-            "--native-patch", str(ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch"),
+            "--native-patch", str(engine_patch(ROOT, registration["engine_tree"])),
             "--output-dir", str(output),
         ], cwd=ROOT, env=env, stdin=subprocess.DEVNULL, stdout=log,
             stderr=subprocess.STDOUT, start_new_session=True)

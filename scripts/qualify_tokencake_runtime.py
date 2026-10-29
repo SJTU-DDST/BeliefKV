@@ -3,8 +3,10 @@
 
 from __future__ import annotations
 
+import __future__
 import argparse
 from array import array
+import ast
 from contextlib import contextmanager
 import fcntl
 import json
@@ -22,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.paper_baselines import environment as paper_environment
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.tokencake_engine import NATIVE_SOURCE_SHA256, verify_native_hooks
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.tokencake_baseline import TokenCakePaperAdapter
@@ -44,6 +47,7 @@ QUALIFIED_SOURCES = (
     "beliefkv/policy/tokencake.py",
     "beliefkv/policy/tokencake_capacity.py",
     "beliefkv/policy/tokencake_lifecycle.py",
+    "beliefkv/experiments/tokencake_engine.py",
 )
 SCENARIOS = ("full_upload", "early_d2h", "early_h2d", "expiry", "retirement", "pressure")
 REQUIRED_EVIDENCE = (
@@ -66,6 +70,8 @@ REQUIRED_EVIDENCE = (
     "all_native_capacity_and_host_pins_released",
     "full_prompt_native_radix_sessions_follow_the_same_paper_lifecycle",
     "native_session_generation_and_cached_source_ownership_preserved",
+    "actual_native_scheduler_loop_calls_the_capacity_guard",
+    "native_decode_victim_and_release_hooks_are_bound",
 )
 FIXTURE_PARAMETERS = {
     "generation_budget": 8, "context_limit": 64, "running_limit": 4,
@@ -77,6 +83,9 @@ FIXTURE_PARAMETERS = {
 def _complete_scenarios(observed, *, native_sessions):
     return type(observed) is dict and set(observed) == set(SCENARIOS) and all(
         row.get("status") == "complete"
+        and row.get("native_scheduler_loop_executions") == (
+            4 if name == "early_h2d" else 3 if name in ("full_upload", "early_d2h") else 2
+        )
         and row.get("final_uncommitted_tokens") == 64
         and row.get("grants") == (
             [] if name == "early_d2h"
@@ -118,6 +127,7 @@ def validate_report(report, *, engine_tree, patch_sha256, root=ROOT):
     complete = _complete_scenarios(report.get("scenarios"), native_sessions=False) and (
         _complete_scenarios(report.get("native_session_scenarios"), native_sessions=True)
     )
+    bindings = report.get("native_scheduler_bindings") or {}
     if (
         report.get("status") != "tokencake_native_lifecycle_qualified"
         or report.get("engine_tree") != engine_tree
@@ -125,6 +135,12 @@ def validate_report(report, *, engine_tree, patch_sha256, root=ROOT):
         or report.get("whole_model_or_performance_qualified") is not False
         or report.get("performance_accepted") is not False
         or not complete
+        or bindings.get("source_sha256") != NATIVE_SOURCE_SHA256
+        or any(bindings.get(name) is not True for name in (
+            "exact_optional_hooks_projection_verified", "prefill_guard_before_native_input",
+            "decode_victim_and_before_release_bound",
+        ))
+        or bindings.get("native_compute_or_copy_implementation_changed") is not False
         or any(report.get(name) is not True for name in REQUIRED_EVIDENCE)
         or report.get("source_sha256") != {
             name: sha256_file(root / name) for name in QUALIFIED_SOURCES
@@ -148,6 +164,77 @@ def isolated_environment():
                 os.environ[name] = value
 
 
+class _BatchReady(Exception):
+    pass
+
+
+class NativeSchedulerAdmission:
+    """Run the native candidate loop up to batch construction, before allocation."""
+
+    def __init__(self, runtime, cache, *, max_running=4, token_budget=64):
+        from sglang.srt.managers.schedule_policy import AddReqResult, PrefillAdder
+
+        source = Path(sys.modules[PrefillAdder.__module__].__file__).with_name("scheduler.py")
+        cls = next(
+            node for node in ast.parse(source.read_text()).body
+            if isinstance(node, ast.ClassDef) and node.name == "Scheduler"
+        )
+        method = next(
+            node for node in cls.body if isinstance(node, ast.FunctionDef)
+            and node.name == "_get_new_batch_prefill_raw"
+        )
+        self.selected, self.executions = (), 0
+
+        def constructed(requests, *_args, **_kwargs):
+            self.selected = tuple(requests)
+            raise _BatchReady
+
+        scope = {
+            "PrefillAdder": PrefillAdder, "AddReqResult": AddReqResult,
+            "get_schedule": lambda: SimpleNamespace(prefill_max_requests=None),
+            "TEST_RETRACT": False,
+            "DisaggregationMode": SimpleNamespace(PREFILL=object()),
+            "set_time_batch": lambda *_args: None,
+            "ScheduleBatch": SimpleNamespace(init_new=constructed),
+        }
+        exec(compile(
+            ast.Module(body=[method], type_ignores=[]), str(source), "exec",
+            flags=__future__.annotations.compiler_flag,
+        ), scope)
+        self.method = scope["_get_new_batch_prefill_raw"]
+        self.scheduler = SimpleNamespace(
+            beliefkv_runtime=runtime, tree_cache=cache,
+            token_to_kv_pool_allocator=cache.token_to_kv_pool_allocator,
+            req_to_token_pool=cache.req_to_token_pool, chunked_req=None, waiting_queue=[],
+            grammar_manager=SimpleNamespace(has_waiting_grammars=lambda: False),
+            enable_priority_preemption=False, is_hybrid_swa=False,
+            min_free_slots_delayer=None,
+            policy=SimpleNamespace(calc_priority=lambda *_args, **_kwargs: None),
+            processed_tokens_counter=0, get_num_allocatable_reqs=lambda *_args, **_kwargs: max_running,
+            chunked_prefill_size=token_budget, page_size=1,
+            tp_worker=SimpleNamespace(model_runner=SimpleNamespace(attn_backend=object())),
+            new_token_ratio_tracker=SimpleNamespace(current=0.), max_prefill_tokens=token_budget,
+            is_mixed_chunk=False, priority_scheduling_preemption_threshold=0,
+            max_prefill_bs=max_running, max_running_requests=max_running, dllm_config=None,
+            enable_lora=False, enable_hicache_storage=False, enable_hierarchical_cache=True,
+            enable_unified_cache_external_linker=False, truncation_align_size=None,
+            disaggregation_mode=None, model_config=object(),
+            enable_overlap=True, spec_algorithm=object(),
+        )
+
+    def admit(self, requests):
+        self.selected = ()
+        self.scheduler.waiting_queue = list(requests)
+        self.scheduler._beliefkv_prefill_candidates = lambda *_args: tuple(requests)
+        running = SimpleNamespace(reqs=[], batch_is_full=False, is_empty=lambda: True)
+        self.executions += 1
+        try:
+            self.method(self.scheduler, None, running)
+        except _BatchReady:
+            pass
+        return self.selected
+
+
 def scenario(name, *, native_sessions=False):
     import torch
     from sglang.srt.mem_cache.allocator import TokenToKVPoolAllocator
@@ -158,7 +245,6 @@ def scenario(name, *, native_sessions=False):
     from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
     from sglang.srt.mem_cache.unified_radix_cache import UnifiedRadixCache
     from sglang.srt.managers.schedule_batch import FINISH_LENGTH, Req, ScheduleBatch
-    from sglang.srt.managers.schedule_policy import PrefillAdder
     from sglang.srt.model_executor.forward_batch_info import ForwardMode
     from sglang.srt.sampling.sampling_params import SamplingParams
     from sglang.srt.server_args import ServerArgs, set_global_server_args_for_scheduler
@@ -200,6 +286,7 @@ def scenario(name, *, native_sessions=False):
         runtime.on_native_transfer_commit(commit)
 
     cache.on_hicache_transfer_commit = acknowledged
+    scheduler_admission = NativeSchedulerAdmission(runtime, cache)
 
     def send(kind, invocation="agent", **attributes):
         clock.sequence += 1
@@ -250,18 +337,7 @@ def scenario(name, *, native_sessions=False):
         chosen = select_native_prefill_candidates(
             [req], plan=plan, current_semantic_revision=runtime.semantic_revision,
         ).candidates
-        if chosen != (req,) or not runtime.allow_native_prefill_candidate(
-            req, running_batch=None, adder=None,
-        ):
-            return False
-        req.init_next_round_input(cache, cow_mamba=False)
-        adder = PrefillAdder(
-            1, cache, allocator, None, 0., 64, 64, max_running_requests=4,
-        )
-        result = adder.add_one_req(req, has_chunked_req=False, truncation_align_size=None)
-        admitted = req in adder.can_run_list
-        runtime.on_prefill_candidate_result(req, admitted=admitted, result=result.name)
-        if not admitted:
+        if chosen != (req,) or scheduler_admission.admit(chosen) != (req,):
             return False
         if cache.cache_controller.load_queue:
             cache.cache_controller.start_loading()
@@ -385,7 +461,7 @@ def scenario(name, *, native_sessions=False):
                     send(Kind.TOOL_END, tool_run_id="external")
                     consumer = request("next", range(9), "agent")
                     runtime.plan_native_prefill([consumer], running_batch=None, adder=None)
-                    if runtime.allow_native_prefill_candidate(consumer, running_batch=None, adder=None):
+                    if scheduler_admission.admit((consumer,)):
                         raise ValueError("consumer bypassed its in-flight paper H2D dependency")
                     if not checkpoint.host_leases:
                         raise ValueError("tool return lost its native upload Host source")
@@ -483,6 +559,7 @@ def scenario(name, *, native_sessions=False):
             pending.extend(node.children.values())
         return {
             "status": "complete",
+            "native_scheduler_loop_executions": scheduler_admission.executions,
             "grants": grants, "native_demand_h2d_tokens": native_demand,
             "temporal_counts": dict(adapter.temporal.counts),
             "capacity_counts": dict(adapter.capacity.counts),
@@ -517,6 +594,7 @@ def qualify(engine, native_patch):
     native = git_source_state(engine, canonical_patch=native_patch)["canonical_patch"]
     if not native["matches_worktree"]:
         raise ValueError("TokenCake engine differs from its pinned native patch")
+    scheduler_bindings = verify_native_hooks(engine)
     sys.path.insert(0, str(engine / "python"))
     import torch
 
@@ -532,6 +610,7 @@ def qualify(engine, native_patch):
         "engine_tree": native["actual_tree"],
         "native_patch_sha256": sha256_file(native_patch),
         "native_engine": native,
+        "native_scheduler_bindings": scheduler_bindings,
         "gpu": torch.cuda.get_device_name(), "owned_gpu_pid": os.getpid(),
         "fixture_only_parameters": FIXTURE_PARAMETERS, "scenarios": evidence,
         "native_session_scenarios": session_evidence,

@@ -35,7 +35,7 @@ from beliefkv.experiments.subagent_retention import (
     ORDER as RETENTION_ORDER, environment as retention_environment,
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
-from beliefkv.experiments.native_engine_variant import COMMON_TREE, engine_patch
+from beliefkv.experiments.native_engine_variant import COMMON_TREE, TOKENCAKE_TREE, engine_patch
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
@@ -1531,8 +1531,9 @@ def wait_for_resources(plan, state, *, pulse):
 def qualify_paper_components(plan, label, arm, *, pulse, owned):
     if label not in PREFIX_PAPER_CONTROLS:
         return None
-    if plan.get("engine_tree") != COMMON_TREE:
-        raise ValueError("paper prefix qualification requires the reviewed common native engine")
+    expected_tree = TOKENCAKE_TREE if label in TOKENCAKE_ARMS else COMMON_TREE
+    if plan.get("engine_tree") != expected_tree:
+        raise ValueError("paper prefix qualification requires the reviewed paper native engine")
     from scripts.run_agentx_baseline import qualify_native_prefix, qualify_native_tokencake
 
     registered = {
