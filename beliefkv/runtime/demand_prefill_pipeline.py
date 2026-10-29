@@ -122,10 +122,17 @@ class DemandPrefillPipeline:
         if pending.finish_event.query():
             self._unlock(pending)
             self.pending = None
+            retry_native_capacity = bool(getattr(running_batch, "batch_is_full", False))
+            if retry_native_capacity:
+                # The selected batch was staged, not merged into running.
+                # Recheck native capacity instead of retaining its old stop flag.
+                running_batch.batch_is_full = False
+                self.runtime.counts["demand_restore_native_capacity_retries"] += 1
             self.runtime.counts["demand_restore_completed_before_selection"] += 1
             self._record(
                 "native_demand_restore_ready", pending,
                 waiting_checks=pending.waiting_checks,
+                retry_native_capacity_check=retry_native_capacity,
             )
             return False
         admission = self.runtime._agent_admission

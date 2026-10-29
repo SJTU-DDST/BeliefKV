@@ -1,0 +1,363 @@
+{
+  "observed_at": "2026-10-29T00:02:58.686933+00:00",
+  "arms": {
+    "Full": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full",
+      "decode": {
+        "batches": 94730,
+        "output_tokens": 545997,
+        "worker_interval_sum_ms": 1587560.1742351428,
+        "worker_interval_mean_ms": 16.758789973980182,
+        "worker_interval_p50_ms": 14.332552440464497,
+        "worker_interval_p90_ms": 30.38776759058237,
+        "sum_transfer_envelope_intersections_ms": 157383.03271484375
+      },
+      "by_transfer_envelope": {
+        "outside_envelopes": {
+          "batches": 87962,
+          "output_tokens": 492558,
+          "worker_interval_sum_ms": 1388669.2800708115,
+          "worker_interval_mean_ms": 15.787149906446096,
+          "worker_interval_p50_ms": 12.0545644313097,
+          "worker_interval_p90_ms": 29.99994345009327,
+          "sum_transfer_envelope_intersections_ms": 0.0
+        },
+        "intersects_envelope": {
+          "batches": 6768,
+          "output_tokens": 53439,
+          "worker_interval_sum_ms": 198890.89416433126,
+          "worker_interval_mean_ms": 29.386952447448472,
+          "worker_interval_p50_ms": 27.051198296248913,
+          "worker_interval_p90_ms": 34.18138902634382,
+          "sum_transfer_envelope_intersections_ms": 157383.03271484375
+        },
+        "unknown_bounds": {
+          "batches": 0,
+          "output_tokens": 0,
+          "worker_interval_sum_ms": 0,
+          "worker_interval_mean_ms": null,
+          "worker_interval_p50_ms": null,
+          "worker_interval_p90_ms": null,
+          "sum_transfer_envelope_intersections_ms": 0
+        }
+      },
+      "steady_same_request_decode": {
+        "batches": 83362,
+        "output_tokens": 449415,
+        "worker_interval_sum_ms": 1335437.1511349455,
+        "worker_interval_mean_ms": 16.019735024770824,
+        "worker_interval_p50_ms": 11.553833726793528,
+        "worker_interval_p90_ms": 30.3895752876997,
+        "sum_transfer_envelope_intersections_ms": 134982.23120117188
+      },
+      "by_adjacent_phase": {
+        "('decode', 'decode')": {
+          "batches": 89053,
+          "output_tokens": 497296,
+          "worker_interval_sum_ms": 1460999.6092952788,
+          "worker_interval_mean_ms": 16.405956108107294,
+          "worker_interval_p50_ms": 12.79897429049015,
+          "worker_interval_p90_ms": 30.38251493126154,
+          "sum_transfer_envelope_intersections_ms": 149577.6240234375
+        },
+        "('decode', 'missing')": {
+          "batches": 1,
+          "output_tokens": 0,
+          "worker_interval_sum_ms": 0.9617991745471954,
+          "worker_interval_mean_ms": 0.9617991745471954,
+          "worker_interval_p50_ms": 0.9617991745471954,
+          "worker_interval_p90_ms": 0.9617991745471954,
+          "sum_transfer_envelope_intersections_ms": 0.0
+        },
+        "('decode', 'prefill')": {
+          "batches": 2695,
+          "output_tokens": 21251,
+          "worker_interval_sum_ms": 62495.58048136532,
+          "worker_interval_mean_ms": 23.189454724068767,
+          "worker_interval_p50_ms": 24.85228981822729,
+          "worker_interval_p90_ms": 30.985032208263874,
+          "sum_transfer_envelope_intersections_ms": 4929.250732421875
+        },
+        "('prefill', 'decode')": {
+          "batches": 2696,
+          "output_tokens": 24730,
+          "worker_interval_sum_ms": 57335.54900158197,
+          "worker_interval_mean_ms": 21.266895030260372,
+          "worker_interval_p50_ms": 23.539146408438683,
+          "worker_interval_p90_ms": 29.946505092084408,
+          "sum_transfer_envelope_intersections_ms": 2350.128173828125
+        },
+        "('prefill', 'prefill')": {
+          "batches": 285,
+          "output_tokens": 2720,
+          "worker_interval_sum_ms": 6728.473657742143,
+          "worker_interval_mean_ms": 23.60867950084962,
+          "worker_interval_p50_ms": 23.79283308982849,
+          "worker_interval_p90_ms": 29.480498284101486,
+          "sum_transfer_envelope_intersections_ms": 526.02978515625
+        }
+      },
+      "transfer_bounds": {
+        "operations": 13827,
+        "merged_intervals": 12717,
+        "submit_to_ack_union_ms": 203402.8935546875
+      },
+      "source_sha256": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/server/native_telemetry_status.json": "1c0a8386eee682592f6a387f07629434c519303ab316797523ac92c4ffc26223",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/replay/summary.json": "5200cc5132555dc4c65938b3cbba2a12d796b2e879251ddc05748a4e00e8bf9c",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1/full/replay/native_requests.jsonl": "6a0352d9095f94a32acc24a7b80dc9bf768624772964203a95dea668ad1eaa21"
+      },
+      "input_jsonl_prefixes": {
+        "experiments/raw/demand_prefill_pipeline_20261028_r1/full/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 10153891,
+          "complete_prefix_sha256": "56b583ab54711a7330909c65af89a95a4ff062f11e78ee611777fc9c1b768e95",
+          "first_read_limit_bytes": 10153891
+        },
+        "experiments/raw/demand_prefill_pipeline_20261028_r1/full/server/runtime_audit.jsonl": {
+          "complete_prefix_bytes": 366998869,
+          "complete_prefix_sha256": "7ffdb2e3b3f0e2218e3fc07f6777a75819954cf19c67050b98510e1736819e08",
+          "first_read_limit_bytes": 366998869
+        }
+      }
+    },
+    "Preadmission": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full",
+      "decode": {
+        "batches": 96402,
+        "output_tokens": 545997,
+        "worker_interval_sum_ms": 1576540.8139405772,
+        "worker_interval_mean_ms": 16.353818530119472,
+        "worker_interval_p50_ms": 13.24282307177782,
+        "worker_interval_p90_ms": 29.8229968175292,
+        "sum_transfer_envelope_intersections_ms": 41512.2080078125
+      },
+      "by_transfer_envelope": {
+        "outside_envelopes": {
+          "batches": 94337,
+          "output_tokens": 527649,
+          "worker_interval_sum_ms": 1495589.8558888584,
+          "worker_interval_mean_ms": 15.853693205093,
+          "worker_interval_p50_ms": 12.841899879276752,
+          "worker_interval_p90_ms": 29.72924429923296,
+          "sum_transfer_envelope_intersections_ms": 0.0
+        },
+        "intersects_envelope": {
+          "batches": 2065,
+          "output_tokens": 18348,
+          "worker_interval_sum_ms": 80950.95805171877,
+          "worker_interval_mean_ms": 39.20143247056599,
+          "worker_interval_p50_ms": 25.864532217383385,
+          "worker_interval_p90_ms": 51.555102691054344,
+          "sum_transfer_envelope_intersections_ms": 41512.2080078125
+        },
+        "unknown_bounds": {
+          "batches": 0,
+          "output_tokens": 0,
+          "worker_interval_sum_ms": 0,
+          "worker_interval_mean_ms": null,
+          "worker_interval_p50_ms": null,
+          "worker_interval_p90_ms": null,
+          "sum_transfer_envelope_intersections_ms": 0
+        }
+      },
+      "steady_same_request_decode": {
+        "batches": 84872,
+        "output_tokens": 449096,
+        "worker_interval_sum_ms": 1301655.604925938,
+        "worker_interval_mean_ms": 15.336690603802644,
+        "worker_interval_p50_ms": 10.34957217052579,
+        "worker_interval_p90_ms": 29.7688115388155,
+        "sum_transfer_envelope_intersections_ms": 6632.05712890625
+      },
+      "by_adjacent_phase": {
+        "('decode', 'decode')": {
+          "batches": 90455,
+          "output_tokens": 495863,
+          "worker_interval_sum_ms": 1416966.3683986291,
+          "worker_interval_mean_ms": 15.664876108547114,
+          "worker_interval_p50_ms": 11.971253901720047,
+          "worker_interval_p90_ms": 29.744816944003105,
+          "sum_transfer_envelope_intersections_ms": 7854.63525390625
+        },
+        "('decode', 'missing')": {
+          "batches": 1,
+          "output_tokens": 0,
+          "worker_interval_sum_ms": 2.0654182881116867,
+          "worker_interval_mean_ms": 2.0654182881116867,
+          "worker_interval_p50_ms": 2.0654182881116867,
+          "worker_interval_p90_ms": 2.0654182881116867,
+          "sum_transfer_envelope_intersections_ms": 0.0
+        },
+        "('decode', 'prefill')": {
+          "batches": 2837,
+          "output_tokens": 22145,
+          "worker_interval_sum_ms": 93592.56307967007,
+          "worker_interval_mean_ms": 32.989976411586206,
+          "worker_interval_p50_ms": 25.30595287680626,
+          "worker_interval_p90_ms": 36.56033519655466,
+          "sum_transfer_envelope_intersections_ms": 29301.047607421875
+        },
+        "('prefill', 'decode')": {
+          "batches": 2838,
+          "output_tokens": 25614,
+          "worker_interval_sum_ms": 56559.963894076645,
+          "worker_interval_mean_ms": 19.92951511419191,
+          "worker_interval_p50_ms": 22.28848822414875,
+          "worker_interval_p90_ms": 28.96931115537882,
+          "sum_transfer_envelope_intersections_ms": 1199.394287109375
+        },
+        "('prefill', 'prefill')": {
+          "batches": 271,
+          "output_tokens": 2375,
+          "worker_interval_sum_ms": 9419.853149913251,
+          "worker_interval_mean_ms": 34.75960571923709,
+          "worker_interval_p50_ms": 24.177481420338154,
+          "worker_interval_p90_ms": 38.5458255186677,
+          "sum_transfer_envelope_intersections_ms": 3157.130859375
+        }
+      },
+      "transfer_bounds": {
+        "operations": 13314,
+        "merged_intervals": 13017,
+        "submit_to_ack_union_ms": 175079.92211914062
+      },
+      "source_sha256": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/native_telemetry_status.json": "e5ff309bfd861b44698f6aaf8c01e9304ddf392e24e1d650c78ed3e90cbee203",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/summary.json": "bce325a54a5cfcb44011fd94ea99201bf3f5a6ca9a6b841d1bbd10ce97a112ce",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/replay/native_requests.jsonl": "2a6ac180d5f7cecd7ae63917c599d10b7e8f98c84b66de1fb54e1dcdfb3f7345"
+      },
+      "input_jsonl_prefixes": {
+        "experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "complete_prefix_bytes": 9544945,
+          "complete_prefix_sha256": "ba0246aabb25d160c0f1500b840acc831824056ae75ed0a1eb60d4804170cffe",
+          "first_read_limit_bytes": 9544945
+        },
+        "experiments/raw/locobench_tool_offload_before_admission_20261027_r1/full/server/runtime_audit.jsonl": {
+          "complete_prefix_bytes": 368261493,
+          "complete_prefix_sha256": "2c613efd35d77820c8b53c74c005c8c61ea1825f6259fdac6136b6c02000997e",
+          "first_read_limit_bytes": 368261493
+        }
+      }
+    }
+  },
+  "left_right_order": [
+    "Full",
+    "Preadmission"
+  ],
+  "geometry_matched": {
+    "all": {
+      "match_neighbor_phases_and_sizes": false,
+      "geometry_cohorts": 281,
+      "common_weight": 70567,
+      "matched_batches": {
+        "left": 89585,
+        "right": 92673
+      },
+      "left_mean_ms": 15.751341577723306,
+      "right_mean_ms": 15.570641105329468,
+      "ratio": 1.0116052043824957
+    },
+    "steady": {
+      "match_neighbor_phases_and_sizes": false,
+      "geometry_cohorts": 261,
+      "common_weight": 61998,
+      "matched_batches": {
+        "left": 78721,
+        "right": 81262
+      },
+      "left_mean_ms": 14.879445439557559,
+      "right_mean_ms": 14.471019640057188,
+      "ratio": 1.028223705700033
+    },
+    "steady_outside_envelopes": {
+      "match_neighbor_phases_and_sizes": false,
+      "geometry_cohorts": 249,
+      "common_weight": 59188,
+      "matched_batches": {
+        "left": 73817,
+        "right": 79313
+      },
+      "left_mean_ms": 14.051456777775448,
+      "right_mean_ms": 14.076510422285187,
+      "ratio": 0.998220180729588
+    }
+  },
+  "neighbor_geometry_matched": {
+    "all": {
+      "match_neighbor_phases_and_sizes": true,
+      "geometry_cohorts": 482,
+      "common_weight": 66202,
+      "matched_batches": {
+        "left": 83587,
+        "right": 87066
+      },
+      "left_mean_ms": 15.31775377940143,
+      "right_mean_ms": 14.96527260681595,
+      "ratio": 1.0235532744271523
+    },
+    "steady": {
+      "match_neighbor_phases_and_sizes": true,
+      "geometry_cohorts": 261,
+      "common_weight": 61998,
+      "matched_batches": {
+        "left": 78721,
+        "right": 81262
+      },
+      "left_mean_ms": 14.879445439557559,
+      "right_mean_ms": 14.471019640057188,
+      "ratio": 1.028223705700033
+    },
+    "steady_outside_envelopes": {
+      "match_neighbor_phases_and_sizes": true,
+      "geometry_cohorts": 249,
+      "common_weight": 59188,
+      "matched_batches": {
+        "left": 73817,
+        "right": 79313
+      },
+      "left_mean_ms": 14.051456777775448,
+      "right_mean_ms": 14.076510422285187,
+      "ratio": 0.998220180729588
+    }
+  },
+  "exact_single_request_outside_envelopes": {
+    "matched_ordinals": 13333,
+    "matched_requests": 131,
+    "ambiguous_common_ordinals": 0,
+    "incompatible_common_ordinals": 0,
+    "left": {
+      "batches": 13333,
+      "output_tokens": 13333,
+      "worker_interval_sum_ms": 74442.49870814383,
+      "worker_interval_mean_ms": 5.583326986285444,
+      "worker_interval_p50_ms": 5.150456912815571,
+      "worker_interval_p90_ms": 6.613590754568577,
+      "sum_transfer_envelope_intersections_ms": 0.0
+    },
+    "right": {
+      "batches": 13333,
+      "output_tokens": 13333,
+      "worker_interval_sum_ms": 74444.34475060552,
+      "worker_interval_mean_ms": 5.583465442931487,
+      "worker_interval_p50_ms": 5.152564495801926,
+      "worker_interval_p90_ms": 6.699049845337868,
+      "sum_transfer_envelope_intersections_ms": 0.0
+    }
+  },
+  "same_request_tokens_and_stopping_verified": true,
+  "analysis_source_sha256": {
+    "scripts/audit_decode_transfer_envelopes.py": "0db073af82eed12d6b9fd372ba296d9e9dce56b8589dc0176271ee04a583c6c3",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46",
+    "scripts/run_causal_comparison.py": "c5a405c08f3d5731b4d25d1d470f9ac79f36f300c77af158b957632d67f49cd6"
+  },
+  "performance_accepted": false,
+  "scope": [
+    "All recorded decode service intervals and ordinary workflow tails are retained.",
+    "Submit-to-ACK envelopes conservatively bound completed native H2D/D2H; intersection is possible overlap, not DMA duration or exposed waiting.",
+    "Outside envelopes excludes these observed Host transfers, not device-to-device state copies, CPU control, layout/interleaving effects or unobserved transfers.",
+    "Any unknown positive-byte transfer bound makes exclusion unknown. Independent complete-line input seals are not an atomic snapshot.",
+    "Geometry matches batch size, sum/max context bins and graph. Neighbor matching additionally requires exact preceding/following forward phases and sizes. Steady means those adjacent forwards decode the same ordered requests.",
+    "Exact singleton matches request and recorded output ordinal plus context, graph and token delta; these are observation-conditioned cohorts, not a causal ablation.",
+    "Worker intervals include runtime/result processing and busy waiting. No pure GPU time, unique root cause, removable JCT or speedup is inferred."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "observed_at": "2026-10-29T00:20:47.584524+00:00",
+  "scope": "Exact R1 reuse after complete work, cleanup, source and configuration checks.",
+  "qualified_source_identical": true,
+  "code_commit": "01510ed528c2247f3ce0b370151381b04fefea9e",
+  "engine_tree": "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4",
+  "old_cpu_and_gpu_evidence_reused_by_exact_source_identity": true,
+  "ordinary_math_long_greedy_equivalence_verified": false,
+  "main_admission_retry_fix_included": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json": "59caf40545da12972b8affe70025fdca7790867e4c09db2359815043f8a2f74c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.json": "d23965aa3ad6b80c7162d232a0495c2aca5dddc59a8a10bcdb23b9c1c6352e3a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/final_index.json": "e739deda404ae49ad312be540fd58f4bda17c4a33aa1112d8fc1b9cf9178cc11",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/repeat_registration.py": "4172de33e79e49f6f56abb748c268e23161dde2e1877eb1db2fb160a1a4bd853"
+  },
+  "gpu_work_started": false,
+  "performance_accepted": false
+}

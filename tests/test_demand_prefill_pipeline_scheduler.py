@@ -17,12 +17,9 @@ class BatchConstructionReached(Exception):
     pass
 
 
-@pytest.mark.parametrize("staged_native", ({"members": 2, "select": False},), indirect=True)
-@pytest.mark.parametrize("enabled", (False, True))
-def test_native_batch_restore_defers_callbacks_without_splitting_selected_members(staged_native, enabled):
+def native_scheduler(f, *, enabled, request_slots=24):
     from sglang.srt.managers.schedule_policy import AddReqResult, PrefillAdder
 
-    f = staged_native
     source = Path(os.environ["SGLANG_SOURCE_CHECKOUT"]) / "python/sglang/srt/managers/scheduler.py"
     cls = next(
         node for node in ast.parse(source.read_text()).body
@@ -52,6 +49,7 @@ def test_native_batch_restore_defers_callbacks_without_splitting_selected_member
     ), scope)
     f.runtime.defer_prefill_for_prefetch = lambda _: False
     f.runtime.on_prefill_candidate_result = Mock(return_value=False)
+    f.runtime.allow_prefill_capacity_bypass = lambda *_args, **_kwargs: False
     running = f.running
     running.batch_is_full = False
     scheduler = NS(
@@ -63,7 +61,7 @@ def test_native_batch_restore_defers_callbacks_without_splitting_selected_member
         enable_priority_preemption=False, is_hybrid_swa=False,
         min_free_slots_delayer=None, policy=NS(calc_priority=lambda *_args, **_kwargs: None),
         processed_tokens_counter=0,
-        get_num_allocatable_reqs=lambda *_args, **_kwargs: 24,
+        get_num_allocatable_reqs=lambda *_args, **_kwargs: request_slots,
         chunked_prefill_size=32, page_size=1,
         tp_worker=NS(model_runner=NS(attn_backend=object())),
         new_token_ratio_tracker=NS(current=1.), max_prefill_tokens=32,
@@ -76,6 +74,15 @@ def test_native_batch_restore_defers_callbacks_without_splitting_selected_member
         model_config=object(), enable_overlap=True, spec_algorithm=object(),
     )
     invoke = lambda: scope["_get_new_batch_prefill_raw"](scheduler, None, running)
+    return scheduler, construction, invoke
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 2, "select": False},), indirect=True)
+@pytest.mark.parametrize("enabled", (False, True))
+def test_native_batch_restore_defers_callbacks_without_splitting_selected_members(staged_native, enabled):
+    f = staged_native
+    scheduler, construction, invoke = native_scheduler(f, enabled=enabled)
+    running = f.running
     if not enabled:
         with pytest.raises(BatchConstructionReached):
             invoke()
@@ -109,4 +116,52 @@ def test_native_batch_restore_defers_callbacks_without_splitting_selected_member
             for call in f.runtime.on_prefill_candidate_result.call_args_list[2:]
         )
     for member in f.members:
+        f.cache.dec_lock_ref(member.last_node, member.lock_receipt)
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 3, "select": False},), indirect=True)
+def test_restored_selected_batch_retries_native_admission_after_capacity_stop(staged_native):
+    f = staged_native
+    scheduler, construction, invoke = native_scheduler(f, enabled=True, request_slots=2)
+    assert invoke() == (None, f.running)
+    assert f.running.batch_is_full
+    assert tuple(member.request for member in f.pipeline.pending.members) == tuple(f.members[:2])
+    assert f.members[2].lock_receipt.node_id is None
+    assert invoke() == (None, f.running)
+    assert not construction and len(f.loads) == 2
+
+    f.complete.ready = True
+    f.cache.loading_check(finish_count=1)
+    with pytest.raises(BatchConstructionReached):
+        invoke()
+    assert construction == [tuple(f.members[:2])]
+    assert scheduler.waiting_queue == [f.members[2]]
+    assert f.pipeline.pending is None and len(f.loads) == 2
+    assert all(member.kv.req_pool_idx is None for member in f.members)
+    for member in f.members[:2]:
+        f.cache.dec_lock_ref(member.last_node, member.lock_receipt)
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 3, "select": False},), indirect=True)
+def test_restore_ack_still_obeys_new_native_slot_pressure(staged_native):
+    f = staged_native
+    scheduler, construction, invoke = native_scheduler(f, enabled=True, request_slots=2)
+    assert invoke() == (None, f.running)
+    assert f.running.batch_is_full
+    scheduler.get_num_allocatable_reqs = lambda *_args, **_kwargs: 0
+    f.complete.ready = True
+    f.cache.loading_check(finish_count=1)
+    assert invoke() == (None, f.running)
+    assert not construction and f.running.batch_is_full
+    assert all(member.kv.req_pool_idx is None for member in f.members)
+    assert len(f.loads) == 2
+    assert f.pipeline.pending is None
+
+    scheduler.get_num_allocatable_reqs = lambda *_args, **_kwargs: 2
+    f.running.batch_is_full = False
+    with pytest.raises(BatchConstructionReached):
+        invoke()
+    assert construction == [tuple(f.members[:2])]
+    assert len(f.loads) == 2
+    for member in f.members[:2]:
         f.cache.dec_lock_ref(member.last_node, member.lock_receipt)

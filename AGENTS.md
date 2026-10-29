@@ -2832,3 +2832,23 @@
   Sibling_unique_review preserves the old mislabeled21-journal summary while
   independently binding20 distinct native forward/sample IDs. Do not call21
   journals21 independent batches or change old reports.
+- Main now repairs stale running batch_is_full after staged native demand ACK:
+  clear it only at completed ACK to request fresh native admission, with no
+  permit/priority/capacity credit. Real native scheduler/Req/PrefillAdder/
+  tree/allocator red test fails at missing post-ACK batch construction;
+  the first empty-receipt fixture failure stays separate. Fixed targeted42
+  and complete4102+6 CPU pass, retaining4100/add2 and real constructors/
+  source manifests. New zero-slot pressure still rejects after ACK.
+  Native remainsd3da19c1/tree729aa0caa7a1; current repair has no GPU/model/
+  performance evidence. R1 remains frozen01510ed5. Keep all failures.
+- Complete R1/Preadmission copy-envelope analysis retains all worker data:
+  steady same-member matched ratio1.028224, steady outside all recorded
+  submit-to-ACK envelopes .998220;13333 identical singleton ordinals across
+  131 requests have5.583327/5.583465ms means. These conditional envelopes
+  are not actual DMA times or causal control/transfer attribution. Default
+  native JIT quota2 is source evidence, not actual runtime kernel/SM proof.
+  The separate repeat entry reuses exactly R1's frozen source/config/engine,
+  changes metadata only, and excludes main's ACK retry repair. Nine metadata
+  CPU checks and actual complete-source/owned-exit entry check pass; no
+  repeated performance result yet. See
+  docs/research/demand_restore_readmission_retry_20261028_zh.md.
