@@ -2944,3 +2944,11 @@
   versus the possibly older counter snapshot. Do not require positive gains
   or nonzero retry events to retain the completed run. Current demand ACK/
   service and JOIN/EOS/sibling mechanism audits remain separate requirements.
+- readmission_mechanism_review now composes unchanged exact native demand ACK/
+  service, physical-release accounting, JOIN grants, sibling and final-EOS/
+  known-case classifiers. It retains unknown associations and separates
+  multi-member journals/native forwards; zero retries remain valid evidence.
+  Syntax only is checked before the running Full completes. After actual
+  completion/cleanup run complete review, then sealed prefetch, then mechanism
+  review sequentially so independent readers never race to create the same
+  result directory. It does not alter frozen5cf3bb8b or qualify new performance.

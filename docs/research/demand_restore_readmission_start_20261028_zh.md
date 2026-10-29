@@ -80,3 +80,12 @@ nice0 watcher1038516/server1039033/driver1040363及sole GPU1039393
 允许末次快照滞后，且不把计数当成准入许可或因果收益。
 没有重试时仍保留完整性能结果，不将差异归因于未触发的修复。
 需求恢复精确ACK/服务/字节与JOIN/EOS/sibling完整审计仍为独立要求。
+
+`readmission_mechanism_review.py`补齐这些机制入口，并复用既有分类器：
+需求恢复精确字节及后续服务、逻辑/物理释放对账、JOIN grant、sibling
+实际选批、final-EOS及四个工具反例。多成员日志与独立native forward
+分别计数，未知grant关联保持未知。该入口目前只完成语法核对。
+
+结束后的依赖顺序是先运行完整结果入口，再将本轮sealed wait-prefetch
+报告写入`readmission_complete/`，最后执行机制入口；不并发创建同一个
+结果目录。完整ACK重试事件数须与完整结果报告一致，无需大于零。
