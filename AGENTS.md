@@ -3165,3 +3165,14 @@
   candidates are in experiments/reports/prefill_arrival_20261029/rate05_after_baselines/,
   with chunk2048/mixed-off first and other prefill profiles conditional on its
   results. All methods retain identical arrivals, work and complete JCT clocks.
+- The latest 2026-10-29 user order supersedes the preceding baseline/arrival
+  queue: skip further TokenCake reproduction, preserving both failed complete
+  attempts and their cleanup. Run Agentix next. Its four real GPU byte scenes
+  do not qualify actual model preemption/resumption or formal performance;
+  finish those checks before a complete Agentix benchmark. Explicitly allowing
+  a failed predecessor requires its terminal failure and actual owned exit,
+  never relabelling it successful. New arrival trials remain deferred until
+  Agentix completes; rate0.5 is now under reconsideration, not an automatic
+  launch instruction. Choose rate/population from observed capacity and useful
+  memory pressure; total workflows and simultaneous workflows are distinct.
+  Keep every future naturally captured root from a different original project.
