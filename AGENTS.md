@@ -3380,3 +3380,13 @@
   separately after actual original Full completion, fresh drain and owned exit,
   reuse the matched mean120 Thunder control, and keep all normal tails and
   identical work/tools/arrivals/capacity/seeds. No superiority is established.
+- Dispatch registration CPU preflightR1 refused only relocated canonical-patch
+  path identity; exact engine/patch bytes were rechecked and preserved.
+  R2 then correctly refused different reference_environment through the strict
+  same-policy after-registration interface. Neither started GPU work. Keep that
+  interface unchanged. The independent hbm_dispatch queue_candidate.py waits
+  complete original Full work/fresh drain/actual owned exit, then registers the
+  changed-policy Full and its CPU-only reviewer. New26-case queue CPU binding
+  passes; preserve both registration entry failures. Candidate uses a fresh
+  r2 registration identity because the refused r1 prepared frozen worktrees.
+  Reuse the same actual mean120 control and original Full for review.

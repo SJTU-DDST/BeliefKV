@@ -106,3 +106,11 @@ acting-decay 对照，不额外重跑 native 或 ThunderAgent。
 `cpu_r1/evidence.json` 已通过 4,760 项测试与 6 项子测试，保留此前全部
 4,734 个测试身份，无失败、错误或跳过；1,937 份源输入在执行期间保持一致。
 这证明回归与 CPU 所有权约束通过，完整 GPU 性能收益仍待单独实验。
+
+候选注册的两次 CPU 前置拒绝保存在 `registration_entry_r1/r2.json`：
+第一次为 canonical patch 路径的状态摘要变化，已核对代码与补丁字节完全
+一致；第二次为旧 `after-registration` 接口要求策略环境完全一致。
+两次均未创建 GPU 实验。保留该接口的严格约束，新增独立 CPU 队列等待
+原 FULL 的完整工作、两份新鲜空闲快照和实际进程退出，然后单独注册策略
+不同的候选。`queue_cpu_r2.evidence.json` 绑定队列与 reviewer 源文件，
+26 项检查通过。GPU 注册器仍需通过自己的原生容量、来源和资源检查。

@@ -1,0 +1,26 @@
+{
+  "observed_at": "2026-10-29T14:37:03.241626+00:00",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/test_hbm_dispatch_queue.py",
+    "tests/test_mean120_arrival_experiment.py",
+    "--tb=short",
+    "--junitxml=/home/longhao/experiment/BeliefKV/experiments/reports/hbm_dispatch_20261029/queue_cpu_r2.xml"
+  ],
+  "returncode": 0,
+  "source_sha256": {
+    "experiments/reports/hbm_dispatch_20261029/queue_candidate.py": "1b31782170d976b9a91a28f16fe5ae5d078536e83f70dbcf84c91457d5679367",
+    "experiments/reports/hbm_dispatch_20261029/review_after_candidate.py": "51f80d25e046ba9b76433dfb5a3885e0c8aadab33cc8bb89854056634cb882c1",
+    "tests/test_hbm_dispatch_queue.py": "3865b53e79b8ada47ab895e8dd3ec45e216acb115fa14c5f2c4a93e0809540aa",
+    "tests/test_mean120_arrival_experiment.py": "6d4856a12217777105f29ae59c6e42ec23d0636d237cc4a083be36beceb71841"
+  },
+  "sources_unchanged_during_execution": true,
+  "report": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/hbm_dispatch_20261029/queue_cpu_r2.xml",
+    "sha256": "3814c327b128e4f7490e075ad1bda0c92ac74849e0be34229995a76e655c9886"
+  },
+  "GPU_experiment_started": false
+}

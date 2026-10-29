@@ -67,10 +67,20 @@ def watch(path):
     }
     try:
         verify(plan)
+        missing_state_checks = 0
         while True:
+            candidate_state_path = Path(plan["candidate"]).with_suffix(".state.json")
+            if not candidate_state_path.exists():
+                missing_state_checks += 1
+                if missing_state_checks > 3:
+                    raise ValueError("registered candidate has not published its supervisor state")
+                state["checked_at"] = causal.reservation.now().isoformat()
+                causal.reservation.write_json(state_path, state)
+                time.sleep(20.)
+                continue
             if all(complete_work(Path(plan[name])) is not None for name in ("thunder", "original", "candidate")):
                 break
-            candidate_state = causal.load(Path(plan["candidate"]).with_suffix(".state.json"))
+            candidate_state = causal.load(candidate_state_path)
             if not causal.reservation.alive(candidate_state.get("watcher")):
                 raise ValueError("candidate supervisor exited without complete drained work")
             state["checked_at"] = causal.reservation.now().isoformat()
