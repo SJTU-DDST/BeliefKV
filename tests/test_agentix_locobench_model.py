@@ -1,7 +1,9 @@
 import asyncio
+import json
+from contextlib import nullcontext
 from dataclasses import replace
-from types import SimpleNamespace as NS
 
+import httpx
 import pytest
 
 from beliefkv.experiments.agentix_model_probe import (
@@ -116,3 +118,38 @@ def test_model_environment_isolates_full_and_uses_actual_agentix_engine(tmp_path
     assert settings["SGLANG_PLUGINS"] == "" and settings["BELIEFKV_CAUSAL_REPLAY_BRIDGE"] == "0"
     assert "--enable-custom-logit-processor" not in flags
     assert "--enable-deterministic-inference" in flags and socket is not None
+
+
+def test_model_probe_drives_six_http_calls_with_real_session_leases(tmp_path, monkeypatch):
+    requests, closed = [], []
+    client_type = httpx.AsyncClient
+    fixture = replace(FIXTURES["roomy"], prompt_tokens=4, generated_tokens=2)
+
+    def handle(request):
+        body = json.loads(request.content)
+        if request.url.path == "/close_session":
+            closed.append(body["session_id"])
+            return httpx.Response(200, json={})
+        assert request.url.path == "/generate"
+        requests.append(body)
+        return httpx.Response(200, json={"meta_info": {
+            "id": body["rid"], "prompt_tokens": 4, "completion_tokens": 2,
+            "finish_reason": {"type": "length", "length": 2},
+            "output_token_logprobs": [[-1., 7], [-2., 8]],
+        }})
+
+    monkeypatch.setattr(qualifier.httpx, "AsyncClient", lambda **kwargs: client_type(
+        **kwargs, transport=httpx.MockTransport(handle),
+    ))
+    class Sink:
+        def emit_batch(self, events):
+            pass
+    monkeypatch.setattr(qualifier, "UnixDatagramRuntimeEventSink", lambda _: nullcontext(Sink()))
+    result = asyncio.run(qualifier.model_probe(
+        {"port": 18708}, fixture, tmp_path, tmp_path / "unused.sock",
+        [[1, 2, 3, 4]] * 3, lambda: None,
+    ))
+    assert result["actual_greedy_tokens_equal"]
+    assert len(requests) == len(closed) == len(set(closed)) == 6
+    assert {body["session_id"] for body in requests} == set(closed)
+    assert all(identity.startswith("beliefkv-") for identity in closed)

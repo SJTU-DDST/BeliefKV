@@ -1,6 +1,7 @@
 """Bind the new Agentix operator checks; unchanged physical server proofs stay separate."""
 
 from datetime import datetime, timezone
+import argparse
 import json
 import os
 from pathlib import Path
@@ -17,7 +18,12 @@ from experiments.reports.kvflow_radix_session_20261028.run_bound_cpu import sour
 
 
 def main():
-    xml, output = HERE / "operator_cpu.xml", HERE / "operator_cpu.json"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--name", default="operator_cpu")
+    args = parser.parse_args()
+    if Path(args.name).name != args.name:
+        raise ValueError("CPU evidence name must be a basename")
+    xml, output = HERE / f"{args.name}.xml", HERE / f"{args.name}.json"
     if xml.exists() or output.exists():
         raise FileExistsError("preserve previous operator checks")
     before = source_manifest()

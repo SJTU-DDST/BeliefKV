@@ -24,7 +24,7 @@ from beliefkv.experiments.agentix_model_probe import (
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from beliefkv.runtime.event_channel import JsonlRuntimeEventSink, UnixDatagramRuntimeEventSink
-from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
+from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases, close_native_radix_session
 from scripts import qualify_full_native_model as numerical
 from scripts import run_causal_comparison as controls
 from scripts.qualify_agentix_runtime import validate_runtime
@@ -152,7 +152,11 @@ def model_environment(plan, fixture, policy_path, run):
 
 async def model_probe(plan, fixture, run, socket, prompts, pulse):
     rows = {}
-    leases = NativeRadixSessionLeases()
+    leases = NativeRadixSessionLeases(
+        lambda session: close_native_radix_session(
+            f"http://127.0.0.1:{plan['port']}", session,
+        ),
+    )
     document = {"generated_tokens": fixture.generated_tokens, "sampling_seed": 21}
     with JsonlRuntimeEventSink(run / "events.jsonl") as log, UnixDatagramRuntimeEventSink(socket) as sink:
         async with httpx.AsyncClient(
@@ -374,6 +378,7 @@ def main():
                 state.update(status="failed", cleanup_error=repr(error))
             state.update(finished_at=datetime.now(timezone.utc).isoformat())
             controls.reservation.write_json(run / "summary.json", state)
+            controls.reservation.write_json(run / "state.json", state)
     if state["status"] != "agentix_unforced_model_qualified":
         raise ValueError("Agentix model qualification failed; preserve this attempt")
 
