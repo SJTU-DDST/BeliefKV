@@ -79,3 +79,11 @@ native_consumer_cpu一次执行762项全部通过，无失败/跳过，严格保
 校验器新增真实原生准入/分配回执要求；plain证据不能冒充session
 证据，缺一消费者或手工锁报告均拒绝。GPU复制和executor仍为CPU
 stand-in。新入口尚未完成真实GPU或整模型资格，Agentix仍未正式启用。
+
+queue_components.py为四场景顺序入口：plain/session各自执行swap和
+有限Host压力检查，仅在完整TokenCake实际退出、精确工作量核验、
+两次新鲜idle快照和owned cleanup之后，检查GPU资源并启动。
+四项独立CPU边界检查通过，证明前序仍存活时不查询GPU也不启动
+子进程，cleanup文件不能替代实际退出，来源变化会拒绝运行。
+该4项报告不与762项相加。冻结并登记后仍只是待执行的小池GPU资格，
+没有自动启用Agentix正式baseline或整模型性能实验。
