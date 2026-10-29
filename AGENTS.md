@@ -2875,3 +2875,8 @@
   separate clean5cf3bb8b checkout; exact CPU-manifest reuse is source evidence,
   not fresh GPU/model/position or performance qualification. Do not launch a
   competing GPU job while the frozen R2 is live.
+- repeat_mechanism_review.py composes the unchanged demand ACK/service, JOIN
+  grant, sibling and final-EOS/known-case classifiers after completed R2.
+  It separately counts native forwards and preserves unknown associations;
+  syntax checks alone are not complete mechanism evidence. Run sealed
+  prefetch accounting first and retain all original classifiers and reports.

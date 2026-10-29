@@ -69,3 +69,9 @@ V345。关键路径若变化则按实际路径报告；固定历史工具后继�
 `experiments/figures/demand_prefill_pipeline_20261028_r2/`中的完整趋势、
 分布与geometry图。它对照同一封存V345，只报告重复表现，不因两次
 正收益自动宣布目标达成；需求恢复ACK/服务及JOIN/EOS机制另行审计。
+
+`repeat_mechanism_review.py`提供后者的完整入口：先要求上述完成证明，
+再复用原有需求恢复、grant、sibling与EOS分类器，逐项核对传输字节、
+原生ACK和后续服务，单独去重多成员native forward，并保留未知关联。
+四个历史工具/EOS反例仍使用原分类器；R1/R2引擎相同，不放宽旧
+跨引擎检查。入口只通过语法核对，实际完整执行仍须等待R2结束。
