@@ -3570,3 +3570,14 @@
   pre-rebase6437 cannot accept the current incremental canonical patch. That
   precheck started no GPU. Preserve the failed one-workflow fixture and its
   passing three-workflow correction. Commit/freeze before native collection.
+- Eight-task training source is now actually recording from frozena719f972 at
+  ops/workflow_work_train8_source_20261029_r1.registration.json,port18891.
+  Actual sampler1/8/24 passes;live_start_r1 independently verifies8 workflows,
+  379 complete native outputs,frozen sources,actual2048/mixed-off/running24/
+  native admission off,nice0 watcher/driver/server/scheduler and sole GPU owner.
+  Preserve this live capture and its normal tails. CPU-only finish_training
+  waits exact complete source/token/graph/fresh-drain and actual owned exit
+  before exporting exactly24+8 natural workflows and fitting against the same
+  independent18 calibration/18 development evaluation workflows. Its34 focused
+  tests include7 completion-boundary cases. It registers no further GPU action;
+  complete capture,expanded-model quality and scheduler gains remain pending.

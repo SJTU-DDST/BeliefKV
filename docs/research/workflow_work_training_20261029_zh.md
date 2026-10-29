@@ -62,3 +62,20 @@ child 提醒/软目标 4/8、root 提醒/软目标 8/16、2048-token prefill、m
 采集复用已经验证的 common tree `11b84f7c31986782be3fbe699bae2574ef092389`，
 其 726 项原生检查证据与实际引擎逐字段核对，只允许 canonical patch 路径及派生哈希重绑定。
 历史 V230 的旧 patch 属于 rebase 前的引擎，不能直接套用当前 patch；该预检查失败未启动 GPU。
+
+## 实际启动与后续处理
+
+采集已从干净冻结的 `a719f972` 启动，注册为
+`ops/workflow_work_train8_source_20261029_r1.registration.json`，服务端口 18891。
+实际 sampler 的 batch 1/8/24 均通过。`live_start_r1.json` 独立核对冻结源码、
+实际模型参数、原生采集模式、进程身份和唯一 GPU 所有者；watcher、driver、server、
+scheduler 均为 nice 0。2026-10-29 11:12 America/Los_Angeles 的快照已有 8 个
+workflow 和 379 个完整输出；这是运行中前缀，不是完整采集结果或性能结论。
+
+`finish_training.py` 只执行 CPU 后处理。它等待成功完整采集、审计通过、两次新鲜
+idle telemetry 及实际采集进程退出，再导出 24+8 共 32 条训练轨迹，沿用上述独立校准/
+开发评测数据进行固定训练。失败采集或不完整自然执行不会进入自动重训；所有失败记录保留。
+输出终态为 `training_complete_requires_review`，不会自动注册下一次 GPU 实验。
+
+该后处理新增 7 项完成边界检查，与训练/划分检查合计实际通过 34 项测试，见
+`completion_cpu_r1.xml`。它们不替代采集前 4,913 项绑定回归，也不改变正在运行的冻结代码。
