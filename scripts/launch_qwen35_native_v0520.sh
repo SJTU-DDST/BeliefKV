@@ -225,6 +225,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     tokencake_scheduler)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-tokencake-scheduler-runtime-20261028.patch"
       ;;
+    agentix_common)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-agentix-common-runtime-20261029.patch"
+      ;;
     *)
       printf 'Unknown SGLang patch flavor: %s\n' "${SGLANG_PATCH_FLAVOR}" >&2
       exit 2

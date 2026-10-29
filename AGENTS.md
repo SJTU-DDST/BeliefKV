@@ -3195,3 +3195,17 @@
   .008 workflow/s with48 distinct original projects (36 for shorter calibration);
   only18 currently have the matched complete source. This recommendation is
   not verified stationary capacity or a GPU arrival launch registration.
+- Agentix now has a separate common-engine port25155f0701c4 with only two
+  native files changed (9 insertions/2 deletions): constructor scheduler attach
+  and default-empty checks before decode retraction/abort release. Exact AST
+  projection restores common11b84; compute/copy/cache/sampler/fences and native
+  victim order stay identical. Preserve legacyc489 and its actual GPU/model
+  evidence; do not inherit them as qualification for the new native tree.
+  The focused24-case CPU report passes, with full retained-population CPU and
+  four GPU scenes plus roomy/pressure models still pending. Formal Agentix is
+  still disabled; its parameters and complete3674 work remain to be qualified.
+  Common source entry is experiments/reports/agentix_common_engine_20261029/.
+  Keep TokenCake skipped and do not queue arrival/prefill experiments before
+  complete Agentix. Latest arrival advice is a short18-workflow trial with10
+  initial and8 subsequent Poisson arrivals at mean120s;24 is conditional,
+  not36/48 by default, not verified stationary capacity or an active GPU plan.

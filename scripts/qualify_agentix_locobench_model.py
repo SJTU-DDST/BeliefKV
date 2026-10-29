@@ -31,6 +31,7 @@ from scripts.qualify_agentix_runtime import validate_runtime
 from scripts.run_agentx_baseline import prefix_qualification_environment
 from scripts.run_causal_gpu_replay import source_plan
 from beliefkv.experiments.paper_baselines import isolated_environment
+from beliefkv.experiments.agentix_engine import verify_qualification_engine
 
 
 POLICY = "configs/baselines/agentix_locobench_model_qualification_20261029.json"
@@ -85,7 +86,7 @@ def verify_component_application(plan):
     if (
         component.get("status") != "four_native_consumer_gpu_checks_qualified"
         or component["registered_frozen_application"] != str(application)
-        or component["engine_checkout"] != str(engine) or component["engine_tree"] != TREE
+        or component["engine_checkout"] != str(engine)
     ):
         raise ValueError("Agentix model server differs from its actual GPU byte components")
     cpu = controls.load(Path(plan["cpu_evidence"]))
@@ -103,8 +104,9 @@ def verify_component_application(plan):
     native = git_source_state(
         engine, canonical_patch=application / "patches/sglang-v0.5.20-beliefkv-staging.patch",
     )["canonical_patch"]
-    if not native["matches_worktree"] or native["actual_tree"] != TREE:
+    if not native["matches_worktree"] or native["actual_tree"] != component["engine_tree"]:
         raise ValueError("Agentix model server native sources changed")
+    verify_qualification_engine(engine, native["actual_tree"])
     for scene in component["reports"].values():
         if sha256_file(Path(scene["path"])) != scene["sha256"] or not scene["actual_exit_verified"]:
             raise ValueError("actual Agentix GPU byte evidence changed")

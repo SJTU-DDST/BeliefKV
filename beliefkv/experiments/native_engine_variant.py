@@ -1,6 +1,8 @@
 """Explicit immutable native engine variants accepted by replay launchers."""
 
 COMMON_TREE = "11b84f7c31986782be3fbe699bae2574ef092389"
+AGENTIX_TREE = "25155f0701c4c3707add0901437833281590016b"
+AGENTIX_PATCH_SHA256 = "0da0df6abd9ee3be9b0b7b4e3a905d23b166d451fb022f782bc6528735d2839e"
 TOKENCAKE_TREE = "131d175450fe2b74d31a0508c2e13c55a3750a56"
 TOKENCAKE_PATCH_SHA256 = "56d7fdefec0beb0fb5277aaa1704c1bcc0e380d49ee2240ee96905c2977557a6"
 LAYER_TREE = "0d407f981c5179b20859e82e7088d85589cd08b3"
@@ -16,6 +18,11 @@ DEMAND_PREFILL_PIPELINE_PATCH_SHA256 = "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22
 def engine_patch(root, tree):
     from beliefkv.experiments.source_provenance import sha256_file
 
+    if tree == AGENTIX_TREE:
+        patch = root / "patches/sglang-agentix-common-runtime-20261029.patch"
+        if sha256_file(patch) != AGENTIX_PATCH_SHA256:
+            raise ValueError("Agentix scheduler patch differs from the reviewed optional hooks")
+        return patch
     if tree == TOKENCAKE_TREE:
         patch = root / "patches/sglang-tokencake-scheduler-runtime-20261028.patch"
         if sha256_file(patch) != TOKENCAKE_PATCH_SHA256:

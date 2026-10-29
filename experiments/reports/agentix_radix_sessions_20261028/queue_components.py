@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.agentix_engine import verify_qualification_engine
 from scripts import run_causal_comparison as controls
 from scripts.qualify_agentix_pressure import validate_report as validate_pressure
 from scripts.qualify_agentix_runtime import validate_swap
@@ -38,10 +39,11 @@ def verify_inputs(plan):
         canonical_patch=ROOT / "patches/sglang-v0.5.20-beliefkv-staging.patch",
     )["canonical_patch"]
     if (
-        not native["matches_worktree"] or native["actual_tree"] != TREE
+        not native["matches_worktree"] or native["actual_tree"] != plan["engine_tree"]
         or native["sha256"] != plan["native_patch_sha256"]
     ):
         raise ValueError("Agentix component native tree or canonical patch changed")
+    verify_qualification_engine(Path(plan["engine_checkout"]), native["actual_tree"])
 
 
 def predecessor_ready(plan):
@@ -95,8 +97,7 @@ def start(args):
     previous = controls.load(predecessor)
     controls.fresh.check_hold(previous, released=True)
     frozen = freeze(args.engine.resolve(), args.native_patch.resolve())
-    if frozen["engine_tree"] != TREE:
-        raise ValueError("Agentix components require the independently qualified engine")
+    verify_qualification_engine(Path(frozen["engine_checkout"]), frozen["engine_tree"])
     application = Path(frozen["checkout"])
     controls.comparison.verify_cpu_snapshot(
         application, controls.load(Path(cpu["source_manifest"]["path"])),
@@ -218,7 +219,7 @@ def watch(path):
                         validate_swap(report, plan, require_native_sessions=sessions)
                     else:
                         validate_pressure(
-                            report, engine_tree=TREE, patch_sha256=plan["native_patch_sha256"],
+                            report, engine_tree=plan["engine_tree"], patch_sha256=plan["native_patch_sha256"],
                             require_native_sessions=sessions,
                         )
                     reports[name] = {
