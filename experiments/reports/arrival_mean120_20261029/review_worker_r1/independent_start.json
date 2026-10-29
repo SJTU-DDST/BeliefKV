@@ -1,0 +1,19 @@
+{
+  "observed_at_shanghai": "2026-10-29T21:46:05+08:00",
+  "status": "waiting_complete_gpu_pair",
+  "application_commit_prefix": "74f0fc2c",
+  "cpu_watcher_pid": 1354635,
+  "cpu_watcher_start_ticks": "745173678",
+  "actual_proc_identity_and_argv_verified": true,
+  "cpu_watcher_nice": 19,
+  "gpu_queue_pid": 1341226,
+  "gpu_queue_start_ticks": "744960744",
+  "gpu_queue_alive": true,
+  "comparison_watcher_pid": 1345254,
+  "comparison_server_pid": 1345626,
+  "comparison_driver_pid": 1346717,
+  "comparison_processes_alive_and_nice_zero": true,
+  "sole_gpu_compute_pid": 1345920,
+  "GPU_experiment_registered": false,
+  "performance_accepted": false
+}

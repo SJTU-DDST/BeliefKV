@@ -1,0 +1,48 @@
+{
+  "registered_at": "2026-10-29T13:44:33.682718+00:00",
+  "application": {
+    "commit": "74f0fc2c450d6c1030a0595c446c878e8dffdad6",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "2e6b8deeeabe39f73f1b0fdf05b3595d24192adbaf789da0cfd2ca20dac0d6ee"
+  },
+  "gpu_queue": "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/queue_r1/registration.json",
+  "gpu_queue_watcher": {
+    "pid": 1341226,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "744960744",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-arrival120-622c5feb/experiments/reports/arrival_mean120_20261029/queue_pair.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/queue_r1/registration.json"
+    ]
+  },
+  "entries": {
+    "thunderagent_acting_decay": {
+      "registration": "/home/longhao/experiment/ops/arrival_mean120_thunder_20261029_r1.registration.json",
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/arrival_mean120_thunder_20261029_r1",
+      "port": 18871
+    },
+    "full": {
+      "registration": "/home/longhao/experiment/ops/arrival_mean120_full_20261029_r1.registration.json",
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/arrival_mean120_full_20261029_r1",
+      "port": 18872
+    }
+  },
+  "reader": "/home/longhao/experiment/.worktrees/beliefkv-arrival-review-74f0fc2c/experiments/reports/arrival_mean120_20261029/review_pair.py",
+  "plot_python": "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+  "matplotlib_version": "3.9.4",
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/queue_r1/registration.json": "4e3dbf229fb968bb2641496f2f37e7086644f66ec12eddc418c4bc8a8d0e7134",
+    "/home/longhao/experiment/.worktrees/beliefkv-arrival-review-74f0fc2c/experiments/reports/arrival_mean120_20261029/review_pair.py": "e1658d59622fcd87278a5ace364aca92c7fe5b6c4ed2f2d1ca53079035ca9af5",
+    "/home/longhao/experiment/.worktrees/beliefkv-arrival-review-74f0fc2c/experiments/reports/arrival_mean120_20261029/review_after_pair.py": "6529c5bbdb01a55e766debbf789f2b782c9304d8c1691e98e34739f602a7d96d",
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/pyvenv.cfg": "37c9f6a09cd7adda7611c754d53aea33d97739257a13017b14b6f8891e2752aa"
+  },
+  "GPU_experiment_registered": false,
+  "performance_accepted": false
+}

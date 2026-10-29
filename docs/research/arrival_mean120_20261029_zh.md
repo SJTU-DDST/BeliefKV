@@ -64,3 +64,10 @@ scheduler1345920。paper acting decay 配置生效，未继承 FULL 的
 匹配报告。它不登记 GPU 实验、不替换比较进程，也不把原排队器后处理
 失败误报为 GPU 实验失败。main 的后续队列已改用该绘图解释器；
 当前冻结队列保留原始执行证据。
+
+该 CPU 结果处理进程现已实际登记并核验：冻结分析提交 `74f0fc2c`，
+PID1354635 / start ticks745173678，nice19，状态
+`waiting_complete_gpu_pair`，登记文件为
+`review_worker_r1/registration.json`。2026-10-29 21:46:05 的独立进程
+核验确认它和原 GPU 排队器均真实存活，唯一 GPU 使用者仍为
+ThunderAgent 的 PID1345920；没有新增 GPU 比较任务。
