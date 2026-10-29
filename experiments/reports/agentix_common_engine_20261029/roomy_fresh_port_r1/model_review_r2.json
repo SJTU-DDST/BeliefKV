@@ -1,0 +1,58 @@
+{
+  "status": "common_engine_unforced_model_reviewed",
+  "native_tree": "25155f0701c4c3707add0901437833281590016b",
+  "fixture": "roomy",
+  "requests": 6,
+  "actual_greedy_tokens_equal": true,
+  "maximum_logprob_absolute_delta": {
+    "0": 0.0,
+    "1": 0.0,
+    "2": 0.0
+  },
+  "checkpoint_pauses": 45,
+  "actual_native_resumptions": 45,
+  "backing_drain_control_rounds": 0,
+  "drain_rounds_are_not_independent_host_exhaustions": true,
+  "actual_owned_exit_verified": true,
+  "native_hooks": {
+    "common_engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "exact_optional_hooks_projection_verified": true,
+    "constructor_binds_scheduler_after_cache": true,
+    "uncheckpointed_retraction_checked_before_release": true,
+    "native_compute_copy_cache_and_sampler_changed": false,
+    "native_victim_order_changed": false,
+    "source_sha256": {
+      "python/sglang/srt/managers/scheduler.py": "db5e2c21f9620ce9bdfe4cb426f8f265d5c5fdeb4f5d13da0bba0b451d9e87fe",
+      "python/sglang/srt/managers/schedule_batch.py": "190b363e8483ebe71e93385576d34b05ab042922af732804bbcbfb73d60cc695"
+    }
+  },
+  "full_formal_workload_qualified": false,
+  "performance_accepted": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/registration.json": "b152689adacc1d87204cc524748efec0260b491633cb97ece0310081f2a1081d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/summary.json": "e94cf56c493fd110aa9fa172dc692476f42d1a29bd949c72742d4b4fc0a1afd0",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/qualification_policy.json": "8e4ae3dcabe0d69da9eeabe4d02a16e3dc2dca7a078150bd0a3291cadd8f81f6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/owned_process_cleanup.json": "e10d13fd779c6796932eac88c45efe05b7a82a644432c1f24f1ff1e567c2255b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/telemetry_drain.json": "9923d881a221d73707bfe5e57e0ef28e27143411fb533befb9ffb499fa4d26e0",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/cpu/common_engine_cpu.json": "6aea40124928f42d7bba6be2d167f56fffcc9989266c4470fd3b9e209028c807",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/components/summary.json": "a8d7a3ac86efaf17de56664adfd71b329db38330254efc174222b8a7bb9ff192",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/cpu/common_engine_cpu.sources.json": "6937c08750508b1074db4acd0b40e432431b0f81fb443800eeafd673864a731f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/components/swap_plain/summary.json": "aef61d45b2b0376457db0edac6b1cca7eb8e80f0e0518cd35874f1eb5af04c1c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/components/swap_native_sessions/summary.json": "951ed8abff52aeef46c6380b89a6380d91d818ae0c10ed6c16463baeb0a72b44",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/components/pressure_plain/summary.json": "13ce8822042d7d239bfd5f5474a927823c1c32235224c747350b2a23ce71a11d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/components/pressure_native_sessions/summary.json": "1a81e1e931aab81c9ea0b0906559495a8c7d0cc98f7e97a6a4bb4236b0c3d742",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/components/owned_process_cleanup.json": "b9559578760c205e8cd38d3a792d88705d760af4a931eca8c2afdfbb9c8c467d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/request_actual-0.json": "079f5174bfbe24de997ae8333196da08f24b3c8a1a6bfe88da61fc6f025b171c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/response_actual-0.json": "ea4b2aff42a5823d82a43c39fd883e44318d76469224dcacf53446bc1dc21d8e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/request_actual-1.json": "2395bc3a82e5b3c2351ccc4deb5e05bf829d64a66ea95275d28bfba2b46dbdac",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/response_actual-1.json": "1352871c35169e4200cf83d8d8f82ffe44c85dfc281a16588f6bd31ee8514fe4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/request_actual-2.json": "c501e5cb80fcc34b4eab3ee694dc47075b8e9ba1d1c3a8eb5ea178a532b02d19",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/response_actual-2.json": "88e83584d43dc615d9ae1239e09b187130ad8085dbcaad8f4dd05ed2daeeed4f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/request_reference-0.json": "7b7e7ca048d0141d5d67b4a5c9610427403e9ecb1855559f59e29f835bbf2d53",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/response_reference-0.json": "ed8ca37c00174c61d25a8c87b01cbf05adb1e62b70a61180255c37cb99d10902",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/request_reference-1.json": "ee2d1f260b25b15743be338fa46007e025d2fc621fee016d3fa5638e4e6b52c9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/response_reference-1.json": "8fdbc81dfc7098b16c0a34b7d0e84723bc05a19d840da210b0920836c5392735",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/request_reference-2.json": "bdbc67ff2387f93837ec77ce6935b0cf4b3b445a4c9c0c298f4de67da6d3bce9",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/roomy_fresh_port_r1/response_reference-2.json": "242c0f970d887ea74636f500c6905fbfe9efd151ec2aea55defad873fe90cc69"
+  }
+}

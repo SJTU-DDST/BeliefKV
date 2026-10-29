@@ -1,0 +1,35 @@
+{
+  "status": "failed",
+  "performance_accepted": false,
+  "supervisor": {
+    "pid": 1254749,
+    "state": "R",
+    "ppid": 1252707,
+    "start_ticks": "743972331",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-f8d62e1d5277/scripts/qualify_agentix_locobench_model.py",
+      "--predecessor",
+      "/home/longhao/experiment/ops/tokencake_fragmented_capacity_20261029_r1.registration.json",
+      "--application",
+      "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-f8d62e1d5277",
+      "--engine",
+      "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-25155f0701c4-f8d62e1d5277",
+      "--components",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/components/summary.json",
+      "--cpu-evidence",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/cpu/common_engine_cpu.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_common_engine_20261029/cycle_r2/roomy",
+      "--fixture",
+      "roomy",
+      "--port",
+      "18712",
+      "--allow-failed-predecessor"
+    ]
+  },
+  "checked_at": "2026-10-29T10:24:31.515124+00:00",
+  "owned": [],
+  "error": "ValueError('Agentix model qualifier requires a fresh event socket')",
+  "finished_at": "2026-10-29T10:24:34.241129+00:00"
+}

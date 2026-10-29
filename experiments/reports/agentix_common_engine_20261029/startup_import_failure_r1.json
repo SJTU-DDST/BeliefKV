@@ -1,0 +1,12 @@
+{
+  "status": "failed_before_cpu_or_gpu_startup",
+  "frozen_manifest": "frozen_r1.json",
+  "application_commit": "2c4291b967d635b00d48a2fda39169cd47215ad4",
+  "error": "ModuleNotFoundError: No module named 'server_reservation'",
+  "cause": "The clean operator was under .worktrees; freeze created a nested .worktrees/.worktrees layout outside the existing machine-helper root resolution.",
+  "output_directory_created": false,
+  "CPU_checks_started": false,
+  "GPU_experiment_started": false,
+  "owned_GPU_children": [],
+  "correction": "Move the clean operator to /home/longhao/experiment/beliefkv-agentix-common-operator-da330, then create a separate frozen_r2 manifest. Preserve r1."
+}

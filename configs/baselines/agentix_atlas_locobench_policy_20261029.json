@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "purpose": "complete_same_work_paper_strategy_reproduction",
+  "policy": "agentix_atlas_paper_native",
+  "native_engine_tree": "25155f0701c4c3707add0901437833281590016b",
+  "parameter_origin": "predeclared_native_port_not_author_defaults",
+  "author_parameter_defaults_verified": false,
+  "parameters": {
+    "mode": "atlas",
+    "band_edges_ms": [10000.0, 100000.0],
+    "quanta_ms": [500.0, 1000.0, 2000.0],
+    "starvation_ratio": 10.0,
+    "decode_steps_per_schedule": 16,
+    "context_limit": 262144,
+    "running_limit": 24,
+    "decode_growth_tokens": 100
+  }
+}

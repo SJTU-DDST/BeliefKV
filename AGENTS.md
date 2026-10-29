@@ -3209,3 +3209,21 @@
   complete Agentix. Latest arrival advice is a short18-workflow trial with10
   initial and8 subsequent Poisson arrivals at mean120s;24 is conditional,
   not36/48 by default, not verified stationary capacity or an active GPU plan.
+- Common Agentix frozenf8d62e1d5277/native25155 now passes1124 unique CPU cases,
+  retaining all782 Agentix and726 causal-control IDs (1109 in their union),
+  with1889 unchanged inputs; all four actual GPU byte/pressure scenes pass.
+  Preserve the pre-import nested-worktree failure and the roomy startup refusal
+  on the existing18712 event socket; neither launched a model. The independent
+  fresh-port roomy/pressure runs complete all12 model calls with45/227 actual
+  pauses/resumptions and exactly equal greedy tokens/logprobs. Raw request/
+  response/source/drain/owned-exit reviews are model_review_r2.json in
+  experiments/reports/agentix_common_engine_20261029/{roomy,pressure}_fresh_port_r1/.
+  Pressure91 drain rounds are control observations, not91 independent Host
+  exhaustions. Formal policy is separately declared with10/100s service bands,
+  .5/1/2s quanta,beta10,N16,context262144/running24/growth100; its11 CPU cases
+  pass but author defaults are explicitly unverified. Do not promote fixtures
+  to full-workload or formal-parameter qualification. RUNTIME_ARMS still lacks
+  formal Agentix; next bind its factory, root-workflow identity, complete-call
+  accounting and fresh batch24/position checks before complete3674 comparison.
+  No GPU job remains after these two owned model exits; do not restart
+  TokenCake or launch arrival/prefill work before complete formal Agentix.

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "purpose": "bounded_native_preemption_validation",
+  "policy": "agentix_atlas_native_qualification",
+  "max_requests": 6,
+  "parameters": {
+    "mode": "atlas",
+    "band_edges_ms": [
+      1000.0,
+      10000.0
+    ],
+    "quanta_ms": [
+      1.0,
+      2.0,
+      4.0
+    ],
+    "starvation_ratio": 1000.0,
+    "decode_steps_per_schedule": 2,
+    "context_limit": 262144,
+    "running_limit": 1,
+    "decode_growth_tokens": 4
+  }
+}

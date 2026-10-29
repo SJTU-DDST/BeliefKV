@@ -1,0 +1,80 @@
+{
+  "reason": "agentix_unforced_model_qualified",
+  "started_at": "2026-10-29T18:33:08.677638+08:00",
+  "identities": [
+    {
+      "pid": 1257987,
+      "state": "R",
+      "ppid": 1257634,
+      "start_ticks": "744011166",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-f8d62e1d5277/scripts/launch_qwen35_native_v0520.sh",
+        "--max-total-tokens",
+        "32768",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18842.sock",
+        "--enable-deterministic-inference",
+        "--attention-backend",
+        "fa3",
+        "--skip-server-warmup"
+      ]
+    },
+    {
+      "pid": 1258060,
+      "state": "S",
+      "ppid": 1257987,
+      "start_ticks": "744012367",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-c",
+        "from multiprocessing.resource_tracker import main;main(21)"
+      ]
+    },
+    {
+      "pid": 1258061,
+      "state": "R",
+      "ppid": 1257987,
+      "start_ticks": "744012367",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-c",
+        "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=22, pipe_handle=24)",
+        "--multiprocessing-fork"
+      ]
+    },
+    {
+      "pid": 1258062,
+      "state": "R",
+      "ppid": 1257987,
+      "start_ticks": "744012367",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-c",
+        "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=22, pipe_handle=24)",
+        "--multiprocessing-fork"
+      ]
+    }
+  ],
+  "signals": [
+    {
+      "pid": 1257987,
+      "signal": "SIGTERM"
+    },
+    {
+      "pid": 1258060,
+      "signal": "SIGTERM"
+    },
+    {
+      "pid": 1258061,
+      "signal": "SIGTERM"
+    },
+    {
+      "pid": 1258062,
+      "signal": "SIGTERM"
+    }
+  ],
+  "remaining_processes": [],
+  "finished_at": "2026-10-29T18:33:14.391547+08:00"
+}

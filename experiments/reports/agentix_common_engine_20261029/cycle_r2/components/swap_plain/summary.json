@@ -1,0 +1,77 @@
+{
+  "status": "native_kv_swap_interface_qualified",
+  "scope": "Actual small native FULL GPU/Host pools and kernels; no model forward or policy performance experiment.",
+  "gpu": "NVIDIA H200 NVL",
+  "owned_gpu_pid": 1253940,
+  "native_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-agentx-baseline-f8d62e1d5277/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "0da0df6abd9ee3be9b0b7b4e3a905d23b166d451fb022f782bc6528735d2839e",
+    "expected_tree": "25155f0701c4c3707add0901437833281590016b",
+    "actual_tree": "25155f0701c4c3707add0901437833281590016b",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "checkpoint_tokens": 18,
+  "shared_live_peer_tokens": 16,
+  "exclusive_tokens_released_and_restored": 2,
+  "layers": 2,
+  "key_and_value_bytes_preserved_all_layers": true,
+  "live_peer_kv_preserved": true,
+  "released_tail_poisoned_before_restore": true,
+  "no_device_capacity_release_before_d2h_ack": true,
+  "host_pin_protected_until_actual_resumption": true,
+  "split_complete_host_prefix_protected_under_pressure": true,
+  "native_h2d_lock_survived_pin_handoff": true,
+  "input_output_and_sampler_preserved": true,
+  "native_transfer_acknowledgements": [
+    {
+      "direction": "d2h",
+      "tokens": {
+        "kv": 18
+      }
+    },
+    {
+      "direction": "h2d",
+      "tokens": {
+        "kv": 2
+      }
+    }
+  ],
+  "actor": {
+    "pending_requests": 0,
+    "paused_host_pins": 0,
+    "counts": {
+      "prepared_requests": 1,
+      "unique_checkpoint_nodes": 2,
+      "missing_backup_nodes": 2,
+      "waiting_native_ack": 1,
+      "paused_requests": 1,
+      "demoted_full_tokens": 2,
+      "allocator_available_increase": 2,
+      "resumed_requests": 1,
+      "native_logprob_suffix_replayed_tokens": 0
+    },
+    "victim_selection_policy": "external_paper_scheduler",
+    "request_ids_outputs_and_sampling_preserved": true,
+    "host_ownership": "split_safe_complete_prefix_until_native_resumption_or_cancellation",
+    "native_capacity_authority_preserved": true,
+    "runtime_scheduler_hook_installed": false
+  },
+  "native_prefill_consumer": {
+    "native_prefill_admitted": true,
+    "native_extend_allocation_tokens": 1,
+    "checkpoint_tokens": 18,
+    "uncomputed_fixture_tail_returned": true
+  },
+  "request_transport": "plain_tokens",
+  "native_session_generation_preserved": null,
+  "native_session_anchors_preserved": null,
+  "whole_llm_scheduler_or_baseline_qualified": false,
+  "performance_accepted": false,
+  "elapsed_seconds": 7.269000580534339,
+  "source_sha256": {
+    "scripts/qualify_agentix_swap.py": "28dc58465c67cfa5fd6c60b592ce877feb062f8a330ee502362d3534f38e3ecf",
+    "beliefkv/runtime/agentix_swap.py": "9a70528925c19d9d62a4d02f9eb84adc863581102d6abe76c2d05b91985212c4",
+    "beliefkv/runtime/paper_prefix_transfers.py": "c1fdc96be2abf96d40d8fc90a509c17ea837e9cb77ad7f8cb4d7e7a4ded468c3"
+  }
+}

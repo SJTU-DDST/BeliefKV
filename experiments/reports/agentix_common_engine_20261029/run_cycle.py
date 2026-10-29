@@ -30,6 +30,11 @@ def main():
 
     if frozen["engine_tree"] != AGENTIX_TREE or os.getpriority(os.PRIO_PROCESS, os.getpid()) != 0:
         raise ValueError("common Agentix cycle requires its reviewed tree and nice0 supervisor")
+    if not 1 <= args.port <= 65533:
+        raise ValueError("common Agentix cycle needs three valid distinct ports")
+    model_ports = {"roomy": args.port + 1, "pressure": args.port + 2}
+    if any(Path(f"/tmp/bkv-causal-{port}.sock").exists() for port in model_ports.values()):
+        raise ValueError("preserve old event sockets; choose unused model qualification ports")
     output = args.output_dir.resolve()
     if output.exists():
         raise FileExistsError("preserve every common Agentix validation cycle")
@@ -82,7 +87,7 @@ def main():
     queue.watch(registration)
     if controls.load(gpu / "summary.json")["status"] != "four_native_consumer_gpu_checks_qualified":
         raise ValueError("fresh common-engine physical components failed")
-    for fixture in ("roomy", "pressure"):
+    for fixture, port in model_ports.items():
         with (output / (fixture + ".log")).open("x") as log:
             subprocess.run([
                 sys.executable, str(application / "scripts/qualify_agentix_locobench_model.py"),
@@ -90,7 +95,7 @@ def main():
                 "--engine", str(engine), "--components", str(gpu / "summary.json"),
                 "--cpu-evidence", str(cpu / "common_engine_cpu.json"),
                 "--output-dir", str(output / fixture), "--fixture", fixture,
-                "--port", str(args.port), "--allow-failed-predecessor",
+                "--port", str(port), "--allow-failed-predecessor",
             ], cwd=application, check=True, stdout=log, stderr=subprocess.STDOUT,
                 env={**os.environ, "PYTHONHASHSEED": "21"})
     controls.reservation.write_json(output / "summary.json", {
