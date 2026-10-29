@@ -1,0 +1,67 @@
+{
+  "registered_at": "2026-10-29T16:35:27.636413+00:00",
+  "application": {
+    "commit": "175d6925498fb8afebed23dbd321e92cb8a617db",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "0087503f3e1fc9a623ac15b2e1cb6f6ad1ef01cd61e58f7419b4fd93afcc247d"
+  },
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-30T00:35:25.710245+08:00"
+  },
+  "control": "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json",
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-decay2s-175d6925/scripts/run_position_replay_calibration.py",
+    "--source-registration",
+    "/home/longhao/experiment/ops/v230_locobench_parallel_retry_source_20261026.registration.json",
+    "--reference",
+    "/home/longhao/experiment/ops/v128_eos_seeded_modules_resume_20261022.registration.json",
+    "--cpu-report",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/cpu_r1/bound_cpu.xml",
+    "--cpu-sources",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/cpu_r1/sources.json",
+    "--engine",
+    "/home/longhao/experiment/.worktrees/sglang-causal-434c35dd6621-622c5feb5280-efce42459a53",
+    "--engine-report",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml",
+    "--engine-sources",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/native_sources.json",
+    "--registration",
+    "/home/longhao/experiment/ops/decay_tick2s_position_20261030_r1_full.registration.json",
+    "--run-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_position_20261030_r1_full",
+    "--comparison-registration",
+    "/home/longhao/experiment/ops/decay_tick2s_no_handoff_20261030_r1.registration.json",
+    "--comparison-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/decay_tick2s_no_handoff_20261030_r1",
+    "--port",
+    "18883",
+    "--experiment-config",
+    "/home/longhao/experiment/.worktrees/beliefkv-decay2s-175d6925/configs/migration/predictive_decay_tick2s_no_handoff_20261030.json"
+  ],
+  "entry": {
+    "position_registration": "/home/longhao/experiment/ops/decay_tick2s_position_20261030_r1_full.registration.json",
+    "comparison_registration": "/home/longhao/experiment/ops/decay_tick2s_no_handoff_20261030_r1.registration.json"
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/cpu_r1/evidence.json": "d6bdc33708f5619f6f0ed538d47553aa68049228ba344a8e38a39dc8349de741",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/cpu_r1/bound_cpu.xml": "cc1c973d6962dccd82c3f5f04beeb2fd77df6f7d7da88e25a608a4b8748a930b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/cpu_r1/sources.json": "db97906ea138da340c0c63be1f8d3c3b94a5f69045922e59b84238da87f7e5be",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r2/registration.json": "0a19721a80550b7d97c3d24a1a37eee9815c942507cddcf46e774eb599604c1c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r2/registration.state.json": "dca760da0949ea587ca10080a60931d8e2ce7877ca5b9561a53f3575bd861265",
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json": "e4821865066bab8ebdd4a28791ba9dcabd350fe6ce621a03985903fa13147ec4",
+    "/home/longhao/experiment/.worktrees/beliefkv-decay2s-175d6925/configs/migration/predictive_decay_tick2s_no_handoff_20261030.json": "217b603b6d502110f63b0d8def7a2b333605775fee76c2c18ba5f6a76c55c555",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/native_sources.json": "923bc76768305400d320eee3668fb8982605b7993d130e90e8ae96c05f0b6cd4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml": "06bb7dcf7576f720a835ec98dacd6b8d7126e7a68f10a7e955f885deb2709b5e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/full.native_sources.json": "500fe1d1aedd3e285370383c6bdabce9b3e302ece5fb3dfbfceab00d65c4635c"
+  },
+  "old_unregistered_full_superseded_by_user": true,
+  "running_control_changed": false,
+  "performance_accepted": false
+}

@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-10-30T00:37:32.743341+08:00",
+  "registration": "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/registration.json",
+  "actual_queue_watcher": {
+    "pid": 1459481,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "746199079",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-decay2s-175d6925/experiments/reports/decay_tick2s_no_handoff_20261030/queue_full.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/registration.json"
+    ]
+  },
+  "queue_status": "waiting_existing_control_complete",
+  "source_and_input_verification_passed": true,
+  "superseded_queue_actually_dead": true,
+  "current_control_status": "running_thunderagent_acting_decay",
+  "current_control_watcher_alive": true,
+  "gpu_pids": [
+    "1442425"
+  ],
+  "full_position_registered": false,
+  "queued_full_control_interval_ms": 2000,
+  "queued_physical_layer_handoff": false,
+  "queued_free_extent_handoff": false,
+  "complete_performance_verified": false
+}

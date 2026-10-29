@@ -3504,3 +3504,12 @@
   current2048 Thunder continues unchanged and only its actual complete/drain/
   owned exit may release fresh Full position/model checks. No new Full GPU
   qualification or performance follows from these CPU results.
+- The user-selected2s/no-physical-handoff Full is now actually queued from
+  clean frozen175d6925 (runtime implementation234de993),watcher1459481,nice0,
+  at decay_tick2s_no_handoff_20261030/queue_r1/registration.json. Independent
+  queue_live_start verifies frozen sources/inputs,old watcher dead,current
+  Thunder still running,and no early Full position registration. It rechecks
+  effective2000ms/layer0/free-extent0. Keep the new queue,existing frozenf502
+  control and all original work/tails; wait complete control/drain/owned exit
+  before fresh current-source Full position/native-stop/sampler qualification.
+  New Full GPU qualification/performance and clear superiority remain pending.

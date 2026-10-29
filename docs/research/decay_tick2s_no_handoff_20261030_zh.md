@@ -90,3 +90,12 @@ fixture 容量估算错误和未设置 native 测试环境产生的七个 skip�
 验收同时看完整平均 JCT、全程输出、
 ready 服务间隔、H2D/D2H、已服务前缀重算及工作集切换；更频繁的 tick
 可能增加迁移，不能仅凭更早 resume 判为正收益。
+
+当前已从独立冻结 `175d6925` 登记 CPU 队列：
+`experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/registration.json`。
+实际 watcher1459481、nice0，通过全部冻结源码与输入校验；
+`queue_live_start_r1.json` 独立确认旧 watcher 已死、原对照仍在正常
+运行、新 FULL 尚未越过完整对照门槛，并重新核对未来有效值为
+control2000ms、layer handoff0、free extent0。正式 FULL 的 GPU
+资格和性能仍未据此宣称完成。实现提交为 `234de993`，冻结根
+`175d6925` 只额外移除了误暂存的生成 bytecode，不改变绑定源码。
