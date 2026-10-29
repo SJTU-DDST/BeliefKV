@@ -64,6 +64,8 @@ REQUIRED_EVIDENCE = (
     "persistent_return_retains_ordinary_evictable_cache",
     "paper_receipts_reconciled_and_runtime_not_disabled",
     "all_native_capacity_and_host_pins_released",
+    "full_prompt_native_radix_sessions_follow_the_same_paper_lifecycle",
+    "native_session_generation_and_cached_source_ownership_preserved",
 )
 FIXTURE_PARAMETERS = {
     "generation_budget": 8, "context_limit": 64, "running_limit": 4,
@@ -72,9 +74,8 @@ FIXTURE_PARAMETERS = {
 }
 
 
-def validate_report(report, *, engine_tree, patch_sha256, root=ROOT):
-    observed = report.get("scenarios", {})
-    complete = set(observed) == set(SCENARIOS) and all(
+def _complete_scenarios(observed, *, native_sessions):
+    return type(observed) is dict and set(observed) == set(SCENARIOS) and all(
         row.get("status") == "complete"
         and row.get("final_uncommitted_tokens") == 64
         and row.get("grants") == (
@@ -91,7 +92,31 @@ def validate_report(report, *, engine_tree, patch_sha256, root=ROOT):
             or row.get("capacity_counts", {}).get("upload_reservations_consumed") == 1
             and row.get("temporal_counts", {}).get("paper_upload_consumers") == 1
         )
+        and (
+            not native_sessions or (
+                row.get("request_transport") == "full_prompt_native_radix_session"
+                and row.get("native_session_request_count") == (
+                    4 if name in ("full_upload", "early_d2h", "early_h2d") else 3
+                )
+                and type(row.get("native_session_generations")) is dict
+                and len(row["native_session_generations"]) == 3
+                and all(
+                    type(value) is int and value > 0
+                    for value in row["native_session_generations"].values()
+                )
+                and len(set(row["native_session_generations"].values())) == 3
+                and type(row.get("native_session_source_anchors")) is int
+                and row["native_session_source_anchors"] > 0
+                and row.get("native_session_ownership_preserved") is True
+            )
+        )
         for name, row in observed.items()
+    )
+
+
+def validate_report(report, *, engine_tree, patch_sha256, root=ROOT):
+    complete = _complete_scenarios(report.get("scenarios"), native_sessions=False) and (
+        _complete_scenarios(report.get("native_session_scenarios"), native_sessions=True)
     )
     if (
         report.get("status") != "tokencake_native_lifecycle_qualified"
@@ -123,7 +148,7 @@ def isolated_environment():
                 os.environ[name] = value
 
 
-def scenario(name):
+def scenario(name, *, native_sessions=False):
     import torch
     from sglang.srt.mem_cache.allocator import TokenToKVPoolAllocator
     from sglang.srt.mem_cache.base_prefix_cache import MatchPrefixParams
@@ -160,6 +185,8 @@ def scenario(name):
     cache.init_hicache(settings, params)
     cache.load_back_threshold = 1
     clock, commits, live = SimpleNamespace(now=10., sequence=0), [], {}
+    session_requests, session_generations = {}, {}
+    namespace = None if native_sessions else "workflow"
     with isolated_environment():
         runtime = NativeAdmissionRuntime()
         adapter = TokenCakePaperAdapter(
@@ -187,12 +214,18 @@ def scenario(name):
         req = Req(
             rid=identity, origin_input_text="", origin_input_ids=array("q", tokens),
             sampling_params=SamplingParams(temperature=1., top_k=1, max_new_tokens=1),
-            extra_key="workflow", cache_salt="workflow",
+            extra_key=namespace, cache_salt=namespace,
+            session_id="tokencake-session-" + context if native_sessions else None,
             beliefkv_metadata={
                 "root_workflow_id": "workflow", "invocation_id": context,
                 "context_id": context, "context_epoch": 0,
+                "full_prompt_replay_guaranteed": True,
             },
         )
+        if native_sessions:
+            req.session_generation = cache.ensure_session_generation(req.session_id)
+            session_requests[req.rid] = req.session_id
+            session_generations[req.session_id] = req.session_generation
         if not runtime.register_visible_request(req):
             raise ValueError("native lifecycle request was not registered")
         return req
@@ -209,7 +242,7 @@ def scenario(name):
 
     def match(tokens):
         return cache.match_prefix(MatchPrefixParams(key=RadixKey(
-            array("q", tokens), "workflow", cache_salt="workflow",
+            array("q", tokens), namespace, cache_salt=namespace,
         ), cow_mamba=False))
 
     def native_admit(req):
@@ -414,6 +447,23 @@ def scenario(name):
         if name in ("expiry", "pressure"):
             send(Kind.TOOL_END, tool_run_id="external")
         finish(peer, preserve=False)
+        session_anchors = 0
+        if native_sessions:
+            for session_id, generation in session_generations.items():
+                if (
+                    cache.session_refs._session_generations.get(session_id) != generation
+                    or session_id in cache.session_refs._closed_session_ids
+                ):
+                    raise ValueError("paper lifecycle changed a native session generation")
+            source_session = "tokencake-session-agent"
+            anchors = cache.session_refs.snapshot_session_leaf_anchors(
+                source_session, session_generations[source_session],
+            )
+            if anchors is None:
+                raise ValueError("paper lifecycle lost the native cached source session")
+            session_anchors = sum(len(leaves) for _, leaves in anchors)
+            if not session_anchors:
+                raise ValueError("paper lifecycle retained no native source ownership")
         send(Kind.WORKFLOW_END, None)
         with adapter._authority():
             adapter.capacity.refresh()
@@ -444,6 +494,13 @@ def scenario(name):
                 ) for direction in ("d2h", "h2d")
             },
             "final_uncommitted_tokens": adapter.capacity.window.uncommitted,
+            "request_transport": (
+                "full_prompt_native_radix_session" if native_sessions else "plain_tokens"
+            ),
+            "native_session_request_count": len(session_requests),
+            "native_session_generations": session_generations,
+            "native_session_source_anchors": session_anchors,
+            "native_session_ownership_preserved": native_sessions and session_anchors > 0,
         }
     finally:
         try:
@@ -466,6 +523,7 @@ def qualify(engine, native_patch):
     if torch.cuda.device_count() != 1:
         raise ValueError("TokenCake lifecycle check requires one explicit visible GPU")
     evidence = {name: scenario(name) for name in SCENARIOS}
+    session_evidence = {name: scenario(name, native_sessions=True) for name in SCENARIOS}
     if os.getpid() not in gpu_processes():
         raise ValueError("TokenCake lifecycle did not execute on its owned GPU process")
     return {
@@ -476,6 +534,7 @@ def qualify(engine, native_patch):
         "native_engine": native,
         "gpu": torch.cuda.get_device_name(), "owned_gpu_pid": os.getpid(),
         "fixture_only_parameters": FIXTURE_PARAMETERS, "scenarios": evidence,
+        "native_session_scenarios": session_evidence,
         **dict.fromkeys(REQUIRED_EVIDENCE, True),
         "whole_model_or_performance_qualified": False, "performance_accepted": False,
     }

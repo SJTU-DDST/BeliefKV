@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="8.148" timestamp="2026-10-28T21:08:49.782892-07:00" hostname="ddst-12"><testcase classname="tests.test_tokencake_native_sessions" name="test_actual_session_request_is_admitted_with_observed_native_prefix" time="7.076" /><testcase classname="tests.test_tokencake_native_sessions" name="test_two_native_sessions_share_capacity_once_and_keep_both_native_owners" time="0.006" /><testcase classname="tests.test_tokencake_native_sessions" name="test_session_paper_upload_grants_use_real_prefix_slots_and_resume_same_context" time="0.011"><failure message="ValueError: TokenCake upload handoff requires the real consumer's native lock">tests/test_tokencake_native_sessions.py:137: in test_session_paper_upload_grants_use_real_prefix_slots_and_resume_same_context
+    assert stage(live, req) == 8
+           ^^^^^^^^^^^^^^^^
+tests/test_tokencake_runtime.py:70: in stage
+    runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+beliefkv/runtime/sglang_v0520_runtime.py:13068: in on_prefill_candidate_result
+    return callback(req, admitted=admitted, result=result)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_baseline.py:715: in candidate_result
+    self.temporal.consumer_admitted(req)
+beliefkv/runtime/tokencake_paper.py:288: in consumer_admitted
+    consumed = self.adapter.capacity.consume_reservation(identity, req)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/tokencake_capacity.py:326: in consume_reservation
+    raise ValueError("TokenCake upload handoff requires the real consumer's native lock")
+E   ValueError: TokenCake upload handoff requires the real consumer's native lock</failure></testcase><testcase classname="tests.test_tokencake_native_sessions" name="test_tool_return_during_session_upload_preserves_host_source_until_real_admission" time="0.008"><failure message="AssertionError: assert ({49: _OngoingLoadBack(node_id=49, lock_params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_l..._params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_lock=None, skipped_lock_components=()))} and set())&#10; +  where {49: _OngoingLoadBack(node_id=49, lock_params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_l..._params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_lock=None, skipped_lock_components=()))} = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x79b88e85e590&gt;.ongoing_load_back&#10; +  and   set() = _Checkpoint(prefix=_Prefix(snapshot=PrefixSnapshot(owner=('workflow', 'agent', 0), root_id=43, root_creation_time=np.f...0.009999999999998, expires_at=70.01, created_at=10.0, host_ready=True, finished=False, host_leases=set(), retry_step=0).host_leases">tests/test_tokencake_native_sessions.py:155: in test_tool_return_during_session_upload_preserves_host_source_until_real_admission
+    assert cache.ongoing_load_back and checkpoint.host_leases
+E   AssertionError: assert ({49: _OngoingLoadBack(node_id=49, lock_params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_l..._params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_lock=None, skipped_lock_components=()))} and set())
+E    +  where {49: _OngoingLoadBack(node_id=49, lock_params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_l..._params=DecLockRefParams(node_id=49, swa_uuid_for_lock=None, swa_uuid_for_host_lock=None, skipped_lock_components=()))} = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x79b88e85e590&gt;.ongoing_load_back
+E    +  and   set() = _Checkpoint(prefix=_Prefix(snapshot=PrefixSnapshot(owner=('workflow', 'agent', 0), root_id=43, root_creation_time=np.f...0.009999999999998, expires_at=70.01, created_at=10.0, host_ready=True, finished=False, host_leases=set(), retry_step=0).host_leases</failure></testcase></testsuite></testsuites>

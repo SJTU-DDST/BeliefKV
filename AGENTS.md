@@ -3035,3 +3035,21 @@
   remaining Agentix CPU adaptation meanwhile. All normal tails and global
   all-baseline acceptance remain pending. See
   docs/research/kvflow_locobench_start_20261028_zh.md.
+- TokenCake CPU session ingress now explicitly uses real native Req and
+  PrefillAdder, current session generations and null namespaces. Four new
+  cases verify native admission, shared capacity once,4/2/1/1 upload and
+  early-H2D return with4 native-demand tokens and real lock handoff.
+  Production TokenCake policy/capacity/transfer code remains unchanged.
+  Preserve r1/r2 fixture failures: missing real receipt, wrong lease timing
+  and confusing stale ID strings with live manager ownership. Final60-case
+  focused and source-bound742-case merged CPU executions pass; all726 prior
+  identities retained,1873 sources unchanged, common native11b84f7c3198.
+  GPU qualifier keeps six original plain scenes and adds six actual native
+  session scenes with generation/source-anchor proof; validator requires
+  each complete group. These new scenes have not run. Freeze before any GPU
+  execution, after actual KVFlow exit and completed owned cleanup/current
+  hold/resources. Its independent live prefix now seals2274 exact completions;
+  unknown budgets stay null and no partial JCT/performance claim is made.
+  Keep frozen6dc4b892 and full work/tails unchanged, no native/V345 rerun or
+  ablation, and the overall goal active. See
+  docs/research/tokencake_radix_session_20261028_zh.md.
