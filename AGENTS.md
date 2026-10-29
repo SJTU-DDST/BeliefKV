@@ -3076,3 +3076,20 @@
   and actual exit are proved. Fresh24-request model/position and sampler
   qualification still precede a distinct complete TokenCake retry. Preserve
   the failed common-engine formalR1 and reuse completeV345/KVFlow unchanged.
+- New-hook TokenCake position/model smoke now passes24 exact/session/native-stop
+  requests, all24 native stops, then running1/8/24 sampling calibration. Complete
+  TokenCake now runs frozen22caa011/native131d at18705:
+  ops/tokencake_locobench_native_hooks_20261028_r1.registration.json.
+  Independent live_start verifies nice0 watcher1122651/server1123520/
+  driver1124738/sole GPU1123824, actual seven parameters, fresh native-loop
+  components and318 exact completed receipts. Keep full work/performance pending,
+  preserve the failed original run, and do not overlap another GPU experiment.
+- Main-only Agentix full-prompt radix-session support preserves original call/
+  token/sampler/namespace ownership and validates open native generations before
+  registration, capacity and checkpoint release. Its actual752-case CPU run
+  passes on originalc489 native, with copy/executor stand-ins. Preserve the
+  strict retention refusal:686 of690 literal prior IDs remain; four historical
+  cases became eight observed/inferred parameter cases, explicitly reviewed.
+  This is not GPU/model/finite-pressure qualification or formal Agentix enablement,
+  and it is absent from frozen TokenCake. See
+  docs/research/agentix_radix_sessions_20261028_zh.md.

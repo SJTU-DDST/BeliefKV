@@ -2,7 +2,7 @@
 
 The scheduler must drain its real forward/result pipeline before prepare and
 commit. This module supplies physical mechanisms, not victim or JOIN policy.
-Current scope matches the common FULL-only, page-size-one AgentX data plane.
+Supports plain token input and complete-input native radix sessions.
 """
 
 from collections import Counter
@@ -53,6 +53,29 @@ def _metadata(req):
     return tuple(data.get(name) for name in (
         "root_workflow_id", "invocation_id", "context_id", "context_epoch",
     ))
+
+
+def validate_request_transport(cache, req):
+    if any(getattr(req, name, None) is not None for name in (
+        "input_embeds", "positional_embed_overrides", "session", "session_params",
+    )):
+        raise ValueError("Agentix requires token input without session reconstruction or overrides")
+    session_id = getattr(req, "session_id", None)
+    if session_id is None:
+        return
+    metadata = getattr(req, "beliefkv_metadata", None)
+    if type(metadata) is not dict or metadata.get("full_prompt_replay_guaranteed") is not True:
+        raise ValueError("Agentix radix sessions require an explicit full-prompt contract")
+    generation = getattr(req, "session_generation", None)
+    refs = getattr(cache, "session_refs", None)
+    if (
+        getattr(cache, "enable_session_radix_cache", False) is not True
+        or type(session_id) is not str or not session_id
+        or type(generation) is not int or generation < 0
+        or getattr(refs, "_session_generations", {}).get(session_id) != generation
+        or session_id in getattr(refs, "_closed_session_ids", ())
+    ):
+        raise ValueError("Agentix requires a live native radix session generation")
 
 
 class AgentixNativeSwap:
@@ -108,16 +131,15 @@ class AgentixNativeSwap:
         return req.extra_key, req.cache_salt, req.session_id, req.session_generation
 
     def _proof(self, req):
+        validate_request_transport(self.cache, req)
         committed = req.effective_kv_committed_len()
         if (
             req.finished() or not req.kv.holds_kv or req.kv.is_kv_released
-            or req.input_embeds is not None or req.session is not None
-            or req.session_id is not None
             or not req.output_ids or committed != req.seqlen - 1
             or committed <= 0 or req.kv.kv_allocated_len != committed
             or req.rid in self.paused
         ):
-            raise ValueError("Agentix swap requires a settled plain running decode request")
+            raise ValueError("Agentix swap requires a settled running decode request")
         return _RequestProof(
             req, req.rid, req.origin_input_ids, req.output_ids,
             len(req.origin_input_ids), len(req.output_ids), req.sampling_params,
@@ -126,6 +148,7 @@ class AgentixNativeSwap:
         )
 
     def _validate_tokens(self, proof, req):
+        validate_request_transport(self.cache, req)
         if (
             req is not proof.request or req.rid != proof.rid
             or req.origin_input_ids is not proof.input_ids

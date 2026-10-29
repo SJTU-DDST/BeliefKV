@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="19" time="7.056" timestamp="2026-10-28T22:42:44.161584-07:00" hostname="ddst-12"><testcase classname="tests.test_agentix_native_sessions" name="test_native_session_checkpoint_restores_through_real_prefill_consumer" time="6.584"><failure message="ValueError: Agentix swap requires a settled plain running decode request">tests/test_agentix_native_sessions.py:47: in test_native_session_checkpoint_restores_through_real_prefill_consumer
+    actor.prepare([req], running_batch=NS(reqs=[req]))
+beliefkv/runtime/agentix_swap.py:20: in invoke
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:181: in prepare
+    proofs = tuple(self._proof(req) for req in reqs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:181: in &lt;genexpr&gt;
+    proofs = tuple(self._proof(req) for req in reqs)
+                   ^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:120: in _proof
+    raise ValueError("Agentix swap requires a settled plain running decode request")
+E   ValueError: Agentix swap requires a settled plain running decode request</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_two_native_sessions_share_checkpoint_pages_and_keep_both_owners" time="0.005"><failure message="ValueError: Agentix swap requires a settled plain running decode request">tests/test_agentix_native_sessions.py:80: in test_two_native_sessions_share_checkpoint_pages_and_keep_both_owners
+    prepared = actor.prepare([first, second], running_batch=NS(reqs=[first, second]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:20: in invoke
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:181: in prepare
+    proofs = tuple(self._proof(req) for req in reqs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:181: in &lt;genexpr&gt;
+    proofs = tuple(self._proof(req) for req in reqs)
+                   ^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:120: in _proof
+    raise ValueError("Agentix swap requires a settled plain running decode request")
+E   ValueError: Agentix swap requires a settled plain running decode request</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-missing_full_prompt]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-false_full_prompt]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-closed]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-stale_generation]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-boolean_generation]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-reconstruction]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-embeddings]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[swap-position_override]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-missing_full_prompt]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">tests/test_agentix_native_sessions.py:126: in test_unsupported_session_transport_is_rejected_before_native_context_mutation
+    with pytest.raises(ValueError, match="session|token|full.prompt|plain running|observed native"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-false_full_prompt]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">tests/test_agentix_native_sessions.py:126: in test_unsupported_session_transport_is_rejected_before_native_context_mutation
+    with pytest.raises(ValueError, match="session|token|full.prompt|plain running|observed native"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-closed]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">tests/test_agentix_native_sessions.py:126: in test_unsupported_session_transport_is_rejected_before_native_context_mutation
+    with pytest.raises(ValueError, match="session|token|full.prompt|plain running|observed native"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-stale_generation]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">tests/test_agentix_native_sessions.py:126: in test_unsupported_session_transport_is_rejected_before_native_context_mutation
+    with pytest.raises(ValueError, match="session|token|full.prompt|plain running|observed native"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-boolean_generation]" time="0.005" /><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-reconstruction]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">tests/test_agentix_native_sessions.py:126: in test_unsupported_session_transport_is_rejected_before_native_context_mutation
+    with pytest.raises(ValueError, match="session|token|full.prompt|plain running|observed native"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-embeddings]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">tests/test_agentix_native_sessions.py:126: in test_unsupported_session_transport_is_rejected_before_native_context_mutation
+    with pytest.raises(ValueError, match="session|token|full.prompt|plain running|observed native"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_unsupported_session_transport_is_rejected_before_native_context_mutation[capacity-position_override]" time="0.005"><failure message="Failed: DID NOT RAISE ValueError">tests/test_agentix_native_sessions.py:126: in test_unsupported_session_transport_is_rejected_before_native_context_mutation
+    with pytest.raises(ValueError, match="session|token|full.prompt|plain running|observed native"):
+E   Failed: DID NOT RAISE ValueError</failure></testcase><testcase classname="tests.test_agentix_native_sessions" name="test_native_session_generation_is_rechecked_before_checkpoint_release" time="0.005"><failure message="ValueError: Agentix swap requires a settled plain running decode request">tests/test_agentix_native_sessions.py:134: in test_native_session_generation_is_rechecked_before_checkpoint_release
+    actor.prepare([req], running_batch=NS(reqs=[req]))
+beliefkv/runtime/agentix_swap.py:20: in invoke
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:181: in prepare
+    proofs = tuple(self._proof(req) for req in reqs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:181: in &lt;genexpr&gt;
+    proofs = tuple(self._proof(req) for req in reqs)
+                   ^^^^^^^^^^^^^^^^
+beliefkv/runtime/agentix_swap.py:120: in _proof
+    raise ValueError("Agentix swap requires a settled plain running decode request")
+E   ValueError: Agentix swap requires a settled plain running decode request</failure></testcase></testsuite></testsuites>

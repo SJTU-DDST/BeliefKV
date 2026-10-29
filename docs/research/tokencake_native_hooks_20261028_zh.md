@@ -68,3 +68,21 @@ start_position.py为独立后续入口：核验812项CPU、实际组件及失败
 清理后，冻结新应用并启动24请求token/session/native-stop检查与
 running1/8/24 sampler校准。其后只登记TokenCake完整重试，不采native、
 不重跑ThunderAgent。实际模型/position结果和完整性能仍待产生。
+
+## 模型检查与完整重试已启动
+
+24请求token/session/native-stop检查已实际通过，24项均原生停止；
+running1/8/24 sampler校准完成。position supervisor1119760及所属
+server退出并清理后，完整TokenCake重试从冻结22caa011/native131d
+在18705启动，登记为
+`ops/tokencake_locobench_native_hooks_20261028_r1.registration.json`。
+
+独立observe_live.py/live_start.json核验实际nice0 watcher1122651、
+server1123520、driver1124738和唯一GPU scheduler1123824，以及原生hook
+投影、七个实际策略参数和启动前新鲜prefix/十二场景资格。封存318个
+完全一致的完成回执，未知per-agent预算保持null。该前缀不代表完整
+3674请求、正常尾部或最终JCT/吞吐。
+
+所有完整工作量、V311工具时间、容量、seed和普通数值设置保持原合同。
+原生tree不同于V345/KVFlow，比较时明确保留这个必要hook差异。
+main之后的Agentix CPU session适配没有进入此冻结TokenCake运行。

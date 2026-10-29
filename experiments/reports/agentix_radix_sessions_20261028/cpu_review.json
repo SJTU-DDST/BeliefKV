@@ -1,0 +1,87 @@
+{
+  "observed_at": "2026-10-29T06:03:25.248220+00:00",
+  "status": "agentix_radix_session_cpu_qualified_with_declared_parameter_expansions",
+  "passing_unique_cases": 752,
+  "literal_prior_identities_retained": 686,
+  "all_prior_690_literal_identities_retained": false,
+  "historical_parameter_expansions": [
+    {
+      "previous": [
+        "tests.test_kvflow_runtime",
+        "test_all_and_any_observed_nested_joins_drive_different_distances"
+      ],
+      "current": [
+        [
+          "tests.test_kvflow_runtime",
+          "test_all_and_any_observed_nested_joins_drive_different_distances[observed_exact]"
+        ],
+        [
+          "tests.test_kvflow_runtime",
+          "test_all_and_any_observed_nested_joins_drive_different_distances[inferred]"
+        ]
+      ]
+    },
+    {
+      "previous": [
+        "tests.test_tokencake_runtime",
+        "test_observed_join_inherits_live_priority_but_no_future_graph_is_read"
+      ],
+      "current": [
+        [
+          "tests.test_tokencake_runtime",
+          "test_observed_join_inherits_live_priority_but_no_future_graph_is_read[observed_exact]"
+        ],
+        [
+          "tests.test_tokencake_runtime",
+          "test_observed_join_inherits_live_priority_but_no_future_graph_is_read[inferred]"
+        ]
+      ]
+    },
+    {
+      "previous": [
+        "tests.test_workflow_agent_service_runtime",
+        "test_observed_all_join_coadmits_ready_siblings_but_any_join_does_not[all]"
+      ],
+      "current": [
+        [
+          "tests.test_workflow_agent_service_runtime",
+          "test_observed_all_join_coadmits_ready_siblings_but_any_join_does_not[observed_exact-all]"
+        ],
+        [
+          "tests.test_workflow_agent_service_runtime",
+          "test_observed_all_join_coadmits_ready_siblings_but_any_join_does_not[inferred-all]"
+        ]
+      ]
+    },
+    {
+      "previous": [
+        "tests.test_workflow_agent_service_runtime",
+        "test_observed_all_join_coadmits_ready_siblings_but_any_join_does_not[any]"
+      ],
+      "current": [
+        [
+          "tests.test_workflow_agent_service_runtime",
+          "test_observed_all_join_coadmits_ready_siblings_but_any_join_does_not[observed_exact-any]"
+        ],
+        [
+          "tests.test_workflow_agent_service_runtime",
+          "test_observed_all_join_coadmits_ready_siblings_but_any_join_does_not[inferred-any]"
+        ]
+      ]
+    }
+  ],
+  "original_strict_retention_refusal_preserved": "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/bound_cpu.json",
+  "source_manifest_rechecked": true,
+  "actual_native_source_rechecked": true,
+  "copy_and_execution_events_are_CPU_standins": true,
+  "GPU_qualification": false,
+  "formal_agentix_enabled": false,
+  "performance_accepted": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/review_cpu.py": "6bc6b1330dd5529467ce6390ac2694b9dfd1fc9d11e853c568a8888d5c6f6e2e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/bound_cpu.json": "2a4be56e0056610b2df34574d19c4cfca7e9c2fac70e488fedce8d7b53cbde9e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/bound_cpu.xml": "d94e29a759cc3cb32a351913c18053a1d79a443f7ae677cb6001402544bec420",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_radix_sessions_20261028/bound_cpu.sources.json": "630fb1e9a57556cc50cb70e6262e5d82247d919be43146bf5e96a8c1af518184",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/agentix_pressure_all_baselines_cpu_20261025.xml": "8554d30948b107c074f5bacd6930d13eef019f7e21e5fc0d75cda1498da69915"
+  }
+}

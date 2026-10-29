@@ -10,7 +10,7 @@ from beliefkv.runtime.agentix_executor import AgentixWorkerExecution
 from beliefkv.runtime.agentix_lifecycle import (
     AgentixCallLifecycle, AgentixNativeScheduling,
 )
-from beliefkv.runtime.agentix_swap import AgentixNativeSwap
+from beliefkv.runtime.agentix_swap import AgentixNativeSwap, validate_request_transport
 from beliefkv.runtime.paper_baseline import _isolated
 
 
@@ -97,6 +97,7 @@ class AgentixAdapter:
 
     def registered(self, req, key):
         self._bound()
+        validate_request_transport(self.cache, req)
         if self.qualification is not None and (
             self.calls.counts["registered"] >= self.qualification["max_requests"]
         ):

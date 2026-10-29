@@ -9,6 +9,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from beliefkv.runtime.sglang_v0520_admission import _request_key
+from beliefkv.runtime.agentix_swap import validate_request_transport
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,7 @@ class AgentixNativeCapacity:
         staged = []
         identities = set()
         for req in requests:
+            validate_request_transport(self.cache, req)
             key = _request_key(req)
             if key is None or req.rid in identities:
                 raise ValueError("Agentix capacity requires unique observed native requests")
@@ -96,6 +98,7 @@ class AgentixNativeCapacity:
         self.counts["prepared_requests"] += len(probes)
 
     def _probe(self, req):
+        validate_request_transport(self.cache, req)
         probe = self.probes.get(req.rid)
         if probe is None or (
             probe.request is not req or _request_key(req) != probe.key
