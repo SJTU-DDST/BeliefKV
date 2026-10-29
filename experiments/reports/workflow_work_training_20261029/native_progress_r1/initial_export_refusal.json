@@ -1,0 +1,14 @@
+{
+  "capture": "experiments/raw/workflow_work_source_20261029_matched6/native_capture",
+  "initial_error": "ValueError: native progress differs from observed source identity or time",
+  "sample_id": "native-service-000000352",
+  "source_submit_monotonic_ms": 7474058773.895011,
+  "native_sample_monotonic_ms": 7474126265.917784,
+  "source_result_monotonic_ms": 7474126258.305794,
+  "output_tokens_before": 53,
+  "token_delta": 0,
+  "captured_final_output_tokens": 54,
+  "matched6_zero_delta_post_result_rows": 982,
+  "resolution": "Ignore validated zero-delta residues following source completion; still reject late positive output deltas.",
+  "GPU_experiment_started": false
+}

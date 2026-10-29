@@ -22,6 +22,21 @@ from beliefkv.predictor.workflow_work import (
 from beliefkv.runtime.replay_token_capture import decode_tokens
 
 
+BOUNDARY_PROGRESS = "completed_request_boundaries_v1"
+NATIVE_PROGRESS = "observed_native_decode_progress_128_v1"
+SNAPSHOT_EVENTS = frozenset((
+    Kind.WORKFLOW_START, Kind.LLM_SUBMIT, Kind.LLM_RESULT,
+    Kind.JOIN_WAIT, Kind.JOIN_SATISFIED, Kind.TOOL_START, Kind.TOOL_END,
+))
+
+
+def progress_contract(dataset):
+    value = dataset.get("progress_observation_contract", BOUNDARY_PROGRESS)
+    if value not in (BOUNDARY_PROGRESS, NATIVE_PROGRESS):
+        raise ValueError("unsupported workflow progress observation contract")
+    return value
+
+
 def write(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x") as handle:
@@ -29,7 +44,97 @@ def write(path, value):
         handle.write("\n")
 
 
-def export_capture(capture, *, prefill_weight):
+def native_decode_progress(events, batches, output_lengths, *, quantum=128):
+    """Use observed native output counts; final lengths only exclude terminal rows."""
+    if type(quantum) is not int or quantum < 1:
+        raise ValueError("native progress requires a positive observation quantum")
+    submitted, completed = {}, {}
+    for event in events:
+        if event.kind not in (Kind.LLM_SUBMIT, Kind.LLM_RESULT):
+            continue
+        rid = event.attributes["request_id"]
+        target = submitted if event.kind is Kind.LLM_SUBMIT else completed
+        if rid in target:
+            raise ValueError("duplicate native-progress source boundary")
+        target[rid] = event
+    if (
+        not submitted or submitted.keys() != completed.keys()
+        or not submitted.keys() <= output_lengths.keys()
+        or any(type(output_lengths[rid]) is not int or output_lengths[rid] < 0 for rid in submitted)
+    ):
+        raise ValueError("native progress needs complete source calls and captured outputs")
+    observed, published, seen_samples, domains, values = set(), Counter(), set(), set(), []
+    previous = -math.inf
+    for batch in batches:
+        if batch.get("event") != "gpu_service_sample":
+            continue
+        identity, now = batch.get("sample_id"), batch.get("complete_monotonic_ms")
+        domain = batch.get("monotonic_clock_domain")
+        if (
+            type(identity) is not str or not identity or identity in seen_samples
+            or type(now) not in (int, float) or not math.isfinite(now) or now < previous
+            or type(domain) is not str or not domain
+        ):
+            raise ValueError("native progress has an invalid sample identity or clock")
+        seen_samples.add(identity)
+        domains.add(domain)
+        previous = now
+        for sample in batch.get("request_samples", ()):
+            rid = sample.get("request_id")
+            if rid not in submitted:
+                continue
+            begin, end = submitted[rid], completed[rid]
+            if (
+                any(sample.get(name) != getattr(begin, name) for name in (
+                    "workflow_id", "invocation_id", "context_id", "context_epoch",
+                ))
+                or now < begin.ts_ms
+            ):
+                raise ValueError("native progress differs from observed source identity or time")
+            observed.add(rid)
+            if sample.get("phase", batch.get("phase")) != "decode":
+                if now > end.ts_ms:
+                    raise ValueError("native progress service follows source completion")
+                continue
+            before, delta = sample.get("output_tokens_before"), sample.get("token_delta")
+            if (
+                sample.get("token_delta_semantics") != "observed_output_ids_delta"
+                or any(type(value) is not int or value < 0 for value in (before, delta))
+            ):
+                raise ValueError("native progress requires observed output-count deltas")
+            count = before + delta
+            if count > output_lengths[rid]:
+                raise ValueError("observed native output exceeds the captured generation")
+            # Overlapped batches can retain a completed row without new output.
+            if now > end.ts_ms:
+                if delta == 0:
+                    continue
+                raise ValueError("native progress service follows source completion")
+            if (
+                count == output_lengths[rid] or now == end.ts_ms
+                or count - published[rid] < quantum
+            ):
+                continue
+            published[rid] = count
+            values.append({
+                "ts_ms": now, "request_id": rid, "output_tokens": count,
+                "workflow_id": begin.workflow_id, "sample_id": identity,
+            })
+    if len(domains) != 1 or observed != submitted.keys():
+        raise ValueError("native progress lacks one clock domain or full request coverage")
+    return values
+
+
+def _native_progress_records(path):
+    with path.open("rb") as stream:
+        for line in stream:
+            if not line.endswith(b"\n"):
+                raise ValueError("native progress requires a complete service journal")
+            if b'"gpu_service_sample"' in line:
+                yield json.loads(line)
+
+
+def export_capture(capture, *, prefill_weight, native_progress=False):
     """Only completed same-context histories contribute past logical KV work."""
     clients = list(capture.glob("client_*/workflows"))
     if len(clients) != 1:
@@ -83,12 +188,40 @@ def export_capture(capture, *, prefill_weight):
         elif row["event"] == "request_output":
             outputs[row["request_id"]] = decode_tokens(row)
     evidence[str(token_path.resolve())] = sha256_file(token_path)
+    streamed = defaultdict(list)
+    if native_progress:
+        service_path = capture / "server/runtime_audit.jsonl"
+        for observation in native_decode_progress(
+            (event for _project, _text, events, _digest in workflows.values() for event in events),
+            _native_progress_records(service_path),
+            {rid: len(output) for rid, output in outputs.items()},
+        ):
+            streamed[observation["workflow_id"]].append(observation)
+        evidence[str(service_path.resolve())] = sha256_file(service_path)
     result = []
     for workflow, (project, text, events, execution_digest) in workflows.items():
         progress, snapshots, completed = WorkflowProgress(), [], set()
         progress.text = text
         task_hash = hashlib.sha256(text.encode()).hexdigest()
-        for event in events:
+        observations = [(event.ts_ms, i, event) for i, event in enumerate(events)]
+        if native_progress:
+            observations.extend(
+                (item["ts_ms"], len(events) + i, item)
+                for i, item in enumerate(streamed[workflow])
+            )
+            observations.sort(key=lambda item: item[:2])
+        for _when, _order, event in observations:
+            if isinstance(event, dict):
+                progress.generated(event["request_id"], event["output_tokens"])
+                snapshots.append({
+                    "features": progress.features(),
+                    "attained_work": progress.counts["input_tokens"] * prefill_weight
+                                     + progress.counts["output_tokens"],
+                    "event": "native_decode_progress", "observed_ts_ms": event["ts_ms"],
+                    "observation_request_id": event["request_id"],
+                    "observed_output_tokens": event["output_tokens"],
+                })
+                continue
             if event.kind is Kind.WORKFLOW_END:
                 continue
             progress.event(event)
@@ -105,10 +238,7 @@ def export_capture(capture, *, prefill_weight):
                     request, event.invocation_id, event.context_id,
                     prompts[request], outputs[request],
                 )
-            if event.kind in (
-                Kind.WORKFLOW_START, Kind.LLM_SUBMIT, Kind.LLM_RESULT,
-                Kind.JOIN_WAIT, Kind.JOIN_SATISFIED, Kind.TOOL_START, Kind.TOOL_END,
-            ):
+            if event.kind in SNAPSHOT_EVENTS:
                 snapshots.append({
                     "features": progress.features(),
                     "attained_work": progress.counts["input_tokens"] * prefill_weight
@@ -383,6 +513,7 @@ def main():
     export = sub.add_parser("export")
     export.add_argument("--capture", type=Path, action="append", required=True)
     export.add_argument("--prefill-token-weight", type=float, required=True)
+    export.add_argument("--native-progress", action="store_true")
     export.add_argument("--output", type=Path, required=True)
     train = sub.add_parser("fit")
     train.add_argument("--dataset", type=Path, required=True)
@@ -401,7 +532,10 @@ def main():
             raise ValueError("a frozen positive model-work conversion is required")
         values, evidence, rejections = [], {}, []
         for capture in args.capture:
-            rows, bound, rejected = export_capture(capture, prefill_weight=args.prefill_token_weight)
+            rows, bound, rejected = export_capture(
+                capture, prefill_weight=args.prefill_token_weight,
+                native_progress=args.native_progress,
+            )
             values.extend(rows)
             evidence.update(bound)
             rejections.extend(rejected)
@@ -410,6 +544,9 @@ def main():
             "prefill_token_weight": args.prefill_token_weight,
             "work_unit": "explicit_logical_token_work_proxy_not_calibrated_GPU_seconds",
             "rejected_non_natural_workflows": rejections,
+            "progress_observation_contract": (
+                NATIVE_PROGRESS if args.native_progress else BOUNDARY_PROGRESS
+            ),
         })
         print({"workflows": len({row["workflow"] for row in values}), "snapshots": len(values)})
         return
@@ -418,6 +555,9 @@ def main():
     )
     if dataset["prefill_token_weight"] != evaluation["prefill_token_weight"]:
         raise ValueError("training and evaluation work units differ")
+    observation_contract = progress_contract(dataset)
+    if progress_contract(evaluation) != observation_contract:
+        raise ValueError("training and evaluation progress observations differ")
     test = evaluation["rows"]
     excluded_projects = {row["project"] for row in test}
     excluded_templates = {row["task_template"] for row in test}
@@ -427,6 +567,8 @@ def main():
         calibrated = json.loads(args.calibration_dataset.read_bytes())
         if calibrated["prefill_token_weight"] != dataset["prefill_token_weight"]:
             raise ValueError("calibration work units differ")
+        if progress_contract(calibrated) != observation_contract:
+            raise ValueError("training and calibration progress observations differ")
         training, calibration = dataset["rows"], calibrated["rows"]
         split_contract = capture_split(
             training, calibration, test, require_capture_disjoint=args.split_mode == "capture",
@@ -466,6 +608,7 @@ def main():
     raw["metadata"].update({
         "prefill_token_weight": dataset["prefill_token_weight"],
         "training_dataset_sha256": sha256_file(args.dataset),
+        "progress_observation_contract": observation_contract,
         "evaluation_excluded_projects": sorted(excluded_projects) if args.split_mode == "project" else [],
         "evaluation_excluded_task_templates": sorted(excluded_templates) if args.split_mode == "project" else [],
         "split_contract": split_contract,

@@ -3724,3 +3724,15 @@
   workerCPU3.139s are prefix observations,not incremental overhead or complete
   performance. Keep open coverage/normal tails and wait the existing Full/
   CPU reviewer;do not start baselines or change workload from these prefixes.
+- Workflow-size Full now completes the exact3674/18 workload and normal tails.
+  MeanJCT1438.451359 vs original2sFull1439.457324s (-.0699%),whole-run output
+  241.403124 vs243.890996token/s (-1.0201%);do not promote ranking or start
+  other baselines. Final1132 controls change local selected sets only13times.
+  Training/calibration/development running features were all0 while online
+  emits partial output every128tokens. This is a confirmed input mismatch,
+  not a proven performance root cause. New opt-in native-progress export uses
+  actual journal counts,keeps final work/execution populations,and validates
+  ownership/clock/coverage. Zero-delta post-result residues publish no progress.
+  Actual104 focused tests pass. Keep fixed34/22/18 populations and compact16
+  parameters for CPU repair,with actual Worker partial-progress parity.
+  No new GPU action follows;keep tool/frontier prefetch and layer handoff off.
