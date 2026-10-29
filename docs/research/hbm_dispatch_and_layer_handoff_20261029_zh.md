@@ -114,3 +114,34 @@ acting-decay 对照，不额外重跑 native 或 ThunderAgent。
 原 FULL 的完整工作、两份新鲜空闲快照和实际进程退出，然后单独注册策略
 不同的候选。`queue_cpu_r2.evidence.json` 绑定队列与 reviewer 源文件，
 26 项检查通过。GPU 注册器仍需通过自己的原生容量、来源和资源检查。
+
+## 刚完成的 mean120 更新
+
+原配置 mean120 FULL 随后完成了全部 3,674 个请求、完整排空与实际退出。
+使用同一个已绑定审计器复查，`mean120_original_complete_audit_r1.json` 给出：
+
+- 共同 300–1800 秒区间观测覆盖 99.96%，物理驻留平均 99.48%，不可驱逐
+  67.01%，可驱逐 32.47%，空闲 0.52%。
+- 原生短缺下已备份节点释放 1,499 次，约 238.11 GB。预测式已备份工具
+  节点释放另有 317 次、37.11 GB；这些口径不能相加为独立交换次数。
+- 新工具 D2H 备份 50 个命令、49 个受益请求、约 0.603 GB，全部 ACK；
+  可逐条关联的同 owner/node/受益请求备份→释放→恢复→服务链为四条，
+  仍不能视作全部必须串行迁移的上界或总数。
+- 最后记录的 handoff 计数为 61 次尝试、一次提交，恢复 1,047 token，
+  其中 586 token 来自实际空闲 extent，461 token 来自 donor。31 次为
+  donor 小于目标；这仍不是独立 on/off 性能证据。
+- 133 个请求有可放入完整逻辑预算的 inactive 采样，其中 44 个首次调用、
+  89 个续接；采样区间并集约 244.86 秒，逐请求相加约 297.08 秒，
+  后者包含重叠，不可当作 JCT 收益。
+
+独立完整性能 reviewer 给出原 FULL 平均 JCT 1,448.78 秒，对照 ThunderAgent
+1,494.24 秒，降低 3.04%；全程输出率 248.04 对 239.60 token/s，提高
+3.52%。这些是原配置的整套性能，不能归因于单次 handoff，也不是新候选的
+成绩。原配对 decode 图在 `arrival_mean120_20261029/review_worker_r1/complete_review/`。
+
+候选已从冻结 `11c14d6f` 单独运行，注册
+`ops/hbm_dispatch_mean120_20261029_r2.registration.json`、端口 18873。
+22:44:54 Asia/Shanghai 的独立检查确认 sole GPU scheduler 1390529、实际
+watcher/server/driver 存活且 nice0、500ms 补位和五秒压力重评同时生效，
+工具/frontier 预取关闭。该时刻为启动前缀，不能据此报告完成性能。
+CPU reviewer 已排队等待完整工作后生成相对 ThunderAgent 和原 FULL 的结果。

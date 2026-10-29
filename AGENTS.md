@@ -3390,3 +3390,18 @@
   passes; preserve both registration entry failures. Candidate uses a fresh
   r2 registration identity because the refused r1 prepared frozen worktrees.
   Reuse the same actual mean120 control and original Full for review.
+- Original mean120 Full now actually completes all3674 exact requests, fresh
+  drain and actual owned exit. Independent CPU reviewer completes: JCT1448.785
+  vs Thunder1494.243s (-3.04%),output248.040 vs239.596token/s (+3.52%).
+  New complete capacity audit confirms99.48% middle physical KV residency
+  (99.96% coverage),67.01% non-evictable,133 raw-fitting paused requests.
+  Actual backed releases1499 nodes;50 new tool-D2H commands/49 beneficiaries,
+  4 explicitly joined backup-release-restore-service chains. Last handoff
+  counters61 attempts/1 submit,1047 restored tokens incl586 real free extent;
+  do not extrapolate mandatory-D2H frequency or isolated performance.
+  Queue11c14d6f successfully registers candidate r2 on18873 after actual original
+  exit. candidate_live_start_r1 independently verifies22:44:54 Asia/Shanghai:
+  live nice0 watcher1388810/server1390061/driver1392393/sole GPU1390529,
+  healthy500ms free dispatch with5s pressure ticks, tool/frontier prefetch off.
+  This is a startup prefix, not completed performance. Preserve frozen candidate
+  and its CPU-only review_worker_r1; global optimization goal stays active.

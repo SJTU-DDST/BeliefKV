@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-hbm-queue-11c14d6f/experiments/reports/hbm_dispatch_20261029/review_after_candidate.py",
+    "--thunder",
+    "/home/longhao/experiment/ops/arrival_mean120_thunder_20261029_r1.registration.json",
+    "--original",
+    "/home/longhao/experiment/ops/arrival_mean120_full_20261029_r1.registration.json",
+    "--candidate",
+    "/home/longhao/experiment/ops/hbm_dispatch_mean120_20261029_r2.registration.json",
+    "--output-root",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/hbm_dispatch_20261029/review_worker_r1"
+  ],
+  "returncode": 0,
+  "stdout": "{'registration': '/home/longhao/experiment/BeliefKV/experiments/reports/hbm_dispatch_20261029/review_worker_r1/registration.json', 'watcher': {'pid': 1388964, 'state': 'R', 'ppid': 1388823, 'start_ticks': '745509838', 'argv': ['nice', '-n', '19', '/home/longhao/miniconda3/envs/beliefkv-next/bin/python', '/home/longhao/experiment/.worktrees/beliefkv-hbm-queue-11c14d6f/experiments/reports/hbm_dispatch_20261029/review_after_candidate.py', '--watch', '/home/longhao/experiment/BeliefKV/experiments/reports/hbm_dispatch_20261029/review_worker_r1/registration.json']}}\n",
+  "stderr": ""
+}

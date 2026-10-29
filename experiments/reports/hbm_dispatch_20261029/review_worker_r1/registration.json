@@ -1,0 +1,24 @@
+{
+  "application": {
+    "commit": "11c14d6fcf4b2e9774e01de60427f8fa2aa9579f",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "146d3064e1996238394b6fd79f508fd04607d1f5f8d62c4dbb22e0d503ddfb79"
+  },
+  "registered_at": "2026-10-29T14:40:35.287382+00:00",
+  "thunder": "/home/longhao/experiment/ops/arrival_mean120_thunder_20261029_r1.registration.json",
+  "candidate": "/home/longhao/experiment/ops/hbm_dispatch_mean120_20261029_r2.registration.json",
+  "original": "/home/longhao/experiment/ops/arrival_mean120_full_20261029_r1.registration.json",
+  "reader": "/home/longhao/experiment/.worktrees/beliefkv-hbm-queue-11c14d6f/experiments/reports/arrival_mean120_20261029/review_pair.py",
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/arrival_mean120_thunder_20261029_r1.registration.json": "473dc9c10b07799773540f9d8618cf85f874a9bd315ae045096699b73672515d",
+    "/home/longhao/experiment/ops/hbm_dispatch_mean120_20261029_r2.registration.json": "205442e5f0dcff9cf01765803b56e5def50bf1c243ea11869396fce6558859e2",
+    "/home/longhao/experiment/ops/arrival_mean120_full_20261029_r1.registration.json": "ead26b0149c2c5a7ee5c446eb43c6293af1ebe9abeb7ab58065aa51d6afae1a1",
+    "/home/longhao/experiment/.worktrees/beliefkv-hbm-queue-11c14d6f/experiments/reports/hbm_dispatch_20261029/review_after_candidate.py": "51f80d25e046ba9b76433dfb5a3885e0c8aadab33cc8bb89854056634cb882c1",
+    "/home/longhao/experiment/.worktrees/beliefkv-hbm-queue-11c14d6f/experiments/reports/arrival_mean120_20261029/review_pair.py": "e1658d59622fcd87278a5ace364aca92c7fe5b6c4ed2f2d1ca53079035ca9af5"
+  },
+  "GPU_experiment_registered": false
+}
