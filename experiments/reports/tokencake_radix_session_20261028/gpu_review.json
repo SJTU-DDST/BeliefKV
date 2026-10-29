@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-10-29T04:44:14.934795+00:00",
+  "status": "twelve_native_session_components_independently_verified",
+  "application": {
+    "commit": "eca8b38dd8ae383a5748e6a347902bf846129d2e",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "e3535cccb750ee2328aba7b8dd98a70aa59fbe31c181c9eccb0f461c9def643a"
+  },
+  "engine_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+  "scenarios": [
+    "full_upload",
+    "early_d2h",
+    "early_h2d",
+    "expiry",
+    "retirement",
+    "pressure"
+  ],
+  "native_session_scenarios": [
+    "full_upload",
+    "early_d2h",
+    "early_h2d",
+    "expiry",
+    "retirement",
+    "pressure"
+  ],
+  "same_native_and_policy_sources_verified": true,
+  "actual_component_and_supervisor_exit_verified": true,
+  "GPU_compute_processes_absent": true,
+  "whole_model_or_performance_qualified": false,
+  "performance_accepted": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/component_review.py": "56e7249e07ff2db985bfeee75f3aec76f9565a217275db24484fb5a2820dd2be",
+    "/home/longhao/experiment/ops/tokencake_native_sessions_20261028_r1.registration.json": "441bd8eb5049c1d39ec407638636138dbf2cba27f79dd5d44eaebe0c013486bf",
+    "/home/longhao/experiment/ops/tokencake_native_sessions_20261028_r1.registration.state.json": "51641ed02b1b87e0e8e8a101d8c32dbff3f842121fda4519b1c98b00e8c7ada2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_native_sessions_20261028_r1/components/summary.json": "51c4c36826fa074f294699652fe029e5a32ab803af1dea21c19ba64777453c58",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_native_sessions_20261028_r1/owned_process_cleanup.json": "0994a3af3811a569c89b659b82c4f22a25ca52c4d1207a33cb596332e487a2f8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/component_queue_cpu.xml": "d2c12ab15e80733c3170e557b6eddedd9bea4dc94eabd7f7e2e2a6ff1a47fba4",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/tokencake_radix_session_20261028/bound_cpu.json": "c037c7c5db0f4364436f466c28ea01f68efca83c17779ad693bef1a18fbc5400"
+  }
+}

@@ -74,3 +74,26 @@ paper启动和TokenCake验证器。这是启动入口的CPU证据，与742项
 新增只读前缀 `kvflow_collecting_before_component_queue.json` 封存
 3664/3674个完全一致的完成回执；它仍不是完整实验结果。当前GPU
 组件尚未执行，任何后续资格或性能结论必须依据实际完整报告。
+
+## 组件完成与正式配置
+
+后续实际执行已完成：冻结应用eca8b38d在KVFlow正常退出和清理之后，
+通过全部六个plain场景及六个native-session场景。组件PID1096881
+退出0，waiter1096617也已实际退出。独立component_review.py/
+gpu_review.json重新检查来源、原始报告、进程身份和cleanup，确认GPU
+上下文不存在。此处仍是两层有限KV组件，不代表完整模型或性能。
+
+正式配置为
+`configs/baselines/tokencake_locobench_v230_v311_20261028.json`。
+除TokenCake独立声明的七个参数外，共同环境与已完成KVFlow相同；
+generation预算16384、context262144、running24、prefill16384、
+chunk4096、policy block1、eviction window128。旧paper配置被直接
+引用；不使用某个请求的录制输出长度作为容量预算或截断规则。
+
+formal_bound_cpu.json/.xml/.sources.json是一次新的759项完整执行，
+无失败或跳过，保留所有742项，新增15项顺序入口与2项正式配置检查；
+1880个来源文件在执行前后相同。配置检查构造实际runtime并核验
+TokenCake参数及Full策略隔离。这里的CPU检查仍使用copy/event stand-in。
+register_formal.py在冻结后核验组件、前驱实际退出及当前资源，再登记
+单独TokenCake；正式supervisor仍会在模型启动前重跑prefix和十二项
+生命周期组件，不继承这次组件的整模型/性能资格。
