@@ -1,0 +1,150 @@
+{
+  "status": "complete_matched_arrival_pair_reviewed",
+  "observed_at": "2026-10-29T13:22:01.356268+00:00",
+  "metrics": {
+    "ThunderAgent decay": {
+      "mean_jct_s": 1599.890513215065,
+      "makespan_s": 2323.0478552246095,
+      "end_to_end_output_tokens_per_s": 236.61630506826288,
+      "decode": {
+        "batches": 97205,
+        "request_steps": 549531,
+        "worker_ms": 1604526.9781025127,
+        "request_step_ms": 12997238.973415457,
+        "output_tokens": 545997,
+        "context_tokens": 30624152825,
+        "graph_batches": 97205,
+        "graph_request_steps": 549531,
+        "configured_bucket_rows": 634914,
+        "batches_needing_padding": 44623,
+        "worker_ms_in_batches_needing_padding": 1039336.1466722563,
+        "mean_batch": 5.653320302453578,
+        "worker_weighted_mean_batch": 8.100355525829661,
+        "worker_interval_sum_s": 1604.5269781025127,
+        "mean_worker_interval_ms": 16.506630092099304,
+        "output_tokens_per_worker_interval_second": 340.28533483786424,
+        "mean_observed_request_context_tokens": 55727.798477246964,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.1553743100935161
+      }
+    },
+    "FULL": {
+      "mean_jct_s": 1538.164561112457,
+      "makespan_s": 2281.264305978775,
+      "end_to_end_output_tokens_per_s": 240.9501602069577,
+      "decode": {
+        "batches": 93638,
+        "request_steps": 549498,
+        "worker_ms": 1587484.702700749,
+        "request_step_ms": 13239734.357505105,
+        "output_tokens": 545997,
+        "context_tokens": 30623273777,
+        "graph_batches": 93638,
+        "graph_request_steps": 549498,
+        "configured_bucket_rows": 634971,
+        "batches_needing_padding": 43615,
+        "worker_ms_in_batches_needing_padding": 1032796.4882766828,
+        "mean_batch": 5.868322689506397,
+        "worker_weighted_mean_batch": 8.340070512163468,
+        "worker_interval_sum_s": 1587.484702700749,
+        "mean_worker_interval_ms": 16.953423852503782,
+        "output_tokens_per_worker_interval_second": 343.938432333306,
+        "mean_observed_request_context_tokens": 55729.54547059316,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15554742692421075
+      }
+    }
+  },
+  "full_relative_to_thunder": {
+    "mean_jct_reduction_percent": 3.858136015730629,
+    "whole_run_output_throughput_gain_percent": 1.8315961520253277
+  },
+  "streaming_response_metrics": {
+    "ThunderAgent decay": {
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 75363.38010438283,
+        "p50": 62799.01570940018,
+        "p75": 85605.36189389229,
+        "p90": 121209.28523330693,
+        "p95": 167059.7267683506,
+        "p99": 167315.2847228718,
+        "max": 167379.17421150208
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 67508.7176844279,
+        "p50": 59370.316345214844,
+        "p75": 77939.70924139023,
+        "p90": 112970.27636060715,
+        "p95": 147162.12918152788,
+        "p99": 244266.88802273726,
+        "max": 268543.07773303986
+      }
+    },
+    "FULL": {
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 73891.34859551323,
+        "p50": 60887.5869269371,
+        "p75": 84111.57056760788,
+        "p90": 120105.96052837376,
+        "p95": 163099.52982988357,
+        "p99": 163231.30083215714,
+        "max": 163264.24358272552
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 71137.80966016982,
+        "p50": 48968.09602022171,
+        "p75": 108919.73831367493,
+        "p90": 148938.33678884507,
+        "p95": 172562.5907988548,
+        "p99": 190351.33254423138,
+        "max": 194798.51798057556
+      }
+    }
+  },
+  "requests": 3674,
+  "prompt_tokens": 145565966,
+  "output_tokens": 549671,
+  "method_specific_qualified_native_trees": {
+    "ThunderAgent decay": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "FULL": "434c35dd66211d0a230717c88bf1452056769a40"
+  },
+  "all_normal_tails_exact_tokens_stopping_drained_telemetry_and_owned_exit_verified": true,
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json": "6c939970b66ad2559200658cd5b0c173b8e8231d22f1e08d31182639b50040c8",
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.state.json": "39557c55199cf7217d6522f4d6c7e102bfaa2d6d38ddf40c96f42cca1107c5bd",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/telemetry_drain.json": "82e87e404d6d29b55f587ab4130abd388a3309f37849782bda1b799f2b7b3c53",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/owned_process_cleanup.json": "5b4c6d6b14a37fe86f4f691b2bb11f5f658e4b0ea2265cfcaa9266310f9b23af",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/warm_start_thunder_20261029/arrivals.json": "a20ccd553d2c81dc9f51b0f75b154a854936ab700c5412eedd9cd347a7ada2f9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/replay/summary.json": "571044c0ec4e5227b6748e6aca562d54a1e18738ff18d92e48fcdb284af2f2ef",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/server_info.json": "53be7ca36a649582fc0a4c01f97ef8f85ae6728aaea5b353d851997ba2ee2243",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/native_telemetry_status.json": "68f4917c05e2b7521075b414748aa36d5cedb2646aba5282c135a9f1a2350a99",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/native_capacity_census.json": "085386cd3901d6c2a3d5440c670ffe699c4fbd383cef55fb1daf9f4349873418",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": "a8751385323af52da2a2bb80a94b574ad75683432b860bdb7486075642153cdf",
+    "/home/longhao/experiment/ops/warm_start_free_extent_20261029_r1.registration.json": "7cccfb9a8efed9925f3b2cddcbbae536acd894d4ae5cab73edc4aa015adc4b47",
+    "/home/longhao/experiment/ops/warm_start_free_extent_20261029_r1.registration.state.json": "6fea4ed6840ecc9c866407e6da1f521c60bb25613176ab997188d8628e1bdbef",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/telemetry_drain.json": "fe234c3b34472b47b0a4c3f1a24f3787265a121b7a17a14b3138d534fb8197de",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/owned_process_cleanup.json": "1b3bf02c602f22878286a3d0b1a2230e8d4d767cc87ee0c24f40d22d5dc0ccb6",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/replay/summary.json": "a01216e566f79c717dd5021c8cadd681a97195159529675aded31003e8b4f22f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/server/server_info.json": "d41ab02ed8e328fa3bd6252df5369a6467ac05f6cf19ae1d3d4803eba2150551",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/server/native_telemetry_status.json": "45b2e58d7cdd40cefeaf2985a88258bc25536c8c1d7f3eb84e6c2550970d870e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/server/native_capacity_census.json": "c68d5008f8340c3b1057abe275fe20bd9afa87ee429ca684709cbf95c00173a9",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/opportunities/admission_opportunities.jsonl": "1bb95ebcaff55f8ac7005986d7608de6a5c3019d1976821cedcd3b67393f393d"
+  },
+  "decode_evidence_sha256": "3655a925e3dcab0166695f6685139e9843c4670149a0d59513e024e08e3115da",
+  "figures": [
+    "decode_timeline",
+    "decode_distributions",
+    "decode_geometry"
+  ],
+  "performance_accepted": false,
+  "limitations": [
+    "One paired execution is not a repeated-run superiority result.",
+    "Finite warm-start arrivals do not establish stationary capacity.",
+    "Whole-run output rate includes normal arrival gaps and all tails.",
+    "Worker intervals include runtime waits, not exclusive GPU kernel time."
+  ]
+}

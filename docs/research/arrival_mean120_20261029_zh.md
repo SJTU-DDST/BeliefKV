@@ -49,3 +49,18 @@ PID 1341226 / start ticks 744960744 已独立核验为真实存活、
 
 上述状态只证明后继任务已排队，不是新 120 秒实验已经启动或获得性能
 收益。实际执行状态由队列与两侧各自的状态文件继续记录。
+
+原 60 秒 FULL 在 21:17:44 完成收集并实际退出后，120 秒 ThunderAgent
+已自动接入。独立 `thunder_live_start.json` 于 21:35:17 核验
+1283/3674 个完整回执、17 个已投递 workflow 的原定到达时刻、
+nice0 watcher1345254/server1345626/driver1346717 和唯一 GPU
+scheduler1345920。paper acting decay 配置生效，未继承 FULL 的
+工具预取、普通预取、需求流水线或逐层交接。该前缀不是完整 JCT 结果。
+
+当前冻结排队器在所有 GPU 比较结束后使用服务 Python 执行绘图，而
+该 Python 缺少 matplotlib。为保留已运行源码，另用
+`review_after_pair.py` 登记只做 CPU 后处理的独立进程：两侧 GPU
+完成和真实退出后，通过已有 `ops/cpu_plotting_20261027` 环境生成
+匹配报告。它不登记 GPU 实验、不替换比较进程，也不把原排队器后处理
+失败误报为 GPU 实验失败。main 的后续队列已改用该绘图解释器；
+当前冻结队列保留原始执行证据。

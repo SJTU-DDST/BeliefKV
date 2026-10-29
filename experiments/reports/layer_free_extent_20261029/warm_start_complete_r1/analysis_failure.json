@@ -1,0 +1,11 @@
+{
+  "stage": "offline_figure_rendering_after_complete_work_and_owned_exit_validation",
+  "error": "ModuleNotFoundError: No module named 'matplotlib'",
+  "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+  "complete_gpu_experiment_failed": false,
+  "complete_decode_evidence_preserved": "decode_evidence.json.gz",
+  "retry": "../warm_start_complete_r2",
+  "retry_python": "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+  "serving_environment_modified": false,
+  "performance_accepted": false
+}

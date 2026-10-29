@@ -70,8 +70,11 @@ def main():
     extracted = args.output_dir / "decode_evidence.json.gz"
     with extracted.open("xb") as stream:
         stream.write(gzip.compress(json.dumps(rows, allow_nan=False).encode(), mtime=0))
+    arrivals = rows["FULL"]["match_contract"]["workflow_arrivals"]
+    mean_seconds = 1 / arrivals["rate_per_second"]
     figures = plotting.render(
-        rows, args.output_dir, title="Matched warm start: mean 120-second arrivals", bin_s=60,
+        rows, args.output_dir,
+        title=f"Matched warm start: mean {mean_seconds:g}-second arrivals", bin_s=60,
     )
     plotting.write_csv(args.output_dir / "time_bins.csv", [
         {"arm": label, **row} for label, arm in rows.items() for row in arm["bins"]

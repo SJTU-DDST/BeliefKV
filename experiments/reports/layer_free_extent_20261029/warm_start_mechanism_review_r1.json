@@ -1,0 +1,246 @@
+{
+  "observed_at": "2026-10-29T13:30:47.970906+00:00",
+  "status": "complete_warm_start_mechanism_reviewed",
+  "arms": {
+    "ThunderAgent decay": {
+      "actual_native_work": {
+        "prefill_batches": 3580,
+        "prefill_worker_ms": 430129.46221698076,
+        "actual_prefill_input_tokens": 3789634,
+        "decode_batches": 97205,
+        "decode_worker_ms": 1604526.9781025127
+      },
+      "actual_transfers": {
+        "d2h_bytes": 2199933616128,
+        "d2h_tagged_bytes": 0,
+        "d2h_operations": 28085,
+        "d2h_stream_ms_not_exposed_wait": 50558.72531186044,
+        "h2d_bytes": 2826104438784,
+        "h2d_tagged_bytes": 0,
+        "h2d_operations": 297,
+        "h2d_stream_ms_not_exposed_wait": 90502.31554973125
+      },
+      "previously_served_prefix_evidence": {
+        "counts": {
+          "new_or_changed_prompt_tokens": 2331532,
+          "previously_served_common_prefix_tokens": 140952652,
+          "previously_served_prefix_recompute_proxy_tokens": 0,
+          "request_probes": 3674,
+          "requests_with_prefix_recompute_proxy": 0,
+          "with_prior_served_prompt": 3564,
+          "without_prior_served_prompt": 110
+        },
+        "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+        "tracked_context_count": 110,
+        "tracking_limit": 1024
+      },
+      "host_eviction_reaccess_attribution": {
+        "available": true,
+        "counts": {
+          "full_device_hit": 11348,
+          "full_evictions": 25200,
+          "full_host_hit": 8260,
+          "full_mixed_tier_hit": 1,
+          "full_recompute": 13,
+          "request_probes": 2867
+        },
+        "evicted_units_by_pool": {
+          "full": 20344720
+        },
+        "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+        "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+        "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+        "pending_blocks_by_pool": {
+          "full": 4462
+        },
+        "pending_latest_evicted_units_by_pool": {
+          "full": 2068850
+        },
+        "probe_prefix_length_overflow": 0,
+        "recomputed_full_units": 35749,
+        "reused_full_units": 17767125
+      },
+      "restore_wait_probe_coverage": {
+        "counts": {
+          "completed_samples": 19,
+          "duplicate_or_captured_wait": 912,
+          "eligible_batches": 297,
+          "sampled_batches": 19
+        },
+        "pending_samples": 0,
+        "queue_limit": 32,
+        "sampling_interval": 16
+      },
+      "verified_staged_demand": {},
+      "verified_staged_members": {},
+      "handoffs": []
+    },
+    "FULL": {
+      "actual_native_work": {
+        "prefill_batches": 3572,
+        "prefill_worker_ms": 372316.47617183626,
+        "actual_prefill_input_tokens": 3770429,
+        "decode_batches": 93638,
+        "decode_worker_ms": 1587484.702700749
+      },
+      "actual_transfers": {
+        "d2h_bytes": 1302827728896,
+        "d2h_tagged_bytes": 7066681344,
+        "d2h_operations": 14828,
+        "d2h_stream_ms_not_exposed_wait": 31049.374666452408,
+        "h2d_bytes": 2790839156736,
+        "h2d_tagged_bytes": 210720817152,
+        "h2d_operations": 616,
+        "h2d_stream_ms_not_exposed_wait": 126684.64523665607
+      },
+      "previously_served_prefix_evidence": {
+        "counts": {
+          "new_or_changed_prompt_tokens": 2331532,
+          "previously_served_common_prefix_tokens": 140952652,
+          "previously_served_prefix_recompute_proxy_tokens": 0,
+          "request_probes": 3674,
+          "requests_with_prefix_recompute_proxy": 0,
+          "with_prior_served_prompt": 3564,
+          "without_prior_served_prompt": 110
+        },
+        "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+        "tracked_context_count": 110,
+        "tracking_limit": 1024
+      },
+      "host_eviction_reaccess_attribution": {
+        "available": true,
+        "counts": {
+          "full_device_hit": 10752,
+          "full_evictions": 13452,
+          "full_host_hit": 81,
+          "full_recompute": 2,
+          "request_probes": 3323
+        },
+        "evicted_units_by_pool": {
+          "full": 11218977
+        },
+        "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+        "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+        "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+        "pending_blocks_by_pool": {
+          "full": 2577
+        },
+        "pending_latest_evicted_units_by_pool": {
+          "full": 849189
+        },
+        "probe_prefix_length_overflow": 0,
+        "recomputed_full_units": 7775,
+        "reused_full_units": 10344827
+      },
+      "restore_wait_probe_coverage": {
+        "counts": {
+          "completed_samples": 2,
+          "duplicate_or_captured_wait": 96,
+          "eligible_batches": 22,
+          "sampled_batches": 2
+        },
+        "pending_samples": 0,
+        "queue_limit": 32,
+        "sampling_interval": 16
+      },
+      "verified_staged_demand": {
+        "matched_staging_episodes": 497,
+        "native_selected_requests": 798,
+        "native_full_tokens": 25424264,
+        "native_h2d_bytes": 2499306848256
+      },
+      "verified_staged_members": {
+        "members_with_subsequent_native_service": 798
+      },
+      "handoffs": [
+        {
+          "request_id": "beliefkv:01a177bc-eefa-7753-b91b-c055bca22081",
+          "donor_tokens": 220,
+          "consumer_tokens": 73,
+          "donor_bytes": 21626880,
+          "consumer_bytes": 7176192,
+          "published_donor_anchor": [
+            6598
+          ],
+          "published_consumer_anchor": [
+            6566
+          ],
+          "declared_donor_path_nodes": 1,
+          "declared_consumer_path_nodes": 1,
+          "donor_ack_node_publication": "expanded_backup_path",
+          "consumer_ack_node_publication": "anchor_only_not_individual_path_generations",
+          "native_pair_submit_ts_ms": 1793279137520.7283,
+          "journal_ts_ms": 1793279137521.8477,
+          "first_native_run_batch_ts_ms": 1793279137545.3447,
+          "journal_to_first_native_run_batch_ms": 23.4970703125,
+          "h2d_stream_ms_including_dependencies": 13.450016021728516,
+          "d2h_stream_ms": 0.5008000135421753,
+          "native_run_batch_before_h2d_ack": true,
+          "native_run_batch_before_d2h_ack": true
+        }
+      ],
+      "last_recorded_handoff_counters_not_shutdown_final": {
+        "layer_handoff_attempts": 70,
+        "layer_handoff_selected_input_reserve": 58,
+        "layer_handoff_refused:donor_smaller_than_restore": 53,
+        "layer_handoff_native_refused": 3,
+        "layer_handoff_refused:native": 3,
+        "layer_handoff_unmatched_decode_tail": 3,
+        "layer_handoff_refused:unmatched_decode_tail": 3,
+        "layer_handoff_refused:eos_private_tail": 3,
+        "layer_handoff_refused:host_destination": 1,
+        "layer_handoff_submitted": 1,
+        "layer_handoff_reused_tokens": 73,
+        "layer_handoff_restored_tokens": 73,
+        "layer_handoff_free_extent_tokens": 0,
+        "layer_handoff_reserved_tail_tokens": 147,
+        "layer_handoff_geometry_refused": 6,
+        "layer_handoff_refused:geometry": 6
+      },
+      "last_recorded_tool_offload_and_host_counters_not_shutdown_final": {
+        "predicted_tool_offload_context_checks": 1459,
+        "predicted_tool_offload_evicted_nodes": 253,
+        "predicted_tool_offload_freed_component_0": 276932,
+        "predicted_tool_offload_freed_bytes": 27223523328,
+        "predicted_tool_offload_backup_issued": 76,
+        "idle_prepare_host_demand_reserve_skips": 7656,
+        "host_demand_capacity_checks": 26,
+        "host_demand_mirror_checks": 249,
+        "host_demand_reclaimed_tokens": 35903,
+        "host_demand_reclaimed_bytes": 3529408512,
+        "host_demand_insufficient_safe_mirrors": 2
+      }
+    }
+  },
+  "full_relative_to_thunder": {
+    "actual_prefill_input_tokens_percent": -0.5067771716213199,
+    "h2d_bytes_percent": -1.2478407225167465,
+    "d2h_bytes_percent": -40.77877080722799
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/warm_start_complete_r2/review.json": "f08fe127c720d2fe5aca65eb5f4d0097dc02e2104861c62a09d290e733ac337f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/mechanism_review.py": "86fd58ac11c4e42270280b1abecc93a395314b8678293c363783bce17c2507f8",
+    "/home/longhao/experiment/ops/warm_start_thunder_20261029_r1.registration.json": "6c939970b66ad2559200658cd5b0c173b8e8231d22f1e08d31182639b50040c8",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/native_telemetry_status.json": "68f4917c05e2b7521075b414748aa36d5cedb2646aba5282c135a9f1a2350a99",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/warm_start_thunder_native_demand_r1.json": "4284fc201a1013d6059d1d46ea61413c0fccc646ac04540252584d188f7d7fd5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_thunder_20261029_r1/thunderagent_acting_decay/server/runtime_audit.jsonl": "50082edf793f557cbb77c7ff913cb8e25cbb44cae2e9d2a3dcd6266561b5a164",
+    "/home/longhao/experiment/ops/warm_start_free_extent_20261029_r1.registration.json": "7cccfb9a8efed9925f3b2cddcbbae536acd894d4ae5cab73edc4aa015adc4b47",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/server/native_telemetry_status.json": "45b2e58d7cdd40cefeaf2985a88258bc25536c8c1d7f3eb84e6c2550970d870e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/warm_start_native_demand_r1.json": "534fc4b3681402bf77713400d33eb9e309882a4f3e113b05928dfe73aadd20e1",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/warm_start_free_extent_20261029_r1/full/server/runtime_audit.jsonl": "fd5d7e4a01e5efe437992ecb69705f93a7b5d7b446488bf653047018090c48df"
+  },
+  "complete_performance": {
+    "mean_jct_reduction_percent": 3.858136015730629,
+    "whole_run_output_throughput_gain_percent": 1.8315961520253277
+  },
+  "handoff_isolated_performance_proven": false,
+  "performance_accepted": false,
+  "limitations": [
+    "Native prefill work includes real retries; worker intervals are not exclusive GPU kernels.",
+    "Copy-stream time includes dependencies and cannot be subtracted from workflow JCT.",
+    "Restore probes are sampled, with 19/2 observations; no whole-run wait extrapolation.",
+    "Prefix-loss counters and exact revisits of evicted FULL nodes measure different boundaries.",
+    "Staged member counts are episode associations, not distinct requests or proof of hidden DMA.",
+    "One tiny handoff with no new free extent cannot establish the new path's performance."
+  ]
+}

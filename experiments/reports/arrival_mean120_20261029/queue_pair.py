@@ -281,7 +281,7 @@ def watch(path):
         pulse()
         completed = subprocess.run(
             [
-                "nice", "-n", "19", sys.executable,
+                "nice", "-n", "19", str(OPS / "cpu_plotting_20261027/bin/python"),
                 str(Path(__file__).with_name("review_pair.py")),
                 "--thunder", plan["entries"][ORDER[0]]["registration"],
                 "--full", plan["entries"]["full"]["registration"],

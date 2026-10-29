@@ -3338,3 +3338,23 @@
   measurement. Named evidence is arrival_mean120_20261029. Independent
   registrations sharing a qualified commit use separate registration-bound
   application/native worktree paths. Agentix/TokenCake remain deferred.
+- Mean60 warm-start Full now completes3674 exact requests, original exit0,
+  fresh idle drain and actual owned exit. Independent complete review gives
+  meanJCT1538.164561s vs Thunder1599.890513s and output240.950160 vs236.616305
+  token/s:3.8581%/1.8316% gains, still below the overall clear/repeated gate.
+  Exact native prefill3770429 vs3789634; H2D2790.839157 vs2826.104439GB,
+  D2H1302.827729 vs2199.933616GB. All staged497 episodes/798 member
+  associations have actual later service; complete physical bytes reconcile.
+  One73-token handoff haszero new free extent; do not attribute performance
+  to the new path. Restore samples19/2 cannot be extrapolated. Workflow mean
+  maximum ready gap worsens67.508718 to71.137810s; retain this tradeoff.
+  Source/figures are layer_free_extent_20261029/warm_start_complete_r2 and
+  warm_start_mechanism_review_r1.json; failed R1 plotting evidence is retained.
+  Mean120 Thunder now actually runs from frozen622c5feb/common11b84 on18871;
+  thunder_live_start verifies1283 exact receipts/17 actual releases and nice0
+  watcher1345254/server1345626/driver1346717/sole GPU1345920. Keep pending Full
+  policy/native/work unchanged. The old frozen queue lacks matplotlib in its
+  final postprocessing interpreter; use a separate source-pinned CPU reviewer
+  with the existing cpu_plotting_20261027 env, without changing or restarting
+  live GPU jobs. Do not promote a plotting failure to a GPU comparison failure.
+  Keep Agentix/TokenCake deferred and the overall goal active.
