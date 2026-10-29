@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-10-29T02:07:49.768546+00:00",
+  "actual_live_repair_rejected": "require complete successful work and actual owned process exit",
+  "actual_live_watcher": {
+    "pid": 1038516,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "740861290",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-causal-5cf3bb8bf40d/scripts/run_causal_comparison.py",
+      "--watch",
+      "/home/longhao/experiment/ops/demand_prefill_ack_retry_20261028_r1.registration.json"
+    ]
+  },
+  "actual_complete_R1_R2_and_owned_exit_verified": true,
+  "same_work_and_formal_configuration_verified": true,
+  "changed_runtime_files": [
+    "beliefkv/runtime/demand_prefill_pipeline.py"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/readmission_complete_review.py": "e069ee4a7a8256e84a2ff1bef49606bf166dab2da8239f4c3ccb26ca498154e5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/prefill_pipeline_20261028/complete_review.py": "33368bdc003ea15908582a0cd598e1853114ad5646ed2877980b52b9aa84f81a",
+    "/home/longhao/experiment/ops/demand_prefill_ack_retry_20261028_r1.registration.json": "fbfe3a62408e7d717a620f62ca609df795f3057a264bf47a4e294d375e8f70f7",
+    "/home/longhao/experiment/ops/demand_prefill_pipeline_20261028_r1.registration.json": "59caf40545da12972b8affe70025fdca7790867e4c09db2359815043f8a2f74c"
+  },
+  "complete_performance_result_written": false,
+  "performance_accepted": false
+}

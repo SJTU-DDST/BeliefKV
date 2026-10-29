@@ -64,3 +64,19 @@ nice0 watcher1038516/server1039033/driver1040363及sole GPU1039393
 当时最后记录快照的ACK原生容量重试计数为0，不能外推为整轮没有
 该分支，更不能把后续性能变化提前归因于修复。230是启动前缀，
 不是完整3674请求的正确性、JCT、吞吐或修复收益证明。
+
+## 完整审计入口
+
+`readmission_complete_review.py`已提供本修复的完整入口，比较R1、R2、
+准入前卸载和同一完整V345。实际CPU预检查接受已完整退出的R1/R2，
+拒绝仍运行的修复版FULL，核对相同正式配置和完整工作，仅有
+`beliefkv/runtime/demand_prefill_pipeline.py`这一个runtime文件改变。
+证明保存在`readmission_complete_precheck.json`，未生成完整结果或图。
+
+该入口要求完整3674请求、原始停止、两次新鲜idle、实际owned退出和
+注册源码/配置后，才写入`readmission_complete/complete_review.json`
+及`experiments/figures/demand_prefill_ack_retry_20261028_r1/`。
+它另列全部ready日志中实际发生的原生容量重试与最后快照计数，
+允许末次快照滞后，且不把计数当成准入许可或因果收益。
+没有重试时仍保留完整性能结果，不将差异归因于未触发的修复。
+需求恢复精确ACK/服务/字节与JOIN/EOS/sibling完整审计仍为独立要求。

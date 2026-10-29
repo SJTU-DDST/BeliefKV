@@ -2936,3 +2936,11 @@
   an early snapshot, not a complete opportunity or performance result.
   Preserve R1/R2 and the running frozen repair; no competing GPU job or
   other baseline/ablation is queued. Goal remains active.
+- readmission_complete_review now has an actual CPU precheck accepting complete
+  R1/R2 with owned exit and rejecting the currently live repaired Full. Same
+  work/config and the sole changed runtime file demand_prefill_pipeline.py
+  are verified. No complete repair result/figures are created. At completion
+  require full work/drain/exit and separately report actual ACK retry journals
+  versus the possibly older counter snapshot. Do not require positive gains
+  or nonzero retry events to retain the completed run. Current demand ACK/
+  service and JOIN/EOS/sibling mechanism audits remain separate requirements.
