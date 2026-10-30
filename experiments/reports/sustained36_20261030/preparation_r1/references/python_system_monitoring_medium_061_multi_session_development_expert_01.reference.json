@@ -1,0 +1,61 @@
+{
+  "id": "python_system_monitoring_medium_061_multi_session_development_expert_01",
+  "task_category": "multi_session_development",
+  "difficulty": "expert",
+  "title": "Implement a Crowd-Sourced Incident Correlation Feature",
+  "description": "The PulseLink SocialOps Monitor currently tracks internal system health. The product team wants to enhance its capabilities by correlating internal performance issues with external public sentiment. The goal is to create a new 'CrowdAlert' feature. When the performance monitoring service (`perf_pulse`) detects a sustained degradation, it should trigger a process to check for a corresponding spike in negative public feedback. If both conditions are met, a high-priority incident should be flagged in the deployment automation service (`deploy_flow`) to alert the on-call team and potentially halt ongoing deployments. This task requires staged implementation over multiple sessions, touching several microservices and shared components.",
+  "context_files": [
+    "PulseLink_SocialOps_Monitor//services//log_harvester//main.py",
+    "PulseLink_SocialOps_Monitor//services//log_harvester//service.py",
+    "PulseLink_SocialOps_Monitor//services//log_harvester//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//main.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//service.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//main.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//service.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//main.py",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//service.py",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//main.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//service.py",
+    "PulseLink_SocialOps_Monitor//shared//__init__.py",
+    "PulseLink_SocialOps_Monitor//shared//patterns.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//command_handler.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//__init__.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//__init__.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//__init__.py",
+    "PulseLink_SocialOps_Monitor//services//log_harvester//__init__.py",
+    "PulseLink_SocialOps_Monitor//shared//messaging.py",
+    "PulseLink_SocialOps_Monitor//shared//events.py",
+    "PulseLink_SocialOps_Monitor//Makefile",
+    "PulseLink_SocialOps_Monitor//docs//architecture.md",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//__init__.py",
+    "PulseLink_SocialOps_Monitor//docs//api//deployflow_api.md",
+    "PulseLink_SocialOps_Monitor//docs//api//crowdalert_api.md",
+    "PulseLink_SocialOps_Monitor//README.md"
+  ],
+  "context_length": 383018,
+  "task_prompt": "This feature will be built over three sessions. Follow the instructions for each session sequentially.\n\n**Session 1: Event Generation**\nYour first task is to modify the `perf_pulse` service to detect and announce sustained performance issues. \n1.  Navigate to the `perf_pulse` service code.\n2.  Modify the `PerfPulseService` in `services/perf_pulse/service.py`. It needs to track the number of *consecutive* times the `analyze_metrics` method detects an error rate above 8%. \n3.  If this condition is met for 3 consecutive analysis cycles, the service must publish a new `PerformanceDegradationEvent`.\n4.  Define this new `PerformanceDegradationEvent` in the shared events module, `shared/events.py`. It should contain the service name, the metric details, and a timestamp.\n5.  Add a new test to `services/perf_pulse/tests/test_service.py` that verifies the `PerformanceDegradationEvent` is published *only* after 3 consecutive breaches of the error rate threshold.\n\n**Session 2: Correlation Service**\n(Prerequisite: Session 1 complete) Now that the degradation event is being published, you will create a new, lightweight service to correlate this with external data.\n1.  Create a new service directory: `services/crowd_correlator`.\n2.  Inside this new directory, create the basic service structure (`__init__.py`, `main.py`, `service.py`, `tests/test_service.py`).\n3.  Implement a `CrowdCorrelatorService` in `service.py`. This service must subscribe to the `PerformanceDegradationEvent`.\n4.  Upon receiving an event, the service should call a (mock) external API function `fetch_social_sentiment(service_name)`. For this task, you can implement this mock function directly within your service file or a utils file. It should return a dictionary, e.g., `{'status': 'highly_negative', 'mention_volume': 520}`.\n5.  If the mock API returns a `highly_negative` status, the `CrowdCorrelatorService` must publish a new `HighConfidenceIncidentEvent`. \n6.  Define this new `HighConfidenceIncidentEvent` in `shared/events.py`. It should carry over the data from the original degradation event plus the sentiment data.\n7.  Write a unit test in `tests/test_service.py` to verify this logic.\n\n**Session 3: Incident Response Integration**\n(Prerequisite: Session 2 complete) The final step is to connect the output of the new correlator to the existing `deploy_flow` service to create a tangible action.\n1.  Navigate to the `deploy_flow` service code.\n2.  Modify the `CommandHandler` in `services/deploy_flow/command_handler.py` to subscribe to the `HighConfidenceIncidentEvent`.\n3.  When a `HighConfidenceIncidentEvent` is received, the handler should trigger an existing internal command, `flag_deployment_for_review`, passing the incident details as arguments.\n4.  Ensure the `main.py` or service initialization logic for `deploy_flow` correctly wires up the new event subscription.\n5.  Update the tests for the `CommandHandler` to include a case where it receives a `HighConfidenceIncidentEvent` and correctly calls the `flag_deployment_for_review` action.",
+  "expected_approach": "An expert developer would approach this incrementally, validating each step before proceeding.\n\n1.  **Exploration (Session 1):** The developer would first read `docs/architecture.md`, `shared/messaging.py`, and `shared/events.py` to understand the system's communication patterns. They would then inspect `services/perf_pulse/service.py` to locate the `analyze_metrics` function and understand its current logic.\n\n2.  **Implementation (Session 1):**\n    -   Add a new `PerformanceDegradationEvent` class in `shared/events.py`, likely inheriting from a base event class.\n    -   In `services/perf_pulse/service.py`, add an instance variable like `self.consecutive_failure_count = 0` to the `PerfPulseService` class.\n    -   Modify `analyze_metrics` to increment this counter when the error rate exceeds 8% and reset it to 0 otherwise.\n    -   Add a condition: `if self.consecutive_failure_count >= 3`, then instantiate and publish the new event using the existing messaging client, and reset the counter to prevent re-firing.\n    -   Write a new test in `services/perf_pulse/tests/test_service.py` that mocks the messaging client, calls `analyze_metrics` multiple times with data designed to trigger the condition, and asserts that the client's `publish` method was called with the correct event object.\n\n3.  **Scaffolding & Logic (Session 2):**\n    -   Create the directory `services/crowd_correlator` and populate it with the standard service files, likely copying the structure from another service.\n    -   Define `HighConfidenceIncidentEvent` in `shared/events.py`.\n    -   In `crowd_correlator/service.py`, create the new service class. Its constructor would subscribe to `PerformanceDegradationEvent` via the messaging client. \n    -   Implement the event handler method, which calls the mock sentiment function and contains the `if status == 'highly_negative'` logic to publish the `HighConfidenceIncidentEvent`.\n    -   Write tests for this service, mocking the messaging client and asserting that the correct outgoing event is published based on the mock sentiment data.\n\n4.  **Integration (Session 3):**\n    -   Examine `services/deploy_flow/command_handler.py` and `services/deploy_flow/main.py` to understand how event subscriptions and command dispatching work.\n    -   Modify the `CommandHandler` to add a subscription to `HighConfidenceIncidentEvent` and a corresponding handler method.\n    -   This new handler method would parse the incoming event and call the internal `flag_deployment_for_review` function.\n    -   Add a new test case to the `deploy_flow` test suite that simulates the arrival of a `HighConfidenceIncidentEvent` and asserts that the target internal function is called with the correct parameters.",
+  "ground_truth": "The final solution should contain the following key changes:\n\n-   **`shared/events.py`**: Contains two new event classes, `PerformanceDegradationEvent` and `HighConfidenceIncidentEvent`, with appropriate attributes.\n-   **`services/perf_pulse/service.py`**: The `PerfPulseService` class is modified with a stateful counter for consecutive failures. The `analyze_metrics` method contains the logic to increment/reset this counter and publish the `PerformanceDegradationEvent` via the message bus when the threshold is met.\n-   **`services/perf_pulse/tests/test_service.py`**: A new test method `test_publishes_degradation_event_on_consecutive_failures` is added and passing.\n-   **`services/crowd_correlator/`**: This new directory exists with a functional `service.py` that subscribes to the degradation event, calls a mock sentiment function, and publishes the incident event. It also has a passing `tests/test_service.py`.\n-   **`services/deploy_flow/command_handler.py`**: The `CommandHandler` class is modified to subscribe to `HighConfidenceIncidentEvent`. It has a new handler method that processes this event and calls the `flag_deployment_for_review` action.\n-   **`services/deploy_flow/tests/test_service.py` (or `test_command_handler.py`)**: A new test is added to verify the new event handling logic in the command handler.",
+  "evaluation_criteria": [
+    "**Context Retention & Continuity:** Did the agent successfully resume the task in sessions 2 and 3, correctly using the components it created in the previous session without re-implementing or re-discovering them?",
+    "**Architectural Adherence:** Did the agent correctly use the shared event/messaging system and place new code in the appropriate modules, respecting the existing microservice architecture?",
+    "**Correctness of Logic:** Is the stateful logic for counting consecutive failures correct? Is the event-driven flow from `perf_pulse` to `crowd_correlator` to `deploy_flow` implemented correctly?",
+    "**Test-Driven Approach:** Did the agent successfully write new, meaningful tests for each piece of new functionality? Do all new and existing tests pass?",
+    "**Code Comprehension:** Did the agent correctly identify and modify the specific classes and methods required by the prompt (e.g., `PerfPulseService`, `CommandHandler`)?",
+    "**Problem Decomposition:** Did the agent successfully follow the incremental steps outlined in the multi-session prompt, delivering a functional piece at the end of each session?",
+    "**Code Quality:** Is the new code clean, idiomatic, and consistent with the style of the surrounding project files?"
+  ],
+  "metadata": {
+    "context_length": 383018,
+    "files_count": 29,
+    "information_coverage": 0.9077245386937912,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T14:45:54.495295"
+  }
+}

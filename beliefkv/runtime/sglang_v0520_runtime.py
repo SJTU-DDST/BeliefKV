@@ -1088,6 +1088,12 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("workflow size resume requires reference Full continuation admission")
         self.workflow_size_resume = workflow_size == "1"
+        combination = os.environ.get("BELIEFKV_WORKFLOW_COMBINATION_ADMISSION", "0")
+        if combination not in ("0", "1") or (
+            combination == "1" and (not self.workflow_size_resume or not self.agent_free_dispatch_interval_ms)
+        ):
+            raise ValueError("R5 requires workflow prediction and bounded free dispatch")
+        self.workflow_combination_admission = combination == "1"
         self.workflow_work_source = os.environ.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned")
         if self.workflow_work_source not in ("learned", "oracle") or (
             self.workflow_work_source == "oracle" and not self.workflow_size_resume
@@ -2901,6 +2907,7 @@ class NativeAdmissionRuntime:
                 "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
                 "agent_control_interval_ms": self.agent_control_interval_ms,
                 "workflow_size_resume": self.workflow_size_resume,
+                "workflow_combination_admission": self.workflow_combination_admission,
                 "workflow_work_source": self.workflow_work_source,
                 "workflow_work_model_sha256": (
                     self.workflow_work_model_sha256 if self.workflow_size_resume else None
@@ -12374,6 +12381,8 @@ class NativeAdmissionRuntime:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             return paper.plan(native_order, running_batch=running_batch, adder=adder)
         if self._agent_admission is not None:
+            if self.workflow_combination_admission:
+                self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
             self._agent_admission.tick()
             prepare = getattr(self._agent_admission, "prepare_prefill", None)
             if prepare is not None:

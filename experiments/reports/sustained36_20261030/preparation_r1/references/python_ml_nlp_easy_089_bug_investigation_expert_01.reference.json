@@ -1,0 +1,50 @@
+{
+  "id": "python_ml_nlp_easy_089_bug_investigation_expert_01",
+  "task_category": "bug_investigation",
+  "difficulty": "expert",
+  "title": "Anomalous 1.0 F1-Score in Sentiment Analysis Evaluation",
+  "description": "The LexiLearn Lab platform is being used by a high school English teacher to analyze student feedback on a recent assignment. The feedback is categorized as 'positive', 'negative', or 'neutral'. After running the sentiment analysis pipeline, the teacher observes suspicious results in the evaluation report. While the accuracy, precision, and recall for 'positive' and 'negative' classes seem plausible, the F1-score for the 'neutral' class is consistently and exactly 1.0. This perfect score is highly unlikely given the complexity of student language and suggests a bug in the data processing or evaluation pipeline rather than a perfectly performing model.",
+  "context_files": [
+    "lexilearn_lab_project/lexilearn_lab/main.py",
+    "lexilearn_lab_project/lexilearn_lab/strategies/sentiment_strategy.py",
+    "lexilearn_lab_project/lexilearn_lab/strategies/base_strategy.py",
+    "lexilearn_lab_project/lexilearn_lab/pipeline.py",
+    "lexilearn_lab_project/lexilearn_lab/components/__init__.py",
+    "lexilearn_lab_project/lexilearn_lab/components/feature_engineering.py",
+    "lexilearn_lab_project/lexilearn_lab/strategies/__init__.py",
+    "lexilearn_lab_project/lexilearn_lab/__init__.py",
+    "lexilearn_lab_project/lexilearn_lab/components/data_ingestion.py",
+    "lexilearn_lab_project/lexilearn_lab/components/evaluation.py",
+    "lexilearn_lab_project/lexilearn_lab/components/modeling.py",
+    "lexilearn_lab_project/lexilearn_lab/visualization.py"
+  ],
+  "context_length": 182543,
+  "task_prompt": "A user has reported that the sentiment analysis pipeline is producing a perfect F1-score (1.0) for the 'neutral' class, which is unrealistic. The code runs to completion without any errors or exceptions.\n\nYour task is to investigate the entire ML pipeline to find the root cause of this anomaly.\n\n1.  **Identify the Root Cause:** Pinpoint the exact file, function, and lines of code responsible for this behavior.\n2.  **Explain the Bug:** Clearly describe how the identified code causes the F1-score for the 'neutral' class to be artificially inflated to 1.0. Your explanation must detail the mechanism of the bug, referencing the flow of data between components.\n3.  **Propose a Fix:** Provide the corrected code snippet that resolves the bug. The fix should be robust and adhere to best practices in machine learning, specifically regarding data handling and evaluation integrity.",
+  "expected_approach": "An expert developer would not assume the bug is in the final evaluation step, as a perfect score often points to data contamination upstream.\n\n1.  **Hypothesize & Verify:** The primary hypothesis should be data leakage or contamination of the test set. The first step is to verify the symptom. The developer would inspect `components/evaluation.py` to confirm that a standard F1-score calculation (e.g., from `sklearn.metrics`) is being used. Finding that the calculation is correct, they would shift focus to the *inputs* of the function: `y_true` and `y_pred`.\n\n2.  **Trace Data Flow:** The developer would trace the data's journey backward from the evaluation step. They would examine `pipeline.py` to understand the sequence of operations: `data_ingestion` -> `feature_engineering` -> `modeling` -> `evaluation`.\n\n3.  **Inspect Preprocessing:** The most likely culprit is a preprocessing step that is incorrectly applied to the test set. The developer would focus their investigation on `components/feature_engineering.py`, looking for any function that transforms the target variable (the sentiment labels).\n\n4.  **Isolate the Flaw:** Inside `feature_engineering.py`, the developer would scrutinize functions that handle data cleaning or transformation. They should identify a function, let's call it `_handle_label_imbalance_or_rarity`, that is designed to address rare classes. They would discover that this function calculates the most frequent class ('neutral') from the training data and then incorrectly applies a transformation to the *entire dataset* (including the test data), replacing any label not in a 'common' list with the 'neutral' label. This corrupts the ground truth (`y_test`) before evaluation.\n\n5.  **Analyze the Impact:** The developer would reason that because the ground truth labels in the test set have been forcibly changed to 'neutral' for certain samples, any prediction the model makes on these samples is being compared against a corrupted label, leading to a misleading evaluation. When the model correctly predicts 'neutral', it matches. When it incorrectly predicts 'neutral' on a sample that was originally something else but got corrupted, it *also* matches, artificially inflating the score.\n\n6.  **Formulate a Solution:** The core principle to fix this is that the ground truth of the test set (`y_test`) must never be modified. The developer would propose removing or refactoring the faulty logic to ensure that any transformations fitted on `y_train` are not applied to `y_test`. The correct approach is to train the model on the (potentially transformed) training labels and evaluate it against the original, pristine test labels.",
+  "ground_truth": {
+    "file": "lexilearn_lab_project/lexilearn_lab/components/feature_engineering.py",
+    "insight": "The root cause is a classic data leakage bug where a data cleaning step, intended to handle rare labels, contaminates the ground truth of the test set. A function within `feature_engineering.py` modifies the target column of the entire dataset *before* the train-test split is used for evaluation. It replaces rare labels with the most frequent label ('neutral'), which was determined from the training set. Consequently, when the evaluation component compares the model's predictions to the test labels, it's using a corrupted `y_test` vector where some labels have been forcibly changed to 'neutral', guaranteeing a perfect match for those instances and thus a perfect F1-score.",
+    "code_change": {
+      "description": "The flawed function applies a label transformation to the entire dataset. The fix is to ensure this transformation is only fitted and applied to the training data's labels, while the test data's labels remain untouched for evaluation.",
+      "before": "```python\n# In components/feature_engineering.py\n\ndef _clean_labels(self, data: pd.DataFrame, target: str) -> pd.DataFrame:\n    \"\"\"Cleans labels by consolidating rare categories.\"\"\"\n    # This is determined from the training set during a `fit` step not shown here\n    frequent_labels = self.frequent_labels_ # ['positive', 'negative', 'neutral']\n    majority_class = self.majority_class_   # 'neutral'\n\n    # BUG: This modification is applied to the entire dataframe, including what will become the test set.\n    # It corrupts the ground truth for any sample whose true label is rare.\n    data[target] = data[target].apply(\n        lambda x: x if x in frequent_labels else majority_class\n    )\n    return data\n```",
+      "after": "```python\n# In components/feature_engineering.py\n\n# The flawed _clean_labels function should be removed or fundamentally changed.\n# The correct pattern is to fit on train and transform train/test separately.\n\ndef fit(self, data: pd.DataFrame, target: str):\n    \"\"\"Fits the transformer on the training data to learn frequent labels.\"\"\"\n    label_counts = data[target].value_counts()\n    self.frequent_labels_ = label_counts[label_counts > 10].index.tolist()\n    self.majority_class_ = label_counts.idxmax()\n    return self\n\ndef transform(self, data: pd.DataFrame, target: str) -> pd.DataFrame:\n    \"\"\"Transforms labels of a given dataset. CRITICAL: This should only be applied to training labels.\n    The ground truth of the test set (y_test) must not be altered.\n    \"\"\"\n    # This function should now be used carefully within the pipeline.\n    data = data.copy()\n    data[target] = data[target].apply(\n        lambda x: x if x in self.frequent_labels_ else self.majority_class_\n    )\n    return data\n\n# The pipeline code in pipeline.py must be updated to call fit() on the training set,\n# and then call transform() ONLY on the training labels, not the test labels.\n# y_test should be the original, unmodified labels from the initial data split.\n```"
+    }
+  },
+  "evaluation_criteria": [
+    "**Root Cause Identification:** Was the agent able to correctly identify `components/feature_engineering.py` and the specific function responsible for label modification as the source of the bug?",
+    "**Conceptual Understanding:** Did the agent's explanation correctly use terms like 'data leakage', 'test set contamination', or 'corrupted ground truth'? Does the explanation demonstrate an understanding of *why* modifying `y_test` is fundamentally wrong?",
+    "**Problem-Solving Strategy:** Did the agent follow a logical debugging path (e.g., from evaluation to data source) or did it randomly inspect files? Was it able to rule out other potential causes systematically?",
+    "**Solution Correctness:** Is the proposed code fix correct? Does it ensure that the test set's ground truth labels are preserved for evaluation? Does the agent recognize that the fix might involve changing the pipeline's logic, not just one function?",
+    "**Clarity of Explanation:** How clearly and concisely did the agent explain the complex interaction between the feature engineering step and the evaluation result?"
+  ],
+  "metadata": {
+    "context_length": 182543,
+    "files_count": 12,
+    "information_coverage": 0.9157920613260555,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T16:18:12.552243"
+  }
+}

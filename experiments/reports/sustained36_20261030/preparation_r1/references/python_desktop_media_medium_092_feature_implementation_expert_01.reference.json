@@ -1,0 +1,54 @@
+{
+  "id": "python_desktop_media_medium_092_feature_implementation_expert_01",
+  "task_category": "feature_implementation",
+  "difficulty": "expert",
+  "title": "Implement User-Defined Media Transcoding Profiles",
+  "description": "The ClipFlux Workspace application allows users to export media, but the current implementation in the 'export_to_cloud_drive.py' plugin has hardcoded transcoding settings. This task requires creating a new, centralized system for 'Transcoding Profiles'. Users must be able to create, save, and manage named profiles (e.g., 'YouTube 1080p H.264', 'Podcast Audio - 128kbps MP3') that specify detailed export parameters. This new system must be integrated into the export workflow and be extensible, allowing other plugins to contribute their own default profiles.",
+  "context_files": [
+    "clipflux_workspace//docs//API.md",
+    "clipflux_workspace//docs//DEVELOPERS.md",
+    "clipflux_workspace//clipflux//services//plugin_manager.py",
+    "clipflux_workspace//clipflux//app.py",
+    "clipflux_workspace//main.py",
+    "clipflux_workspace//clipflux//plugins//export_to_cloud_drive.py",
+    "clipflux_workspace//clipflux//core//media_clip.py",
+    "clipflux_workspace//clipflux//gui//clip_list_view.py",
+    "clipflux_workspace//clipflux//core//command.py",
+    "clipflux_workspace//clipflux//gui//theme_manager.py",
+    "clipflux_workspace//clipflux//services//__init__.py",
+    "clipflux_workspace//clipflux//gui//main_window.py",
+    "clipflux_workspace//clipflux//gui//media_player.py",
+    "clipflux_workspace//clipflux//services//system_services.py",
+    "clipflux_workspace//clipflux//services//cloud_sync_manager.py",
+    "clipflux_workspace//clipflux//plugins//__init__.py",
+    "clipflux_workspace//clipflux//__init__.py",
+    "clipflux_workspace//clipflux//core//__init__.py",
+    "clipflux_workspace//clipflux//gui//command_palette.py",
+    "clipflux_workspace//clipflux//gui//__init__.py",
+    "clipflux_workspace//clipflux//core//state_machine.py",
+    "clipflux_workspace//clipflux//services//preferences_manager.py"
+  ],
+  "context_length": 347502,
+  "task_prompt": "You must implement a user-configurable Transcoding Profile system in the ClipFlux Workspace application.\n\n1.  **Persistence Layer:** Modify the `clipflux/services/preferences_manager.py` to handle the storage and retrieval of a list of transcoding profiles. Each profile should store at least a name, container format (e.g., 'mp4'), video codec, video bitrate, audio codec, and audio bitrate.\n\n2.  **Management UI:** Create a new UI component (e.g., a dialog or a settings pane) that allows users to Add, Edit, and Delete transcoding profiles. This UI should be accessible from the main application window's menu.\n\n3.  **Plugin Extensibility:** Enhance the `clipflux/services/plugin_manager.py` to discover and register default transcoding profiles provided by plugins. A plugin should be able to define an entry point (e.g., a function named `register_transcoding_profiles()`) that the manager calls upon loading. These default profiles should be added to the user's preferences if they don't already exist.\n\n4.  **Integration with Exporting:** Refactor the `clipflux/plugins/export_to_cloud_drive.py` plugin. Replace its hardcoded format/codec settings with a dropdown menu that lists the available transcoding profiles from the `preferences_manager`. The selected profile's settings must be used to perform the actual media export.",
+  "expected_approach": "An expert developer would approach this by first analyzing the existing architecture to ensure the new feature is cleanly integrated, not just bolted on.\n\n1.  **Analysis:** Review `preferences_manager.py` to understand its data storage mechanism (likely using QSettings or a JSON file). Examine `plugin_manager.py` to see how plugins are discovered and initialized. Study `export_to_cloud_drive.py` to understand the current, hardcoded export logic. The `DEVELOPERS.md` document should be consulted for architectural guidelines.\n\n2.  **Decouple Core Logic:** Recognize that the transcoding logic itself is a core capability, not specific to the cloud export plugin. Create a new service, for example `clipflux/services/transcoder_service.py`, that takes a media object and a profile object and handles the actual transcoding process (e.g., by constructing and running an ffmpeg command). This promotes reusability.\n\n3.  **Implement Persistence:** In `preferences_manager.py`, add methods like `get_transcoding_profiles()`, `save_transcoding_profiles()`, and `add_default_profile()`. The profiles would be stored under a dedicated key, e.g., `'transcoding_profiles'`, as a list of dictionaries.\n\n4.  **Build the UI:** Create a new Qt Dialog class in a new file, e.g., `clipflux/gui/profile_editor_dialog.py`. This dialog will interact directly with the `preferences_manager` service to CRUD the profiles. It would be launched from a new QAction in `clipflux/gui/main_window.py`.\n\n5.  **Enhance Plugin System:** In `plugin_manager.py`, during the plugin loading loop, add a check like `if hasattr(plugin_module, 'register_transcoding_profiles'):`. If true, call the function and pass the returned default profiles to the `preferences_manager` to be registered.\n\n6.  **Refactor the Plugin:** Modify `export_to_cloud_drive.py`. Remove its internal transcoding logic and replace it with a call to the new `transcoder_service`. Change its UI to include a `QComboBox` populated with profiles from `preferences_manager.get_transcoding_profiles()`. The 'Export' button would then pass the selected media and the chosen profile object to the service.",
+  "ground_truth": "The ideal solution involves several coordinated changes and the creation of new files for proper separation of concerns.\n\n-   **New File (`clipflux/services/transcoder_service.py`):** This file should contain a class or functions that encapsulate the logic of running the external transcoding tool (like ffmpeg) using the `subprocess` module. It should accept a profile dictionary/object as an argument to build the command-line arguments dynamically.\n\n-   **New File (`clipflux/gui/profile_editor_dialog.py`):** This file will define a `QDialog` with a `QListWidget` or `QTableWidget` to display profiles, and `QPushButton`s for 'Add', 'Edit', 'Delete'. The dialog for adding/editing will have `QLineEdit`s and `QComboBox`es for the profile's attributes.\n\n-   **Modification (`clipflux/services/preferences_manager.py`):**\n    ```python\n    # Example snippet\n    def get_transcoding_profiles(self):\n        return self.settings.value('transcoding_profiles', defaultValue=[])\n\n    def save_transcoding_profiles(self, profiles):\n        self.settings.setValue('transcoding_profiles', profiles)\n    ```\n\n-   **Modification (`clipflux/services/plugin_manager.py`):**\n    ```python\n    # In the plugin loading loop\n    if hasattr(plugin_module, 'register_transcoding_profiles'):\n        default_profiles = plugin_module.register_transcoding_profiles()\n        # Logic to merge default_profiles with existing user profiles\n        self.preferences_manager.add_default_profiles(default_profiles)\n    ```\n\n-   **Modification (`clipflux/plugins/export_to_cloud_drive.py`):** The plugin's UI setup will be changed to remove hardcoded options and add a `QComboBox`. The `on_export` method will be refactored to fetch the selected profile from the combo box and pass it to the new `transcoder_service`.\n\n-   **Modification (`clipflux/gui/main_window.py`):** A new `QAction` will be created in the 'Settings' or 'Edit' menu to instantiate and show the `ProfileEditorDialog`.",
+  "evaluation_criteria": [
+    "**Functionality - Profile Management:** The agent must successfully implement a UI where users can create, view, edit, and delete transcoding profiles, with changes persisted across application restarts.",
+    "**Functionality - Export Integration:** The 'Export to Cloud Drive' feature must correctly use the selected user-defined profile to transcode the media.",
+    "**Architectural Soundness - Decoupling:** The agent must refactor the transcoding logic out of the `export_to_cloud_drive.py` plugin and into a new, reusable service.",
+    "**Architectural Soundness - Extensibility:** The `plugin_manager.py` must be correctly modified to allow new plugins to register default profiles, demonstrating an understanding of the plugin architecture.",
+    "**Code Correctness:** The agent must correctly use the `preferences_manager.py` for persistence without corrupting other settings, and properly interact with the GUI framework.",
+    "**Completeness:** The solution must touch all required parts of the application: persistence, core services, GUI, and plugins. All new UI elements must be correctly wired into the main application.",
+    "**File Management:** The agent must demonstrate the ability to create new files for new classes/modules (`transcoder_service.py`, `profile_editor_dialog.py`) and modify existing files without introducing unrelated errors."
+  ],
+  "metadata": {
+    "context_length": 347502,
+    "files_count": 22,
+    "information_coverage": 0.9169039169382182,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:28:26.443119"
+  }
+}

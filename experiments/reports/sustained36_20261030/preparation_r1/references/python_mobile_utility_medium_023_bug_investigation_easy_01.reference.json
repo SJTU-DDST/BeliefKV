@@ -1,0 +1,44 @@
+{
+  "id": "python_mobile_utility_medium_023_bug_investigation_easy_01",
+  "task_category": "bug_investigation",
+  "difficulty": "easy",
+  "title": "Incorrect Palette Names Displayed in Gallery",
+  "description": "A user-reported bug in the PalettePulse application indicates that newly created color palettes are not displaying their custom names in the main gallery view. Instead, they all appear with the default name 'Untitled Palette'. Palettes that were created and saved before the most recent app update are unaffected and continue to show their correct names. This suggests a recent regression related to how palette data is being saved or loaded from local storage.",
+  "context_files": [
+    "palettepulse/src/app/models/palette.py",
+    "palettepulse/src/app/services/sync_service.py",
+    "palettepulse/src/app/viewmodels/capture_vm.py",
+    "palettepulse/src/app/views/gallery_screen.kv",
+    "palettepulse/src/app/views/__init__.py",
+    "palettepulse/src/main.py",
+    "palettepulse/src/data/__init__.py",
+    "palettepulse/src/app/views/capture_screen.py",
+    "palettepulse/src/app/viewmodels/gallery_vm.py",
+    "palettepulse/src/app/models/color.py"
+  ],
+  "context_length": 145351,
+  "task_prompt": "You are a software engineer tasked with investigating a bug in the PalettePulse application. Your goal is to find the root cause of this issue. \n\n**Bug Report:**\n- **Symptom:** All newly created palettes are displayed with the name 'Untitled Palette' in the gallery screen, ignoring the name provided by the user during creation.\n- **Condition:** This only affects palettes created with the latest version of the app. Older palettes display correctly.\n\n**Your Task:**\n1. Analyze the provided file list to understand the data flow for creating, saving, and displaying palettes.\n2. Identify the specific line of code that is causing this bug.\n3. Provide a clear explanation of why the bug occurs.\n\nYour final output should be a JSON object with the following keys:\n- `file_path`: The path to the file containing the bug.\n- `line_number`: The specific line number where the error originates.\n- `explanation`: A brief but complete explanation of the root cause.",
+  "expected_approach": "An expert developer would approach this by tracing the data lifecycle of a 'palette' backwards from the point of failure.\n\n1.  **Start at the UI:** The bug is visible in the gallery. The developer would inspect `palettepulse/src/app/views/gallery_screen.kv` and its corresponding view logic/viewmodel `palettepulse/src/app/viewmodels/gallery_vm.py` to see how a palette's name is accessed and displayed.\n\n2.  **Investigate the ViewModel:** In `gallery_vm.py`, they would find the function responsible for loading palettes for the gallery (e.g., a method like `load_palettes_from_storage`). They would check how the list of palette objects is being populated.\n\n3.  **Analyze Data Loading:** The `gallery_vm.py` likely gets its data from a service or directly from a data-loading mechanism. This data is probably retrieved as a list of dictionaries from a JSON file or a database, which is then used to instantiate `Palette` objects.\n\n4.  **Examine the Model:** The developer would then inspect the `Palette` class in `palettepulse/src/app/models/palette.py`. The key area of interest would be the method responsible for creating a `Palette` instance from stored data, such as a class method like `from_dict` or `from_json`.\n\n5.  **Identify the Discrepancy:** By comparing the data-saving logic (likely in `capture_vm.py` or `sync_service.py`) with the data-loading logic (`palette.py`), the developer would spot a mismatch. The bug is that the key used to save the palette's name (e.g., 'title') is different from the key used to load it (e.g., 'name'). The `from_dict` method in `palette.py` is likely using the wrong key and falling back to a default value, 'Untitled Palette', because the expected key is not found in the dictionary for newly saved palettes.",
+  "ground_truth": {
+    "file_path": "palettepulse/src/app/models/palette.py",
+    "line_number": 124,
+    "explanation": "The root cause is a key mismatch during deserialization. The `Palette.from_dict` class method attempts to create a Palette object from a dictionary representation. It tries to retrieve the palette's name using `data.get('name', 'Untitled Palette')`. However, recent changes to the saving mechanism (in `sync_service.py`) now store the name under the key 'title'. Because the 'name' key is not found in the data for new palettes, the `.get()` method returns the default value, 'Untitled Palette', for every new palette being loaded."
+  },
+  "evaluation_criteria": [
+    "**Root Cause Identification:** Did the agent correctly identify that the bug is a key mismatch in the `from_dict` method?",
+    "**File Accuracy:** Did the agent correctly identify `palettepulse/src/app/models/palette.py` as the file containing the bug?",
+    "**Line Number Accuracy:** Did the agent pinpoint the exact line responsible for incorrectly reading the palette name?",
+    "**Explanation Quality:** Was the agent's explanation clear, concise, and technically accurate, mentioning the discrepancy between the saved key ('title') and the loaded key ('name')?",
+    "**Debugging Path:** Did the agent's investigation show a logical progression from the symptom (UI) to the cause (Model), or did it rely on brute-force file scanning?"
+  ],
+  "metadata": {
+    "context_length": 145351,
+    "files_count": 10,
+    "information_coverage": 0.32556040352637616,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:24:44.290388"
+  }
+}

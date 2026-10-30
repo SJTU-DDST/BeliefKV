@@ -1,0 +1,68 @@
+{
+  "id": "python_mobile_game_hard_024_multi_session_development_easy_01",
+  "task_category": "multi_session_development",
+  "difficulty": "easy",
+  "title": "Update Daily Bonus Cooldown and Corresponding Unit Tests",
+  "description": "This scenario simulates a common, incremental development task in a mobile game project. The game design team has requested a change to the daily bonus cooldown period to improve player retention. This requires a developer to first locate and update a configuration value, and then, in a subsequent session, fix the unit tests that break as a result of the change. The task tests the agent's ability to retain context, understand code dependencies between configuration and tests, and complete a full change-and-verify cycle.",
+  "context_files": [
+    "src/config.py",
+    "tests/test_main.py",
+    "name",
+    "src/module_20.py",
+    "src/module_51.py",
+    "src/module_2.py",
+    "src/module_45.py",
+    "src/module_35.py",
+    "src/module_7.py",
+    "src/module_19.py",
+    "src/module_43.py",
+    "src/module_6.py",
+    "src/module_30.py",
+    "src/module_48.py",
+    "src/module_23.py",
+    "src/module_50.py",
+    "children",
+    "src/module_25.py",
+    "src/module_1.py",
+    "src/module_13.py"
+  ],
+  "context_length": 288662,
+  "task_prompt": {
+    "session_1": "Hello. We need to make a quick gameplay tweak. The daily bonus cooldown is currently too long at 24 hours. Please find the configuration setting for the daily bonus cooldown in the source code and change it to 12 hours. The value is likely stored in seconds. Let me know when you've updated the configuration file.",
+    "session_2": "Thanks for making that change. As expected, I just ran the automated tests and some are failing because they were hardcoded with the old 24-hour value. Please find the relevant unit test in `tests/test_main.py` that checks the daily bonus cooldown and update it to align with the new 12-hour value. Ensure all tests pass after your change."
+  },
+  "expected_approach": "An expert developer would approach this task in two distinct phases, matching the sessions.\n\n**Session 1: Configuration Change**\n1.  The developer would start by reasoning that a 'cooldown' value is a configuration parameter and would begin by inspecting `src/config.py`.\n2.  They would search within `src/config.py` for keywords like `bonus`, `daily`, `cooldown`, or the numeric value `86400` (24 * 60 * 60).\n3.  Upon finding a variable like `DAILY_BONUS_COOLDOWN_SECONDS = 86400`, they would calculate the new value for 12 hours (`12 * 60 * 60 = 43200`).\n4.  They would modify the line to `DAILY_BONUS_COOLDOWN_SECONDS = 43200` and save the file.\n5.  A proactive developer might run the tests at this point and anticipate their failure, which would provide context for the next step.\n\n**Session 2: Test Correction**\n1.  Recalling the previous change, the developer would know the old value was `86400` and the new value is `43200`.\n2.  They would open `tests/test_main.py` and search for the hardcoded value `86400` or for test names containing `bonus` or `cooldown`.\n3.  They would identify the test case that asserts a behavior based on the 24-hour cooldown.\n4.  They would modify the test's assertion or setup to use the new `43200` value. A more advanced fix would involve importing the `DAILY_BONUS_COOLDOWN_SECONDS` variable from `config.py` into the test file to avoid hardcoding the value, making the test more resilient to future changes.\n5.  Finally, they would execute the test suite to confirm that all tests pass, verifying the fix.",
+  "ground_truth": {
+    "reasoning": "The core of this task is to link a configuration change to its corresponding test. The agent must first correctly identify and modify the configuration variable. Then, in the second session, it must remember or re-discover this change and apply it to the test suite. The key insight is that a change in application logic or configuration often invalidates existing tests, which must then be updated to reflect the new, correct behavior.",
+    "file_modifications": [
+      {
+        "file_path": "src/config.py",
+        "change_description": "Update the daily bonus cooldown from 24 hours to 12 hours (in seconds).",
+        "diff": "--- a/src/config.py\n+++ b/src/config.py\n@@ -152,7 +152,7 @@\n # Gameplay Balance Settings\n # =========================================\n PLAYER_STARTING_CASH = 50000\n-DAILY_BONUS_COOLDOWN_SECONDS = 86400  # 24 hours\n+DAILY_BONUS_COOLDOWN_SECONDS = 43200  # 12 hours\n OFFLINE_INCOME_PERCENTAGE = 0.10\n MAX_OFFLINE_INCOME_HOURS = 8"
+      },
+      {
+        "file_path": "tests/test_main.py",
+        "change_description": "Update the unit test for the daily bonus to assert the new 12-hour cooldown instead of the old 24-hour one.",
+        "diff": "--- a/tests/test_main.py\n+++ b/tests/test_main.py\n@@ -215,10 +215,11 @@\n         # Simulate collecting the bonus\n         initial_time = time.time()\n         self.game_state.collect_daily_bonus(self.player)\n-        expected_next_bonus_time = initial_time + 86400\n+        # The cooldown is now 12 hours (43200 seconds)\n+        expected_next_bonus_time = initial_time + 43200\n \n         # Check that the next bonus time is set correctly\n         self.assertAlmostEqual(\n             self.player.next_bonus_availability_ts,\n             expected_next_bonus_time,\n             delta=1"
+      }
+    ]
+  },
+  "evaluation_criteria": [
+    "**Session 1 Correctness:** Was the correct configuration variable in `src/config.py` identified and updated to the correct value (43200)?",
+    "**Session 2 Context Retention:** Did the agent correctly use the new value (43200) in the second session without being explicitly reminded of it?",
+    "**Session 2 Test Identification:** Was the correct unit test function within `tests/test_main.py` correctly identified for modification?",
+    "**Session 2 Test Correction:** Was the identified unit test modified correctly to reflect the new configuration value?",
+    "**Code Integrity:** Were any unrelated files or code blocks modified unnecessarily?",
+    "**Final State Verification:** Does the final state of the code pass the entire test suite in `tests/test_main.py`?"
+  ],
+  "metadata": {
+    "context_length": 288662,
+    "files_count": 20,
+    "information_coverage": 0.3025654893674113,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:12:26.710527"
+  }
+}

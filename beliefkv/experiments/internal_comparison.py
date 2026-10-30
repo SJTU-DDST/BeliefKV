@@ -223,6 +223,16 @@ def arm_environment(
     ):
         raise ValueError("declared oracle requires reference Full workflow size resume")
     workflow_source = workflow_source if mode == "full" else "learned"
+    combination = common.get(
+        "BELIEFKV_WORKFLOW_COMBINATION_ADMISSION",
+        common.get("WORKFLOW_COMBINATION_ADMISSION", "0"),
+    )
+    if combination not in ("0", "1") or (
+        mode == "full" and combination == "1"
+        and (workflow_size != "1" or int(dispatch_interval) == 0)
+    ):
+        raise ValueError("R5 combination admission requires workflow prediction and bounded free dispatch")
+    combination = combination if mode == "full" else "0"
     workflow_model = common.get("BELIEFKV_WORKFLOW_WORK_MODEL", common.get("WORKFLOW_WORK_MODEL", ""))
     workflow_sha = common.get(
         "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256", common.get("WORKFLOW_WORK_MODEL_SHA256", ""),
@@ -386,6 +396,8 @@ def arm_environment(
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS": control_interval,
         "WORKFLOW_SIZE_RESUME": workflow_size,
         "BELIEFKV_WORKFLOW_SIZE_RESUME": workflow_size,
+        "WORKFLOW_COMBINATION_ADMISSION": combination,
+        "BELIEFKV_WORKFLOW_COMBINATION_ADMISSION": combination,
         "WORKFLOW_WORK_SOURCE": workflow_source,
         "BELIEFKV_WORKFLOW_WORK_SOURCE": workflow_source,
         "WORKFLOW_WORK_MODEL": workflow_model,

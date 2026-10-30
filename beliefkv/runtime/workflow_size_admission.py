@@ -18,6 +18,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     rank_kind = "learned_work_class"
 
     def __init__(self, runtime):
+        self._combination = None
+        combination = getattr(runtime, "workflow_combination_admission", False)
         self._task_seen = set()
         self._output_observed = {}
         self._resume_groups = {}
@@ -25,9 +27,34 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self.working_set_type = lambda capacity, **kwargs: WorkflowSizeWorkingSet(
             capacity, rank=self._rank, sibling_group=self._resume_groups.get,
             observe_ready=self._logical_ready_paused, **kwargs,
+            select_set=(
+                lambda ordered, reference, budget: self._combination.periodic(
+                    ordered, reference, budget,
+                )
+            ) if combination else None,
+            defer_first=combination,
         )
         super().__init__(runtime)
         self._work = self._create_work(runtime)
+        if combination:
+            from beliefkv.runtime.workflow_combination import WorkflowCombinationController
+
+            try:
+                self._combination = WorkflowCombinationController(self)
+            except Exception:
+                self._work.close()
+                raise
+            self.policy_name += "_r5"
+
+    def _admit_free_continuation(self, *, preferred=None):
+        if self._combination is not None:
+            return self._combination.defer(preferred)
+        return super()._admit_free_continuation(preferred=preferred)
+
+    def _coadmit_join(self, join_id):
+        if self._combination is not None:
+            return self._combination.siblings_pending(join_id)
+        return super()._coadmit_join(join_id)
 
     def _create_work(self, runtime):
         return WorkflowWorkWorker(
@@ -113,10 +140,24 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "rank_kind": self.rank_kind,
                 "physical_capacity_credit": False,
             })
-        return ordered
+        return (
+            self._combination.dispatch_keys(ordered)
+            if self._combination is not None else ordered
+        )
 
     def registered(self, req, key):
         super().registered(req, key)
+        if self._combination is not None and self.policy.programs[key.invocation_id].steps == 1:
+            self.counts["workflow_combination_first_registrations_deferred"] += 1
+            writer = getattr(self.runtime, "_opportunity_writer", None)
+            if writer is not None:
+                writer.record({
+                    "event": "workflow_combination_first_registration",
+                    "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
+                    "key": asdict(key), "active": self.policy.programs[key.invocation_id].active,
+                    "grant_deferred_to_shared_selection": True,
+                    "physical_capacity_credit": False,
+                })
         invocation = self.runtime.graph.invocations.get(key.invocation_id)
         if key.root_workflow_id not in self._task_seen and (
             invocation is not None and invocation.relation_type is RelationType.ROOT
@@ -178,6 +219,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 self._index_resume_groups()
         super().tick(now=now)
         if not due:
+            if self._combination is not None:
+                self._combination.dispatch(now)
             return
         choice = self.policy.last_selection
         control_cpu_us = (time.thread_time() - control_cpu) * 1e6
@@ -211,6 +254,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 ],
                 "physical_capacity_credit": False,
             })
+        if self._combination is not None:
+            self._combination.dispatch(now)
 
     def native_service(self, batch, completed_ids):
         super().native_service(batch, completed_ids)
@@ -254,6 +299,16 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 if dispatch else "unchanged_join_and_free_continuation"
             ),
             "workflow_size_new_preemption": False,
+            "workflow_combination_admission": self._combination is not None,
+            **({
+                "workflow_combination_scope": "periodic_and_coalesced_first_continuation_sibling_admission",
+                "workflow_combination_join_recovery": "protected_existing_join_eos_rights_unchanged",
+                "workflow_combination_category": "stable_reference_preference_not_hard_search_partition",
+                "workflow_combination_cost_identity": self._combination.cost_identity,
+                "workflow_combination_max_candidates": 8,
+                "workflow_combination_search_budget_ns": 500_000,
+                "workflow_combination_eager_first_grant": False,
+            } if self._combination is not None else {}),
         }
 
     def close(self):

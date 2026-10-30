@@ -4230,3 +4230,36 @@
   All16raw trials remain;conditioned development schedule is not pressure/
   competition qualification. Focused CPU now58passes,including actual entry
   binding/rejection. Runtime/paper policies unchanged;global goal remains active.
+- New user prioritizes more sustained workflow arrivals and permits R5 changes,
+  retaining JOIN prefetch. sustained36_20261030/preparation_r1 keeps the prior
+  eighteen original tasks plus eighteen different original projects,all36
+  live root/child CPU tool checks pass on the existing immutable image.
+  Sources/tests are unchanged. Natural36 capture and matched rate calibration
+  remain pending;8warm/28later is preparation,not proved steady pressure.
+- Explicit WORKFLOW_COMBINATION_ADMISSION defaults off and is isolated from
+  paper/native arms. New bounded6/8candidate controller covers periodic decay
+  resume and coalesced first/continuation/sibling grants,preserves S0 on invalid
+  summaries/deadline and never chooses ready active victims. It scores shared
+  workflow distributions/observed ALL-JOIN coverage against frozen batch-cost
+  metadata,uniquely charges known missing extents and permits native chunked
+  input without an all-input gate. Existing protected JOIN/EOS recovery and
+  blocked-donor authority remain;do not claim unrestricted global JOIN search.
+  Requires a fingerprinted admission_cost_profile;only CPU fixture profiles
+  exist so far. No formal R5 GPU profile,component qualification or gains.
+- Related shared CPU run passes986 with the native source path and no skips;
+  retain the prior976pass/10missing-native-path skips. Final focused set now
+  includes66cases for set changes reaching actual native candidate selection,
+  periodic/event entry,real observed JOIN budget handover,active continuity,
+  shared extent/resource guards and chunked eligibility. This is not the full
+  prior5268source-bound qualification or new GPU/performance acceptance.
+- User proposes fixed arrival-index measurement cohorts under continuing
+  background traffic. See steady_workflow_cohort_20261030_zh.md:exclude declared
+  warmup,retain every measured workflow's complete JCT,never select first
+  completed or censor normal tails. Keep measured identity private to analysis,
+  identical open arrivals/background across arms and verify background covers
+  the entire cohort. Current36total with8warm/18measured leaves10background;
+  oldFull P95~2064s/max2150s suggests this may be too short.48distinct projects
+  is a planning candidate,not an accepted steady-state experiment. Parrot
+  OSDI24background-targetJCT,PackServearXiv2609.33224arrival-window warmup and
+  NSDI06OpenVersusClosed provide related evidence,not an exact reused protocol.
+  No GPU job was launched this turn;global all-baseline goal remains active.

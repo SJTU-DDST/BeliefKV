@@ -1,0 +1,52 @@
+{
+  "id": "python_web_blog_hard_076_feature_implementation_medium_01",
+  "task_category": "feature_implementation",
+  "difficulty": "medium",
+  "title": "Implement 'Clap' (Like) Functionality for Blog Posts",
+  "description": "To increase user engagement on the ProBlogFlow platform, the product team has requested a new feature that allows authenticated users to 'clap' for posts they appreciate. This is analogous to a 'like' system. The feature requires full-stack implementation, including backend API endpoints, database modifications, and a frontend UI component to display and interact with the clap system.",
+  "context_files": [
+    "problogflow//docs//api//openapi.yaml",
+    "problogflow//frontend//src//services//authService.js",
+    "problogflow//src//problogflow//adapters//outbound//database//post_repository.py",
+    "problogflow//frontend//src//services//apiClient.js",
+    "problogflow//config//development.py",
+    "problogflow//docs//setup//DEVELOPMENT_GUIDE.md",
+    "problogflow//src//problogflow//adapters//outbound//__init__.py",
+    "problogflow//src//problogflow//adapters//__init__.py",
+    "problogflow//frontend//src//views//Dashboard.jsx",
+    "problogflow//frontend//src//views//EditorView.jsx",
+    "problogflow//frontend//src//App.jsx",
+    "problogflow//config//production.py",
+    "problogflow//frontend//src//components//core//Modal.jsx",
+    "problogflow//src//problogflow//__init__.py",
+    "problogflow//config//settings.py",
+    "problogflow//src//problogflow//adapters//inbound//web//__init__.py",
+    "problogflow//src//problogflow//adapters//inbound//web//routers//posts_router.py"
+  ],
+  "context_length": 219404,
+  "task_prompt": "Your task is to implement the 'Clap' feature for blog posts. This involves changes to the backend, the API documentation, and the frontend.\n\n**Backend Requirements (Python):**\n1.  **API Endpoints:** In `problogflow//src//problogflow//adapters//inbound//web//routers//posts_router.py`, implement two new endpoints:\n    -   `POST /api/v1/posts/{post_id}/clap`: Allows an authenticated user to clap for a specific post. A user can only clap once per post. Subsequent requests should not create duplicate claps.\n    -   `DELETE /api/v1/posts/{post_id}/clap`: Allows an authenticated user to remove their clap from a post.\n2.  **Database Layer:** In `problogflow//src//problogflow//adapters//outbound//database//post_repository.py`, add the necessary logic to store and retrieve claps. You will need to infer the database structure and create a new table (e.g., `post_claps`) to link users and posts.\n3.  **Data Retrieval:** Modify the existing endpoint for retrieving a single post (likely `GET /api/v1/posts/{post_id}`) to include two new fields in its JSON response:\n    -   `clap_count`: An integer representing the total number of claps for that post.\n    -   `has_clapped`: A boolean indicating if the currently authenticated user has clapped for this post.\n\n**API Documentation Requirements:**\n1.  **Update OpenAPI Spec:** Modify `problogflow//docs//api//openapi.yaml` to accurately document the new `POST` and `DELETE` endpoints. Also, update the response schema for the `GET /api/v1/posts/{post_id}` endpoint to include `clap_count` and `has_clapped`.\n\n**Frontend Requirements (JavaScript/JSX):**\n1.  **API Service:** In `problogflow//frontend//src//services//apiClient.js` or `problogflow//frontend//src//services//authService.js`, add functions to communicate with the new backend endpoints (e.g., `clapForPost(postId)`, `unclapForPost(postId)`).\n2.  **UI Implementation:** In the component responsible for displaying posts (you'll need to identify this, but `problogflow//frontend//src//views//Dashboard.jsx` is a likely candidate), implement the following:\n    -   Display the `clap_count` for each post.\n    -   Add a 'Clap' button. The button's appearance should reflect the `has_clapped` status (e.g., different color or icon).\n    -   The button's `onClick` handler should call the appropriate API function to either add or remove a clap, and the UI should update immediately to reflect the new state.",
+  "expected_approach": "An expert developer would approach this task by first analyzing the existing architecture and then implementing the changes layer by layer.\n\n1.  **Analysis & Planning:** \n    -   Review `posts_router.py` to understand how FastAPI routers, dependencies (for authentication), and responses are structured.\n    -   Examine `post_repository.py` to understand the existing database interaction patterns, likely using an ORM like SQLAlchemy. This will inform how to define the new `post_claps` table model and its repository functions.\n    -   Inspect `openapi.yaml` to understand the documentation format.\n    -   On the frontend, analyze `apiClient.js` to see how authenticated API calls are made. Then, locate the component rendering posts in `Dashboard.jsx` or a child component to identify where the new UI elements should be added and how state is managed.\n\n2.  **Backend Implementation:**\n    -   Define a new database model for claps (e.g., a `PostClap` table with `user_id` and `post_id` foreign keys, and a composite primary key).\n    -   In `post_repository.py`, add methods: `add_clap(user_id, post_id)`, `remove_clap(user_id, post_id)`, `get_clap_count(post_id)`, and `has_user_clapped(user_id, post_id)`.\n    -   In `posts_router.py`, create the `POST` and `DELETE` routes for `/posts/{post_id}/clap`. These routes must require authentication.\n    -   Modify the response model and the implementation of the `GET /posts/{post_id}` route to join or query for clap data, adding `clap_count` and `has_clapped` to the returned object.\n\n3.  **API Documentation:**\n    -   Edit `openapi.yaml` to add path definitions for the two new endpoints, including security requirements. Update the response schema for the single post endpoint.\n\n4.  **Frontend Implementation:**\n    -   Add `clapForPost(postId)` and `unclapForPost(postId)` functions to `apiClient.js`.\n    -   In the relevant React component (e.g., `PostCard.jsx` rendered by `Dashboard.jsx`), add state to manage the clap count and the user's clap status.\n    -   Create a button element. Its `onClick` handler will check the `has_clapped` state and call the corresponding new function from `apiClient.js`.\n    -   Upon a successful API response, update the component's local state to provide immediate visual feedback to the user (optimistic update could also be considered).",
+  "ground_truth": "The ideal solution would involve specific code changes in the designated files. Key insights include:\n\n-   **`problogflow/src/problogflow/adapters/inbound/web/routers/posts_router.py`:**\n    -   Addition of two new routes, `@router.post(\"/{post_id}/clap\")` and `@router.delete(\"/{post_id}/clap\")`, both requiring an authenticated user dependency.\n    -   Modification of the `get_post` route's response model to include `clap_count: int` and `has_clapped: bool`.\n    -   The `get_post` function logic will be updated to call the repository to fetch this new data.\n-   **`problogflow/src/problogflow/adapters/outbound/database/post_repository.py`:**\n    -   A new SQLAlchemy model `PostClap` would be defined (likely in a `models.py` file it imports).\n    -   New functions like `add_clap`, `remove_clap`, etc., would be implemented, containing the necessary database session logic.\n    -   The `get_by_id` function would be updated to perform an additional query or a `LEFT JOIN` to fetch the clap information.\n-   **`problogflow/docs/api/openapi.yaml`:**\n    -   New path items for `/posts/{post_id}/clap` with `post` and `delete` operations defined.\n    -   The schema for the `PostResponse` object would be updated to include `clap_count` and `has_clapped` properties.\n-   **`problogflow/frontend/src/services/apiClient.js`:**\n    -   New exported functions `clapForPost` and `unclapForPost` that make `POST` and `DELETE` requests respectively, including the auth token.\n-   **`problogflow/frontend/src/views/Dashboard.jsx` (or a child component):**\n    -   Use of `useState` to manage `clapCount` and `hasClapped`.\n    -   A `<button>` element whose `onClick` triggers a handler function.\n    -   The handler function would call the new API service functions and then update state using `setClapCount` and `setHasClapped`.",
+  "evaluation_criteria": [
+    "**Backend - Endpoint Creation:** Agent successfully creates the `POST /api/v1/posts/{post_id}/clap` and `DELETE /api/v1/posts/{post_id}/clap` endpoints in `posts_router.py`.",
+    "**Backend - Security:** The new endpoints correctly enforce user authentication, failing for unauthenticated requests.",
+    "**Backend - Logic:** The clap logic correctly ensures a user can only clap once per post, and the delete logic correctly removes the clap.",
+    "**Backend - Data Retrieval:** The `GET /api/v1/posts/{post_id}` endpoint correctly returns the `clap_count` and `has_clapped` fields.",
+    "**Backend - Repository Pattern:** The agent correctly adds new functions to `post_repository.py` for database interactions, following the existing pattern.",
+    "**API Documentation:** The `openapi.yaml` file is updated to reflect all API changes, including new paths and modified response schemas.",
+    "**Frontend - API Service:** The agent correctly adds new functions for clapping/unclapping in the appropriate frontend service file (`apiClient.js` or similar).",
+    "**Frontend - UI Display:** The UI correctly displays the clap count and a button.",
+    "**Frontend - Interactivity:** The clap button correctly calls the appropriate API on click and updates its visual state based on the `has_clapped` status.",
+    "**Code Integration:** The new code is well-integrated with the existing application structure, style, and conventions without breaking existing functionality."
+  ],
+  "metadata": {
+    "context_length": 219404,
+    "files_count": 17,
+    "information_coverage": 0.5096409582190301,
+    "coverage_range": [
+      0.4,
+      0.6
+    ],
+    "generation_timestamp": "2025-08-05T18:23:56.728795"
+  }
+}

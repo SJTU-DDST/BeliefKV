@@ -424,12 +424,14 @@ def validate_reference_admission(
     workflow_size_resume=False,
     workflow_work_model_sha256=None,
     workflow_work_source="learned",
+    workflow_combination_admission=False,
     pressure_pause_policy="reference",
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
         join_blocked_handoff,
         workflow_size_resume,
+        workflow_combination_admission,
     )):
         raise ValueError("JOIN admission declarations must be booleans")
     if (
@@ -462,6 +464,8 @@ def validate_reference_admission(
     ):
         raise ValueError("oracle must be explicitly declared with workflow size admission")
     oracle = workflow_work_source == "oracle"
+    if workflow_combination_admission and (not workflow_size_resume or not free_dispatch_interval_ms):
+        raise ValueError("R5 requires declared workflow prediction and bounded dispatch")
     if oracle:
         from beliefkv.runtime.workflow_oracle_admission import WorkflowOracleAdmission
 
@@ -492,6 +496,18 @@ def validate_reference_admission(
         "ordinary_restore_reservation_ms": 0,
         "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
     }
+    if workflow_combination_admission:
+        expected["policy"] += "_r5"
+        expected.update({
+            "workflow_combination_admission": True,
+            "workflow_combination_join_recovery": "protected_existing_join_eos_rights_unchanged",
+            "workflow_combination_category": "stable_reference_preference_not_hard_search_partition",
+            "workflow_combination_max_candidates": 8,
+            "workflow_combination_search_budget_ns": 500_000,
+            "workflow_combination_eager_first_grant": False,
+        })
+    elif state.get("workflow_combination_admission", False):
+        raise ValueError("R5 cannot be silently enabled in an ordered admission comparison")
     if pressure_pause_policy == "predicted_acting":
         expected.update({
             "pressure_prediction_scope": "mandatory_acting_pressure_only",

@@ -370,6 +370,7 @@ def preflight_runtime(settings, model_path):
         )),
         "agent_control_interval_ms": int(settings.get("BELIEFKV_AGENT_CONTROL_INTERVAL_MS", "5000")),
         "workflow_size_resume": settings.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0") == "1",
+        "workflow_combination_admission": settings.get("BELIEFKV_WORKFLOW_COMBINATION_ADMISSION", "0") == "1",
         "workflow_work_source": settings.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned"),
         "coadmit_join_children": settings.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0") == "1",
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
@@ -959,6 +960,11 @@ def observed_configuration(plan, label, arm, *, final=False):
                         plan["reference_environment"].get("AGENT_COADMIT_JOIN_CHILDREN", "0"),
                     ) == "1",
                 )
+                if common.get(
+                    "BELIEFKV_WORKFLOW_COMBINATION_ADMISSION",
+                    common.get("WORKFLOW_COMBINATION_ADMISSION", "0"),
+                ) == "1":
+                    reference_policy += "_r5"
             if (
                 not isinstance(actual_agents, dict)
                 or actual_agents.get("policy") != (
@@ -1010,6 +1016,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                         common.get("WORKFLOW_WORK_MODEL_SHA256"),
                     ),
                     workflow_work_source="oracle" if oracle else "learned",
+                    workflow_combination_admission=common.get(
+                        "BELIEFKV_WORKFLOW_COMBINATION_ADMISSION",
+                        common.get("WORKFLOW_COMBINATION_ADMISSION", "0"),
+                    ) == "1",
                     pressure_pause_policy=common.get(
                         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY",
                         common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),

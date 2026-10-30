@@ -1,0 +1,101 @@
+{
+  "id": "python_mobile_game_hard_060_bug_investigation_expert_01",
+  "task_category": "bug_investigation",
+  "difficulty": "expert",
+  "title": "Stale Location Data in Geo-Fenced Quest Notifications",
+  "description": "In 'QuestSmith: Productivity RPG Forge', players are reporting a confusing and frustrating bug. When a player enters a new real-world geo-fenced zone (e.g., a library, park, or cafe), the game is supposed to send a push notification for a new, relevant quest. Instead, players are receiving notifications for quests associated with the *previous* zone they were in. For example, after leaving the 'Library of Scribing' and entering the 'Park of Vitality', they get another notification for a library quest. The issue appears to resolve itself if they wait a few minutes in the new zone, but the initial notification is always wrong. This is leading to negative user reviews and is a high-priority issue. Initial analysis of server logs indicates that the push notification payload is being generated with outdated user location data, even though our location services module seems to be correctly detecting the new zone entry.",
+  "context_files": [
+    "tests/test_utils.py",
+    "src/module_16.py",
+    "src/module_34.py",
+    "src/module_14.py",
+    "src/module_2.py",
+    "src/module_1.py",
+    "name",
+    "type",
+    "src/module_22.py",
+    "children",
+    "src/module_3.py",
+    "src/module_7.py",
+    "src/module_31.py",
+    "src/module_30.py",
+    "src/module_32.py",
+    "src/module_17.py",
+    "src/module_21.py",
+    "src/module_19.py",
+    "src/module_29.py",
+    "src/module_5.py",
+    "src/module_12.py",
+    "src/module_38.py",
+    "src/module_9.py",
+    "src/module_25.py",
+    "src/module_6.py",
+    "src/module_36.py",
+    "src/module_20.py",
+    "src/module_37.py",
+    "src/module_24.py",
+    "src/module_15.py",
+    "src/module_39.py",
+    "src/module_13.py",
+    "src/module_11.py",
+    "src/utils.py",
+    "src/module_8.py",
+    "src/module_18.py",
+    "src/module_4.py",
+    "src/config.py",
+    "src/module_26.py",
+    "src/module_10.py",
+    "src/module_27.py",
+    "src/module_28.py",
+    "src/module_33.py",
+    "tests/test_main.py"
+  ],
+  "context_length": 669880,
+  "task_prompt": "Your task is to investigate the root cause of this bug. You must determine why the push notification service is using stale location data to generate quest notifications.\n\n1.  Begin by analyzing the codebase to trace the data flow from a background location update to the triggering of a push notification.\n2.  Identify the specific modules, functions, and line(s) of code that are responsible for the bug.\n3.  Provide a clear, step-by-step explanation of how the bug occurs, detailing the interaction between the different system components.\n4.  Propose a high-level technical solution to fix the bug. You do not need to write the code, but you must describe the necessary changes.",
+  "expected_approach": "An expert developer would approach this by hypothesizing that this is a state management or caching issue, common in systems with background processing.\n\n1.  **Start at the effect:** The developer would first locate the code responsible for sending push notifications. A search for 'notification' or 'push' would lead them to `src/module_22.py` (assumed to be the Push Notification Service).\n2.  **Trace backwards:** Inside `module_22.py`, they'd find a function like `send_quest_notification(user_id)`. They would note that it only takes a `user_id`, meaning it must be fetching the user's data, including location, from another source.\n3.  **Identify the trigger:** The developer would then search the codebase to find where `send_quest_notification` is called. This would lead them to `src/module_12.py` (Location Services), likely within a function named `handle_geofence_entry` or similar, which is triggered by the mobile OS.\n4.  **Analyze the data source:** In `module_22.py`, the developer would see that `send_quest_notification` calls a helper function to get user data, likely from `src/utils.py`, for example `utils.get_user_data(user_id)`.\n5.  **Investigate the utility function:** Upon inspecting `utils.get_user_data` in `src/utils.py`, the developer would discover it uses a cache (e.g., Redis or an in-memory dictionary with a TTL) to avoid frequent database hits. This is the prime suspect.\n6.  **Connect the dots:** The developer would connect the sequence of events: \n    a. `module_12.py` detects a new location and updates the user's location in the primary database.\n    b. `module_12.py` immediately queues a background job to call `module_22.py`'s notification function.\n    c. The background worker in `module_22.py` executes almost instantly and calls `utils.get_user_data`.\n    d. `utils.py` returns the user's data from the cache, which has not yet expired and has not been invalidated by the database write in step (a). This cached data contains the *old* location.\n7.  **Formulate the conclusion:** The root cause is a race condition. The location is updated in the database, but the notification is generated using a stale cache before it can be updated or expire. The fix would involve either invalidating the cache upon location update or passing the new location data directly to the notification job.",
+  "ground_truth": {
+    "identified_files": [
+      "src/module_12.py",
+      "src/module_22.py",
+      "src/utils.py"
+    ],
+    "root_cause_analysis": "The bug is caused by a race condition combined with an aggressive caching strategy. The system is designed for performance, but this creates a state inconsistency between the background location tracking and the push notification systems.\n\n1.  **In `src/module_12.py` (Location Services):** The function `handle_new_geofence_entry(user_id, new_location_data)` is correctly triggered by the OS. It performs two actions:\n    - It writes the `new_location_data` to the main user database.\n    - It immediately enqueues a background task to send a push notification, passing only the `user_id`, like so: `notification_queue.add_task('send_quest_notification', user_id=user_id)`.\n\n2.  **In `src/module_22.py` (Push Notification Service):** A worker process picks up the task and executes `send_quest_notification(user_id)`. To get the quest details, this function needs the user's current location. It retrieves the full user profile by calling a utility function: `user_profile = utils.get_cached_user_profile(user_id)`.\n\n3.  **In `src/utils.py` (Shared Utilities):** The function `get_cached_user_profile(user_id)` is the source of the bug. It's implemented with a 90-second cache to reduce database load:\n    ```python\n    # Simplified example from utils.py\n    user_profile_cache = {}\n    def get_cached_user_profile(user_id):\n        if user_id in user_profile_cache and not cache_is_expired(user_id):\n            return user_profile_cache[user_id] # BUG: Returns stale data\n        \n        # Fetch from DB and update cache\n        profile = db.fetch_user_profile(user_id)\n        update_cache(user_id, profile)\n        return profile\n    ```\n    The location update in `module_12.py` does *not* invalidate this cache. Therefore, when the notification worker in `module_22.py` calls this function moments later, it receives the stale, cached profile containing the user's previous location.\n\n**Proposed Solution:**\nThe most robust fix is to modify the system to avoid reliance on the cache for this time-sensitive operation. The `handle_new_geofence_entry` function in `src/module_12.py` should pass the new location data directly to the background task.\n\n- **Change in `module_12.py`:** `notification_queue.add_task('send_quest_notification', user_id=user_id, location_data=new_location_data)`\n- **Change in `module_22.py`:** `def send_quest_notification(user_id, location_data): ...`\n\nAn alternative, less ideal solution would be to have the function in `module_12.py` explicitly invalidate the cache in `utils.py` before queueing the task.",
+    "key_insights": [
+      "The issue is not a crash, but a logical flaw in state management.",
+      "The problem arises from the interaction between three separate modules: location services, push notifications, and a shared caching utility.",
+      "The root cause is a race condition where a notification is generated based on a stale cache that has not yet been updated after a database write."
+    ]
+  },
+  "evaluation_criteria": [
+    {
+      "criterion": "Correct Root Cause Identification",
+      "description": "Did the agent correctly identify that a stale cache in `utils.py` is the source of the outdated location data, and that this is due to a race condition with the database update?",
+      "weight": 0.4
+    },
+    {
+      "criterion": "Accurate File and Function Pinpointing",
+      "description": "Did the agent correctly identify `module_12.py`, `module_22.py`, and `utils.py` as the three key files involved in the bug?",
+      "weight": 0.3
+    },
+    {
+      "criterion": "Coherent Explanation of the Bug",
+      "description": "Was the agent's explanation of the bug's lifecycle clear, logical, and did it correctly describe the sequence of events leading to the failure?",
+      "weight": 0.2
+    },
+    {
+      "criterion": "Viability of Proposed Solution",
+      "description": "Did the agent propose a valid high-level solution, such as passing the new location data directly to the notification task or explicitly invalidating the cache?",
+      "weight": 0.1
+    }
+  ],
+  "metadata": {
+    "context_length": 669880,
+    "files_count": 44,
+    "information_coverage": 0.9077432171304214,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:13:47.632214"
+  }
+}

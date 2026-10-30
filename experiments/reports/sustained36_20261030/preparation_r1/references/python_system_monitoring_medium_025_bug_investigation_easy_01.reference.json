@@ -1,0 +1,44 @@
+{
+  "id": "python_system_monitoring_medium_025_bug_investigation_easy_01",
+  "task_category": "bug_investigation",
+  "difficulty": "easy",
+  "title": "Incorrect Alert Severity for High CPU Usage",
+  "description": "The EduPulse Monitor system is designed to track infrastructure health and send alerts when key metrics cross predefined thresholds. Recently, system administrators have reported that they are receiving 'WARNING' level alerts for high CPU usage on application servers, even when the utilization is clearly in the 'CRITICAL' range (e.g., 92-94%). According to the operational runbook, any CPU utilization exceeding 90% should trigger a 'CRITICAL' alert to mobilize the on-call engineering team immediately. This misclassification is causing a delay in response to potentially serious performance degradation.",
+  "context_files": [
+    "edupulse-monitor//ARCHITECTURE.md",
+    "edupulse-monitor//src//main.py",
+    "edupulse-monitor//src//edupulse_monitor//core//use_cases//monitor_system.py",
+    "edupulse-monitor//src//edupulse_monitor//core//domain//policy.py",
+    "edupulse-monitor//src//edupulse_monitor//infrastructure//gateways//__init__.py",
+    "edupulse-monitor//src//edupulse_monitor//core//use_cases//manage_alerts.py",
+    "edupulse-monitor//src//edupulse_monitor//core//use_cases//__init__.py",
+    "edupulse-monitor//src//edupulse_monitor//infrastructure//collectors//__init__.py",
+    "edupulse-monitor//src//edupulse_monitor//infrastructure//event_bus//redis_bus.py"
+  ],
+  "context_length": 127176,
+  "task_prompt": "A user has reported that CPU alerts are being misclassified. CPU utilization spikes above 90% are incorrectly triggering 'WARNING' alerts instead of the expected 'CRITICAL' alerts. Your task is to investigate the codebase to find the root cause of this alert misclassification. You do not need to write a fix. Your final output should be a report identifying the specific file and the exact line(s) of code responsible for the issue, along with a clear explanation of why it causes the incorrect behavior.",
+  "expected_approach": "An expert developer would approach this by:\n1.  **Formulating a Hypothesis:** The symptom is an incorrect severity level ('WARNING' instead of 'CRITICAL'). The root cause is likely in the logic that evaluates CPU metric values against predefined thresholds.\n2.  **Code Reconnaissance:** Start by searching for keywords related to the problem domain, such as 'alert', 'severity', 'cpu', 'threshold', and 'critical' across the project.\n3.  **Tracing the Logic:** The search would likely lead to `src/edupulse_monitor/core/use_cases/manage_alerts.py`, which probably orchestrates the alert handling. From there, the developer would trace how an alert's severity is determined.\n4.  **Identifying the Policy:** The alert management use case should delegate the decision-making to a domain policy. The developer would inspect `src/edupulse_monitor/core/domain/policy.py` as the most probable location for business rules and thresholds.\n5.  **Pinpointing the Bug:** Inside `policy.py`, the developer would look for the specific data structure or conditional logic that defines the CPU alert thresholds. They would then compare the implemented values against the user's requirement (CRITICAL > 90%) and identify the discrepancy.",
+  "ground_truth": {
+    "file": "src/edupulse_monitor/core/domain/policy.py",
+    "insight": "The root cause is a misconfigured threshold value within the `SystemHealthPolicy` class. The threshold for a 'CRITICAL' CPU alert is incorrectly set to 95, while the requirement is 90.",
+    "code_snippet": "class SystemHealthPolicy:\n    # ... other policy definitions ...\n    CPU_THRESHOLDS = {\n        \"CRITICAL\": 95,  // This value should be 90\n        \"WARNING\": 75,\n    }\n\n    def get_severity_for_cpu(self, cpu_percentage: float) -> str:\n        if cpu_percentage >= self.CPU_THRESHOLDS[\"CRITICAL\"]:\n            return \"CRITICAL\"\n        if cpu_percentage >= self.CPU_THRESHOLDS[\"WARNING\"]:\n            return \"WARNING\"\n        return \"INFO\"",
+    "explanation": "The `SystemHealthPolicy` class defines the thresholds for system metrics. The `CPU_THRESHOLDS` dictionary sets the 'CRITICAL' level at 95%. Therefore, any CPU utilization value between 90% and 94.9% will fail the `cpu_percentage >= 95` check and fall through to the next condition, `cpu_percentage >= 75`, resulting in an incorrect 'WARNING' severity. The fix would be to change the 'CRITICAL' threshold value from 95 to 90 to match the operational requirement."
+  },
+  "evaluation_criteria": [
+    "**Root Cause Identification:** Was the agent able to correctly identify `src/edupulse_monitor/core/domain/policy.py` as the file containing the bug?",
+    "**Accuracy of Explanation:** Did the agent's explanation correctly state that the `CPU_THRESHOLDS` value for 'CRITICAL' is misconfigured (95 instead of 90)?",
+    "**Logical Deduction:** Did the agent demonstrate a logical investigation path, starting from the symptom (alerts) and tracing back to the policy, rather than randomly inspecting files?",
+    "**Clarity of Reporting:** Was the final report clear, concise, and directly answering the prompt without including irrelevant information?",
+    "**Efficiency:** Did the agent avoid spending significant time analyzing irrelevant files like `redis_bus.py` or `__init__.py` files?"
+  ],
+  "metadata": {
+    "context_length": 127176,
+    "files_count": 9,
+    "information_coverage": 0.337848571709406,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:37:04.828395"
+  }
+}

@@ -15,12 +15,23 @@ def resume_category(item):
 class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
     """Change recovery ordering; inherit decay, pressure, and native authority."""
 
-    def __init__(self, capacity_tokens, *, rank, sibling_group, observe_ready=None, **kwargs):
+    def __init__(
+        self, capacity_tokens, *, rank, sibling_group, observe_ready=None,
+        select_set=None, defer_first=False, **kwargs,
+    ):
         super().__init__(capacity_tokens, **kwargs)
         self.rank = rank
         self.sibling_group = sibling_group
         self.observe_ready = observe_ready
+        self.select_set = select_set
+        self.defer_first = defer_first
         self.last_selection = {}
+
+    def arrive(self, identity, tokens, *, now):
+        super().arrive(identity, tokens, now=now)
+        item = self.programs[identity]
+        if self.defer_first and item.steps == 1 and item.active:
+            self._pause(item, now)
 
     def _resume(self):
         if self._resume_now is None:
@@ -72,6 +83,16 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
             if used + required <= capacity:
                 selected.append(item)
                 used += required
+        if self.select_set is not None:
+            chosen = self.select_set(ordered, selected, capacity)
+            if (
+                len({item.identity for item in chosen}) != len(chosen)
+                or any(item not in ordered for item in chosen)
+                or sum(item.tokens + self.buffer_tokens for item in chosen) > capacity
+            ):
+                raise ValueError("combination selector violated the reference logical budget")
+            selected = list(chosen)
+            used = sum(item.tokens + self.buffer_tokens for item in selected)
         selection_order = tuple(item.identity for item in selected)
         # Keep the public one-backend placement convention and post-resume pressure.
         selected.sort(key=lambda item: -item.tokens)
