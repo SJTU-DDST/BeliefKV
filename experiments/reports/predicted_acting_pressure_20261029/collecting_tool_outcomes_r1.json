@@ -1,0 +1,3367 @@
+{
+  "logical_decisions": {
+    "counts": {
+      "mandatory_acting_pauses": 236,
+      "changed_local_victims": 59,
+      "logical_tokens_paused": 14206065,
+      "predicted_choices": 125,
+      "quantile_only_bounds_not_reconstructed": 0
+    },
+    "scope": "Explicit mandatory logical pressure decisions only. No physical freed pages, saved migration, complete reference trajectory or causal JCT benefit follows."
+  },
+  "counts": {
+    "predicted_decisions": 125,
+    "fully_bound_decisions": 121,
+    "observed_survived_threshold_decisions": 108,
+    "pause_outside_observed_tool": 0,
+    "unbound_decisions": 4,
+    "independent_tool_executions": 121,
+    "independent_first_decisions_survived_threshold": 108
+  },
+  "tool_weighted_first_decision_median_remaining_ms": 5508.952703475952,
+  "rows": [
+    {
+      "request_id": "beliefkv:01a177a6-0544-7bf0-a53c-a081a8bce3b7",
+      "identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+        12
+      ],
+      "pause_monotonic_ms": 7497831313.476917,
+      "threshold_ms": 3386.5041920000003,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "01a177a6-2171-79f3-9922-54926f8e9e80"
+      ],
+      "tool_start_monotonic_ms": 7497830762.10993,
+      "tool_end_monotonic_ms": 7497836552.268471,
+      "observed_remaining_ms": 5238.791553497314,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a6-21db-7633-a243-fb1722393243",
+      "next_submit_after_tool_return_ms": 36.40712833404541,
+      "next_submit_after_pause_ms": 5275.19868183136,
+      "tool_return_to_next_first_output_ms": 9744.815472602844
+    },
+    {
+      "request_id": "beliefkv:01a177a7-0705-7a10-89e1-6b474f09e7ee",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:774c21d38b88ade0",
+        "deepagents-context:774c21d38b88ade0",
+        5
+      ],
+      "pause_monotonic_ms": 7497870978.377543,
+      "threshold_ms": 2114.7492097746645,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:774c21d38b88ade0",
+        "01a177a7-1642-75e0-b3d8-03a73fe068bd"
+      ],
+      "tool_start_monotonic_ms": 7497867497.897555,
+      "tool_end_monotonic_ms": 7497874477.512079,
+      "observed_remaining_ms": 3499.1345357894897,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a7-169c-7a21-b986-87dcb410eda7",
+      "next_submit_after_tool_return_ms": 11.527849197387695,
+      "next_submit_after_pause_ms": 3510.6623849868774,
+      "tool_return_to_next_first_output_ms": 1157.6229705810547
+    },
+    {
+      "request_id": "beliefkv:01a177a7-aae7-7333-a075-5107fb6d0e86",
+      "identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents-invocation:649818db6a48d692",
+        "deepagents-context:649818db6a48d692",
+        25
+      ],
+      "pause_monotonic_ms": 7497893442.444299,
+      "threshold_ms": 2277.9188810300625,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents-invocation:649818db6a48d692",
+        "01a177a7-b01f-77e0-8f34-3dad3e299d48"
+      ],
+      "tool_start_monotonic_ms": 7497892241.655119,
+      "tool_end_monotonic_ms": 7497894373.773717,
+      "observed_remaining_ms": 931.329418182373,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a7-b085-7cf3-9f3f-a2733274f2e4",
+      "next_submit_after_tool_return_ms": 39.15339279174805,
+      "next_submit_after_pause_ms": 970.4828109741211,
+      "tool_return_to_next_first_output_ms": 1254.883092880249
+    },
+    {
+      "request_id": "beliefkv:01a177a7-e585-71c1-85fc-3d4314f7a0aa",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "deepagents-context:5055fd56f6f9d254",
+        14
+      ],
+      "pause_monotonic_ms": 7497909659.101401,
+      "threshold_ms": 2242.1416074968874,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "01a177a7-f875-7743-be06-64c5bf26f587"
+      ],
+      "tool_start_monotonic_ms": 7497909386.015563,
+      "tool_end_monotonic_ms": 7497925496.247931,
+      "observed_remaining_ms": 15837.146529197693,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a7-f94f-7910-b351-02bcfa3e9d08",
+      "next_submit_after_tool_return_ms": 41.15329074859619,
+      "next_submit_after_pause_ms": 15878.299819946289,
+      "tool_return_to_next_first_output_ms": 465.0435314178467
+    },
+    {
+      "request_id": "beliefkv:01a177a7-8752-7122-99fb-2726ca595cfd",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "deepagents-context:94cdd6e0338ac17a",
+        15
+      ],
+      "pause_monotonic_ms": 7497915747.777595,
+      "threshold_ms": 2298.9428869729313,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:94cdd6e0338ac17a",
+        "01a177a7-8d5e-71f3-8e6e-921213d078d5"
+      ],
+      "tool_start_monotonic_ms": 7497910302.333139,
+      "tool_end_monotonic_ms": 7497922988.444715,
+      "observed_remaining_ms": 7240.667119979858,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a7-8dc3-75a0-ab0b-06d93ec99658",
+      "next_submit_after_tool_return_ms": 28.62634563446045,
+      "next_submit_after_pause_ms": 7269.293465614319,
+      "tool_return_to_next_first_output_ms": 105.74924373626709
+    },
+    {
+      "request_id": "beliefkv:01a177a7-f94f-7910-b351-02bcfa3e9d08",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "deepagents-context:5055fd56f6f9d254",
+        15
+      ],
+      "pause_monotonic_ms": 7497952127.176671,
+      "threshold_ms": 2368.182404021424,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:5055fd56f6f9d254",
+        "01a177a8-0938-7b10-b9d6-f4c62687d006"
+      ],
+      "tool_start_monotonic_ms": 7497928796.610273,
+      "tool_end_monotonic_ms": 7497980142.923713,
+      "observed_remaining_ms": 28015.74704170227,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-0a03-73e2-b0ff-d5b02e9b248b",
+      "next_submit_after_tool_return_ms": 29.30258083343506,
+      "next_submit_after_pause_ms": 28045.049622535706,
+      "tool_return_to_next_first_output_ms": 100.1012544631958
+    },
+    {
+      "request_id": "beliefkv:01a177a8-f271-72d3-bba0-ea3a8920d121",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents-context:ed7c58e8e023e49d",
+        29
+      ],
+      "pause_monotonic_ms": 7497994338.264982,
+      "threshold_ms": 2388.5786263272166,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "01a177a8-feac-7921-91c5-ab972f1074e1"
+      ],
+      "tool_start_monotonic_ms": 7497993192.491378,
+      "tool_end_monotonic_ms": 7498000229.205291,
+      "observed_remaining_ms": 5890.940308570862,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-ffc5-75c3-862b-6181c2d37008",
+      "next_submit_after_tool_return_ms": 34.41478729248047,
+      "next_submit_after_pause_ms": 5925.355095863342,
+      "tool_return_to_next_first_output_ms": 14572.116027832031
+    },
+    {
+      "request_id": "beliefkv:01a177a8-3e63-7802-9070-b2d50b157969",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:774c21d38b88ade0",
+        "deepagents-context:774c21d38b88ade0",
+        22
+      ],
+      "pause_monotonic_ms": 7498054227.794154,
+      "threshold_ms": 2461.251651627621,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:774c21d38b88ade0",
+        "01a177a8-4a9f-7471-b503-94f13501a19a"
+      ],
+      "tool_start_monotonic_ms": 7498037072.770086,
+      "tool_end_monotonic_ms": 7498054766.081315,
+      "observed_remaining_ms": 538.2871608734131,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-4b09-7ae2-84d2-071c1e152642",
+      "next_submit_after_tool_return_ms": 29.515993118286133,
+      "next_submit_after_pause_ms": 567.8031539916992,
+      "tool_return_to_next_first_output_ms": 1548.7815217971802
+    },
+    {
+      "request_id": "beliefkv:01a177a9-4327-7961-aff8-6674c9f80a71",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+        33
+      ],
+      "pause_monotonic_ms": 7498062338.712818,
+      "threshold_ms": 2720.72564603956,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "01a177a9-4edf-7ce3-b018-8ed67e62aa86"
+      ],
+      "tool_start_monotonic_ms": 7498061246.551558,
+      "tool_end_monotonic_ms": 7498064090.151948,
+      "observed_remaining_ms": 1751.4391298294067,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a9-4f57-77a1-b761-ec4e9ee4bc04",
+      "next_submit_after_tool_return_ms": 48.056396484375,
+      "next_submit_after_pause_ms": 1799.4955263137817,
+      "tool_return_to_next_first_output_ms": 323.18251514434814
+    },
+    {
+      "request_id": "beliefkv:01a177a9-c054-74a2-92a4-8589161e915e",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents-context:ed7c58e8e023e49d",
+        38
+      ],
+      "pause_monotonic_ms": 7498064359.903047,
+      "threshold_ms": 2525.9704807773232,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "01a177a9-d433-7922-a4f6-53d87fd52a5d"
+      ],
+      "tool_start_monotonic_ms": 7498064121.131345,
+      "tool_end_monotonic_ms": 7498069471.443594,
+      "observed_remaining_ms": 5111.540547370911,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a9-dd3b-74b2-9989-4c82bdacbfbb",
+      "next_submit_after_tool_return_ms": 21.264972686767578,
+      "next_submit_after_pause_ms": 5132.805520057678,
+      "tool_return_to_next_first_output_ms": 1034.0023469924927
+    },
+    {
+      "request_id": "beliefkv:01a177aa-c504-7e52-843e-8afe3b3f43d3",
+      "identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+        19
+      ],
+      "pause_monotonic_ms": 7498112855.023585,
+      "threshold_ms": 2575.380638494922,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "01a177aa-e041-77d1-840b-57d1d68f0e46"
+      ],
+      "tool_start_monotonic_ms": 7498112449.201532,
+      "tool_end_monotonic_ms": 7498116578.116958,
+      "observed_remaining_ms": 3723.0933723449707,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-e0dc-7e12-a0d2-52a9f1cefb91",
+      "next_submit_after_tool_return_ms": 40.98750114440918,
+      "next_submit_after_pause_ms": 3764.08087348938,
+      "tool_return_to_next_first_output_ms": 1040.17240524292
+    },
+    {
+      "request_id": "beliefkv:01a177ab-f019-7772-afa5-6d5137408f73",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        28
+      ],
+      "pause_monotonic_ms": 7498114865.405937,
+      "threshold_ms": 2544.60603940646,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177ac-3150-7451-9800-a5b67d798926"
+      ],
+      "tool_start_monotonic_ms": 7498113927.413645,
+      "tool_end_monotonic_ms": 7498119454.489802,
+      "observed_remaining_ms": 4589.08386516571,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-31ee-7fb0-afdc-442d6356577c",
+      "next_submit_after_tool_return_ms": 45.017438888549805,
+      "next_submit_after_pause_ms": 4634.10130405426,
+      "tool_return_to_next_first_output_ms": 2264.322525024414
+    },
+    {
+      "request_id": "beliefkv:01a177a8-c8c1-7b62-a70b-ec4bfdebfd4c",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:root",
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:context:root",
+        16
+      ],
+      "pause_monotonic_ms": 7498120953.905265,
+      "threshold_ms": 2607.1489757858217,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70:root",
+        "01a177a8-d047-7a31-b14d-71592c57ff04"
+      ],
+      "tool_start_monotonic_ms": 7498118308.096147,
+      "tool_end_monotonic_ms": 7498125282.949428,
+      "observed_remaining_ms": 4329.044162750244,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-d0c0-7b40-b00e-e555f70ffd29",
+      "next_submit_after_tool_return_ms": 44.397308349609375,
+      "next_submit_after_pause_ms": 4373.4414710998535,
+      "tool_return_to_next_first_output_ms": 636.4696741104126
+    },
+    {
+      "request_id": "beliefkv:01a177aa-26d8-7c62-8565-4b637828febb",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:61c6413bdc63294c",
+        "deepagents-context:61c6413bdc63294c",
+        20
+      ],
+      "pause_monotonic_ms": 7498139144.818709,
+      "threshold_ms": 2378.9002139121294,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:61c6413bdc63294c",
+        "01a177aa-30a7-75b3-bfc1-8f750640a0d4"
+      ],
+      "tool_start_monotonic_ms": 7498137854.59366,
+      "tool_end_monotonic_ms": 7498143644.594541,
+      "observed_remaining_ms": 4499.775831222534,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-311a-7640-beef-f10b7a8041da",
+      "next_submit_after_tool_return_ms": 39.9810733795166,
+      "next_submit_after_pause_ms": 4539.756904602051,
+      "tool_return_to_next_first_output_ms": 1749.2303552627563
+    },
+    {
+      "request_id": "beliefkv:01a177aa-8c24-7a92-a626-99de20ae84db",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents-context:ed7c58e8e023e49d",
+        43
+      ],
+      "pause_monotonic_ms": 7498139144.830026,
+      "threshold_ms": 2519.5825677365065,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "01a177aa-9f35-7612-a3d5-70aff486f27d"
+      ],
+      "tool_start_monotonic_ms": 7498138119.081456,
+      "tool_end_monotonic_ms": 7498142395.959909,
+      "observed_remaining_ms": 3251.1298837661743,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-9f98-7e11-8646-101a9271a0f2",
+      "next_submit_after_tool_return_ms": 26.66510009765625,
+      "next_submit_after_pause_ms": 3277.7949838638306,
+      "tool_return_to_next_first_output_ms": 166.69224643707275
+    },
+    {
+      "request_id": "beliefkv:01a177aa-9f98-7e11-8646-101a9271a0f2",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "deepagents-context:ed7c58e8e023e49d",
+        44
+      ],
+      "pause_monotonic_ms": 7498145176.356404,
+      "threshold_ms": 2558.3401581272483,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:ed7c58e8e023e49d",
+        "01a177aa-b044-7870-b820-94f15147fa4d"
+      ],
+      "tool_start_monotonic_ms": 7498144597.85779,
+      "tool_end_monotonic_ms": 7498148028.333082,
+      "observed_remaining_ms": 2851.9766778945923,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-b09d-7870-8edf-27fce050a864",
+      "next_submit_after_tool_return_ms": 19.110485076904297,
+      "next_submit_after_pause_ms": 2871.0871629714966,
+      "tool_return_to_next_first_output_ms": 1406.3670845031738
+    },
+    {
+      "request_id": "beliefkv:01a177ad-2603-7141-a7f7-907941462028",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        33
+      ],
+      "pause_monotonic_ms": 7498149200.587514,
+      "threshold_ms": 2641.3234517909586,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177ad-5998-7b41-9829-3fe2a0317b51"
+      ],
+      "tool_start_monotonic_ms": 7498148248.209908,
+      "tool_end_monotonic_ms": 7498154070.828557,
+      "observed_remaining_ms": 4870.24104309082,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-5a06-7753-9119-1b8e90e5cb45",
+      "next_submit_after_tool_return_ms": 46.56879425048828,
+      "next_submit_after_pause_ms": 4916.809837341309,
+      "tool_return_to_next_first_output_ms": 38102.196108818054
+    },
+    {
+      "request_id": "beliefkv:01a177aa-029d-7a70-bc23-8e41356f12bc",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:15415946e8089cac",
+        "deepagents-context:15415946e8089cac",
+        28
+      ],
+      "pause_monotonic_ms": 7498187550.1550455,
+      "threshold_ms": 2317.9411059245467,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:15415946e8089cac",
+        "01a177aa-0c5a-79f2-a8ce-1f2d372a6ad6"
+      ],
+      "tool_start_monotonic_ms": 7498186022.461079,
+      "tool_end_monotonic_ms": 7498200794.687766,
+      "observed_remaining_ms": 13244.532720565796,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-0cc2-7fa3-93d4-c1b1ec1bc2f2",
+      "next_submit_after_tool_return_ms": 30.558834075927734,
+      "next_submit_after_pause_ms": 13275.091554641724,
+      "tool_return_to_next_first_output_ms": 307.034140586853
+    },
+    {
+      "request_id": "beliefkv:01a177ad-89e2-7da3-b2df-585b80159909",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-context:76aeaea63220d752",
+        33
+      ],
+      "pause_monotonic_ms": 7498189579.51945,
+      "threshold_ms": 2398.1207055039704,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:76aeaea63220d752",
+        "01a177ad-a488-7043-83e2-1847f756036e"
+      ],
+      "tool_start_monotonic_ms": 7498188948.987164,
+      "tool_end_monotonic_ms": 7498199739.693083,
+      "observed_remaining_ms": 10160.173632621765,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-a4fc-7543-b1c9-664cfbd2b344",
+      "next_submit_after_tool_return_ms": 40.830504417419434,
+      "next_submit_after_pause_ms": 10201.004137039185,
+      "tool_return_to_next_first_output_ms": 2235.0978536605835
+    },
+    {
+      "request_id": "beliefkv:01a177a8-15c7-7583-bc3c-f9b2f15e60a3",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents-context:c85f08691118384c",
+        16
+      ],
+      "pause_monotonic_ms": 7498191597.987212,
+      "threshold_ms": 2216.848476231098,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "01a177a8-2935-7c13-b5a7-26a269a3b130"
+      ],
+      "tool_start_monotonic_ms": 7498191435.499503,
+      "tool_end_monotonic_ms": 7498206208.169989,
+      "observed_remaining_ms": 14610.18277645111,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-2a06-7a13-8f47-6dac28c3514a",
+      "next_submit_after_tool_return_ms": 68.93093013763428,
+      "next_submit_after_pause_ms": 14679.113706588745,
+      "tool_return_to_next_first_output_ms": 1710.6882629394531
+    },
+    {
+      "request_id": "beliefkv:01a177a7-c4c1-7182-8ee9-97a5c3149954",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-context:3dffade2fc78cb6a",
+        18
+      ],
+      "pause_monotonic_ms": 7498191597.999887,
+      "threshold_ms": 2256.3320649787784,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "01a177a7-cd79-74a2-829e-54c14cb43a0a"
+      ],
+      "tool_start_monotonic_ms": 7498191244.225983,
+      "tool_end_monotonic_ms": 7498195270.137146,
+      "observed_remaining_ms": 3672.137258529663,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a7-cdde-7311-8ae8-28c3fd5e82df",
+      "next_submit_after_tool_return_ms": 27.298078536987305,
+      "next_submit_after_pause_ms": 3699.4353370666504,
+      "tool_return_to_next_first_output_ms": 429.6094036102295
+    },
+    {
+      "request_id": "beliefkv:01a177aa-cc5d-7102-a23f-a9c7c72f604a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+        41
+      ],
+      "pause_monotonic_ms": 7498191598.010504,
+      "threshold_ms": 2666.6786912177095,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "01a177aa-e745-7bb3-9e89-f41521d7c8a6"
+      ],
+      "tool_start_monotonic_ms": 7498190035.760759,
+      "tool_end_monotonic_ms": 7498196043.321837,
+      "observed_remaining_ms": 4445.311333656311,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-e7bc-7351-a198-b1b2edc561c9",
+      "next_submit_after_tool_return_ms": 50.719804763793945,
+      "next_submit_after_pause_ms": 4496.031138420105,
+      "tool_return_to_next_first_output_ms": 1748.081000328064
+    },
+    {
+      "request_id": "beliefkv:01a177a7-cdde-7311-8ae8-28c3fd5e82df",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "deepagents-context:3dffade2fc78cb6a",
+        19
+      ],
+      "pause_monotonic_ms": 7498197628.053991,
+      "threshold_ms": 2215.084870811552,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3dffade2fc78cb6a",
+        "01a177a7-d44e-72f1-be86-7c6a5d9c18b0"
+      ],
+      "tool_start_monotonic_ms": 7498196991.982813,
+      "tool_end_monotonic_ms": 7498204309.154552,
+      "observed_remaining_ms": 6681.100561141968,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a7-d4bc-7172-9b0b-a3e59d11f73d",
+      "next_submit_after_tool_return_ms": 28.307259559631348,
+      "next_submit_after_pause_ms": 6709.407820701599,
+      "tool_return_to_next_first_output_ms": 241.56171989440918
+    },
+    {
+      "request_id": "beliefkv:01a177ad-7538-7702-a2c3-3faa5552d3f5",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        35
+      ],
+      "pause_monotonic_ms": 7498197628.065505,
+      "threshold_ms": 2653.1056724488735,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177ad-928f-7390-b56c-3761d41c0839"
+      ],
+      "tool_start_monotonic_ms": 7498197564.226175,
+      "tool_end_monotonic_ms": 7498201357.968752,
+      "observed_remaining_ms": 3729.9032468795776,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-9301-7160-8d8b-9beb7a730a41",
+      "next_submit_after_tool_return_ms": 51.905653953552246,
+      "next_submit_after_pause_ms": 3781.80890083313,
+      "tool_return_to_next_first_output_ms": 27633.67827606201
+    },
+    {
+      "request_id": "beliefkv:01a177af-5d09-77e0-8645-00f7d51b46fa",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "deepagents-context:893664b32c440622",
+        8
+      ],
+      "pause_monotonic_ms": 7498207717.330744,
+      "threshold_ms": 2137.458491604775,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "01a177af-9286-7101-94ae-ec500a713401"
+      ],
+      "tool_start_monotonic_ms": 7498203690.22324,
+      "tool_end_monotonic_ms": 7498255036.985101,
+      "observed_remaining_ms": 47319.65435695648,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-92de-78b0-8c0f-3fdc3d0cea1e",
+      "next_submit_after_tool_return_ms": 10.903359413146973,
+      "next_submit_after_pause_ms": 47330.55771636963,
+      "tool_return_to_next_first_output_ms": 205.30216121673584
+    },
+    {
+      "request_id": "beliefkv:01a177a9-1f01-7712-aff1-0d0121f0cb72",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "deepagents-invocation:d467f49894387cc0",
+        "deepagents-context:d467f49894387cc0",
+        12
+      ],
+      "pause_monotonic_ms": 7498215761.092633,
+      "threshold_ms": 2145.0308091007173,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "deepagents-invocation:d467f49894387cc0",
+        "01a177a9-3db0-73f2-90cb-9e8f1d54f848"
+      ],
+      "tool_start_monotonic_ms": 7498214185.904896,
+      "tool_end_monotonic_ms": 7498221414.846072,
+      "observed_remaining_ms": 5653.753438949585,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a9-47a5-7932-9eb1-0324940bae8e",
+      "next_submit_after_tool_return_ms": 32.950693130493164,
+      "next_submit_after_pause_ms": 5686.704132080078,
+      "tool_return_to_next_first_output_ms": 462.4207830429077
+    },
+    {
+      "request_id": "beliefkv:01a177a8-56b0-7dc0-85a8-6c7f069a793f",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents-context:c85f08691118384c",
+        18
+      ],
+      "pause_monotonic_ms": 7498221770.434973,
+      "threshold_ms": 2145.0308091007173,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "01a177a8-6794-78a1-82b5-4727531d65db"
+      ],
+      "tool_start_monotonic_ms": 7498221249.381302,
+      "tool_end_monotonic_ms": 7498225869.15149,
+      "observed_remaining_ms": 4098.716517448425,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-683c-7961-9bf6-0885c5d209b6",
+      "next_submit_after_tool_return_ms": 22.041744232177734,
+      "next_submit_after_pause_ms": 4120.758261680603,
+      "tool_return_to_next_first_output_ms": 2153.148250579834
+    },
+    {
+      "request_id": "beliefkv:01a177a8-683c-7961-9bf6-0885c5d209b6",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents-context:c85f08691118384c",
+        19
+      ],
+      "pause_monotonic_ms": 7498231842.324707,
+      "threshold_ms": 2145.0308091007173,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "01a177a8-7764-7e11-b54a-edd9f12568be"
+      ],
+      "tool_start_monotonic_ms": 7498231706.621473,
+      "tool_end_monotonic_ms": 7498239930.691244,
+      "observed_remaining_ms": 8088.366537094116,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-7809-7342-91ce-08aa6ff922a1",
+      "next_submit_after_tool_return_ms": 25.001626014709473,
+      "next_submit_after_pause_ms": 8113.368163108826,
+      "tool_return_to_next_first_output_ms": 2142.034266471863
+    },
+    {
+      "request_id": "beliefkv:01a177aa-9b13-7ee3-bda8-fd6ee5526093",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root",
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:context:root",
+        22
+      ],
+      "pause_monotonic_ms": 7498231842.3439865,
+      "threshold_ms": 2547.8461659513414,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root",
+        "01a177aa-a611-7312-ad2c-b0a5f42c0dc0"
+      ],
+      "tool_start_monotonic_ms": 7498231772.171407,
+      "tool_end_monotonic_ms": 7498236686.558182,
+      "observed_remaining_ms": 4844.214195251465,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-a67e-7c92-8ff0-66417d8f300d",
+      "next_submit_after_tool_return_ms": 36.19651985168457,
+      "next_submit_after_pause_ms": 4880.410715103149,
+      "tool_return_to_next_first_output_ms": 5997.9837465286255
+    },
+    {
+      "request_id": "beliefkv:01a177ad-9301-7160-8d8b-9beb7a730a41",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        36
+      ],
+      "pause_monotonic_ms": 7498233850.860893,
+      "threshold_ms": 2598.802604868147,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177ad-d098-7e22-8947-1a0429588a8f"
+      ],
+      "tool_start_monotonic_ms": 7498230928.09483,
+      "tool_end_monotonic_ms": 7498236592.636671,
+      "observed_remaining_ms": 2741.7757778167725,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-d9bd-7502-a92a-69cae174ceb5",
+      "next_submit_after_tool_return_ms": 53.82615947723389,
+      "next_submit_after_pause_ms": 2795.6019372940063,
+      "tool_return_to_next_first_output_ms": 10218.127526283264
+    },
+    {
+      "request_id": "beliefkv:01a177ac-356b-7373-bf0d-92338298875a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        21
+      ],
+      "pause_monotonic_ms": 7498245928.822718,
+      "threshold_ms": 2222.827603109181,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177ac-5c02-77c1-b257-cdf996e6106b"
+      ],
+      "tool_start_monotonic_ms": 7498243848.738138,
+      "tool_end_monotonic_ms": 7498280744.343266,
+      "observed_remaining_ms": 34815.52054786682,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-65b8-7f31-a118-65d496e5f656",
+      "next_submit_after_tool_return_ms": 32.72961902618408,
+      "next_submit_after_pause_ms": 34848.250166893005,
+      "tool_return_to_next_first_output_ms": 1711.7026119232178
+    },
+    {
+      "request_id": "beliefkv:01a177a8-a4c7-7183-a205-e4f22fba85fe",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents-context:c85f08691118384c",
+        24
+      ],
+      "pause_monotonic_ms": 7498264085.958619,
+      "threshold_ms": 2224.2452069185674,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "01a177a8-ba82-7ee2-bead-69f3bbdab263"
+      ],
+      "tool_start_monotonic_ms": 7498262185.132451,
+      "tool_end_monotonic_ms": 7498267086.405941,
+      "observed_remaining_ms": 3000.4473218917847,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-bb2f-7173-847c-ff436f381f29",
+      "next_submit_after_tool_return_ms": 37.10360336303711,
+      "next_submit_after_pause_ms": 3037.550925254822,
+      "tool_return_to_next_first_output_ms": 108.5082597732544
+    },
+    {
+      "request_id": "beliefkv:01a177ad-fa99-7d52-b9b5-d97d2dde8163",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        38
+      ],
+      "pause_monotonic_ms": 7498264085.970829,
+      "threshold_ms": 2685.696772696083,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177ae-29e3-7ba0-ac6c-f313ad74b6ec"
+      ],
+      "tool_start_monotonic_ms": 7498252915.988479,
+      "tool_end_monotonic_ms": 7498273510.165843,
+      "observed_remaining_ms": 9424.195013999939,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ae-2a65-7523-a427-7bd2f383b6a6",
+      "next_submit_after_tool_return_ms": 35.885887145996094,
+      "next_submit_after_pause_ms": 9460.080901145935,
+      "tool_return_to_next_first_output_ms": 1502.2045392990112
+    },
+    {
+      "request_id": "beliefkv:01a177b0-27af-76f0-b418-2c5f7ce04e86",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "deepagents-context:893664b32c440622",
+        14
+      ],
+      "pause_monotonic_ms": 7498276171.632319,
+      "threshold_ms": 2216.3745323196054,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "01a177b0-5941-7803-97c3-4bcf62cd3883"
+      ],
+      "tool_start_monotonic_ms": 7498265229.350727,
+      "tool_end_monotonic_ms": 7498277916.173311,
+      "observed_remaining_ms": 1744.540991783142,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-618d-7091-85fa-42ce6a74af66",
+      "next_submit_after_tool_return_ms": 33.63763427734375,
+      "next_submit_after_pause_ms": 1778.1786260604858,
+      "tool_return_to_next_first_output_ms": 555.7796306610107
+    },
+    {
+      "request_id": "beliefkv:01a177ae-7b2a-74b0-bef3-3554d9817e37",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        40
+      ],
+      "pause_monotonic_ms": 7498284277.433153,
+      "threshold_ms": 2675.1640528699036,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177ae-b443-7be0-9dde-89903cdb4bbf"
+      ],
+      "tool_start_monotonic_ms": 7498284039.164982,
+      "tool_end_monotonic_ms": 7498287061.608863,
+      "observed_remaining_ms": 2784.1757097244263,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ae-b4c0-7e42-8cb4-1df5aa675042",
+      "next_submit_after_tool_return_ms": 23.922332763671875,
+      "next_submit_after_pause_ms": 2808.098042488098,
+      "tool_return_to_next_first_output_ms": 1492.9031686782837
+    },
+    {
+      "request_id": "beliefkv:01a177ac-65b8-7f31-a118-65d496e5f656",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        22
+      ],
+      "pause_monotonic_ms": 7498286282.025836,
+      "threshold_ms": 2224.2452069185674,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177ac-a353-7e50-81e0-6e1ffab15e1a"
+      ],
+      "tool_start_monotonic_ms": 7498284577.656805,
+      "tool_end_monotonic_ms": 7498289795.714078,
+      "observed_remaining_ms": 3513.688241958618,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-aba9-7f73-952d-a7e92f8989cf",
+      "next_submit_after_tool_return_ms": 21.517484664916992,
+      "next_submit_after_pause_ms": 3535.205726623535,
+      "tool_return_to_next_first_output_ms": 270.7193965911865
+    },
+    {
+      "request_id": "beliefkv:01a177ac-40fd-75c1-86cf-f5cccfc01317",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+        46
+      ],
+      "pause_monotonic_ms": 7498288303.972381,
+      "threshold_ms": 2709.560130686224,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "01a177ac-865e-7a33-8787-9963b52c6390"
+      ],
+      "tool_start_monotonic_ms": 7498287365.935649,
+      "tool_end_monotonic_ms": 7498294975.421695,
+      "observed_remaining_ms": 6671.449314117432,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-86d8-7213-875c-b86b836b6cbc",
+      "next_submit_after_tool_return_ms": 58.89762496948242,
+      "next_submit_after_pause_ms": 6730.346939086914,
+      "tool_return_to_next_first_output_ms": 4279.34960269928
+    },
+    {
+      "request_id": "beliefkv:01a177ae-b4c0-7e42-8cb4-1df5aa675042",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        41
+      ],
+      "pause_monotonic_ms": 7498294335.097574,
+      "threshold_ms": 2675.6576208699034,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177af-1788-7333-af6c-821f6f52bc88"
+      ],
+      "tool_start_monotonic_ms": 7498293785.04127,
+      "tool_end_monotonic_ms": 7498355539.719178,
+      "observed_remaining_ms": 61204.62160396576,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-183f-7bf3-9ca8-59e4affb790e",
+      "next_submit_after_tool_return_ms": 48.11537837982178,
+      "next_submit_after_pause_ms": 61252.73698234558,
+      "tool_return_to_next_first_output_ms": 2560.0041913986206
+    },
+    {
+      "request_id": "beliefkv:01a177b0-a240-7442-b77a-111c5c57f314",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "deepagents-context:db0dca7d9441ce9e",
+        21
+      ],
+      "pause_monotonic_ms": 7498298358.879387,
+      "threshold_ms": 2308.800090570003,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "01a177b0-bbe7-7aa0-ae00-67fd08da9a3f"
+      ],
+      "tool_start_monotonic_ms": 7498297269.323372,
+      "tool_end_monotonic_ms": 7498309961.169113,
+      "observed_remaining_ms": 11602.289726257324,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-bc3a-7533-ad7c-c012c86b845a",
+      "next_submit_after_tool_return_ms": 13.689675331115723,
+      "next_submit_after_pause_ms": 11615.97940158844,
+      "tool_return_to_next_first_output_ms": 11306.062656402588
+    },
+    {
+      "request_id": "beliefkv:01a177af-e5c3-7430-affe-6546cab15610",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-context:76aeaea63220d752",
+        38
+      ],
+      "pause_monotonic_ms": 7498298358.89111,
+      "threshold_ms": 2544.196025702151,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:76aeaea63220d752",
+        "01a177b0-0375-7ff3-98b4-a86c66d592cf"
+      ],
+      "tool_start_monotonic_ms": 7498297461.789882,
+      "tool_end_monotonic_ms": 7498318058.94302,
+      "observed_remaining_ms": 19700.051909446716,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-04a2-7a30-9eba-9750bd6b5f65",
+      "next_submit_after_tool_return_ms": 24.43398952484131,
+      "next_submit_after_pause_ms": 19724.485898971558,
+      "tool_return_to_next_first_output_ms": 5562.319184303284
+    },
+    {
+      "request_id": "beliefkv:01a177aa-7d0b-7392-a4ec-4d07f349565d",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "deepagents-invocation:d467f49894387cc0",
+        "deepagents-context:d467f49894387cc0",
+        20
+      ],
+      "pause_monotonic_ms": 7498321069.131465,
+      "threshold_ms": 2247.2999105229974,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "deepagents-invocation:d467f49894387cc0",
+        "01a177aa-9127-7c13-b301-912ccc0d740a"
+      ],
+      "tool_start_monotonic_ms": 7498318649.114036,
+      "tool_end_monotonic_ms": 7498334989.138323,
+      "observed_remaining_ms": 13920.00685787201,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-918b-7a63-a293-5d603fd11484",
+      "next_submit_after_tool_return_ms": 14.723873138427734,
+      "next_submit_after_pause_ms": 13934.730731010437,
+      "tool_return_to_next_first_output_ms": 873.0606698989868
+    },
+    {
+      "request_id": "beliefkv:01a177af-5d72-7830-befd-566cd585ec2a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+        20
+      ],
+      "pause_monotonic_ms": 7498323156.750202,
+      "threshold_ms": 2674.6524167247117,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+        "01a177af-946d-7df0-8df4-b18fc032fba9"
+      ],
+      "tool_start_monotonic_ms": 7498321461.041669,
+      "tool_end_monotonic_ms": 7498329686.359729,
+      "observed_remaining_ms": 6529.609526634216,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-94fd-7292-985d-341ca68ce0cf",
+      "next_submit_after_tool_return_ms": 20.828200340270996,
+      "next_submit_after_pause_ms": 6550.437726974487,
+      "tool_return_to_next_first_output_ms": 24426.341886520386
+    },
+    {
+      "request_id": "beliefkv:01a177b0-bc3a-7533-ad7c-c012c86b845a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "deepagents-context:db0dca7d9441ce9e",
+        22
+      ],
+      "pause_monotonic_ms": 7498325175.608591,
+      "threshold_ms": 2260.5030117556453,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "01a177b0-df33-7cf3-86a4-9ea77fecb5ac"
+      ],
+      "tool_start_monotonic_ms": 7498323242.737636,
+      "tool_end_monotonic_ms": 7498339583.056569,
+      "observed_remaining_ms": 14407.447978019714,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-dfca-7461-a0fe-39d95043d3ad",
+      "next_submit_after_tool_return_ms": 16.458531379699707,
+      "next_submit_after_pause_ms": 14423.906509399414,
+      "tool_return_to_next_first_output_ms": 1827.4607381820679
+    },
+    {
+      "request_id": "beliefkv:01a177b1-c73e-7c12-9fa5-adb82d570a32",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "deepagents-context:893664b32c440622",
+        22
+      ],
+      "pause_monotonic_ms": 7498353422.189266,
+      "threshold_ms": 2190.0362803722096,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "01a177b1-e4b0-7362-ba02-b641331633a3"
+      ],
+      "tool_start_monotonic_ms": 7498351577.139835,
+      "tool_end_monotonic_ms": 7498357854.574117,
+      "observed_remaining_ms": 4432.384850502014,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-e50b-7830-b51d-5e60c0c09419",
+      "next_submit_after_tool_return_ms": 11.458274841308594,
+      "next_submit_after_pause_ms": 4443.843125343323,
+      "tool_return_to_next_first_output_ms": 1715.9372148513794
+    },
+    {
+      "request_id": "beliefkv:01a177af-485b-7043-b6cd-9c4767d88d45",
+      "identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+        23
+      ],
+      "pause_monotonic_ms": 7498353422.19828,
+      "threshold_ms": 2670.9035219959974,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "01a177af-79a4-7242-a412-13278613f03b"
+      ],
+      "tool_start_monotonic_ms": 7498352939.179719,
+      "tool_end_monotonic_ms": 7498355740.387937,
+      "observed_remaining_ms": 2318.1896562576294,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-7a74-7fa2-ae2b-88e9b8bf7743",
+      "next_submit_after_tool_return_ms": 47.530030250549316,
+      "next_submit_after_pause_ms": 2365.7196865081787,
+      "tool_return_to_next_first_output_ms": 4606.828993797302
+    },
+    {
+      "request_id": "beliefkv:01a177ad-759d-7d41-8726-e10b63c9b149",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        25
+      ],
+      "pause_monotonic_ms": 7498355428.209072,
+      "threshold_ms": 2296.240364201367,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177ad-bb25-7b42-b195-5380f87a60d4"
+      ],
+      "tool_start_monotonic_ms": 7498354559.703593,
+      "tool_end_monotonic_ms": 7498359778.945026,
+      "observed_remaining_ms": 4350.735954284668,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-bbca-73d3-ad55-e0aebddc5be5",
+      "next_submit_after_tool_return_ms": 22.54826068878174,
+      "next_submit_after_pause_ms": 4373.28421497345,
+      "tool_return_to_next_first_output_ms": 1904.4661407470703
+    },
+    {
+      "request_id": "beliefkv:01a177b1-30c6-7f80-9400-d5e1d6e74a72",
+      "identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+        25
+      ],
+      "pause_monotonic_ms": 7498355428.223717,
+      "threshold_ms": 2641.465682222531,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root",
+        "01a177b1-4953-7bb2-9675-9f2ed6e0a872"
+      ],
+      "tool_start_monotonic_ms": 7498354461.5574045,
+      "tool_end_monotonic_ms": 7498360345.988893,
+      "observed_remaining_ms": 4917.765175819397,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-4a1d-7dc1-9165-2a531cb2a07d",
+      "next_submit_after_tool_return_ms": 50.30754566192627,
+      "next_submit_after_pause_ms": 4968.072721481323,
+      "tool_return_to_next_first_output_ms": 58500.40261268616
+    },
+    {
+      "request_id": "beliefkv:01a177af-f710-7cb2-b3c9-aae10998c3d7",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:d469ce62b8941175",
+        "deepagents-context:d469ce62b8941175",
+        16
+      ],
+      "pause_monotonic_ms": 7498357450.453691,
+      "threshold_ms": 2184.6818974706875,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:d469ce62b8941175",
+        "01a177b0-0ff2-76b1-9847-6443d3a63680"
+      ],
+      "tool_start_monotonic_ms": 7498355938.884874,
+      "tool_end_monotonic_ms": 7498360214.802819,
+      "observed_remaining_ms": 2764.3491287231445,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-10a2-7b72-99f6-5cd420aa4ea2",
+      "next_submit_after_tool_return_ms": 15.2843599319458,
+      "next_submit_after_pause_ms": 2779.6334886550903,
+      "tool_return_to_next_first_output_ms": 3676.809287071228
+    },
+    {
+      "request_id": "beliefkv:01a177a9-5662-7331-b300-a906c6f02d2e",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "deepagents-context:c85f08691118384c",
+        30
+      ],
+      "pause_monotonic_ms": 7498359465.779663,
+      "threshold_ms": 2168.9797832973436,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:c85f08691118384c",
+        "01a177a9-7061-7682-994e-dde165fd51ca"
+      ],
+      "tool_start_monotonic_ms": 7498358704.034141,
+      "tool_end_monotonic_ms": 7498361168.535198,
+      "observed_remaining_ms": 1702.7555351257324,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a9-70fc-7c11-8f50-f917ecaa6951",
+      "next_submit_after_tool_return_ms": 28.69349193572998,
+      "next_submit_after_pause_ms": 1731.4490270614624,
+      "tool_return_to_next_first_output_ms": 514.548436164856
+    },
+    {
+      "request_id": "beliefkv:01a177b1-e50b-7830-b51d-5e60c0c09419",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "deepagents-context:893664b32c440622",
+        23
+      ],
+      "pause_monotonic_ms": 7498361481.8047905,
+      "threshold_ms": 2194.953944444031,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents-invocation:893664b32c440622",
+        "01a177b1-f9c1-7a00-8b66-93669d073152"
+      ],
+      "tool_start_monotonic_ms": 7498361336.397826,
+      "tool_end_monotonic_ms": 7498366284.012073,
+      "observed_remaining_ms": 4802.207282066345,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-fd28-79c1-9c6a-3dee0509ed7a",
+      "next_submit_after_tool_return_ms": 15.53290843963623,
+      "next_submit_after_pause_ms": 4817.740190505981,
+      "tool_return_to_next_first_output_ms": 2229.6406049728394
+    },
+    {
+      "request_id": "beliefkv:01a177ad-42f7-7592-91be-81bf99fdafbc",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:context:root",
+        50
+      ],
+      "pause_monotonic_ms": 7498363560.542035,
+      "threshold_ms": 2656.1888693055807,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root",
+        "01a177ad-6efb-7873-8a1f-9393c19b37ed"
+      ],
+      "tool_start_monotonic_ms": 7498363237.048567,
+      "tool_end_monotonic_ms": 7498414584.441443,
+      "observed_remaining_ms": 51023.899408340454,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-6f71-77e0-9077-54a51e413209",
+      "next_submit_after_tool_return_ms": 57.048343658447266,
+      "next_submit_after_pause_ms": 51080.9477519989,
+      "tool_return_to_next_first_output_ms": 16208.523002624512
+    },
+    {
+      "request_id": "beliefkv:01a177b0-10a2-7b72-99f6-5cd420aa4ea2",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:d469ce62b8941175",
+        "deepagents-context:d469ce62b8941175",
+        17
+      ],
+      "pause_monotonic_ms": 7498367595.254241,
+      "threshold_ms": 2256.5462179481983,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:d469ce62b8941175",
+        "01a177b0-30a4-7ce3-b960-a10d3eb33c9d"
+      ],
+      "tool_start_monotonic_ms": 7498366218.963357,
+      "tool_end_monotonic_ms": 7498372486.58179,
+      "observed_remaining_ms": 4891.327548980713,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-3156-75b3-994f-148b6e567437",
+      "next_submit_after_tool_return_ms": 15.353798866271973,
+      "next_submit_after_pause_ms": 4906.681347846985,
+      "tool_return_to_next_first_output_ms": 1306.6376848220825
+    },
+    {
+      "request_id": "beliefkv:01a177b1-9f8f-7a43-b1a9-df2b9d4d503c",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:76aeaea63220d752",
+        "deepagents-context:76aeaea63220d752",
+        42
+      ],
+      "pause_monotonic_ms": 7498405894.444183,
+      "threshold_ms": 2645.3131461516023,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:76aeaea63220d752",
+        "01a177b1-c3d9-7bb1-875d-416386d818b8"
+      ],
+      "tool_start_monotonic_ms": 7498404869.643186,
+      "tool_end_monotonic_ms": 7498419642.282499,
+      "observed_remaining_ms": 13747.838315963745,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-c520-7813-8fd9-955c5aa98020",
+      "next_submit_after_tool_return_ms": 52.19334411621094,
+      "next_submit_after_pause_ms": 13800.031660079956,
+      "tool_return_to_next_first_output_ms": 738.8920841217041
+    },
+    {
+      "request_id": "beliefkv:01a177ab-513b-7080-bb60-d015305eb67d",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+        30
+      ],
+      "pause_monotonic_ms": 7498411944.320688,
+      "threshold_ms": 2711.875208094716,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "01a177ab-8c61-79c2-ab03-29d6b914e17d"
+      ],
+      "tool_start_monotonic_ms": 7498410681.878984,
+      "tool_end_monotonic_ms": 7498419105.85279,
+      "observed_remaining_ms": 7161.532101631165,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ab-8d2c-7373-a2b8-0413eb445b4a",
+      "next_submit_after_tool_return_ms": 41.56948757171631,
+      "next_submit_after_pause_ms": 7203.101589202881,
+      "tool_return_to_next_first_output_ms": 5929.329562187195
+    },
+    {
+      "request_id": "beliefkv:01a177b0-196d-78b3-b880-418b25ee11d8",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+        23
+      ],
+      "pause_monotonic_ms": 7498413952.290182,
+      "threshold_ms": 2739.133489597589,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+        "01a177b0-3e5b-7f41-9028-a2f23438827a"
+      ],
+      "tool_start_monotonic_ms": 7498413938.169252,
+      "tool_end_monotonic_ms": 7498419176.895409,
+      "observed_remaining_ms": 5224.605226516724,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-4087-7521-956b-80fa66373d50",
+      "next_submit_after_tool_return_ms": 20.63931941986084,
+      "next_submit_after_pause_ms": 5245.2445459365845,
+      "tool_return_to_next_first_output_ms": 5858.576376914978
+    },
+    {
+      "request_id": "beliefkv:01a177af-531e-7703-a516-c9de4159c837",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        33
+      ],
+      "pause_monotonic_ms": 7498417970.479589,
+      "threshold_ms": 2245.5934680998325,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177af-884d-7d33-9138-95f276c027d9"
+      ],
+      "tool_start_monotonic_ms": 7498415884.014863,
+      "tool_end_monotonic_ms": 7498423759.864394,
+      "observed_remaining_ms": 5789.384804725647,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-88fd-7603-a148-6387add112d5",
+      "next_submit_after_tool_return_ms": 36.28315258026123,
+      "next_submit_after_pause_ms": 5825.667957305908,
+      "tool_return_to_next_first_output_ms": 235.96262741088867
+    },
+    {
+      "request_id": "beliefkv:01a177b0-f2b8-7bd3-861b-425c470c0f16",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:d469ce62b8941175",
+        "deepagents-context:d469ce62b8941175",
+        21
+      ],
+      "pause_monotonic_ms": 7498424020.165801,
+      "threshold_ms": 2264.6371833980083,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:d469ce62b8941175",
+        "01a177b1-0adc-7da3-a1a1-c0916ed466f7"
+      ],
+      "tool_start_monotonic_ms": 7498423503.36907,
+      "tool_end_monotonic_ms": 7498449405.763753,
+      "observed_remaining_ms": 25385.597951889038,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-0bb2-7120-a045-77fbb332bb5c",
+      "next_submit_after_tool_return_ms": 30.61648464202881,
+      "next_submit_after_pause_ms": 25416.214436531067,
+      "tool_return_to_next_first_output_ms": 1094.4655904769897
+    },
+    {
+      "request_id": "beliefkv:01a177aa-6c7f-70f3-846a-773b71cd64fc",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        10
+      ],
+      "pause_monotonic_ms": 7498428060.725727,
+      "threshold_ms": 2238.1268807686865,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177aa-7587-79f1-aacf-fc67716f0b25"
+      ],
+      "tool_start_monotonic_ms": 7498426364.105575,
+      "tool_end_monotonic_ms": 7498452267.45934,
+      "observed_remaining_ms": 24206.73361301422,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-75e7-7250-bc7a-77c6fa2c50f7",
+      "next_submit_after_tool_return_ms": 26.77836036682129,
+      "next_submit_after_pause_ms": 24233.511973381042,
+      "tool_return_to_next_first_output_ms": 6230.575297355652
+    },
+    {
+      "request_id": "beliefkv:01a177af-88fd-7603-a148-6387add112d5",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        34
+      ],
+      "pause_monotonic_ms": 7498428060.73594,
+      "threshold_ms": 2269.609801378101,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177af-ba1f-7a52-b269-066ce53f3ddd"
+      ],
+      "tool_start_monotonic_ms": 7498427850.247156,
+      "tool_end_monotonic_ms": 7498431643.596784,
+      "observed_remaining_ms": 3582.8608436584473,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-bad0-7dd3-b9d9-60e648e38bfe",
+      "next_submit_after_tool_return_ms": 35.92577934265137,
+      "next_submit_after_pause_ms": 3618.7866230010986,
+      "tool_return_to_next_first_output_ms": 244.655366897583
+    },
+    {
+      "request_id": "beliefkv:01a177ab-8d2c-7373-a2b8-0413eb445b4a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+        31
+      ],
+      "pause_monotonic_ms": 7498428060.739128,
+      "threshold_ms": 2628.9554042741656,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "01a177ab-d920-79d0-b5fc-d722e4904d1e"
+      ],
+      "tool_start_monotonic_ms": 7498427901.435622,
+      "tool_end_monotonic_ms": 7498435696.840846,
+      "observed_remaining_ms": 7636.101717948914,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ab-da74-7cf2-a742-d56ea7997a74",
+      "next_submit_after_tool_return_ms": 38.76224422454834,
+      "next_submit_after_pause_ms": 7674.863962173462,
+      "tool_return_to_next_first_output_ms": 406.90405082702637
+    },
+    {
+      "request_id": "beliefkv:01a177b0-4087-7521-956b-80fa66373d50",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:context:root",
+        24
+      ],
+      "pause_monotonic_ms": 7498430084.588282,
+      "threshold_ms": 2700.5530991591513,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055:root",
+        "01a177b0-7edf-7303-aa76-06231a71e43b"
+      ],
+      "tool_start_monotonic_ms": 7498426984.2608,
+      "tool_end_monotonic_ms": 7498432642.794192,
+      "observed_remaining_ms": 2558.205910682678,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-80df-7493-a1f4-965f45c94a7c",
+      "next_submit_after_tool_return_ms": 41.0208625793457,
+      "next_submit_after_pause_ms": 2599.226773262024,
+      "tool_return_to_next_first_output_ms": 2518.518907546997
+    },
+    {
+      "request_id": "beliefkv:01a177b0-127f-7ea1-8ccc-d4d275ec3cb6",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:context:root",
+        45
+      ],
+      "pause_monotonic_ms": 7498430084.597847,
+      "threshold_ms": 2700.5530991591513,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root",
+        "01a177b0-3734-76d1-8146-4356bca2f64b"
+      ],
+      "tool_start_monotonic_ms": 7498429997.415704,
+      "tool_end_monotonic_ms": 7498438222.428349,
+      "observed_remaining_ms": 8137.8305015563965,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-37bc-78a1-9fa6-c7563946763b",
+      "next_submit_after_tool_return_ms": 44.171067237854004,
+      "next_submit_after_pause_ms": 8182.0015687942505,
+      "tool_return_to_next_first_output_ms": 2638.4045915603638
+    },
+    {
+      "request_id": "beliefkv:01a177af-bad0-7dd3-b9d9-60e648e38bfe",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        35
+      ],
+      "pause_monotonic_ms": 7498434099.053322,
+      "threshold_ms": 2268.558263592422,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177af-e90a-7c03-b23e-3c2a0a2345a3"
+      ],
+      "tool_start_monotonic_ms": 7498433870.787509,
+      "tool_end_monotonic_ms": 7498439694.279126,
+      "observed_remaining_ms": 5595.2258043289185,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-e97c-7352-ab34-d7144ae09383",
+      "next_submit_after_tool_return_ms": 38.12105464935303,
+      "next_submit_after_pause_ms": 5633.3468589782715,
+      "tool_return_to_next_first_output_ms": 1166.8838472366333
+    },
+    {
+      "request_id": "beliefkv:01a177b2-ee23-7c23-8fd6-0389907b47a0",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "deepagents-context:c66969c98886ed53",
+        26
+      ],
+      "pause_monotonic_ms": 7498434099.065699,
+      "threshold_ms": 2415.4528407379985,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "01a177b3-0aa9-75a1-a721-3300d87bfc9f"
+      ],
+      "tool_start_monotonic_ms": 7498432891.11796,
+      "tool_end_monotonic_ms": 7498441101.254397,
+      "observed_remaining_ms": 7002.188698768616,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b3-0b1f-7121-8436-240a582a32ab",
+      "next_submit_after_tool_return_ms": 15.20894718170166,
+      "next_submit_after_pause_ms": 7017.397645950317,
+      "tool_return_to_next_first_output_ms": 1221.240475654602
+    },
+    {
+      "request_id": "beliefkv:01a177ab-da74-7cf2-a742-d56ea7997a74",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+        32
+      ],
+      "pause_monotonic_ms": 7498440124.350658,
+      "threshold_ms": 2594.221175648272,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "01a177ab-fddd-7423-9a14-1d6ab4c75023"
+      ],
+      "tool_start_monotonic_ms": 7498438529.731413,
+      "tool_end_monotonic_ms": 7498445505.48342,
+      "observed_remaining_ms": 5381.132761955261,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ab-fea6-7d41-9006-9b6955bc6a7a",
+      "next_submit_after_tool_return_ms": 41.87635612487793,
+      "next_submit_after_pause_ms": 5423.009118080139,
+      "tool_return_to_next_first_output_ms": 5304.488527297974
+    },
+    {
+      "request_id": "beliefkv:01a177b3-0b1f-7121-8436-240a582a32ab",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "deepagents-context:c66969c98886ed53",
+        27
+      ],
+      "pause_monotonic_ms": 7498444158.719328,
+      "threshold_ms": 2305.5707584135234,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "01a177b3-216a-73f3-a8ca-00eaee9bc312"
+      ],
+      "tool_start_monotonic_ms": 7498443402.608905,
+      "tool_end_monotonic_ms": 7498449070.792053,
+      "observed_remaining_ms": 4912.0727252960205,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b3-2385-7ef2-902a-541a668bf209",
+      "next_submit_after_tool_return_ms": 23.875320434570312,
+      "next_submit_after_pause_ms": 4935.948045730591,
+      "tool_return_to_next_first_output_ms": 25649.683420181274
+    },
+    {
+      "request_id": "beliefkv:01a177a8-7f9c-7243-8299-942e09c08590",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:5f1238807b639c1a",
+        "deepagents-context:5f1238807b639c1a",
+        25
+      ],
+      "pause_monotonic_ms": 7498482567.725681,
+      "threshold_ms": 2314.350638538599,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:5f1238807b639c1a",
+        "01a177a8-8a78-7f21-9223-e70a504356b5"
+      ],
+      "tool_start_monotonic_ms": 7498481581.208845,
+      "tool_end_monotonic_ms": 7498499273.597463,
+      "observed_remaining_ms": 16705.871781349182,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-8ae2-7fa0-9346-0e0cb6bd1b97",
+      "next_submit_after_tool_return_ms": 34.20415687561035,
+      "next_submit_after_pause_ms": 16740.075938224792,
+      "tool_return_to_next_first_output_ms": 1905.9483032226562
+    },
+    {
+      "request_id": "beliefkv:01a177b0-13fa-7743-bfd5-425364246132",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        37
+      ],
+      "pause_monotonic_ms": 7498482567.733902,
+      "threshold_ms": 2314.350638538599,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177b0-4056-7000-b4df-e2abc139bcfb"
+      ],
+      "tool_start_monotonic_ms": 7498480437.165635,
+      "tool_end_monotonic_ms": 7498486262.493319,
+      "observed_remaining_ms": 3694.7594165802,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-40b1-7263-a70e-1aec5dd72ebf",
+      "next_submit_after_tool_return_ms": 16.546716690063477,
+      "next_submit_after_pause_ms": 3711.3061332702637,
+      "tool_return_to_next_first_output_ms": 1759.2356452941895
+    },
+    {
+      "request_id": "beliefkv:01a177ac-4037-7480-afbe-0ca18186c97b",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:context:root",
+        34
+      ],
+      "pause_monotonic_ms": 7498482567.737046,
+      "threshold_ms": 2595.4916831105947,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "01a177ac-697a-7451-9e30-f2847a11dc87"
+      ],
+      "tool_start_monotonic_ms": 7498481487.994118,
+      "tool_end_monotonic_ms": 7498489158.943425,
+      "observed_remaining_ms": 6591.206378936768,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-6a22-7982-bfe3-0e0170bd9c59",
+      "next_submit_after_tool_return_ms": 42.779398918151855,
+      "next_submit_after_pause_ms": 6633.985777854919,
+      "tool_return_to_next_first_output_ms": 2784.3694581985474
+    },
+    {
+      "request_id": "beliefkv:01a177aa-9eed-75f2-8409-34f0023f634d",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        15
+      ],
+      "pause_monotonic_ms": 7498490734.098362,
+      "threshold_ms": 2310.447648819536,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177aa-acf0-7a72-b620-16b5a2133dc0"
+      ],
+      "tool_start_monotonic_ms": 7498489878.157412,
+      "tool_end_monotonic_ms": 7498493533.983191,
+      "observed_remaining_ms": 2799.884828567505,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-ad4f-7761-9481-0e5bd6c9fed6",
+      "next_submit_after_tool_return_ms": 26.391722679138184,
+      "next_submit_after_pause_ms": 2826.276551246643,
+      "tool_return_to_next_first_output_ms": 222.75767993927002
+    },
+    {
+      "request_id": "beliefkv:01a177b0-40b1-7263-a70e-1aec5dd72ebf",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        38
+      ],
+      "pause_monotonic_ms": 7498490734.109441,
+      "threshold_ms": 2340.6348400749266,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177b0-7d78-7cd3-a0eb-1b09073c165f"
+      ],
+      "tool_start_monotonic_ms": 7498489705.081718,
+      "tool_end_monotonic_ms": 7498495497.486889,
+      "observed_remaining_ms": 4763.37744808197,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-7df6-7652-b85c-b6c8d4a596a3",
+      "next_submit_after_tool_return_ms": 38.65505790710449,
+      "next_submit_after_pause_ms": 4802.032505989075,
+      "tool_return_to_next_first_output_ms": 1942.9883117675781
+    },
+    {
+      "request_id": "beliefkv:01a177b3-48a6-75a1-8baf-1e9473ba7025",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "deepagents-context:c66969c98886ed53",
+        29
+      ],
+      "pause_monotonic_ms": 7498490734.11372,
+      "threshold_ms": 2344.278996437788,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "01a177b3-5903-75c2-8bb3-2615e01e5246"
+      ],
+      "tool_start_monotonic_ms": 7498490048.201092,
+      "tool_end_monotonic_ms": 7498493063.366451,
+      "observed_remaining_ms": 2329.252731323242,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b3-5a58-7530-8f58-edaf126f085e",
+      "next_submit_after_tool_return_ms": 32.701815605163574,
+      "next_submit_after_pause_ms": 2361.9545469284058,
+      "tool_return_to_next_first_output_ms": 4376.6912298202515
+    },
+    {
+      "request_id": "beliefkv:01a177aa-ad4f-7761-9481-0e5bd6c9fed6",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        16
+      ],
+      "pause_monotonic_ms": 7498496911.560972,
+      "threshold_ms": 2322.346394881606,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177aa-bcb2-7413-bbf8-f9446ced02ef"
+      ],
+      "tool_start_monotonic_ms": 7498496298.088104,
+      "tool_end_monotonic_ms": 7498506500.411655,
+      "observed_remaining_ms": 9588.85068321228,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-bd16-7a60-bab0-23e01d09f04a",
+      "next_submit_after_tool_return_ms": 25.92488193511963,
+      "next_submit_after_pause_ms": 9614.7755651474,
+      "tool_return_to_next_first_output_ms": 210.0461835861206
+    },
+    {
+      "request_id": "beliefkv:01a177a8-8ae2-7fa0-9346-0e0cb6bd1b97",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:5f1238807b639c1a",
+        "deepagents-context:5f1238807b639c1a",
+        26
+      ],
+      "pause_monotonic_ms": 7498506979.277484,
+      "threshold_ms": 2341.313991229981,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:5f1238807b639c1a",
+        "01a177a8-959c-7b52-9c64-4b49b000ece8"
+      ],
+      "tool_start_monotonic_ms": 7498504518.20317,
+      "tool_end_monotonic_ms": 7498511607.186911,
+      "observed_remaining_ms": 4627.909426689148,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-9643-7c81-a058-dc81576c2e98",
+      "next_submit_after_tool_return_ms": 40.835323333740234,
+      "next_submit_after_pause_ms": 4668.744750022888,
+      "tool_return_to_next_first_output_ms": 551.3630294799805
+    },
+    {
+      "request_id": "beliefkv:01a177b3-cb5d-7b82-9859-91b94f37a93f",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+        14
+      ],
+      "pause_monotonic_ms": 7498506979.289274,
+      "threshold_ms": 2518.912563930241,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root",
+        "01a177b3-e91e-76a3-9d7a-78a71f23d5cd"
+      ],
+      "tool_start_monotonic_ms": 7498503095.023868,
+      "tool_end_monotonic_ms": 7498522383.527098,
+      "observed_remaining_ms": 15404.237823486328,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b3-e97e-7a21-b4d4-d0f817086fc4",
+      "next_submit_after_tool_return_ms": 27.743855476379395,
+      "next_submit_after_pause_ms": 15431.981678962708,
+      "tool_return_to_next_first_output_ms": 510.44867420196533
+    },
+    {
+      "request_id": "beliefkv:01a177b2-e6ff-7d82-8e3e-b075dc6dbcd9",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "deepagents-context:8498e39022e89ead",
+        16
+      ],
+      "pause_monotonic_ms": 7498511014.961886,
+      "threshold_ms": 2288.4112775325775,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "01a177b3-00ec-77e1-8210-7ee69f562019"
+      ],
+      "tool_start_monotonic_ms": 7498510649.349417,
+      "tool_end_monotonic_ms": 7498520851.612529,
+      "observed_remaining_ms": 9836.65064239502,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b3-014d-7151-846f-dd24da299953",
+      "next_submit_after_tool_return_ms": 25.12182903289795,
+      "next_submit_after_pause_ms": 9861.772471427917,
+      "tool_return_to_next_first_output_ms": 942.3196773529053
+    },
+    {
+      "request_id": "beliefkv:01a177aa-bd16-7a60-bab0-23e01d09f04a",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        17
+      ],
+      "pause_monotonic_ms": 7498511014.974711,
+      "threshold_ms": 2288.4112775325775,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177aa-d096-76a1-bca0-f60e5f944dc9"
+      ],
+      "tool_start_monotonic_ms": 7498508242.175633,
+      "tool_end_monotonic_ms": 7498514126.622038,
+      "observed_remaining_ms": 3111.6473264694214,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177aa-d100-7f52-ac96-73a518737a6a",
+      "next_submit_after_tool_return_ms": 37.30272674560547,
+      "next_submit_after_pause_ms": 3148.950053215027,
+      "tool_return_to_next_first_output_ms": 229.45303916931152
+    },
+    {
+      "request_id": "beliefkv:01a177b3-9b23-7402-ae73-12402542ae20",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "deepagents-context:c66969c98886ed53",
+        31
+      ],
+      "pause_monotonic_ms": 7498511014.977908,
+      "threshold_ms": 2341.313991229981,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "01a177b3-b181-7ff2-a170-93bd85aab718"
+      ],
+      "tool_start_monotonic_ms": 7498508380.947853,
+      "tool_end_monotonic_ms": 7498513283.018709,
+      "observed_remaining_ms": 2268.040801048279,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b3-b3ad-7a12-9e3d-8d2cb8031fb6",
+      "next_submit_after_tool_return_ms": 35.23184013366699,
+      "next_submit_after_pause_ms": 2303.272641181946,
+      "tool_return_to_next_first_output_ms": 273.58310413360596
+    },
+    {
+      "request_id": "beliefkv:01a177a8-9643-7c81-a058-dc81576c2e98",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:5f1238807b639c1a",
+        "deepagents-context:5f1238807b639c1a",
+        27
+      ],
+      "pause_monotonic_ms": 7498515044.697912,
+      "threshold_ms": 2341.7007932439446,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+        "deepagents-invocation:5f1238807b639c1a",
+        "01a177a8-9fbf-7203-8d9e-2540dd060479"
+      ],
+      "tool_start_monotonic_ms": 7498513953.656307,
+      "tool_end_monotonic_ms": 7498534547.975997,
+      "observed_remaining_ms": 19503.278084754944,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-a05e-79e2-97fd-c1fa4302d8aa",
+      "next_submit_after_tool_return_ms": 32.42053985595703,
+      "next_submit_after_pause_ms": 19535.6986246109,
+      "tool_return_to_next_first_output_ms": 246.33453941345215
+    },
+    {
+      "request_id": "beliefkv:01a177b3-b3ad-7a12-9e3d-8d2cb8031fb6",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "deepagents-context:c66969c98886ed53",
+        32
+      ],
+      "pause_monotonic_ms": 7498521195.727325,
+      "threshold_ms": 2378.3486667089164,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:c66969c98886ed53",
+        "01a177b4-01de-73c1-8fc3-e72f301115d3"
+      ],
+      "tool_start_monotonic_ms": 7498519637.4429,
+      "tool_end_monotonic_ms": 7498525165.217747,
+      "observed_remaining_ms": 3969.490421295166,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-045c-7681-b51b-51ca16f6cfcd",
+      "next_submit_after_tool_return_ms": 20.025519371032715,
+      "next_submit_after_pause_ms": 3989.5159406661987,
+      "tool_return_to_next_first_output_ms": 746.9075393676758
+    },
+    {
+      "request_id": "beliefkv:01a177a5-cb15-71f1-bd67-2238b3fe2bb1",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:root",
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:context:root",
+        9
+      ],
+      "pause_monotonic_ms": 7498525232.82367,
+      "threshold_ms": 2945.135081652552,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1:root",
+        "01a177a5-f0c8-7da0-9aab-baa000a9b3ed"
+      ],
+      "tool_start_monotonic_ms": 7498523754.973252,
+      "tool_end_monotonic_ms": 7498531554.696628,
+      "observed_remaining_ms": 6321.872957229614,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a5-f129-7fc2-9d72-a0bc4965ffe6",
+      "next_submit_after_tool_return_ms": 22.20846462249756,
+      "next_submit_after_pause_ms": 6344.081421852112,
+      "tool_return_to_next_first_output_ms": 11588.434850692749
+    },
+    {
+      "request_id": "beliefkv:01a177ac-127c-71d1-bc85-d5ab35558264",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        24
+      ],
+      "pause_monotonic_ms": 7498561429.138317,
+      "threshold_ms": 2231.05908036232,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177ac-4bae-74f3-b6cb-6aeade1e85a7"
+      ],
+      "tool_start_monotonic_ms": 7498561328.83105,
+      "tool_end_monotonic_ms": 7498569553.680076,
+      "observed_remaining_ms": 8124.5417585372925,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-4c53-7b40-88a9-98e8ba7c2844",
+      "next_submit_after_tool_return_ms": 34.13136577606201,
+      "next_submit_after_pause_ms": 8158.6731243133545,
+      "tool_return_to_next_first_output_ms": 2362.833724975586
+    },
+    {
+      "request_id": "beliefkv:01a177af-5c55-7683-938e-a17e748a920b",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:c373adec8378be35",
+        "deepagents-context:c373adec8378be35",
+        12
+      ],
+      "pause_monotonic_ms": 7498565550.110351,
+      "threshold_ms": 2233.200466260314,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:c373adec8378be35",
+        "01a177af-8850-7723-8d0d-426a310bb2f1"
+      ],
+      "tool_start_monotonic_ms": 7498564392.2175865,
+      "tool_end_monotonic_ms": 7498575188.475845,
+      "observed_remaining_ms": 9638.365494728088,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177af-88b9-7a22-bc9c-76e0b1d1ebdf",
+      "next_submit_after_tool_return_ms": 27.428627967834473,
+      "next_submit_after_pause_ms": 9665.794122695923,
+      "tool_return_to_next_first_output_ms": 1296.1076393127441
+    },
+    {
+      "request_id": "beliefkv:01a177ad-8112-7492-b213-9564180cc330",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root",
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:context:root",
+        23
+      ],
+      "pause_monotonic_ms": 7498565550.120181,
+      "threshold_ms": 2819.3659014338605,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root",
+        "01a177ad-bc41-7f91-8b99-ec8b9ea3a5ae"
+      ],
+      "tool_start_monotonic_ms": 7498565113.42269,
+      "tool_end_monotonic_ms": 7498571775.866781,
+      "observed_remaining_ms": 6225.746600151062,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-bcd2-71e1-a433-a998ed89dfd9",
+      "next_submit_after_tool_return_ms": 55.37357139587402,
+      "next_submit_after_pause_ms": 6281.120171546936,
+      "tool_return_to_next_first_output_ms": 51618.82629299164
+    },
+    {
+      "request_id": "beliefkv:01a177b4-5d3b-7650-94f4-a4add41e9ddb",
+      "identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:46e4ed5303d25a26",
+        "deepagents-context:46e4ed5303d25a26",
+        18
+      ],
+      "pause_monotonic_ms": 7498567557.857763,
+      "threshold_ms": 2412.668180372566,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+        "deepagents-invocation:46e4ed5303d25a26",
+        "01a177b4-78ea-73a3-91b5-30795d53a734"
+      ],
+      "tool_start_monotonic_ms": 7498558590.521357,
+      "tool_end_monotonic_ms": 7498574953.392535,
+      "observed_remaining_ms": 7395.5347719192505,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-795b-7ba0-964b-ee73ed5c0800",
+      "next_submit_after_tool_return_ms": 29.606016159057617,
+      "next_submit_after_pause_ms": 7425.140788078308,
+      "tool_return_to_next_first_output_ms": 259.51237392425537
+    },
+    {
+      "request_id": "beliefkv:01a177b4-a8bd-7212-b978-1fda71ebe18d",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:26e0500faee9bdaf",
+        "deepagents-context:26e0500faee9bdaf",
+        31
+      ],
+      "pause_monotonic_ms": 7498571580.449702,
+      "threshold_ms": 2406.323514506221,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:26e0500faee9bdaf",
+        "01a177b4-c9db-7ef3-b62a-c68ad20994b8"
+      ],
+      "tool_start_monotonic_ms": 7498569637.278534,
+      "tool_end_monotonic_ms": 7498584411.433044,
+      "observed_remaining_ms": 12830.983342170715,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-ca45-7d20-99fd-6a7f667275c1",
+      "next_submit_after_tool_return_ms": 36.19529628753662,
+      "next_submit_after_pause_ms": 12867.178638458252,
+      "tool_return_to_next_first_output_ms": 316.2463073730469
+    },
+    {
+      "request_id": "beliefkv:01a177ac-4c53-7b40-88a9-98e8ba7c2844",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        25
+      ],
+      "pause_monotonic_ms": 7498581655.633213,
+      "threshold_ms": 2230.6535323150456,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177ac-a336-7220-bab7-38b0ac9624cf"
+      ],
+      "tool_start_monotonic_ms": 7498579229.364055,
+      "tool_end_monotonic_ms": 7498587453.573853,
+      "observed_remaining_ms": 5797.94063949585,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-a3d0-7422-8a15-c9e8154cbb0d",
+      "next_submit_after_tool_return_ms": 20.328110694885254,
+      "next_submit_after_pause_ms": 5818.268750190735,
+      "tool_return_to_next_first_output_ms": 721.8484010696411
+    },
+    {
+      "request_id": "beliefkv:01a177b1-1ab0-70d2-9d26-c2a9b8d4ecb9",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "deepagents-context:3e175d02425e2774",
+        24
+      ],
+      "pause_monotonic_ms": 7498581655.646528,
+      "threshold_ms": 2230.6535323150456,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "01a177b1-3598-79c0-b482-b75c27d1ea74"
+      ],
+      "tool_start_monotonic_ms": 7498580440.748491,
+      "tool_end_monotonic_ms": 7498583738.446235,
+      "observed_remaining_ms": 2082.7997064590454,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-362a-7070-be14-f9cd28feb2b7",
+      "next_submit_after_tool_return_ms": 56.407715797424316,
+      "next_submit_after_pause_ms": 2139.2074222564697,
+      "tool_return_to_next_first_output_ms": 191.75952816009521
+    },
+    {
+      "request_id": "beliefkv:01a177b5-5b06-71d3-8be6-9e3185835d87",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:context:root",
+        18
+      ],
+      "pause_monotonic_ms": 7498581655.649761,
+      "threshold_ms": 2668.554037809372,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root",
+        "01a177b5-7498-7d03-aeeb-4b995af46584"
+      ],
+      "tool_start_monotonic_ms": 7498581449.841303,
+      "tool_end_monotonic_ms": 7498587618.127642,
+      "observed_remaining_ms": 5962.477880477905,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b5-7c86-7b51-9d7b-7fb356ce3236",
+      "next_submit_after_tool_return_ms": 26.120633125305176,
+      "next_submit_after_pause_ms": 5988.59851360321,
+      "tool_return_to_next_first_output_ms": 557.6643285751343
+    },
+    {
+      "request_id": "beliefkv:01a177b4-6b45-79f0-8924-1385ee16a226",
+      "identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+        40
+      ],
+      "pause_monotonic_ms": 7498581655.65261,
+      "threshold_ms": 2719.994665942638,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "01a177b4-8e7a-76b0-b263-58230d307041"
+      ],
+      "tool_start_monotonic_ms": 7498580042.914507,
+      "tool_end_monotonic_ms": 7498585393.60222,
+      "observed_remaining_ms": 3737.9496097564697,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-8efe-71b2-a7ab-1fba07250b98",
+      "next_submit_after_tool_return_ms": 25.37081241607666,
+      "next_submit_after_pause_ms": 3763.3204221725464,
+      "tool_return_to_next_first_output_ms": 21453.04883670807
+    },
+    {
+      "request_id": "beliefkv:01a177b4-07ba-7c82-833b-213aaa5892ff",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "deepagents-context:8498e39022e89ead",
+        27
+      ],
+      "pause_monotonic_ms": 7498587700.711455,
+      "threshold_ms": 2186.661353908339,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "01a177b4-2596-7691-bb19-ecd7c44d0fc1"
+      ],
+      "tool_start_monotonic_ms": 7498587284.900313,
+      "tool_end_monotonic_ms": 7498590128.892979,
+      "observed_remaining_ms": 2428.181523323059,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-25eb-7ce1-b82d-4a08353df4e1",
+      "next_submit_after_tool_return_ms": 16.40698528289795,
+      "next_submit_after_pause_ms": 2444.588508605957,
+      "tool_return_to_next_first_output_ms": 1651.0969219207764
+    },
+    {
+      "request_id": "beliefkv:01a177b1-7844-7180-ac78-bda2d6a0f28b",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "deepagents-context:3e175d02425e2774",
+        27
+      ],
+      "pause_monotonic_ms": 7498591711.676415,
+      "threshold_ms": 2222.822345327586,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "01a177b1-9d57-7122-abe1-6af4ed7f7af8"
+      ],
+      "tool_start_monotonic_ms": 7498590711.212549,
+      "tool_end_monotonic_ms": 7498598936.021196,
+      "observed_remaining_ms": 7224.344780921936,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-9dc6-76b1-ab0f-e20b268f33df",
+      "next_submit_after_tool_return_ms": 32.539785385131836,
+      "next_submit_after_pause_ms": 7256.884566307068,
+      "tool_return_to_next_first_output_ms": 332.1453523635864
+    },
+    {
+      "request_id": "beliefkv:01a177b4-25eb-7ce1-b82d-4a08353df4e1",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "deepagents-context:8498e39022e89ead",
+        28
+      ],
+      "pause_monotonic_ms": 7498593735.370142,
+      "threshold_ms": 2222.822345327586,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "01a177b4-3fee-7d00-9fa8-4acf1e0a3a43"
+      ],
+      "tool_start_monotonic_ms": 7498593338.291074,
+      "tool_end_monotonic_ms": 7498601133.791607,
+      "observed_remaining_ms": 7398.421464920044,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-404b-7df3-a02d-b971da7b338a",
+      "next_submit_after_tool_return_ms": 14.832674980163574,
+      "next_submit_after_pause_ms": 7413.2541399002075,
+      "tool_return_to_next_first_output_ms": 851.8706073760986
+    },
+    {
+      "request_id": "beliefkv:01a177b6-f560-7e62-88c8-513a1300bd29",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "deepagents-context:db0dca7d9441ce9e",
+        46
+      ],
+      "pause_monotonic_ms": 7498595758.312746,
+      "threshold_ms": 2596.633871085942,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "01a177b6-ff45-7a21-9d96-69bb74e83614"
+      ],
+      "tool_start_monotonic_ms": 7498594745.055522,
+      "tool_end_monotonic_ms": 7498600404.867202,
+      "observed_remaining_ms": 4646.554455757141,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b6-ffc4-7be3-9b5a-99a4592864e7",
+      "next_submit_after_tool_return_ms": 40.57568550109863,
+      "next_submit_after_pause_ms": 4687.13014125824,
+      "tool_return_to_next_first_output_ms": 401.9230365753174
+    },
+    {
+      "request_id": "beliefkv:01a177b3-ef76-7e82-9d90-bb6f64e04eec",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:d03da39ef0461137",
+        "deepagents-context:d03da39ef0461137",
+        10
+      ],
+      "pause_monotonic_ms": 7498599797.365552,
+      "threshold_ms": 2223.365894705057,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:d03da39ef0461137",
+        "01a177b4-032f-7e80-9d65-9bf40ad313b1"
+      ],
+      "tool_start_monotonic_ms": 7498598398.042812,
+      "tool_end_monotonic_ms": 7498635295.818085,
+      "observed_remaining_ms": 35498.45253276825,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-03e8-7902-a20a-d48dc62efc9e",
+      "next_submit_after_tool_return_ms": 26.642518997192383,
+      "next_submit_after_pause_ms": 35525.09505176544,
+      "tool_return_to_next_first_output_ms": 6310.2486391067505
+    },
+    {
+      "request_id": "beliefkv:01a177ac-a3d0-7422-8a15-c9e8154cbb0d",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        26
+      ],
+      "pause_monotonic_ms": 7498599797.376941,
+      "threshold_ms": 2223.365894705057,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177ac-dfff-7a81-8fc8-4aa8fb5aa96b"
+      ],
+      "tool_start_monotonic_ms": 7498598394.167808,
+      "tool_end_monotonic_ms": 7498602670.721802,
+      "observed_remaining_ms": 2873.3448610305786,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ac-e09c-7e82-9544-7be1c5356211",
+      "next_submit_after_tool_return_ms": 32.49117851257324,
+      "next_submit_after_pause_ms": 2905.836039543152,
+      "tool_return_to_next_first_output_ms": 146.89225673675537
+    },
+    {
+      "request_id": "beliefkv:01a177b4-6b16-70f3-a3fe-933201944e16",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "deepagents-context:8498e39022e89ead",
+        31
+      ],
+      "pause_monotonic_ms": 7498605850.838537,
+      "threshold_ms": 2240.0178209878504,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "01a177b4-814d-75d1-8716-05b87d88d39b"
+      ],
+      "tool_start_monotonic_ms": 7498605586.899549,
+      "tool_end_monotonic_ms": 7498667348.736029,
+      "observed_remaining_ms": 61497.89749145508,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-81a7-7ab0-95a6-d45ef8d5d924",
+      "next_submit_after_tool_return_ms": 19.134407997131348,
+      "next_submit_after_pause_ms": 61517.03189945221,
+      "tool_return_to_next_first_output_ms": 451.78134632110596
+    },
+    {
+      "request_id": "beliefkv:01a177b1-bc56-7e61-90f1-83a93cfab296",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "deepagents-context:3e175d02425e2774",
+        29
+      ],
+      "pause_monotonic_ms": 7498605850.850897,
+      "threshold_ms": 2240.8118676394224,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "01a177b1-cce3-7802-888c-5584d8d020f5"
+      ],
+      "tool_start_monotonic_ms": 7498605787.198812,
+      "tool_end_monotonic_ms": 7498611007.168664,
+      "observed_remaining_ms": 5156.3177671432495,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-cd4b-7dd0-9819-23037ef2a27c",
+      "next_submit_after_tool_return_ms": 51.92547607421875,
+      "next_submit_after_pause_ms": 5208.243243217468,
+      "tool_return_to_next_first_output_ms": 763.343035697937
+    },
+    {
+      "request_id": "beliefkv:01a177b6-ffc4-7be3-9b5a-99a4592864e7",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "deepagents-context:db0dca7d9441ce9e",
+        47
+      ],
+      "pause_monotonic_ms": 7498605850.854352,
+      "threshold_ms": 2494.570809043944,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "01a177b7-0872-7163-90ce-041c6f2855a0"
+      ],
+      "tool_start_monotonic_ms": 7498602410.357878,
+      "tool_end_monotonic_ms": 7498617182.863557,
+      "observed_remaining_ms": 11332.009204864502,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b7-08f7-7d02-bbd7-5c02e0a9106e",
+      "next_submit_after_tool_return_ms": 42.83362865447998,
+      "next_submit_after_pause_ms": 11374.842833518982,
+      "tool_return_to_next_first_output_ms": 3109.5686826705933
+    },
+    {
+      "request_id": "beliefkv:01a177a7-caca-7ea3-bf1f-1d9d478641a4",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-context:a9fdd146083bc610",
+        19
+      ],
+      "pause_monotonic_ms": 7498613926.588127,
+      "threshold_ms": 2257.7647764235735,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "01a177a7-d456-7e53-8f1a-3384cac9c59d"
+      ],
+      "tool_start_monotonic_ms": 7498613846.954216,
+      "tool_end_monotonic_ms": 7498618757.713247,
+      "observed_remaining_ms": 4831.125120162964,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a7-d536-7bc3-a6b2-061ec199ca38",
+      "next_submit_after_tool_return_ms": 24.18021869659424,
+      "next_submit_after_pause_ms": 4855.305338859558,
+      "tool_return_to_next_first_output_ms": 1534.396782875061
+    },
+    {
+      "request_id": "beliefkv:01a177ac-e09c-7e82-9544-7be1c5356211",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        27
+      ],
+      "pause_monotonic_ms": 7498613926.599852,
+      "threshold_ms": 2257.7647764235735,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177ad-5894-7020-99ca-423f7c5894d9"
+      ],
+      "tool_start_monotonic_ms": 7498612928.0392,
+      "tool_end_monotonic_ms": 7498618596.98734,
+      "observed_remaining_ms": 4670.387488365173,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-5942-75e3-917e-9403431bca62",
+      "next_submit_after_tool_return_ms": 35.1710844039917,
+      "next_submit_after_pause_ms": 4705.558572769165,
+      "tool_return_to_next_first_output_ms": 253.5282564163208
+    },
+    {
+      "request_id": "beliefkv:01a177b1-cd4b-7dd0-9819-23037ef2a27c",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "deepagents-context:3e175d02425e2774",
+        30
+      ],
+      "pause_monotonic_ms": 7498613926.602827,
+      "threshold_ms": 2473.2147250324488,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "01a177b1-ea75-7a02-a2ca-dbf2432e7856"
+      ],
+      "tool_start_monotonic_ms": 7498613105.391754,
+      "tool_end_monotonic_ms": 7498615906.599318,
+      "observed_remaining_ms": 1979.9964904785156,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-ead5-7c81-9662-1f2c7df50cce",
+      "next_submit_after_tool_return_ms": 21.246058464050293,
+      "next_submit_after_pause_ms": 2001.242548942566,
+      "tool_return_to_next_first_output_ms": 1093.2060918807983
+    },
+    {
+      "request_id": "beliefkv:01a177b7-eb99-79f0-b340-c31ab9557879",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+        17
+      ],
+      "pause_monotonic_ms": 7498613926.605518,
+      "threshold_ms": 2692.975473217666,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root",
+        "01a177b8-3b48-7c42-8cdd-62a007e7301b"
+      ],
+      "tool_start_monotonic_ms": 7498612402.217626,
+      "tool_end_monotonic_ms": 7498619435.558222,
+      "observed_remaining_ms": 5508.952703475952,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b8-3c3b-7272-bdaa-7de95a1bf856",
+      "next_submit_after_tool_return_ms": 48.036906242370605,
+      "next_submit_after_pause_ms": 5556.989609718323,
+      "tool_return_to_next_first_output_ms": 3958.386601448059
+    },
+    {
+      "request_id": "beliefkv:01a177b0-84cd-7032-a31e-8cd59466014b",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:c373adec8378be35",
+        "deepagents-context:c373adec8378be35",
+        14
+      ],
+      "pause_monotonic_ms": 7498619958.722123,
+      "threshold_ms": 2275.915423221886,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:c373adec8378be35",
+        "01a177b0-9d2c-7802-89a9-ad50071013ed"
+      ],
+      "tool_start_monotonic_ms": 7498619848.668422,
+      "tool_end_monotonic_ms": 7498635961.051074,
+      "observed_remaining_ms": 16002.328950881958,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b0-9dea-7ef2-a4ee-e093b1978135",
+      "next_submit_after_tool_return_ms": 28.547608375549316,
+      "next_submit_after_pause_ms": 16030.876559257507,
+      "tool_return_to_next_first_output_ms": 5646.028907775879
+    },
+    {
+      "request_id": "beliefkv:01a177b3-43ae-75e2-8882-8617f9da1891",
+      "identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:context:root",
+        31
+      ],
+      "pause_monotonic_ms": 7498619958.734055,
+      "threshold_ms": 2741.768913828446,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root",
+        "01a177b3-6cb4-72c1-9e48-db54c93e2741"
+      ],
+      "tool_start_monotonic_ms": 7498619545.673224,
+      "tool_end_monotonic_ms": 7498624896.97095,
+      "observed_remaining_ms": 4938.236895561218,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b3-6d63-7f22-a649-42bdfa9347f7",
+      "next_submit_after_tool_return_ms": 42.37467384338379,
+      "next_submit_after_pause_ms": 4980.611569404602,
+      "tool_return_to_next_first_output_ms": 17671.858709335327
+    },
+    {
+      "request_id": "beliefkv:01a177ad-5942-75e3-917e-9403431bca62",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        28
+      ],
+      "pause_monotonic_ms": 7498621968.495085,
+      "threshold_ms": 2276.4888250268996,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177ad-7895-77a2-92ad-8296cbc09581"
+      ],
+      "tool_start_monotonic_ms": 7498621615.794246,
+      "tool_end_monotonic_ms": 7498628083.362658,
+      "observed_remaining_ms": 6114.867572784424,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-7904-77a2-9237-b2a542a42bd8",
+      "next_submit_after_tool_return_ms": 32.38637733459473,
+      "next_submit_after_pause_ms": 6147.253950119019,
+      "tool_return_to_next_first_output_ms": 13523.385025024414
+    },
+    {
+      "request_id": "beliefkv:01a177b4-03e8-7902-a20a-d48dc62efc9e",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:d03da39ef0461137",
+        "deepagents-context:d03da39ef0461137",
+        11
+      ],
+      "pause_monotonic_ms": 7498647041.354185,
+      "threshold_ms": 2205.1530117169023,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:d03da39ef0461137",
+        "01a177b4-2104-7a11-9f09-8df83fab0329"
+      ],
+      "tool_start_monotonic_ms": 7498643582.983274,
+      "tool_end_monotonic_ms": 7498650246.238726,
+      "observed_remaining_ms": 3204.8845405578613,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-2327-72b2-b255-3de22530155f",
+      "next_submit_after_tool_return_ms": 12.484627723693848,
+      "next_submit_after_pause_ms": 3217.369168281555,
+      "tool_return_to_next_first_output_ms": 1898.1012926101685
+    },
+    {
+      "request_id": "beliefkv:01a177ad-7904-77a2-9237-b2a542a42bd8",
+      "identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents-context:82a3d7252ab98e78",
+        29
+      ],
+      "pause_monotonic_ms": 7498647041.366524,
+      "threshold_ms": 2362.1629279106855,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+        "deepagents-invocation:82a3d7252ab98e78",
+        "01a177ad-99fc-7a52-bbe2-c26c512e0826"
+      ],
+      "tool_start_monotonic_ms": 7498643545.449862,
+      "tool_end_monotonic_ms": 7498647822.852151,
+      "observed_remaining_ms": 781.4856271743774,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177ad-9a68-7801-bfd5-d13074780053",
+      "next_submit_after_tool_return_ms": 34.97046756744385,
+      "next_submit_after_pause_ms": 816.4560947418213,
+      "tool_return_to_next_first_output_ms": 282.5607376098633
+    },
+    {
+      "request_id": "beliefkv:01a177b2-0209-70a2-8d92-960b1838176f",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "deepagents-context:3e175d02425e2774",
+        32
+      ],
+      "pause_monotonic_ms": 7498647041.370143,
+      "threshold_ms": 2455.7133696042,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "01a177b2-1ab7-7bd0-ba83-551cd6b8845a"
+      ],
+      "tool_start_monotonic_ms": 7498643978.276555,
+      "tool_end_monotonic_ms": 7498695324.625059,
+      "observed_remaining_ms": 48283.2549161911,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b2-1b1b-7b62-a3db-ce7fb1f3f96e",
+      "next_submit_after_tool_return_ms": 23.806486129760742,
+      "next_submit_after_pause_ms": 48307.06140232086,
+      "tool_return_to_next_first_output_ms": 396.5442352294922
+    },
+    {
+      "request_id": "beliefkv:01a177b4-c32a-7220-a136-de5688d49edd",
+      "identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:context:root",
+        33
+      ],
+      "pause_monotonic_ms": 7498651084.693516,
+      "threshold_ms": 2771.041829138994,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root",
+        "01a177b4-e3aa-7d53-a9f6-e12caa312919"
+      ],
+      "tool_start_monotonic_ms": 7498648757.604751,
+      "tool_end_monotonic_ms": 7498654420.68645,
+      "observed_remaining_ms": 3335.9929342269897,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-e468-77b2-a3e0-fbf5e36baa06",
+      "next_submit_after_tool_return_ms": 25.88628578186035,
+      "next_submit_after_pause_ms": 3361.87922000885,
+      "tool_return_to_next_first_output_ms": 9844.35906124115
+    },
+    {
+      "request_id": "beliefkv:01a177a8-1675-7de0-be1e-1fedeb29b765",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-context:a9fdd146083bc610",
+        24
+      ],
+      "pause_monotonic_ms": 7498663452.713908,
+      "threshold_ms": 2257.2635049931705,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "01a177a8-2232-7443-9639-e82a2232faca"
+      ],
+      "tool_start_monotonic_ms": 7498660565.9486475,
+      "tool_end_monotonic_ms": 7498667554.48681,
+      "observed_remaining_ms": 4101.772901535034,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-2316-79b2-8cb7-927468897676",
+      "next_submit_after_tool_return_ms": 30.766061782836914,
+      "next_submit_after_pause_ms": 4132.538963317871,
+      "tool_return_to_next_first_output_ms": 7159.121981620789
+    },
+    {
+      "request_id": "beliefkv:01a177a8-2316-79b2-8cb7-927468897676",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-context:a9fdd146083bc610",
+        25
+      ],
+      "pause_monotonic_ms": 7498677592.388308,
+      "threshold_ms": 2115.1282848566425,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "01a177a8-2caa-7b93-9e7c-fb11e125fc96"
+      ],
+      "tool_start_monotonic_ms": 7498677082.074094,
+      "tool_end_monotonic_ms": 7498684956.118785,
+      "observed_remaining_ms": 7363.730477333069,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-2d8b-7311-9965-e3d4e2417311",
+      "next_submit_after_tool_return_ms": 26.76749038696289,
+      "next_submit_after_pause_ms": 7390.497967720032,
+      "tool_return_to_next_first_output_ms": 1106.80979347229
+    },
+    {
+      "request_id": "beliefkv:01a177b4-a0c9-7000-be71-051bfe637452",
+      "identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:d03da39ef0461137",
+        "deepagents-context:d03da39ef0461137",
+        16
+      ],
+      "pause_monotonic_ms": 7498677592.400234,
+      "threshold_ms": 2119.3743322116266,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+        "deepagents-invocation:d03da39ef0461137",
+        "01a177b4-e109-79a2-9d2c-94d5e8342853"
+      ],
+      "tool_start_monotonic_ms": 7498677205.186464,
+      "tool_end_monotonic_ms": 7498684128.703833,
+      "observed_remaining_ms": 6536.303598403931,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-e163-7af3-81ad-5ed5a497096a",
+      "next_submit_after_tool_return_ms": 18.731731414794922,
+      "next_submit_after_pause_ms": 6555.035329818726,
+      "tool_return_to_next_first_output_ms": 1933.616268157959
+    },
+    {
+      "request_id": "beliefkv:01a177b1-1682-7ec0-b9e2-8ea7adc7c083",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:c373adec8378be35",
+        "deepagents-context:c373adec8378be35",
+        18
+      ],
+      "pause_monotonic_ms": 7498683725.053677,
+      "threshold_ms": 2196.2676318362355,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:c373adec8378be35",
+        "01a177b1-590d-79f3-a00b-cdc7d8c4d7a9"
+      ],
+      "tool_start_monotonic_ms": 7498678371.683525,
+      "tool_end_monotonic_ms": 7498694714.742584,
+      "observed_remaining_ms": 10989.688907623291,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b1-59c0-7c00-96ef-e840b09c96b6",
+      "next_submit_after_tool_return_ms": 13.07341480255127,
+      "next_submit_after_pause_ms": 11002.762322425842,
+      "tool_return_to_next_first_output_ms": 1005.6693429946899
+    },
+    {
+      "request_id": "beliefkv:01a177b8-4dc6-7d13-8380-1059ccd82550",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:context:root",
+        19
+      ],
+      "pause_monotonic_ms": 7498685751.684515,
+      "threshold_ms": 2863.362413458526,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root",
+        "01a177b8-7c50-7f02-a84b-16e3324e2fda"
+      ],
+      "tool_start_monotonic_ms": 7498684017.763388,
+      "tool_end_monotonic_ms": 7498692442.83302,
+      "observed_remaining_ms": 6691.1485052108765,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b8-7d47-7a02-a54d-2f35754ef24d",
+      "next_submit_after_tool_return_ms": 42.51474952697754,
+      "next_submit_after_pause_ms": 6733.663254737854,
+      "tool_return_to_next_first_output_ms": 6099.945608139038
+    },
+    {
+      "request_id": "beliefkv:01a177a8-521c-7c03-8ebb-57b29851fa3d",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "deepagents-context:a9fdd146083bc610",
+        28
+      ],
+      "pause_monotonic_ms": 7498695885.43341,
+      "threshold_ms": 2248.549178428948,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+        "deepagents-invocation:a9fdd146083bc610",
+        "01a177a8-5717-7011-b954-0e77ea8a690a"
+      ],
+      "tool_start_monotonic_ms": 7498695310.902339,
+      "tool_end_monotonic_ms": 7498711424.605442,
+      "observed_remaining_ms": 15539.172032356262,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177a8-5770-7001-9f68-466b6127685c",
+      "next_submit_after_tool_return_ms": 16.641979217529297,
+      "next_submit_after_pause_ms": 15555.814011573792,
+      "tool_return_to_next_first_output_ms": 1807.4613542556763
+    },
+    {
+      "request_id": "beliefkv:01a177b4-d87e-7060-9679-2bb5913d7ae6",
+      "identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "deepagents-context:8498e39022e89ead",
+        35
+      ],
+      "pause_monotonic_ms": 7498697908.534111,
+      "threshold_ms": 2248.549178428948,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+        "deepagents-invocation:8498e39022e89ead",
+        "01a177b5-2384-7bc2-bd44-35cd078849d9"
+      ],
+      "tool_start_monotonic_ms": 7498695793.848797,
+      "tool_end_monotonic_ms": 7498704217.703759,
+      "observed_remaining_ms": 6309.169648170471,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b5-2cb0-74d3-a69c-5350d50d416f",
+      "next_submit_after_tool_return_ms": 22.404829025268555,
+      "next_submit_after_pause_ms": 6331.57447719574,
+      "tool_return_to_next_first_output_ms": 2091.232081413269
+    },
+    {
+      "request_id": "beliefkv:01a177b4-8623-7212-b9af-7b6d08d5bb27",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        42
+      ],
+      "pause_monotonic_ms": 7498697908.546618,
+      "threshold_ms": 2248.549178428948,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "01a177b4-976e-7753-8976-c3199ba9302d"
+      ],
+      "tool_start_monotonic_ms": 7498696776.6247015,
+      "tool_end_monotonic_ms": 7498699242.679231,
+      "observed_remaining_ms": 1334.1326122283936,
+      "observed_survived_threshold": false,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b4-981c-7732-b7ce-19f063162c2e",
+      "next_submit_after_tool_return_ms": 40.49369525909424,
+      "next_submit_after_pause_ms": 1374.6263074874878,
+      "tool_return_to_next_first_output_ms": 890.5797872543335
+    },
+    {
+      "request_id": "beliefkv:01a177b2-1b1b-7b62-a3db-ce7fb1f3f96e",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "deepagents-context:3e175d02425e2774",
+        33
+      ],
+      "pause_monotonic_ms": 7498697908.549908,
+      "threshold_ms": 2248.549178428948,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "01a177b2-3e7d-7323-8810-9a527126b56d"
+      ],
+      "tool_start_monotonic_ms": 7498697084.604204,
+      "tool_end_monotonic_ms": 7498701247.6337,
+      "observed_remaining_ms": 3339.0837926864624,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b2-3ed6-79f1-8647-870d16cddd25",
+      "next_submit_after_tool_return_ms": 17.440288543701172,
+      "next_submit_after_pause_ms": 3356.5240812301636,
+      "tool_return_to_next_first_output_ms": 750.9421224594116
+    },
+    {
+      "request_id": "beliefkv:01a177b7-1a80-7d01-8dc9-591d1451bbdb",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+        "deepagents-invocation:2a0b00f980f8d848",
+        "deepagents-context:2a0b00f980f8d848",
+        19
+      ],
+      "pause_monotonic_ms": 7498703938.290705,
+      "threshold_ms": 2247.587954159826,
+      "changed_local_victim": false,
+      "binding": "following_request_outside_observed_prefix"
+    },
+    {
+      "request_id": "beliefkv:01a177b8-1723-71c0-9171-2121bc641acb",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:c839861ee808681b",
+        "deepagents-context:c839861ee808681b",
+        23
+      ],
+      "pause_monotonic_ms": 7498703938.300029,
+      "threshold_ms": 2366.1881586536765,
+      "changed_local_victim": false,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:c839861ee808681b",
+        "01a177b8-2f8f-79d1-86c9-69262370cc40"
+      ],
+      "tool_start_monotonic_ms": 7498703097.752739,
+      "tool_end_monotonic_ms": 7498710758.234765,
+      "observed_remaining_ms": 6819.934736251831,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b8-303d-7b10-8b24-175398c076e1",
+      "next_submit_after_tool_return_ms": 38.26857948303223,
+      "next_submit_after_pause_ms": 6858.203315734863,
+      "tool_return_to_next_first_output_ms": 185.10818767547607
+    },
+    {
+      "request_id": "beliefkv:01a177b5-e4b3-7883-abcf-1619171a9288",
+      "identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:context:root",
+        46
+      ],
+      "pause_monotonic_ms": 7498712005.669477,
+      "threshold_ms": 2700.1283051491664,
+      "changed_local_victim": true,
+      "binding": "exact_request_session_single_tool_and_following_request",
+      "tool_identity": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root",
+        "01a177b6-095f-7401-a488-a677a8b22c6e"
+      ],
+      "tool_start_monotonic_ms": 7498710208.8945265,
+      "tool_end_monotonic_ms": 7498718633.1829815,
+      "observed_remaining_ms": 6627.51350402832,
+      "observed_survived_threshold": true,
+      "pause_within_observed_tool": true,
+      "next_request_id": "beliefkv:01a177b6-0dd6-7893-be56-afc38c987b09",
+      "next_submit_after_tool_return_ms": 36.152146339416504,
+      "next_submit_after_pause_ms": 6663.665650367737
+    },
+    {
+      "request_id": "beliefkv:01a177b8-303d-7b10-8b24-175398c076e1",
+      "identity": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+        "deepagents-invocation:c839861ee808681b",
+        "deepagents-context:c839861ee808681b",
+        24
+      ],
+      "pause_monotonic_ms": 7498718092.408157,
+      "threshold_ms": 2148.983916033057,
+      "changed_local_victim": true,
+      "binding": "following_request_outside_observed_prefix"
+    },
+    {
+      "request_id": "beliefkv:01a177b4-ea2a-7051-bd9f-5aabc6144991",
+      "identity": [
+        "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+        "deepagents-invocation:a2cfb5f0bc8f46b4",
+        "deepagents-context:a2cfb5f0bc8f46b4",
+        45
+      ],
+      "pause_monotonic_ms": 7498718092.417458,
+      "threshold_ms": 2149.971052033057,
+      "changed_local_victim": true,
+      "binding": "following_request_outside_observed_prefix"
+    },
+    {
+      "request_id": "beliefkv:01a177b2-3ed6-79f1-8647-870d16cddd25",
+      "identity": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+        "deepagents-invocation:3e175d02425e2774",
+        "deepagents-context:3e175d02425e2774",
+        34
+      ],
+      "pause_monotonic_ms": 7498718092.420577,
+      "threshold_ms": 2156.926060033057,
+      "changed_local_victim": true,
+      "binding": "following_request_outside_observed_prefix"
+    }
+  ],
+  "clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+  "scope": "Retrospective same-host tool-return evidence, bound to exact native request, context epoch and session. Repeated pauses of one tool are not independent samples. Actual future times are evaluation labels only. Local victim changes and first-output delays do not establish physical page release, a reference counterfactual, avoidable migration or causal JCT benefit.",
+  "registration": "/home/longhao/experiment/ops/predicted_acting_pressure_20261029_r1.registration.json",
+  "registration_sha256": "ae73e22a361875517fa82825a85f550442ec6eaa8e229e75dfc63865b16b3e4b",
+  "operator_sha256": "6268e4943892ff53afb3039d6fdb2e3f1147c6a547b76f999207abd0110374ff",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/predicted_acting_pressure_20261029_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 57078474,
+      "complete_prefix_sha256": "f3c221db02ad6c99a6f7caa9532126c41ff03d50569fec5842672171df7bf337",
+      "first_read_limit_bytes": 57078474
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/predicted_acting_pressure_20261029_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 6413824,
+      "complete_prefix_sha256": "b52fcd774231a1991319ac7abe268fcb7c60d77b14cb4c5ffb906b0a7ea4251f",
+      "first_read_limit_bytes": 6413824
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/predicted_acting_pressure_20261029_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 9644904,
+      "complete_prefix_sha256": "d9a4120d36d0c828c34371216e628581bd1aa1cb646972216f3abe4c2873c521",
+      "first_read_limit_bytes": 9644904
+    }
+  },
+  "complete_work_verified": false,
+  "performance_accepted": false,
+  "GPU_action": false
+}

@@ -3933,3 +3933,12 @@
   results honestly;local logical choices do not prove physical migration/JCT.
   Existing34/22/18whole-execution development data already includes two extra
   native captures;do not collect more solely for strict project separation.
+- Predicted-pressure complete CPU reviewer now actually waits from
+  frozen8686451a,PID1828218/start749833184,nice19/CUDA hidden,no GPU action.
+  Separate pressure_outcomes.py binds exact native request/context/session
+  and same-host clocks to observed single-tool returns;20focused cases pass.
+  Sealed collecting prefix has125predicted choices/121fully bound/108survived
+  the recorded horizon/4unknown following boundaries and0after-return pauses.
+  These are selected repeated decision observations,not whole-population
+  accuracy,physical release or causal JCT. Keep all counterexamples and
+  unknowns;wait complete Full/plots/mechanism audits before performance claims.
