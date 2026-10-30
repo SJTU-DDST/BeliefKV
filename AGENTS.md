@@ -4220,3 +4220,13 @@
   18singleton/6double JOINs,1nested,child calls median24/P9039.1,all6roots
   have final-return parallel deferrals. Shape still inadequate;retain all
   outputs and do not automatically expand18or launch another GPU arm.
+- Declared32-47arrival screening with80-120%expected-window guard selects
+  seed32. main_arrivals_r5 binds exact screened/frozen schedule hashes,keeps
+  permutation21/five warm roots/old calibrated rate. Nominal mean132.72s,
+  realized141.38s,first10.69s,max384.21s,last1837.95s/window106.53%.
+  Keep r4 and its rejection:screen/generator floating-point multiplication
+  order produced sub1e-12s offsets but different digests;unify arithmetic and
+  reject any future frozen-plan mismatch. No resampling or GPU action followed.
+  All16raw trials remain;conditioned development schedule is not pressure/
+  competition qualification. Focused CPU now58passes,including actual entry
+  binding/rejection. Runtime/paper policies unchanged;global goal remains active.

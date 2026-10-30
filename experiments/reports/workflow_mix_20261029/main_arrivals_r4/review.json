@@ -1,0 +1,11 @@
+{
+  "selected_seed": 32,
+  "accepted_for_next_main": false,
+  "screened_arrival_schedule_sha256": "f66c3e319dd7392af6308b7cdcc39141a2d59a8b10bfeb406b3ba9d1df083054",
+  "frozen_arrival_schedule_sha256": "5f1f97188c28fc52b7f4f23b89ac1813e15b688e1c5a8320bce967017d0d0bf7",
+  "reason": "Screening and calibration used a different floating-point multiplication order for the same nominal rate. The resulting tiny offset differences change the schedule digest; preserve this preparation and generate a byte-matched replacement.",
+  "replacement_keeps_seed_family": [32, 47],
+  "replacement_keeps_selected_seed": 32,
+  "replacement_keeps_geometry_constraints": true,
+  "GPU_action": false
+}

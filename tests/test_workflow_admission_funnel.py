@@ -199,8 +199,79 @@ def test_development_arrival_selection_uses_fixed_slot_geometry_and_retains_ever
             ids, rate_per_second=.01, seed=row["seed"], permutation_seed=21, initial_workflows=5,
         )
         assert row["arrival_schedule_sha256"] == plan["arrival_schedule_sha256"]
-        assert sum(row["gaps_s"]) == row["last_submission_s"]
+        assert sum(row["gaps_s"]) == pytest.approx(row["last_submission_s"])
         assert row["eligible_by_slot_geometry"] == (
             row["first_gap_s"] <= 100. and row["maximum_gap_s"] <= 300.
             and row["last_submission_s"] <= 1800.
         )
+
+
+def test_arrival_window_guard_rejects_a_burst_even_without_a_large_gap():
+    from experiments.reports.workflow_mix_20261029.screen_main_arrivals import screen
+
+    ids = [str(i) for i in range(18)]
+    result = screen(ids, rate=.01, makespan=1800., seeds=(28,), window_ratio=(.8, 1.2))
+    assert result["selected_seed"] is None
+    assert result["trials"][0]["first_gap_s"] <= 100.
+    assert result["trials"][0]["maximum_gap_s"] <= 300.
+    assert "submission_window_too_bursty_for_expected_rate" in result["trials"][0]["reasons"]
+
+
+def test_normalized_seed_selection_is_independent_of_control_speed():
+    from experiments.reports.workflow_mix_20261029.screen_main_arrivals import screen
+
+    ids = [str(i) for i in range(18)]
+    common = {"seeds": tuple(range(32, 48)), "window_ratio": (.8, 1.2)}
+    first = screen(ids, rate=.009, makespan=1800., **common)
+    second = screen(ids, rate=.0045, makespan=3600., **common)
+    assert first["selected_seed"] == second["selected_seed"]
+    assert first["selected_seed"] is not None
+    for left, right in zip(first["trials"], second["trials"], strict=True):
+        assert left["eligible_by_slot_geometry"] == right["eligible_by_slot_geometry"]
+        assert left["reasons"] == right["reasons"]
+        assert left["last_submission_s"] * 2 == pytest.approx(right["last_submission_s"])
+
+
+@pytest.mark.parametrize("schedule_drift", (False, True))
+def test_arrival_entry_binds_the_screen_to_the_frozen_generator(tmp_path, monkeypatch, schedule_drift):
+    from beliefkv.experiments.replay_arrivals import permuted_poisson_arrival_plan
+    from experiments.reports.workflow_mix_20261029 import screen_main_arrivals as entry
+
+    ids = [str(i) for i in range(18)]
+    makespan = 2149.987822508812
+    control, review, population_path = (
+        tmp_path / name for name in ("control.json", "review.json", "population.json")
+    )
+    entry.write(control, {})
+    entry.write(review, {"metrics": {"makespan_s": makespan}})
+    entry.write(population_path, {"workflows": [{"workflow_id": value} for value in ids]})
+    output = tmp_path / "arrivals"
+    monkeypatch.setattr(entry.sys, "argv", [
+        "screen_main_arrivals.py", "--control", str(control), "--control-review", str(review),
+        "--population", str(population_path), "--output-dir", str(output),
+        "--seed-start", "32", "--seed-stop", "47",
+        "--expected-window-min-ratio", ".8", "--expected-window-max-ratio", "1.2",
+    ])
+
+    def prepare(command, *, cwd, check):
+        assert check is True and cwd == entry.ROOT
+        seed = int(command[command.index("--arrival-seed") + 1])
+        assert seed == 32
+        # Match the real calibration arithmetic, including floating-point order.
+        frozen = permuted_poisson_arrival_plan(
+            ids, rate_per_second=len(ids) / makespan * .9,
+            seed=seed + int(schedule_drift), permutation_seed=21, initial_workflows=5,
+        )
+        output.mkdir()
+        entry.write(output / "arrivals.json", frozen)
+
+    monkeypatch.setattr(entry.subprocess, "run", prepare)
+    if schedule_drift:
+        with pytest.raises(ValueError, match="screened and frozen arrival schedules differ"):
+            entry.main()
+    else:
+        entry.main()
+    evidence = entry.causal.load(output / "selection.json")
+    assert evidence["frozen_arrival_schedule_match_verified"] is not schedule_drift
+    assert str((output / "arrivals.json").resolve()) in evidence["inputs_sha256"]
+    assert evidence["GPU_action"] is False
