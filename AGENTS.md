@@ -4180,3 +4180,13 @@
   repair only the offline observer with existing atomic write_json. Twenty
   focused CPU cases pass,including three heartbeats and successful/failed final
   states. Relaunch the CPU observer separately,never restart the GPU for this.
+- Independent parallel_pilot_gpu_entry_r2/live_start verifies750complete output
+  prefix receipts,six distinct projects/explicit derived semantic inputs,actual
+  new profile/4-8child/8-16root/24running/2048chunk/mixed-off/admission-off/seed21,
+  sole owned GPU and nice0 measured processes,frozen392490cc sources unchanged.
+  This is not complete-work/size/JOIN-shape acceptance. Repaired CPU reviewer
+  actually waits from frozen4f614ae6,PID2080046,at nice19/CUDA
+  hidden,registered in parallel_pilot_finish_r3.registration.json. Verify actual
+  identity from that receipt rather than the transient nice wrapper. Its state
+  heartbeats update;it has no GPU follow-up. Keep all failed startup/observer
+  attempts and user worktree edits;the global performance goal remains active.

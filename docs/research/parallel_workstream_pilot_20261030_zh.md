@@ -125,3 +125,11 @@ fresh sampler 再次通过，实际 client 为6个项目。独立 CPU 收尾首�
 已改用原有原子状态更新函数，20项相关 CPU 测试通过，新增覆盖连续三次
 心跳及正常/失败终态持久化。该修复只涉及离线观察者，不更新运行中的
 GPU 冻结源码，旧观察者的状态和错误日志保留。
+
+`parallel_pilot_gpu_entry_r2/live_start.json` 独立核对了 GPU 冻结源码、实际
+24 running/decode、2048 chunk、mixed/BeliefKV 准入关闭、seed21，
+6个不同项目、模型实际收到的派生交付物，以及750份完整输出前缀记录。
+测量进程均为nice0且GPU归属唯一。这还不是完整采集或工作量差异验收。
+修复后的 CPU 收尾从独立冻结 `4f614ae6` 启动，登记在
+`parallel_pilot_finish_r3.registration.json`；实际存活、nice19、CUDA隐藏
+及周期心跳已核实，读取同一个GPU r2源，仍不注册下一轮GPU任务。
