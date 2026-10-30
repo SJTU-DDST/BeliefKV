@@ -81,7 +81,8 @@ def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=3
         "output_tokens": 0, "decode_tokens": 0, "decode_batches": 0,
     } for index in range(math.ceil((end_s - start_s) / bin_seconds))]
     seen, domains, widths = set(), set(), Counter()
-    output = decode = 0
+    output = decode = observed_output = 0
+    output_by_workflow = Counter()
     for sample in service_samples:
         if sample.get("event") != "gpu_service_sample":
             continue
@@ -90,18 +91,24 @@ def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=3
             forward in seen or not math.isfinite(when)
             or sample["phase"] not in ("prefill", "decode")
             or any(row["workflow_id"] not in starts
-                   or type(row["token_delta"]) is not int or row["token_delta"] < 0
+                   or type(row.get("output_token_delta")) is not int
+                   or row["output_token_delta"] < 0
                    or not starts[row["workflow_id"]] <= when <= ends[row["workflow_id"]]
                    for row in sample["request_samples"])
         ):
             raise ValueError("native service samples are duplicated, invalid or foreign")
         seen.add(forward)
         domains.add(sample["monotonic_clock_domain"])
+        # token_delta measures extend input in prefill samples; only this field
+        # counts newly generated output in both prefill and decode.
+        tokens = sum(row["output_token_delta"] for row in sample["request_samples"])
+        observed_output += tokens
+        for row in sample["request_samples"]:
+            output_by_workflow[row["workflow_id"]] += row["output_token_delta"]
         offset = (when - origin) / 1000.
         if not start_s <= offset < end_s:
             continue
         index = min(int((offset - start_s) / bin_seconds), len(bins) - 1)
-        tokens = sum(row["token_delta"] for row in sample["request_samples"])
         output += tokens
         bins[index]["output_tokens"] += tokens
         if sample["phase"] == "decode":
@@ -131,6 +138,9 @@ def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=3
         "common_window_decode_tokens_per_second": decode / (end_s - start_s),
         "common_window_decode_batch_counts": dict(sorted(widths.items())),
         "common_window_throughput_bins": bins,
+        "all_service_output_tokens": observed_output,
+        "all_service_output_tokens_by_workflow": dict(output_by_workflow),
+        "output_accounting_field": "output_token_delta",
         "token_window_assignment": "native_batch_completion; includes_background_and_first_prefill_outputs",
         "all_workflows_completed": True, "normal_tails_removed": False,
         "steady_state_established": False, "performance_accepted": False,

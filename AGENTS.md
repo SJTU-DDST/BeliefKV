@@ -4588,3 +4588,29 @@
   See docs/design/oracle_first_validation_goal_20261030_zh.md. The active goal
   API refused replacement of an unfinished objective;do not falsely complete
   the old goal to bypass it. Latest user scope and this record govern work.
+- Workload-validation CPU audit found a cohort-output bug:prefill token_delta
+  counts input,so use output_token_delta in all phases and reconcile full output
+  by workflow with exact receipts. Running GPU and JCT boundaries are unchanged.
+  Frozen reviewer8d29bb08's cohort throughput must be superseded by corrected
+  CPU analysis after full completion;do not hot-edit it or accept its old count.
+  Supply r1 seals38arrivals/25ends/13of18measured,2230states/360ready-paused/
+  3pair-competition states(two same-pair adjacent),not all actual decisions or
+  physical feasibility. Source work reconstructs in topological order across
+  independent capture clocks. Targeted84tests pass;full CPU binding separate.
+  Host high usage is not useful loss:session-prefix proxy0,but other attributed
+  Host-block FULL recompute4485units,retain both semantics. No workload/oracle
+  gain accepted and no GPU followup. See original_project_supplement research.
+- Validation fullCPU_r1 preserves5720pass/3nested-parallel timestamp failures/
+  12subtests. Runtime callback publication now serializes causal timestamps
+  under the existing lock,preserves raw callback_observed_ts_ms/adjustment and
+  tool duration_ms,and sends identical trace/control batches. Two deterministic
+  reorder regressions plus full adapter/nested/audit focused133pass;full CPUr2
+  still required. This affects future capture only,not frozen running replay.
+  Disabled R5 cached-metadata microcheck shows6candidates244/276usP50/P99,
+  8all200softdeadlinefallback;free-page-only resource summary also needs audit.
+  Keep these as CPU/source limitations,not end-to-end performance evidence.
+- Corrected workload-validation boundCPU_r2 actually passes5725tests+12subtests,
+  retains5701prior literalIDs,no failures/errors/skips,2158bound inputs/native
+  unchanged. Preserve failedr1 and all source observations. Running8d29bb08
+  control remains frozen;use new CPU cohort/output/supply analysis after complete
+  work/drain/ownedexit. No oracle/learned/baseline performance accepted.

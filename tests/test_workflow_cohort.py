@@ -26,18 +26,23 @@ def fixture():
     samples = [{
         "event": "gpu_service_sample", "forward_iter": 1, "phase": "prefill",
         "complete_monotonic_ms": origin + 100., "monotonic_clock_domain": "clock",
-        "batch_size": 1, "request_samples": [{"workflow_id": "w0", "token_delta": 1}],
+        "batch_size": 1, "request_samples": [{
+            "workflow_id": "w0", "token_delta": 2048, "output_token_delta": 1,
+        }],
     }, {
         "event": "gpu_service_sample", "forward_iter": 2, "phase": "decode",
         "complete_monotonic_ms": origin + arrivals["arrival_schedule"][4]["offset_seconds"] * 1000. + 100.,
         "monotonic_clock_domain": "clock",
         "batch_size": 2, "request_samples": [
-            {"workflow_id": "w4", "token_delta": 1}, {"workflow_id": "w4", "token_delta": 1},
+            {"workflow_id": "w4", "token_delta": 1, "output_token_delta": 1},
+            {"workflow_id": "w4", "token_delta": 1, "output_token_delta": 1},
         ],
     }, {
         "event": "gpu_service_sample", "forward_iter": 3, "phase": "decode",
         "complete_monotonic_ms": origin + end * 1000., "monotonic_clock_domain": "clock",
-        "batch_size": 1, "request_samples": [{"workflow_id": "w1", "token_delta": 1}],
+        "batch_size": 1, "request_samples": [{
+            "workflow_id": "w1", "token_delta": 1, "output_token_delta": 1,
+        }],
     }]
     return arrivals, cohort, events, samples
 
@@ -63,6 +68,28 @@ def test_common_window_counts_background_outputs_and_prefill_first_tokens():
     assert result["common_window_decode_tokens_per_second"] == pytest.approx(2 / window)
     assert result["common_window_decode_batch_counts"] == {2: 1}
     assert sum(row["output_tokens"] for row in result["common_window_throughput_bins"]) == 3
+    assert result["all_service_output_tokens"] == 4
+    assert result["all_service_output_tokens_by_workflow"] == {"w0": 1, "w4": 2, "w1": 1}
+    assert result["output_accounting_field"] == "output_token_delta"
+
+
+def test_intermediate_prefill_chunk_adds_no_output_despite_nonzero_input():
+    arrivals, cohort, events, samples = fixture()
+    samples[0]["request_samples"][0]["output_token_delta"] = 0
+    result = summarize_cohort(cohort, arrivals, events, samples)
+    assert result["common_window_all_workflows_output_tokens"] == 2
+    assert result["all_service_output_tokens"] == 3
+
+
+@pytest.mark.parametrize("value", (None, -1, True, 1., math.nan))
+def test_ambiguous_or_invalid_native_output_cannot_fall_back_to_input_delta(value):
+    arrivals, cohort, events, samples = fixture()
+    if value is None:
+        samples[0]["request_samples"][0].pop("output_token_delta")
+    else:
+        samples[0]["request_samples"][0]["output_token_delta"] = value
+    with pytest.raises(ValueError):
+        summarize_cohort(cohort, arrivals, events, samples)
 
 
 @pytest.mark.parametrize("mutation", ("first_completed", "stop_background", "scheduler_label", "window"))

@@ -44,6 +44,40 @@ from beliefkv.runtime.sglang_v0520_sessions import NativeRadixSessionLeases
 from beliefkv.runtime.stream_content_shadow import StreamContentShadow
 
 
+@pytest.mark.parametrize("control", (False, True))
+def test_parallel_callback_publication_preserves_observed_time_and_control_order(control):
+    trace, controls = CollectingSink(), CollectingSink()
+    now = [10.]
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=controls, clock_ms=lambda: now[0],
+    )
+    adapter.start()
+    older = adapter._event(
+        RuntimeEventKind.STRUCTURED_ACTION, ts_ms=20., invocation_id="root",
+        attributes={"duration_ms": 7., "source": "concurrent-callback-fixture"},
+    )
+    newer = adapter._event(
+        RuntimeEventKind.STRUCTURED_ACTION, ts_ms=30., invocation_id="root",
+    )
+    adapter._publish((newer,), control=control)
+    adapter._publish((older,), control=control)
+    observed = trace.events[-1]
+    assert observed.event_id == older.event_id
+    assert observed.ts_ms == 30. and older.ts_ms == 20.
+    assert observed.attributes["callback_observed_ts_ms"] == 20.
+    assert observed.attributes["callback_publication_adjustment_ms"] == 10.
+    assert observed.attributes["duration_ms"] == 7.
+    assert "callback_observed_ts_ms" not in older.attributes
+    if control:
+        assert controls.events[-2:] == trace.events[-2:]
+    graph = RuntimeCausalContextGraph()
+    for event in trace.events:
+        graph.apply(event)
+    now[0] = 40.
+    adapter.finish(outcome="completed")
+
+
 def test_native_session_follows_context_not_tool_and_retires_on_return() -> None:
     closed = []
     sessions = NativeRadixSessionLeases(closed.append)

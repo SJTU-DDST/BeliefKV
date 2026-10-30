@@ -53,6 +53,7 @@ def main():
         "tests/test_original_project_supplement.py", "tests/test_reused_workflow_mix.py",
         "tests/test_composite_workload.py", "tests/test_workflow_cohort.py",
         "tests/test_composite_comparison.py",
+        "tests/test_sustained_supply.py", "tests/test_workflow_source_work.py",
     )
     names.update(added)
     names.update((
@@ -129,6 +130,9 @@ def main():
         "scripts/prepare_composite_workload.py", "scripts/register_composite_source.py",
         "scripts/audit_workflow_cohort.py",
         "scripts/prepare_composite_comparison.py",
+        "beliefkv/experiments/sustained_supply.py",
+        "beliefkv/experiments/workflow_source_work.py",
+        "scripts/audit_sustained_supply.py",
         str(Path(__file__).relative_to(ROOT)),
     ))
     names.update(str(path.resolve().relative_to(ROOT)) for path in args.bind_input)

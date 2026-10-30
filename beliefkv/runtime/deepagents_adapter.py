@@ -352,6 +352,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._publication_lock = threading.RLock()
         self._sequence = 0
         self._last_ts_ms = 0.0
+        self._published_ts_ms = 0.0
         self._started = False
         self._finished = False
         self._tool_wait_shadow_closed = False
@@ -2734,6 +2735,27 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             **kwargs,
         )
 
+    def _publication_events(
+        self, events: tuple[RuntimeEvent, ...],
+    ) -> tuple[RuntimeEvent, ...]:
+        # Parallel callbacks can finish building an older observation after a
+        # newer batch was delivered. Preserve its measurement and tool duration
+        # while giving both sinks the same serialized causal timestamp.
+        published = []
+        for event in events:
+            if event.ts_ms < self._published_ts_ms:
+                event = replace(
+                    event, ts_ms=self._published_ts_ms,
+                    attributes={
+                        **event.attributes,
+                        "callback_observed_ts_ms": event.ts_ms,
+                        "callback_publication_adjustment_ms": self._published_ts_ms - event.ts_ms,
+                    },
+                )
+            self._published_ts_ms = event.ts_ms
+            published.append(event)
+        return tuple(published)
+
     def _publish(
         self,
         events: tuple[RuntimeEvent, ...],
@@ -2755,6 +2777,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             or self.control_sink is self.trace_sink
         ):
             with self._publication_lock:
+                events = self._publication_events(events)
                 self.trace_sink.emit_batch(events)
             self._retire_native_radix_sessions(events)
             return
@@ -2762,6 +2785,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         async_tool_start = False
         async_reentry = False
         with self._publication_lock:
+            events = self._publication_events(events)
             self.trace_sink.emit_batch(events)
             with self._lock:
                 terminal_ids = frozenset(self._terminal_invocation_ids)
