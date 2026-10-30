@@ -1,0 +1,263 @@
+{
+  "observed_at": "2026-10-30T14:05:39.935902+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_parallel_checkpoint_pilot6_source_20261030_r1.registration.json",
+  "registration_sha256": "84129fe71a2497a44acac5ed2d9568baf6cf3c08e875e23aa943e31601fdd900",
+  "code_commit": "b736480b2175601493efb65c766fcdb1ae7c5c65",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture",
+  "processes": {
+    "watcher": {
+      "pid": 2242607,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "753915499",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-parallel6r1-capture-b736480b2175/scripts/run_causal_source_capture.py",
+        "--watch",
+        "/home/longhao/experiment/ops/workflow_parallel_checkpoint_pilot6_source_20261030_r1.registration.json"
+      ]
+    },
+    "driver": {
+      "pid": 2243009,
+      "state": "S",
+      "ppid": 2242607,
+      "start_ticks": "753916529",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-parallel6r1-capture-b736480b2175/scripts/run_qwen35_native_regime_probe.sh"
+      ]
+    },
+    "scheduler": {
+      "pid": 2243381,
+      "state": "R",
+      "ppid": 2243019,
+      "start_ticks": "753917887",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    },
+    "server": {
+      "pid": 2243019,
+      "state": "R",
+      "ppid": 2243009,
+      "start_ticks": "753916535",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18909",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--skip-server-warmup"
+      ]
+    }
+  },
+  "all_owned_processes_nice0": true,
+  "sole_GPU_owner_verified": true,
+  "actual_server_parameters": {
+    "chunked_prefill_size": 2048,
+    "enable_mixed_chunk": false,
+    "max_running_requests": 24,
+    "random_seed": 21,
+    "enable_beliefkv_admission": false
+  },
+  "fresh_sampler_cases": [
+    1,
+    8,
+    24
+  ],
+  "token_receipt_counts": {
+    "request_prompt": 34,
+    "request_output": 28
+  },
+  "event_counts": {
+    "workflow_start": 6,
+    "invocation_create": 6,
+    "llm_submit": 34,
+    "llm_result": 28,
+    "tool_start": 28,
+    "tool_end": 28
+  },
+  "semantic_metadata_counts": {
+    "workflow_start": 6
+  },
+  "workflow_count": 6,
+  "actual_delegation_contract": {
+    "artificial_tool_delays": false,
+    "checkpoint_assignment_fields": [
+      "question",
+      "known_paths_or_symbols",
+      "existing_evidence",
+      "finish_condition",
+      "write_scope"
+    ],
+    "checkpoint_assignment_protocol_version": 3,
+    "checkpoint_task_parameters_required": true,
+    "child_deliverable": "one_bounded_evidence_or_change",
+    "child_report": "concise_evidence_and_explicit_handoff",
+    "child_roles": "bounded_locator_reproducer_editor_reviewer_and_general_purpose",
+    "child_supporting_write_paths_max": 2,
+    "child_todo_middleware": false,
+    "child_unrelated_failures": "classify_and_handoff_without_expanding_scope",
+    "child_work_budget_enforcement": "soft_reminders_then_natural_report",
+    "children_per_round": null,
+    "depth_convention": "root=0; direct child=1; grandchild=2",
+    "direct_child_task_tool_enabled": true,
+    "first_tool_choice": "auto",
+    "fixed_role_sequence": false,
+    "follow_up_delegation": "only_for_new_unresolved_deliverables",
+    "initial_fanout_generation_bounds": null,
+    "leaf_task_tool_enabled": false,
+    "maximum_root_delegation_attempts": 2,
+    "maximum_spawn_depth": 2,
+    "minimum_completed_root_join_members": 2,
+    "model_call_limit_enforced": false,
+    "natural_final_response_rejected": true,
+    "nested_coordinator_role": "delegation-coordinator",
+    "nested_delegation_required_for_independent_subproblems": true,
+    "nested_fanout_generation_bounds": null,
+    "nested_initial_tool_choice": "auto",
+    "nested_round_target": null,
+    "parallel_checkpoint_api_version": 1,
+    "parallel_checkpoint_execution": "real_concurrent_tasks_then_all_join",
+    "parallel_checkpoint_members": [
+      2,
+      4
+    ],
+    "parallel_checkpoint_tool": "parallel_tasks",
+    "parallel_round_count_enforced": false,
+    "parallel_round_instruction": "submit_2_to_4_independent_assignments_in_parallel_tasks",
+    "pilot_shape_review_required": true,
+    "profile": "native_in_graph_parallel_workstreams",
+    "recommended_parallel_children": [
+      2,
+      4
+    ],
+    "recommended_root_rounds": [
+      2,
+      3
+    ],
+    "repeated_validation_without_new_evidence": false,
+    "report_token_limit_enforced": false,
+    "root_initial_tool_choice": "auto",
+    "root_minimum_delegations_prompt": 2,
+    "root_owns_primary_implementation": true,
+    "root_retry_fanout_generation_bounds": null,
+    "root_retry_tool_choice": "parallel_tasks",
+    "root_round_target": null,
+    "root_terminal_check": "require_completed_model_selected_parallel_join",
+    "round_enforcement": "model_selected_from_task_evidence",
+    "singleton_rounds": "allowed_for_indivisible_work_and_reported_in_source_audit",
+    "task_access_from_manifest": true,
+    "terminal_rejection_for_round_count": false,
+    "tool_duration_target_seconds": null,
+    "tool_execution": "necessary_real_project_commands"
+  },
+  "actual_model_and_work_budgets": {
+    "model": "Qwen3-Coder-30B-A3B-Instruct",
+    "subagent_fanout_profile": "native_in_graph_parallel_workstreams",
+    "child_work_budget_warning_calls": 4,
+    "child_work_budget_target_calls": 8,
+    "root_work_budget_warning_calls": 8,
+    "root_work_budget_target_calls": 16
+  },
+  "frozen_sources_verified": true,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture/server/request_tokens.jsonl": {
+      "complete_prefix_bytes": 3153035,
+      "complete_prefix_sha256": "09d04d76c5807e775d80ab8df9248f1d0c47636974027183dfbaef4989867b72",
+      "first_read_limit_bytes": 3153035
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture/client_6/workflows/locobench__python_api_microservice_medium_008_multi_session_development_hard_01__source_checkpoint_v2__structured_v3__parallel_api_v1/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 48210,
+      "complete_prefix_sha256": "6d3fa38eaecc5131b3fee56137f44b494852fbbb6833f54c9016215eb5cfb7dc",
+      "first_read_limit_bytes": 48210
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture/client_6/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01__source_checkpoint_v2__structured_v3__parallel_api_v1/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 38339,
+      "complete_prefix_sha256": "928058cd705377f44f8bf3e95ce24b415abe07a6451916632ec6cd08e2e35dcc",
+      "first_read_limit_bytes": 38339
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture/client_6/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01__source_checkpoint_v2__structured_v3__parallel_api_v1/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 31510,
+      "complete_prefix_sha256": "596934be6989289baad2bb376d38ce0089968f64a4da153e70465fc796331f4f",
+      "first_read_limit_bytes": 31510
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture/client_6/workflows/locobench__python_web_dashboard_medium_039_cross_file_refactoring_easy_01__source_checkpoint_v2__structured_v3__parallel_api_v1/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 31784,
+      "complete_prefix_sha256": "4d1d4436766ec409fec43f988b7a6c5ad3b4570141bb493d25ab999577851c7d",
+      "first_read_limit_bytes": 31784
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture/client_6/workflows/locobench__python_mobile_social_medium_022_bug_investigation_easy_01__source_checkpoint_v2__structured_v3__parallel_api_v1/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 31554,
+      "complete_prefix_sha256": "50a1fdd57fe290352fe2381683b94b07ca902b41139de9478ed3759b124076c6",
+      "first_read_limit_bytes": 31554
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture/client_6/workflows/locobench__python_ml_inference_hard_088_multi_session_development_hard_01__source_checkpoint_v2__structured_v3__parallel_api_v1/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 41249,
+      "complete_prefix_sha256": "ab4c86893956b15a5bab2fc73004c1a0798d7834cc2117afeef1a2d75f24fcca",
+      "first_read_limit_bytes": 41249
+    }
+  },
+  "CPU_finisher": {
+    "process": {
+      "pid": 2243876,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "753919741",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/beliefkv-parallel-checkpoint-20261030-b736480b/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+        "--registration",
+        "/home/longhao/experiment/ops/workflow_parallel_checkpoint_pilot6_source_20261030_r1.registration.json",
+        "--declaration",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/parallel_checkpoint_pilot6_20261030/declaration.json",
+        "--model-cost-evidence",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/parallel_checkpoint_pilot6_20261030/finish_r1"
+      ]
+    },
+    "nice": 19,
+    "CUDA_VISIBLE_DEVICES": "99999"
+  },
+  "source_capture_complete": false,
+  "measured_size_mix_qualified": false,
+  "new_followup_GPU_action_registered": false,
+  "performance_accepted": false,
+  "operator_sha256": "719712ab9e6b52a78b571b57fe89299c79fb06f28a1210cadaf6f9614111b0eb"
+}

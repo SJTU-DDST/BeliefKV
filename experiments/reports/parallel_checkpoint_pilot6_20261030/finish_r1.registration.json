@@ -1,0 +1,41 @@
+{
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-parallel-checkpoint-20261030-b736480b/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_parallel_checkpoint_pilot6_source_20261030_r1.registration.json",
+    "--declaration",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/parallel_checkpoint_pilot6_20261030/declaration.json",
+    "--model-cost-evidence",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/parallel_checkpoint_pilot6_20261030/finish_r1"
+  ],
+  "process": {
+    "pid": 2243876,
+    "state": "R",
+    "ppid": 2243804,
+    "start_ticks": "753919741",
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-parallel-checkpoint-20261030-b736480b/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_parallel_checkpoint_pilot6_source_20261030_r1.registration.json",
+      "--declaration",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/parallel_checkpoint_pilot6_20261030/declaration.json",
+      "--model-cost-evidence",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/parallel_checkpoint_pilot6_20261030/finish_r1"
+    ]
+  },
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "GPU_followup_registered": false,
+  "operator_sha256": "0a7fc5981f727647ed83fb22f545914e2d61ed4cf84b0758e9f4b5c1e5696f48"
+}

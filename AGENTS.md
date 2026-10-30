@@ -4390,3 +4390,14 @@
   in one source-bound execution,retains all5571prior literalIDs,no failures/
   errors/skips,2100inputs/native unchanged. Fresh freeze,reservation/resources/
   sampler and six-project natural-shape audit still precede any comparison.
+- Parallel checkpoint6 now actually records from frozenb736480b on18909,
+  ops/workflow_parallel_checkpoint_pilot6_source_20261030_r1.registration.json.
+  Execution .worktrees/beliefkv-parallel6r1-capture-b736480b2175,native11b84f7c.
+  Fresh1/8/24sampler/BF16 pass. Independent gpu_entry_r1/live_start verifies
+  28complete prefix outputs,6project/rootsemantic boundaries,actualAPI1/
+  protocol3/4-8child/8-16root/2048/mixed-off/running24/seed21/nativeadmissionoff,
+  nice0 measured owners,soleGPU and frozen sources. CPUreviewer2243876/
+  start753919741 actually waits atnice19/CUDA99999 from cleanb736480b;
+  finish_r1.registration.json. No Full/Thunder/expansion or followupGPU queued.
+  Retain complete natural outputs/tails,then audit shape,promptdelivery and
+  actualreadonlydiffs before qualification;startup is not performance evidence.
