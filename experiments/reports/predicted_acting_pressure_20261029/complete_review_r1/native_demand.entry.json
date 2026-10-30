@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/scripts/audit_demand_prefill_pipeline.py",
+    "--registration",
+    "/home/longhao/experiment/ops/predicted_acting_pressure_20261029_r1.registration.json",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/predicted_acting_pressure_20261029/complete_review_r1/native_demand.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"untagged_native_h2d_bytes\": 2632161067008,\n  \"native_request_host_hit_bytes\": 79314321408,\n  \"layer_handoff_consumer_bytes\": 0,\n  \"staged_native_demand_bytes\": 2552846745600,\n  \"unexplained_native_h2d_bytes\": 0,\n  \"exact_physical_bytes_reconciled\": true,\n  \"native_cache_hit_counters_changed\": false\n}\n",
+  "stderr": ""
+}

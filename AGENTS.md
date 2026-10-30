@@ -3942,3 +3942,22 @@
   These are selected repeated decision observations,not whole-population
   accuracy,physical release or causal JCT. Keep all counterexamples and
   unknowns;wait complete Full/plots/mechanism audits before performance claims.
+- Predicted-pressure46d5b37a Full now completes all18/3674/145565966/549671
+  work,72JOINs/92children,original stops/normal tails,fresh drain/actual exit.
+  CPU completion reviewer exits clean;all five review actions pass and three
+  complete figures are visually inspected. MeanJCT1450.343294/output245.088522
+  versus retained Thunder1504.072304/238.375989 gives3.5722%/2.8159% gains,
+  but versus original2sFull1439.457324/243.890996 JCT regresses.7563% with
+  only.4910% throughput gain. Do not promote;keep original2s/mixed-off Full,
+  workflow ranking/tool-frontier prefetch/handoff off,and the goal active.
+  Final423mandatory pauses include238predicted/111changed-local-victim
+  choices;all238bind exact request/session/tool/following request,210survive
+  the recorded horizon,28do not,0unknown/after-return pauses. This is selected
+  survival evidence,not calibration or causal physical improvement.
+  NativeACK H2D2850.771763vs2659.224748GB(+7.2031%),D2H988.092039vs
+  939.598381GB(+5.1611%);both3564old-input probes sum0recompute proxy.
+  Native512stages/721members have subsequent service and0unexplained bytes;
+  join-only1411prefetch commands all reused,218.610696GB;sibling1055records/
+  21multi-member batches verified,55EOSfinals observed. Preserve full results
+  under predicted_acting_pressure_20261029 and all user worktree edits.
+  Both GPU and CPU reviewers have actually exited;no next GPU job is queued.

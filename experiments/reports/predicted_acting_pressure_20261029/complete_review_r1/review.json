@@ -1,0 +1,34 @@
+{
+  "pair": {
+    "mean_jct_reduction_percent": 3.572235835178672,
+    "whole_run_output_throughput_gain_percent": 2.8159433427940916
+  },
+  "pressure_decisions": {
+    "counts": {
+      "mandatory_acting_pauses": 423,
+      "changed_local_victims": 111,
+      "logical_tokens_paused": 24544713,
+      "predicted_choices": 238,
+      "quantile_only_bounds_not_reconstructed": 0
+    },
+    "scope": "Explicit mandatory logical pressure decisions only. No physical freed pages, saved migration, complete reference trajectory or causal JCT benefit follows."
+  },
+  "relative_to_original_full": {
+    "mean_jct_reduction_percent": -0.7562551789294991,
+    "output_throughput_gain_percent": 0.49100886620083717
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/predicted_acting_pressure_20261029_r1.registration.json": "ae73e22a361875517fa82825a85f550442ec6eaa8e229e75dfc63865b16b3e4b",
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json": "e4821865066bab8ebdd4a28791ba9dcabd350fe6ce621a03985903fa13147ec4",
+    "/home/longhao/experiment/ops/decay_tick2s_no_handoff_20261030_r1.registration.json": "6a30b7859bedabf11ff8b98bc3d88272e9dab77c0fd76f90ceeec2488271b4a8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/complete_review/review.json": "0091a1b5d95fae59aa5f7145b5dc4bda567d838148f633a044e709c8c9dc8779",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/experiments/reports/predicted_acting_pressure_20261029/complete_review.py": "55817ea63fd5921fd1e81f64a29ef5a342e201047a7e8735187023355939df54",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/experiments/reports/arrival_mean120_20261029/review_pair.py": "e1658d59622fcd87278a5ace364aca92c7fe5b6c4ed2f2d1ca53079035ca9af5",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/scripts/audit_demand_prefill_pipeline.py": "8c09cce02bbcc87f079d5af765bec581593c7ff1604d673d31c5eeba6b1cb2e1",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/scripts/audit_prefetch_lifecycle.py": "1929fa4c56deb82074f6e4ec81a798f583a6b87b1d9a8ff0e6f83ed959a7c7f6",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/scripts/audit_sibling_native_service.py": "543b65c8d27ab0234e68d8d37d00583b00c433b31f40528ffd0bab10fee17276",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/scripts/audit_eos_trigger_lifecycle.py": "e7c206cb836dcd0073cb13ee11adcd609eee6ee37eb4718f2e52b3aee94d5d4b"
+  },
+  "GPU_experiment_registered": false,
+  "performance_accepted": false
+}

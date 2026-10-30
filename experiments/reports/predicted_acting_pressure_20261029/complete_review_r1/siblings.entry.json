@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/scripts/audit_sibling_native_service.py",
+    "--arm",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/predicted_acting_pressure_20261029_r1/full",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/predicted_acting_pressure_20261029/complete_review_r1/siblings.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"journal_records\": 1055,\n  \"journal_request_attempts\": 1076,\n  \"status_counts\": {\n    \"native_batch_join_and_completed_sessions_verified\": 1055\n  },\n  \"verified_records\": 1055,\n  \"verified_request_attempts\": 1076,\n  \"verified_multi_member_batches\": 21,\n  \"verified_prefill_records\": 1055,\n  \"native_worker_samples\": 93785,\n  \"all_journal_records_verified\": true,\n  \"positive_service_evidence\": true\n}\n",
+  "stderr": ""
+}

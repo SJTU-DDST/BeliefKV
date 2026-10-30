@@ -1,0 +1,11 @@
+{
+  "counts": {
+    "mandatory_acting_pauses": 423,
+    "changed_local_victims": 111,
+    "logical_tokens_paused": 24544713,
+    "predicted_choices": 238,
+    "quantile_only_bounds_not_reconstructed": 0
+  },
+  "scope": "Explicit mandatory logical pressure decisions only. No physical freed pages, saved migration, complete reference trajectory or causal JCT benefit follows.",
+  "journal_sha256": "d6e5cdd3167f2aeac770d9c85f61ce6c1073ea58cb2acb8042a9c314b4a2f35d"
+}

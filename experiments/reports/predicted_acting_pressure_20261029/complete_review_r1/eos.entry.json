@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-pressure-review-20261029-8686451a/scripts/audit_eos_trigger_lifecycle.py",
+    "--registration",
+    "/home/longhao/experiment/ops/predicted_acting_pressure_20261029_r1.registration.json",
+    "--expected-receipts",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/replay/native_requests.jsonl",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/predicted_acting_pressure_20261029/complete_review_r1/eos.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"exact_completed_receipts\": 3674,\n  \"trigger_records\": 55,\n  \"lifecycle_statuses\": {\n    \"final_request_observed\": 55\n  },\n  \"delimiter_evidence\": {\n    \"no_dedicated_delimiter\": 55\n  },\n  \"all_triggered_requests_observed_final\": true\n}\n",
+  "stderr": ""
+}
