@@ -48,6 +48,7 @@ def main():
         "tests/test_subagent_state.py",
         "tests/test_checkpoint_native_parser.py", "tests/test_parallel_checkpoint_pilot.py",
         "tests/test_checkpoint_repository_tools.py", "tests/test_focused_review_pilot.py",
+        "tests/test_original_task_mix.py",
     )
     names.update(added)
     names.update((
@@ -99,6 +100,19 @@ def main():
         "configs/workloads/locobench_focused_review_pilot6_20261030.json",
         "configs/migration/workflow_focused_review_pilot6_native_20261030.json",
         "experiments/reports/focused_review_pilot6_20261030/declaration.json",
+        "scripts/prepare_original_task_mix.py",
+        "configs/workloads/locobench_original_task_mix6_20261030.json",
+        "configs/migration/workflow_original_task_mix6_native_20261030.json",
+        "experiments/reports/original_task_mix6_20261030/declaration.json",
+        "experiments/reports/original_task_mix6_20261030/qualified_manifest.json",
+        "experiments/reports/original_task_mix6_20261030/native_qualified.json",
+        "experiments/reports/original_task_mix6_20261030/tool_binding.json",
+        "configs/workloads/locobench_original_task_mix6_coder_20261030.json",
+        "configs/migration/workflow_original_task_mix6_coder_native_20261030.json",
+        "experiments/reports/original_task_mix6_20261030/preparation_r2/declaration.json",
+        "experiments/reports/original_task_mix6_20261030/preparation_r2/qualified_manifest.json",
+        "experiments/reports/original_task_mix6_20261030/preparation_r2/native_qualified.json",
+        "experiments/reports/original_task_mix6_20261030/preparation_r2/tool_binding.json",
         str(Path(__file__).relative_to(ROOT)),
     ))
     before = {name: sha256_file(ROOT / name) for name in sorted(names)}

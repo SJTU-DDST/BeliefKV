@@ -1,0 +1,100 @@
+[
+  {
+    "path": "ChirpPulse/chirpulse/__init__.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/chirpulse/__init__.py",
+    "raw_sha256": "6736861a7a4b01b52ad944e648442ceac2f8d977b7b66dd07736871de30a35bc",
+    "materialized_sha256": "d07b3cc3289c909e4e9af73260dcbd425fe60b672c36f36488507c515e58fa46",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/chirpulse/main.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/chirpulse/main.py",
+    "raw_sha256": "6f137d804b2ce342a8031ce043463a666c6f54e93ed92d079a20672b6e5216d7",
+    "materialized_sha256": "0b50ff0d8dfff9534b5eda9f86d7691bf5023354d4725023e919bdace959d9a6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/chirpulse/data_ingestion.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/chirpulse/data_ingestion.py",
+    "raw_sha256": "7d70b29302412e54c4b8cbeccd00b6bf3d0e7c8546fcd6186d8fb81a3e5c9398",
+    "materialized_sha256": "ff67303d997bbe19d10e3de1bd52eff06147426851366d82e1b2fec5b8475cde",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/chirpulse/processing_pipeline.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/chirpulse/processing_pipeline.py",
+    "raw_sha256": "7105a401f894b7482c221aad5605d1b9ab33d2a541a0156fe69635ff7f14b5f3",
+    "materialized_sha256": "c4cd5ef5e522f0884b9457b735abdb4c55cd84fadd9e792aad5370ee1b0e2497",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/chirpulse/strategies.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/chirpulse/strategies.py",
+    "raw_sha256": "372cb5f7604474ee4c11dd0f01f1816de35dbd94c2be223664eb19dbc835ca21",
+    "materialized_sha256": "fa25faea0d99080def32409f3b8ab48b4e485b6ab839388070c3c818b260b793",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/chirpulse/model_factory.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/chirpulse/model_factory.py",
+    "raw_sha256": "45e9853f674b31fabf47918265ea5d49e21917dcbf5fb02a06c5c12b03671bec",
+    "materialized_sha256": "fd5b0add0a88d7b1b748f94b2c56afb86aeb16ac29cc7c7a9bbf12b245686cb9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/chirpulse/dashboard_server.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/chirpulse/dashboard_server.py",
+    "raw_sha256": "799cbea00052f894d4395f8969f9e179604408993d14fadf321d2e3a6b50da15",
+    "materialized_sha256": "64e009e2ce4c75aad9aa1da1e0a8e51c5190afc6c6902c200326b020116383c7",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/docs/setup_guide.md",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/docs/setup_guide.md",
+    "raw_sha256": "349dda9fc450ed23f1fce5ad93e3a79184a7339e5cecca573db02d177afcb2b7",
+    "materialized_sha256": "f0a44ea2b2fc4288ede53b93e619caaa28d19be06ec8db48636decb1d9bc6e55",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/tests/test_pipeline.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/tests/test_pipeline.py",
+    "raw_sha256": "52525719a9913b15a3ea7d664ec063ec3119bb6af48ed8d607a17f0f5fb1edf3",
+    "materialized_sha256": "ded6873fecf6d485a898ac2175c34fb4572e81d6414b1a37a4ff49671d6b0e82",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/tests/test_strategies.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/tests/test_strategies.py",
+    "raw_sha256": "cbbaf33e7cac76ac2c814d54c6d969ad1688c5a757aa32d114720c71a4dbeae4",
+    "materialized_sha256": "4e7c64eaa0d97ade688bde50fcdddb42be01f0ada64a9edbe8feb8bc3911927f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/.env.example",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/.env.example",
+    "raw_sha256": "1ef8894c7ee9b86c7f9f8853932aeb54fbfcf2673d4d041597e8c579c8fec582",
+    "materialized_sha256": "1ef8894c7ee9b86c7f9f8853932aeb54fbfcf2673d4d041597e8c579c8fec582",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "ChirpPulse/README.md",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/README.md",
+    "raw_sha256": "be634af64712083b1217c0d64d424de5b9637d94574ba9379db03fea76247c96",
+    "materialized_sha256": "d42663cc0bea3fe654c1bfb7bc939e908ef8cad5848fbc26d6a621d79464cbf9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "ChirpPulse/CONTRIBUTING.md",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/CONTRIBUTING.md",
+    "raw_sha256": "e113d0cdfe6b1c9e97c824aeec233212da3d905dedb98c1a5bb41f848b9ae9ac",
+    "materialized_sha256": "e113d0cdfe6b1c9e97c824aeec233212da3d905dedb98c1a5bb41f848b9ae9ac",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "ChirpPulse/requirements.txt",
+    "archive_path": "data/generated/python_ml_nlp_easy_053/ChirpPulse/requirements.txt",
+    "raw_sha256": "153ef115bc24a627cbf8ae0bb6bc16019a8f6784b5cf8d490eb55c0a19e92d8c",
+    "materialized_sha256": "153ef115bc24a627cbf8ae0bb6bc16019a8f6784b5cf8d490eb55c0a19e92d8c",
+    "outer_markdown_fence_removed": false
+  }
+]

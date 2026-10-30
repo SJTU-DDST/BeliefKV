@@ -1,0 +1,36 @@
+{
+  "id": "python_web_blog_easy_040_multi_session_development_easy_01",
+  "task_category": "multi_session_development",
+  "difficulty": "easy",
+  "title": "Implement a Site-Wide Maintenance Mode Feature",
+  "description": "The BizSphere Blog Suite needs a 'maintenance mode' feature. When activated, this mode should block access to all public-facing pages, displaying a user-friendly message. However, administrators must still be able to access authentication-related pages (e.g., login) to disable the mode. This feature will be implemented incrementally over three sessions, starting with configuration and ending with refined access control logic.",
+  "context_files": [
+    "BizSphere-Blog-Suite//bizsphere//config.py",
+    "BizSphere-Blog-Suite//bizsphere//auth//middleware.py",
+    "BizSphere-Blog-Suite//bizsphere//blog//views.py",
+    "BizSphere-Blog-Suite//bizsphere//auth//__init__.py"
+  ],
+  "context_length": 57383,
+  "task_prompt": "You will implement a maintenance mode feature for the BizSphere Blog Suite. This will be done in three distinct sessions.\n\n**Session 1:**\nYour first task is to prepare the application for the new feature. Add a new configuration variable named `MAINTENANCE_MODE` to `bizsphere/config.py`. Set its default value to `False`.\n\n**Session 2:**\nWelcome back. Now, let's implement the core maintenance mode logic. Using the `MAINTENANCE_MODE` flag you added previously, modify the application's middleware to intercept all incoming requests when this flag is set to `True`. When intercepted, the server should immediately respond with a `503 Service Unavailable` status and a simple plain text message: \"The site is currently down for maintenance. Please try again later.\" You will likely need to modify `bizsphere/auth/middleware.py`.\n\n**Session 3:**\nGood, the basic maintenance mode is in place. However, we've realized that administrators need a way to log in to disable it. Please update the middleware logic you wrote in the previous session. Requests to any path starting with `/auth/` must *always* be allowed to proceed, regardless of the `MAINTENANCE_MODE` setting. All other paths should still be blocked when maintenance mode is active.",
+  "expected_approach": "An expert developer would approach this incrementally:\n\n1.  **Session 1 (Configuration):** The developer would first identify `bizsphere/config.py` as the correct location for application-wide settings. They would add a new boolean variable, `MAINTENANCE_MODE = False`, within the main configuration class.\n\n2.  **Session 2 (Middleware Implementation):** The developer would recognize that intercepting all requests is a job for middleware. They would open `bizsphere/auth/middleware.py`. They would import the configuration object (e.g., `from bizsphere.config import settings`). Inside the primary middleware execution method (e.g., `__call__`), they would add a conditional check for `settings.MAINTENANCE_MODE`. If true, they would construct and return a 503 response, halting further processing. This demonstrates understanding of the request-response cycle and configuration management.\n\n3.  **Session 3 (Logic Refinement):** The developer would revisit the middleware code from the previous session. They would access the request's path (e.g., `request.url.path`). They would then enhance the conditional logic to a compound statement, like `if settings.MAINTENANCE_MODE and not request.url.path.startswith('/auth/'):`. This demonstrates the ability to modify existing logic and handle more nuanced requirements.",
+  "ground_truth": "The solution requires changes in two files.\n\n1.  In `bizsphere/config.py`, a new line should be added to one of the configuration classes:\n    ```python\n    # In an appropriate config class\n    MAINTENANCE_MODE: bool = False\n    ```\n\n2.  In `bizsphere/auth/middleware.py`, the middleware logic should be updated. Assuming a Starlette-based framework (common for modern Python web apps), the changes would look like this:\n    ```python\n    # Add necessary imports at the top of the file\n    from bizsphere.config import settings\n    from starlette.responses import PlainTextResponse\n    from starlette.requests import Request\n    from starlette.types import ASGIApp, Receive, Scope, Send\n\n    # ... inside the middleware class ...\n    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:\n        if scope[\"type\"] != \"http\":\n            await self.app(scope, receive, send)\n            return\n\n        request = Request(scope)\n\n        # Key Logic: Check for maintenance mode, but exclude /auth/ paths\n        if settings.MAINTENANCE_MODE and not request.url.path.startswith('/auth/'):\n            response = PlainTextResponse(\n                'The site is currently down for maintenance. Please try again later.',\n                status_code=503\n            )\n            await response(scope, receive, send)\n            return\n\n        await self.app(scope, receive, send)\n    ```\n    The key insight is the compound conditional (`and not request.url.path.startswith(...)`) which correctly implements the exclusion rule.",
+  "evaluation_criteria": [
+    "**Session 1 Completion:** Correctly adds the `MAINTENANCE_MODE` variable to `bizsphere/config.py` with the value `False`.",
+    "**Context Retention:** In Session 2, correctly identifies and uses the `MAINTENANCE_MODE` variable that was defined in Session 1.",
+    "**Session 2 Completion:** Successfully modifies `bizsphere/auth/middleware.py` to import the configuration and return a 503 response when the flag is true.",
+    "**Incremental Development:** In Session 3, correctly modifies its own previously written code rather than rewriting it or placing it incorrectly.",
+    "**Session 3 Completion:** The final middleware logic correctly implements the exclusion for paths starting with `/auth/`.",
+    "**File Navigation:** Correctly identifies and modifies only the relevant files (`config.py` and `auth/middleware.py`) without making unnecessary changes to other files.",
+    "**Code Correctness:** The final code is syntactically correct, idiomatic, and logically sound."
+  ],
+  "metadata": {
+    "context_length": 57383,
+    "files_count": 4,
+    "information_coverage": 0.3357026688663461,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:07:55.611950"
+  }
+}

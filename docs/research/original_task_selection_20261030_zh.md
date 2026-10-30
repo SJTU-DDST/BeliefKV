@@ -27,3 +27,39 @@
 `/workspace/...` 绝对通配符映射回实际挂载根目录，会错误返回空结果。七项 CPU
 回归在修复前失败，修复后的完整 CPU 运行通过 5629 项测试和 12 项 subtests。
 这不代表任何新的负载形态、迁移压力或性能收益已经验证。
+
+## 第一组原题候选
+
+完整 Python 原始目录含 800 条 scenario。新筛选不再要求项目满足旧的长上下文
+下限；下面六个项目均保留原题完整文本，且源码、测试和完整上下文已经与归档
+逐项核对。两个分析题来自原生代码理解和架构理解类别，并非重写调查题。
+
+| 原项目 | 原题 | 完整上下文 token | 筛选假设 |
+| --- | --- | ---: | --- |
+| `python_ml_nlp_easy_053` | Configuration-Driven Model Selection Analysis in ChirpPulse | 30,631 | 简单代码理解 |
+| `python_mobile_utility_medium_023` | Explain the Offline Synchronization Mechanism | 91,651 | 简单架构说明 |
+| `python_web_blog_easy_040` | Implement a Site-Wide Maintenance Mode Feature | 35,046 | 完整三阶段实现 |
+| `python_api_microservice_medium_044` | Implement User-Based Rate Limiting for API Endpoints | 50,948 | 完整功能实现 |
+| `python_web_social_hard_001` | Implement Course Waitlist with Automated Notifications | 119,129 | 完整多阶段开发 |
+| `python_system_automation_hard_062` | Implement a Dynamic Correlation Engine for Intelligent Alerting | 118,586 | 完整多阶段开发 |
+
+该选择包含长上下文分析题与短上下文实现题，减少任务范围与 KV 成本完全绑定的
+问题，但不宣称已经获得短、中、长实际工作量分布。所有原题阶段都保留，原题要求
+输出文件时也允许写入；root 和 child 保持正常编辑能力。未启用撤回候选中的
+child 强制只读或 400 行读取 profile。
+
+准备入口为 `scripts/prepare_original_task_mix.py`，清单为
+`configs/workloads/locobench_original_task_mix6_coder_20261030.json`。自然采集前还须
+取得新鲜的 root/child 实际工具检查、匹配源码 CPU 证据和空闲资源检查。
+先用六项目检查形态，不自动扩大人口或启动正式策略对比。
+
+最初准备沿用了 36 项目池的 Qwen3.5 长度统计，虽原题和源码均完整，仍不适合
+判断当前模型容量。该次准备与工具证据原样保留；`preparation_r2` 对六个完整
+上下文全部使用当前固定 Qwen3-Coder tokenizer 重算，表中均为修正后的数值。
+真实工具检查只验证 runtime、共享工作区和正常退出码，不要求项目测试通过，
+不把 agent 应解决的测试或业务错误提前修复。
+
+修正后六项目的 live root/child 工具检查全部通过；`bound_cpu_r1` 的完整执行
+通过 5644 项测试和 12 项 subtests，保留此前 5629 个 literal test ID，
+2121 个源码输入和 native 源在执行期间未变，无失败、错误或跳过。
+这是当前准备版本的 CPU 证据，不是自然工作量、KV 压力或性能收益的证据。

@@ -1,0 +1,43 @@
+{
+  "id": "python_mobile_utility_medium_023_architectural_understanding_easy_01",
+  "task_category": "architectural_understanding",
+  "difficulty": "easy",
+  "title": "Explain the Offline Synchronization Mechanism",
+  "description": "A new developer has joined the PalettePulse team and needs to understand one of the app's core architectural features: offline data synchronization. The app must function seamlessly without an internet connection, allowing users to create and modify color palettes. When the connection is restored, these changes must be synced to a cloud backend without data loss. The task is to provide a clear explanation of this mechanism for onboarding purposes.",
+  "context_files": [
+    "palettepulse/config/settings.json",
+    "palettepulse/docs/api/index.rst",
+    "palettepulse/src/main.py",
+    "palettepulse/src/app/__init__.py",
+    "palettepulse/src/app/events/__init__.py",
+    "palettepulse/src/app/views/__init__.py",
+    "palettepulse/src/data/__init__.py",
+    "palettepulse/src/app/services/sync_service.py",
+    "palettepulse/src/app/services/color_harmony_service.py",
+    "palettepulse/src/app/services/contrast_service.py",
+    "palettepulse/docs/ARCHITECTURE.md",
+    "palettepulse/src/app/models/palette.py"
+  ],
+  "context_length": 147254,
+  "task_prompt": "As a senior developer on the PalettePulse project, your task is to explain the application's architecture for offline data storage and synchronization. Analyze the provided project files, especially `docs/ARCHITECTURE.md`, `src/app/services/sync_service.py`, and `src/data/__init__.py`, to formulate your response.\n\nYour explanation should be written in a markdown file (`explanation.md`) and must cover the following points:\n\n1.  **Architectural Pattern:** What is the high-level architectural pattern used for data management and synchronization (e.g., local-first, cache-aside, etc.)? Justify your answer based on the documentation and code structure.\n2.  **Key Components:** Identify and describe the roles of the main Python modules/classes involved in this process. At a minimum, discuss the roles of the `data` module, the `sync_service`, and the `palette` model.\n3.  **Offline Workflow:** Provide a step-by-step description of what happens when a user modifies a color palette while the application is offline.\n4.  **Synchronization Workflow:** Provide a step-by-step description of the process that occurs when the application regains an internet connection.",
+  "expected_approach": "An expert developer would approach this task by first seeking out the highest-level documentation to understand the intended design, and then diving into the code to verify and detail the implementation.\n\n1.  **Start with the Architecture Document:** The primary source of truth for design decisions is `docs/ARCHITECTURE.md`. The developer would read this file to understand the overall strategy, terminology, and intended component responsibilities for offline sync.\n2.  **Analyze the Data Layer:** Next, they would examine `src/data/__init__.py` to see how data is persisted locally. They would look for functions related to saving, loading, and querying palettes, paying close attention to any flags or tables used to track unsynced changes (e.g., a 'dirty' flag, a 'sync_status' column, or a separate 'pending_sync' table).\n3.  **Inspect the Sync Service:** The developer would then analyze `src/app/services/sync_service.py`. They would look for logic that detects network connectivity, fetches pending changes from the data layer, communicates with a remote API, and handles success or failure responses. They would identify the trigger for this service (e.g., a timer, an event listener, or a startup check).\n4.  **Review the Model:** A quick look at `src/app/models/palette.py` would confirm the data structure and reveal attributes relevant to synchronization, such as `id`, `last_modified_timestamp`, or `is_dirty`.\n5.  **Synthesize and Document:** Finally, the developer would synthesize the information from all sources into a clear, structured explanation that addresses all points in the prompt, using the terminology from the architecture document and referencing the specific components from the code.",
+  "ground_truth": "The expected output is a markdown file (`explanation.md`) containing the following key insights:\n\n**1. Architectural Pattern:**\nThe application uses a **local-first** architecture. The `ARCHITECTURE.md` document explicitly states that the local database (managed by the `data` module) is the primary source of truth for the application. All create, read, update, and delete (CRUD) operations happen directly on the local store, ensuring the app is always responsive and functional, regardless of network state.\n\n**2. Key Components:**\n*   **`data` module (`src/data/__init__.py`):** This is the Data Access Layer (DAL). It abstracts the local SQLite database. When a palette is created or updated, this module writes the changes to the database and marks the record as 'dirty' by setting a `needs_sync` boolean flag to `True`.\n*   **`Palette` model (`src/app/models/palette.py`):** This Pydantic or dataclass model represents a color palette. It includes an attribute `needs_sync: bool` which is crucial for the synchronization logic.\n*   **`SyncService` (`src/app/services/sync_service.py`):** This is a background service that runs periodically. It is responsible for the entire synchronization process. It checks for network connectivity and, if online, queries the `data` module for all palettes where `needs_sync` is `True`. It then sends these palettes to the backend API.\n*   **`events` module (`src/app/events/__init__.py`):** An event like `PaletteModifiedEvent` is fired whenever a palette is saved locally. The `SyncService` might listen for this event to attempt an immediate sync if the device is already online.\n\n**3. Offline Workflow:**\n1.  A user action in a `View` triggers a request to save or update a palette.\n2.  The relevant controller or event handler calls a method in the `data` module (e.g., `data.save_palette(palette_data)`).\n3.  The `data` module creates or updates the palette's record in the local SQLite database.\n4.  As part of the same transaction, it sets the `needs_sync` flag for that record to `True`.\n5.  The UI updates immediately, reading the new state from the local database.\n\n**4. Synchronization Workflow:**\n1.  The `SyncService`, running on a timer (e.g., every 5 minutes) or triggered by a network status change event, detects that the device is now online.\n2.  It calls a method in the `data` module, such as `data.get_unsynced_palettes()`, to retrieve all records where `needs_sync` is `True`.\n3.  The service iterates through the list of unsynced palettes.\n4.  For each palette, it makes a POST or PUT request to the cloud API endpoint (e.g., `/api/v1/palettes`).\n5.  Upon receiving a successful (e.g., HTTP 200/201) response from the server, the `SyncService` calls another method in the `data` module, like `data.mark_palette_as_synced(palette_id)`, which sets the `needs_sync` flag back to `False` for that record.",
+  "evaluation_criteria": [
+    "**Pattern Identification:** Correctly identifies the 'local-first' architectural pattern and provides a reason based on the provided files.",
+    "**Component Role Accuracy:** Accurately describes the distinct responsibilities of the `data` module, `SyncService`, and `Palette` model.",
+    "**Workflow Coherence (Offline):** Provides a logical and correct step-by-step explanation of the offline data modification process.",
+    "**Workflow Coherence (Sync):** Provides a logical and correct step-by-step explanation of the data synchronization process upon reconnection.",
+    "**Evidence of Synthesis:** The explanation successfully integrates information from the high-level `ARCHITECTURE.md` with implementation details found in the `.py` source files.",
+    "**Clarity and Structure:** The final output is well-organized, clear, and directly addresses all parts of the task prompt."
+  ],
+  "metadata": {
+    "context_length": 147254,
+    "files_count": 12,
+    "information_coverage": 0.32982278526376146,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:24:42.947856"
+  }
+}

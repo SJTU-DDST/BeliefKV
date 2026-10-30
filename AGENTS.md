@@ -4443,3 +4443,20 @@
   focused400 repository tools/readonly-child protocol remain disabled by
   default and do not authorize changing original task requirements. No new
   natural GPU source or comparison is qualified by these CPU results.
+- Original-task mix6 now selects complete public ChirpPulse comprehension,
+  PalettePulse offline-sync architecture,BizSphere maintenance mode,
+  ProductivityPulse rate limiting,CampusConnect waitlist and NimbusCustodian
+  correlation-engine tasks. All six original projects/source/tests/context
+  bytes remain complete;no derived deliverable or child-readonly/focused400
+  restriction is enabled. Context and work hypotheses cross categories.
+  Initial preparation reused old36pool Qwen3.5 length metadata and is retained
+  but superseded before GPU. preparation_r2 recomputes every full context with
+  current pinned Qwen3-Coder tokenizer:30631/35046/50948/91651/118586/119129.
+  New tests reject omitted later sessions,derived IDs/requirements and duplicate
+  projects,and verify actual tokenization. Live tools,source-bound CPU/fresh
+  freeze/resources and complete natural shape review precede comparison.
+- Original mix6 coder preparation_r2 actually passes all6fresh live root/child
+  tool checks and bound_cpu_r1:5644tests+12subtests,all5629prior literalIDs
+  retained,2121inputs/native unchanged,no failures/errors/skips. All original
+  prompt/scenario/source/context and real current-model tokenizer checks pass.
+  No natural shape,physical pressure or comparative gain is qualified by this.
