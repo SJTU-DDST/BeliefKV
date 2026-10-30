@@ -423,6 +423,7 @@ def validate_reference_admission(
     control_interval_ms=5000,
     workflow_size_resume=False,
     workflow_work_model_sha256=None,
+    pressure_pause_policy="reference",
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
@@ -443,6 +444,12 @@ def validate_reference_admission(
         from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 
         admission_type = ReferenceFreeContinuationAdmission
+    if (
+        pressure_pause_policy not in ("reference", "predicted_acting")
+        or not isinstance(state, dict)
+        or state.get("pressure_pause_policy", "reference") != pressure_pause_policy
+    ):
+        raise ValueError("reference ThunderAgent pressure policy differs from declaration")
     if workflow_size_resume:
         if not free_continuation_admission or not workflow_work_model_sha256:
             raise ValueError("workflow size reference composition requires its trained model")
@@ -475,6 +482,13 @@ def validate_reference_admission(
         "ordinary_restore_reservation_ms": 0,
         "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
     }
+    if pressure_pause_policy == "predicted_acting":
+        expected.update({
+            "pressure_prediction_scope": "mandatory_acting_pressure_only",
+            "pressure_prediction_fallback": "reference_smallest_context",
+            "pressure_prediction_new_timer": False,
+            "planned_release_grants_capacity": False,
+        })
     if workflow_size_resume:
         expected.update({
             "workflow_size_resume": True,

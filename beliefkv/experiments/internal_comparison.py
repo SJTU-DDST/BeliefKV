@@ -282,10 +282,16 @@ def arm_environment(
     pressure_policy = common.get(
         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
     )
-    if pressure_policy not in ("reference", "projected_release") or (
-        mode == "full" and pressure_policy != "reference" and agent_admission != "thunderagent_retained"
+    if pressure_policy not in ("reference", "projected_release", "predicted_acting") or (
+        mode == "full" and (
+            pressure_policy == "projected_release" and agent_admission != "thunderagent_retained"
+            or pressure_policy == "predicted_acting" and (
+                agent_admission != "thunderagent_reference" or continuation_free != "1"
+                or workflow_size == "1"
+            )
+        )
     ):
-        raise ValueError("projected pressure release requires retained agent eligibility")
+        raise ValueError("pressure policy requires its declared Full agent admission")
     pressure_policy = pressure_policy if mode == "full" else "reference"
     recall_selection = common.get(
         "BELIEFKV_AGENT_RECALL_SELECTION", common.get("AGENT_RECALL_SELECTION", "largest"),

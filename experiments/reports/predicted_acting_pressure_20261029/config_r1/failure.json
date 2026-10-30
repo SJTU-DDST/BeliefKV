@@ -1,0 +1,9 @@
+{
+  "status": "failed_cpu_preparation_before_gpu",
+  "mode": "full",
+  "error": "ValueError: tool timing prior requires online timing adaptation",
+  "cause": "The preparation helper omitted the serving launcher's SERVER_FIELDS alias conversion.",
+  "source_policy_changed_by_repair": false,
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}

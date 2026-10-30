@@ -990,6 +990,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                         "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256",
                         common.get("WORKFLOW_WORK_MODEL_SHA256"),
                     ),
+                    pressure_pause_policy=common.get(
+                        "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY",
+                        common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
+                    ),
                 )
             if state.get("agent_join_free_admission", False) is not join_free:
                 raise ValueError("effective free-capacity JOIN admission differs from declaration")

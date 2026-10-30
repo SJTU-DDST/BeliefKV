@@ -1126,10 +1126,15 @@ class NativeAdmissionRuntime:
             raise ValueError("fitting lending requires observed-demand retained admission")
         self.agent_lending_selection = lending_selection
         pressure_policy = os.environ.get("BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", "reference")
-        if pressure_policy not in ("reference", "projected_release") or (
-            pressure_policy != "reference" and agent_policy != "thunderagent_retained"
+        if pressure_policy not in ("reference", "projected_release", "predicted_acting") or (
+            pressure_policy == "projected_release" and agent_policy != "thunderagent_retained"
+            or pressure_policy == "predicted_acting" and (
+                self.internal_comparison_mode != "full"
+                or agent_policy != "thunderagent_reference"
+                or not self.agent_free_continuation_admission or self.workflow_size_resume
+            )
         ):
-            raise ValueError("projected pressure release requires retained agent eligibility")
+            raise ValueError("pressure policy requires its declared Full agent admission")
         self.agent_pressure_pause_policy = pressure_policy
         recall_selection = os.environ.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest")
         if recall_selection not in ("largest", "cold_fit") or (
@@ -1166,6 +1171,10 @@ class NativeAdmissionRuntime:
                     from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
 
                     self._agent_admission = WorkflowSizeAdmission(self)
+                elif pressure_policy == "predicted_acting":
+                    from beliefkv.runtime.predicted_acting_pressure import PredictedActingPressureAdmission
+
+                    self._agent_admission = PredictedActingPressureAdmission(self)
                 elif self.agent_free_continuation_admission:
                     from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 

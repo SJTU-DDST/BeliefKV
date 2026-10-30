@@ -30,8 +30,10 @@ def full_runtime(
     coadmit_join_children=False, free_continuation_admission=False,
     join_blocked_handoff=False,
     free_dispatch_interval_ms=0,
+    pressure_pause_policy="reference",
+    tool_prefetch=None,
 ):
-    settings = arm_environment({
+    common = {
         "AGENT_ADMISSION": "thunderagent_reference",
         "TOOL_RESTORE_MODE": "speculative",
         "EXECUTION_FRONTIER_RESTORE": "0",
@@ -41,7 +43,11 @@ def full_runtime(
         "AGENT_COADMIT_JOIN_CHILDREN": str(int(coadmit_join_children)),
         "AGENT_FREE_CONTINUATION_ADMISSION": str(int(free_continuation_admission)),
         "AGENT_FREE_DISPATCH_INTERVAL_MS": str(free_dispatch_interval_ms),
-    }, "full")
+        "AGENT_PRESSURE_PAUSE_POLICY": pressure_pause_policy,
+    }
+    if tool_prefetch is not None:
+        common["TOOL_PREFETCH"] = str(int(tool_prefetch))
+    settings = arm_environment(common, "full")
     for name, value in settings.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setenv("BELIEFKV_PAPER_BASELINE", "")

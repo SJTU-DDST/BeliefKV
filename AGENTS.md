@@ -3901,3 +3901,22 @@
   Review is under context_features_r1;no new native source or GPU experiment
   is registered. Preserve the classification/ranking tradeoff and incomplete
   global goal rather than promoting calibration eligibility as performance.
+- The separate default-off predicted_acting pressure candidate uses live supported
+  remaining-tool forecasts only when the reference core already must pause one
+  of multiple ACTING owners. It retains reference resume/decay/raw budgets and
+  reasoning marks,falls back to smallest context,and adds no timer,loan,physical
+  capacity credit or ready-peer preemption. Require a control-period plus full
+  owner H2D horizon under the existing.75 survival rule and native byte geometry;
+  no future duration or KV-tree scan enters the choice. Keep workflow ranking,
+  tool/frontier prefetch,mixed and physical handoff off. This is working-set
+  integration,not a new migration primitive or automatic novelty claim.
+- Predicted pressure actual source-bound cpu_r1 passes5141+6,retains all5066
+  prior IDs,no failures/errors/skips,2027 inputs/native unchanged. Four400-step
+  no-prediction fixtures match reference state;real runtime positive pressure
+  choice and fallback/identity/tail/restore-cost controls pass. Preserve all
+  focusedR1-R3 fixture/validator failures and CPU preparationR1 missing launcher
+  alias failure. ConfigR2 actual Full/control constructors pass. Evidence and
+  declaration are under predicted_acting_pressure_20261029. Freeze/check current
+  hold/resources then qualify fresh position/session/native-stop/sampler before
+  Full-only performance,reusing existing complete mixed-off controls. New GPU/
+  performance acceptance remains pending and the full goal stays active.
