@@ -1,0 +1,261 @@
+{
+  "observed_at": "2026-10-30T08:26:30.731410+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_mix_burst_full_20261030_r1.registration.json",
+  "registration_sha256": "f9cd1c4d171f0a10519c9135cd0f0e87a7eebb28b88b3c10192ad40e51ff0350",
+  "complete_work_and_actual_exit_verified": true,
+  "requests": 4246,
+  "workflows": 18,
+  "prompt_tokens": 148235495,
+  "output_tokens": 607248,
+  "metrics": {
+    "mean_jct_s": 1444.020011912611,
+    "makespan_s": 2149.987822450638,
+    "end_to_end_output_tokens_per_s": 282.4425299803957,
+    "decode": {
+      "batches": 111924,
+      "request_steps": 607007,
+      "worker_ms": 1521134.621203877,
+      "request_step_ms": 12143200.425927527,
+      "output_tokens": 603002,
+      "context_tokens": 25143806996,
+      "graph_batches": 111924,
+      "graph_request_steps": 607007,
+      "configured_bucket_rows": 704043,
+      "batches_needing_padding": 49756,
+      "worker_ms_in_batches_needing_padding": 931570.2562853694,
+      "mean_batch": 5.423385511597155,
+      "worker_weighted_mean_batch": 7.9829886563997805,
+      "worker_interval_sum_s": 1521.134621203877,
+      "mean_worker_interval_ms": 13.59078143386474,
+      "output_tokens_per_worker_interval_second": 396.41593294534573,
+      "mean_observed_request_context_tokens": 41422.59808535981,
+      "graph_batch_fraction": 1.0,
+      "configured_padding_rows_per_real_graph_row": 0.15985977097463455
+    }
+  },
+  "match_contract": {
+    "source_plan": {
+      "causal_graph_compiled": true,
+      "nodes": 21573,
+      "dependency_edges": 29929,
+      "event_counts": {
+        "invocation_create": 134,
+        "join_create": 97,
+        "join_satisfied": 97,
+        "join_wait": 97,
+        "llm_result": 4246,
+        "llm_submit": 4246,
+        "native_request": 4246,
+        "return": 134,
+        "spawn": 116,
+        "structured_action": 130,
+        "tool_end": 3997,
+        "tool_start": 3997,
+        "workflow_end": 18,
+        "workflow_start": 18
+      },
+      "workflows": 18,
+      "requests": 4246,
+      "prompt_tokens": 148235495,
+      "output_tokens": 607248,
+      "native_completion_boundaries_verified": true,
+      "omitted_diagnostic_events": 9109,
+      "gpu_replay_qualified": false,
+      "performance_accepted": false,
+      "scope": "Causal event/request graph and native usage only. Native service is an unresolved request operation, not its original elapsed time. Exact token execution, native EOS, session equivalence and GPU performance require separate qualification."
+    },
+    "token_source_sha256": "639f262f7337003a90c4cd308834d5d094d82fe57eced83ee39388ece23e0d62",
+    "source_capacity": {
+      "device_full_bytes": 79154282496,
+      "device_full_tokens": 805198,
+      "device_mamba_bytes": 0,
+      "device_mamba_slots": 0,
+      "device_total_bytes": 79154282496,
+      "host_full_bytes": 200000077824,
+      "host_full_tokens": 2034506,
+      "host_mamba_bytes": 0,
+      "host_mamba_slots": 0,
+      "host_total_bytes": 200000077824,
+      "pool_layout": "static_full_only"
+    },
+    "source_server_parameters": {
+      "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+      "dtype": "bfloat16",
+      "kv_cache_dtype": "bfloat16",
+      "mem_fraction_static": 0.94,
+      "context_length": 262144,
+      "max_running_requests": 24,
+      "chunked_prefill_size": 2048,
+      "page_size": 1,
+      "mamba_ssm_dtype": null,
+      "mamba_full_memory_ratio": 0.9,
+      "mamba_radix_cache_strategy": "auto",
+      "mamba_track_interval": 256,
+      "mamba_max_states_per_path": -1,
+      "hicache_size": 200,
+      "hicache_mem_layout": "page_first",
+      "hicache_io_backend": "kernel",
+      "hicache_host_memory_mode": "cache",
+      "hicache_write_policy": "write_back",
+      "disable_overlap_schedule": false,
+      "enable_mixed_chunk": false,
+      "radix_cache_backend": null,
+      "radix_eviction_policy": "lru",
+      "schedule_policy": "fcfs",
+      "enable_beliefkv_admission": false
+    },
+    "engine_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+    "sampling_mode": "position",
+    "stream_response_metrics": true,
+    "workflow_ids": [
+      "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "deepagents:autonomous:locobench__python_api_microservice_medium_008_multi_session_development_hard_01:2ace77580f5b",
+      "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_bug_investigation_expert_01:f84fda5d6efa",
+      "deepagents:autonomous:locobench__python_data_analytics_easy_082_feature_implementation_expert_01:91abc9280171",
+      "deepagents:autonomous:locobench__python_data_lake_medium_050_multi_session_development_hard_01:88cd4ef18a09",
+      "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3",
+      "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58",
+      "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e",
+      "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a",
+      "deepagents:autonomous:locobench__python_ml_inference_hard_088_multi_session_development_hard_01:9fe287fa3352",
+      "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273",
+      "deepagents:autonomous:locobench__python_mobile_social_medium_022_bug_investigation_easy_01:54681ea40c86",
+      "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50",
+      "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "deepagents:autonomous:locobench__python_web_blog_easy_040_multi_session_development_easy_01:4b02c45d643f",
+      "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99",
+      "deepagents:autonomous:locobench__python_web_dashboard_medium_039_cross_file_refactoring_easy_01:d1f0a1dac625",
+      "deepagents:autonomous:locobench__python_web_social_hard_001_bug_investigation_medium_01:40c2250d970d"
+    ],
+    "request_timeout_s": 3600.0,
+    "workflow_arrivals": {
+      "schema_version": 3,
+      "mode": "simultaneous",
+      "arrival_schedule": [
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_multi_session_development_hard_01:2ace77580f5b",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_multi_session_development_easy_01:4b02c45d643f",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_multi_session_development_hard_01:9fe287fa3352",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_bug_investigation_medium_01:40c2250d970d",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_bug_investigation_easy_01:54681ea40c86",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_bug_investigation_expert_01:f84fda5d6efa",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_feature_implementation_expert_01:91abc9280171",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_multi_session_development_hard_01:88cd4ef18a09",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_cross_file_refactoring_easy_01:d1f0a1dac625",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3",
+          "offset_seconds": 0.0
+        }
+      ],
+      "arrival_schedule_sha256": "42326bc76a78118e425f42c0ab2bb0e351785d3acd66d4d5d4ba949447dbb136",
+      "jct_boundary": "scheduled_workflow_arrival_to_workflow_end"
+    },
+    "tool_timing_overlay_sha256": "99317004eb8c48f916e832b5378053ea48df649057bf3adec4dda4c83a6a9d31",
+    "seeds": {
+      "SERVER_RANDOM_SEED": "21",
+      "SAMPLING_SEED": "21",
+      "PYTHONHASHSEED": "21"
+    },
+    "free_page_h2d_fence": "1",
+    "exact_receipts_sha256": "1a3bd679fd185d7ad43a2fbc15ca91e804e131d9af4d2c0c16240c02d8cc520e"
+  },
+  "model_cost_calibration": {
+    "model_seconds_per_work_token": 0.020005041829711235,
+    "definition": "complete_retained_Full_decode_request_step_ms/request_steps/1000",
+    "prefill_equivalent_weight": 0.01,
+    "limitations": "context/batch-averaged proxy, not future exact GPU service seconds"
+  },
+  "decode_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/decode_evidence.json.gz",
+    "sha256": "7e0ada59e0d73ab8beb0e4fd15555797d8f41b754d54bbcfb2f086c1894a201e"
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 23758858,
+      "complete_prefix_sha256": "2ac6962b94fc374def781302125e1ddb3b44efe7ef3d25c91cddd1bf4d3e9b98",
+      "first_read_limit_bytes": 23758858
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 15631255,
+      "complete_prefix_sha256": "6357dfc9875279fa446032ab821d364ef2fa8c3f0a478a04f037b7ce69af67bb",
+      "first_read_limit_bytes": 15631255
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 476349149,
+      "complete_prefix_sha256": "a96bd79717d93b2f389242f997774d801e5572555488039ce1fd5fe7682a7626",
+      "first_read_limit_bytes": 476349149
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/workflow_mix_burst_full_20261030_r1.registration.json": "f9cd1c4d171f0a10519c9135cd0f0e87a7eebb28b88b3c10192ad40e51ff0350",
+    "/home/longhao/experiment/ops/workflow_mix_burst_full_20261030_r1.registration.state.json": "3662390446a2f6d66951ab89ed859bbc3b3258c2622f94fe0e7f009b19d953ae",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/telemetry_drain.json": "7d373170424191e363e9b505b4a4da49e94f814fdee7909943ebc1d59a3db6e2",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/owned_process_cleanup.json": "b6117a8708b9b651477f9b84a67b3db13be7c0f7fcbb4de74a109bd681d2643c",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/review_burst.py": "73768aaf295f11a36a088f95e34e176da2ad983b85b50a116586bd7a4b84d6fb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/replay/summary.json": "524bea7bf911edb301b3f8d6000269251e633125d75be55d0781398c50eb2150",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/server/server_info.json": "a90e7babcd88eb7fe3811ecbeea09bc085ddecbad6d68eac71329f2f3f0e95b5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/server/native_telemetry_status.json": "34e4a469c151134c8f41bb6a89cb4f9fdbc477fd2e013c260ac9fd22c0bcc8e5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/server/native_capacity_census.json": "8b4773db12a9ad3b1fa2a9457fb2f6d18b635911ac365d62a8e4b62431ae8af4",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/opportunities/admission_opportunities.jsonl": "ebc657ed1f1fbe5b315b5bcca8b85cfe25e31f35ae92179b64fe70ba143ff89f"
+  },
+  "GPU_followup_registered": false,
+  "performance_accepted": false
+}

@@ -1,0 +1,132 @@
+{
+  "observed_at": "2026-10-30T08:44:22.145290+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json",
+  "registration_sha256": "74d2b2cba8487773d4c5434e4fc11fab58b0003ad899059b57fcb0fad97baf54",
+  "code_commit": "c5bd820f608befccd55ea9236c5a0802522f41fd",
+  "engine_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+  "nice0_owned_processes": {
+    "watcher": {
+      "pid": 2028904,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "751960964",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-c5bd820f608b-c42855c37cff/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 2029437,
+      "state": "S",
+      "ppid": 2028904,
+      "start_ticks": "751963436",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18905",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18905.sock"
+      ]
+    },
+    "driver": {
+      "pid": 2030246,
+      "state": "S",
+      "ppid": 2028904,
+      "start_ticks": "751978729",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-c5bd820f608b-c42855c37cff/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/replay",
+        "--base-url",
+        "http://127.0.0.1:18905",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_tool_timing_r1.json",
+        "--workflow-arrivals",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_finish_r1/burst_arrivals.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18905.sock"
+      ]
+    },
+    "GPU_scheduler": {
+      "pid": 2029529,
+      "state": "R",
+      "ppid": 2029437,
+      "start_ticks": "751964830",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    }
+  },
+  "sole_GPU_owner": true,
+  "observed_policy": {
+    "agent_free_dispatch_interval_ms": 0,
+    "agent_control_interval_ms": 2000,
+    "workflow_size_resume": true,
+    "tool_prefetch": false,
+    "execution_frontier_restore": false,
+    "layer_handoff_enabled": false,
+    "predicted_tool_offload": true
+  },
+  "completed_prefix_receipts": 457,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 1514287,
+      "complete_prefix_sha256": "3a728b06210ea4b3eba6a1fe8570fded1040b5bb5f16142623f037a72793940c",
+      "first_read_limit_bytes": 1514287
+    }
+  },
+  "operator_sha256": "edccab1ca527c8a9fa254bf5544f5a8bf1c0ca1d85cbc14f4664dadedb3acd2e",
+  "future_information_used": true,
+  "complete_work_verified": false,
+  "receipt_scope": "source counts and native exact-token flags; final source validation remains required",
+  "performance_accepted": false
+}

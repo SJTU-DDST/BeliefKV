@@ -4090,3 +4090,33 @@
   model cost,live owners and stale idle drains. This qualifies the new CPU
   operators only;cached oracle GPU/performance remain pending. Preserve current
   Full,all normal tails,user worktree edits and the active incomplete goal.
+- New mixed burst retained Full now actually completes18/4246/148235495/607248,
+  original exit0,exact stopping/arrivals/configuration,fresh drain and actual
+  owned exit. burst_full_review_r1 records meanJCT1444.020012s,makespan
+  2149.987822s,whole-run output282.442530token/s,weighted decode batch7.98299.
+  Both complete control PNGs are visually inspected. Use this changed-workload
+  control for the new oracle,not oldV230 results.
+- New cached model/tool oracle artifact888438f77dc9f838a8311013d202886478e9b29542a44e12c15795cc92c0bedc
+  calibrates.02000504183s/model-work-unit from the complete new control.
+  Actual complete-event CPU progress conserves4246requests/607248outputs/
+  18closed workflows;173queries cost431.86msCPU at complete call boundaries.
+  This is not actual online GPU control cost. Frozen c5bd820f registers
+  workflow_mix_burst_oracle_position_20261030_r1 then formal
+  workflow_mix_burst_oracle_20261030_r1 on18905. Preserve current qualification/
+  formal sources and all normal tails;complete oracle gains remain pending.
+- main_arrivals_r1 uses5warm roots,independent permutation21/Poisson22 and
+  rate.0075349264/s from90%of complete burst throughput,mean132.72s. Its finite
+  13slot realization has875.05s maximum gap and2485.85s final submission.
+  Retain this table as an unqualified sustained-pressure diagnostic;do not
+  silently clip gaps,resample a winning schedule,call it measured90%utilization,
+  or queue its long GPU main run now. Burst competition/oracle net benefit
+  precede a separately declared pool/arrival refinement. No other baseline
+  or sustained-arrival GPU job is queued;global performance goal stays active.
+- New oracle position actually passes24exact token/session/native-stop requests,
+  all24native stops,and fresh sampler. Formal c5bd820f oracle actually runs
+  on18905;burst_oracle_entry_r1/live_start_r1 independently verifies457complete
+  prefix receipts,sole GPU,nice0 owned processes,size ranking enabled with
+  2scontrol/free-dispatch0 and fixed disabled controls. This prefix is not
+  complete work,online control-cost acceptance or performance. CPU-only
+  review_oracle preserves complete equal work/drain/actual exit and binds the
+  exact declared retained control before metrics/plots/mechanism audits.

@@ -155,3 +155,60 @@ session 与原生停止检查，24 次全部按原生停止；本轮 sampler 检
 保持不变。新增覆盖本轮工作量守恒、终态真实退出、idle 新鲜度，以及拒绝
 旧工作量、旧工具表、旧到达表和错误模型代价标定。它是后续入口的 CPU
 资格，不是新 oracle 的 GPU 或性能结果。
+
+## 新 Full 完整对照
+
+`workflow_mix_burst_full_20261030_r1` 已完整完成 18 个 workflow、4,246 个
+请求、148,235,495 个输入 token 与 607,248 个输出 token。原退出码为 0，
+完整 token/停止/到达/原生配置、两份新鲜 idle 遥测和全部所属进程实际退出
+均由 `burst_full_review_r1/review.json` 检查通过。
+
+| 指标 | 新保留 Full |
+| --- | ---: |
+| 完整 workflow 平均 JCT | 1,444.0200s |
+| 全部 workflow makespan | 2,149.9878s |
+| 全程输出吞吐 | 282.4425 token/s |
+| decode worker 时间加权 batch | 7.9830 |
+| decode worker 区间累计 | 1,521.1346s |
+| decode worker 区间输出率 | 396.4159 token/s |
+
+worker 区间包含实际 runtime 等待，不等于纯 CUDA kernel 时间。完整 decode
+趋势和分布图保存在 `experiments/figures/workflow_mix_20261029/burst_control_r1/`，
+两张 PNG 已实际检查。新负载的 GPU 时间、任务与工具表均变化，后续 oracle
+须与这份对照比较。
+
+oracle 从这份对照标定固定模型代理系数 0.02000504183 秒/工作量单位，完整
+源绑定的 artifact SHA 为
+`888438f77dc9f838a8311013d202886478e9b29542a44e12c15795cc92c0bedc`。
+`burst_oracle_r1/progress.json` 已消费本轮完整实际事件，4,246 次请求、
+607,248 个输出、18 个 workflow 关闭及最终剩余量守恒全部通过；
+173 次采样查询累计路径线程 CPU 约 431.86ms。这只是完整调用边界的 CPU
+进度检查，不能解释为在线 GPU 实验的全部预测开销。
+
+新 oracle 已从冻结 `c5bd820f` 注册：
+`workflow_mix_burst_oracle_position_20261030_r1` 完成新的资格阶段后，接续
+`workflow_mix_burst_oracle_20261030_r1`，端口 18905。
+`review_oracle.py` 仅在完整匹配工作、fresh drain 与所属进程退出后生成对比、
+decode 曲线、真实容量竞争及原生恢复/JOIN/sibling/EOS 审计，保留负收益；
+不会自行注册下一轮 GPU 或将 oracle 标为可部署模型。
+
+新的资格阶段实际通过 24 次精确 token/session/原生停止检查，24 次均原生
+停止；fresh sampler 也通过。正式 oracle 已实际运行，独立
+`burst_oracle_entry_r1/live_start_r1.json` 于 UTC 2026-10-30 08:44:22
+验证 457 个完成前缀请求、唯一所属 GPU、全部 nice0 测量进程，以及线上
+工作量排序开启、2s 控制、500ms 免费补位关闭和其他固定开关。此观察不代表
+完整 work、完整控制成本或排序性能验收。
+
+## 持续到达表的诊断限制
+
+`prepare_main_arrivals.py` 已从完整对照生成 `main_arrivals_r1/`，初始 5 条，
+排列 seed 21、泊松间隔 seed 22；两个随机源互相独立，任务大小不决定槽位。
+标定率为 0.0075349264 workflow/s，平均间隔约 132.72s，等于本轮完整 burst
+完成率的 90%，没有直接复用旧 120s。
+
+有限的 13 个间隔下，这个固定随机实现的最后到达为 2,485.85s，最长空档
+875.05s。它不满足“已经验证持续存在容量竞争”的证据要求，且仅提交阶段
+就约 41.43 分钟。因此保留原表作为诊断，不裁掉空档、不重新解释为稳态
+90% 负载，也不据此启动长时间主实验。后续先根据 burst 的真实竞争与 oracle
+净收益判断是否扩展自然任务池或单独声明新的到达配置；当前没有持续到达
+GPU 实验和其他 baseline 排队。
