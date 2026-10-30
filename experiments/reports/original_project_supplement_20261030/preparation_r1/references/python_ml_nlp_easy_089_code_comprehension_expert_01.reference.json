@@ -1,0 +1,43 @@
+{
+  "id": "python_ml_nlp_easy_089_code_comprehension_expert_01",
+  "task_category": "code_comprehension",
+  "difficulty": "expert",
+  "title": "Investigate Inflated Model Performance Metrics due to a Subtle Data Leakage Bug",
+  "description": "In the LexiLearn Lab project, a new sentiment analysis pipeline has been implemented. A junior team member reports that a simple baseline model (e.g., Logistic Regression) is achieving suspiciously high accuracy scores (~98-99%) on the test set. The project lead suspects a subtle form of data leakage is occurring within the data processing pipeline, rather than an issue with the model itself. The agent must act as a senior ML engineer, tasked with performing a deep code audit to locate and explain the source of this data leakage.",
+  "context_files": [
+    "lexilearn_lab_project/lexilearn_lab/main.py",
+    "lexilearn_lab_project/docs/SETUP_GUIDE.md",
+    "lexilearn_lab_project/lexilearn_lab/strategies/sentiment_strategy.py",
+    "lexilearn_lab_project/lexilearn_lab/strategies/base_strategy.py",
+    "lexilearn_lab_project/lexilearn_lab/pipeline.py",
+    "lexilearn_lab_project/lexilearn_lab/components/__init__.py",
+    "lexilearn_lab_project/lexilearn_lab/components/feature_engineering.py",
+    "lexilearn_lab_project/lexilearn_lab/strategies/__init__.py",
+    "lexilearn_lab_project/lexilearn_lab/__init__.py",
+    "lexilearn_lab_project/lexilearn_lab/components/data_ingestion.py",
+    "lexilearn_lab_project/lexilearn_lab/components/evaluation.py",
+    "lexilearn_lab_project/lexilearn_lab/components/modeling.py",
+    "lexilearn_lab_project/lexilearn_lab/visualization.py"
+  ],
+  "context_length": 189548,
+  "task_prompt": "Your task is to analyze the provided codebase to identify the source of suspected data leakage that is causing inflated model evaluation scores. The problem is not a simple syntax error but a flaw in the logical flow of the data pipeline. You are not required to fix the code. Instead, you must provide a detailed root cause analysis.\n\nYour analysis must answer the following questions:\n1.  Pinpoint the exact location of the logical flaw. Which file and which function/method is responsible for orchestrating the incorrect sequence of operations?\n2.  Identify all the key components (i.e., classes/modules like `DataIngestion`, `FeatureEngineering`, `Modeling`) involved in the data leakage and describe their specific roles in the flawed process.\n3.  Provide a step-by-step explanation of how the interaction between these components leads to information from the test set 'leaking' into the model training phase. Reference specific code patterns or function calls (e.g., `fit_transform`, `train_test_split`).\n4.  Explain precisely why this specific type of leakage artificially inflates model performance metrics like accuracy, as reported by the `evaluation` component.",
+  "expected_approach": "An expert developer would approach this by forming a hypothesis about common data leakage scenarios in ML pipelines and then tracing the data flow to verify it.\n\n1.  **Hypothesize:** The most likely cause for inflated NLP model scores is fitting a text vectorizer (like `TfidfVectorizer` or `CountVectorizer`) on the entire dataset before splitting it into training and testing sets.\n2.  **Trace the Pipeline:** Start by examining the main execution flow. This is likely in `main.py` or, more probable given the file names, in a central `pipeline.py` file.\n3.  **Analyze Orchestration:** Look for the order of operations in `pipeline.py`. The developer should trace the data object from its creation in the `data_ingestion` component, through the `feature_engineering` component, and finally to the point where it's split for the `modeling` and `evaluation` components.\n4.  **Inspect Components:** Scrutinize `feature_engineering.py`. Confirm that it contains a text vectorization step. Check if its primary method (e.g., `run()` or `process()`) performs a `fit_transform` operation.\n5.  **Connect the Dots:** The key insight is realizing that `pipeline.py` calls the feature engineering step on the *full, unsplit dataset*. The train/test split happens *after* the features have already been generated. This is the data leakage.\n6.  **Formulate Explanation:** The developer should then clearly articulate that by fitting the vectorizer on the whole dataset, the model's feature space is built with knowledge of the test set's vocabulary and word frequencies (IDF). This means the test set is not truly 'unseen', causing the inflated evaluation scores. They should explicitly mention that the correct procedure is to `fit_transform` on the training data and only `transform` the test data.",
+  "ground_truth": "The root cause of the data leakage is a logical error in the orchestration logic within `lexilearn_lab/pipeline.py`.\n\n1.  **Location of Flaw:** The flaw is in the main execution method of the `Pipeline` class in `lexilearn_lab/pipeline.py`. This method executes the pipeline steps in the wrong order.\n\n2.  **Involved Components:**\n    *   `data_ingestion.py`: Ingests the full dataset (text and labels).\n    *   `feature_engineering.py`: Contains the `FeatureEngineering` component which, when executed, fits a text vectorizer (e.g., `TfidfVectorizer`) on the data it receives.\n    *   `pipeline.py`: The orchestrator. It incorrectly calls the `feature_engineering` component on the full dataset *before* splitting the data into training and test sets for the `modeling` component.\n\n3.  **Step-by-Step Leakage Explanation:**\n    *   The `Pipeline.run()` method first executes the `data_ingestion` component, loading all data into memory.\n    *   Crucially, the *next step* is executing the `feature_engineering` component. Inside this component, a call like `vectorizer.fit_transform(all_text_data)` is made. This `fit` operation builds a vocabulary and calculates IDF (Inverse Document Frequency) statistics using every single document in the dataset, including those that will later be used for testing.\n    *   *After* this step, the `pipeline.py` module finally splits the transformed data (the feature matrix) and labels into training and test sets.\n    *   The model is then trained on the training set, but the features it was trained on were created with knowledge of the test set.\n\n4.  **Reason for Inflated Metrics:** The `TfidfVectorizer` has learned the entire vocabulary of the test set during the `fit` stage. When the model is evaluated, it encounters no out-of-vocabulary words from the test set. Furthermore, the IDF weights, which are critical for feature importance, were calculated using the term frequencies of the test set. This gives the model an unfair advantage, as it's being tested on data whose statistical properties it has already seen during the feature creation process. The evaluation is therefore not a measure of generalization to truly unseen data, leading to near-perfect but misleading scores from the `evaluation` component.",
+  "evaluation_criteria": [
+    "**Correctness of Root Cause Identification:** Did the agent correctly identify that feature engineering is performed before the train/test split as the primary issue?",
+    "**Accuracy of Code Localization:** Did the agent correctly pinpoint `pipeline.py` as the source of the logical error and reference the roles of `feature_engineering.py` and `data_ingestion.py`?",
+    "**Clarity of Leakage Mechanism Explanation:** How well did the agent explain the sequence of operations and the specific role of the vectorizer's `fit_transform` method in causing the leak?",
+    "**Depth of Conceptual Understanding:** Did the agent clearly articulate *why* this constitutes data leakage and how it invalidates the evaluation, demonstrating an understanding of ML best practices beyond just reading code?",
+    "**Comprehensiveness of Analysis:** Did the agent address all four questions in the prompt in a structured and detailed manner?"
+  ],
+  "metadata": {
+    "context_length": 189548,
+    "files_count": 13,
+    "information_coverage": 0.95093514207738,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T16:18:05.000152"
+  }
+}

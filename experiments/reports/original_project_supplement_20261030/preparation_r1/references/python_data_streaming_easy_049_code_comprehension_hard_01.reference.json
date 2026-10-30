@@ -1,0 +1,61 @@
+{
+  "id": "python_data_streaming_easy_049_code_comprehension_hard_01",
+  "task_category": "code_comprehension",
+  "difficulty": "hard",
+  "title": "Diagnose Intermittent Data Loss in EduStream's Parallel Processing Pipeline",
+  "description": "The EduStream Classroom Insights platform processes a high volume of student interaction events (e.g., 'video_played', 'quiz_started', 'document_opened'). A key feature is the transformation of these raw events into a higher-level 'student_engagement' metric. Recently, operators have noticed a significant and intermittent discrepancy: the count of 'student_engagement' events being saved to the final data store is much lower than expected based on the volume of incoming raw events. This data loss appears to worsen under high traffic conditions. The system is not crashing or reporting explicit errors, suggesting that failing records are being silently dropped somewhere in the pipeline.",
+  "context_files": [
+    "edustream_insights//README.md",
+    "edustream_insights//src//event_producer.py",
+    "edustream_insights//run_pipeline.sh",
+    "edustream_insights//src//ingest.py",
+    "edustream_insights//src//pipeline.py",
+    "edustream_insights//src//__init__.py",
+    "edustream_insights//src//monitoring.py",
+    "edustream_insights//src//store.py"
+  ],
+  "context_length": 92447,
+  "task_prompt": "You are tasked with diagnosing the root cause of this intermittent data loss. Your analysis must be based *only* on the provided source code.\n\n1.  **Identify the Root Cause:** Analyze the entire codebase (`ingest.py`, `pipeline.py`, `store.py`, `run_pipeline.sh`) to determine the most probable root cause for the missing 'student_engagement' events.\n2.  **Describe the Failure Scenario:** Detail the precise sequence of operations across the different modules that leads to a raw event being processed but its corresponding 'student_engagement' event being lost. Your description should connect the parallel processing implementation with the data transformation logic and the storage mechanism.\n3.  **Pinpoint Key Code Sections:** Identify the specific conceptual blocks of code (and the files they are in) that are central to this issue. You don't need line numbers, but you must describe the function and logic of the code involved (e.g., 'the multiprocessing Pool instantiation in ingest.py', 'the stateful dictionary used for event correlation in pipeline.py').\n4.  **Explain the High Load Impact:** Explain why the data loss problem is more pronounced under high load conditions.",
+  "expected_approach": "An expert developer would approach this by forming a hypothesis based on the symptoms and then verifying it against the code.\n\n1.  **Hypothesis Formation:** The keywords 'intermittent', 'parallel processing', and 'high load' strongly suggest a concurrency issue, likely related to state management. The problem is likely not a simple bug in a single function but an incorrect interaction between components in a concurrent environment.\n2.  **Investigate Concurrency Model:** The developer would first check `run_pipeline.sh` and `ingest.py` to understand how parallelism is achieved. Finding a `multiprocessing.Pool` in `ingest.py` is a critical discovery, as it implies separate processes with no shared memory.\n3.  **Look for Stateful Operations:** Next, the developer would analyze `pipeline.py` for any logic that relies on state being maintained between function calls. This could be a global variable, a class instance variable, or an in-memory dictionary used to correlate events (e.g., matching a 'video_pause' event with its 'video_play' event to calculate duration).\n4.  **Connect State and Concurrency:** The core insight is connecting the stateless nature of the multi-process workers with the stateful logic in the pipeline. The developer would realize that if `event_A` is processed by Worker 1 and a related `event_B` is processed by Worker 2, the stateful logic will fail because Worker 2 has no knowledge of what Worker 1 did.\n5.  **Trace the Error Handling:** Finally, the developer would inspect `pipeline.py` and `store.py` to see how errors or invalid data are handled. They would look for `try...except` blocks or conditional checks that might return `None` or an empty object, which is then silently discarded by a data quality check in the `store.py` module. This explains the lack of crashes.\n6.  **Synthesize and Explain:** The developer would then synthesize these findings to explain the full failure sequence and why increased load (leading to more workers being active simultaneously) increases the probability of related events being split across different processes.",
+  "ground_truth": {
+    "root_cause": "The root cause is a state management conflict. The `pipeline.py` module uses a process-local in-memory dictionary to perform stateful transformations (e.g., correlating a 'start' event with an 'end' event). However, the `ingest.py` script distributes event processing across a pool of independent, non-memory-sharing worker processes (`multiprocessing.Pool`). This design flaw means that state from one event is not available when a subsequent, related event is handled by a different worker process.",
+    "failure_scenario_description": "1.  The `ingest.py` script creates a `multiprocessing.Pool` with multiple worker processes to handle incoming events by calling the `pipeline.process_event` function.\n2.  A 'quiz_started' event for `student_A` is picked up by **Worker 1**. The `pipeline.process_event` function in this process stores the start time in its local in-memory cache: `{'student_A': 'start_time'}`.\n3.  A short time later, the corresponding 'quiz_submitted' event for `student_A` arrives. Due to system load, it is picked up by **Worker 2**.\n4.  The `pipeline.process_event` function in **Worker 2** attempts to calculate the quiz duration. It looks for `student_A` in its *own* in-memory cache, which is empty. The lookup fails.\n5.  The function's error handling logic catches the failure and returns `None` or an incomplete event object instead of a valid 'student_engagement' event.\n6.  This `None`/invalid object is passed to the `store.py` module. A data quality check within the `store.save_record` function identifies the record as invalid and silently logs a warning and discards it, preventing it from being saved to the final data store. This results in data loss without a system crash.",
+    "key_code_sections": [
+      {
+        "file": "ingest.py",
+        "description": "The instantiation and use of `multiprocessing.Pool` to map the `pipeline.process_event` function onto the stream of incoming events. This is what creates the isolated process environment."
+      },
+      {
+        "file": "pipeline.py",
+        "description": "The stateful transformation logic, likely using a module-level dictionary (e.g., `active_sessions = {}`) to store intermediate data like event start times. This dictionary is not shared between the processes created by `ingest.py`."
+      },
+      {
+        "file": "pipeline.py",
+        "description": "The error handling within the transformation logic. A `try...except KeyError` or `if key not in dict` block that returns `None` when it fails to find a corresponding start event."
+      },
+      {
+        "file": "store.py",
+        "description": "A data validation check at the beginning of the data storage function (e.g., `if not event_data or not is_valid(event_data): return`) that silently drops invalid or null records, thus hiding the upstream failure."
+      }
+    ],
+    "high_load_explanation": "Under low load, it is statistically more likely that the same worker process, being idle, will be assigned consecutive events from the same student session. This can mask the underlying state management issue. Under high load, the event queue is larger and all worker processes are busy. The operating system's scheduler distributes new events to any available worker, making it far more probable that related events (e.g., 'start' and 'end') will be sent to different processes, triggering the failure condition and leading to increased data loss."
+  },
+  "evaluation_criteria": [
+    "**Correctness of Root Cause Identification:** Did the agent correctly identify the conflict between the stateful logic in `pipeline.py` and the stateless multi-process architecture in `ingest.py`?",
+    "**Accuracy of Failure Scenario:** Did the agent accurately trace the sequence of events across at least three modules (`ingest`, `pipeline`, `store`) leading to data loss?",
+    "**Precision of Code Identification:** Did the agent correctly identify the key conceptual code blocks responsible for the issue (multiprocessing pool, stateful dictionary, error handling, silent data dropping)?",
+    "**Validity of High-Load Explanation:** Did the agent provide a correct and logical explanation for why the problem is exacerbated by high system load, linking it to worker scheduling?",
+    "**Completeness:** Did the agent address all four parts of the task prompt?",
+    "**Clarity and Conciseness:** Was the explanation clear, well-structured, and free of irrelevant speculation?"
+  ],
+  "metadata": {
+    "context_length": 92447,
+    "files_count": 8,
+    "information_coverage": 0.7351650099403578,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T16:38:01.158626"
+  }
+}

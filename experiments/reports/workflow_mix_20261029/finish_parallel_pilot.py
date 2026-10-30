@@ -1,4 +1,4 @@
-"""Retain the complete six-project pilot and inspect its shape without GPU follow-up."""
+"""Retain a complete declared project population and inspect its natural shape."""
 
 import argparse
 from datetime import datetime, timezone
@@ -23,8 +23,14 @@ from scripts.train_workflow_work import write
 
 def validate_population(rows, declaration):
     expected = {(row["instance_id"], row["project"]) for row in declaration["assignments"]}
-    if len(rows) != 6 or {(row["task_id"], row["project"]) for row in rows} != expected:
-        raise ValueError("pilot trace differs from all six predeclared projects")
+    count = len(declaration["assignments"])
+    if (
+        not count or len(expected) != count
+        or len({project for _, project in expected}) != count
+        or len(rows) != count
+        or {(row["task_id"], row["project"]) for row in rows} != expected
+    ):
+        raise ValueError("source trace differs from all predeclared distinct projects")
 
 
 def main():

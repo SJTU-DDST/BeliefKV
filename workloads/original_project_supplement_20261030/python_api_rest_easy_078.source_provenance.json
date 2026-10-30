@@ -1,0 +1,86 @@
+[
+  {
+    "path": "tree/utilichain_api_hub/.gitignore",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/.gitignore",
+    "raw_sha256": "8d2d6cbdf201a9d97f5b5b34234223bb8803581827b66ff6f621f85c91c94253",
+    "materialized_sha256": "8d2d6cbdf201a9d97f5b5b34234223bb8803581827b66ff6f621f85c91c94253",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "tree/utilichain_api_hub/README.md",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/README.md",
+    "raw_sha256": "67f1eda4dcd493902b21c9ab2cf7db2e5f0d1fb59f9f18430e4b1a52b65f04da",
+    "materialized_sha256": "38b8da20f99a801feda52a8d02ac85fb2ebe315b44cff708103e55cab177bd26",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/requirements.txt",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/requirements.txt",
+    "raw_sha256": "78b4700fdf835a01493ae2f3e5f5054f126c25ccee3df3960fc9d5cd690b0c16",
+    "materialized_sha256": "78b4700fdf835a01493ae2f3e5f5054f126c25ccee3df3960fc9d5cd690b0c16",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "tree/utilichain_api_hub/Dockerfile",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/Dockerfile",
+    "raw_sha256": "84947f75e29eeacfe5958789029f8bf18e645f5f87a7273a5989172c648d4a2f",
+    "materialized_sha256": "7b9dc94e504fdf30e8707cf49d8948cbe4ed45ae4d5419b5d013cc48cff441a5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/docker-compose.yml",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/docker-compose.yml",
+    "raw_sha256": "4bd533162509ea884ff2a7b92c69df633544e9a6b0180254675cc43a2b7ce9e4",
+    "materialized_sha256": "45df515981210da6c8d4d0fa9860d5a322b135093987e15486d5178f87695816",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/setup.cfg",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/setup.cfg",
+    "raw_sha256": "c950659331ebbab8d7f18ac27308b4026ae6e34a3d7b04e923b4080dc4fc7190",
+    "materialized_sha256": "c950659331ebbab8d7f18ac27308b4026ae6e34a3d7b04e923b4080dc4fc7190",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "tree/utilichain_api_hub/docs/index.md",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/docs/index.md",
+    "raw_sha256": "d55a4d0d19a1c4f91c927abd8a41b9e18e6171b0535556a438b6a57aeabc0dd7",
+    "materialized_sha256": "902f8386055559290d7539c1b3679a2b7b550f67b06751a5bfb843ccdb75a4b9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/docs/setup_guide.md",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/docs/setup_guide.md",
+    "raw_sha256": "a15ed56e92689b91503a8044446c823c64b08299b2698bae9ae6a84119e6ad36",
+    "materialized_sha256": "03160ba7483e50c8a4b4941850d07f0e292900d6d5c34c1010585dfa5d5f2535",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/docs/api_reference.md",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/docs/api_reference.md",
+    "raw_sha256": "a9a8771e966a439c978c575143d718c6b8a9b623c31b4489474fcd09fa28b6c5",
+    "materialized_sha256": "d4fe2b253f9b29b65a861bcbebb32febd7641ad3e532bbee883f070db49b01bb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/utilichain/__init__.py",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/utilichain/__init__.py",
+    "raw_sha256": "2c4321cbd198e20fa6bf00b7ea63846788e24e41ecf615670ea24e2931e6779a",
+    "materialized_sha256": "541ae5909649292670ed96315720bf2e5a38fa9463b1f09ef94ade0d43c0b24d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/utilichain/main.py",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/utilichain/main.py",
+    "raw_sha256": "8eeb77a1bc99bfe3bb71302f5757104826ad686d3057b9092ced8a5562802511",
+    "materialized_sha256": "9bd64258bcd6160b9c45ee79c9323bf181ce0efd682c25635940bf11f33457a0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tree/utilichain_api_hub/utilichain/api/__init__.py",
+    "archive_path": "data/generated/python_api_rest_easy_078/tree/utilichain_api_hub/utilichain/api/__init__.py",
+    "raw_sha256": "45388d37f494b6fc8cc4e886e543e1eb103327e4a18690f8c515890d9fd9ff31",
+    "materialized_sha256": "03b1734351c88952e960b6f0df0c9114ffc3c1d870355a2987e5b38d7bfd56f4",
+    "outer_markdown_fence_removed": true
+  }
+]

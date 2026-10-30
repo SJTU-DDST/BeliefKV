@@ -4,7 +4,7 @@ from types import SimpleNamespace as NS
 import pytest
 
 from beliefkv.experiments.workload_mix import agent_work_breakdown
-from beliefkv.experiments.workload_requirements import assess
+from beliefkv.experiments.workload_requirements import DEFAULT_DIAGNOSTICS, assess
 
 
 def population():
@@ -65,6 +65,23 @@ def test_source_size_uses_intrinsic_work_not_jct_or_policy_outcomes():
 
 @pytest.mark.parametrize("ratio,accepted", ((5., True), (4.999, False)))
 def test_current_work_diversity_threshold_is_five_without_rounding(ratio, accepted):
+    # Preserve the explicit historical fivefold boundary independently of the new default.
+    inventory, shape = population()
+    for index, row in enumerate(inventory["workflows"]):
+        work = 1000. if index < 3 else 1000. * ratio
+        factor = work / row["model_work_units"]
+        row["model_work_units"] = work
+        for agent in row["agent_work_breakdown"]["agents"]:
+            agent["model_work_units"] *= factor
+    report = assess(inventory, shape, diagnostics={
+        **DEFAULT_DIAGNOSTICS, "model_work_p80_p20": 5.,
+    })
+    assert report["diagnostic_targets"]["model_work_p80_p20"] == 5.
+    assert ("insufficient_intrinsic_work_diversity" not in report["shape_shortfalls"]) is accepted
+
+
+@pytest.mark.parametrize("ratio,accepted", ((3., True), (2.999, False)))
+def test_default_p80_p20_boundary_is_three_without_rounding(ratio, accepted):
     inventory, shape = population()
     for index, row in enumerate(inventory["workflows"]):
         work = 1000. if index < 3 else 1000. * ratio
@@ -73,7 +90,9 @@ def test_current_work_diversity_threshold_is_five_without_rounding(ratio, accept
         for agent in row["agent_work_breakdown"]["agents"]:
             agent["model_work_units"] *= factor
     report = assess(inventory, shape)
-    assert report["diagnostic_targets"]["model_work_p90_p10"] == 5.
+    assert report["diagnostic_targets"]["model_work_p80_p20"] == 3.
+    assert report["model_work_diversity"]["metric"] == "p80_p20"
+    assert report["model_work_diversity"]["p90_p10_is_reference_only"]
     assert ("insufficient_intrinsic_work_diversity" not in report["shape_shortfalls"]) is accepted
 
 

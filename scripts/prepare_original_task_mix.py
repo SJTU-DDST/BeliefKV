@@ -353,7 +353,9 @@ def main():
         "context_counts_recomputed_with_current_model_tokenizer": True,
         "fixed_delegation_DAG_added": False, "real_tool_times_retained": True,
         "shape_review": {
-            "model_work_p90_p10_diagnostic_minimum": 5,
+            "model_work_p80_p20_diagnostic_minimum": 3,
+            "model_work_p80_p20_stronger_diagnostic": 4,
+            "model_work_p90_p10_is_reference_only": True,
             "multi_member_JOIN_fraction_diagnostic_minimum": .6,
             "child_calls_p50_p90_diagnostic_maxima": [12, 20],
             "root_parallel_rounds_median_diagnostic_minimum": 2,

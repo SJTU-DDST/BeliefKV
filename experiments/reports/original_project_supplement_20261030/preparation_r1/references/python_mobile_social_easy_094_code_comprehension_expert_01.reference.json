@@ -1,0 +1,42 @@
+{
+  "id": "python_mobile_social_easy_094_code_comprehension_expert_01",
+  "task_category": "code_comprehension",
+  "difficulty": "expert",
+  "title": "Analyze and Document the Offline Snap Lifecycle and Pruning Logic",
+  "description": "The SnapCache Utility Hub is a backend component for a mobile social app. A key feature is its robust offline mode, where media objects ('snaps') created by users are cached locally when the device has no internet connection. These cached snaps are then synchronized with the server when connectivity is restored. To manage device storage, a data pruning mechanism is in place to delete old or irrelevant snaps from the local cache. This logic is not centralized and depends on a combination of application state, configuration values, and time-based policies. A new developer on the team is finding it difficult to trace the complete lifecycle of a cached snap from creation to deletion. Your task is to act as a senior engineer and provide a comprehensive analysis of this process.",
+  "context_files": [
+    "tests/test_main.py",
+    "README.md",
+    "snapcache_utility_hub",
+    "src/module_1.py",
+    "src/module_2.py",
+    "src/config.py",
+    "docs/api.md",
+    "src/utils.py",
+    "src/constants.py",
+    "tests/test_utils.py"
+  ],
+  "context_length": 128188,
+  "task_prompt": "Analyze the provided codebase to document the complete lifecycle of a media object (a 'snap') managed by the offline cache. Your analysis must trace a snap from the moment it is queued for offline storage until it is permanently deleted from the device's local cache.\n\nYour final output must be a detailed markdown report that addresses the following points:\n\n1.  **State Machine:** Identify the sequence of states a cached snap transitions through (e.g., PENDING, SYNCED, FAILED). You must specify the file and variable names where these states are defined.\n2.  **Sync Trigger:** Pinpoint the primary function(s) responsible for initiating the synchronization of the offline cache with the server and describe how it selects which snaps to process.\n3.  **Configuration Dependencies:** List the specific configuration parameters from `src/config.py` that control the cache's behavior. Explain what each parameter does (e.g., controls expiration time, sets retry limits, defines storage caps).\n4.  **Pruning Conditions:** Detail the exact conditions under which a cached snap is finally pruned (deleted) from local storage. There are multiple, distinct triggers for deletion. Identify the function(s) that contain this pruning logic.\n5.  **Critical Code Paths:** Provide a list of all files and the specific functions, classes, or critical variables within them that are involved in this entire lifecycle (creation, state transition, sync attempts, and pruning).",
+  "expected_approach": "An expert developer would approach this task by first forming a hypothesis about where the relevant logic resides based on file names. They would likely start by searching for keywords like 'cache', 'sync', 'offline', 'prune', and 'delete' across the entire project.\n\n1.  The investigation would likely begin in `src/module_2.py` (suggested by its size and likely relation to offline sync) and `src/config.py` to understand the high-level rules.\n2.  They would identify a main 'sync' function in `module_2.py`. By analyzing its implementation, they would see it interacting with a data management utility, likely defined in `src/utils.py` (e.g., a `LocalStorageManager` class).\n3.  They would trace the data flow, observing how snap objects are retrieved, their status checked, and updated. The status values (e.g., `'PENDING_SYNC'`) would lead them to `src/constants.py`.\n4.  The developer would then look for the use of configuration values within conditional logic (`if`, `while` loops). They would cross-reference variable names like `SYNC_SETTINGS['max_retries']` with their definitions in `src/config.py` to understand their purpose.\n5.  Finally, they would search for the deletion logic, likely in a separate 'pruning' or 'cleanup' function. They would carefully read the conditions for deletion, noting that there are multiple paths (e.g., deletion after successful sync, deletion after too many failed attempts, deletion based on age).\n6.  The developer would synthesize all these findings into a coherent document that traces the data's lifecycle logically, explaining the interaction between the different code components.",
+  "ground_truth": "The agent's report must identify the following specific details from the (hypothetical) codebase:\n\n*   **State Machine:** The states are defined in `src/constants.py` under the `OfflineStatus` enum/dictionary:\n    *   `PENDING_UPLOAD`: Initial state upon creation.\n    *   `UPLOAD_SUCCESS`: State after successful synchronization.\n    *   `UPLOAD_FAILED_RETRY`: State after a temporary sync failure.\n    *   `UPLOAD_FAILED_TERMINAL`: State after all retry attempts are exhausted.\n\n*   **Sync Trigger:** The primary sync function is `process_offline_queue()` located in `src/module_2.py`. It retrieves all snaps from storage with the status `PENDING_UPLOAD` or `UPLOAD_FAILED_RETRY` using a helper function from `src/utils.py`.\n\n*   **Configuration Dependencies:** The key parameters are in `src/config.py`:\n    *   `OFFLINE_CACHE_CONFIG['max_retries']`: An integer (e.g., 5) that determines how many times to retry a failed upload before marking it as `UPLOAD_FAILED_TERMINAL`.\n    *   `OFFLINE_CACHE_CONFIG['ttl_hours_after_sync']`: An integer (e.g., 24) that specifies how long a successfully synced snap should remain in the cache before being pruned.\n    *   `OFFLINE_CACHE_CONFIG['max_age_days_terminal']`: An integer (e.g., 7) that specifies the absolute maximum age of a terminally failed snap before it is pruned.\n\n*   **Pruning Conditions:** The logic is located in the `cleanup_local_cache()` function in `src/module_2.py`. It runs periodically and deletes snaps based on three conditions:\n    1.  The snap's status is `UPLOAD_SUCCESS` AND its timestamp is older than `ttl_hours_after_sync`.\n    2.  The snap's status is `UPLOAD_FAILED_TERMINAL` AND its timestamp is older than `max_age_days_terminal`.\n    3.  The initial creation of a snap (in `module_1.py`) can also trigger a cleanup if the total cache size exceeds `STORAGE_CONFIG['max_cache_size_mb']` from `config.py`, forcing the oldest items to be pruned regardless of status.\n\n*   **Critical Code Paths:**\n    *   `src/module_1.py`: The `create_and_cache_snap()` function, which adds a new snap to local storage via `utils.LocalStorage` and sets its initial status to `PENDING_UPLOAD`.\n    *   `src/module_2.py`: The `process_offline_queue()` and `cleanup_local_cache()` functions.\n    *   `src/utils.py`: The `LocalStorage` class, with methods like `get_snaps_by_status()`, `update_snap_status()`, and `delete_snap_by_id()`.\n    *   `src/config.py`: The `OFFLINE_CACHE_CONFIG` and `STORAGE_CONFIG` dictionaries.\n    *   `src/constants.py`: The `OfflineStatus` definitions.",
+  "evaluation_criteria": [
+    "**Accuracy of State Identification:** Correctly identifies all four snap states and their source file (`constants.py`).",
+    "**Correct Identification of Sync Logic:** Correctly identifies `process_offline_queue()` in `module_2.py` as the main sync function.",
+    "**Completeness of Configuration Analysis:** Identifies and accurately explains the purpose of the three key configuration variables (`max_retries`, `ttl_hours_after_sync`, `max_age_days_terminal`).",
+    "**Completeness of Pruning Conditions:** Identifies all three distinct conditions for deletion (post-sync TTL, terminal failure TTL, and on-creation size limit).",
+    "**Multi-File Synthesis:** The explanation must clearly demonstrate how at least four files (`module_1`, `module_2`, `utils`, `config`, `constants`) interact to manage the snap lifecycle.",
+    "**Accuracy of File/Function Mapping:** Correctly attributes the identified logic and variables to the right files and functions/classes.",
+    "**Clarity and Structure:** The final markdown report is well-organized, clear, and easy for a human developer to understand."
+  ],
+  "metadata": {
+    "context_length": 128188,
+    "files_count": 10,
+    "information_coverage": 0.9397258265523055,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:30:47.554220"
+  }
+}

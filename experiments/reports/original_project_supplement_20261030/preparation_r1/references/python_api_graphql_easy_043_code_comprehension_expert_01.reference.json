@@ -1,0 +1,42 @@
+{
+  "id": "python_api_graphql_easy_043_code_comprehension_expert_01",
+  "task_category": "code_comprehension",
+  "difficulty": "expert",
+  "title": "Analyze Multi-Layer Authorization Flow for a Critical GraphQL Mutation",
+  "description": "The CinePulse GraphQL Hub handles movie data, showtimes, and ticket purchasing. A critical bug report has been filed regarding the `purchaseTickets` mutation. Users with a 'standard' account tier are receiving an 'Authentication Error' even when providing a valid API key, while 'premium' tier users can complete the purchase successfully. This suggests the issue is not a simple token validation failure but a more complex, multi-layered authorization problem. The agent must act as a senior developer, performing a deep dive into the codebase to trace the entire request lifecycle and pinpoint the exact cause of this discrepancy.",
+  "context_files": [
+    "cinepulse_hub//README.md",
+    "cinepulse_hub//app//main.py",
+    "cinepulse_hub//.env.example",
+    "cinepulse_hub//app//services//__init__.py",
+    "cinepulse_hub//app//schema.py",
+    "cinepulse_hub//app//__init__.py",
+    "cinepulse_hub//app//middleware//auth.py",
+    "cinepulse_hub//tests//__init__.py",
+    "cinepulse_hub//app//services//ticketing_service.py",
+    "cinepulse_hub//config.py",
+    "cinepulse_hub//docs//api_reference.md",
+    "cinepulse_hub//tests//test_auth_middleware.py"
+  ],
+  "context_length": 141154,
+  "task_prompt": "A `purchaseTickets` GraphQL mutation is failing with an 'Authentication Error' for users with a 'standard' account type, even when they use a valid API key. Users with a 'premium' account type can execute the same mutation successfully.\n\nYour task is to provide a detailed, step-by-step explanation of the entire authentication and authorization process for the `purchaseTickets` mutation. Your analysis must:\n\n1.  Trace the request from the moment it hits the GraphQL server to the final business logic.\n2.  Identify every file and the specific functions or classes involved in checking the user's credentials and permissions for this specific mutation.\n3.  Pinpoint the exact reason why a 'standard' user's request is rejected while a 'premium' user's is accepted.\n4.  Distinguish between the initial authentication step (validating the key) and any subsequent authorization steps (checking permissions/roles).",
+  "expected_approach": "An expert developer would approach this by tracing the code execution path methodically:\n\n1.  **Start at the Schema:** Locate the `purchaseTickets` mutation definition in `app/schema.py` to identify its resolver function.\n2.  **Examine the Resolver:** Analyze the resolver function for `purchaseTickets`. Note that it likely extracts user information from the GraphQL `info.context` and calls a function in a service module, probably `app/services/ticketing_service.py`.\n3.  **Investigate Middleware:** Before tracing into the service, the developer would check how the `info.context` is populated. They would inspect `app/main.py` to see how middleware is configured. This would lead them to `app/middleware/auth.py`.\n4.  **Analyze Authentication Middleware:** In `app/middleware/auth.py`, they would find the logic that validates the `X-API-KEY` header. They would confirm that this middleware is responsible for decoding the key, fetching user details (including their account type), and attaching a user object to the request context. This is the first layer of validation (Authentication).\n5.  **Trace to the Service Layer:** Return to the resolver's call into `app/services/ticketing_service.py`. The developer would now inspect the specific function responsible for the ticket purchase logic (e.g., `create_ticket_purchase`).\n6.  **Discover the Authorization Logic:** Inside the service function in `ticketing_service.py`, the developer would search for conditional logic. They would discover a second check that explicitly verifies a property on the user object passed in from the context (e.g., `if user.account_type != 'premium': raise PermissionDeniedError`). This is the hidden, second layer of validation (Authorization).\n7.  **Synthesize the Findings:** The developer would conclude that the system uses a two-step process. The API key is validated for all users in the middleware, but a secondary, more restrictive permission check exists within the service layer itself, limiting the `purchaseTickets` functionality to 'premium' users only. This explains the observed behavior perfectly.",
+  "ground_truth": "The root cause is a two-tiered authorization mechanism. The agent must identify both layers to provide a complete answer.\n\n**Detailed Explanation:**\n\n1.  **Layer 1: Middleware Authentication:** The request is first processed by the `AuthMiddleware` defined in `app/middleware/auth.py`. This middleware inspects the `X-API-KEY` header. If the key is valid, it retrieves the user's profile, including their `account_type` ('standard' or 'premium'), and attaches a `user` object to the GraphQL `info.context`. This step succeeds for both 'standard' and 'premium' users as long as their key is valid.\n\n2.  **Layer 2: Service-Level Authorization:** The GraphQL resolver for the `purchaseTickets` mutation in `app/schema.py` calls a function within the ticketing service, likely `purchase_tickets_for_user` in `app/services/ticketing_service.py`. Inside this service function, a second, more specific authorization check is performed. The code explicitly checks the `account_type` of the user object from the context. It contains logic similar to:\n    ```python\n    # Hypothetical code in app/services/ticketing_service.py\n    def purchase_tickets_for_user(user, screening_id, seat_count):\n        if user.account_type != 'premium':\n            raise PermissionDeniedError('This feature is available for premium members only.')\n        # ... proceed with ticket purchase logic ...\n    ```\n\n**Conclusion:** A 'standard' user passes the initial authentication (Layer 1) but is rejected at the business logic layer (Layer 2) because their account type does not meet the requirement for this specific, protected action. The `PermissionDeniedError` is then caught and presented to the client as a generic 'Authentication Error' by the GraphQL error handling system.",
+  "evaluation_criteria": [
+    "**Correctness of Flow Identification:** Did the agent correctly identify the two distinct layers of validation (middleware and service-level)?",
+    "**File and Logic Pinpointing:** Did the agent accurately name the key files (`app/middleware/auth.py`, `app/schema.py`, `app/services/ticketing_service.py`) and describe the logic within them?",
+    "**Causal Explanation:** Does the agent clearly articulate *why* the 'standard' user fails (the service-level `account_type` check) and not just that they are rejected?",
+    "**Traceability:** Is the explanation presented as a clear, step-by-step trace of the request, demonstrating an understanding of the application's control flow?",
+    "**Distinguishing Authentication vs. Authorization:** Did the agent correctly label the middleware check as 'authentication' (verifying identity) and the service-level check as 'authorization' (verifying permissions)? This demonstrates a deeper, more expert-level understanding."
+  ],
+  "metadata": {
+    "context_length": 141154,
+    "files_count": 12,
+    "information_coverage": 0.939767378379638,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:24:37.710331"
+  }
+}

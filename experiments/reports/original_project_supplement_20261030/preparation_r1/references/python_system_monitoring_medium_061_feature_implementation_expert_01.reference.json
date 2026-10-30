@@ -1,0 +1,60 @@
+{
+  "id": "python_system_monitoring_medium_061_feature_implementation_expert_01",
+  "task_category": "feature_implementation",
+  "difficulty": "expert",
+  "title": "Implement Automated Deployment Rollback based on Performance Degradation",
+  "description": "The PulseLink SocialOps Monitor currently includes a `deploy_flow` service for automating deployments and a `perf_pulse` service for monitoring system performance metrics. These services operate independently. This task is to create a new, closed-loop integration between them to enhance system reliability. The goal is to automatically roll back a recent deployment if the `perf_pulse` service detects a critical performance degradation immediately following that deployment.",
+  "context_files": [
+    "PulseLink_SocialOps_Monitor//docs//api//crowdalert_api.md",
+    "PulseLink_SocialOps_Monitor//docs//api//deployflow_api.md",
+    "PulseLink_SocialOps_Monitor//services//log_harvester//service.py",
+    "PulseLink_SocialOps_Monitor//services//log_harvester//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//service.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//service.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//service.py",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//tests//test_service.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//service.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//command_handler.py",
+    "PulseLink_SocialOps_Monitor//shared//__init__.py",
+    "PulseLink_SocialOps_Monitor//shared//patterns.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//__init__.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//main.py",
+    "PulseLink_SocialOps_Monitor//services//log_harvester//main.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//__init__.py",
+    "PulseLink_SocialOps_Monitor//services//deploy_flow//__init__.py",
+    "PulseLink_SocialOps_Monitor//services//secu_scan//main.py",
+    "PulseLink_SocialOps_Monitor//services//log_harvester//__init__.py",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//main.py",
+    "PulseLink_SocialOps_Monitor//services//config_sync//main.py",
+    "PulseLink_SocialOps_Monitor//shared//messaging.py",
+    "PulseLink_SocialOps_Monitor//shared//events.py",
+    "PulseLink_SocialOps_Monitor//Makefile",
+    "PulseLink_SocialOps_Monitor//docs//architecture.md",
+    "PulseLink_SocialOps_Monitor//services//perf_pulse//__init__.py",
+    "PulseLink_SocialOps_Monitor//README.md"
+  ],
+  "context_length": 383018,
+  "task_prompt": "You are tasked with implementing an automated rollback feature. This requires modifying multiple services to communicate through the shared event system.\n\nHere are the detailed requirements:\n\n1.  **Modify the `perf_pulse` service:**\n    *   It must subscribe to the `DeploymentSucceededEvent` which is emitted by the `deploy_flow` service. You will need to find the definition of this event in `shared/events.py`.\n    *   Upon receiving a `DeploymentSucceededEvent`, `perf_pulse` must initiate a special 'post-deployment monitoring' state for the deployed service. This state should last for a configurable period (default to 5 minutes).\n    *   During this specific monitoring period, if critical performance thresholds are breached (e.g., P99 latency > 500ms OR error rate > 5%), `perf_pulse` must stop its special monitoring for this deployment and emit a new `CriticalPerformanceDegradationDetectedEvent`.\n\n2.  **Define the new Event:**\n    *   In `shared/events.py`, define a new event class `CriticalPerformanceDegradationDetectedEvent`. It should inherit from the `BaseEvent` class.\n    *   This event must contain the `deployment_id` (str), the `service_name` (str), and a `reason` (str) detailing which metric breached its threshold.\n\n3.  **Modify the `deploy_flow` service:**\n    *   It must subscribe to the new `CriticalPerformanceDegradationDetectedEvent`.\n    *   Upon receiving this event, the `deploy_flow` service must trigger its internal rollback logic for the `deployment_id` specified in the event. You will need to investigate the `deploy_flow` service's code (e.g., `service.py`, `command_handler.py`) and potentially its API documentation (`docs/api/deployflow_api.md`) to find the correct way to initiate a rollback.\n\n4.  **Testing:**\n    *   Add unit tests to `services/perf_pulse/tests/test_service.py` to verify that a `CriticalPerformanceDegradationDetectedEvent` is correctly emitted when simulated metrics breach the thresholds after a `DeploymentSucceededEvent` is processed.\n    *   Add unit tests to `services/deploy_flow/tests/test_service.py` to verify that receiving a `CriticalPerformanceDegradationDetectedEvent` correctly triggers the rollback mechanism.",
+  "expected_approach": "An expert developer would first analyze the existing system architecture to understand the event-driven communication pattern. This involves reviewing `shared/events.py`, `shared/messaging.py`, and `docs/architecture.md`.\n\n1.  **Event Definition:** Start by defining the `CriticalPerformanceDegradationDetectedEvent` dataclass in `shared/events.py` to establish the contract between the services.\n\n2.  **`perf_pulse` Service Modification:**\n    *   Locate the event subscription logic (likely in `main.py` or `service.py`) and add a subscription for `DeploymentSucceededEvent`, routing it to a new handler method in `perf_pulse/service.py`.\n    *   The new handler, e.g., `_handle_deployment_succeeded`, should store the deployment context (service name, deployment ID) and the monitoring deadline (now + 5 minutes). A dictionary mapping deployment IDs to monitoring tasks would be a suitable data structure.\n    *   Modify the main metric processing loop in `perf_pulse/service.py`. Inside the loop, check for any active post-deployment monitoring tasks. If a task is active and its metrics are critical, create and publish the `CriticalPerformanceDegradationDetectedEvent` via the existing `self.publisher`. The task should then be removed to prevent multiple events.\n    *   Write a test in `test_service.py` that mocks the publisher, calls the `_handle_deployment_succeeded` handler, simulates bad metrics, and asserts that `publisher.publish` was called with the correct event.\n\n3.  **`deploy_flow` Service Modification:**\n    *   Analyze `deploy_flow/service.py` or `deploy_flow/command_handler.py` to find the existing business logic for deployments and rollbacks. Identify the function to call, for example, `self.deployment_manager.rollback(deployment_id)`.\n    *   Add a subscription for the new `CriticalPerformanceDegradationDetectedEvent` and wire it to a new handler method, e.g., `_handle_performance_degradation`.\n    *   Implement the handler to extract the `deployment_id` from the event and call the identified rollback function.\n    *   Write a test in its `test_service.py` that simulates the event being received and asserts that the internal rollback method is called with the correct arguments, likely using a `unittest.mock.patch`.",
+  "ground_truth": "The solution requires coordinated changes across multiple files. Key insights for a correct implementation include:\n\n1.  **New Event in `shared/events.py`:** A new dataclass must be added.\n    ```python\n    from dataclasses import dataclass\n    # ... existing BaseEvent and other event classes\n\n    @dataclass\n    class CriticalPerformanceDegradationDetectedEvent(BaseEvent):\n        event_type: str = \"CriticalPerformanceDegradationDetected\"\n        deployment_id: str\n        service_name: str\n        reason: str\n    ```\n\n2.  **`perf_pulse` Logic:** The service needs to manage the state of post-deployment monitoring. The core logic change would be in its main processing loop.\n    ```python\n    # In perf_pulse/service.py\n    def _process_metrics(self):\n        # ... existing metric gathering ...\n        self._check_for_post_deployment_degradation(service_name, metrics)\n\n    def _check_for_post_deployment_degradation(self, service_name, metrics):\n        for dep_id, monitor_task in list(self.active_monitors.items()):\n            if monitor_task['service_name'] == service_name and datetime.now() < monitor_task['deadline']:\n                if metrics['p99_latency'] > 500 or metrics['error_rate'] > 0.05:\n                    event = CriticalPerformanceDegradationDetectedEvent(\n                        deployment_id=dep_id,\n                        service_name=service_name,\n                        reason=f\"P99 Latency {metrics['p99_latency']}ms or Error Rate {metrics['error_rate']}% exceeded threshold\"\n                    )\n                    self.publisher.publish(event)\n                    del self.active_monitors[dep_id] # Prevent re-triggering\n    ```\n\n3.  **`deploy_flow` Handler:** A new handler method must be added and subscribed to.\n    ```python\n    # In deploy_flow/command_handler.py or service.py\n    def _handle_performance_degradation(self, event: CriticalPerformanceDegradationDetectedEvent):\n        logger.warning(\n            f\"Rollback triggered for deployment {event.deployment_id} \"\n            f\"due to performance degradation: {event.reason}\"\n        )\n        # This assumes an existing method to perform the rollback\n        self.deployment_manager.initiate_rollback(deployment_id=event.deployment_id)\n\n    # In the service's event router/dispatcher:\n    # 'CriticalPerformanceDegradationDetected': self._handle_performance_degradation,\n    ```\n\n4.  **Subscription Wiring:** The `main.py` or `__init__.py` files for both services must be updated to register the new event handlers with the messaging consumer.",
+  "evaluation_criteria": [
+    "**Correctness of Implementation:** Does the feature work end-to-end as specified in the prompt? Is the rollback correctly triggered?",
+    "**Multi-File Comprehension:** Were all necessary files correctly identified and modified (`shared/events.py`, `perf_pulse/service.py`, `deploy_flow/service.py` or `command_handler.py`, and both test files)?",
+    "**Adherence to Existing Patterns:** Does the new code correctly use the existing event/messaging system, logging, and configuration patterns? Is the new code stylistically consistent with the existing codebase?",
+    "**State Management:** Is the 'post-deployment monitoring' state in `perf_pulse` managed correctly (i.e., it has a timeout and is cleaned up after triggering or expiring)?",
+    "**Modularity and Decoupling:** Are the changes well-contained within their respective services, communicating only through the defined event contract, maintaining the decoupled nature of the microservices architecture?",
+    "**Test Quality:** Are the new unit tests meaningful? Do they properly isolate the new logic (e.g., using mocks for publishers and internal dependencies) and cover both success and failure paths?"
+  ],
+  "metadata": {
+    "context_length": 383018,
+    "files_count": 29,
+    "information_coverage": 0.9077245386937912,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T14:45:24.646419"
+  }
+}

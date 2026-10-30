@@ -6,6 +6,7 @@ PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 EXPERIMENT_PAUSE_FILE="${BELIEFKV_EXPERIMENT_PAUSE_FILE:-/tmp/beliefkv-experiments.paused}"
 PORT="${PORT:-18454}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
+CLIENT_ROOT_CONCURRENCY="${CLIENT_ROOT_CONCURRENCY:-$ROOT_COUNT}"
 MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 SAMPLING_PROFILE="${SAMPLING_PROFILE:-legacy_greedy}"
@@ -109,6 +110,9 @@ trap 'exit 143' TERM
 
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ROOT_COUNT > 156 )) \
+  || [[ ! "$CLIENT_ROOT_CONCURRENCY" =~ ^[1-9][0-9]{0,2}$ ]] \
+  || (( CLIENT_ROOT_CONCURRENCY > ROOT_COUNT )) \
+  || { [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && (( CLIENT_ROOT_CONCURRENCY < ROOT_COUNT )); } \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
   || { [[ -z "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && (( ROOT_COUNT > 108 )) && { [[ "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]] \
     || { [[ "$ARRIVAL_BATCH_SIZE" != "64" && "$ARRIVAL_BATCH_SIZE" != "108" ]]; }; }; } \
@@ -388,7 +392,7 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   "${client_flags[@]}" \
   --mode autonomous --base-url "$BASE_URL/v1" --model "$SERVED_MODEL_NAME" \
   --workload-manifest "$MANIFEST" --max-workflows "$ROOT_COUNT" \
-  --concurrency "$ROOT_COUNT" --subagent-fanout-profile "$FANOUT_PROFILE" \
+  --concurrency "$CLIENT_ROOT_CONCURRENCY" --subagent-fanout-profile "$FANOUT_PROFILE" \
   --child-work-budget-warning-calls "${CHILD_WORK_BUDGET_WARNING_CALLS:-24}" \
   --child-work-budget-target-calls "${CHILD_WORK_BUDGET_TARGET_CALLS:-32}" \
   --root-work-budget-warning-calls "${ROOT_WORK_BUDGET_WARNING_CALLS:-0}" \

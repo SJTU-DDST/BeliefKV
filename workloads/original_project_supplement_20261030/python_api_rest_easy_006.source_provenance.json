@@ -1,0 +1,93 @@
+[
+  {
+    "path": "pocketops/README.md",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/README.md",
+    "raw_sha256": "f25fb06b0dd674da7a09e1e43bc5b6da3a6e8147d097c6fcfe352fe043634421",
+    "materialized_sha256": "f25fb06b0dd674da7a09e1e43bc5b6da3a6e8147d097c6fcfe352fe043634421",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "pocketops/docs/api_v1.md",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/docs/api_v1.md",
+    "raw_sha256": "1669923cb549b3fbc8dd759ee2422cf0b7df190f844f3e1813ba53f7613598a4",
+    "materialized_sha256": "852fe48197d4c8e2f91530108c451248aa34c0ddc09b8cb6326f13de8bdc1dd6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/adapters/api/main.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/adapters/api/main.py",
+    "raw_sha256": "e66dccadc00144da697ba972793acb9a58b113f05e2d3e901ab7be725aac0acf",
+    "materialized_sha256": "4df168b86e8a0c0c7fc5c271e215dd00c0a90f0dd30a7c79d37c964f859e74e6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/adapters/api/error_handlers.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/adapters/api/error_handlers.py",
+    "raw_sha256": "48a57883aa72613ef69ad912197c82a2e58b759e0176e56c70bdded5b11b57d0",
+    "materialized_sha256": "6061ea24fe3e5162754e815831fcf2817c1544243835272d57e39a27f1e2ff9e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/adapters/api/rest/v1/endpoints.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/adapters/api/rest/v1/endpoints.py",
+    "raw_sha256": "a9c59fc50d3bb20d421eb9298a2d3403422aaec20a2ad4140432b9044fd22971",
+    "materialized_sha256": "0154de6434a713b9897c7c10e917a4b8c9921ff5f265be8e007140db5ca7e7f5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/adapters/api/rest/v1/schemas.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/adapters/api/rest/v1/schemas.py",
+    "raw_sha256": "ddc277729981b865be47a6afa08b5e209c2434b8b1049304ea27cff3e18a3572",
+    "materialized_sha256": "e6d2766f1fd47c0f08aaa4173fa46c74ac22f0cd457937a33fd4a37ea6c42ba6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/adapters/api/graphql/schema.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/adapters/api/graphql/schema.py",
+    "raw_sha256": "ea1f464a1a17256ac449cc0ce38a2439cc6bb15d36eda85c86210cf6f5887793",
+    "materialized_sha256": "a54e4ed95942a7a2979404856191ae6167a7917177f9f977948bf4d61e3dbcaa",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/adapters/cache/redis_adapter.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/adapters/cache/redis_adapter.py",
+    "raw_sha256": "75af5b8b8c1128a74aca83002ae4156272be609379dbce8ca9ec217e10610f46",
+    "materialized_sha256": "386e1f0844e634bf69b6e448dcb424edb2e01db25951d0c49f2eb7216669ef9e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/adapters/persistence/in_memory_repository.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/adapters/persistence/in_memory_repository.py",
+    "raw_sha256": "1bec234120250f9a6e45b146d0cbed05a054958359e6dad5904ca5bb36520e78",
+    "materialized_sha256": "5b68b1538ffef9b7a65abb765a26f1fb6492f06a0ba3e0755942b84634b7ff3d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/core/ports/cache_port.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/core/ports/cache_port.py",
+    "raw_sha256": "f4ea23321908146e894469974c81d8d1af43a172cf6254219a406efe59b3dced",
+    "materialized_sha256": "46d12a115e4eec2fc12e5bc0648c183a155175399ecea7f37cbcedce3bb05400",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/core/ports/history_port.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/core/ports/history_port.py",
+    "raw_sha256": "4ee1919c05d88d3f65a5a760ade195c4601212026ec62bbe0c4bccd421261bf9",
+    "materialized_sha256": "62711e38f52baa6e9164f75ebef57c6cbf916d3fa711077950c51eb76db2fae0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/pocketops/core/use_cases/text_transformation.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/pocketops/core/use_cases/text_transformation.py",
+    "raw_sha256": "a33a15ff6fff26f8a6780ce32c5fa770ebfa26f22ffaed77390b091727bc08f6",
+    "materialized_sha256": "d9e0977bef88eeddba03f9d4a83f5ab0f79421c7acf5b0b01271de976c6d9fd2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "pocketops/tests/test_text_transformation.py",
+    "archive_path": "data/generated/python_api_rest_easy_006/pocketops/tests/test_text_transformation.py",
+    "raw_sha256": "415f957dd818176d5426f370017f29b400804b5647766157c9cad5dcc6eb1c0c",
+    "materialized_sha256": "25a9d20b5312bd335107c6ee2a6878e6c32e8b36093815e3e9d3cb42300d0b58",
+    "outer_markdown_fence_removed": true
+  }
+]

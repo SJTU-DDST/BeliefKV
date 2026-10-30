@@ -1,0 +1,86 @@
+[
+  {
+    "path": "edustream_insights/README.md",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/README.md",
+    "raw_sha256": "df343b50d88c0073445dd775d7d53f12bdfd6ac6f6a8573fe8b39de5a4aec5df",
+    "materialized_sha256": "5b746abe025cd26a312ec2f9969f5762b84493163b94ce359d62732e29cc48ef",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/requirements.txt",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/requirements.txt",
+    "raw_sha256": "ecba18722ecf03d6c82528ed197919853a0127333ad05813bacffec313a494f5",
+    "materialized_sha256": "ecba18722ecf03d6c82528ed197919853a0127333ad05813bacffec313a494f5",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "edustream_insights/config.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/config.py",
+    "raw_sha256": "a4603c67a6013fa941af27514dffb0d4022c441fc52e04f39a4b7be6c255cab3",
+    "materialized_sha256": "e02e77c7e7818555e0b056bbdfcd388f0c11f7e8046df17c3570658278d7da02",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/run_pipeline.sh",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/run_pipeline.sh",
+    "raw_sha256": "ed8349b39c0864df1948c9b79789cd827f1da672edeb28560bdde09f8d3c79ce",
+    "materialized_sha256": "2c618d605d33a92aaa3ea59eaf24eb95a2b9237f99912659637b6dcf3e0e8369",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/src/__init__.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/src/__init__.py",
+    "raw_sha256": "7f083a258bc1bde489a5c848acc74fbf3e56b40ea0974b09aa993968af862385",
+    "materialized_sha256": "6e40febce01ce0cece899efe5ca1c7c7b921739f5ad2259f54315f537e16425a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/src/pipeline.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/src/pipeline.py",
+    "raw_sha256": "54329520bd3a4fa490264eaf957508f5fa2ac6a95c179aedb7f73d789f49dc0c",
+    "materialized_sha256": "5d55680c6ac829727e384c7e61cc2ce4a9df9ddcc52ef9b4a79a85f55a8aec06",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/src/ingest.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/src/ingest.py",
+    "raw_sha256": "a26fb07d9f6a43b3d66dd4184844c776c05da07bbf161d93db0542fbe6b07e4c",
+    "materialized_sha256": "2691deaea41e1e117d0ed820eafe4469eae15e6d8d9e470f9676854ce5d4d747",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/src/transform.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/src/transform.py",
+    "raw_sha256": "430931491d07b85bf4b6dbda54a8137064857219e7d65773c13cd3265e3d7cdb",
+    "materialized_sha256": "f0c25bea9486cf432f1292e7f77e495c63a0235b951f995a87f76dec1e0ec5aa",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/src/store.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/src/store.py",
+    "raw_sha256": "28c8f85f1e607feca4e6212db0a03fbff4625f77cf693c8d241e351c65082209",
+    "materialized_sha256": "ca51601592ab63aec6050e599c0a3420b948e707f9100269240e1a9dd4358923",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/src/monitoring.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/src/monitoring.py",
+    "raw_sha256": "029111310bfa08debc78bd9414d1d8a282511476c316b4fa89a4aa5756264057",
+    "materialized_sha256": "9d196f37c44facd956a7da602175929fa1551dd574cf626b54fed1a2a5ea800a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/src/event_producer.py",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/src/event_producer.py",
+    "raw_sha256": "11a02ce50157282655dbb9c951df96d4ec2f622c5602a7216daa90b210dc047c",
+    "materialized_sha256": "efec4d26dab37045d168fb93fd9774b1e546625bc02ec2239cd217a2bce1ed22",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edustream_insights/docs/PIPELINE_DESIGN.md",
+    "archive_path": "data/generated/python_data_streaming_easy_049/edustream_insights/docs/PIPELINE_DESIGN.md",
+    "raw_sha256": "7e011c769f0b3ba9a01c31606395ec8445a35e7d7ea81c4df13376d0602a3d23",
+    "materialized_sha256": "138d7302f4735bed05cef5122160c50404e77a3a4e6204336c48554a51b41128",
+    "outer_markdown_fence_removed": true
+  }
+]

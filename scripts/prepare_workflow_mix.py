@@ -25,7 +25,9 @@ DEFAULT_CAPTURES = (
 )
 
 
-def review(inventories, *, each=6, target_ratio=5.):
+def review(inventories, *, each=6, target_ratio=3., ratio_metric="p80_p20"):
+    if ratio_metric not in ("p80_p20", "p90_p10"):
+        raise ValueError("declare the work-diversity percentile ratio")
     protocols = defaultdict(list)
     for inventory in inventories:
         for row in inventory["workflows"]:
@@ -56,7 +58,8 @@ def review(inventories, *, each=6, target_ratio=5.):
     return {
         "schema_version": 1, "kind": "mixed_workload_preparation_review",
         "requested_workflows": each * 3, "requested_per_tier": each,
-        "diagnostic_target_p90_p10": target_ratio, "protocol_groups": groups,
+        "diversity_metric": ratio_metric, "diagnostic_target_ratio": target_ratio,
+        "protocol_groups": groups,
         "eligible_for_selection_requires_further_checks": [group["protocol_sha256"] for group in qualifies],
         "selection_status": "needs_explicit_selection" if qualifies else "needs_new_natural_candidates",
         "GPU_experiment_started": False, "performance_accepted": False,
@@ -86,7 +89,8 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--capture", type=Path, action="append")
     parser.add_argument("--model-cost-evidence", type=Path, required=True)
-    parser.add_argument("--target-ratio", type=float, default=5.)
+    parser.add_argument("--target-ratio", type=float, default=3.)
+    parser.add_argument("--ratio-metric", choices=("p80_p20", "p90_p10"), default="p80_p20")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
     cost = json.loads(args.model_cost_evidence.read_bytes())["metrics"]["FULL"]["decode"]
@@ -108,7 +112,7 @@ def main():
             continue
         inventories.append(value)
         write(args.output_dir / (capture.parent.name + ".json"), value)
-    result = review(inventories, target_ratio=args.target_ratio)
+    result = review(inventories, target_ratio=args.target_ratio, ratio_metric=args.ratio_metric)
     result.update(
         source_rejections=rejected,
         model_cost_evidence={

@@ -1,0 +1,100 @@
+[
+  {
+    "path": "cinepulse_hub/README.md",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/README.md",
+    "raw_sha256": "0ccdbd3c3354e1fd9d41faa42655f11fec9901b08eae0f78d9e8607bf28de8f5",
+    "materialized_sha256": "ed1a9355f4f3163ebe4a4d39bc41cf574cb4abe5885f9f0cb8af2f8fc85a54ce",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/.env.example",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/.env.example",
+    "raw_sha256": "044f906ab0d576cd74145f5849f2d4553e7bf8f301a0c8ce52aa0da958a085fd",
+    "materialized_sha256": "044f906ab0d576cd74145f5849f2d4553e7bf8f301a0c8ce52aa0da958a085fd",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "cinepulse_hub/requirements.txt",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/requirements.txt",
+    "raw_sha256": "6f08a5121586eecc6a52ef60e68502a91c32b2e633e6908e2f55b247168a110d",
+    "materialized_sha256": "6f08a5121586eecc6a52ef60e68502a91c32b2e633e6908e2f55b247168a110d",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "cinepulse_hub/config.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/config.py",
+    "raw_sha256": "20769b85dcdb4cf9c2697aeba4d9a2a822cb2f87d55d989a369e07f3fa5cb123",
+    "materialized_sha256": "ff40792ac4c0c3788ecd47f7e1808fd31a22543b2f8e9be07abaef1737a16a6a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/app/__init__.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/app/__init__.py",
+    "raw_sha256": "ec70e4bc2c545bb5704b4bebae6923d7283d6d74fa38953aacab9d7b4e189694",
+    "materialized_sha256": "c507c675794ade46b0cd7fcc477cae967d3db4f484cabfac3cba9a856a95c94b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/app/main.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/app/main.py",
+    "raw_sha256": "2e81663477f827957b35d887d02221a9ede939bdbeeb8f42016021a3f7f4c115",
+    "materialized_sha256": "6788a0f55aa4e2c295a25875dfb5c37c923e1adc63908162296cb7c30e248543",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/app/schema.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/app/schema.py",
+    "raw_sha256": "ba73a05c992a0912226da7f0df8e32aeabeab59d041aaa12a8218e3e2ca2a02a",
+    "materialized_sha256": "1c47d49a160d704dd2d0d184d2513190a6592c94007730416f54b11b54d4946b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/app/services/__init__.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/app/services/__init__.py",
+    "raw_sha256": "473321a4051650bb617957105b4094baf3e02d4cbcaaaa31c71cba7ef4beaf81",
+    "materialized_sha256": "f6e98f7941accf27ce79bb106447d39cd25cfb07f3d7088058b6ee6b1f93a213",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/app/services/ticketing_service.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/app/services/ticketing_service.py",
+    "raw_sha256": "3da25a1f5a611292e27cde8a3deb7a3d36a15b6fa1526c13fe77c932de2ed238",
+    "materialized_sha256": "4e87baa5af3b02838c737ab5f11a34bdcf0d660fdbd004404d53f6896b2ea252",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/app/middleware/auth.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/app/middleware/auth.py",
+    "raw_sha256": "3c27dac0eac0a7843a6e9daeaf966315b5c7843f75d36c72cec332803f01f109",
+    "materialized_sha256": "16d026f252575528f25fa2df135bc56c8adbfd9b7d30270c51f3b54f2662f466",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/docs/api_reference.md",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/docs/api_reference.md",
+    "raw_sha256": "9057274dfc3c57776b151038f786d8b934a02b45679061720b64d32464ff365d",
+    "materialized_sha256": "2bb1fcf375ad409ec5dff4c76e646b8fae7954f7a37ff66a5c9ded0025a106ad",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/tests/__init__.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/tests/__init__.py",
+    "raw_sha256": "2432de9d40c8e4aed039c4dbc30b640574cf9b1d8763e05beb8e6f6990d47234",
+    "materialized_sha256": "fec165442a1429b076058d67848b519339883cf0d9ba72de7a160ec114edd970",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/tests/test_schema_mutations.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/tests/test_schema_mutations.py",
+    "raw_sha256": "7d0aadb1a86293c67cf5a4b2b69e110b23df55ba8d7dd46fa16d3fb29b7fa4b2",
+    "materialized_sha256": "8922af9d20124e3124b3e90c9b8491cc7275134b3e4eaaf46632b1244c8eabbf",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "cinepulse_hub/tests/test_auth_middleware.py",
+    "archive_path": "data/generated/python_api_graphql_easy_043/cinepulse_hub/tests/test_auth_middleware.py",
+    "raw_sha256": "9615f0320193f1dd8f0de12fff97b1105c23e04780e84a86ac77da014b021c6c",
+    "materialized_sha256": "c8afcaa5a9d587fdb379570a8900906f78e79a4cd348a2d7be584c200cf64e6f",
+    "outer_markdown_fence_removed": true
+  }
+]

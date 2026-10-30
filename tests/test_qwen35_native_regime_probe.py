@@ -95,6 +95,21 @@ def test_pressure_scan_rejects_unauthorized_single_wave_above_108(tmp_path: Path
     assert not run_root.exists()
 
 
+@pytest.mark.parametrize("concurrency", ("0", "27", "twelve", "-1"))
+def test_capture_rejects_invalid_root_window_before_launch(tmp_path, concurrency):
+    run = tmp_path / "capture"
+    result = subprocess.run(
+        ["bash", str(SCRIPT)],
+        env={
+            **os.environ, "RUN_ROOT": str(run), "ROOT_COUNT": "26",
+            "CLIENT_ROOT_CONCURRENCY": concurrency,
+        },
+        text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 2
+    assert not run.exists()
+
+
 def test_native_policy_baseline_disables_beliefkv_policy() -> None:
     script = SCRIPT.read_text()
     assert 'control_flags=(--native-policy-baseline)' in script

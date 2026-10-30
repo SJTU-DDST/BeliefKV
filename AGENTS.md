@@ -4500,3 +4500,26 @@
   Keep whole new source and all tails;use its full original workflows only as
   incremental inventory,not automatic expansion or comparison. Do not re-run
   whole older populations merely because this shape remains insufficient.
+- Latest user switches heterogeneity to model-workP80/P20:minimum3,report4as
+  stricter diagnostic;P90/P10 is reference only. New summary/acceptance/reuse
+  entrypoints name the actual ratio;preserve all old P90 reports unchanged.
+  review_r3 old18ratio2.322 is unmet;completed original6ratio3.250 passes3
+  but not4,with its other JOIN/child shortfalls retained.
+- User explicitly requires moving beyond repeated six-task diagnosis. Reuse
+  complete originals covering22distinct projects,then collect the26missing
+  syntax-qualified original projects toward48project candidates. Source
+  collection concurrency may be bounded separately;formal replay uses frozen
+  sustained arrivals,warmup/arrival-index measured cohort/common background,
+  complete JCT and actual ready-capacity/service/physical-KV evidence.
+- The original-project supplement now materializes26complete original tasks:
+  17comprehension/2architecture/7feature,pristine source/tests,real Qwen3-Coder
+  contexts19068--178191. All26fresh live root/child tool/sharedworkspace/exitcode
+  checks pass;project tests remain agent responsibilities. Source capture has
+  population26/client rootwindow12/native running24 with no external schedule.
+  Keep scheduled formal arrivals open:do not permit a hidden smaller client
+  window. New source reviewers check the declared project population,not six.
+  This preparation is not natural shape,pressure or performance qualification.
+- Supplement26 bound_cpu_r1 actually passes5672tests+12subtests,retains all5644
+  prior literal identities,no failures/errors/skips,2131inputs/native unchanged.
+  Fresh freeze/reservation/resources/sampler and actual GPU collection remain
+  distinct from this complete CPU result. Preserve all original-source evidence.

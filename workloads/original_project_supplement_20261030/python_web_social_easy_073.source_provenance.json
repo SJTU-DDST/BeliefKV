@@ -1,0 +1,86 @@
+[
+  {
+    "path": "classpulse_live/classpulse/main.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/classpulse/main.py/content",
+    "raw_sha256": "bb3fe05f7e21d3a3b6bdd395b6958d485a7c6bc9f87b2ad0f07ecc6bb4e8f8fc",
+    "materialized_sha256": "faa4701506af1d24aef88d4ae459076bf3b4c61e8baa60c16ed126bb56532968",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/classpulse/services.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/classpulse/services.py/content",
+    "raw_sha256": "d68645176b922f483082fdc7f2e14f1c725d6a0271fc817f99284fbd20123263",
+    "materialized_sha256": "d68645176b922f483082fdc7f2e14f1c725d6a0271fc817f99284fbd20123263",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "classpulse_live/classpulse/repositories.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/classpulse/repositories.py/content",
+    "raw_sha256": "e4bfc1440bf8e05c34bcd0e648346a2ff0ecb605a0e5735ce794ce5f3c0be644",
+    "materialized_sha256": "d282143725647b6609f78b34659f495fb5d72a47b507a8edd2b5df3dfe6f2069",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/classpulse/models.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/classpulse/models.py/content",
+    "raw_sha256": "9db80d0911ba129890991eac92f96f3cd5f2d7a8f4656a5469405a7687e69fdf",
+    "materialized_sha256": "ba752727a101a19e9bd347638e1709218a5487969544d930b0737a6435ca018a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/classpulse/events.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/classpulse/events.py/content",
+    "raw_sha256": "4a1cc9395ef6d081d098a3da32caa5d125e0b3b5ab78975794b56d34c7f9ae3b",
+    "materialized_sha256": "56a89d9c53aa2b478755a261999461f9e12bae11a8700a0b94fe8ae8f3c98ef4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/classpulse/worker.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/classpulse/worker.py/content",
+    "raw_sha256": "e2f3debc4629c7299d621e89742983262e1a50d2fdf1be36060351d5cfd2e3c4",
+    "materialized_sha256": "e2f3debc4629c7299d621e89742983262e1a50d2fdf1be36060351d5cfd2e3c4",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "classpulse_live/classpulse/config.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/classpulse/config.py/content",
+    "raw_sha256": "b59db4c8ec764b053f7d831ae076b746703122f5f3ad2a6059fb4fb5edd74a13",
+    "materialized_sha256": "21bf7b3c33e5b8d39737b2f197ff45c36e0be4050e3a842bfacb0a595260c54a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/tests/test_services.py/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/tests/test_services.py/content",
+    "raw_sha256": "272bad87ff99647b9b596826dfa0a752d3648168c7f3190868a8646d14b0653e",
+    "materialized_sha256": "f7faeb5e2e3a6c9384f2840ccf90aa76d7b38285630d7e80348ca2602fbba428",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/docs/api_reference.md/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/docs/api_reference.md/content",
+    "raw_sha256": "0fed127eadbf5fad2ac1db8becec60e15542012dd8ac3cdc125b102279bfdf07",
+    "materialized_sha256": "eade13100cbf14e6de1add9eeebcca50248906e96f3edef06b31034bf8e7f370",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/static/index.html/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/static/index.html/content",
+    "raw_sha256": "027304f9ac25e1651883a8b2b1710f350b4256e4b54690a5ecf68c94560c6b01",
+    "materialized_sha256": "b000bdfce5c02b35d83dd45ae60d8c12ff1e8e23e3ae006a65dc8a42e1c3c08d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "classpulse_live/README.md/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/README.md/content",
+    "raw_sha256": "c26a359c097a3076e7bede62e759c23aab6aea5d1cf5e30b2b94e955e8272166",
+    "materialized_sha256": "c26a359c097a3076e7bede62e759c23aab6aea5d1cf5e30b2b94e955e8272166",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "classpulse_live/.env.example/content",
+    "archive_path": "data/generated/python_web_social_easy_073/classpulse_live/.env.example/content",
+    "raw_sha256": "958ccebb560a468736283cbb15a6eec3ffb5c84c4281d8fbd9502eabe1f2ae05",
+    "materialized_sha256": "2a27b64896bc156dcdf6720d226efd327d91e96c2606eabf7c18a03b99ca274c",
+    "outer_markdown_fence_removed": true
+  }
+]

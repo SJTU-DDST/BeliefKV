@@ -1,0 +1,72 @@
+[
+  {
+    "path": "HealthStreamInsightsHub/README.md",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/README.md",
+    "raw_sha256": "95727b5be40f2014bbeb3e5ef8e35bb8ed60e47795818444e37401275cba3bd4",
+    "materialized_sha256": "3d93a56551d54e93686a72ecf8fd9a01470306f1c85db6bce33865dba7951853",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/requirements.txt",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/requirements.txt",
+    "raw_sha256": "c1afa59c096cbd0b9d891455e4abf388a1d52268478498724ee46c433acc6a56",
+    "materialized_sha256": "c1afa59c096cbd0b9d891455e4abf388a1d52268478498724ee46c433acc6a56",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "HealthStreamInsightsHub/config.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/config.py",
+    "raw_sha256": "3b6dd97bc4edfbdd6797d9ba5e55532263ad4b945187f3a651ecfad59fa1f951",
+    "materialized_sha256": "f08b06c8eb313b990e777750156b2445660072ce5c8b3feb5b591fbe978a5267",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/main.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/main.py",
+    "raw_sha256": "abacaf4b398a41f6edea2c3aa18969cd02a59ba4c48e098b3f026098f5b0bf85",
+    "materialized_sha256": "f1d163e4bd3f5ede1e1fd5bdf6fc413d648f4139bc7fabf25b654a0ee2515ac1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/healthstream/__init__.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/healthstream/__init__.py",
+    "raw_sha256": "b07771e9ed1ebe06696261565f0045de448210a2023161db277f83d994720ecb",
+    "materialized_sha256": "53aa81fed9af33e03e2bc8be3e1ad56ee1e2dbb5121c7d453c204137d1bb4630",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/healthstream/pipeline.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/healthstream/pipeline.py",
+    "raw_sha256": "2103d947c969046614164d3132fdcca2f0a1d718b926c776c1e13e536cc45ebf",
+    "materialized_sha256": "ae7e873380b35261613508bb5f64327da20148bb6a4df02cf7b693aff5eb0d4e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/healthstream/scheduler.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/healthstream/scheduler.py",
+    "raw_sha256": "03472f765e526f62052f46992245b2a516209e33b7d9156ddab02d3265c7b590",
+    "materialized_sha256": "133c8d181d97f7ea96143c02b56f30788ae828ce643919a9b25ef911636b9aa1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/healthstream/stream_consumer.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/healthstream/stream_consumer.py",
+    "raw_sha256": "06a5fb20dad4898f50ce94360418707b840c7ef5b815225e61f86e05aa7395fd",
+    "materialized_sha256": "df45eb5ff6787a250b8befd2fc5edb90d0e09b4e5b1592b449015c7a55c0029c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/healthstream/dashboards.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/healthstream/dashboards.py",
+    "raw_sha256": "0c051c4a80b66a515668c3ce67673b71437b63a1344c79a6ba32a9da6acd9ad8",
+    "materialized_sha256": "c7814a7abc39f70899153b8d8d962175f24102ce1f8dc6e6274a7f598c6e3f94",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "HealthStreamInsightsHub/tests/test_pipeline.py",
+    "archive_path": "data/generated/python_data_analytics_easy_010/HealthStreamInsightsHub/tests/test_pipeline.py",
+    "raw_sha256": "00f686e8f17c8785c4389a2b17830e285bbc73bc6d9b74306b3cf33b38197931",
+    "materialized_sha256": "b4213c3f3ed8b28af76381f7cf42dc155d0c6e6955276ce4c806a8dd0062aa94",
+    "outer_markdown_fence_removed": true
+  }
+]

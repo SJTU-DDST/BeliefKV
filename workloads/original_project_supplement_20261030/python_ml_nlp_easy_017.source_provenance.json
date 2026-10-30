@@ -1,0 +1,72 @@
+[
+  {
+    "path": "edu_vocab_coach/README.md",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/README.md",
+    "raw_sha256": "33f81b0bfacf30b944a4965c70b35d49f131ba7ee907d3c86c06fddf4ca9dff6",
+    "materialized_sha256": "33f81b0bfacf30b944a4965c70b35d49f131ba7ee907d3c86c06fddf4ca9dff6",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "edu_vocab_coach/requirements.txt",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/requirements.txt",
+    "raw_sha256": "58f049d0d576094246a226080b28be9571e5a12a755f5f482bc6e81dd606b3d4",
+    "materialized_sha256": "58f049d0d576094246a226080b28be9571e5a12a755f5f482bc6e81dd606b3d4",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "edu_vocab_coach/config.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/config.py",
+    "raw_sha256": "7dba95a7bd9560fe9fec0ae0a38ef95bec41063b634b1c6f5f8628d5dca6fdff",
+    "materialized_sha256": "758cf8c46538967b778bd0f7da3952f31b0faeef4ed7910bd3b6584ebd1545a5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edu_vocab_coach/app.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/app.py",
+    "raw_sha256": "a9e3ae7cb944d62e6b7bfd5584e37fb255b3fc508fd75912278a60612934096b",
+    "materialized_sha256": "cb8c88f52f3eb55b0a2bebd15dfac54f8b73e629f6c1271ebafff328a08065a7",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edu_vocab_coach/scripts/run_retrainer.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/scripts/run_retrainer.py",
+    "raw_sha256": "c6dc31415ce00f0566d2bb79e675ee5e7ffdee9d6c0a5b6eb6fc862846c834bb",
+    "materialized_sha256": "26a604ee3549c052feb35f62e1711809a384f768891d807c639cc76c4aced701",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edu_vocab_coach/src/eduvocab_coach/__init__.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/src/eduvocab_coach/__init__.py",
+    "raw_sha256": "1f16e400e94d07dc4bb2528ed72352cc9e445449d4fd4414e7e5bd46b8416998",
+    "materialized_sha256": "455a047d12aa3fdeab8006757d076709fc509061c7fc335b201d97e15c6677ae",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edu_vocab_coach/src/eduvocab_coach/nlp_pipeline.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/src/eduvocab_coach/nlp_pipeline.py",
+    "raw_sha256": "ba23b2cb086f20c5b0899419710a6297a0ffaaabc1c2942a70d75407ac433132",
+    "materialized_sha256": "86ee35d02727306bc99d623111051c90a0118900246004220b74c078470a7d00",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edu_vocab_coach/src/eduvocab_coach/ml_ops/retrainer.py",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/src/eduvocab_coach/ml_ops/retrainer.py",
+    "raw_sha256": "219da62cc276c5d0f1029dd5e9aa933d8ebffd1698928cd4aa5a9b88e0fd7f9d",
+    "materialized_sha256": "e07fe57641144046b83ac9b8ddd17404626d848a3aedfee0f970a6d24d3be9e1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edu_vocab_coach/templates/index.html",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/templates/index.html",
+    "raw_sha256": "3008b993cf4bb9fc45acd1882a8bbd94bfecd5e528be4e6bc0be6cf646cc4f0b",
+    "materialized_sha256": "1d5b39fcca95c16d8174613cd828486d523925f48114c84c4a817ec1af203144",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "edu_vocab_coach/docs/API.md",
+    "archive_path": "data/generated/python_ml_nlp_easy_017/edu_vocab_coach/docs/API.md",
+    "raw_sha256": "070374c0e7a8fc8a747ba66de4c6396c3c08294ce6dc6318bc60a7fd522b441a",
+    "materialized_sha256": "ea6c6111f7fc1c6bc52c1fc3af2c80001c8fb0484ba047c09d469a6da5a1ff87",
+    "outer_markdown_fence_removed": true
+  }
+]

@@ -1,0 +1,57 @@
+{
+  "id": "python_system_automation_medium_098_feature_implementation_expert_01",
+  "task_category": "feature_implementation",
+  "difficulty": "expert",
+  "title": "Implement Canary Deployment Strategy with Automated Rollback",
+  "description": "The VitalOps Orchestrator currently supports a basic 'all-at-once' deployment model. This task is to enhance the deployment capabilities by introducing a more robust Canary Deployment strategy. This strategy involves deploying a new application version to a small subset of servers (the 'canary' group), monitoring its performance against key metrics, and then automatically promoting it to all servers or rolling it back if it fails health checks. This feature is critical for minimizing the risk of introducing a faulty version into production.",
+  "context_files": [
+    "vitalops_orchestrator/vitalops/interfaces/api.py",
+    "vitalops_orchestrator/docs/api_guide.md",
+    "vitalops_orchestrator/vitalops/interfaces/__init__.py",
+    "vitalops_orchestrator/vitalops/coordinators/__init__.py",
+    "vitalops_orchestrator/vitalops/services/notification_gateway.py",
+    "vitalops_orchestrator/run.py",
+    "vitalops_orchestrator/vitalops/coordinators/deployment.py",
+    "vitalops_orchestrator/vitalops/services/__init__.py",
+    "vitalops_orchestrator/vitalops/policy_engine/__init__.py",
+    "vitalops_orchestrator/vitalops/core/__init__.py",
+    "vitalops_orchestrator/vitalops/models/__init__.py",
+    "vitalops_orchestrator/vitalops/models/domain.py",
+    "vitalops_orchestrator/vitalops/policy_engine/chain.py",
+    "vitalops_orchestrator/vitalops/services/metric_collector.py",
+    "vitalops_orchestrator/vitalops/core/eventing.py",
+    "vitalops_orchestrator/vitalops/__init__.py",
+    "vitalops_orchestrator/vitalops/coordinators/recovery.py",
+    "vitalops_orchestrator/tests/test_coordinators.py",
+    "vitalops_orchestrator/vitalops/services/workflow_engine.py",
+    "vitalops_orchestrator/vitalops/models/events.py",
+    "vitalops_orchestrator/vitalops/coordinators/performance.py",
+    "vitalops_orchestrator/vitalops/interfaces/cli.py",
+    "vitalops_orchestrator/vitalops/policy_engine/handlers.py",
+    "vitalops_orchestrator/vitalops/core/logging.py",
+    "vitalops_orchestrator/config.yaml"
+  ],
+  "context_length": 357536,
+  "task_prompt": "You are tasked with implementing a full-featured canary deployment strategy within the VitalOps Orchestrator. The implementation must integrate seamlessly with the existing deployment, metrics, policy, and notification systems.\n\n### Requirements:\n\n1.  **Modify the Deployment API:**\n    -   Update the deployment endpoint in `vitalops/interfaces/api.py` to accept a new optional parameter: `deployment_strategy`. This parameter should accept `'standard'` (for the existing behavior) or `'canary'`. It should default to `'standard'` to maintain backward compatibility.\n\n2.  **Enhance the Deployment Model:**\n    -   In `vitalops/models/domain.py`, update the `DeploymentJob` model to include a `strategy` field.\n    -   Expand the status tracking for `DeploymentJob` to include canary-specific states: `CANARY_DEPLOY`, `CANARY_MONITORING`, `CANARY_FAILED`, `PROMOTING`, `ROLLED_BACK`.\n\n3.  **Implement Core Canary Logic in the Coordinator:**\n    -   In `vitalops/coordinators/deployment.py`, modify the `DeploymentCoordinator` to handle the `'canary'` strategy.\n    -   The logic should first deploy the new version to a small, configurable percentage of the target nodes (the canary group).\n    -   After the canary deployment, the system must enter a monitoring phase (the 'bake time').\n\n4.  **Integrate with Metrics and Policy Engine:**\n    -   During the 'bake time', the `DeploymentCoordinator` must use the `MetricCollector` service (`vitalops/services/metric_collector.py`) to gather performance metrics (e.g., `cpu_usage`, `error_rate`) specifically from the canary nodes.\n    -   Create a new policy handler in `vitalops/policy_engine/handlers.py` named `CanaryHealthPolicyHandler`. This handler will evaluate the collected metrics against configurable thresholds.\n    -   The `DeploymentCoordinator` must invoke this policy to get a pass/fail decision.\n\n5.  **Implement Promotion and Rollback:**\n    -   **On Success:** If the `CanaryHealthPolicyHandler` returns a 'pass' result, the `DeploymentCoordinator` must proceed to deploy the new version to the remaining nodes (promotion).\n    -   **On Failure:** If the policy returns a 'fail' result, the `DeploymentCoordinator` must trigger a rollback on the canary nodes (reverting them to the previous stable version), update the `DeploymentJob` status to `ROLLED_BACK`, and send an alert using the `NotificationGateway` service (`vitalops/services/notification_gateway.py`).\n\n6.  **Externalize Configuration:**\n    -   Add the following new configuration options to `config.yaml` under a `deployment_strategies.canary` section:\n        -   `subset_percentage` (e.g., 10 for 10%)\n        -   `bake_time_seconds` (e.g., 300)\n        -   `health_thresholds` (a dictionary with keys like `max_cpu_usage` and `max_error_rate`).\n\n7.  **Write Tests:**\n    -   Add new test cases to `tests/test_coordinators.py` that validate the canary deployment workflow. You must test both a successful promotion scenario and a failure scenario that results in a rollback. Mock service dependencies as needed.",
+  "expected_approach": "An expert developer would approach this by first understanding the existing architecture and identifying the key integration points. The process would be:\n\n1.  **Schema First:** Start by modifying the data model in `vitalops/models/domain.py` to support the new states and strategy type. This establishes the data contract for the feature.\n2.  **Configuration:** Add the new parameters to `config.yaml` and ensure they are loaded correctly by the application's configuration module.\n3.  **Bottom-Up Service Integration:** Implement the `CanaryHealthPolicyHandler` in `vitalops/policy_engine/handlers.py`. This encapsulates the evaluation logic, keeping the coordinator clean. The handler should be designed to receive metrics and thresholds and return a simple boolean or status object.\n4.  **Core Orchestration Logic:** Modify the `DeploymentCoordinator` in `vitalops/coordinators/deployment.py`. The main execution method should have a clear conditional branch for `strategy == 'canary'`. This branch will orchestrate the sequence: deploy to subset -> wait/monitor -> invoke policy engine -> promote or rollback.\n5.  **Service Calls:** Within the coordinator, the developer will add calls to the `MetricCollector` to fetch data, the `PolicyEngine` to evaluate it, and the `NotificationGateway` for alerts. These calls should reuse existing service clients.\n6.  **API Surface:** Update the function signature and docstrings in `vitalops/interfaces/api.py` to expose the new `deployment_strategy` parameter, ensuring it has a safe default.\n7.  **Testing:** Write comprehensive tests in `tests/test_coordinators.py`. This involves mocking the `MetricCollector` to return simulated data (both healthy and unhealthy), mocking the `PolicyEngine`'s response, and asserting that the coordinator takes the correct actions (e.g., calls the deploy function for the remaining nodes or triggers a rollback).",
+  "ground_truth": "A successful solution will demonstrate the following key characteristics:\n\n-   **Decoupled Logic:** The core health evaluation logic is implemented in a new `CanaryHealthPolicyHandler` within the `policy_engine` module, not hardcoded inside the `DeploymentCoordinator`. The coordinator is responsible for *orchestration*, not *evaluation*.\n-   **Stateful Model:** The `DeploymentJob` model in `vitalops/models/domain.py` is the single source of truth for the deployment's progress, correctly reflecting the new canary-specific states (`CANARY_MONITORING`, `ROLLED_BACK`, etc.).\n-   **Configuration-Driven:** All key parameters (`subset_percentage`, `bake_time_seconds`, `health_thresholds`) are defined in and loaded from `config.yaml`. The code contains no hardcoded magic numbers for these values.\n-   **Architectural Consistency:** The implementation reuses existing services (`MetricCollector`, `NotificationGateway`) and patterns. The new code in `DeploymentCoordinator` should stylistically and structurally match the existing code.\n-   **Non-Breaking API Change:** The change to the API in `vitalops/interfaces/api.py` is backward-compatible. Existing clients calling the endpoint without the `deployment_strategy` parameter should trigger the standard deployment as before.\n-   **Correct Rollback Implementation:** The rollback mechanism must correctly identify the previous stable version and re-deploy it *only* to the failed canary nodes. It should also correctly use the `NotificationGateway` to send a failure alert.",
+  "evaluation_criteria": [
+    "**Correctness of Implementation:** Does the feature work as specified? Does it correctly deploy to a subset, monitor, and then either promote or roll back based on the policy outcome?",
+    "**Architectural Adherence:** Does the solution correctly separate concerns by placing evaluation logic in the `PolicyEngine` and orchestration logic in the `DeploymentCoordinator`?",
+    "**Code Quality and Readability:** Is the new code clean, well-commented, and does it follow PEP 8 standards and existing project conventions?",
+    "**Configuration Management:** Are all new operational parameters (canary size, bake time, thresholds) externalized to `config.yaml` with no hardcoding?",
+    "**Modularity:** Is the canary logic encapsulated in a way that it doesn't overly complicate the standard deployment path?",
+    "**API Contract:** Is the API change in `api.py` implemented correctly and in a backward-compatible manner?",
+    "**Testing Coverage:** Are there new tests in `tests/test_coordinators.py`? Do the tests adequately cover both the successful promotion and the failure/rollback scenarios?"
+  ],
+  "metadata": {
+    "context_length": 357536,
+    "files_count": 25,
+    "information_coverage": 0.9041632842984779,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:09:15.978627"
+  }
+}

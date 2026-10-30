@@ -1,0 +1,40 @@
+{
+  "id": "python_system_monitoring_medium_025_code_comprehension_easy_01",
+  "task_category": "code_comprehension",
+  "difficulty": "easy",
+  "title": "Trace Alert Triggering Logic for High CPU Usage",
+  "description": "As a new developer on the EduPulse Monitor team, you need to understand the basic alerting pipeline. Your task is to investigate and document the exact sequence of events that occurs when the system detects high CPU usage, leading to the creation of an alert. This involves tracing the data flow from metric collection to alert generation, identifying the key modules and functions involved, and pinpointing where the specific alert threshold is configured.",
+  "context_files": [
+    "edupulse-monitor//README.md",
+    "edupulse-monitor//src//main.py",
+    "edupulse-monitor//ARCHITECTURE.md",
+    "edupulse-monitor//src//edupulse_monitor//core//use_cases//monitor_system.py",
+    "edupulse-monitor//src//edupulse_monitor//core//domain//policy.py",
+    "edupulse-monitor//src//edupulse_monitor//infrastructure//gateways//__init__.py",
+    "edupulse-monitor//src//edupulse_monitor//core//use_cases//manage_alerts.py",
+    "edupulse-monitor//src//edupulse_monitor//core//use_cases//__init__.py",
+    "edupulse-monitor//src//edupulse_monitor//infrastructure//collectors//__init__.py"
+  ],
+  "context_length": 116789,
+  "task_prompt": "Analyze the provided codebase to answer the following questions:\n1.  What is the sequence of primary function/method calls that starts from collecting a CPU metric and results in the creation of an alert?\n2.  List the specific files where each major step (collection, policy evaluation, alert creation) in this sequence occurs.\n3.  In which file and within which specific data structure or class is the numerical threshold for a 'high_cpu_usage' alert defined?",
+  "expected_approach": "An expert developer would approach this by first identifying the main application loop or entry point, likely in `src/main.py` or `src/edupulse_monitor/core/use_cases/monitor_system.py`. They would then trace the execution flow:\n1.  Look for a 'monitoring' or 'execution' loop in `monitor_system.py`.\n2.  Identify the call to a metric collector. The file `src/edupulse_monitor/infrastructure/collectors/__init__.py` is the most probable location for this logic.\n3.  Follow the collected metric data back to the `monitor_system.py` use case. The use case would then likely pass this data to a policy evaluation component.\n4.  Examine `src/edupulse_monitor/core/domain/policy.py` to understand how rules and thresholds are defined and evaluated. They would search for a structure (e.g., a dictionary, a list of objects) that defines policies, looking for a 'cpu_usage' key.\n5.  Once a policy violation is detected, the `monitor_system.py` use case would likely trigger an alert. The developer would look for a call to a different use case, such as one defined in `src/edupulse_monitor/core/use_cases/manage_alerts.py`.\n6.  By cross-referencing these files, the developer can build a complete picture of the control flow and locate the specific configuration value.",
+  "ground_truth": "The agent should provide a response that correctly identifies the following key points:\n\n1.  **Function/Method Sequence:** The flow is orchestrated by `monitor_system.MonitorUseCase.execute()`. This method calls a collector, likely `collectors.SystemMetricsCollector.get_metrics()`, which returns CPU data. The data is then passed to `policy.PolicyEvaluator.evaluate(metric)`. If the evaluation returns a 'breached' status, `monitor_system.MonitorUseCase` then calls `manage_alerts.AlertManagerUseCase.create_alert(alert_details)`.\n\n2.  **File Locations for Each Step:**\n    *   **Orchestration:** `src/edupulse_monitor/core/use_cases/monitor_system.py`\n    *   **Collection:** `src/edupulse_monitor/infrastructure/collectors/__init__.py`\n    *   **Policy Evaluation:** `src/edupulse_monitor/core/domain/policy.py`\n    *   **Alert Creation:** `src/edupulse_monitor/core/use_cases/manage_alerts.py`\n\n3.  **Threshold Definition Location:** The threshold for high CPU usage is defined in `src/edupulse_monitor/core/domain/policy.py`. It is located within a data structure, likely a list of `Policy` objects or a dictionary named `DEFAULT_ALERTING_POLICIES`. The specific entry would look something like:\n    ```python\n    # In src/edupulse_monitor/core/domain/policy.py\n    DEFAULT_ALERTING_POLICIES = [\n        Policy(\n            name='high_cpu_usage',\n            metric='cpu.percent',\n            condition='greater_than',\n            threshold=90.0,\n            severity='critical'\n        ),\n        # ... other policies\n    ]\n    ```",
+  "evaluation_criteria": [
+    "Correctly identifies the main orchestrating use case in `monitor_system.py`.",
+    "Accurately traces the control flow from the orchestrator to the collector, policy evaluator, and alert manager.",
+    "Correctly maps each logical step (collection, evaluation, creation) to the corresponding file.",
+    "Successfully locates the `policy.py` file as the source for threshold configuration.",
+    "Pinpoints the specific data structure (e.g., a list of `Policy` objects or a dictionary) where the 'high_cpu_usage' threshold is defined.",
+    "The explanation is clear, concise, and does not invent non-existent functions or files."
+  ],
+  "metadata": {
+    "context_length": 116789,
+    "files_count": 9,
+    "information_coverage": 0.3102550547380781,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:37:11.107479"
+  }
+}

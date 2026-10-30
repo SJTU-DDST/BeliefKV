@@ -49,6 +49,7 @@ def main():
         "tests/test_checkpoint_native_parser.py", "tests/test_parallel_checkpoint_pilot.py",
         "tests/test_checkpoint_repository_tools.py", "tests/test_focused_review_pilot.py",
         "tests/test_original_task_mix.py",
+        "tests/test_original_project_supplement.py", "tests/test_reused_workflow_mix.py",
     )
     names.update(added)
     names.update((
@@ -113,6 +114,14 @@ def main():
         "experiments/reports/original_task_mix6_20261030/preparation_r2/qualified_manifest.json",
         "experiments/reports/original_task_mix6_20261030/preparation_r2/native_qualified.json",
         "experiments/reports/original_task_mix6_20261030/preparation_r2/tool_binding.json",
+        "scripts/prepare_reused_workflow_mix.py",
+        "scripts/prepare_original_project_supplement.py",
+        "configs/workloads/locobench_original_supplement26_coder_20261030.json",
+        "configs/migration/workflow_original_supplement26_native_20261030.json",
+        "experiments/reports/original_project_supplement_20261030/preparation_r1/declaration.json",
+        "experiments/reports/original_project_supplement_20261030/preparation_r1/qualified_manifest.json",
+        "experiments/reports/original_project_supplement_20261030/preparation_r1/native_qualified.json",
+        "experiments/reports/original_project_supplement_20261030/preparation_r1/tool_binding.json",
         str(Path(__file__).relative_to(ROOT)),
     ))
     before = {name: sha256_file(ROOT / name) for name in sorted(names)}

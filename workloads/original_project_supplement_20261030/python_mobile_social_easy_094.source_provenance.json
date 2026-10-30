@@ -1,0 +1,93 @@
+[
+  {
+    "path": "snapcache_utility_hub",
+    "archive_path": "data/generated/python_mobile_social_easy_094/snapcache_utility_hub",
+    "raw_sha256": "42742ddc6e412152be359a02e8a987b38a20401a494efeb66e5fd0170ccb25a0",
+    "materialized_sha256": "6ae2a09889ec94eed3fbe196ece6c2d42956bdd334dbe7fc8fa82732a581012a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "src/utils.py",
+    "archive_path": "data/generated/python_mobile_social_easy_094/src/utils.py",
+    "raw_sha256": "9f6b085b6c0db0107332fecbb9d1eb99f83bb1c80c8ed3a8817e3fd135a84fb8",
+    "materialized_sha256": "9f6b085b6c0db0107332fecbb9d1eb99f83bb1c80c8ed3a8817e3fd135a84fb8",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "src/config.py",
+    "archive_path": "data/generated/python_mobile_social_easy_094/src/config.py",
+    "raw_sha256": "b189644e38feaba8433cd4c3b7c2666a7f6c664e271ac8f669cbc255ddae2211",
+    "materialized_sha256": "780937aa42aa496284396bbb1fbedf1728d10c0d67d8e44c7caad06b60777a23",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "src/constants.py",
+    "archive_path": "data/generated/python_mobile_social_easy_094/src/constants.py",
+    "raw_sha256": "809be3fe7464af2514815a0ae5f35268dca3d42087ea15ff888b61cc181873d7",
+    "materialized_sha256": "b6a80bc69acbafdd437beb90c6fba1ab1978615690dd8ec58fca993e1da0e701",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/test_main.py",
+    "archive_path": "data/generated/python_mobile_social_easy_094/tests/test_main.py",
+    "raw_sha256": "b0d46b884e18f2caff2e1849eb94a77573e4928af7e108e4a6b1d1aaf76816b7",
+    "materialized_sha256": "f2d802815b254fd54a6df843fb814177d7b6f94ae4f5761f25f7df507f7dd6c6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/test_utils.py",
+    "archive_path": "data/generated/python_mobile_social_easy_094/tests/test_utils.py",
+    "raw_sha256": "cd968db1b4ffb4a2e88ea2299ab16d1d2c79d05a6d2b2d4e97ccfa82e2b6f000",
+    "materialized_sha256": "c24fd0a8d81a9b95b731a1d2b18cd2802ed2238be18338eae2f3d5dc21d8bf24",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "README.md",
+    "archive_path": "data/generated/python_mobile_social_easy_094/README.md",
+    "raw_sha256": "fdf19332e4e8c7e511705be678bf182359c05bebdabc36556bcb12bafd1a8c72",
+    "materialized_sha256": "1c41e482c0de4165a54dfa055521e608687d07ab2ccd6b2e993860c6ecee8c84",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "requirements.txt",
+    "archive_path": "data/generated/python_mobile_social_easy_094/requirements.txt",
+    "raw_sha256": "0e5423276160eac0580c7172b674b41acb5a159d43927378cc6ab8c78f184493",
+    "materialized_sha256": "0e5423276160eac0580c7172b674b41acb5a159d43927378cc6ab8c78f184493",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": ".gitignore",
+    "archive_path": "data/generated/python_mobile_social_easy_094/.gitignore",
+    "raw_sha256": "507ed79b25b68d0eaca8223de5bb3c16944d167ae6530a21db23b298db8617a7",
+    "materialized_sha256": "507ed79b25b68d0eaca8223de5bb3c16944d167ae6530a21db23b298db8617a7",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "Dockerfile",
+    "archive_path": "data/generated/python_mobile_social_easy_094/Dockerfile",
+    "raw_sha256": "aab40237393ba5362dc02f8f507314834efbe9b359e8715c942fd95ae52f4326",
+    "materialized_sha256": "aab40237393ba5362dc02f8f507314834efbe9b359e8715c942fd95ae52f4326",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "docs/api.md",
+    "archive_path": "data/generated/python_mobile_social_easy_094/docs/api.md",
+    "raw_sha256": "2dbb47750fdfa83ca9cb6a9290dceb2d7aefae44ea65a7762ce2dbf1f55178ba",
+    "materialized_sha256": "e951c7b3c6002cd5e05e7ff133c9910c618b209a20ecf5772ce0416cf5519bc7",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "src/module_1.py",
+    "archive_path": "data/generated/python_mobile_social_easy_094/src/module_1.py",
+    "raw_sha256": "6a45318a48f0a821ae8c8d95bba3faec370922b9556c5d63a8f6c0116ca9d95c",
+    "materialized_sha256": "6b2b171a21c7848ef8f31057b38d3595c848156bf784a62c48933d12e6d5d58b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "src/module_2.py",
+    "archive_path": "data/generated/python_mobile_social_easy_094/src/module_2.py",
+    "raw_sha256": "e21606c2121c12ef29eb7dbd5d11d80007f5b417180d2baa2b8494173b6e9ea3",
+    "materialized_sha256": "be55ebb22f07c63851ce5f44101c5def46dbaf658bf9ed3f67fee2f3d23b0f1e",
+    "outer_markdown_fence_removed": true
+  }
+]

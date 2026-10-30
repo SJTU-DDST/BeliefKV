@@ -1,0 +1,86 @@
+[
+  {
+    "path": "UtilitySight/README.md",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/README.md",
+    "raw_sha256": "0df5c22e789533de582f27617b7517afd974f370614d3080ba526432b16fb368",
+    "materialized_sha256": "9ce34bf8004ebe1eba80d66e5bad06c4ebc1c666114053af76e7b1627104e9a1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/pyproject.toml",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/pyproject.toml",
+    "raw_sha256": "c575146481f731bafa913e242240c8049826477726307b9aa45267ef77d4663a",
+    "materialized_sha256": "109e8535b9f7d9304a5a5de65a4d1feb9459d9cb1e9e0fea1048bf7231742f62",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/config/settings.yml",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/config/settings.yml",
+    "raw_sha256": "a3542ec545e8b1d39f495911678385150f565373fb0ad4162d70e0fe31263ce3",
+    "materialized_sha256": "dcb5f056751f4f8747a43fac106a1ddb66bbfb70a8d43e87e41b2e23edf98db3",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/docs/api_reference.md",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/docs/api_reference.md",
+    "raw_sha256": "5c8fd3a0f2deadaac872563310b923e0a1ece3250b6c0d0dafd090ab1c852696",
+    "materialized_sha256": "6cef5fb5a6fd78464b25b6cc72796b24fb6351d9407bf19f3c09c9f199b3e725",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/src/utilitysight/domain/models.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/src/utilitysight/domain/models.py",
+    "raw_sha256": "a9b4e80f0d3c2035a22591618c110a5de471606c1559f04c8b4d727030aa3c51",
+    "materialized_sha256": "ffe96161caf0ea988458d3f91a85499a95ef78175960f1fc22012ea608acd9e4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/src/utilitysight/application/ports.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/src/utilitysight/application/ports.py",
+    "raw_sha256": "c15ade358b2fec657dc49223caf1fced7e2516dcf6d77f57bc4fa5ff59be3568",
+    "materialized_sha256": "83a8342c17e5399849865564519962a7d94b85239e6a6a82729cef3b5b4a2752",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/src/utilitysight/adapters/api_server.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/src/utilitysight/adapters/api_server.py",
+    "raw_sha256": "da81baa31daeae89de7a840f5ac90847e16a83e5a022648a19a25a7fb39f20bd",
+    "materialized_sha256": "c265a54388f9d53f24323b2cf248774248eed4fbc52d6aabef370e291e8a7318",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/src/utilitysight/adapters/stream_processor.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/src/utilitysight/adapters/stream_processor.py",
+    "raw_sha256": "c809b21e862b161a93b4423ce73edb15302b2e17c430663fa6e8b0fc9ce559eb",
+    "materialized_sha256": "7d98296c208b5f9596ed32890c77829d5cb3d09b277fe0f47a6b916e3ac3b285",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/src/utilitysight/adapters/local_lake_storage.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/src/utilitysight/adapters/local_lake_storage.py",
+    "raw_sha256": "08f57e12b6e47abcb0f01d4a5f5f35f67783867155947f64b836f1ace3f5fe15",
+    "materialized_sha256": "4e58357b790ffcdcdfd61e568d9d45f6e42dcb27937381ef330e5e4d267b5e5e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/src/utilitysight/adapters/quality_event_publisher.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/src/utilitysight/adapters/quality_event_publisher.py",
+    "raw_sha256": "e967b49af0fdf2fc1ec40a522cdfbb1c39a070e493434df6fd9db0b8481b4d16",
+    "materialized_sha256": "db4f9131396c3ebeed76772777c7673d5a410bf0d6103b7118c3eb2693de755f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/tests/unit/test_domain_rules.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/tests/unit/test_domain_rules.py",
+    "raw_sha256": "b9bcedff29a01eb3d00673c635221153a7f1cbea5eac7e6c431c20289382ba50",
+    "materialized_sha256": "252f4df6084bc2713425ca9bc7e9578fcc3718f5b0f080d6310ab62ed6ed122e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "UtilitySight/tests/integration/test_api_pipeline.py",
+    "archive_path": "data/generated/python_data_analytics_easy_046/UtilitySight/tests/integration/test_api_pipeline.py",
+    "raw_sha256": "85f29352939b33cb97804e819c7cb555f5e3bb9151c31801862b088cdc362b19",
+    "materialized_sha256": "83c5687b71a473e7555a7fe6ea63a37563cb3d63bcc3feb38991c80661f8a449",
+    "outer_markdown_fence_removed": true
+  }
+]

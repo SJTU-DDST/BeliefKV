@@ -1,0 +1,51 @@
+{
+  "id": "python_mobile_game_hard_024_code_comprehension_easy_01",
+  "task_category": "code_comprehension",
+  "difficulty": "easy",
+  "title": "Identify Logic Path for 'Daily Bonus' Push Notification",
+  "description": "The 'Corporate Conquest: Executive Tycoon' game sends a daily push notification to remind players to collect their bonus rewards. Due to legacy code and a lack of documentation, it's unclear where this logic resides. The codebase uses non-descriptive module names (e.g., `module_23.py`), making it difficult to navigate. A new developer on the team needs to understand the end-to-end flow for this feature, from checking bonus eligibility to triggering the actual notification.",
+  "context_files": [
+    "tests/test_main.py",
+    "README.md",
+    "name",
+    "src/module_20.py",
+    "src/module_51.py",
+    "src/module_2.py",
+    "src/module_45.py",
+    "src/module_35.py",
+    "src/module_7.py",
+    "src/module_19.py",
+    "src/module_43.py",
+    "src/module_6.py",
+    "src/module_30.py",
+    "src/module_48.py",
+    "src/module_23.py",
+    "src/module_50.py",
+    "children",
+    "src/module_25.py",
+    "src/module_1.py",
+    "src/module_13.py",
+    "src/module_29.py"
+  ],
+  "context_length": 303423,
+  "task_prompt": "Your task is to analyze the provided codebase and answer the following questions to document the 'Daily Bonus' notification feature:\n\n1.  Identify the specific function or method that determines if a player is eligible for the daily bonus. In which file is this logic located?\n2.  Identify the specific function or method that schedules or sends the push notification for the daily bonus. In which file is this logic located?\n3.  Describe the mechanism that connects the eligibility check (from question 1) to the notification trigger (from question 2). For example, is it a direct function call, an event being published and subscribed to, a state change being monitored, or something else?",
+  "expected_approach": "An expert developer would not read every file. They would start by performing a targeted search for relevant keywords within the project.\n\n1.  **Initial Search:** Search for strings like `\"daily bonus\"`, `\"notification\"`, or `\"bonus\"`. This would likely lead to user-facing text strings or configuration variables, probably located in a constants file or a general utility module.\n2.  **Trace Backwards from Notification Text:** Let's assume the search finds a constant `DAILY_BONUS_NOTIFICATION_TEXT` in `src/module_48.py`. The developer would then search for usages of this constant.\n3.  **Locate Notification Sender:** This usage search would lead to a function, for instance, `schedule_local_notification` inside `src/module_7.py`. This module would appear to be a generic notification service.\n4.  **Locate the Caller:** The next step is to find where `schedule_local_notification` (or a similar public-facing method in `module_7.py`) is called with the daily bonus context. This requires searching for calls to this function.\n5.  **Discover Business Logic:** This search would lead to a different module, for example, `src/module_23.py`. Within this file, the developer would find a function like `_check_and_trigger_daily_rewards` which contains the core business logic. This function likely checks the player's last login timestamp against the current time.\n6.  **Synthesize the Connection:** The developer would observe that `_check_and_trigger_daily_rewards` in `module_23.py` directly imports and calls the notification scheduler from `module_7.py` after confirming the player's eligibility. They would then formulate the final answer based on these findings.",
+  "ground_truth": "The expected output is a clear and concise explanation based on the (hypothetical) codebase structure. The agent must correctly identify the functions, files, and the connection between them.\n\n1.  **Eligibility Logic:** The function is `is_bonus_available(player_data)` located in `src/module_23.py`. It checks `player_data['last_collection_timestamp']` against the current server time.\n2.  **Notification Trigger:** The function is `schedule_game_notification(user_id, message, delay_seconds)` located in `src/module_7.py`.\n3.  **Connection Mechanism:** The connection is an event-driven system, a common pattern for decoupling features like this. In the `offline_sync` module (`src/module_13.py`), after a successful sync, a function `process_player_state_events` is called. This function iterates through recent state changes. If it finds that `is_bonus_available()` from `module_23.py` now returns `True`, it publishes a `'DAILY_BONUS_AVAILABLE'` event to a global event queue. A listener in `module_7.py`, `setup_notification_listeners()`, is configured to listen for this event. When the event is received, its handler function calls `schedule_game_notification` with the appropriate player and message details.",
+  "evaluation_criteria": [
+    "**Correctness of Eligibility Logic Identification:** Did the agent correctly identify the function `is_bonus_available` and the file `src/module_23.py`?",
+    "**Correctness of Notification Trigger Identification:** Did the agent correctly identify the function `schedule_game_notification` and the file `src/module_7.py`?",
+    "**Accuracy of Connection Description:** Did the agent correctly identify the indirect, event-driven connection mechanism involving `module_13.py` (the offline_sync module)?",
+    "**Identification of Intermediary Module:** Was the agent able to identify the crucial role of the `offline_sync` module (`src/module_13.py`) in linking the game state logic to the notification system?",
+    "**Clarity and Conciseness:** Is the explanation clear, accurate, and free of irrelevant code snippets or file summaries?"
+  ],
+  "metadata": {
+    "context_length": 303423,
+    "files_count": 21,
+    "information_coverage": 0.3180374572348561,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:12:21.383025"
+  }
+}

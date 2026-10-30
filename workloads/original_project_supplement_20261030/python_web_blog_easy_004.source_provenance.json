@@ -1,0 +1,86 @@
+[
+  {
+    "path": "focusflow_blog/focusflow/__init__.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/focusflow/__init__.py",
+    "raw_sha256": "efe68f3388792815c2441759107ca31e189e3f965156061d3cf87f0632fb71fb",
+    "materialized_sha256": "f044eef0c07b2d6ade9e8c653c3b690a4d2ffd66855bd32ba62c989626da9cd8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/focusflow/routes.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/focusflow/routes.py",
+    "raw_sha256": "c53b86f8348861802f20c1f006cbd7dbb64190c8526a18a19c3d64ff432c229e",
+    "materialized_sha256": "a19783405d49837e1321ba9671f02d6a229e3841655e33a0ac5c9c8754f0b64f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/focusflow/models.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/focusflow/models.py",
+    "raw_sha256": "164c5077a732089913c92dc38a1feaf9fba70e0cfa07bdb974094a2f21a3269e",
+    "materialized_sha256": "88c36b16024554cf001b18c5e63f277a39548f00b6c79b06658b593ce29fc9f5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/focusflow/services.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/focusflow/services.py",
+    "raw_sha256": "01d890b038a177361d18bdaf62d467cea9bfb915d3bca4715ceddb3c7da65ad3",
+    "materialized_sha256": "a3091ebaa387317b9847dbb2c52fc81ded52d2cceb88aa199ad5ebe5e7df25fb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/focusflow/api.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/focusflow/api.py",
+    "raw_sha256": "e55c27b807773ad5e1d67076abb7440081a897a4bbd67471e1391ccc817b38da",
+    "materialized_sha256": "ef4af045ebe298e880562bb1b137950c650a9d03a00c6a74578ce7f8a26de502",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/focusflow/templates",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/focusflow/templates",
+    "raw_sha256": "b043c7d3198dd4a952273857aa0808f5a440c44e395d14330b2a763b9917d340",
+    "materialized_sha256": "338c455f52518994a37d3f52bc7b9b6dab2397e885067e6c7114bedf10f32543",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/focusflow/static",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/focusflow/static",
+    "raw_sha256": "c7b78604ef53772b260468ff76d900eae4df29011e460741761836f4ae7749cc",
+    "materialized_sha256": "0316190eb4da22540c116f3dd4f312cb8179bcc1396927239806780365fdaba7",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/tests/test_core.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/tests/test_core.py",
+    "raw_sha256": "e1bf13ac8c84620b28b09ba527e66bfd1536a699cceb68721266c9f2609f7edb",
+    "materialized_sha256": "d1533aadb7a7041b6444dbe54cd48827c810bf2803831a9ec8352e650eaca476",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/docs/API.md",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/docs/API.md",
+    "raw_sha256": "01a359c8b4b89602f56f9831bf35e18a7dffc68244ef4821114659c0af91b912",
+    "materialized_sha256": "087c6013b54a4f5102b935eec03d01d28407cc7a3919e0c7b76d93c1eee755a5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/run.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/run.py",
+    "raw_sha256": "ebdba7a6498eed858d9dfb992a8749048cb347debb4be59b73c5709ea53250e2",
+    "materialized_sha256": "448abcec310f9f552a4cda01fa0d9c23bf9b176f2f6afae427420ea65756f6ed",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/config.py",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/config.py",
+    "raw_sha256": "19b191bc998f19184cc8f1fbdf3c333c441910cab63a49ea300cc80d007ab974",
+    "materialized_sha256": "84133c7bbff6382c36affcb3c245266557115a883c7b5949e123228c804ad13f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "focusflow_blog/requirements.txt",
+    "archive_path": "data/generated/python_web_blog_easy_004/focusflow_blog/requirements.txt",
+    "raw_sha256": "4bf30d68d8f971a9f40f040e9ac3ee340a681b873019309870caf0890acf6d9a",
+    "materialized_sha256": "4bf30d68d8f971a9f40f040e9ac3ee340a681b873019309870caf0890acf6d9a",
+    "outer_markdown_fence_removed": false
+  }
+]

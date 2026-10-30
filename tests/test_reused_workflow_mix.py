@@ -4,8 +4,9 @@ from types import SimpleNamespace as NS
 import pytest
 
 from beliefkv.core.events import RuntimeEventKind as Kind
-from beliefkv.experiments.workload_mix import _paths, stratify
+from beliefkv.experiments.workload_mix import _paths, stratify, summary
 from scripts.prepare_reused_workflow_mix import choose_reuse
+from scripts.prepare_workflow_mix import review
 
 
 def base_inventory():
@@ -35,7 +36,7 @@ def test_reuse_changes_one_original_task_without_choosing_a_lucky_repeat():
         alternate(base, 5, 60.), alternate(base, 0, 1.),
     ]}
     before = deepcopy((base, alternatives))
-    report = choose_reuse(base, [alternatives], target_ratio=3.)
+    report = choose_reuse(base, [alternatives], target_ratio=3., ratio_metric="p90_p10")
     assert (base, alternatives) == before
     assert report["model_work_diversity_met"]
     assert report["target_ratio"] == 3.
@@ -52,7 +53,7 @@ def test_concurrency_does_not_disqualify_an_existing_complete_trace():
     candidate = alternate(base, 0, 1.)
     candidate["capture_concurrency"] = 6
     base["workflows"][0]["capture_concurrency"] = 24
-    report = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3.)
+    report = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3., ratio_metric="p90_p10")
     assert report["model_work_diversity_met"]
     assert report["selected_workflows"][0]["source_capture"] == "/different-concurrency"
 
@@ -60,7 +61,10 @@ def test_concurrency_does_not_disqualify_an_existing_complete_trace():
 def test_sufficient_existing_population_is_not_replaced_to_exaggerate_the_spread():
     base = base_inventory()
     base["workflows"][0]["model_work_units"] = 1.
-    report = choose_reuse(base, [{"workflows": [alternate(base, 0, .001)]}], target_ratio=3.)
+    report = choose_reuse(
+        base, [{"workflows": [alternate(base, 0, .001)]}],
+        target_ratio=3., ratio_metric="p90_p10",
+    )
     assert report["substitutions"] == []
     assert report["selected_workflows"] == base["workflows"]
 
@@ -68,9 +72,9 @@ def test_sufficient_existing_population_is_not_replaced_to_exaggerate_the_spread
 def test_source_jct_and_policy_outcomes_do_not_affect_reuse_selection():
     base = base_inventory()
     candidate = alternate(base, 0, 1.)
-    previous = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3.)
+    previous = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3., ratio_metric="p90_p10")
     candidate.update(source_jct_s=1e12, predictive_speedup=1000.)
-    current = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3.)
+    current = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3., ratio_metric="p90_p10")
     assert current["substitutions"] == previous["substitutions"]
     assert current["after_model_work"] == previous["after_model_work"]
 
@@ -78,11 +82,46 @@ def test_source_jct_and_policy_outcomes_do_not_affect_reuse_selection():
 def test_current_default_threshold_rejects_a_threefold_reuse_mix():
     base = base_inventory()
     candidate = alternate(base, 0, 1.)
-    previous = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3.)
+    previous = choose_reuse(base, [{"workflows": [candidate]}], target_ratio=3., ratio_metric="p90_p10")
     assert previous["model_work_diversity_met"]
     current = choose_reuse(base, [{"workflows": [candidate]}])
-    assert current["target_ratio"] == 5.
+    assert current["target_ratio"] == 3.
+    assert current["diversity_metric"] == "p80_p20"
     assert not current["model_work_diversity_met"]
+
+
+def test_extreme_tails_do_not_satisfy_the_current_percentile_criterion():
+    base = base_inventory()
+    for row, work in zip(base["workflows"], (1., 10., 10., 10., 10., 100.), strict=True):
+        row["model_work_units"] = work
+    report = choose_reuse(base, [])
+    assert report["after_model_work"]["p90_p10"] == 10.
+    assert report["after_model_work"]["p80_p20"] == 1.
+    assert not report["model_work_diversity_met"]
+
+
+def test_three_is_the_minimum_and_four_remains_an_explicit_stricter_tier():
+    base = base_inventory()
+    for row, work in zip(base["workflows"], (1., 1., 1., 3.5, 3.5, 3.5), strict=True):
+        row["model_work_units"] = work
+    report = choose_reuse(base, [])
+    assert report["model_work_diversity_met"]
+    assert report["model_work_p80_p20_levels"] == {
+        "meets_threshold_3": True, "meets_threshold_4": False,
+    }
+    strict = choose_reuse(base, [], target_ratio=4.)
+    assert strict["diversity_metric"] == "p80_p20"
+    assert not strict["model_work_diversity_met"]
+
+
+def test_quantiles_and_preparation_defaults_name_the_actual_percentile_ratio():
+    values = summary([1., 2., 3., 4., 5., 6.])
+    assert values["p20"] == 2.
+    assert values["p80"] == 5.
+    assert values["p80_p20"] == 2.5
+    report = review([])
+    assert report["diversity_metric"] == "p80_p20"
+    assert report["diagnostic_target_ratio"] == 3.
 
 
 def test_tool_aware_tiers_can_place_small_model_work_after_a_long_tool_path():

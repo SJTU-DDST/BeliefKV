@@ -7,7 +7,7 @@ from beliefkv.experiments.workload_mix import summary
 
 
 DEFAULT_DIAGNOSTICS = {
-    "model_work_p90_p10": 5.,
+    "model_work_p80_p20": 3.,
     "multi_child_join_fraction": .5,
     "child_calls_median_max": 12.,
     "child_calls_p90_max": 20.,
@@ -79,7 +79,7 @@ def assess(inventory, shape, *, diagnostics=None):
     )
     shortfalls = []
     checks = (
-        (work["p90_p10"] is not None and work["p90_p10"] >= diagnostics["model_work_p90_p10"],
+        (work["p80_p20"] is not None and work["p80_p20"] >= diagnostics["model_work_p80_p20"],
          "insufficient_intrinsic_work_diversity"),
         (multi_fraction >= diagnostics["multi_child_join_fraction"], "mostly_single_child_joins"),
         (bool(child_calls["count"]) and child_calls["p50"] <= diagnostics["child_calls_median_max"],
@@ -107,6 +107,13 @@ def assess(inventory, shape, *, diagnostics=None):
             "join_fanout_counts": dict(Counter(row["members"] for row in shape["joins"])),
         },
         "diagnostic_targets": dict(diagnostics), "shape_shortfalls": shortfalls,
+        "model_work_diversity": {
+            "metric": "p80_p20", "minimum": diagnostics["model_work_p80_p20"],
+            "actual": work["p80_p20"],
+            "meets_threshold_3": work["p80_p20"] is not None and work["p80_p20"] >= 3.,
+            "meets_threshold_4": work["p80_p20"] is not None and work["p80_p20"] >= 4.,
+            "p90_p10_is_reference_only": True,
+        },
         "shape_status": "needs_new_candidates" if shortfalls else "source_shape_candidate",
         "serving_evidence_status": "pending_matching_arrival_and_capacity_calibration",
         "serving_evidence_required": [

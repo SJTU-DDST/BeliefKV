@@ -1,0 +1,52 @@
+{
+  "id": "python_api_rest_easy_006_code_comprehension_hard_01",
+  "task_category": "code_comprehension",
+  "difficulty": "hard",
+  "title": "Diagnose Intermittent Stale Data in Text Transformation Endpoint",
+  "description": "The PocketOps API is a microservice providing various text manipulation utilities. A critical bug has been reported by users of the `/v1/transform/text` endpoint. Users report that when they make consecutive requests with the same text but different transformation types (e.g., first 'summarize', then 'anonymize'), they sometimes receive the result from the previous transformation. This issue is intermittent and appears to be related to the API's response caching layer. The system is built using a clean architecture with distinct layers for API, core business logic, and infrastructure adapters like caching.",
+  "context_files": [
+    "pocketops/README.md",
+    "pocketops/pocketops/adapters/api/main.py",
+    "pocketops/pocketops/adapters/api/rest/v1/endpoints.py",
+    "pocketops/pocketops/core/use_cases/text_transformation.py",
+    "pocketops/pocketops/adapters/cache/redis_adapter.py",
+    "pocketops/pocketops/adapters/persistence/in_memory_repository.py",
+    "pocketops/pocketops/core/ports/cache_port.py",
+    "pocketops/pocketops/adapters/api/rest/v1/schemas.py",
+    "pocketops/pocketops/adapters/api/error_handlers.py"
+  ],
+  "context_length": 97094,
+  "task_prompt": "You are a senior software engineer tasked with performing a root cause analysis of a critical bug causing stale data to be served. Your objective is to analyze the provided codebase and identify the precise defect in the caching mechanism.\n\nYour analysis must include:\n1.  A clear identification of the root cause of the bug.\n2.  The specific file(s) and, if possible, the function(s) or class(es) responsible for the flawed logic.\n3.  A detailed, step-by-step explanation of the request lifecycle that triggers this bug. Trace the flow from the initial API request in `endpoints.py` through the business logic to the caching implementation, explaining how the incorrect data is retrieved and returned.",
+  "expected_approach": "An expert developer would approach this by tracing the data flow of a request to understand how the system's components interact. \n1.  Start by examining `pocketops/adapters/api/rest/v1/endpoints.py` to identify the endpoint handler for text transformations and see how it processes incoming requests.\n2.  Inspect `pocketops/adapters/api/rest/v1/schemas.py` to understand the structure of the request body. This will reveal all parameters that should define a unique transformation, such as the text content and the transformation type.\n3.  Follow the logic from the endpoint into the core use case in `pocketops/core/use_cases/text_transformation.py`. This will show how the business logic orchestrates operations, specifically how it interacts with the caching layer before performing the actual text transformation.\n4.  Analyze the caching contract defined in `pocketops/core/ports/cache_port.py` to understand the expected behavior of any cache implementation.\n5.  The crucial step is to investigate the concrete implementation of the cache port, `pocketops/adapters/cache/redis_adapter.py`. Here, the developer would scrutinize the logic for generating cache keys.\n6.  By comparing the components used in the cache key generation against the full set of parameters from the request schema that define a unique operation, the developer will spot the discrepancy.\n7.  Finally, synthesize these findings into a coherent explanation, detailing how a request with one transformation type can generate a cache key that collides with a request for a different transformation type on the same text.",
+  "ground_truth": {
+    "bug_summary": "The root cause is a flawed cache key generation strategy in the `RedisCacheAdapter`. The key is generated using only the input text, completely ignoring the `transformation_type` parameter. This causes key collisions when different transformations are requested for the identical input text, leading to stale data from a previous, different operation being served from the cache.",
+    "file_and_logic_location": {
+      "primary_file": "pocketops/adapters/cache/redis_adapter.py",
+      "class": "RedisCacheAdapter",
+      "method": "The method responsible for generating the cache key (e.g., `_generate_key` or inline within `get`/`set` methods).",
+      "supporting_files": [
+        "pocketops/adapters/api/rest/v1/schemas.py (Defines the `TransformationRequest` model with both `text` and `transformation_type` fields).",
+        "pocketops/adapters/api/rest/v1/endpoints.py (Receives the request and passes the data to the use case).",
+        "pocketops/core/use_cases/text_transformation.py (Orchestrates the check against the cache before executing logic)."
+      ]
+    },
+    "bug_trigger_scenario": "1.  **Request 1 (Summarize):** A client sends a POST request to `/v1/transform/text` with the payload `{\"text\": \"The quick brown fox jumps over the lazy dog\", \"transformation_type\": \"summarize\"}`.\n2.  **Cache Miss & Key Generation:** The `text_transformation` use case checks the cache. The `RedisCacheAdapter` generates a key based *only* on the text, e.g., `key = f'cache:{hash(\"The quick brown fox...\")}'`.\n3.  **Execution & Caching:** The cache returns a miss. The summarization logic runs, producing a result (e.g., \"A fox jumped over a dog\"). This result is then stored in Redis with the generated key.\n4.  **Request 2 (Anonymize):** A second client sends a POST request to the same endpoint with `{\"text\": \"The quick brown fox jumps over the lazy dog\", \"transformation_type\": \"anonymize\"}`.\n5.  **Cache Hit (Incorrect):** The use case checks the cache again. The `RedisCacheAdapter` generates the *exact same key* as in step 2, because it again ignores the `transformation_type` ('anonymize') and only considers the text.\n6.  **Stale Data Returned:** The adapter finds the key in Redis and returns the cached value, which is the summarized text (\"A fox jumped over a dog\"), instead of executing the anonymization logic. The user receives incorrect, stale data."
+  },
+  "evaluation_criteria": [
+    "**Correctness of Root Cause:** Did the agent correctly identify that the cache key is incomplete and missing the `transformation_type`?",
+    "**Accuracy of Localization:** Did the agent correctly pinpoint `pocketops/adapters/cache/redis_adapter.py` as the source of the defect?",
+    "**Completeness of Traceability:** Did the agent's explanation successfully trace the problematic request flow across multiple files (`endpoints.py`, `text_transformation.py`, `redis_adapter.py`)?",
+    "**Understanding of System Architecture:** Does the analysis demonstrate an understanding of the roles of different components (API adapter, use case, cache port, cache adapter)?",
+    "**Clarity of Explanation:** Is the explanation of the bug scenario clear, logical, and easy for a human developer to understand?"
+  ],
+  "metadata": {
+    "context_length": 97094,
+    "files_count": 9,
+    "information_coverage": 0.753145410260786,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T16:56:55.654918"
+  }
+}

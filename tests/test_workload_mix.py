@@ -213,6 +213,9 @@ def test_original_scope_candidates_cross_context_and_never_expose_reference_answ
     assert declaration["scope_counts"] == {"investigation": 6, "implementation": 6, "multi_stage": 6}
     assert declaration["observed_size_tiers"] is None
     assert declaration["online_size_hints_injected"] is False
+    assert declaration["post_capture_acceptance"]["p80_p20_diagnostic_minimum"] == 3
+    assert declaration["post_capture_acceptance"]["p80_p20_stronger_diagnostic"] == 4
+    assert declaration["post_capture_acceptance"]["p90_p10_is_reference_only"]
     assignment = declaration["assignments"]
     for band in range(6):
         assert {row["scope_hypothesis"] for row in assignment if row["context_band"] == band} == {

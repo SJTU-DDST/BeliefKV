@@ -127,7 +127,9 @@ def mixed_scope_manifest(base, archive, *, seed=21):
         },
         "post_capture_acceptance": {
             "complete_natural_returns": True, "different_projects": 18,
-            "size_tier_counts": [6, 6, 6], "p90_p10_diagnostic_target_range": [5, 10],
+            "size_tier_counts": [6, 6, 6],
+            "p80_p20_diagnostic_minimum": 3, "p80_p20_stronger_diagnostic": 4,
+            "p90_p10_is_reference_only": True,
             "crossed_contexts_required": True,
             "record_real_JOIN_fanout_rounds_and_nesting": True,
             "no_normal_tail_removal_or_forced_length": True,

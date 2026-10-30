@@ -42,10 +42,13 @@ def summary(values):
     if not values:
         return {"count": 0}
     low, high = quantile(values, .1), quantile(values, .9)
+    lower_middle, upper_middle = quantile(values, .2), quantile(values, .8)
     return {
         "count": len(values), "min": min(values), "p10": low,
+        "p20": lower_middle, "p80": upper_middle,
         "p50": quantile(values, .5), "p90": high, "max": max(values),
         "p90_p10": high / low if low > 0 else None,
+        "p80_p20": upper_middle / lower_middle if lower_middle > 0 else None,
     }
 
 

@@ -18,6 +18,24 @@ from scripts import run_causal_source_capture as capture
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
+def verify_started_population(manifest, started, semantic_roots, population, concurrency, *, queued_source):
+    expected = set(manifest["instance_ids"])
+    if (
+        not 1 <= concurrency <= population
+        or len(expected) != population
+        or len(started) != len(set(started))
+        or not set(started) <= expected
+        or semantic_roots != len(started)
+        or manifest["config"]["concurrency"] != concurrency
+        or (not queued_source and len(started) != population)
+        or (queued_source and (
+            concurrency == population or len(started) < concurrency
+            or manifest["config"].get("workflow_arrival_schedule")
+        ))
+    ):
+        raise ValueError("observed root population or capture concurrency differs")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registration", type=Path, default=Path(
@@ -30,6 +48,7 @@ def main():
         ROOT / "experiments/reports/workflow_mix_20261029/scope18_finish_r1.registration.json"
     ))
     parser.add_argument("--declaration", type=Path)
+    parser.add_argument("--queued-source", action="store_true")
     args = parser.parse_args()
     registration, output = args.registration, args.output
     if output.exists():
@@ -114,21 +133,25 @@ def main():
             raise ValueError("live checkpoint contract or soft budgets differ")
     reader = SealedRecords()
     tokens = Counter(row["event"] for row in reader(run / "server/request_tokens.jsonl"))
-    events, semantics = Counter(), Counter()
+    events, semantics, started = Counter(), Counter(), []
     for path in clients[0].parent.glob("workflows/*/runtime_events.deepagents.jsonl"):
         for event in reader(path):
             events[event["kind"]] += 1
+            if event["kind"] == "workflow_start":
+                started.append(path.parent.name)
             value = event.get("attributes", {}).get("workflow_ranking_input")
             if value is not None:
                 item = WorkflowRankInput.from_dict(value)
                 semantics[event["kind"]] += 1
                 if event["kind"] == "workflow_start" and not item.task_instructions:
                     raise ValueError("new root did not expose its explicit task metadata")
-    if (
-        events["workflow_start"] != population or tokens["request_output"] <= 0
-        or semantics["workflow_start"] != population
-    ):
-        raise ValueError("require actual complete outputs and every root semantic boundary")
+    verify_started_population(
+        manifest, started, semantics["workflow_start"], population,
+        int(plan["environment"].get("CLIENT_ROOT_CONCURRENCY", population)),
+        queued_source=args.queued_source,
+    )
+    if tokens["request_output"] <= 0:
+        raise ValueError("require actual complete model outputs")
     finisher = capture.load(args.finisher)
     process = capture.reservation.process(finisher["process"]["pid"])
     if process is None or os.getpriority(os.PRIO_PROCESS, process["pid"]) != 19:
@@ -144,6 +167,9 @@ def main():
         "actual_server_parameters": actual, "fresh_sampler_cases": [1, 8, 24],
         "token_receipt_counts": dict(tokens), "event_counts": dict(events),
         "semantic_metadata_counts": dict(semantics), "workflow_count": population,
+        "started_task_ids": sorted(started),
+        "queued_source": args.queued_source,
+        "client_root_concurrency": manifest["config"]["concurrency"],
         "actual_delegation_contract": manifest["delegation_contract"],
         "actual_model_and_work_budgets": {
             name: manifest["config"][name] for name in (

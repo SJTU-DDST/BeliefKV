@@ -30,7 +30,7 @@ ALTERNATIVES = tuple(
 )
 
 
-def choose_reuse(base, inventories, *, target_ratio=5.):
+def choose_reuse(base, inventories, *, target_ratio=3., ratio_metric="p80_p20"):
     """Prefer the existing population, then the smallest one-task substitution."""
     selected = list(base["workflows"])
     if (
@@ -39,6 +39,7 @@ def choose_reuse(base, inventories, *, target_ratio=5.):
         or any(not row["eligible"] for row in selected)
         or len({row["protocol_sha256"] for row in selected}) != 1
         or target_ratio < 1
+        or ratio_metric not in ("p80_p20", "p90_p10")
     ):
         raise ValueError("reuse needs complete project-disjoint baseline workflows")
     by_project = {row["project"]: index for index, row in enumerate(selected)}
@@ -66,14 +67,14 @@ def choose_reuse(base, inventories, *, target_ratio=5.):
                 canonical.append(row)
     before = summary([row["model_work_units"] for row in selected])
     candidates = []
-    if before["p90_p10"] < target_ratio:
+    if before[ratio_metric] < target_ratio:
         for row in canonical:
             index = by_project.get(row["project"])
             if index is None or row["task_id"] == selected[index]["task_id"]:
                 continue
             trial = [*selected]
             trial[index] = row
-            ratio = summary([item["model_work_units"] for item in trial])["p90_p10"]
+            ratio = summary([item["model_work_units"] for item in trial])[ratio_metric]
             if ratio >= target_ratio:
                 candidates.append((
                     abs(row["model_work_units"] - selected[index]["model_work_units"]),
@@ -95,7 +96,12 @@ def choose_reuse(base, inventories, *, target_ratio=5.):
     return {
         "selected_workflows": deepcopy(selected), "canonical_candidates": deepcopy(canonical),
         "before_model_work": before, "after_model_work": after,
-        "target_ratio": target_ratio, "model_work_diversity_met": after["p90_p10"] >= target_ratio,
+        "diversity_metric": ratio_metric, "target_ratio": target_ratio,
+        "model_work_diversity_met": after[ratio_metric] >= target_ratio,
+        "model_work_p80_p20_levels": {
+            "meets_threshold_3": after["p80_p20"] >= 3.,
+            "meets_threshold_4": after["p80_p20"] >= 4.,
+        },
         "available_model_work_max_min_envelope": available["max"] / available["min"],
         "available_pool_cannot_reach_target_even_before_project_constraints": (
             available["max"] / available["min"] < target_ratio
@@ -139,15 +145,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-inventory", type=Path, default=BASE)
     parser.add_argument("--alternative-inventory", type=Path, action="append")
-    parser.add_argument("--output-dir", type=Path, default=HERE / "review_r2")
-    parser.add_argument("--target-ratio", type=float, default=5.)
+    parser.add_argument("--output-dir", type=Path, default=HERE / "review_r3")
+    parser.add_argument("--target-ratio", type=float, default=3.)
+    parser.add_argument("--ratio-metric", choices=("p80_p20", "p90_p10"), default="p80_p20")
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve every reuse selection and prior assessment")
     inputs = [args.base_inventory, *(args.alternative_inventory or ALTERNATIVES)]
     inventories = [json.loads(path.read_bytes()) for path in inputs]
     originals = {item["capture"]: original_source_proof(item) for item in inventories}
-    decision = choose_reuse(inventories[0], inventories[1:], target_ratio=args.target_ratio)
+    decision = choose_reuse(
+        inventories[0], inventories[1:], target_ratio=args.target_ratio, ratio_metric=args.ratio_metric,
+    )
     args.output_dir.mkdir(parents=True, exist_ok=False)
     write(args.output_dir / "declared_selection.json", decision)
     coefficient = inventories[0]["model_seconds_per_unit"]
@@ -194,7 +203,7 @@ def main():
             "all_nonselected_workflows_and_normal_tails_retained": True,
         },
         "pending": [
-            "finish_current_six_original_workflows_and_review_complementary_projects",
+            "review_completed_six_original_workflows_and_complementary_projects",
             "freeze_multisource_replay_bindings_before_any_comparison",
             "qualify_join_shape_background_population_arrivals_and_physical_pressure",
         ],
@@ -205,6 +214,8 @@ def main():
         "reused_workflows": len(tiers), "projects": len({row["project"] for row in tiers}),
         "canonical_original_tasks": len(decision["canonical_candidates"]),
         "model_work_p90_p10": report["after_model_work"]["p90_p10"],
+        "model_work_p80_p20": report["after_model_work"]["p80_p20"],
+        "diversity_metric": report["diversity_metric"],
         "substitutions": len(report["substitutions"]), "GPU_action": False,
     })
 

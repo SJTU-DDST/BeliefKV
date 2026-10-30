@@ -1,0 +1,79 @@
+[
+  {
+    "path": "structure/sitesmith_lite/__init__.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/sitesmith_lite/__init__.py",
+    "raw_sha256": "c26ea7cdfffb1b0fb7b942752ff2e75043a48b2205057085c7f646afcd2ba442",
+    "materialized_sha256": "b969486c2d350c2f3db7a9d702d0eb52a47c8b0b37ffeaae29ee962fd8c4c5fd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/sitesmith_lite/models.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/sitesmith_lite/models.py",
+    "raw_sha256": "d8ff1bca7149eb66d437fadc3b7e8c64c0a0ccc349235a92e3ed7fbf1437d50c",
+    "materialized_sha256": "f2819280b8cca3dd9cee17741b2f44112a3896cfb2e9458a9df75ac294d30e3c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/sitesmith_lite/schemas.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/sitesmith_lite/schemas.py",
+    "raw_sha256": "26bdecd9caf573b6bbf59a0e57d3e9aec43aed71cf447e4275a19d3728b56da7",
+    "materialized_sha256": "fc08507459b021e05d2e193653a5fb8ff2d0172f57c3c2a3dc0653d8521587b1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/sitesmith_lite/repositories.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/sitesmith_lite/repositories.py",
+    "raw_sha256": "37327551ff2afe99cca7278cf850c00680dd43225d8cbfa5e7ee9e79b837ceca",
+    "materialized_sha256": "538820f312a6c22dcf857a7f5187e0c0b194c4a9fddf572f46fbe2e04ca82bcd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/sitesmith_lite/routes.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/sitesmith_lite/routes.py",
+    "raw_sha256": "fb7c8c8e9c6a3d06c3a11fd067feec2139fa07cfde22f36912a19b8e0c383309",
+    "materialized_sha256": "248233f850517e78d24f41495aae0c2b5266574f776bb6585377ebcc49c64fae",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/sitesmith_lite/api.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/sitesmith_lite/api.py",
+    "raw_sha256": "2385dbbe7f5f7418e5b86881bbbf150a3c4c48e667f0862a86983ed3e0785719",
+    "materialized_sha256": "e6a49d63e85800a3efd34e29858c108636fb53883b3b5abebae5f66b978a136f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/sitesmith_lite/templates/admin/editor.html",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/sitesmith_lite/templates/admin/editor.html",
+    "raw_sha256": "ffa06a19a2104e4e9fa1bfb1768791b51b2703bbcc1590c089f3e8fc26b9a10c",
+    "materialized_sha256": "ffa06a19a2104e4e9fa1bfb1768791b51b2703bbcc1590c089f3e8fc26b9a10c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "structure/tests/test_api.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/tests/test_api.py",
+    "raw_sha256": "5e306d4a88eff81a86195bc5cabc4e9b03ae60c930ce79963f293250be739231",
+    "materialized_sha256": "1ec9c6618168e002985bb771642f9d7d5377ea91a9c5882c3954cd89c9b0ec73",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/docs/api_reference.md",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/docs/api_reference.md",
+    "raw_sha256": "6963aad3f27286b7ffc32f43dcb180012ec5ba8bf2f0b035470313808bcc64f4",
+    "materialized_sha256": "56bd563d9d9fc0f11d77b8041d91fe04d02d09ee27e120421dcc6323f2a7c6a0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/docs/setup_guide.md",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/docs/setup_guide.md",
+    "raw_sha256": "30a0e26877b06db558aea251386d61ec6efb6b255fd06ef87c1731eef425b79b",
+    "materialized_sha256": "0f5e41cfc1cc718543dc7f373c03dd7359953052ce78ccd3b39b3da2be85a56d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "structure/config.py",
+    "archive_path": "data/generated/python_web_cms_easy_038/structure/config.py",
+    "raw_sha256": "444742fcac1b463351b18daf2e26ad3978ee405e6682941087ec4265f9ad52c9",
+    "materialized_sha256": "b210b5ccf11378ba761e37652c1f3c87d0d0a93ba8f420b887fb2bba6c10b2e4",
+    "outer_markdown_fence_removed": true
+  }
+]

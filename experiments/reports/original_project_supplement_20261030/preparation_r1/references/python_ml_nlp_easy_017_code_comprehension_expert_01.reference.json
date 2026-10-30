@@ -1,0 +1,39 @@
+{
+  "id": "python_ml_nlp_easy_017_code_comprehension_expert_01",
+  "task_category": "code_comprehension",
+  "difficulty": "expert",
+  "title": "Investigate Model Serving Discrepancy in Retraining Pipeline",
+  "description": "The EduVocab Coach project includes an automated retraining pipeline to keep its NLP model up-to-date with new data. A junior developer recently implemented a model versioning feature. The retraining script, `scripts/run_retrainer.py`, now successfully completes, logs indicate a new, versioned model artifact (e.g., `model_v2.pkl`) is created and evaluated with high accuracy. However, the operations team and end-users report that the live Flask application's predictions are stale and do not reflect the improvements from the latest training data. The system appears to be 'silently failing' by continuing to serve an old model despite successful retraining runs. The task is to perform a root cause analysis of this discrepancy.",
+  "context_files": [
+    "edu_vocab_coach//README.md",
+    "edu_vocab_coach//app.py",
+    "edu_vocab_coach//templates//index.html",
+    "edu_vocab_coach//src//eduvocab_coach//__init__.py",
+    "edu_vocab_coach//src//eduvocab_coach//ml_ops//retrainer.py",
+    "edu_vocab_coach//src//eduvocab_coach//nlp_pipeline.py",
+    "edu_vocab_coach//scripts//run_retrainer.py",
+    "edu_vocab_coach//config.py",
+    "edu_vocab_coach//docs//API.md"
+  ],
+  "context_length": 100039,
+  "task_prompt": "Your task is to analyze the EduVocab Coach codebase to identify why the newly trained model from the retraining pipeline is not being used by the live web application. You must provide a detailed explanation of the underlying issue, referencing specific files and code logic.\n\nYour analysis must answer the following questions:\n1.  How does the main Flask application in `app.py` load the NLP model? Identify the specific configuration parameter and the logic used.\n2.  How does the retraining process in `scripts/run_retrainer.py` and its dependency `src/eduvocab_coach/ml_ops/retrainer.py` save a newly trained model? Specifically, how is the filename for the new model artifact determined?\n3.  What is the core logical flaw that causes the disconnect between the model saved by the retrainer and the model loaded by the application?\n4.  Provide a concise summary of your findings, citing the key files and approximate line numbers that demonstrate the problem. Explain the sequence of events that leads to the stale model being served.",
+  "expected_approach": "An expert developer would approach this by tracing the model's lifecycle through the system, from creation to consumption.\n\n1.  **Start at the point of consumption:** Examine `app.py` to find the model loading mechanism. This would likely be in the application factory or at the top level of the script. The developer would identify that the model path is being pulled from the app's configuration (`app.config`).\n2.  **Trace the configuration:** The developer would then investigate how the configuration is loaded into the Flask app, likely via `app.config.from_object()`. This would lead them to `config.py`.\n3.  **Analyze the configuration file:** In `config.py`, the developer would find a static variable, such as `MODEL_PATH`, which holds a hardcoded path to a specific model version (e.g., `'models/model_v1.pkl'`).\n4.  **Switch to the point of production:** The developer would then analyze the retraining pipeline, starting with the entry point `scripts/run_retrainer.py` and tracing the logic into `src/eduvocab_coach/ml_ops/retrainer.py`.\n5.  **Analyze the saving logic:** Inside `retrainer.py`, the developer would find the function responsible for saving the model. They would notice that this function implements versioning logic\u2014it scans the model directory, determines the next version number, and constructs a new filename (e.g., `'models/model_v2.pkl'`).\n6.  **Synthesize the findings:** The developer would connect the two halves of the analysis. The retrainer dynamically creates new, versioned model files, but the application loads its model based on a static, unchanging path from the configuration file. There is no mechanism to update the configuration or otherwise communicate the path of the newest model to the serving application. This decoupling is the root cause of the issue.",
+  "ground_truth": "The root cause of the problem is a state management failure between the decoupled retraining and serving components.\n\n**Detailed Analysis:**\n- **Model Loading (`app.py`):** The Flask application initializes and loads the NLP model at startup. It reads the model's location from a configuration variable. The logic looks something like this:\n  ```python\n  # in app.py\n  app.config.from_object('config.ProductionConfig')\n  model_path = app.config.get('MODEL_PATH')\n  nlp_pipeline = NlpPipeline.load(model_path)\n  ```\n- **Configuration (`config.py`):** The `ProductionConfig` class in `config.py` defines a static path for the model:\n  ```python\n  # in config.py\n  class ProductionConfig(Config):\n      MODEL_PATH = 'models/model_v1.pkl'\n  ```\n- **Model Saving (`src/eduvocab_coach/ml_ops/retrainer.py`):** The `Retrainer` class contains a method like `_save_model_and_metadata`. This method dynamically determines the new model's filename by incrementing a version number found in the model directory. It saves the new model to a path like `models/model_v2.pkl`, `models/model_v3.pkl`, etc. Crucially, this function **does not** modify the `config.py` file or update any other persistent state that the `app.py` can read.\n\n**Conclusion:** The retraining script (`run_retrainer.py`) correctly trains and saves a new, versioned model. However, the Flask application (`app.py`) is unaware of this new file. When the application starts or restarts, it reads the static, hardcoded `MODEL_PATH` from `config.py`, which always points to the original `model_v1.pkl`. The system lacks a mechanism (like a 'latest' symlink, a model registry, or a dynamic configuration update) to link the serving application to the most recently trained model artifact.",
+  "evaluation_criteria": [
+    "**Correctness of Root Cause:** Accurately identifies the state management failure between the dynamic saving mechanism and the static loading configuration.",
+    "**Evidence Localization:** Correctly pinpoints the relevant code sections for model loading in `app.py`, configuration definition in `config.py`, and model saving in `src/eduvocab_coach/ml_ops/retrainer.py`.",
+    "**Cross-File Comprehension:** Demonstrates the ability to trace the `MODEL_PATH` variable from its definition in `config.py` to its ultimate usage in `app.py`.",
+    "**Process Flow Understanding:** Clearly explains the sequence of operations\u2014retrainer runs, saves a new file, but the app on restart reads the old config\u2014and why this leads to the observed problem.",
+    "**Clarity and Conciseness:** The final summary is clear, well-structured, and avoids irrelevant details, focusing on the core logical flaw."
+  ],
+  "metadata": {
+    "context_length": 100039,
+    "files_count": 9,
+    "information_coverage": 0.9738525188610367,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T15:48:50.797843"
+  }
+}
