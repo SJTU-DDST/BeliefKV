@@ -4319,3 +4319,37 @@
   CUDA99999;finish_r1.registration.json and live state bind its handle.
   No next GPU comparison is registered. Keep all natural tails and do not
   treat this partial launch evidence as source-shape/pressure/performance.
+- Checkpoint pilot bf75bbd7 and reviewer actually complete/exit:6projects,
+  1145requests/39454528prompt/145284outputtokens,fresh drain and exact complete
+  source. Shape still fails:modelworkP90/P10=1.644,childP50/P90=23/38.8,max56,
+  23singleton/7doubleJOINs,2nested,rootparallelroundmedian1,totalchildwork76.40%.
+  Seven doublegroups have positive shareddecode;all6roots need terminalparallel
+  reminders. Do not expand this population or queue Full/Thunder. Complete
+  finish_r1 and all source/tail/negative evidence remain.
+- New complete exact-token prompt_delivery_r1 checks everychild's selected
+  callboundaries:36/37children exceed8calls,and all36ninthprompts contain the8
+  reminder;all sampled childprompts includecheckpointcontract. Wide Session1/2/3
+  assignments still take47/46/56calls.One read-only derivedtask edits original
+  scene.py. Natural eligibility is not taskconformance. Two legacy patchfiles
+  are corrupt from command_output.strip();their actual workspace rawdiffs
+  match afterstripping,with both hashes/errors retained.
+- Next source candidate keeps identical six objectives and project/context mix
+  but uses checkpointprotocol3 explicit taskarguments:path/evidence/finish/write
+  fields,atmost2 supportingwritefiles,and explicit readonlytask intent. Keep
+  4/8child,8/16root,auto firsttool,naturalreturns and no fixedDAG/callcap.
+  Readonly removes advertised editingtools/role but is not OS write isolation;
+  audit actual diffs. Adapter schema must match actualtask validation before
+  declaring SPAWN/JOIN.Native/paper scheduling policies unchanged. New
+  structured_checkpoint_pilot6_20261030 is preparation,not qualified shape or
+  performance;full current CPU/GPU入口/complete-source review remain required.
+- Structured checkpoint candidate now actually passes bound_cpu_r1:
+  5571tests+12subtests,retains all5308prior literal identities,no failures/
+  errors/skips,2094sourceinputs and native unchanged. Actual native Qwen3-Coder
+  parser additionally passes8CPUcases for both schemas,two calls,arrays/empty
+  writes and1/7/64character streaming. Focused cpu_r1 wrong root-return-count
+  assertion and cpu_r2 optional-Docker skip are retained;full suite actually
+  runs cached Docker evidence. New required-field sync/async callback tests
+  verify invalid calls create no phantom child/JOIN;read-only nested harness
+  checks editing tools removed. Fifteen external workload inputs revalidate.
+  No shape/performance accepted;fresh freeze/reservation/resources/sampler
+  still precede new natural collection.

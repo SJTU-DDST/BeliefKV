@@ -86,7 +86,7 @@ def test_known_paths_are_checked_against_actual_pinned_source_not_the_latest_wor
 
 def test_changed_prompt_protocol_cannot_be_grouped_with_the_old_capture_contract():
     contract = delegation_contract(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE)
-    assert contract["checkpoint_assignment_protocol_version"] == 2
+    assert contract["checkpoint_assignment_protocol_version"] == 3
     assert contract["root_owns_primary_implementation"] is True
     assert contract["child_unrelated_failures"] == "classify_and_handoff_without_expanding_scope"
     assert contract["model_call_limit_enforced"] is False

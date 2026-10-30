@@ -637,6 +637,30 @@ def test_load_bundle_and_prepare_exact_commit(tmp_path: Path) -> None:
     assert len(collection["errors"]) == 1
 
 
+def test_collected_patch_preserves_trailing_context_and_parses_as_a_real_diff(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    subprocess.run(["git", "init", "--quiet"], cwd=source, check=True)
+    path = source / "module.py"
+    path.write_text("VALUE = 1\n\n\n")
+    subprocess.run(["git", "add", "module.py"], cwd=source, check=True)
+    subprocess.run([
+        "git", "-c", "user.name=BeliefKV Test", "-c", "user.email=beliefkv@example.invalid",
+        "commit", "--quiet", "-m", "fixture",
+    ], cwd=source, check=True)
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip()
+    path.write_text("VALUE = 2\n\n\n")
+    actual = subprocess.check_output(["git", "diff", "--binary", commit, "--"], cwd=source, text=True)
+    patch, status, collection = collect_workspace_artifacts(source, source_repo=source, base_commit=commit)
+    assert collection["mode"] == "workspace_git"
+    assert status == "M module.py"
+    assert patch == actual
+    parsed = subprocess.run(
+        ["git", "apply", "--numstat"], input=patch, text=True, capture_output=True, check=True,
+    )
+    assert parsed.stdout.strip() == "1\t1\tmodule.py"
+
+
 def test_docker_backend_hashes_commands_and_truncates_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

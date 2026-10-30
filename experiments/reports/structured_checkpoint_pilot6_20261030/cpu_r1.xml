@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.510" timestamp="2026-10-30T05:43:14.279250-07:00" hostname="ddst-12"><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[False-False]" time="0.024"><failure message="AssertionError: assert 3 == 2&#10; +  where 3 = len([RuntimeEvent(event_id='w:deepagents:000000014', ts_ms=7534459762.29194, kind=&lt;RuntimeEventKind.RETURN: 'return'&gt;, wor...e=&lt;EventConfidence.DECLARED_RUNTIME: 'declared_runtime'&gt;, attributes={'outcome': 'completed', 'source': 'deepagents'})])">asynchronous = False, invalid_first = False
+
+    @pytest.mark.parametrize("asynchronous", (False, True))
+    @pytest.mark.parametrize("invalid_first", (False, True))
+    def test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children(
+        asynchronous, invalid_first,
+    ):
+        child = create_agent(model=ToolModel(responses=[AIMessage(content="Bounded child evidence.")]))
+        middleware = CheckpointSubAgentMiddleware(
+            backend=object(), private_state_keys=frozenset({"child_private"}),
+            subagents=[{"name": "checker", "description": "Check one invariant.", "runnable": child}],
+        )
+        # The base framework rebuilds its task tool when graph-private keys change.
+        middleware.private_state_keys = frozenset({"child_work_model_calls"})
+        assert middleware.tools[0].args_schema is CheckpointTaskSchema
+        calls = [{
+            "name": "task", "id": f"valid-{index}", "args": assignment(),
+        } for index in range(2)]
+        responses = [AIMessage(content="", tool_calls=calls), AIMessage(content="Integrated evidence.")]
+        if invalid_first:
+            missing = assignment()
+            missing.pop("finish_condition")
+            responses.insert(0, AIMessage(content="", tool_calls=[
+                {"name": "task", "id": "invalid", "args": missing},
+            ]))
+        agent = create_agent(model=ToolModel(responses=responses), middleware=[middleware])
+        trace = CollectingSink()
+        adapter = DeepAgentsRuntimeAdapter(
+            trace, BeliefKVRequestMetadata("w", "root", "ctx-root", 0),
+            task_arguments_schema=CheckpointTaskSchema,
+        )
+        adapter.start()
+        inputs, config = {"messages": [HumanMessage(content="Check two independent properties.")]}, {
+            "callbacks": [adapter],
+        }
+        result = (
+            asyncio.run(agent.ainvoke(inputs, config=config)) if asynchronous
+            else agent.invoke(inputs, config=config)
+        )
+        adapter.finish(outcome="completed")
+        assert result["messages"][-1].content == "Integrated evidence."
+        graph = RuntimeCausalContextGraph()
+        for event in trace.events:
+            graph.apply(event)
+        creates = [event for event in trace.events if event.kind is Kind.INVOCATION_CREATE]
+        joins = [event for event in trace.events if event.kind is Kind.JOIN_CREATE]
+        assert len(creates) == 3
+        assert len(joins) == 1 and len(joins[0].member_invocation_ids) == 2
+        assert len([event for event in trace.events if event.kind is Kind.LLM_RESULT]) == (
+            5 if invalid_first else 4
+        )
+&gt;       assert len([event for event in trace.events if event.kind is Kind.RETURN]) == 2
+E       AssertionError: assert 3 == 2
+E        +  where 3 = len([RuntimeEvent(event_id='w:deepagents:000000014', ts_ms=7534459762.29194, kind=&lt;RuntimeEventKind.RETURN: 'return'&gt;, wor...e=&lt;EventConfidence.DECLARED_RUNTIME: 'declared_runtime'&gt;, attributes={'outcome': 'completed', 'source': 'deepagents'})])
+
+tests/test_checkpoint_subagents.py:79: AssertionError</failure></testcase></testsuite></testsuites>

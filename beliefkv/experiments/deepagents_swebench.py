@@ -126,6 +126,7 @@ from beliefkv.runtime.sglang_v0520_sessions import (
     close_native_radix_session,
 )
 from beliefkv.runtime.subagent_state import PrivateStateIsolatingSubAgentMiddleware
+from beliefkv.runtime.checkpoint_subagents import CheckpointSubAgentMiddleware, checkpoint_schema
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 from beliefkv.runtime.experiment_randomness import seed_experiment_process
 
@@ -255,7 +256,10 @@ def copy_append_window(
     }
 
 
-def command_output(command: Sequence[str], *, cwd: Path, timeout: float = 60.0) -> str:
+def command_output(
+    command: Sequence[str], *, cwd: Path, timeout: float = 60.0,
+    preserve_whitespace: bool = False,
+) -> str:
     result = subprocess.run(
         list(command),
         cwd=cwd,
@@ -267,7 +271,7 @@ def command_output(command: Sequence[str], *, cwd: Path, timeout: float = 60.0) 
     if result.returncode != 0:
         detail = (result.stderr or result.stdout).strip()
         raise RuntimeError(f"command failed ({result.returncode}): {detail}")
-    return result.stdout.strip()
+    return result.stdout if preserve_whitespace else result.stdout.strip()
 
 
 @dataclass(frozen=True)
@@ -382,6 +386,7 @@ class SweBenchWorkload:
     task_kind: str = "swebench"
     frozen_repository_context: FrozenRepositoryContext | None = None
     test_entrypoint_scope: str | None = None
+    task_access: str = "read_write"
 
 
 def repository_sandbox_contract(workload: SweBenchWorkload) -> str:
@@ -460,6 +465,7 @@ def load_workload_bundle(path: Path) -> WorkloadBundle:
             ),
             sandbox_environment=project_environment(item.get("sandbox_environment")),
             task_kind=str(item.get("task_kind", "swebench")),
+            task_access=str(item.get("task_access", "read_write")),
             frozen_repository_context=parse_repository_context(
                 item.get("frozen_repository_context")
             ),
@@ -469,6 +475,8 @@ def load_workload_bundle(path: Path) -> WorkloadBundle:
     if len({item.instance_id for item in workloads}) != len(workloads):
         raise ValueError("workload instance IDs must be unique")
     for item in workloads:
+        if item.task_access not in ("read_only", "read_write"):
+            raise ValueError(f"unsupported task access: {item.task_access}")
         if item.task_kind not in ("swebench", "locobench_agent"):
             raise ValueError(f"unsupported repository task kind: {item.task_kind}")
         if item.task_kind == "locobench_agent" and item.frozen_repository_context is None:
@@ -557,9 +565,8 @@ def collect_workspace_artifacts(
             raise RuntimeError(
                 f"workspace HEAD changed: expected {base_commit}, found {head}"
             )
-        patch, status = (
-            command_output(command, cwd=workspace) for command in commands
-        )
+        patch = command_output(commands[0], cwd=workspace, preserve_whitespace=True)
+        status = command_output(commands[1], cwd=workspace)
         return patch, status, {"mode": "workspace_git", "errors": []}
     except (OSError, RuntimeError, subprocess.SubprocessError) as primary_error:
         errors = [f"workspace_git: {type(primary_error).__name__}: {primary_error}"]
@@ -605,7 +612,8 @@ def collect_workspace_artifacts(
                 f"--work-tree={workspace}",
             ]
             patch = command_output(
-                [*prefix, "diff", "--binary", base_commit, "--"], cwd=workspace
+                [*prefix, "diff", "--binary", base_commit, "--"], cwd=workspace,
+                preserve_whitespace=True,
             )
             tracked = command_output(
                 [*prefix, "diff", "--name-status", base_commit, "--"], cwd=workspace
@@ -2586,6 +2594,10 @@ checks, a coordinating child may delegate those checks and join their reports.
 CHECKPOINT ASSIGNMENT CONTRACT
 Each task description states: Question, Known paths/symbols, Existing evidence,
 Finish condition, and Write scope (read-only unless explicitly assigned).
+The task tool exposes known_paths, existing_evidence, finish_condition and
+write_paths as required parameters. Use description for only the one assigned
+question. A supporting edit names at most two files; keep larger implementation
+and integration in the root rather than outsourcing a complete phase.
 Use paths from the supplied source snapshot directly; do not walk every directory
 again merely to establish a known path. If location is the actual unknown, assign
 only that location question and request its result before broadening the scope.
@@ -3375,7 +3387,7 @@ def _autonomous_system_prompt(
     workload: SweBenchWorkload, config: DeepAgentsExperimentConfig,
 ) -> str:
     if workload.task_kind == "locobench_agent":
-        return (
+        prompt = (
             "You supervise a LoCoBench-Agent long-repository software task. "
             "Use the mounted offline Docker workspace and the supplied project "
             "snapshot to fulfil the task. Coordinate disjoint workstreams, "
@@ -3383,9 +3395,17 @@ def _autonomous_system_prompt(
             "tools. Report actual results and concrete blockers in natural language.\n"
             + TOOL_PROGRESS_INSTRUCTION + SANDBOX_PATH_CONTRACT
         )
-    return (
-        AUTONOMOUS_SYSTEM_PROMPT if config.completion_gate_enabled
-        else AUTONOMOUS_NATIVE_SYSTEM_PROMPT
+    else:
+        prompt = (
+            AUTONOMOUS_SYSTEM_PROMPT if config.completion_gate_enabled
+            else AUTONOMOUS_NATIVE_SYSTEM_PROMPT
+        )
+    return prompt + (
+        "\nTASK ACCESS: READ ONLY. This assignment requests evidence, not "
+        "a patch. Keep project source and tests unchanged, and delegate "
+        "read-only checkpoints. Report missing interfaces or bugs without "
+        "implementing a repair.\n"
+        if workload.task_access == "read_only" else ""
     )
 
 
@@ -3639,6 +3659,7 @@ def _autonomous_subagents(
     subagents: list[dict[str, Any]] = []
     read_only = (
         config.subagent_fanout_profile in READ_ONLY_SUBAGENT_FANOUT_PROFILES
+        or workload.task_access == "read_only"
     )
     specs = (
         PARALLEL_ANALYSIS_SUBAGENT_SPECS
@@ -3653,6 +3674,8 @@ def _autonomous_subagents(
     parallel_workstreams = config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE
     if parallel_workstreams:
         specs = BOUNDED_WORKSTREAM_SUBAGENT_SPECS
+        if read_only:
+            specs = tuple(spec for spec in specs if spec[0] != "bounded-editor")
     if nested:
         specs = ((
             NESTED_COORDINATOR_ROLE,
@@ -3697,6 +3720,11 @@ def _autonomous_subagents(
                         else ""
                     )
                     + ("\n\n" + PARALLEL_WORKSTREAM_CHILD_PROMPT if parallel_workstreams else "")
+                    + (
+                        "\nThis workflow permits read-only evidence. Do not edit "
+                        "project source or tests; return findings to the parent.\n"
+                        if workload.task_access == "read_only" else ""
+                    )
                     + (
                         budget_instruction(
                             config.child_work_budget_warning_calls,
@@ -3778,6 +3806,7 @@ def _autonomous_subagents(
             subagents[-1]["middleware"].extend([
                 _task_middleware(
                     config, adapter,
+                    checkpoint_read_only=workload.task_access == "read_only",
                     backend=backend,
                     private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                     **({
@@ -3807,7 +3836,7 @@ def _autonomous_subagents(
     return subagents
 
 
-def _task_middleware(config, adapter, **kwargs):
+def _task_middleware(config, adapter, *, checkpoint_read_only=False, **kwargs):
     kwargs["private_state_keys"] = (
         kwargs.get("private_state_keys", frozenset())
         | CHILD_WORK_BUDGET_PRIVATE_KEYS | ROOT_DELEGATION_PRIVATE_KEYS
@@ -3816,6 +3845,8 @@ def _task_middleware(config, adapter, **kwargs):
     if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE:
         kwargs.pop("system_prompt", None)
         return ReusableSubAgentMiddleware(adapter=adapter, **kwargs)
+    if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
+        return CheckpointSubAgentMiddleware(read_only=checkpoint_read_only, **kwargs)
     return PrivateStateIsolatingSubAgentMiddleware(**kwargs)
 
 
@@ -3835,7 +3866,9 @@ def _build_autonomous_agent(
     deadline_controller.register_model(summary_model)
     middleware: list[Any] = [
         TodoListMiddleware(),
-        _filesystem_middleware(backend, allow_direct_edits=True),
+        _filesystem_middleware(
+            backend, allow_direct_edits=workload.task_access != "read_only",
+        ),
     ]
     dynamic = config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
     root_budget_enabled = delegation_enabled and config.root_work_budget_warning_calls > 0
@@ -3864,6 +3897,7 @@ def _build_autonomous_agent(
         middleware.append(
             _task_middleware(
                 config, adapter,
+                checkpoint_read_only=workload.task_access == "read_only",
                 backend=backend,
                 private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                 **({
@@ -3959,7 +3993,7 @@ def _build_autonomous_agent(
         ))
     return create_agent(
         model=model,
-        tools=[_workspace_patch_tool(backend)],
+        tools=[] if workload.task_access == "read_only" else [_workspace_patch_tool(backend)],
         system_prompt=(
             _autonomous_system_prompt(workload, config)
             + repository_sandbox_contract(workload)
@@ -5207,6 +5241,10 @@ def _run_workflow(
         trace_sink,
         root_metadata,
         control_sink=control_sink,
+        task_arguments_schema=(
+            checkpoint_schema(read_only=workload.task_access == "read_only")
+            if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+        ),
         reusable_subagents=(
             ReusableSubagentRegistry(workflow_id)
             if config.subagent_fanout_profile == REUSABLE_NESTED_IN_GRAPH_PROFILE else None
@@ -5368,7 +5406,7 @@ def _run_workflow(
         base_commit=workload.base_commit,
     )
     (workflow_dir / "model.patch").write_text(
-        patch + ("\n" if patch else ""), encoding="utf-8"
+        patch, encoding="utf-8"
     )
     correctness_gate = (
         validate_workflow_completion(completion, patch=patch)

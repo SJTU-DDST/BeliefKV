@@ -23,7 +23,7 @@ from langchain_core.messages.tool import invalid_tool_call, tool_call_chunk
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_openai import ChatOpenAI
 from openai.resources.chat.completions import AsyncCompletions, Completions
-from pydantic import PrivateAttr, ValidationError
+from pydantic import BaseModel, PrivateAttr, ValidationError
 
 from beliefkv.core.events import (
     ContextMode,
@@ -279,6 +279,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             {"ChildCompletion", "WorkflowCompletion", "DelegationPlan"}
         ),
         allowed_subagent_types: frozenset[str] | None = None,
+        task_arguments_schema: type[BaseModel] | None = None,
         workspace_digest_provider: (
             Callable[[str, Mapping[str, Any]], str | None] | None
         ) = None,
@@ -317,6 +318,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.event_namespace = event_namespace
         self.completion_tool_names = completion_tool_names
         self.allowed_subagent_types = allowed_subagent_types
+        self.task_arguments_schema = task_arguments_schema
         self.workspace_digest_provider = workspace_digest_provider
         self.native_radix_sessions = native_radix_sessions
         if reusable_subagents is not None and reusable_subagents.workflow_id != root_metadata.root_workflow_id:
@@ -1883,7 +1885,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
 
     def _task_arguments_valid(self, payload: Any) -> bool:
         from deepagents.middleware.subagents import TaskToolSchema
-        if self.reusable_subagents is not None:
+        if self.task_arguments_schema is not None:
+            TaskToolSchema = self.task_arguments_schema
+        elif self.reusable_subagents is not None:
             from beliefkv.runtime.reusable_subagent_middleware import ReusableTaskSchema
             TaskToolSchema = ReusableTaskSchema
 

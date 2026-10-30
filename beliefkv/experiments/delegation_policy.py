@@ -108,12 +108,15 @@ def delegation_contract(profile: str) -> dict:
         )
     if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
         contract.update(
-            checkpoint_assignment_protocol_version=2,
+            checkpoint_assignment_protocol_version=3,
             checkpoint_assignment_fields=[
                 "question", "known_paths_or_symbols", "existing_evidence",
                 "finish_condition", "write_scope",
             ],
             root_owns_primary_implementation=True,
+            checkpoint_task_parameters_required=True,
+            child_supporting_write_paths_max=2,
+            task_access_from_manifest=True,
             child_unrelated_failures="classify_and_handoff_without_expanding_scope",
             child_roles="bounded_locator_reproducer_editor_reviewer_and_general_purpose",
             child_report="concise_evidence_and_explicit_handoff",

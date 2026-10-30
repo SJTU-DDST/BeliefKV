@@ -43,6 +43,9 @@ def main():
         "tests/test_checkpoint_workstream_pilot.py", "tests/test_workload_requirements.py",
         "tests/test_workflow_combination.py", "tests/test_workflow_combination_runtime.py",
         "tests/test_sustained_workload.py",
+        "tests/test_checkpoint_subagents.py", "tests/test_structured_checkpoint_pilot.py",
+        "tests/test_deepagents_swebench.py", "tests/test_deepagents_adapter.py",
+        "tests/test_subagent_state.py",
     )
     names.update(added)
     names.update((
@@ -79,6 +82,12 @@ def main():
         "configs/workloads/locobench_checkpoint_pilot6_20261030.json",
         "configs/migration/workflow_checkpoint_pilot6_native_20261030.json",
         "experiments/reports/checkpoint_pilot6_20261030/declaration.json",
+        "beliefkv/runtime/checkpoint_subagents.py",
+        "scripts/prepare_structured_checkpoint_pilot.py",
+        "scripts/audit_checkpoint_prompt_delivery.py",
+        "configs/workloads/locobench_structured_checkpoint_pilot6_20261030.json",
+        "configs/migration/workflow_structured_checkpoint_pilot6_native_20261030.json",
+        "experiments/reports/structured_checkpoint_pilot6_20261030/declaration.json",
         str(Path(__file__).relative_to(ROOT)),
     ))
     before = {name: sha256_file(ROOT / name) for name in sorted(names)}

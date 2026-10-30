@@ -90,6 +90,13 @@ class NestedFixtureModel(BaseChatModel):
             })
 
         def call(name, args):
+            if name == "task" and "CHECKPOINT" in system:
+                args = {
+                    **args, "known_paths": ["fixture.py"],
+                    "existing_evidence": "Independent controlled fixture property.",
+                    "finish_condition": "Return the assigned fixture evidence.",
+                    "write_paths": [],
+                }
             return {"name": name, "args": args, "id": f"fixture-{uuid4().hex}"}
 
         if role == "root":
@@ -155,17 +162,18 @@ def configuration(tmp_path, profile=NESTED_IN_GRAPH_PROFILE):
 
 
 @pytest.mark.parametrize("deliver_control", [False, True])
-@pytest.mark.parametrize("profile,source_context", [
-    (NESTED_IN_GRAPH_PROFILE, False),
-    (NESTED_IN_GRAPH_PROFILE, True),
-    (DYNAMIC_NESTED_IN_GRAPH_PROFILE, False),
-    (DYNAMIC_NESTED_IN_GRAPH_PROFILE, True),
-    (SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True),
-    (PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, False),
-    (PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True),
+@pytest.mark.parametrize("profile,source_context,task_access", [
+    pytest.param(NESTED_IN_GRAPH_PROFILE, False, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-False"),
+    pytest.param(NESTED_IN_GRAPH_PROFILE, True, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, False, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-False"),
+    pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, True, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=SHORT_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, False, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-False"),
+    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_only", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-read_only"),
 ])
 def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
-    tmp_path, monkeypatch, deliver_control, profile, source_context,
+    tmp_path, monkeypatch, deliver_control, profile, source_context, task_access,
 ):
     audit = harness.JsonlAudit(tmp_path / "audit.jsonl")
     workspace = tmp_path / "workspace"
@@ -181,6 +189,10 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
             "workflow", "root", "ctx-root", 0, full_prompt_replay_guaranteed=True,
         ),
         control_sink=queued, native_radix_sessions=sessions,
+        task_arguments_schema=(
+            harness.checkpoint_schema(read_only=task_access == "read_only")
+            if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+        ),
     )
     model = NestedFixtureModel()
     model._dynamic = profile in (
@@ -194,6 +206,7 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     workload = harness.SweBenchWorkload(
         instance_id="fixture-1", repo="fixture/repo", base_commit="abc",
         problem_statement="Controlled nested delegation.", difficulty="unknown",
+        task_access=task_access,
     )
     if source_context:
         from dataclasses import replace
@@ -246,6 +259,11 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
             row["parallel_child_prompt"] and row["checkpoint_child_contract"]
             and "write_todos" not in row["tools"]
             for row in model._requests if row["role"] != "root"
+        )
+    if task_access == "read_only":
+        assert all(
+            not {"apply_patch_tool", "write_file", "edit_file"} & set(row["tools"])
+            for row in model._requests
         )
 
     graph = RuntimeCausalContextGraph()

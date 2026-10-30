@@ -1,0 +1,66 @@
+{
+  "cases": [
+    {
+      "schema": "CheckpointTaskSchema",
+      "mode": "nonstream",
+      "calls": 2,
+      "exact_arguments": true
+    },
+    {
+      "schema": "CheckpointTaskSchema",
+      "mode": "stream",
+      "chunk_characters": 1,
+      "calls": 2,
+      "exact_arguments": true
+    },
+    {
+      "schema": "CheckpointTaskSchema",
+      "mode": "stream",
+      "chunk_characters": 7,
+      "calls": 2,
+      "exact_arguments": true
+    },
+    {
+      "schema": "CheckpointTaskSchema",
+      "mode": "stream",
+      "chunk_characters": 64,
+      "calls": 2,
+      "exact_arguments": true
+    },
+    {
+      "schema": "ReadOnlyCheckpointTaskSchema",
+      "mode": "nonstream",
+      "calls": 2,
+      "exact_arguments": true
+    },
+    {
+      "schema": "ReadOnlyCheckpointTaskSchema",
+      "mode": "stream",
+      "chunk_characters": 1,
+      "calls": 2,
+      "exact_arguments": true
+    },
+    {
+      "schema": "ReadOnlyCheckpointTaskSchema",
+      "mode": "stream",
+      "chunk_characters": 7,
+      "calls": 2,
+      "exact_arguments": true
+    },
+    {
+      "schema": "ReadOnlyCheckpointTaskSchema",
+      "mode": "stream",
+      "chunk_characters": 64,
+      "calls": 2,
+      "exact_arguments": true
+    }
+  ],
+  "GPU_action": false,
+  "performance_accepted": false,
+  "scope": "Actual native Qwen3-Coder parser with two calls, arrays and empty read-only write scope; not generated model behavior.",
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/beliefkv/runtime/checkpoint_subagents.py": "85a83d7082d4683883fec88e5e43ce0c66d90f4a526090f36316515a366ae3a5",
+    "/home/longhao/experiment/sglang-layer-free-extent-20261029/python/sglang/srt/function_call/function_call_parser.py": "016eb8f8ce84f76c35b84dc905a9f68ecd4f2d32a6832e43e3a603ab5bddc8c4",
+    "/home/longhao/experiment/sglang-layer-free-extent-20261029/python/sglang/srt/function_call/qwen3_coder_detector.py": "92eeaeaf02ac1c1e966a8b9bbd4393141353ca9177265044fe12e250c0e38089"
+  }
+}
