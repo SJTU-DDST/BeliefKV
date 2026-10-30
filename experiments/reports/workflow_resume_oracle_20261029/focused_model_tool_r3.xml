@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="53" time="2.077" timestamp="2026-10-29T21:11:15.435026-07:00" hostname="ddst-12"><testcase classname="tests.test_workflow_work_oracle" name="test_native_progress_exact_remaining_work_and_completion_conservation" time="0.003" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[started-args0]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[started-args1]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[started-args2]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[started-args3]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[started-args4]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[generated-args5]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[completed-args6]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_unknown_wrong_identity_early_successor_or_truncated_work_is_rejected[event-args7]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_output_progress_cannot_exceed_source_or_move_backwards[-1]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_output_progress_cannot_exceed_source_or_move_backwards[31]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_output_progress_cannot_exceed_source_or_move_backwards[9]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_artifact_rejects_undeclared_future_work_and_broken_serial_population[&lt;lambda&gt;0]" time="0.000" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_artifact_rejects_undeclared_future_work_and_broken_serial_population[&lt;lambda&gt;1]" time="0.000" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_artifact_rejects_undeclared_future_work_and_broken_serial_population[&lt;lambda&gt;2]" time="0.000" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_artifact_rejects_undeclared_future_work_and_broken_serial_population[&lt;lambda&gt;3]" time="0.000" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_artifact_rejects_undeclared_future_work_and_broken_serial_population[&lt;lambda&gt;4]" time="0.000" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_artifact_rejects_undeclared_future_work_and_broken_serial_population[&lt;lambda&gt;5]" time="0.000" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_provider_is_full_only_and_control_paths_are_isolated[full]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_provider_is_full_only_and_control_paths_are_isolated[join_priority_only]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_provider_is_full_only_and_control_paths_are_isolated[scheduler_only]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_provider_is_full_only_and_control_paths_are_isolated[kv_only]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_provider_is_full_only_and_control_paths_are_isolated[native_matched]" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_real_runtime_and_constructor_preflight_require_explicit_oracle" time="0.255" /><testcase classname="tests.test_workflow_work_oracle" name="test_oracle_does_not_silently_load_as_a_learned_predictor" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_actual_continuous_resume_and_sibling_grouping_use_oracle_work[False]" time="0.003" /><testcase classname="tests.test_workflow_work_oracle" name="test_actual_continuous_resume_and_sibling_grouping_use_oracle_work[True]" time="0.003"><failure message="assert {20.04, 100.91999999999999} == {20.04, 100.92}&#10;  &#10;  Extra items in the left set:&#10;  100.91999999999999&#10;  Extra items in the right set:&#10;  100.92&#10;  Use -v to get more diff">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7dcab43e7e50&gt;
+tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3376/test_actual_continuous_resume_1')
+long_tool = True
+
+    @pytest.mark.parametrize("long_tool", (False, True))
+    def test_actual_continuous_resume_and_sibling_grouping_use_oracle_work(monkeypatch, tmp_path, long_tool):
+        raw = source()
+        raw["requests"] = {}
+        raw["workflows"] = {}
+        for rid, invocation, context, workflow, tokens, outputs in (
+            ("a1", "child-0", "child-0-context", "wf", 300, 20),
+            ("a2", "child-1", "child-1-context", "wf", 300, 20),
+            ("b", "peer", "peer-context", "other", 200, 1000),
+        ):
+            raw["requests"][rid] = {
+                "workflow_id": workflow, "invocation_id": invocation, "context_id": context,
+                "prompt_tokens": tokens, "output_tokens": outputs, "input_increment": tokens,
+                "predecessor_request_id": None,
+            }
+            item = raw["workflows"].setdefault(workflow, {"total_work_units": 0, "requests": 0})
+            item["total_work_units"] += tokens + 100 * outputs
+            item["requests"] += 1
+        add_serial_graphs(raw)
+        if long_tool:
+            graph = raw["workflow_graphs"]["wf"]
+            graph.insert(0, node(
+                "event:long-tool", event_id="long-tool", kind=Kind.TOOL_END.value, delay=100.,
+            ))
+            for item in graph[1:]:
+                item["dependencies"] = [dep + 1 for dep in item["dependencies"]]
+            graph[1]["dependencies"] = [0]
+        path, digest = oracle_file(tmp_path, raw)
+        value = arm_environment({
+            **settings(tmp_path), "WORKFLOW_WORK_SOURCE": "oracle",
+            "WORKFLOW_WORK_MODEL": path, "WORKFLOW_WORK_MODEL_SHA256": digest,
+            "AGENT_COADMIT_JOIN_CHILDREN": "1",
+        }, "full")
+        for name, item in value.items():
+            monkeypatch.setenv(name, item)
+        monkeypatch.setenv("BELIEFKV_PAPER_BASELINE", "")
+        runtime = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "rank.sock"))
+        try:
+            runtime.attach_native_cache(NS(
+                tree_components=(0,), token_to_kv_pool_allocator=NS(size_full=1000),
+            ))
+            group(runtime)
+            for rid, invocation, workflow, size in (
+                ("a1", "child-0", "wf", 300), ("b", "peer", "other", 200),
+                ("a2", "child-1", "wf", 300),
+            ):
+                runtime.register_visible_request(request(rid, invocation, workflow=workflow, tokens=size))
+            admission = runtime._agent_admission
+            for item in admission.policy.programs.values():
+                item.active = False
+            admission.next_tick = 0.
+            admission.tick(now=time.monotonic())
+            assert {p.identity for p in admission.policy.programs.values() if p.active} == (
+                {"peer", "child-1"} if long_tool else {"child-0", "child-1"}
+            )
+            assert admission._resume_groups == {"child-0": "join", "child-1": "join"}
+&gt;           assert {row[2] for row in admission.policy.last_selection["ordered"]} == {
+                (100. if long_tool else 0.) + 46. * .02, 1002. * .02,
+            }
+E           assert {20.04, 100.91999999999999} == {20.04, 100.92}
+E             
+E             Extra items in the left set:
+E             100.91999999999999
+E             Extra items in the right set:
+E             100.92
+E             Use -v to get more diff
+
+tests/test_workflow_work_oracle.py:243: AssertionError</failure></testcase><testcase classname="tests.test_workflow_work_oracle" name="test_parallel_tools_use_the_longest_branch_and_observed_elapsed_time" time="0.001" /><testcase classname="tests.test_workflow_work_oracle" name="test_longer_tool_path_changes_oracle_priority_with_equal_model_work" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_model_and_rank_only_reach_explicit_full_composition[full]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_model_and_rank_only_reach_explicit_full_composition[join_priority_only]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_model_and_rank_only_reach_explicit_full_composition[scheduler_only]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_model_and_rank_only_reach_explicit_full_composition[kv_only]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_model_and_rank_only_reach_explicit_full_composition[native_matched]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_invalid_composition_is_refused_before_registration[changes0]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_invalid_composition_is_refused_before_registration[changes1]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_invalid_composition_is_refused_before_registration[changes2]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_invalid_composition_is_refused_before_registration[changes3]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_real_runtime_configuration_and_unchanged_capacity_authority" time="0.002" /><testcase classname="tests.test_workflow_size_admission" name="test_production_preflight_binds_the_new_setting" time="0.245" /><testcase classname="tests.test_workflow_size_admission" name="test_formal_preflight_refuses_a_diagnostic_model_even_with_exact_hash" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_candidate_preparation_preserves_base_and_project_split[False]" time="0.002" /><testcase classname="tests.test_workflow_size_admission" name="test_candidate_preparation_preserves_base_and_project_split[True]" time="0.001" /><testcase classname="tests.test_workflow_size_admission" name="test_actual_paused_competition_uses_one_workflow_bucket_and_real_sibling_index" time="0.002" /><testcase classname="tests.test_workflow_size_admission" name="test_uncertain_prediction_preserves_original_resume_order_even_with_ready_siblings" time="0.002" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_uses_whole_workflow_remaining_and_respects_complete_budget" time="0.000" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_continuous_can_disambiguate_one_true_class" time="0.000" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_keeps_original_categories_and_skips_oversized_candidates" time="0.000" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_refuses_invalid_future_work_labels[nan]" time="0.001" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_refuses_invalid_future_work_labels[inf]" time="0.000" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_refuses_invalid_future_work_labels[-1.0]" time="0.000" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_refuses_invalid_future_work_labels[True]" time="0.000" /><testcase classname="tests.test_workflow_resume_oracle" name="test_oracle_refuses_a_changed_recorded_policy_or_duplicate_identity" time="0.000" /></testsuite></testsuites>

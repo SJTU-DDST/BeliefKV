@@ -1,0 +1,2565 @@
+{
+  "artifact_sha256": "9f1f817b6018c3a16f837a26edd529b126c7353f9d17f08095aa36680efec5c6",
+  "counts": {
+    "matched_graph_event_observations": 14966,
+    "observations": 22314,
+    "observation_thread_cpu_us": 232914.74200002744,
+    "path_evaluations": 149,
+    "path_nodes_evaluated": 171507,
+    "path_thread_cpu_us": 247039.5309999989,
+    "started_requests": 3674,
+    "observed_output_tokens": 549671,
+    "observed_input_tokens": 4117249,
+    "completed_requests": 3674,
+    "closed_workflows": 18
+  },
+  "complete_work_conserved": true,
+  "remaining_path_samples": [
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 1,
+      "updated_at": 7482515.874230631,
+      "evidence": "oracle",
+      "remaining_work": 48553.61,
+      "remaining_work_units": 4855361,
+      "remaining_path_s": 1764.0974067330123,
+      "model_only_path_s": 1075.848651502109,
+      "tool_and_fixed_delay_path_s": 688.2487552309041
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 4,
+      "updated_at": 7482623.427115924,
+      "evidence": "oracle",
+      "remaining_work": 40589.41,
+      "remaining_work_units": 4058941,
+      "remaining_path_s": 1309.654039893956,
+      "model_only_path_s": 902.924910841793,
+      "tool_and_fixed_delay_path_s": 406.7291290521623
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 7,
+      "updated_at": 7482627.735233127,
+      "evidence": "oracle",
+      "remaining_work": 28798.99,
+      "remaining_work_units": 2879899,
+      "remaining_path_s": 830.3274960746182,
+      "model_only_path_s": 648.2623474158657,
+      "tool_and_fixed_delay_path_s": 182.0651486587525
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 9,
+      "updated_at": 7482636.776795498,
+      "evidence": "oracle",
+      "remaining_work": 48280.31,
+      "remaining_work_units": 4828031,
+      "remaining_path_s": 1898.5029466357641,
+      "model_only_path_s": 1095.9002187648189,
+      "tool_and_fixed_delay_path_s": 802.6027278709402
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 4,
+      "updated_at": 7482674.79219474,
+      "evidence": "oracle",
+      "remaining_work": 44553.46,
+      "remaining_work_units": 4455346,
+      "remaining_path_s": 1804.5719003497445,
+      "model_only_path_s": 938.175077905782,
+      "tool_and_fixed_delay_path_s": 871.933995717048
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 14,
+      "updated_at": 7482684.277260333,
+      "evidence": "oracle",
+      "remaining_work": 25691.19,
+      "remaining_work_units": 2569119,
+      "remaining_path_s": 886.4004645942657,
+      "model_only_path_s": 548.0166799080861,
+      "tool_and_fixed_delay_path_s": 338.8185212373731
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 13,
+      "updated_at": 7482694.139553526,
+      "evidence": "oracle",
+      "remaining_work": 46779.45,
+      "remaining_work_units": 4677945,
+      "remaining_path_s": 1681.5918847705027,
+      "model_only_path_s": 1033.5164780846749,
+      "tool_and_fixed_delay_path_s": 648.0754066858298
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 16,
+      "updated_at": 7482701.490793644,
+      "evidence": "oracle",
+      "remaining_work": 47502.02,
+      "remaining_work_units": 4750202,
+      "remaining_path_s": 1879.5429428231078,
+      "model_only_path_s": 1077.329905349425,
+      "tool_and_fixed_delay_path_s": 802.2130374736776
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 15,
+      "updated_at": 7482708.215176405,
+      "evidence": "oracle",
+      "remaining_work": 43846.53,
+      "remaining_work_units": 4384653,
+      "remaining_path_s": 1787.034415325472,
+      "model_only_path_s": 921.3074428818909,
+      "tool_and_fixed_delay_path_s": 871.2641457166667
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 26,
+      "updated_at": 7482714.9091574,
+      "evidence": "oracle",
+      "remaining_work": 16920.49,
+      "remaining_work_units": 1692049,
+      "remaining_path_s": 637.4654108149969,
+      "model_only_path_s": 334.5576928155389,
+      "tool_and_fixed_delay_path_s": 302.90771799945844
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 16,
+      "updated_at": 7482725.206599167,
+      "evidence": "oracle",
+      "remaining_work": 25059.01,
+      "remaining_work_units": 2505901,
+      "remaining_path_s": 693.2637525382497,
+      "model_only_path_s": 546.1517507729984,
+      "tool_and_fixed_delay_path_s": 147.11200176525116
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 21,
+      "updated_at": 7482733.687968861,
+      "evidence": "oracle",
+      "remaining_work": 24745.04,
+      "remaining_work_units": 2474504,
+      "remaining_path_s": 685.5193126581057,
+      "model_only_path_s": 538.6602998960359,
+      "tool_and_fixed_delay_path_s": 146.8590127620697
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 27,
+      "updated_at": 7482742.766621347,
+      "evidence": "oracle",
+      "remaining_work": 24422.01,
+      "remaining_work_units": 2442201,
+      "remaining_path_s": 677.5445284017497,
+      "model_only_path_s": 530.95267376365,
+      "tool_and_fixed_delay_path_s": 146.59185463809968
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 33,
+      "updated_at": 7482754.491822201,
+      "evidence": "oracle",
+      "remaining_work": 15508.15,
+      "remaining_work_units": 1550815,
+      "remaining_path_s": 603.3540753848001,
+      "model_only_path_s": 300.8586905810286,
+      "tool_and_fixed_delay_path_s": 302.4953848037721
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 29,
+      "updated_at": 7482763.738245103,
+      "evidence": "oracle",
+      "remaining_work": 26670.97,
+      "remaining_work_units": 2667097,
+      "remaining_path_s": 798.4079403961724,
+      "model_only_path_s": 584.2568151119772,
+      "tool_and_fixed_delay_path_s": 214.15112528419502
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 33,
+      "updated_at": 7482772.763348461,
+      "evidence": "oracle",
+      "remaining_work": 24146.6,
+      "remaining_work_units": 2414660,
+      "remaining_path_s": 648.4503290966663,
+      "model_only_path_s": 524.3812800444276,
+      "tool_and_fixed_delay_path_s": 124.06904905223841
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 25,
+      "updated_at": 7482786.209031193,
+      "evidence": "oracle",
+      "remaining_work": 46828.09,
+      "remaining_work_units": 4682809,
+      "remaining_path_s": 1805.7016337213247,
+      "model_only_path_s": 1061.2496636399896,
+      "tool_and_fixed_delay_path_s": 744.4519700813278
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 27,
+      "updated_at": 7482799.64473704,
+      "evidence": "oracle",
+      "remaining_work": 46724.17,
+      "remaining_work_units": 4672417,
+      "remaining_path_s": 1792.69320547128,
+      "model_only_path_s": 1058.770090511557,
+      "tool_and_fixed_delay_path_s": 733.9231149597152
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 30,
+      "updated_at": 7482808.664328095,
+      "evidence": "oracle",
+      "remaining_work": 25200.78,
+      "remaining_work_units": 2520078,
+      "remaining_path_s": 716.0677821607248,
+      "model_only_path_s": 562.4076050519608,
+      "tool_and_fixed_delay_path_s": 153.66017710876474
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 29,
+      "updated_at": 7482822.893672919,
+      "evidence": "oracle",
+      "remaining_work": 40985.5,
+      "remaining_work_units": 4098550,
+      "remaining_path_s": 1684.4576512780982,
+      "model_only_path_s": 853.042112746795,
+      "tool_and_fixed_delay_path_s": 836.9527118043893
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 49,
+      "updated_at": 7482837.094921643,
+      "evidence": "oracle",
+      "remaining_work": 42674.68,
+      "remaining_work_units": 4267468,
+      "remaining_path_s": 1547.295891023595,
+      "model_only_path_s": 935.5750097398343,
+      "tool_and_fixed_delay_path_s": 611.7208812837605
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 48,
+      "updated_at": 7482866.214643648,
+      "evidence": "oracle",
+      "remaining_work": 38777.58,
+      "remaining_work_units": 3877758,
+      "remaining_path_s": 1307.4854296966798,
+      "model_only_path_s": 832.2635189904045,
+      "tool_and_fixed_delay_path_s": 490.795744791031
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 11,
+      "updated_at": 7482880.199445265,
+      "evidence": "oracle",
+      "remaining_work": 20495.68,
+      "remaining_work_units": 2049568,
+      "remaining_path_s": 625.1091969103551,
+      "model_only_path_s": 411.78880815790774,
+      "tool_and_fixed_delay_path_s": 219.49450675392163
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 52,
+      "updated_at": 7482891.589270288,
+      "evidence": "oracle",
+      "remaining_work": 24089.74,
+      "remaining_work_units": 2408974,
+      "remaining_path_s": 693.9912068047157,
+      "model_only_path_s": 522.6676258673298,
+      "tool_and_fixed_delay_path_s": 171.32358093738554
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 60,
+      "updated_at": 7482904.084668172,
+      "evidence": "oracle",
+      "remaining_work": 23614.38,
+      "remaining_work_units": 2361438,
+      "remaining_path_s": 682.2428283775395,
+      "model_only_path_s": 511.3253444746079,
+      "tool_and_fixed_delay_path_s": 170.91748390293117
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 60,
+      "updated_at": 7482930.210019109,
+      "evidence": "oracle",
+      "remaining_work": 10518.92,
+      "remaining_work_units": 1051892,
+      "remaining_path_s": 460.9884977211887,
+      "model_only_path_s": 181.81364978455863,
+      "tool_and_fixed_delay_path_s": 279.1748479366304
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 52,
+      "updated_at": 7482944.556997736,
+      "evidence": "oracle",
+      "remaining_work": 22579.53,
+      "remaining_work_units": 2257953,
+      "remaining_path_s": 614.7870697417744,
+      "model_only_path_s": 499.8635224605095,
+      "tool_and_fixed_delay_path_s": 114.92354728126531
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 6,
+      "updated_at": 7482958.021847315,
+      "evidence": "oracle",
+      "remaining_work": 19899.78,
+      "remaining_work_units": 1989978,
+      "remaining_path_s": 554.2815254121836,
+      "model_only_path_s": 385.88237509213053,
+      "tool_and_fixed_delay_path_s": 181.8798907508851
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 44,
+      "updated_at": 7482967.912289963,
+      "evidence": "oracle",
+      "remaining_work": 23741.59,
+      "remaining_work_units": 2374159,
+      "remaining_path_s": 983.6472081468339,
+      "model_only_path_s": 526.0114228093865,
+      "tool_and_fixed_delay_path_s": 457.63578533744794
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 16,
+      "updated_at": 7482982.406559758,
+      "evidence": "oracle",
+      "remaining_work": 19178.13,
+      "remaining_work_units": 1917813,
+      "remaining_path_s": 536.4222335409021,
+      "model_only_path_s": 368.663514929185,
+      "tool_and_fixed_delay_path_s": 181.2394590425492
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 20,
+      "updated_at": 7482996.749513506,
+      "evidence": "oracle",
+      "remaining_work": 18664.67,
+      "remaining_work_units": 1866467,
+      "remaining_path_s": 523.9516928871652,
+      "model_only_path_s": 356.41215216431834,
+      "tool_and_fixed_delay_path_s": 181.02028115367895
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 48,
+      "updated_at": 7483008.478077057,
+      "evidence": "oracle",
+      "remaining_work": 23513.42,
+      "remaining_work_units": 2351342,
+      "remaining_path_s": 949.7891562218381,
+      "model_only_path_s": 520.5671945500098,
+      "tool_and_fixed_delay_path_s": 429.221961671829
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 70,
+      "updated_at": 7483023.375964768,
+      "evidence": "oracle",
+      "remaining_work": 9758.75,
+      "remaining_work_units": 975875,
+      "remaining_path_s": 416.64456816186464,
+      "model_only_path_s": 163.6756868800117,
+      "tool_and_fixed_delay_path_s": 252.96888128185273
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 71,
+      "updated_at": 7483038.74947048,
+      "evidence": "oracle",
+      "remaining_work": 34823.63,
+      "remaining_work_units": 3482363,
+      "remaining_path_s": 1179.5784399133906,
+      "model_only_path_s": 737.9206766966632,
+      "tool_and_fixed_delay_path_s": 457.23159730148313
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 49,
+      "updated_at": 7483059.261979125,
+      "evidence": "oracle",
+      "remaining_work": 29461.33,
+      "remaining_work_units": 2946133,
+      "remaining_path_s": 1002.4547840516632,
+      "model_only_path_s": 637.4044322135514,
+      "tool_and_fixed_delay_path_s": 365.050351838112
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 46,
+      "updated_at": 7483077.70315435,
+      "evidence": "oracle",
+      "remaining_work": 36219.76,
+      "remaining_work_units": 3621976,
+      "remaining_path_s": 1525.128163086327,
+      "model_only_path_s": 739.3296335214698,
+      "tool_and_fixed_delay_path_s": 791.3357028379442
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 38,
+      "updated_at": 7483092.185859383,
+      "evidence": "oracle",
+      "remaining_work": 28093.98,
+      "remaining_work_units": 2809398,
+      "remaining_path_s": 1068.470172095689,
+      "model_only_path_s": 587.822752410324,
+      "tool_and_fixed_delay_path_s": 480.6474196853628
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 75,
+      "updated_at": 7483105.051425931,
+      "evidence": "oracle",
+      "remaining_work": 38512.24,
+      "remaining_work_units": 3851224,
+      "remaining_path_s": 1352.429686734522,
+      "model_only_path_s": 836.2575119269736,
+      "tool_and_fixed_delay_path_s": 516.1721748075481
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 82,
+      "updated_at": 7483116.761694309,
+      "evidence": "oracle",
+      "remaining_work": 33655.62,
+      "remaining_work_units": 3365562,
+      "remaining_path_s": 1115.061133070123,
+      "model_only_path_s": 710.0514868415786,
+      "tool_and_fixed_delay_path_s": 420.5834803133014
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 88,
+      "updated_at": 7483129.55910631,
+      "evidence": "oracle",
+      "remaining_work": 37639.17,
+      "remaining_work_units": 3763917,
+      "remaining_path_s": 1331.0330190926586,
+      "model_only_path_s": 815.4257094708485,
+      "tool_and_fixed_delay_path_s": 515.6073096218105
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 66,
+      "updated_at": 7483158.786999334,
+      "evidence": "oracle",
+      "remaining_work": 29535.04,
+      "remaining_work_units": 2953504,
+      "remaining_path_s": 778.1337840373819,
+      "model_only_path_s": 551.5764135015314,
+      "tool_and_fixed_delay_path_s": 250.38442564773578
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 77,
+      "updated_at": 7483171.288648714,
+      "evidence": "oracle",
+      "remaining_work": 20375.56,
+      "remaining_work_units": 2037556,
+      "remaining_path_s": 827.412622623709,
+      "model_only_path_s": 445.69658892276647,
+      "tool_and_fixed_delay_path_s": 381.7160337009429
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 97,
+      "updated_at": 7483191.192830391,
+      "evidence": "oracle",
+      "remaining_work": 37032.05,
+      "remaining_work_units": 3703205,
+      "remaining_path_s": 1286.994392162509,
+      "model_only_path_s": 800.9395813171346,
+      "tool_and_fixed_delay_path_s": 486.05481084537524
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 79,
+      "updated_at": 7483205.283348476,
+      "evidence": "oracle",
+      "remaining_work": 8193.78,
+      "remaining_work_units": 819378,
+      "remaining_path_s": 272.39905979886146,
+      "model_only_path_s": 126.33487126412479,
+      "tool_and_fixed_delay_path_s": 146.06418853473667
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 18,
+      "updated_at": 7483228.424658226,
+      "evidence": "oracle",
+      "remaining_work": 24293.75,
+      "remaining_work_units": 2429375,
+      "remaining_path_s": 668.476470725915,
+      "model_only_path_s": 523.1756138571711,
+      "tool_and_fixed_delay_path_s": 145.30085686874386
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 58,
+      "updated_at": 7483245.919882795,
+      "evidence": "oracle",
+      "remaining_work": 25679.0,
+      "remaining_work_units": 2567900,
+      "remaining_path_s": 953.1735286794108,
+      "model_only_path_s": 530.2003552422923,
+      "tool_and_fixed_delay_path_s": 422.9731734371182
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "bucket": 2,
+      "revision": 82,
+      "updated_at": 7483274.042330973,
+      "evidence": "oracle",
+      "remaining_work": 38018.77,
+      "remaining_work_units": 3801877,
+      "remaining_path_s": 1432.1107013449853,
+      "model_only_path_s": 851.0557341580529,
+      "tool_and_fixed_delay_path_s": 581.054967186927
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 80,
+      "updated_at": 7483290.314040694,
+      "evidence": "oracle",
+      "remaining_work": 12669.53,
+      "remaining_work_units": 1266953,
+      "remaining_path_s": 415.50478530557933,
+      "model_only_path_s": 250.1768075738748,
+      "tool_and_fixed_delay_path_s": 165.32797773170472
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 65,
+      "updated_at": 7483301.446652372,
+      "evidence": "oracle",
+      "remaining_work": 25294.24,
+      "remaining_work_units": 2529424,
+      "remaining_path_s": 906.5088259021713,
+      "model_only_path_s": 521.0198264038042,
+      "tool_and_fixed_delay_path_s": 385.48899949836687
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 100,
+      "updated_at": 7483309.323172936,
+      "evidence": "oracle",
+      "remaining_work": 6082.15,
+      "remaining_work_units": 608215,
+      "remaining_path_s": 212.9521610808897,
+      "model_only_path_s": 86.32837137275213,
+      "tool_and_fixed_delay_path_s": 126.62378970813752
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 108,
+      "updated_at": 7483318.230991666,
+      "evidence": "oracle",
+      "remaining_work": 5518.34,
+      "remaining_work_units": 551834,
+      "remaining_path_s": 206.30137465740484,
+      "model_only_path_s": 80.02254394413266,
+      "tool_and_fixed_delay_path_s": 126.2788307132721
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 117,
+      "updated_at": 7483332.618663223,
+      "evidence": "oracle",
+      "remaining_work": 5094.09,
+      "remaining_work_units": 509409,
+      "remaining_path_s": 192.79617800913158,
+      "model_only_path_s": 75.79209440919158,
+      "tool_and_fixed_delay_path_s": 117.00408359993995
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 122,
+      "updated_at": 7483342.190887192,
+      "evidence": "oracle",
+      "remaining_work": 4731.83,
+      "remaining_work_units": 473183,
+      "remaining_path_s": 185.33131461623415,
+      "model_only_path_s": 73.25215445998414,
+      "tool_and_fixed_delay_path_s": 112.07916015625
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 76,
+      "updated_at": 7483349.011809315,
+      "evidence": "oracle",
+      "remaining_work": 8149.31,
+      "remaining_work_units": 814931,
+      "remaining_path_s": 230.3422575642126,
+      "model_only_path_s": 146.8643624083059,
+      "tool_and_fixed_delay_path_s": 83.47789515590664
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 84,
+      "updated_at": 7483354.179655757,
+      "evidence": "oracle",
+      "remaining_work": 9942.43,
+      "remaining_work_units": 994243,
+      "remaining_path_s": 258.9934117562067,
+      "model_only_path_s": 156.0570600525628,
+      "tool_and_fixed_delay_path_s": 116.40986423397067
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 91,
+      "updated_at": 7483361.019714376,
+      "evidence": "oracle",
+      "remaining_work": 9519.08,
+      "remaining_work_units": 951908,
+      "remaining_path_s": 254.52929106540986,
+      "model_only_path_s": 151.71923870201408,
+      "tool_and_fixed_delay_path_s": 116.26642350101474
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 92,
+      "updated_at": 7483369.522314829,
+      "evidence": "oracle",
+      "remaining_work": 7174.55,
+      "remaining_work_units": 717455,
+      "remaining_path_s": 215.18909096344848,
+      "model_only_path_s": 138.3631392565622,
+      "tool_and_fixed_delay_path_s": 76.82595170688627
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 102,
+      "updated_at": 7483380.276839755,
+      "evidence": "oracle",
+      "remaining_work": 8624.23,
+      "remaining_work_units": 862423,
+      "remaining_path_s": 239.69596485054646,
+      "model_only_path_s": 147.95979353153854,
+      "tool_and_fixed_delay_path_s": 115.68601650524143
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 109,
+      "updated_at": 7483392.472251083,
+      "evidence": "oracle",
+      "remaining_work": 8219.25,
+      "remaining_work_units": 821925,
+      "remaining_path_s": 227.2095861409429,
+      "model_only_path_s": 146.31223267204794,
+      "tool_and_fixed_delay_path_s": 115.29642458629611
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 145,
+      "updated_at": 7483403.261836235,
+      "evidence": "oracle",
+      "remaining_work": 2865.19,
+      "remaining_work_units": 286519,
+      "remaining_path_s": 138.30196301978432,
+      "model_only_path_s": 51.91856771891913,
+      "tool_and_fixed_delay_path_s": 86.38339530086517
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 128,
+      "updated_at": 7483414.155425781,
+      "evidence": "oracle",
+      "remaining_work": 26921.01,
+      "remaining_work_units": 2692101,
+      "remaining_path_s": 896.0495557878046,
+      "model_only_path_s": 549.360975039494,
+      "tool_and_fixed_delay_path_s": 362.2624148330694
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 55,
+      "updated_at": 7483426.581344749,
+      "evidence": "oracle",
+      "remaining_work": 8817.28,
+      "remaining_work_units": 881728,
+      "remaining_path_s": 251.0779122443624,
+      "model_only_path_s": 133.1374722929556,
+      "tool_and_fixed_delay_path_s": 124.11455795288084
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 2,
+      "updated_at": 7483452.836711275,
+      "evidence": "oracle",
+      "remaining_work": 31192.06,
+      "remaining_work_units": 3119206,
+      "remaining_path_s": 896.0801503407895,
+      "model_only_path_s": 701.2069124839245,
+      "tool_and_fixed_delay_path_s": 194.87323785686488
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 123,
+      "updated_at": 7483465.702508412,
+      "evidence": "oracle",
+      "remaining_work": 14898.39,
+      "remaining_work_units": 1489839,
+      "remaining_path_s": 601.9676020597167,
+      "model_only_path_s": 315.00910285794254,
+      "tool_and_fixed_delay_path_s": 286.95849920177443
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 130,
+      "updated_at": 7483478.527831949,
+      "evidence": "oracle",
+      "remaining_work": 14561.26,
+      "remaining_work_units": 1456126,
+      "remaining_path_s": 593.4864921973731,
+      "model_only_path_s": 306.9650450366527,
+      "tool_and_fixed_delay_path_s": 286.5214471607207
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 135,
+      "updated_at": 7483488.954149664,
+      "evidence": "oracle",
+      "remaining_work": 14300.39,
+      "remaining_work_units": 1430039,
+      "remaining_path_s": 586.8192827566886,
+      "model_only_path_s": 300.7405815838603,
+      "tool_and_fixed_delay_path_s": 286.0787011728286
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 25,
+      "updated_at": 7483498.451904871,
+      "evidence": "oracle",
+      "remaining_work": 29868.22,
+      "remaining_work_units": 2986822,
+      "remaining_path_s": 862.940982673169,
+      "model_only_path_s": 669.6195559563646,
+      "tool_and_fixed_delay_path_s": 193.32142671680444
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 86,
+      "updated_at": 7483509.91843696,
+      "evidence": "oracle",
+      "remaining_work": 21885.58,
+      "remaining_work_units": 2188558,
+      "remaining_path_s": 762.6882112259908,
+      "model_only_path_s": 439.68782351732796,
+      "tool_and_fixed_delay_path_s": 323.00038770866394
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 91,
+      "updated_at": 7483519.058955958,
+      "evidence": "oracle",
+      "remaining_work": 21600.38,
+      "remaining_work_units": 2160038,
+      "remaining_path_s": 755.6899705385728,
+      "model_only_path_s": 432.8828364481502,
+      "tool_and_fixed_delay_path_s": 322.8071340904236
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 142,
+      "updated_at": 7483528.159847911,
+      "evidence": "oracle",
+      "remaining_work": 13176.5,
+      "remaining_work_units": 1317650,
+      "remaining_path_s": 559.3484022548317,
+      "model_only_path_s": 273.92411272979973,
+      "tool_and_fixed_delay_path_s": 285.42428952503195
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 45,
+      "updated_at": 7483535.974362943,
+      "evidence": "oracle",
+      "remaining_work": 28679.5,
+      "remaining_work_units": 2867950,
+      "remaining_path_s": 833.4778880658215,
+      "model_only_path_s": 641.2562171454498,
+      "tool_and_fixed_delay_path_s": 192.221670920372
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 160,
+      "updated_at": 7483545.601489407,
+      "evidence": "oracle",
+      "remaining_work": 672.07,
+      "remaining_work_units": 67207,
+      "remaining_path_s": 16.17928467498586,
+      "model_only_path_s": 16.035861358983965,
+      "tool_and_fixed_delay_path_s": 0.14342331600189206
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 84,
+      "updated_at": 7483555.90425779,
+      "evidence": "oracle",
+      "remaining_work": 6138.28,
+      "remaining_work_units": 613828,
+      "remaining_path_s": 202.4151873011205,
+      "model_only_path_s": 88.83156630061829,
+      "tool_and_fixed_delay_path_s": 117.58548787021637
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 91,
+      "updated_at": 7483569.808881368,
+      "evidence": "oracle",
+      "remaining_work": 5681.81,
+      "remaining_work_units": 568181,
+      "remaining_path_s": 191.3195887789594,
+      "model_only_path_s": 85.25656204895319,
+      "tool_and_fixed_delay_path_s": 113.80644346759466
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 84,
+      "updated_at": 7483585.28003729,
+      "evidence": "oracle",
+      "remaining_work": 6815.4,
+      "remaining_work_units": 681540,
+      "remaining_path_s": 185.68172426742467,
+      "model_only_path_s": 123.72502033275504,
+      "tool_and_fixed_delay_path_s": 61.95670393466949
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 85,
+      "updated_at": 7483604.110876602,
+      "evidence": "oracle",
+      "remaining_work": 6764.82,
+      "remaining_work_units": 676482,
+      "remaining_path_s": 168.02584998145008,
+      "model_only_path_s": 122.51816112532515,
+      "tool_and_fixed_delay_path_s": 45.507688856124894
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 131,
+      "updated_at": 7483624.045706624,
+      "evidence": "oracle",
+      "remaining_work": 27793.44,
+      "remaining_work_units": 2779344,
+      "remaining_path_s": 974.2478495826673,
+      "model_only_path_s": 580.5026192302645,
+      "tool_and_fixed_delay_path_s": 393.74523035240173
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 132,
+      "updated_at": 7483635.126226981,
+      "evidence": "oracle",
+      "remaining_work": 27708.46,
+      "remaining_work_units": 2770846,
+      "remaining_path_s": 964.4535991359786,
+      "model_only_path_s": 578.4749621435229,
+      "tool_and_fixed_delay_path_s": 385.9786369924545
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 113,
+      "updated_at": 7483645.259447765,
+      "evidence": "oracle",
+      "remaining_work": 7627.61,
+      "remaining_work_units": 762761,
+      "remaining_path_s": 286.61566287326895,
+      "model_only_path_s": 128.3861501503001,
+      "tool_and_fixed_delay_path_s": 158.22951272296905
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 111,
+      "updated_at": 7483657.553306006,
+      "evidence": "oracle",
+      "remaining_work": 18292.32,
+      "remaining_work_units": 1829232,
+      "remaining_path_s": 652.3706270221194,
+      "model_only_path_s": 353.9511901505914,
+      "tool_and_fixed_delay_path_s": 298.4194368715287
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 114,
+      "updated_at": 7483667.512701992,
+      "evidence": "oracle",
+      "remaining_work": 18018.47,
+      "remaining_work_units": 1801847,
+      "remaining_path_s": 645.0461512339069,
+      "model_only_path_s": 347.41701866077966,
+      "tool_and_fixed_delay_path_s": 297.62913257312783
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 71,
+      "updated_at": 7483680.659529114,
+      "evidence": "oracle",
+      "remaining_work": 25974.23,
+      "remaining_work_units": 2597423,
+      "remaining_path_s": 732.8856051504863,
+      "model_only_path_s": 576.7073834545869,
+      "tool_and_fixed_delay_path_s": 156.1782216958999
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 116,
+      "updated_at": 7483694.720636951,
+      "evidence": "oracle",
+      "remaining_work": 17787.68,
+      "remaining_work_units": 1778768,
+      "remaining_path_s": 621.7217829154027,
+      "model_only_path_s": 341.91027614431573,
+      "tool_and_fixed_delay_path_s": 279.81150677108775
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 68,
+      "updated_at": 7483706.093656639,
+      "evidence": "oracle",
+      "remaining_work": 31269.34,
+      "remaining_work_units": 3126934,
+      "remaining_path_s": 1248.524909634639,
+      "model_only_path_s": 621.2106149836069,
+      "tool_and_fixed_delay_path_s": 632.8514679241184
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 104,
+      "updated_at": 7483717.575563984,
+      "evidence": "oracle",
+      "remaining_work": 15689.55,
+      "remaining_work_units": 1568955,
+      "remaining_path_s": 518.2618422135976,
+      "model_only_path_s": 308.8042049359941,
+      "tool_and_fixed_delay_path_s": 209.45763727760297
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 97,
+      "updated_at": 7483726.564267711,
+      "evidence": "oracle",
+      "remaining_work": 24571.94,
+      "remaining_work_units": 2457194,
+      "remaining_path_s": 698.1983916423954,
+      "model_only_path_s": 543.2481782749335,
+      "tool_and_fixed_delay_path_s": 154.9502133674621
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 157,
+      "updated_at": 7483735.532673905,
+      "evidence": "oracle",
+      "remaining_work": 25375.86,
+      "remaining_work_units": 2537586,
+      "remaining_path_s": 890.8916336387804,
+      "model_only_path_s": 522.818185013215,
+      "tool_and_fixed_delay_path_s": 368.0734486255646
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 114,
+      "updated_at": 7483744.599738488,
+      "evidence": "oracle",
+      "remaining_work": 3577.02,
+      "remaining_work_units": 357702,
+      "remaining_path_s": 94.28043817807433,
+      "model_only_path_s": 62.05255828000304,
+      "tool_and_fixed_delay_path_s": 32.22787989807128
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 164,
+      "updated_at": 7483760.208480326,
+      "evidence": "oracle",
+      "remaining_work": 24787.11,
+      "remaining_work_units": 2478711,
+      "remaining_path_s": 870.8165275815753,
+      "model_only_path_s": 508.7703724712153,
+      "tool_and_fixed_delay_path_s": 362.04615511035917
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 98,
+      "updated_at": 7483774.692657961,
+      "evidence": "oracle",
+      "remaining_work": 7599.73,
+      "remaining_work_units": 759973,
+      "remaining_path_s": 221.61466746114831,
+      "model_only_path_s": 129.2093340699587,
+      "tool_and_fixed_delay_path_s": 92.40533339118957
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 77,
+      "updated_at": 7483788.776263815,
+      "evidence": "oracle",
+      "remaining_work": 29928.11,
+      "remaining_work_units": 2992811,
+      "remaining_path_s": 1207.6179503435496,
+      "model_only_path_s": 589.2083260397319,
+      "tool_and_fixed_delay_path_s": 623.9467975769048
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 167,
+      "updated_at": 7483800.79581859,
+      "evidence": "oracle",
+      "remaining_work": 9282.69,
+      "remaining_work_units": 928269,
+      "remaining_path_s": 359.13426201434953,
+      "model_only_path_s": 186.93623980518188,
+      "tool_and_fixed_delay_path_s": 172.19802220916748
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 178,
+      "updated_at": 7483810.142761865,
+      "evidence": "oracle",
+      "remaining_work": 8607.18,
+      "remaining_work_units": 860718,
+      "remaining_path_s": 350.2125340654181,
+      "model_only_path_s": 178.46317192953083,
+      "tool_and_fixed_delay_path_s": 171.74936213588714
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 124,
+      "updated_at": 7483821.59609004,
+      "evidence": "oracle",
+      "remaining_work": 15965.89,
+      "remaining_work_units": 1596589,
+      "remaining_path_s": 314.4183347602289,
+      "model_only_path_s": 227.81101977876827,
+      "tool_and_fixed_delay_path_s": 110.43437009334568
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 65,
+      "updated_at": 7483833.363864176,
+      "evidence": "oracle",
+      "remaining_work": 11102.6,
+      "remaining_work_units": 1110260,
+      "remaining_path_s": 262.27837278094825,
+      "model_only_path_s": 208.42945264545028,
+      "tool_and_fixed_delay_path_s": 53.84892013549802
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 113,
+      "updated_at": 7483841.112876043,
+      "evidence": "oracle",
+      "remaining_work": 13711.4,
+      "remaining_work_units": 1371140,
+      "remaining_path_s": 432.6421152485963,
+      "model_only_path_s": 261.6047478150481,
+      "tool_and_fixed_delay_path_s": 171.0373674335478
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 100,
+      "updated_at": 7483845.927217874,
+      "evidence": "oracle",
+      "remaining_work": 10642.41,
+      "remaining_work_units": 1064241,
+      "remaining_path_s": 345.4696054742557,
+      "model_only_path_s": 194.76125912263214,
+      "tool_and_fixed_delay_path_s": 150.70834635162362
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 114,
+      "updated_at": 7483851.0979382,
+      "evidence": "oracle",
+      "remaining_work": 13343.19,
+      "remaining_work_units": 1334319,
+      "remaining_path_s": 423.84022766297966,
+      "model_only_path_s": 252.81910865396154,
+      "tool_and_fixed_delay_path_s": 171.02111900901775
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 123,
+      "updated_at": 7483855.346863363,
+      "evidence": "oracle",
+      "remaining_work": 5448.85,
+      "remaining_work_units": 544885,
+      "remaining_path_s": 158.3272071873683,
+      "model_only_path_s": 93.31636773653213,
+      "tool_and_fixed_delay_path_s": 65.0108394508362
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 162,
+      "updated_at": 7483860.432687596,
+      "evidence": "oracle",
+      "remaining_work": 2184.09,
+      "remaining_work_units": 218409,
+      "remaining_path_s": 125.06407363059961,
+      "model_only_path_s": 52.11326861122098,
+      "tool_and_fixed_delay_path_s": 72.95080501937868
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 150,
+      "updated_at": 7483874.47689437,
+      "evidence": "oracle",
+      "remaining_work": 13796.52,
+      "remaining_work_units": 1379652,
+      "remaining_path_s": 270.20627893698753,
+      "model_only_path_s": 194.11106312811916,
+      "tool_and_fixed_delay_path_s": 82.19942745590208
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 88,
+      "updated_at": 7483880.516962539,
+      "evidence": "oracle",
+      "remaining_work": 28430.92,
+      "remaining_work_units": 2843092,
+      "remaining_path_s": 1146.0498258896184,
+      "model_only_path_s": 553.4847685709308,
+      "tool_and_fixed_delay_path_s": 598.1022305917744
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 148,
+      "updated_at": 7483890.575547317,
+      "evidence": "oracle",
+      "remaining_work": 3403.99,
+      "remaining_work_units": 340399,
+      "remaining_path_s": 125.34398774430795,
+      "model_only_path_s": 76.20106172463935,
+      "tool_and_fixed_delay_path_s": 49.14292601966858
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 141,
+      "updated_at": 7483901.683913972,
+      "evidence": "oracle",
+      "remaining_work": 26232.85,
+      "remaining_work_units": 2623285,
+      "remaining_path_s": 937.3390184199608,
+      "model_only_path_s": 569.838927712183,
+      "tool_and_fixed_delay_path_s": 367.50009070777895
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 123,
+      "updated_at": 7483920.219823647,
+      "evidence": "oracle",
+      "remaining_work": 8416.93,
+      "remaining_work_units": 841693,
+      "remaining_path_s": 258.9288626621911,
+      "model_only_path_s": 141.66040841185549,
+      "tool_and_fixed_delay_path_s": 117.26845425033574
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 167,
+      "updated_at": 7483939.91751615,
+      "evidence": "oracle",
+      "remaining_work": 11085.89,
+      "remaining_work_units": 1108589,
+      "remaining_path_s": 202.606306527459,
+      "model_only_path_s": 160.23000601514516,
+      "tool_and_fixed_delay_path_s": 43.351997476577736
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 95,
+      "updated_at": 7483957.587777704,
+      "evidence": "oracle",
+      "remaining_work": 27737.71,
+      "remaining_work_units": 2773771,
+      "remaining_path_s": 1073.0444318162943,
+      "model_only_path_s": 536.9444982826257,
+      "tool_and_fixed_delay_path_s": 541.6371068067554
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 195,
+      "updated_at": 7483971.469321852,
+      "evidence": "oracle",
+      "remaining_work": 21051.59,
+      "remaining_work_units": 2105159,
+      "remaining_path_s": 688.459200786093,
+      "model_only_path_s": 419.6393581070692,
+      "tool_and_fixed_delay_path_s": 268.8198426790239
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 127,
+      "updated_at": 7483981.596757786,
+      "evidence": "oracle",
+      "remaining_work": 16776.36,
+      "remaining_work_units": 1677636,
+      "remaining_path_s": 472.0364187751014,
+      "model_only_path_s": 357.24249420501775,
+      "tool_and_fixed_delay_path_s": 114.79392457008358
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 209,
+      "updated_at": 7483995.332898686,
+      "evidence": "oracle",
+      "remaining_work": 20276.54,
+      "remaining_work_units": 2027654,
+      "remaining_path_s": 669.3719054661201,
+      "model_only_path_s": 401.146352398913,
+      "tool_and_fixed_delay_path_s": 268.2255530672075
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 126,
+      "updated_at": 7484011.603293868,
+      "evidence": "oracle",
+      "remaining_work": 8325.4,
+      "remaining_work_units": 832540,
+      "remaining_path_s": 255.48362322499742,
+      "model_only_path_s": 133.09261473443507,
+      "tool_and_fixed_delay_path_s": 122.39100849056243
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 145,
+      "updated_at": 7484017.745238719,
+      "evidence": "oracle",
+      "remaining_work": 15797.57,
+      "remaining_work_units": 1579757,
+      "remaining_path_s": 439.9246935834868,
+      "model_only_path_s": 333.8881698942167,
+      "tool_and_fixed_delay_path_s": 106.03652368926994
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 147,
+      "updated_at": 7484025.030095338,
+      "evidence": "oracle",
+      "remaining_work": 15706.74,
+      "remaining_work_units": 1570674,
+      "remaining_path_s": 432.00081373788043,
+      "model_only_path_s": 331.7209294471851,
+      "tool_and_fixed_delay_path_s": 100.2798842906951
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 149,
+      "updated_at": 7484032.520542008,
+      "evidence": "oracle",
+      "remaining_work": 3947.82,
+      "remaining_work_units": 394782,
+      "remaining_path_s": 76.36800893011598,
+      "model_only_path_s": 68.31305094203262,
+      "tool_and_fixed_delay_path_s": 8.05495798808336
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 160,
+      "updated_at": 7484040.754709309,
+      "evidence": "oracle",
+      "remaining_work": 3278.01,
+      "remaining_work_units": 327801,
+      "remaining_path_s": 62.04452223152383,
+      "model_only_path_s": 54.9672114700721,
+      "tool_and_fixed_delay_path_s": 7.07731076145172
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 166,
+      "updated_at": 7484054.792300943,
+      "evidence": "oracle",
+      "remaining_work": 2448.64,
+      "remaining_work_units": 244864,
+      "remaining_path_s": 47.1014216774568,
+      "model_only_path_s": 46.8000339668855,
+      "tool_and_fixed_delay_path_s": 0.30138771057128905
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 140,
+      "updated_at": 7484061.017422943,
+      "evidence": "oracle",
+      "remaining_work": 6911.54,
+      "remaining_work_units": 691154,
+      "remaining_path_s": 203.2190464575988,
+      "model_only_path_s": 107.1866588767273,
+      "tool_and_fixed_delay_path_s": 96.0323875808716
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 159,
+      "updated_at": 7484071.545480019,
+      "evidence": "oracle",
+      "remaining_work": 14895.87,
+      "remaining_work_units": 1489587,
+      "remaining_path_s": 383.29355148463446,
+      "model_only_path_s": 312.37324408679206,
+      "tool_and_fixed_delay_path_s": 70.92030739784238
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 172,
+      "updated_at": 7484081.414067221,
+      "evidence": "oracle",
+      "remaining_work": 11217.22,
+      "remaining_work_units": 1121722,
+      "remaining_path_s": 279.5465954608454,
+      "model_only_path_s": 185.13644957156313,
+      "tool_and_fixed_delay_path_s": 94.41014588928216
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 182,
+      "updated_at": 7484087.407491597,
+      "evidence": "oracle",
+      "remaining_work": 10678.87,
+      "remaining_work_units": 1067887,
+      "remaining_path_s": 274.78779266026146,
+      "model_only_path_s": 180.5812599454176,
+      "tool_and_fixed_delay_path_s": 94.2065327148437
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 193,
+      "updated_at": 7484094.367625626,
+      "evidence": "oracle",
+      "remaining_work": 1990.06,
+      "remaining_work_units": 199006,
+      "remaining_path_s": 49.56483820226928,
+      "model_only_path_s": 47.48363452625415,
+      "tool_and_fixed_delay_path_s": 2.081203676015139
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 164,
+      "updated_at": 7484103.309239024,
+      "evidence": "oracle",
+      "remaining_work": 4008.85,
+      "remaining_work_units": 400885,
+      "remaining_path_s": 91.05397659456013,
+      "model_only_path_s": 58.238472785584925,
+      "tool_and_fixed_delay_path_s": 32.81550380897522
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 202,
+      "updated_at": 7484121.244249371,
+      "evidence": "oracle",
+      "remaining_work": 8425.71,
+      "remaining_work_units": 842571,
+      "remaining_path_s": 239.440126367456,
+      "model_only_path_s": 156.86043983734268,
+      "tool_and_fixed_delay_path_s": 82.57968653011321
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 198,
+      "updated_at": 7484144.816706176,
+      "evidence": "oracle",
+      "remaining_work": 0.0,
+      "remaining_work_units": 0,
+      "remaining_path_s": 0.0,
+      "model_only_path_s": 0.0,
+      "tool_and_fixed_delay_path_s": 0.0
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "bucket": 1,
+      "revision": 121,
+      "updated_at": 7484156.470100947,
+      "evidence": "oracle",
+      "remaining_work": 23577.76,
+      "remaining_work_units": 2357776,
+      "remaining_path_s": 893.3157278162109,
+      "model_only_path_s": 450.6263868833651,
+      "tool_and_fixed_delay_path_s": 448.29414170932824
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 180,
+      "updated_at": 7484168.196770091,
+      "evidence": "oracle",
+      "remaining_work": 1023.04,
+      "remaining_work_units": 102304,
+      "remaining_path_s": 24.751853452613684,
+      "model_only_path_s": 24.410147164275973,
+      "tool_and_fixed_delay_path_s": 0.34170628833770755
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 229,
+      "updated_at": 7484182.78519611,
+      "evidence": "oracle",
+      "remaining_work": 15161.0,
+      "remaining_work_units": 1516100,
+      "remaining_path_s": 470.62664742910204,
+      "model_only_path_s": 279.08750404035385,
+      "tool_and_fixed_delay_path_s": 191.53914338874816
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 247,
+      "updated_at": 7484206.170421688,
+      "evidence": "oracle",
+      "remaining_work": 9042.14,
+      "remaining_work_units": 904214,
+      "remaining_path_s": 192.19064323146864,
+      "model_only_path_s": 126.12895598219278,
+      "tool_and_fixed_delay_path_s": 81.59114098358154
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 261,
+      "updated_at": 7484213.774183118,
+      "evidence": "oracle",
+      "remaining_work": 8330.13,
+      "remaining_work_units": 833013,
+      "remaining_path_s": 182.9843501489496,
+      "model_only_path_s": 117.95366594182694,
+      "tool_and_fixed_delay_path_s": 81.19840373420715
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 268,
+      "updated_at": 7484221.315558541,
+      "evidence": "oracle",
+      "remaining_work": 7939.21,
+      "remaining_work_units": 793921,
+      "remaining_path_s": 174.59059751158986,
+      "model_only_path_s": 111.85661704355569,
+      "tool_and_fixed_delay_path_s": 76.03511112242937
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 175,
+      "updated_at": 7484228.211298596,
+      "evidence": "oracle",
+      "remaining_work": 8310.05,
+      "remaining_work_units": 831005,
+      "remaining_path_s": 220.12027735240852,
+      "model_only_path_s": 155.2329217167655,
+      "tool_and_fixed_delay_path_s": 64.887355635643
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 285,
+      "updated_at": 7484242.466109805,
+      "evidence": "oracle",
+      "remaining_work": 11008.4,
+      "remaining_work_units": 1100840,
+      "remaining_path_s": 403.3667872004401,
+      "model_only_path_s": 221.066160926331,
+      "tool_and_fixed_delay_path_s": 182.30062627410885
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 285,
+      "updated_at": 7484261.593903798,
+      "evidence": "oracle",
+      "remaining_work": 6355.8,
+      "remaining_work_units": 635580,
+      "remaining_path_s": 132.018997031248,
+      "model_only_path_s": 92.41253565315048,
+      "tool_and_fixed_delay_path_s": 41.20072367477417
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 299,
+      "updated_at": 7484272.692682246,
+      "evidence": "oracle",
+      "remaining_work": 4966.19,
+      "remaining_work_units": 496619,
+      "remaining_path_s": 107.96879015282406,
+      "model_only_path_s": 68.66236724880947,
+      "tool_and_fixed_delay_path_s": 40.890831508636474
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 316,
+      "updated_at": 7484283.9876369,
+      "evidence": "oracle",
+      "remaining_work": 3970.5,
+      "remaining_work_units": 397050,
+      "remaining_path_s": 91.72700349200719,
+      "model_only_path_s": 55.794928866389675,
+      "tool_and_fixed_delay_path_s": 37.01151927852631
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 193,
+      "updated_at": 7484295.621273511,
+      "evidence": "oracle",
+      "remaining_work": 5337.6,
+      "remaining_work_units": 533760,
+      "remaining_path_s": 133.476687523711,
+      "model_only_path_s": 90.42353242002758,
+      "tool_and_fixed_delay_path_s": 43.05315510368348
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 230,
+      "updated_at": 7484303.879827659,
+      "evidence": "oracle",
+      "remaining_work": 455.41,
+      "remaining_work_units": 45541,
+      "remaining_path_s": 24.073687216216328,
+      "model_only_path_s": 10.866266343528038,
+      "tool_and_fixed_delay_path_s": 13.207420872688292
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 332,
+      "updated_at": 7484311.164307055,
+      "evidence": "oracle",
+      "remaining_work": 2974.21,
+      "remaining_work_units": 297421,
+      "remaining_path_s": 61.37216516565746,
+      "model_only_path_s": 45.74421111341035,
+      "tool_and_fixed_delay_path_s": 19.82122852134704
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 338,
+      "updated_at": 7484324.922616922,
+      "evidence": "oracle",
+      "remaining_work": 2062.1,
+      "remaining_work_units": 206210,
+      "remaining_path_s": 44.45871328723525,
+      "model_only_path_s": 35.29383160233592,
+      "tool_and_fixed_delay_path_s": 9.274360529899598
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 213,
+      "updated_at": 7484333.289240822,
+      "evidence": "oracle",
+      "remaining_work": 9253.79,
+      "remaining_work_units": 925379,
+      "remaining_path_s": 437.99739488982897,
+      "model_only_path_s": 176.6077869558308,
+      "tool_and_fixed_delay_path_s": 261.3896079339981
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 231,
+      "updated_at": 7484340.312886626,
+      "evidence": "oracle",
+      "remaining_work": 8205.15,
+      "remaining_work_units": 820515,
+      "remaining_path_s": 424.7524566538674,
+      "model_only_path_s": 166.80975087558147,
+      "tool_and_fixed_delay_path_s": 257.9427057782858
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 160,
+      "updated_at": 7484361.780185332,
+      "evidence": "oracle",
+      "remaining_work": 12609.43,
+      "remaining_work_units": 1260943,
+      "remaining_path_s": 597.1505684380217,
+      "model_only_path_s": 231.08729177900955,
+      "tool_and_fixed_delay_path_s": 366.06327665901193
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 318,
+      "updated_at": 7484401.24269445,
+      "evidence": "oracle",
+      "remaining_work": 5651.38,
+      "remaining_work_units": 565138,
+      "remaining_path_s": 189.75560981082816,
+      "model_only_path_s": 134.84420695304772,
+      "tool_and_fixed_delay_path_s": 54.91140285778045
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 343,
+      "updated_at": 7484412.48132968,
+      "evidence": "oracle",
+      "remaining_work": 4194.44,
+      "remaining_work_units": 419444,
+      "remaining_path_s": 151.31046697644229,
+      "model_only_path_s": 100.08103072384824,
+      "tool_and_fixed_delay_path_s": 51.22943625259399
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 180,
+      "updated_at": 7484443.998700979,
+      "evidence": "oracle",
+      "remaining_work": 10729.94,
+      "remaining_work_units": 1072994,
+      "remaining_path_s": 489.95718237869477,
+      "model_only_path_s": 194.6534100989552,
+      "tool_and_fixed_delay_path_s": 295.30377227973935
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 200,
+      "updated_at": 7484467.647135685,
+      "evidence": "oracle",
+      "remaining_work": 7973.32,
+      "remaining_work_units": 797332,
+      "remaining_path_s": 430.0576032569773,
+      "model_only_path_s": 146.3391949279672,
+      "tool_and_fixed_delay_path_s": 283.71840832901006
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 260,
+      "updated_at": 7484509.248681054,
+      "evidence": "oracle",
+      "remaining_work": 4999.9,
+      "remaining_work_units": 499990,
+      "remaining_path_s": 223.2705465026646,
+      "model_only_path_s": 119.2996313014774,
+      "tool_and_fixed_delay_path_s": 103.97091520118713
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 269,
+      "updated_at": 7484565.27934165,
+      "evidence": "oracle",
+      "remaining_work": 3160.85,
+      "remaining_work_units": 316085,
+      "remaining_path_s": 134.71807382255042,
+      "model_only_path_s": 75.41915630298104,
+      "tool_and_fixed_delay_path_s": 59.2989175195694
+    },
+    {
+      "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d",
+      "probabilities": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "bucket": 0,
+      "revision": 235,
+      "updated_at": 7484676.433559284,
+      "evidence": "oracle",
+      "remaining_work": 3177.91,
+      "remaining_work_units": 317791,
+      "remaining_path_s": 169.22492610702838,
+      "model_only_path_s": 75.82621478615134,
+      "tool_and_fixed_delay_path_s": 93.39871132087708
+    }
+  ],
+  "sample_scope": "source-call completion progress, without partial native generation",
+  "operator_sha256": "c0de9a56c58fcfc69b544b526b8ad992dbe0b3d43a633974b25df881b917c227",
+  "registration_sha256": "5f27b1f116a932f96a048f642b95abbd958e88f130981b3e8adc66b1d1f4a6a2",
+  "configuration_sha256": "e407de711e49a6fd0db6184c24aaa9f8f1f6ea2609a668f85f99c22d62f4aa25",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_dispatch_20261029_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 20518218,
+      "complete_prefix_sha256": "bb952f4d8715deebef32dbaab2b32343586fbf2b8e401cc7d5af95a720cce477",
+      "first_read_limit_bytes": 20518218
+    }
+  },
+  "future_model_and_tool_information_used": true,
+  "GPU_action": false
+}
