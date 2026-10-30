@@ -4621,3 +4621,31 @@
   reconciliation and complete supply audit. Preserve/supersede old cohort;
   do not hot-edit serving8d29bb08. No GPUfollowup registered and no workload/
   steady-state/oracle acceptance. Stage1remains active under the latest goal.
+- Sustained46 control/reviewers now actually complete:all46/8388exact requests/
+  1131444outputs,freshdrain and actualownedexit. Corrected cohort18meanJCT
+  1088.584474s/P95=2030.000763s,commonwindow output310.806065tps,submission
+  end3353.249coverslastmeasured3204.231. Full duration4243.830s/all46mean901.409s.
+  Complete supply3116states/425ready-paused/5pairandsetcompetitionstates;
+  3+set audit addsnone,not exacttick/nativefeasibility. Late ready supply falls.
+  Corrected grant audit fixes same-epoch submitted freeJOIN successors:all426
+  programgrants/420journalentries havefollowingnative service;preserve old11
+  unproven and correctedaudit,not a JCT causal claim or completeentrycoverage.
+  See docs/research/sustained_original46_control_20261030_zh.md. Phase1 continues,
+  no oracle/learned/baseline GPU followup.
+- Current-tokenizer scan finds5previously excluded syntax-qualified Python
+  originals withfullcontexts188616--231616,plus250040-tokenexcludedproject.
+  Prepareonlythese5,notrecaptureold48;53originalprojectcandidates possible.
+  All5originalcomprehensiontasks(3easy/1medium/1expert),source/tests/fullcontext
+  unchanged,4-8child/8-16root;sourcepopulation/clientwindow5,nativerunning24.
+  Live root/childtools/sharedworkspace/nonzeroexit/cleanup allpass. Data at
+  remaining_original_projects_20261030/preparation_r1;sourcecollector requires
+  full currentCPU/cleanfreeze/reservation/resources/sampler. Do not treat this
+  five-project supplement as formal comparison population or proven shortwork.
+- Remaining-original5 pre-capture boundCPU_r1 now passes5738tests+12subtests,
+  retains5725literalIDs,no failures/errors/skips,2169bound inputs/native unchanged.
+  review_declaration.json is a separate bound diagnostic sidecar;original capture
+  contract/tasks/configuration remain unchanged. Fresh cleanfreeze/resources/
+  reservation/CUDAsampler still precede collection. Use existing dedicated
+  /home/longhao/experiment/ops/cpu_plotting_20261027/bin/python for figures:
+  beliefkv-next lacks matplotlib;preserve failed emptycontrol_figures,CPUretry
+  goes to control_figures_cpu,not a GPU failure or reason to rerun serving.

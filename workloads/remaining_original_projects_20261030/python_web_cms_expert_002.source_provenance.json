@@ -1,0 +1,604 @@
+[
+  {
+    "path": "healpress-cms/.github/workflows/deploy-backend.yml",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/.github/workflows/deploy-backend.yml",
+    "raw_sha256": "ff7b26d092a46887a4e5cd4c61c649e9477c118d0323ea407ee894fb438a8ea7",
+    "materialized_sha256": "5419ba9601266d6091e61b90f209a11f230630bbefd8d6f329ad81f9954ec0bd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/.github/workflows/deploy-frontend.yml",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/.github/workflows/deploy-frontend.yml",
+    "raw_sha256": "3cedaec24751bdb14618be9934108319590b7e2e584b052ed0a7976495733b91",
+    "materialized_sha256": "7af3e792c9e0976241bff6482aef7a9388159c553793d761f2963c56c6027b1d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/docs/api/index.html",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/docs/api/index.html",
+    "raw_sha256": "d89f07b42c7d52b90fefd6e2d46e4740818ccbab8f7f596fae5f5f9958d48051",
+    "materialized_sha256": "973c73010a0b8de2c15ff1f8e18a519625463a84a763c18a73d724bbbd831292",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/docs/api/modules.html",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/docs/api/modules.html",
+    "raw_sha256": "14f8401ff474e19c697660faa907f82ae3203f629a1907ec7ba956513c6d397a",
+    "materialized_sha256": "f6f5ba3b1784dff62d999901fc4c2f9c4dd075e5b817caaed0f377db00c566da",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/docs/architecture.md",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/docs/architecture.md",
+    "raw_sha256": "a25308d9ec86820d8a3285b2375fd395845bc66b4047629d782ebf1ccbf3cb28",
+    "materialized_sha256": "c085d598d59d11575016b338f77251dcea47fbfe65932ffa018aa297ebdf5b15",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/docs/deployment_guide.md",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/docs/deployment_guide.md",
+    "raw_sha256": "68ba122d05c4eed7fb6977777a3f8e14aad21867d5ab07b4b0e64f426459aafc",
+    "materialized_sha256": "8734427be7cdd9c61c932e508ccccd1f045907b8c11549acad9916ac934f86a2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/docs/hipaa_compliance.md",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/docs/hipaa_compliance.md",
+    "raw_sha256": "a33f233787e60da62bdee0393662af357d7efe5913c2dd241ae20185d169b171",
+    "materialized_sha256": "14e4ea7b54adac777cf457bd75f4e38400609468005584569444ed00a049f7d7",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/docs/setup_guide.md",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/docs/setup_guide.md",
+    "raw_sha256": "bf3f344601e9d78fa602aef6202326d94c08a2a2425bf18e9f67a36fc8f34306",
+    "materialized_sha256": "fb5f52a09f649d50fabb345dfb8aa1c4cd3ce9d4d08d787da70ee613a99f939e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/public/index.html",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/public/index.html",
+    "raw_sha256": "b153f352e905394d3327640c2431b11b0385950689ef4523673e1f567e4ff1fd",
+    "materialized_sha256": "643ca77a8addd626910ac4d4d3561f3df07073df1efe37efefff3bb67eba21ec",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/public/favicon.ico",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/public/favicon.ico",
+    "raw_sha256": "9657548c76123ac5a3a32c87ea983008833fd05efd888b3ae88e1dacf500b773",
+    "materialized_sha256": "fbf9754346f28c6b3873228620fb0df4cab45a2ee5bae8b64f95fe11828f5853",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/api/auth.js",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/api/auth.js",
+    "raw_sha256": "ae01284877066aee28ec24cb7b355d0ed909f28ba8ddb5995302f56726de0084",
+    "materialized_sha256": "ae01284877066aee28ec24cb7b355d0ed909f28ba8ddb5995302f56726de0084",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/frontend/src/api/content.js",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/api/content.js",
+    "raw_sha256": "8d8c9636855c5adbd46c78a4050e089d5b6201b21c027c56c5f72f9591ce4615",
+    "materialized_sha256": "1d488a4c9ab847efa001a831b2ef7f11c0c21d3f0f1446ff14e3891180750839",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/api/patient.js",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/api/patient.js",
+    "raw_sha256": "d60305eb1a449d4d90fb25ca250b4f679a96e43951385a05a9b7f22dec0e1ca9",
+    "materialized_sha256": "176812f38fa3582ad380cdbf1cf498df9ceb4c4637ec59c861a5d744d302b25a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/assets/styles/main.scss",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/assets/styles/main.scss",
+    "raw_sha256": "7f220c8b9b56456bb0914a966bdd5338839f2cc994cfeb74aa353638b644d77f",
+    "materialized_sha256": "00d149b94ec1336223688b734b1d937ec632a47692fd17956b38005bb0afb683",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/components/common/Button.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/components/common/Button.jsx",
+    "raw_sha256": "5bb77400c8949aada72b9356c87d4bd3f4c3d86fc574a64caf53fa6a5dd19cc8",
+    "materialized_sha256": "5bb77400c8949aada72b9356c87d4bd3f4c3d86fc574a64caf53fa6a5dd19cc8",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/frontend/src/components/common/Modal.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/components/common/Modal.jsx",
+    "raw_sha256": "54fcaacb2d138c1bac4cabded453f6c1cb3ac32c5f6a682315c615e3fe9e126b",
+    "materialized_sha256": "8a470d97aa99fb2793c0888c5de6fc5304b27022588716050cb7202f054979c5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/components/layout/Header.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/components/layout/Header.jsx",
+    "raw_sha256": "85f8d0175cf9874ccbd4a438afcf2f6fd38084a5b1477a1248bc281290d858cb",
+    "materialized_sha256": "f18a605a906ae9fff417b1aa922c06d1f44501a7dbb2de6e5bd4d4d48882f12a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/components/layout/Footer.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/components/layout/Footer.jsx",
+    "raw_sha256": "481ea94654f8791fb29e17715328d976f11666535be42b7df82b40ffc9121c86",
+    "materialized_sha256": "a2294cd9087194cca09bb57f27358b9c9e72f671efb04945a72cc161b32f7df2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/components/layout/Sidebar.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/components/layout/Sidebar.jsx",
+    "raw_sha256": "f72d3e28e160df88d354b05f45551fcdad27ef43031d29429c36725bf4391029",
+    "materialized_sha256": "913fb9114b41f1429e3ad6fd373f651b75f9f791fdda1d7ae81850f39f90796c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/contexts/AuthContext.js",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/contexts/AuthContext.js",
+    "raw_sha256": "3027926c38528ad27b7b8cbb3a9020873c7fbefbd1bcf0eb098b597403276662",
+    "materialized_sha256": "cdd376afaf440891fd30b2f7d6cc94937345648667aa963ad8335ffab7e0a367",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/hooks/useApi.js",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/hooks/useApi.js",
+    "raw_sha256": "3c75b280a2b950f79a0ee62432777b0530d98e5a33f0453429116187d87fd511",
+    "materialized_sha256": "7f7e2fb490333522dd4d86328373a3b0bd0e631f25101fa9970d0a5ff8fcd780",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/pages/admin/Dashboard.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/pages/admin/Dashboard.jsx",
+    "raw_sha256": "df738cffd81d1807e8ac8a235464216a396b7c4aa5a33b453d2bb0dc287e0dd3",
+    "materialized_sha256": "df738cffd81d1807e8ac8a235464216a396b7c4aa5a33b453d2bb0dc287e0dd3",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/frontend/src/pages/admin/ContentEditor.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/pages/admin/ContentEditor.jsx",
+    "raw_sha256": "cc86f37bff8d23a2eab519f7edc57f89f8bcc36cdc89236ab60b8a997f3a749f",
+    "materialized_sha256": "0d16ab51315c86f8f43d4245a5e856566d4568491e85fb27eb45f8b941eadc60",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/pages/patient/PatientDashboard.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/pages/patient/PatientDashboard.jsx",
+    "raw_sha256": "e343d189ba89cacc07e2c0115fef36c55eb866abdc61d41ecdb1c0ef364cd472",
+    "materialized_sha256": "42ea694e0e4ec61739527f70bf291a2313dc4ea88ea38b9f307c7e97761258f2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/pages/patient/MyDocuments.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/pages/patient/MyDocuments.jsx",
+    "raw_sha256": "f7dd24ead4ae501e69b1004df6ddc565e1adb90bffe71e7420d7ad932ff9f785",
+    "materialized_sha256": "87f5a5827638448f9f9b844caead37001205dfc1809c39cce1e359d3c6b5351a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/pages/public/HomePage.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/pages/public/HomePage.jsx",
+    "raw_sha256": "95391002616053e6f6efd19e4e0f905c0832132c0bd7421caa2e274eb418fb96",
+    "materialized_sha256": "a6d89923d4dfe2037425f4848774f1014ebb46d12603e6377be2d01b68624a19",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/pages/public/ArticlePage.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/pages/public/ArticlePage.jsx",
+    "raw_sha256": "72b5ccbe12e6716fee6a061da48ced1d3fbca0d97085df2f1591d9fb50e8f8e1",
+    "materialized_sha256": "69d421d81897c255efdeb7d3dadbdade1cc550d45b9b56f0fb851775d92d7623",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/pages/Login.jsx",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/pages/Login.jsx",
+    "raw_sha256": "d7c6ab7ba308472d5a97e301f848a219ff38e9873e2834913121db9707a76d81",
+    "materialized_sha256": "4789e0437c7a9c79501b91557b7cfc1e546f4f18b5b58f9e729ac76383f624bc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/App.js",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/App.js",
+    "raw_sha256": "16dae2fe46c03038a613f44ce1c11827d776cab354f764d535fba8af5f65fe92",
+    "materialized_sha256": "51bee1b9fedb23122a2db824a2cd725993205926d764d52a50dfb1d3c97bb2b8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/src/index.js",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/src/index.js",
+    "raw_sha256": "f2e36ce172eda045b7c8007602e717807a9b82631cb1d1e7a9c695192b516160",
+    "materialized_sha256": "038ac2683891cf71570476103dcf3d2f54bd57840296f9c516417a1196d6e4cb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/frontend/package.json",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/package.json",
+    "raw_sha256": "230d1eb5b95de624260bab208649613cfbeee926e49a030e6c3360f638a6cb3c",
+    "materialized_sha256": "230d1eb5b95de624260bab208649613cfbeee926e49a030e6c3360f638a6cb3c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/frontend/README.md",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/frontend/README.md",
+    "raw_sha256": "a03bf10ce0bb7a7861f28d88357ebcc324f18b25466d6a813ed4a29b9068ef5d",
+    "materialized_sha256": "2be83e97d434da05013e496e6593686e62846d02be7eb106197d7cdc54607c17",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/infrastructure/api_gateway.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/api_gateway.tf",
+    "raw_sha256": "861d571c5d7a74155ac39ea49f31644ea42606422c7f61f98fd8be7776f37e4d",
+    "materialized_sha256": "201e88201f68c9e39993e24ae4322118495c55139d8d9e6cc32c289277265aea",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/infrastructure/cognito.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/cognito.tf",
+    "raw_sha256": "d001063189e7e11a5728017304733aa67f5748fdd82fd2bc4352f5fea84c2d86",
+    "materialized_sha256": "565ecdcaf9b239f58d2f69bf714f98ee68ae92464a9599b59c913c4ecc2c7d23",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/infrastructure/databases.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/databases.tf",
+    "raw_sha256": "27728e1b1521ae9fb854e8bb1ebfd488b01854b5e856a53612d925b281542587",
+    "materialized_sha256": "4ec2eef253b3c93ef935bf7967ebe169f32874d3dbbdb3fe5a4d5b9545f0fedb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/infrastructure/iam.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/iam.tf",
+    "raw_sha256": "0cef2b8918c1e4632328dcc1eda7510751d375e8b78983ad1e28938e42c82f68",
+    "materialized_sha256": "6943fb112d4c11d0f9d40dfb146731ee2d2767bd957ff01f34b5e8a0321d5db9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/infrastructure/lambda.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/lambda.tf",
+    "raw_sha256": "6ed94fb265199855de9533d105c4062b7559135988bcf68495e5278fc8dbbc11",
+    "materialized_sha256": "6ed94fb265199855de9533d105c4062b7559135988bcf68495e5278fc8dbbc11",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/infrastructure/s3.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/s3.tf",
+    "raw_sha256": "c827049891adf0be01ef91c06112476977367c88779af17b1ec95d4b461ef348",
+    "materialized_sha256": "8b8649cdb25e04e2114bf6a2f22348e9a86c8b7b164c598860ac13c9ebcda19a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/infrastructure/cloudfront.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/cloudfront.tf",
+    "raw_sha256": "232f9fd6ad59ecf586e591ea271b5e65cf4c96c6cfd51f35185d32c593102393",
+    "materialized_sha256": "232f9fd6ad59ecf586e591ea271b5e65cf4c96c6cfd51f35185d32c593102393",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/infrastructure/variables.tf",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/infrastructure/variables.tf",
+    "raw_sha256": "5ffc70fb4ef34e36f682c9c1b00c8a3fd3ecfce6671064216118bf59ec14c6e6",
+    "materialized_sha256": "687d1468317b46201d78593c233e0320d5fd155880d0929ff2a1dea8ade1d0cc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/alembic/versions/0001_initial_schema.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/alembic/versions/0001_initial_schema.py",
+    "raw_sha256": "7aa243427bdf80f6abf549e3ebd0d71945288cdc754e72f69d6e9cbc6a4b8bc4",
+    "materialized_sha256": "846a3a1a3315de68f69b0d3f3cbd4b139f8e5d48adbed8d408a291a7ead92d63",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/alembic/env.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/alembic/env.py",
+    "raw_sha256": "02a3349bf2747d25e21164857f4e51862c1984eb0af901dc6c779c44bfaac4ae",
+    "materialized_sha256": "0178df2343b58081a403ca236df0375a5732054c8464e59866aff2f4c9f8cd52",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/api/v1/endpoints/auth.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/v1/endpoints/auth.py",
+    "raw_sha256": "751bcc292a8d8798c8d6ae58a3a6f3d699c86f199bbde41d604d04f021d4f493",
+    "materialized_sha256": "918f1933387e7d12a82bbc2888e910488c4128137030308f295dd46449baf0d0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/api/v1/endpoints/content.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/v1/endpoints/content.py",
+    "raw_sha256": "5a287486b427dba2a5d387b82c9036609aac6dce60295f4288055c540cc277bd",
+    "materialized_sha256": "182e75457f27942e4b9ae90212d1e983ad9260772f49a63be9fdf0931bfdcaa8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/api/v1/endpoints/users.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/v1/endpoints/users.py",
+    "raw_sha256": "d109428337bee939bec5412d168786641b741e772066850107b6349cb662cb77",
+    "materialized_sha256": "406c13f7d57e944f898079417df3e3d28afb9cf210a8eab1faaa2e1a3d8768f6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/api/v1/endpoints/patients.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/v1/endpoints/patients.py",
+    "raw_sha256": "416a2d9a049584e8d0ad03d247c5bdeabde55b17987b7e7bae94a8a1e422734a",
+    "materialized_sha256": "562442e0b927afedb9338d32c5249302190c97b518512f71578f402f8a29b116",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/api/v1/endpoints/payments.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/v1/endpoints/payments.py",
+    "raw_sha256": "e0740c2b974f75967fbeadcaf93a3416b4cdd7972493635056b2d502c7278af2",
+    "materialized_sha256": "0a3ccead7aa495b64ea259e44bb491f50b586591b85147ef64e5ec409b1f824d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/api/v1/endpoints/uploads.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/v1/endpoints/uploads.py",
+    "raw_sha256": "c5f02044b918b74c2ff355c1b5a6228e3a00272bd5f4ae20c3bfcd2eb4dee8be",
+    "materialized_sha256": "3326bd4764cd847d3bed03f03a4c1898b1f120ec74cc7fe62be6c49848e6b977",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/api/v1/api.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/v1/api.py",
+    "raw_sha256": "539e9720a5636807cfd6afa318d50ec0b9d6d478a60761edf6780be51603d18f",
+    "materialized_sha256": "539e9720a5636807cfd6afa318d50ec0b9d6d478a60761edf6780be51603d18f",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/src/app/api/__init__.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/api/__init__.py",
+    "raw_sha256": "f9b75a3fbbfccf107728aca84a5c038fbaaf34d26e5b1cf559cecfe34d96a3c6",
+    "materialized_sha256": "ae7c989e97475685b2905d647d560030b0267acd1d03abb45dd17dac36379d72",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/core/config.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/core/config.py",
+    "raw_sha256": "76febb20493ddd3c6163544c02b75d5d70eb75780bdebb45d5f806750e2f9646",
+    "materialized_sha256": "76febb20493ddd3c6163544c02b75d5d70eb75780bdebb45d5f806750e2f9646",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/src/app/core/security.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/core/security.py",
+    "raw_sha256": "378dfaef1d59d99ca9876febb703f3ab7b8f689c5f65aa49a3a49a0e95060f05",
+    "materialized_sha256": "afbe58686da66013ddf3040f094327a34bad0b39c31450afc40527a0324b45e4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/core/dependencies.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/core/dependencies.py",
+    "raw_sha256": "21adf05bc43fd3b969244b43cc92eb8c06cdf9e827258ee617d0e980e3c63b5b",
+    "materialized_sha256": "8fedc7d21d3daa6bd962455455b5c5dae568bb0adbaa7003f33ddb6273fd1b2d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/db/session.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/db/session.py",
+    "raw_sha256": "4ed324a48eef3a9a1e758ca9e409671b1bb0aa4f0e88fe2738ba9f6b70e72e6e",
+    "materialized_sha256": "4011ea0125d080c9a68012c683c1d018912765ee777cd74cbd497be28e84b9bb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/db/base.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/db/base.py",
+    "raw_sha256": "1affe7dc3f8e9ad61406868a08ed30373b39e66779f590ce9e410dad4e013487",
+    "materialized_sha256": "a37e266ccb55abaf2913ef4e1f8a408971d8e99d40669ee43fe40efc13185dd2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/models/user.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/models/user.py",
+    "raw_sha256": "1f7ef3f9aef9e3c50048a2ddd947a72f75832246d66774ee66775cf39b57fd46",
+    "materialized_sha256": "98c4035f8061cc1df01f52fb4a9e45c982cecffde8499c989701f600ed3c78ac",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/models/content.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/models/content.py",
+    "raw_sha256": "d7e64defd12297dea9daff3a8e42b29e41976c3859e28fe979d65c4d8764df1a",
+    "materialized_sha256": "719bb96097df42ed6553fe15d216022c613021fabf1b41f1993cc4838c928ce8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/models/patient.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/models/patient.py",
+    "raw_sha256": "4839867781765909e528514a901ead51dd473ab95e9671772fb1cb970ccfe4ee",
+    "materialized_sha256": "52da3224e28d71b91d0ff9854169c111de0132b4a30167cb13a1cc958f4f93ee",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/models/consent.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/models/consent.py",
+    "raw_sha256": "3276f57720aaefaa6a6074c8b27038a34ac8763702a7c7491294d24c7b7c2d57",
+    "materialized_sha256": "c9e6b8b32c38240d2e2cf4665977c84aefcc08e6003290ef6c23e1f4f29db53d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/models/payment.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/models/payment.py",
+    "raw_sha256": "61c17650b524d22fff7f564850e23752a9eae7d85d7ba8db9da5496f646eecb1",
+    "materialized_sha256": "5bbc3b84a9213204a6450f94ad81cfff666eb73c0476c320247ce0e79eb3c78a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/repositories/base_repository.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/repositories/base_repository.py",
+    "raw_sha256": "57d2d8ad2c98e5a727244d007ddc8684bfeec7cf5f4953232311fbbd2fdfa31c",
+    "materialized_sha256": "cdf8f7c37a0609bb6e347913ea96d15f064eab9996f287153383b5cc29cc51ad",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/repositories/user_repository.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/repositories/user_repository.py",
+    "raw_sha256": "cf3afe9878e4369eaa4c4943fdc7318f229126fec27bea8e89d41c5d4a7f949c",
+    "materialized_sha256": "148806f2f23af4e1f609ef5aad3346c51475edf4006c70fdc7739625bd13487b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/repositories/content_repository.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/repositories/content_repository.py",
+    "raw_sha256": "4bbe0e60549f59af37e65f35e22baedafd2fe62bfee76ae4fa9029b4c729082f",
+    "materialized_sha256": "2cb5321072b029880535fc9f113c7f73286d5faeabd66e556aabdf3b67225caf",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/repositories/audit_log_repository.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/repositories/audit_log_repository.py",
+    "raw_sha256": "8bd430013f01bf9898c56b93edbb5fae524b6ba01d78230e4db57eb95b00e0be",
+    "materialized_sha256": "7ed890088ceff79e0b9b3364fccd61f9da561f3aec0272cabf234782cb667c65",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/repositories/document_repository.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/repositories/document_repository.py",
+    "raw_sha256": "409843dd20b7c6bd9b99cd0364b919b5ba137a04c591a1d4506c92e07adacc4a",
+    "materialized_sha256": "ac31a16cc09d7af9236333e53bbd60562dcca19b446ed49b5450a8ae820fbbad",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/schemas/user.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/schemas/user.py",
+    "raw_sha256": "7efc10735ecb6324f0bd5aaa613ac94504efe33ec5dfc75c675662e67e82240b",
+    "materialized_sha256": "d8c711773a10c1f6478d66f4db0bf054cdcf6fa2b97173a9a384cdc8b34ef591",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/schemas/content.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/schemas/content.py",
+    "raw_sha256": "eb4178f25767fc94b29f8d72dcfb4fd5d1f82526bb99fe15a01be49257b4cf1e",
+    "materialized_sha256": "5dc15069ff013faa935c0504572b62b135cde158533ea35f9d88557bec5443a8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/schemas/token.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/schemas/token.py",
+    "raw_sha256": "363698883605f89aed57e67645a8c617046e555a830c6aae94aa1cc760e9cb2c",
+    "materialized_sha256": "99ab8c8e12fe2a280374eaa38fcd5dfcda66848a54f47d6cc4f3d7bc11fbda97",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/schemas/patient.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/schemas/patient.py",
+    "raw_sha256": "d3133fd394ca96daf89f46aabf75b1b721b42a9a9aec443b3e19d7a800e7e9af",
+    "materialized_sha256": "a074e1b51d8a9fee19a0a9d5e38fce9cbefaed3bd643b8f4ad5698fb6af745da",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/schemas/payment.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/schemas/payment.py",
+    "raw_sha256": "ea720643934d3eaa6d5ac77f46b2e259941bdc18736f35befa897ae3c498b31e",
+    "materialized_sha256": "9097def3796035307598a64f5b48eb39d9c079ae27aef225a1c7f3c4db2fc0b2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/services/auth_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/services/auth_service.py",
+    "raw_sha256": "f877e38eb45cbb563eedf3d2732149989058844589e4c40f178404a76b735535",
+    "materialized_sha256": "f877e38eb45cbb563eedf3d2732149989058844589e4c40f178404a76b735535",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/src/app/services/content_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/services/content_service.py",
+    "raw_sha256": "cdf37d324635b8d2ccef9b74a1cf84172dd851cfe4cc4f4145a38ef41a843de1",
+    "materialized_sha256": "92b041fd8308b5886cab85d945c6c6ad9bab985859eb70ff29cf0d85e0a39747",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/services/notification_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/services/notification_service.py",
+    "raw_sha256": "3169b37e24d5a6be388bc6f79f8611fdfd8b3ce1446247d51d80f14139370b64",
+    "materialized_sha256": "95e8ee6c33e09bccde2264a7821b7c61eaa62c9868723d3236fd75ce8f1db92e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/services/payment_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/services/payment_service.py",
+    "raw_sha256": "5395600bfd9ba6a5c93683de1cc718d870acc5b351f0c470e79e54bc0e7d2c0b",
+    "materialized_sha256": "d65bacbba55ce05e8dfe8efa033223b5a71726b8e0f68d4f144e37b079d7ff46",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/services/upload_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/services/upload_service.py",
+    "raw_sha256": "8c0bed65a6f4e0501bf9bf7b7b91ee63942b7d9fb1b6bfb692dae37ac6f63440",
+    "materialized_sha256": "869273dc62af1e617d7699887c1d2a0958771abbd882eb4cb3771e79505ae8bd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/services/audit_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/services/audit_service.py",
+    "raw_sha256": "bb8e802b931ad973fbc8b438e34d7bbb202ba8021edcd6958b1f2e5b304a2070",
+    "materialized_sha256": "7ad90dccab8a7e5c05340d0d012f5f994d3335eafad1cf8559531707f270cc07",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/utils/error_handling.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/utils/error_handling.py",
+    "raw_sha256": "3c978da2f40497d52bb1c5c90c09ee43f04eabf843909529e832e3fe1c0857b9",
+    "materialized_sha256": "3c978da2f40497d52bb1c5c90c09ee43f04eabf843909529e832e3fe1c0857b9",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "healpress-cms/src/app/utils/logging_config.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/utils/logging_config.py",
+    "raw_sha256": "fdf199895e609aa52a5b5c7eb98343f3ae9e93b1e24a6d43da403166066b025e",
+    "materialized_sha256": "1ea061f4e8f8e4874eff0a6add954de2c69363b01c52822194c9ebf838e56127",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/main.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/main.py",
+    "raw_sha256": "0e83093040a6470f35067fbf873729590453e94759ca362339a85aeb76f72769",
+    "materialized_sha256": "676b45e5b7594e8ededcbff806ee0adae0dca3870bee0e0406cd4f12d06ea351",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/app/__init__.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/app/__init__.py",
+    "raw_sha256": "bc28fbc8d419d83062696108690b7bd0cfec9ef1458f894c6e99eefc0ec16e66",
+    "materialized_sha256": "4ae3ebdd03f3dd4d33093a4b3ab41d9fa72c44afb178956a4c608a40e9ccfd3b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/tests/conftest.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/tests/conftest.py",
+    "raw_sha256": "943d775b92cbc5dac3bf9a5d79e8b65d0774b8c654ae44ae8d10e4eed5cbb856",
+    "materialized_sha256": "024e3a6893b5325a4be211b474753922471c8dc790cbbc2582fa20ff237fcf4b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/tests/test_api/v1/test_auth.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/tests/test_api/v1/test_auth.py",
+    "raw_sha256": "766680111659e71ca8a325171dd73ca50988db3ff034c983990209ab6eacc9ec",
+    "materialized_sha256": "f91e0a7c86a1ae2a2ceeccb816c54bbb60c01d59f81b9284b9c6c7ca3126526d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/tests/test_api/v1/test_content.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/tests/test_api/v1/test_content.py",
+    "raw_sha256": "fe4f8aad906128684b849cf593e69108915b992503a37c07a84f9237f8b7c8bc",
+    "materialized_sha256": "9019158b811109d2795677db84b19271abd1bc58c51db8867f9d36d10cb9e4c0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/tests/test_services/test_content_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/tests/test_services/test_content_service.py",
+    "raw_sha256": "947fe7fc9669d6507395c79efec01b2633c94ce12daf7825a96a2fca89f63b82",
+    "materialized_sha256": "c8d2edcf5474292c3af3ca0b506d15d72fb33e277ab61385d42bc6ae1272a0f9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/tests/test_services/test_payment_service.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/tests/test_services/test_payment_service.py",
+    "raw_sha256": "8c483b7f77d17b5843a03308e7de23b26ec1715f2a4cddb2949f4ce02f5bae6c",
+    "materialized_sha256": "f7a578ddfc6f41e1d97d5abf7a1972364ba5c0179c8dd63c1c200a64505e1ee0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "healpress-cms/src/tests/test_repositories/test_user_repository.py",
+    "archive_path": "data/generated/python_web_cms_expert_002/healpress-cms/src/tests/test_repositories/test_user_repository.py",
+    "raw_sha256": "925d331950adb326e46b8cc219d07bad1b2255eb6c43eb144456311e27d4c998",
+    "materialized_sha256": "8392ea199eb26c21dc2d33c9ba8a0a1a44284d299d43e39d18c172c96faac68a",
+    "outer_markdown_fence_removed": true
+  }
+]

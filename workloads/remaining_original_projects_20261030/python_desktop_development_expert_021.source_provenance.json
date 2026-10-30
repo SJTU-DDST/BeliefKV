@@ -1,0 +1,646 @@
+[
+  {
+    "path": "flockdesk/core/main.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/main.py",
+    "raw_sha256": "7218c43c3c48c09c2428a960e33f759d482f22e24b6ef3b87cd421a55307e874",
+    "materialized_sha256": "ad2a4e6695400dca2b64dd2817c491f7b3b88e021ddd21d30686c31b086d3c1c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/app.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/app.py",
+    "raw_sha256": "0ecd3667b1d82689a78d9d0aa2e6192e3176ee323329d85f093c72c7f3f10b03",
+    "materialized_sha256": "4ea48c21053a2ebba9f3b9065769e6f2d6f3239fca05453b33631bf2028095d6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/shell/main_window.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/shell/main_window.py",
+    "raw_sha256": "ac76aa898bbfcc5d3f70b0e5d6afac9287ebb8c1875876c80b55dd3d6554f253",
+    "materialized_sha256": "e37c8109664213a8b574268785b119107500b35bad50a5200f7fe27831bbb389",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/shell/menu_bar.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/shell/menu_bar.py",
+    "raw_sha256": "272bf491f45bcf744860c3755cb5805ab6b0a5e327d731a165fb2fb4f398c85d",
+    "materialized_sha256": "b5534804274548a8f0a40dfd8d36f6d4347ad3f1a6c43fe439f3ff03371eba2c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/shell/status_bar.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/shell/status_bar.py",
+    "raw_sha256": "02b4ccd746a2440c342471047b2946e0669dc8f6748855455c15d972c49feb17",
+    "materialized_sha256": "02b4ccd746a2440c342471047b2946e0669dc8f6748855455c15d972c49feb17",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "flockdesk/core/shell/layout_manager.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/shell/layout_manager.py",
+    "raw_sha256": "e77ab57a1c73b9c5d2230d23850530aaed5871efbbef1524b9b12bc3af5291d6",
+    "materialized_sha256": "340528a8b39a7098c9217ef34c4acdc84b438c410eb34b6a82ad44a3325f159e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/services/auth_service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/services/auth_service.py",
+    "raw_sha256": "24d07ee2b4cbd737e8d2f0d11dde63023f5ae835aa5d2dc69a04623279a6bfe3",
+    "materialized_sha256": "55c2d4e428d2a11a48531e1808715fb1aab8d901de2d525fbb455bc69cbbd65e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/services/settings_service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/services/settings_service.py",
+    "raw_sha256": "0be214877c642923d641463379ad88bd4185bceb414629f44ce33ead1310e013",
+    "materialized_sha256": "f235a73122aa3c205b9aa767fe4fba664ab67ebd4489b9b7d5669de7aeff3dd5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/services/update_service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/services/update_service.py",
+    "raw_sha256": "f81a04bf29e1a477933c897d5caaeb5fe5eae20ca8b0492bb2b19fc0bbb87cf8",
+    "materialized_sha256": "3711ea84377139158dec26106f3ba531e15c61dd4352b74f50af8b865f413b4c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/services/crash_reporter.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/services/crash_reporter.py",
+    "raw_sha256": "e6505fa24046eccdf2d45fe6fcfd7d5871f72d65cafc69d59df24599b2e9d345",
+    "materialized_sha256": "eb79536dc885fb2327d109f4029024e775c48fed92a04db38367017daf679c1f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/services/profile_service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/services/profile_service.py",
+    "raw_sha256": "a43a4e72c7327434dc46a7499a31210ee542aa383e3a1d725876734296f84019",
+    "materialized_sha256": "358174f3960723653e937d4ac89f2201179c0691e0413cea90dd8005d54809c1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/services/process_manager.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/services/process_manager.py",
+    "raw_sha256": "39450f1fbd799e78287281edfcf656ad6b36e2a8da3f11cae5e79fe479d2db40",
+    "materialized_sha256": "8f736dedb039671c49101bebbcd8deee78b2426d68af202f2d810cf798b90c04",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/ipc/event_bus.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/ipc/event_bus.py",
+    "raw_sha256": "b7b13ba48078c1e51e40918a2fe213fd70d34a1d8609996ccbc20554e140c9a9",
+    "materialized_sha256": "e258a50ce0bc1aa40c312702b5d5247e39a3c2b33404c4a4be3b59edf9acaa94",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/ipc/event_types.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/ipc/event_types.py",
+    "raw_sha256": "bb69406ad266862d7ecc5e1dbf89494b5c30002dcfe0fea9b2d7df6ec973aad3",
+    "materialized_sha256": "bb035a6f79e4376469f5a0de28e024a9daef5f5aa88b68b51515327fef9c8ae1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/plugins/plugin_manager.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/plugins/plugin_manager.py",
+    "raw_sha256": "644e65604594d126e85070b9b54666c584e411c3291a2e3e7ba3e708086e32fd",
+    "materialized_sha256": "3f8dc0da88fd38ec376c99c808c9f71447aa318edff4a9ade8581524385386b6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/plugins/plugin_manifest.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/plugins/plugin_manifest.py",
+    "raw_sha256": "e6ef61b2c4fbb0e3b443da2355c22ef3b2e574e5847c5be159bdd919c17e0fd2",
+    "materialized_sha256": "bb732958371d84f84e14d96b5e0aeb561bc9e526718602daadc0f3ba270f4d99",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/theming/theme_manager.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/theming/theme_manager.py",
+    "raw_sha256": "14e11e4f436903e62273601cf86ff3c1167915e57ca72bd2c49064b75547e7b8",
+    "materialized_sha256": "c31a2e905550b7dd3b07a91a846baa839a7dde383e1bcb3a284ea9acf8e4c984",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/theming/themes/dark_theme.qss",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/theming/themes/dark_theme.qss",
+    "raw_sha256": "63d3c47bc563f5bd2cc099e128c8fd4093aacc9d97e78e76fee0242f5577ed03",
+    "materialized_sha256": "63d3c47bc563f5bd2cc099e128c8fd4093aacc9d97e78e76fee0242f5577ed03",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "flockdesk/core/theming/themes/light_theme.qss",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/theming/themes/light_theme.qss",
+    "raw_sha256": "1806fcc194f2bfe0bb50611a24d6ebad0b6b18719e9b6d1e9c784535c0180053",
+    "materialized_sha256": "1806fcc194f2bfe0bb50611a24d6ebad0b6b18719e9b6d1e9c784535c0180053",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "flockdesk/core/shortcuts/shortcut_manager.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/shortcuts/shortcut_manager.py",
+    "raw_sha256": "7a8eb0a2bcd2f4e43c4b678bfb8ca2b7874d8d58671ecc3b5136dfb1e1858723",
+    "materialized_sha256": "6ebeb56ef6b74465f00fc8066249b8a501acfdc620efb2286e96ebb222069d6b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/core/shortcuts/commands.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/core/shortcuts/commands.py",
+    "raw_sha256": "4548d08e4e9f7e06f043dac9509f14814a943b03929ec14eba1cb5664662b69c",
+    "materialized_sha256": "2b720ed0d07d08469598ea2d1ac340076bfa9f20976a3f6ea44a928655f50e6b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/chat/main.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/chat/main.py",
+    "raw_sha256": "7deebc33cc30076f5c134a2f6d84c0e7493119aa6021af08a0b71c5adb977b47",
+    "materialized_sha256": "5017028ed5410024a918333f60ef783a1718bc0d27ad50712ebc6944548a9afa",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/chat/service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/chat/service.py",
+    "raw_sha256": "162a416295f2fea5df02229a4e68fee9a0b25471c907063b3ed747bcbf29b8cb",
+    "materialized_sha256": "bf841b7d6edf455e6519b964c37eb17ead10c749ca64e5d5b2d6bb1db3ab46e4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/chat/view/chat_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/chat/view/chat_widget.py",
+    "raw_sha256": "fe2888f649b44d4d685cc7abd2b8846d31f6e77390c00576885b47efa4e251ca",
+    "materialized_sha256": "39d174a48a05eb3c6fa861db7ce52248edab1551f27ceca0e8ce9e34d672b36f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/chat/view/chat_widget.ui",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/chat/view/chat_widget.ui",
+    "raw_sha256": "7f7afee2e5168c76616e6b9e49aa1daf87d80836dd3cd0cc687c6fb5b2df7f59",
+    "materialized_sha256": "1acb2a2d58ac42b86a3a1f00d5ac2228065703c5d0941ae0657dd980d8d6e432",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/chat/viewmodel/chat_vm.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/chat/viewmodel/chat_vm.py",
+    "raw_sha256": "6a6957cba9300edd39ecc3199eeb0e986a2b056cf3bef8192ab7c7f233533d1b",
+    "materialized_sha256": "a2e6406a17929785b262f04ea93ea077e90ec64597b6618a353a9c6d5495cad4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/chat/model/conversation.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/chat/model/conversation.py",
+    "raw_sha256": "abccd70b9ce93ea65bffe00017b4eb23f1ea86ef19223bce7bb8a97989bffc6c",
+    "materialized_sha256": "93ec9f4a9c5b06d44f67e74f50823cb406fe1b171ee024de6b8d43ed2fd083d4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/whiteboard/main.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/whiteboard/main.py",
+    "raw_sha256": "3f35f82efd86665b455e56d7327af8a056bdd4229711a454e8af430398fc154c",
+    "materialized_sha256": "6d7be4906cf00c64c7e7fe451afc4d84bdaf627ce7c434b61d8be9021912d096",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/whiteboard/service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/whiteboard/service.py",
+    "raw_sha256": "0d0fa732bcc0ddce3be434960a1565c265b5a3ec3eabad091f0ac0d64d3d2cfb",
+    "materialized_sha256": "4337b7b6cb2823f392971253c7704ed9688b4290dc2e1429748bc7b405e94cc3",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/whiteboard/view/whiteboard_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/whiteboard/view/whiteboard_widget.py",
+    "raw_sha256": "a63273ce78e40bc493e133bbafe217ed013f64c27be2a002c5334c6fa7f6d496",
+    "materialized_sha256": "b69ad0a31f683b1a28a24f773695985f71e44e2b333a41d7bbfac54ca5b26ad1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/whiteboard/viewmodel/whiteboard_vm.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/whiteboard/viewmodel/whiteboard_vm.py",
+    "raw_sha256": "16d4fb4a019bc4c090ed3599ba6f891dc9deebb116ae086bcc779cc94665bd6c",
+    "materialized_sha256": "e4eaac96a8979a07e821acbd3941f72620a053c4fad6aa8da44503c4bffbff6d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/whiteboard/model/canvas_state.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/whiteboard/model/canvas_state.py",
+    "raw_sha256": "f8eb94fa7d01fa08bfd1f1cf649ef985ca7869a3558c28b60dc8539cbedc2afe",
+    "materialized_sha256": "72b8344f50fdae164b3b8dc00612cd96f43d8f50c41a0f71829d61a299c74679",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/co_editor/main.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/co_editor/main.py",
+    "raw_sha256": "d968f304dbb64dad03f7f6cf039914825d75a21c2b57c6a9aee7d2d409ad383f",
+    "materialized_sha256": "7c1b4614aaf4fbf96725aacf2d9d37363382ce3d7ad13a3f445a07c6ecea5830",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/co_editor/service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/co_editor/service.py",
+    "raw_sha256": "f3dd294d964d5090e9a636c90e8e95eb74b85e1422f1ace5e45fc354c4acb5ed",
+    "materialized_sha256": "c788d193a59fe63b1150fb557dd751b2a827f6c155457fb38f616ce5a825df37",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/co_editor/view/editor_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/co_editor/view/editor_widget.py",
+    "raw_sha256": "9bf7339ffc0ca100bd551d430d786cbaab5351a6e704e93b6b2ed737cafe7c22",
+    "materialized_sha256": "96ef189d230d7081c3f21394d6063f3edd23e716c32c316d2e7d025930db5872",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/co_editor/viewmodel/editor_vm.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/co_editor/viewmodel/editor_vm.py",
+    "raw_sha256": "de7f6eaa75df775d62e897cd4bd0624a264a4b5426ae94d2a80609c9f88d8b5d",
+    "materialized_sha256": "a4dc3ee89ef0c991ea9b635d28e6cf5107a26b9ef422f8b8c57d51cb9289bd54",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/co_editor/model/document.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/co_editor/model/document.py",
+    "raw_sha256": "3d60ab281887af702b4205b3df38a4c4dd196766167d342c5cd73c27b70e81eb",
+    "materialized_sha256": "c934c5a88bcaef297824c10f93601631ca132526c28264e3998e6de010b40be1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/presence/main.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/presence/main.py",
+    "raw_sha256": "f85d6c083b0cbbe16ec354339cca6534a58a835af649b07f707c39227c6703af",
+    "materialized_sha256": "6677fb6c3a8e0f70ac4d22d230651f271365543bac186222a91b99a6aec3cf2d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/presence/service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/presence/service.py",
+    "raw_sha256": "092cb48db49ccf92fb873aca8d3e3441272dd64175ea5094933230d03bd7f9dd",
+    "materialized_sha256": "5842ccc6d82b566b39a3f609cf1adf1de20d6bae9174ebb38f6b642068cdef52",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/presence/view/presence_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/presence/view/presence_widget.py",
+    "raw_sha256": "bddcd1e07b137bee91329065fdc3435b0dded13cda9888b750e9fbc138ea6ac7",
+    "materialized_sha256": "36836c82ca05ed3dc3fd832df0d89b9cfbd2410f61d56670eb38c8dcabd1c0aa",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/presence/viewmodel/presence_vm.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/presence/viewmodel/presence_vm.py",
+    "raw_sha256": "8716cf3a6eae99d670a588c599a83dba7c15a447fe503c750a92fae9af9d4ace",
+    "materialized_sha256": "452747e3ab7c4390ad75acf3fbe0fdbd531e95a6c3290210c777f9509d5bd659",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/presence/model/user_status.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/presence/model/user_status.py",
+    "raw_sha256": "066188483ac6b3a0920f1ea0339c2dcb21310a017b312056a23acdab04ec12c0",
+    "materialized_sha256": "55cce2f948e5ca239e52869e7e9b1b349eaf7e9937865574987e165bd9e54467",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/dashboard/main.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/dashboard/main.py",
+    "raw_sha256": "4f8a79d34394985f4c23907fa8cf183aa96139c4914e79e26264398f3ba4f310",
+    "materialized_sha256": "bced82a59ebc4dd3a7625b27a821a694d7000ffc74a16862893eeac538584e2a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/dashboard/service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/dashboard/service.py",
+    "raw_sha256": "a01a34c633d48636f1c0f77eac19668a8f3c2bc5d4c42d0fbfc412588c76d663",
+    "materialized_sha256": "3f7e70db11bb527cbc3f63cc4d778db82ea76672ff56368fe9701bb954e89f08",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/dashboard/view/dashboard_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/dashboard/view/dashboard_widget.py",
+    "raw_sha256": "96ecc5e817e829c3d6345ce4474dfbd4ad7cbf5962192f4eefe3ca48341ef9fd",
+    "materialized_sha256": "d6972545585674d4bb41cda1e6a33610d7ebf7053b43d27b1c60bb649fa87e59",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/modules/dashboard/viewmodel/dashboard_vm.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/modules/dashboard/viewmodel/dashboard_vm.py",
+    "raw_sha256": "02aa704b2efd47a30f54e8f27dd594ba6c5870bb56ea2e1aa860c67b44d31078",
+    "materialized_sha256": "e174d34da60035001d9735b405e15c858b05b1035dc96d0a6274fc576db429e2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/shared/utils/singleton.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/shared/utils/singleton.py",
+    "raw_sha256": "f93f68e7bf5641c8fd0c8c2d8bf29e271d408a978e37500148a1ccfe95b27bb2",
+    "materialized_sha256": "7f7f7c735bb3eeaaf35cfce25900015e2196f1699e9839aeed086485533dd5f3",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/shared/widgets/avatar_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/shared/widgets/avatar_widget.py",
+    "raw_sha256": "af84fc7051f7347506753430149f18cdc2f4abdb2e2355068b2efecea2e97f70",
+    "materialized_sha256": "2bb865f1271e091cbdae0327107c28026c1b08d67f1a6907ec201f02b894b3e4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/shared/mvvm/viewmodel_base.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/shared/mvvm/viewmodel_base.py",
+    "raw_sha256": "b04e086eb3f2a06fe6ff4a12b4f7bfebc8c0ac438fe00864205c3a3223168d9f",
+    "materialized_sha256": "7ed9ed7c8b6974dec6fc57635dc181543e885f4dd8977aad1ee0bc6cda9991b5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/shared/mvvm/view_base.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/shared/mvvm/view_base.py",
+    "raw_sha256": "47d192bc54f47d46446f193d8f88e91f1a4608295c11831e2a1593b566dc64aa",
+    "materialized_sha256": "78d5107fd623b1b7c8368a779d196e300f4e9baade67cdfe6055580fd2e37e4c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/shared/schemas/events.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/shared/schemas/events.py",
+    "raw_sha256": "d889fb66fd2ddef94ad00bbfb5235fc55bd3f4328b16f181f99202eea431a1b2",
+    "materialized_sha256": "4136f7650ad6f3c8771fa2512e32ead6b479c030488b2b3f545d97fa2fa427a8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/shared/schemas/user_profile.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/shared/schemas/user_profile.py",
+    "raw_sha256": "7c7888bc258a7d21121eac512557a097be5f838c32fc66cf90acbc53b3728c5b",
+    "materialized_sha256": "3d9a5c4010f4ab39bed3f192d59688e61ccf6b4a1a39efaa6cca36661263c876",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "flockdesk/shared/ipc/event_client.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/flockdesk/shared/ipc/event_client.py",
+    "raw_sha256": "57043b65d2bd83e7f18a92bd5f58b86187ba2b89784fe7fd6bcfb8d074eef103",
+    "materialized_sha256": "936911e1417ef0bdf95fb9dfd217e27196f68c7497aa1eba20439da9bd35544f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "plugins_available/poll_plugin/manifest.json",
+    "archive_path": "data/generated/python_desktop_development_expert_021/plugins_available/poll_plugin/manifest.json",
+    "raw_sha256": "38cb1c4a705e1650e838b67488a9d461f235b15ebefe54f564977d29b36c7f41",
+    "materialized_sha256": "38cb1c4a705e1650e838b67488a9d461f235b15ebefe54f564977d29b36c7f41",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "plugins_available/poll_plugin/poll.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/plugins_available/poll_plugin/poll.py",
+    "raw_sha256": "bfcf57e85e6c0f631b55a8b61fab8f4c604c56bddac26724c934828c23d85a06",
+    "materialized_sha256": "2eee2d1faef70829051690aa67db54f249f89a13c24d4cabd8aebd9a7196a4cd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "plugins_available/poll_plugin/poll_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/plugins_available/poll_plugin/poll_widget.py",
+    "raw_sha256": "b9d56b78ee351d3a61ea60c1445bb41721bcfb99883c603935a97c5894decddc",
+    "materialized_sha256": "0ee1e80a15ac6215b9984f78df0bd38af1ea935ae522edcdd2980ac5345acba1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "plugins_available/code_review_plugin/manifest.json",
+    "archive_path": "data/generated/python_desktop_development_expert_021/plugins_available/code_review_plugin/manifest.json",
+    "raw_sha256": "7f8953ed71112a9d3768856a36080866535128e61c9b564739e51e075e6d6fda",
+    "materialized_sha256": "7f8953ed71112a9d3768856a36080866535128e61c9b564739e51e075e6d6fda",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "plugins_available/code_review_plugin/review_panel.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/plugins_available/code_review_plugin/review_panel.py",
+    "raw_sha256": "52a1331456d18d47498243533b9de2477b039b37cfebb1a0534ceb246bcc3325",
+    "materialized_sha256": "009fb909dd6f9a6e789f1105df368b2daa51b45b60a299b03999aecf76900591",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "plugins_available/code_review_plugin/review_widget.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/plugins_available/code_review_plugin/review_widget.py",
+    "raw_sha256": "7698d8b23d6a444d47b21209e20636dc702ebb2a2c49df8b74c76651b1cb7b82",
+    "materialized_sha256": "e51df571e9e9939ed85ebf4c904ef16c5099535fd729a80347805f2287eae4bb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/README.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/README.md",
+    "raw_sha256": "9ef645f9d7ee72f75eedf40d3c410de3598523a9b93b021a6fef948e2fb6f603",
+    "materialized_sha256": "1ea1ac87c21c8b8fdb5c7e0df95c923a0cd06440b48a67e972b2495d9fbdcd71",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/architecture.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/architecture.md",
+    "raw_sha256": "006ed68c6b6762f23209d3a3f3841ca80b34e3229526a612249b6c5a23a2a331",
+    "materialized_sha256": "bb410daaab0812f360264cad25c40b03702f8ba177b2a58e5d71f1c0926a2582",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/CONTRIBUTING.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/CONTRIBUTING.md",
+    "raw_sha256": "9de324637c21592fb0ea90923ea243b31b20d9fa4dd3be014ffab4640fa1d672",
+    "materialized_sha256": "96e59020eb19228fa2de52db347cc36dfd0f38623b8af0c5574600cf4b577071",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/CODE_OF_CONDUCT.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/CODE_OF_CONDUCT.md",
+    "raw_sha256": "e737c1f1670747ac108e019ef6d9703f1486ac50eb8d13f6d92309a8bebf9dfe",
+    "materialized_sha256": "e737c1f1670747ac108e019ef6d9703f1486ac50eb8d13f6d92309a8bebf9dfe",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "docs/guides/01_setup_guide.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/guides/01_setup_guide.md",
+    "raw_sha256": "4590a93931f9e1e4ef5a9becfc47b5d06aae430f3b294dde03167f195e0de69c",
+    "materialized_sha256": "6e32c80f6c9572f240fb64a2d49023d6d30568314f181d7d7b04abb4cd5252c4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/guides/02_user_guide.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/guides/02_user_guide.md",
+    "raw_sha256": "fa292f2540dd691c6301ab7240e72cc72b5049a3621797c86564cd7cc0a35dbc",
+    "materialized_sha256": "cdfbd4bbb26ab5460e0dd0cc02c6a00b93aff29a60aa1320985f2282306f8fa8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/guides/03_plugin_development.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/guides/03_plugin_development.md",
+    "raw_sha256": "9c4c5cab145140c804fd8708a4372df7293fb6218f7b46984cce17daf56dc219",
+    "materialized_sha256": "73dd3e46246ef5c2fc84642cb1b3efbe999e9cbb34785cff74f50a855b400d0e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/api/conf.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/api/conf.py",
+    "raw_sha256": "59f7d9dafb6fe0031ba71ecd52335332a47be728a2299b94ae9acf4d767d8462",
+    "materialized_sha256": "4a02abea56db95f47a687de9da21ca17ab255a73da82a775c5237780ff295c16",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "docs/api/index.rst",
+    "archive_path": "data/generated/python_desktop_development_expert_021/docs/api/index.rst",
+    "raw_sha256": "d037feab2542187698c113dce50242b3b12bde236178aba53be25700c163c232",
+    "materialized_sha256": "d037feab2542187698c113dce50242b3b12bde236178aba53be25700c163c232",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "tests/conftest.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/conftest.py",
+    "raw_sha256": "08573cde25188bbc30c1dc480eb0dbfc65801e4a733af06d77f9474e020b875e",
+    "materialized_sha256": "85c8c09f3d366ac595758408233f0d2d0175d2150260b9cc179e4ed925b1b12f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/unit/core/test_settings_service.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/unit/core/test_settings_service.py",
+    "raw_sha256": "0af9c2df655458f3e160bb2fafcb78b05204781ebd37b2cf0d906c42ddb6a159",
+    "materialized_sha256": "5e6f0b6d9cd406eaf8359639a24622c76fb59bde99fdc1ba3e4d9b70a8806e82",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/unit/core/test_layout_manager.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/unit/core/test_layout_manager.py",
+    "raw_sha256": "04e6a4b8c047942a163093605b7f9600b2f8a1ec139a5573a64ba567641c3d92",
+    "materialized_sha256": "917fa0c0fedf45d1b24e6a4f9e36807d877ea90f5384e40387da062991d8ec37",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/unit/core/test_plugin_manager.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/unit/core/test_plugin_manager.py",
+    "raw_sha256": "a5e7dc0873e64fdea665c826d728db528da98a972963f3944982fd15af16abc9",
+    "materialized_sha256": "e4dfce32d2efd94b1c2e0c8cea68a8964c0049243ac1389d36c2c0d4e25523bc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/unit/modules/test_chat_vm.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/unit/modules/test_chat_vm.py",
+    "raw_sha256": "cecf2a3562cd9ecd8ccadde38ac0908c1c8e2b1e24fd4a1db107fa554e1dace4",
+    "materialized_sha256": "6b43057222dce69b971be5bef32e21e53022c3964498b38e041482e6da7c939e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/unit/modules/test_whiteboard_model.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/unit/modules/test_whiteboard_model.py",
+    "raw_sha256": "795008ab9565d5f1619b357a2a4c9f3c6278151cf2498fd6b79e6682728e72f0",
+    "materialized_sha256": "1dd5e70a44d940f2ce83301c0b43610a3ac3077d94f435ad3043dc945d4ac012",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/unit/shared/test_event_schemas.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/unit/shared/test_event_schemas.py",
+    "raw_sha256": "839e90bb33fa426f177a0029ce36cbf9a5e261ced20dd98b0cea936918bde1f3",
+    "materialized_sha256": "040b47f6d6955f14d46d034fa3c636539bef1f7a574ffe0a1426c87f4e208668",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/integration/test_event_bus_communication.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/integration/test_event_bus_communication.py",
+    "raw_sha256": "f2c3cfc186e58a12d74f60f0c99a6d4ea9763e24c67c6e54036b8b03f1cddb03",
+    "materialized_sha256": "cb2bf20c473e3266c25553bd8640376b53d30223eacf597e7bf1f3a41db61d73",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/integration/test_plugin_loading.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/integration/test_plugin_loading.py",
+    "raw_sha256": "6877539f96f71373da57b87ecdc51c6de391c7056fd212db86842de79ac95039",
+    "materialized_sha256": "bc90fb5153ffc24c17c682b50b9561dcc4e93d2c903de41560a4f0e910c1f58f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "tests/integration/test_profile_sync.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/tests/integration/test_profile_sync.py",
+    "raw_sha256": "1c000c040173f71b6444248d8422729ac2e0780ad5fe7485f893f8431228221e",
+    "materialized_sha256": "3d430dae87d2d0a4181893e60c0efd14fe2c00c9f260e09dee44203cb0153987",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "configs/default_settings.json",
+    "archive_path": "data/generated/python_desktop_development_expert_021/configs/default_settings.json",
+    "raw_sha256": "a942a962eafdedafe134dfae729e4ee3c16080ad40fe50b1d8bf07a07a3846fe",
+    "materialized_sha256": "a942a962eafdedafe134dfae729e4ee3c16080ad40fe50b1d8bf07a07a3846fe",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "configs/default_layout.json",
+    "archive_path": "data/generated/python_desktop_development_expert_021/configs/default_layout.json",
+    "raw_sha256": "e6af87eb026e8acacf08ef177a5fd25c5d2fe526d7e13a7c22aad607f538ef9e",
+    "materialized_sha256": "e6af87eb026e8acacf08ef177a5fd25c5d2fe526d7e13a7c22aad607f538ef9e",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "configs/logging.conf",
+    "archive_path": "data/generated/python_desktop_development_expert_021/configs/logging.conf",
+    "raw_sha256": "bdef614dc1a0eea1a7b16d2c43898ad00cc05da5be5e4e4cb27f7828ace680af",
+    "materialized_sha256": "bdef614dc1a0eea1a7b16d2c43898ad00cc05da5be5e4e4cb27f7828ace680af",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "assets/icons/app_icon.png",
+    "archive_path": "data/generated/python_desktop_development_expert_021/assets/icons/app_icon.png",
+    "raw_sha256": "a55465fe6bd1a5a33576d51bc37c6293c7199f1edd1f2e8bc92a524771a7e9de",
+    "materialized_sha256": "1197b3e5ec0de98f378f86ab2bd2db6490c02b9d93d3168a2621e13a62e43987",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "assets/icons/chat_icon.svg",
+    "archive_path": "data/generated/python_desktop_development_expert_021/assets/icons/chat_icon.svg",
+    "raw_sha256": "18439bf09368e107fe7828a4a331c91056ac705eccb3a0323a589b0cd129fb67",
+    "materialized_sha256": "71b48d77dcb0ed37da949943b2d64b2fa01ba14a5adf531f5d04af8e17e2fdd6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "assets/fonts/Inter-Regular.ttf",
+    "archive_path": "data/generated/python_desktop_development_expert_021/assets/fonts/Inter-Regular.ttf",
+    "raw_sha256": "e1c3967a8860520b77400fa37976badd5befda45c96a4404fc699eb8b18ef592",
+    "materialized_sha256": "3aa3051d78e7bdbb89c87dcef035173227c251ae22fcf3db679350be90f100f3",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "scripts/build.py",
+    "archive_path": "data/generated/python_desktop_development_expert_021/scripts/build.py",
+    "raw_sha256": "cd888d107e4962a5403683aa5815db7f1b48144720ab02eb95c7a7132b73dd64",
+    "materialized_sha256": "826d3f28045d384612d1515d9724f57cf3479b0447a8353d828e0da7ebd32454",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "scripts/run_dev.sh",
+    "archive_path": "data/generated/python_desktop_development_expert_021/scripts/run_dev.sh",
+    "raw_sha256": "b80ae12ece65a8c26d4eb94747c29fca8ad21ff269b61d02960912c64924bd20",
+    "materialized_sha256": "dc41aaa8794bdc611724e0872b57de5d7cb1d9d70f737bd859363e4f529553e1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "scripts/generate_docs.sh",
+    "archive_path": "data/generated/python_desktop_development_expert_021/scripts/generate_docs.sh",
+    "raw_sha256": "035b1c1a92b788925ebc1a206869ea5231034c99be60b6d9e499cd1d769e128c",
+    "materialized_sha256": "035b1c1a92b788925ebc1a206869ea5231034c99be60b6d9e499cd1d769e128c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": ".github/workflows/ci.yml",
+    "archive_path": "data/generated/python_desktop_development_expert_021/.github/workflows/ci.yml",
+    "raw_sha256": "ad751965c907f0adbb2339f7d5e7911d7654095b927165b704bf4eda89ae4993",
+    "materialized_sha256": "48b46ab038909bc1a831a624def774e1de88bb510cc5797894097cdc789eb796",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": ".github/workflows/release.yml",
+    "archive_path": "data/generated/python_desktop_development_expert_021/.github/workflows/release.yml",
+    "raw_sha256": "d8abc8689986c1b16909894d8f591ccab084c29a396983d752625c20691761ac",
+    "materialized_sha256": "d8abc8689986c1b16909894d8f591ccab084c29a396983d752625c20691761ac",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": ".github/PULL_REQUEST_TEMPLATE.md",
+    "archive_path": "data/generated/python_desktop_development_expert_021/.github/PULL_REQUEST_TEMPLATE.md",
+    "raw_sha256": "33ad7b3606761bc410f07a1783fe2446167dc1edebd3f6d74630fa13f69cb0f8",
+    "materialized_sha256": "33ad7b3606761bc410f07a1783fe2446167dc1edebd3f6d74630fa13f69cb0f8",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": ".gitignore",
+    "archive_path": "data/generated/python_desktop_development_expert_021/.gitignore",
+    "raw_sha256": "cf43381ccf7850aa00f9d17b20c87fe760f46fa7913ff85988c6bd49ebc89718",
+    "materialized_sha256": "cf43381ccf7850aa00f9d17b20c87fe760f46fa7913ff85988c6bd49ebc89718",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": ".editorconfig",
+    "archive_path": "data/generated/python_desktop_development_expert_021/.editorconfig",
+    "raw_sha256": "cc7a55f1fc19039e56f0577c20b6bf18cf39effc77e1211f049840323bea61d3",
+    "materialized_sha256": "cc7a55f1fc19039e56f0577c20b6bf18cf39effc77e1211f049840323bea61d3",
+    "outer_markdown_fence_removed": false
+  }
+]

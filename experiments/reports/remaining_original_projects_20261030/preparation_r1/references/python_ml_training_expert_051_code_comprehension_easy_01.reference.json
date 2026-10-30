@@ -1,0 +1,53 @@
+{
+  "id": "python_ml_training_expert_051_code_comprehension_easy_01",
+  "task_category": "code_comprehension",
+  "difficulty": "easy",
+  "title": "Trace the Data Ingestion Workflow for a New Dataset",
+  "description": "As a new developer on the StageCraft AI Factory team, your first task is to understand the core data flow. The platform is built on an event-driven, microservice architecture. A critical workflow is initiated when a new dataset is uploaded. You need to trace this initial process to understand how services communicate and hand off responsibilities. This task will test your ability to navigate the codebase and understand the interaction patterns between different services.",
+  "context_files": [
+    "stagecraft-ai-factory/services/data-ingestion-service/app/main.py",
+    "stagecraft-ai-factory/services/data-ingestion-service/README.md",
+    "stagecraft-ai-factory/services/data-preprocessing-service/app/main.py",
+    "stagecraft-ai-factory/services/data-preprocessing-service/README.md",
+    "stagecraft-ai-factory/services/feature-engineering-service/app/main.py",
+    "stagecraft-ai-factory/services/feature-engineering-service/README.md",
+    "stagecraft-ai-factory/services/model-training-service/app/main.py",
+    "stagecraft-ai-factory/services/model-training-service/README.md",
+    "stagecraft-ai-factory/services/hyperparameter-tuning-service/app/main.py",
+    "stagecraft-ai-factory/services/hyperparameter-tuning-service/README.md",
+    "stagecraft-ai-factory/services/model-evaluation-service/app/main.py",
+    "stagecraft-ai-factory/services/model-evaluation-service/README.md",
+    "stagecraft-ai-factory/services/model-registry-service/app/main.py",
+    "stagecraft-ai-factory/services/model-registry-service/README.md",
+    "stagecraft-ai-factory/services/model-serving-service/app/main.py",
+    "stagecraft-ai-factory/services/model-serving-service/README.md",
+    "stagecraft-ai-factory/services/pipeline-orchestration-service/app/main.py",
+    "stagecraft-ai-factory/services/pipeline-orchestration-service/README.md",
+    "stagecraft-ai-factory/services/data-ingestion-service/app/logic.py",
+    "stagecraft-ai-factory/services/model-serving-service/app/loader.py",
+    "stagecraft-ai-factory/services/hyperparameter-tuning-service/app/search_spaces.py",
+    "stagecraft-ai-factory/shared_libs/event_bus/observer.py",
+    "stagecraft-ai-factory/services/model-serving-service/app/predictor.py"
+  ],
+  "context_length": 282861,
+  "task_prompt": "A user uploads a new dataset to the platform. Based on the provided files, please answer the following questions to describe what happens immediately after the data is successfully ingested:\n\n1.  Which service is the primary entry point for handling the new dataset file?\n2.  After this service processes the dataset, how does it notify the rest of the system that a new dataset is ready?\n3.  Which service listens for this notification to begin the main MLOps pipeline?\n4.  Provide a list of the specific files and the key functions/classes within them that are responsible for this handoff (from the end of ingestion to the start of orchestration).",
+  "expected_approach": "An expert developer would approach this by first forming a hypothesis based on the service names. 'data-ingestion-service' is the logical starting point.\n\n1.  **Examine the Entry Point:** The developer would inspect `stagecraft-ai-factory/services/data-ingestion-service/app/main.py` to find the API endpoint responsible for uploads (e.g., a FastAPI route like `/ingest` or `/upload`).\n\n2.  **Trace the Logic:** They would follow the function call from the API endpoint into `stagecraft-ai-factory/services/data-ingestion-service/app/logic.py` to understand the processing steps.\n\n3.  **Identify the Handoff Mechanism:** Within the logic file, the developer would look for the code that executes after the data is saved. They would notice a call to a system that is not a direct API call to another service. The presence of `shared_libs/event_bus/observer.py` strongly suggests a publish-subscribe (Pub/Sub) or observer pattern. They'd look for a function call like `event_bus.publish('DATASET_INGESTED', ...)`. \n\n4.  **Find the Subscriber:** Knowing an event is published, the developer would then hypothesize which service would be interested. `pipeline-orchestration-service` is the most logical consumer. They would then search in `stagecraft-ai-factory/services/pipeline-orchestration-service/app/main.py` for code that subscribes or listens to events. They would expect to find a setup block (e.g., in the application startup event) where handlers are registered, such as `event_bus.subscribe('DATASET_INGESTED', handle_new_dataset_pipeline)`.\n\n5.  **Synthesize Findings:** Finally, they would compile the names of the services, the mechanism (event bus), and the specific files and function names they identified into a clear, concise answer.",
+  "ground_truth": "The agent should provide a response that contains the following key insights:\n\n1.  **Entry Point Service:** The `data-ingestion-service` is the primary entry point.\n\n2.  **Notification Mechanism:** The system uses an event-driven architecture. The `data-ingestion-service` publishes an event (e.g., `DATASET_INGESTION_COMPLETE` or similar) to a central event bus after it has finished processing the new data. This is an asynchronous, decoupled communication pattern.\n\n3.  **Listening Service:** The `pipeline-orchestration-service` subscribes to the `DATASET_INGESTION_COMPLETE` event and is responsible for initiating the MLOps pipeline in response.\n\n4.  **Key Files and Functions/Classes:**\n    *   `services/data-ingestion-service/app/main.py`: Contains the API endpoint function that receives the initial request.\n    *   `services/data-ingestion-service/app/logic.py`: Contains the business logic for handling the data and, crucially, the function call that publishes the completion event to the event bus.\n    *   `shared_libs/event_bus/observer.py`: Implements the `EventBus` or `Observer` class, which is the core of the pub/sub mechanism used for communication.\n    *   `services/pipeline-orchestration-service/app/main.py`: Contains the code that, on startup, subscribes a handler function to the `DATASET_INGESTION_COMPLETE` event, and the handler function itself which kicks off the pipeline.",
+  "evaluation_criteria": [
+    "Correctly identifies 'data-ingestion-service' as the entry point.",
+    "Correctly identifies 'pipeline-orchestration-service' as the reacting service.",
+    "Accurately describes the communication method as an event bus, publish-subscribe, or observer pattern.",
+    "Correctly lists at least 3 of the 4 key files involved in the handoff.",
+    "Demonstrates understanding of the asynchronous, event-driven nature of the interaction, rather than describing it as a direct function call."
+  ],
+  "metadata": {
+    "context_length": 282861,
+    "files_count": 23,
+    "information_coverage": 0.3109131378637575,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T19:46:45.234019"
+  }
+}

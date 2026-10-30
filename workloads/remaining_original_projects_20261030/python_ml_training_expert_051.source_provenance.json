@@ -1,0 +1,590 @@
+[
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/app/__init__.py",
+    "raw_sha256": "ba44c4d4c1b9f9263c35761fdd3f7e85c4abde55ab58167309a80a09acf88fce",
+    "materialized_sha256": "5fcdaa658268f1e5d370ed796ce80e4b2f3bf7b9f17785de7bf6a7fcd959475b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/app/main.py",
+    "raw_sha256": "7ed3b3e50f6c9c09cecd8dffe000f21dc88a43ea9c96f722b1e0f7b7ddd10c7b",
+    "materialized_sha256": "1184ed0eea0df29578546377014986c5021367d17b351e346f20de0c0ee36d3d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/app/logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/app/logic.py",
+    "raw_sha256": "58b18d0e15b769afd28f2146792a8ad0349b68e76d206561fa9cf41f0f469ba1",
+    "materialized_sha256": "b4e2fe9a8d7bd1a8a0db7f28cd8a26e9b24e8ef2d3da0f85b0a9b20641748c91",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/app/schemas.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/app/schemas.py",
+    "raw_sha256": "2c8733077cb0bb666de04debdcaadc29f7e02ad0dc99cbd519f895b4149e2e32",
+    "materialized_sha256": "e068fe0e223746133218f3b7ff3e7d080332b46b4a93ba4647f80ed302098429",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/tests/test_logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/tests/test_logic.py",
+    "raw_sha256": "e0a22b64c72e513bb8c207582c60b861c7d47f8a8173f8489c2f6be860e67be8",
+    "materialized_sha256": "027eddd75be479f0b9bf55f846693d6ba6055ce7d35e5c91f1e14ed953121239",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/Dockerfile",
+    "raw_sha256": "14610fdbcba8a932dd14e56781b8a93498ec1713219f892b6160564866fa8948",
+    "materialized_sha256": "14610fdbcba8a932dd14e56781b8a93498ec1713219f892b6160564866fa8948",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/README.md",
+    "raw_sha256": "0a95a9eb7d313d1d18d330a490b7fc61efcb2129ebe28ec97effbaf7c6ea8d50",
+    "materialized_sha256": "7ef02988ef5c0b7ce513ed04f968d8e59f0bccd92307f7752effd91ea367dbc5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-ingestion-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-ingestion-service/requirements.txt",
+    "raw_sha256": "f7a75837e027cc1a7d2034c1e8fa18b680e1c31206aee001d0fdcaa124ed17ce",
+    "materialized_sha256": "f7a75837e027cc1a7d2034c1e8fa18b680e1c31206aee001d0fdcaa124ed17ce",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/app/__init__.py",
+    "raw_sha256": "c60cf6185b9632cc67cdd956ca6eb8895639d136e2745948cefa29d3fda3f932",
+    "materialized_sha256": "2dd8d8aadc466f9acdd5cba3fb035e042af615261fe6579c2fd78c0a51c2353a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/app/main.py",
+    "raw_sha256": "9563d3a1df475f3c7c3790ebd4238790e522188767df4ba40e834d4db14f0104",
+    "materialized_sha256": "50ffce659fd2659a5e6e93047969f471030345c690e6e9469b47923f5b239ceb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/app/logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/app/logic.py",
+    "raw_sha256": "5da638656c43aa3b89ac410a313d5e787743c05f833742e47cc72beea61a6b5e",
+    "materialized_sha256": "830948464e6413358445b651a4275922a6628160871ce85fff95740aa8ba7367",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/app/strategies.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/app/strategies.py",
+    "raw_sha256": "21b90891d9d72de11eb62c0e22703e1b639fb1c61f1a004d46c8c8b42267a1b2",
+    "materialized_sha256": "bedaf07fba1db8389f77e4989ee7559ca15b0b63d5dbacf797fb33206dd5e51f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/tests/test_strategies.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/tests/test_strategies.py",
+    "raw_sha256": "bcc6be48ac4ea54df01c80496a7ba65caffd2eac97989dafc44b6d8900069d65",
+    "materialized_sha256": "30ca25b2463fab6803c90f465d9277b0e9a2dc418db060d013a889c428f98b19",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/Dockerfile",
+    "raw_sha256": "ea51545b18ac70c76b5b5e5d58ca1ddbc58c1c830c7595c2ccd41d3e0878ea68",
+    "materialized_sha256": "ea51545b18ac70c76b5b5e5d58ca1ddbc58c1c830c7595c2ccd41d3e0878ea68",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/README.md",
+    "raw_sha256": "dfc1ac31852894b53a63c8f8115f3ee6aadb182806adf9e7e7f8d922a33d368e",
+    "materialized_sha256": "f2a283237563e9ba0235cca041964e79f2f3cf93fc64bb68bdc14c5ca7fc3f7e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/data-preprocessing-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/data-preprocessing-service/requirements.txt",
+    "raw_sha256": "390e186ac5d74780e518ebe560c0f6fba676b7da7030b0137c06fe31cb053cb4",
+    "materialized_sha256": "390e186ac5d74780e518ebe560c0f6fba676b7da7030b0137c06fe31cb053cb4",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/app/__init__.py",
+    "raw_sha256": "89ce7262e55e4657ddf0c25aef71fa90bb1413f613010828f4907df17704d94b",
+    "materialized_sha256": "fa0cbb6985068c02087d6d7b1501b53616c7ec1343ac55aeb63ad6d258617cca",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/app/main.py",
+    "raw_sha256": "11741359e6ec28b96268e0c8ea38a84e1e1759c4dbef31bf39564b332e8d9a4e",
+    "materialized_sha256": "cc374a5d472f2bfebec45e9676718c66bd652024ac488b59ee5044211c2245fe",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/app/logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/app/logic.py",
+    "raw_sha256": "51499e70f73b69098a363b50471360016c03ccadc47fb6fee38998bd4975e014",
+    "materialized_sha256": "0fc199a4b014a0455f10f73ea10ceae062426a026db3dc8a2c6ed3fcd07cf1b3",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/app/feature_store_client.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/app/feature_store_client.py",
+    "raw_sha256": "48b02c93d8d3a69fce85c59b547a5e5a661355da4b7b1295d1467527a8d717bb",
+    "materialized_sha256": "7c2cb317e3b0b4ac4040f34304306691c9433f923564a5423a8f179ff737efe4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/tests/test_logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/tests/test_logic.py",
+    "raw_sha256": "092c2b27c3ebd2c2903f65755ebde277d7a1103ad510faebbe5f1bbfb91f3275",
+    "materialized_sha256": "f6bd218bdb43d039600ea140945448392e7bc924f987dfd51421ffb9609d81cf",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/Dockerfile",
+    "raw_sha256": "9be815a815db126bfa411abaa383dc637eee03923a55a354a9817e2e67b90efe",
+    "materialized_sha256": "9be815a815db126bfa411abaa383dc637eee03923a55a354a9817e2e67b90efe",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/README.md",
+    "raw_sha256": "483e8c0c639d57be291080a3927d7b89c8e16dc0efe12f016d7cb979b4928e6c",
+    "materialized_sha256": "553fe3a478d723689e4f0014b69c4d978c2477cfc4c7aa8178170d495294ac34",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/feature-engineering-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/feature-engineering-service/requirements.txt",
+    "raw_sha256": "283d1e974e4971355a4dd297a97377cee1d04d4488e3be865b42d710ef978355",
+    "materialized_sha256": "283d1e974e4971355a4dd297a97377cee1d04d4488e3be865b42d710ef978355",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/app/__init__.py",
+    "raw_sha256": "1394a47cacc51b029f3f6572472b43c209892558f88b610f39e9e0aa439437ea",
+    "materialized_sha256": "2b4732db3c98b3423434990d8dfb7b5f0fae86d8b48d8ae0ff2ad5ec51ef9399",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/app/main.py",
+    "raw_sha256": "366482b63910d9c5e6b5a2b40d148ce55ceec9c9c149acf026b885ae3152830c",
+    "materialized_sha256": "a7319219b00d2cc619240678f9a80b4106160ee9fa1934c993cf33db55f0058d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/app/logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/app/logic.py",
+    "raw_sha256": "a7d3244754a16cf5004ef8189ac998c32f4c78dcddeaa67d78a125be0766daa4",
+    "materialized_sha256": "7548edea9839ef0cd817d597dbc662f57b0b41baff6f2fdd9d7c5133a7e52de7",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/app/model_definitions/recommendation_model.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/app/model_definitions/recommendation_model.py",
+    "raw_sha256": "382a4cab461350b68837ff5f25974eff16e1fe9b8c2402de287b43b2d667362b",
+    "materialized_sha256": "fc23caa8cf236793d8660860f63fd47bcedc78a72f30d6119f059f48614f7acc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/app/model_definitions/audiogen_model.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/app/model_definitions/audiogen_model.py",
+    "raw_sha256": "4feb9977a14f089b2b1b43ba9bd4bbc740d3d6cfc45bd0b5efd7bc52b9ac7fff",
+    "materialized_sha256": "b3ad1fe825be925821f28a47093a5c99dc87b6f6c0adce75f80cf2b3c63b9f82",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/tests/test_training_logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/tests/test_training_logic.py",
+    "raw_sha256": "2f35c134f0b7e453fecfd30ee2ff9d19319793414fd40e5bb29dc17712fd55c4",
+    "materialized_sha256": "bcbf4d750cf2e55853957fd186b3f6412c26df30d4936cd902d08db22097ec24",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/Dockerfile",
+    "raw_sha256": "cc93a439d81f4254d5493563093f0be1b5e268321a3729123f2a65d2871a9dd2",
+    "materialized_sha256": "cc93a439d81f4254d5493563093f0be1b5e268321a3729123f2a65d2871a9dd2",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/README.md",
+    "raw_sha256": "acfea6b52fed9a83f8a20e7129ce5f5a914818b5b887f3bf02da9e135cdf0c02",
+    "materialized_sha256": "f5f8c23a83517aa90a4e2496c850a9d0a78ceffc6be53dd33bf61be35be7fb64",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-training-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-training-service/requirements.txt",
+    "raw_sha256": "f6311172881ae74937354ef05816c5ce7390d589053bfb4db4d69e6a4d2eaac3",
+    "materialized_sha256": "f6311172881ae74937354ef05816c5ce7390d589053bfb4db4d69e6a4d2eaac3",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/app/__init__.py",
+    "raw_sha256": "e497bf9df2d4866c1d0402e6cb85cc8681798ec45bdc93d0974faa7ed1ffbd6f",
+    "materialized_sha256": "d95df18914287d6f8c5a1808e8b366ea8b152e3ae7f7f1104c89d14801bc23a4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/app/main.py",
+    "raw_sha256": "b46c106c6e6dd377601bc0aeb2b8eae3c10724bbc9e4ae1677b0a034e8e91d47",
+    "materialized_sha256": "bca3a72a5fbd4f22183cc6b179fd77d3b5b6d9e210b2afd491b8c4160d70fdef",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/app/logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/app/logic.py",
+    "raw_sha256": "a2e7b5dd7137b3d4165877593a300072d21338936479af039be0136a52fb1dd2",
+    "materialized_sha256": "7ed16125f5804ca5b03c9a7ac8b4a33e358a620ee12f7c0d868a552455d818f6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/app/search_spaces.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/app/search_spaces.py",
+    "raw_sha256": "404f4d4eaa7ba7d93f5cde6d0bbd17bfb6707268f8aafb45abc4c34b18e48ebf",
+    "materialized_sha256": "38693da73e731a67d7cb72497e538bd03617e47aef9482a58ca45dbdf4c493a8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/tests/test_tuning_logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/tests/test_tuning_logic.py",
+    "raw_sha256": "ae38b76f973b893a1245c3c882b4fa46c0c2bd72331d616515adc43bb62e22c9",
+    "materialized_sha256": "69412c1c4f6869f66bd7cb5c50fb8e617f07e7bdd82bf6a9505b48f8fa7ae734",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/Dockerfile",
+    "raw_sha256": "53bc9fca885e5be0178f1387fa00d9e1df808a71a5a44b9b0603166b11fc9737",
+    "materialized_sha256": "53bc9fca885e5be0178f1387fa00d9e1df808a71a5a44b9b0603166b11fc9737",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/README.md",
+    "raw_sha256": "504dd7837932b09d47947a3504adc5502cdf3a71ebde1fde800d8961abae4466",
+    "materialized_sha256": "b778549a48b80781956ee69721a8d73990aa9a6de8ae493ec98ac2c85c629f36",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/hyperparameter-tuning-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/hyperparameter-tuning-service/requirements.txt",
+    "raw_sha256": "87f49c1207359f942a6a2dca8a8cf674e24ddbd435fdd7a23f0b7e10be39cbfa",
+    "materialized_sha256": "87f49c1207359f942a6a2dca8a8cf674e24ddbd435fdd7a23f0b7e10be39cbfa",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/app/__init__.py",
+    "raw_sha256": "4f93782230dd4334a13601e81cfc12de122f0389e26d4cc0304673e34ae17d3d",
+    "materialized_sha256": "0bfc433b0623b66b1722a271e49a82a1bbdbc756c7e55388d799963b10264b3c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/app/main.py",
+    "raw_sha256": "f5ff0b806830454de6f472f8a22e11108d85145a5f8dbad41e0570cfc8aa5c64",
+    "materialized_sha256": "4f39e8ada3db177100d30eaa25c9ff4548ec9be9c37cb0e918689fc725ec85fd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/app/logic.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/app/logic.py",
+    "raw_sha256": "40810c6e3d71e612e74a6c3998f8f3e503efa55b551d7fd0354358af3388bc3c",
+    "materialized_sha256": "967ac1c434516100e2dba37e1e53ca51346e227e82b8503180c2ca3e6da1d47a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/app/metrics/engagement_metrics.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/app/metrics/engagement_metrics.py",
+    "raw_sha256": "6adb5ba268bdeb5be26f2ec7b18bf9c9464ea24e3c22be2b96907a552bf09a18",
+    "materialized_sha256": "9a9053f90257e2a6d1ca35fdbc3b7349f2e2c60619851a655be7bb7b8c306f5d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/app/metrics/audio_quality_metrics.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/app/metrics/audio_quality_metrics.py",
+    "raw_sha256": "29593b8726beefeea077e754fc5a85db46c3c036b2db9d430252ae9800d8257b",
+    "materialized_sha256": "9e7f9d67e738e3f4d9f16a08f4b5584f7acbf226203bdd6393fb2ec7cb3e0639",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/tests/test_metrics.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/tests/test_metrics.py",
+    "raw_sha256": "518faff28b08fac16595f70546f71a47b759ea64630d2441cc322fc2c897c3e8",
+    "materialized_sha256": "a97d7b6b52f638de7febca3b2becae12017c3e8fe2846c946adfb191b1929aed",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/Dockerfile",
+    "raw_sha256": "30a007b8610d127f1953657119791b150ce059d4fc6320e3eaf6e3e8ef0c5913",
+    "materialized_sha256": "30a007b8610d127f1953657119791b150ce059d4fc6320e3eaf6e3e8ef0c5913",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/README.md",
+    "raw_sha256": "341c6c393737c8542aa45988f25187daeb679af22f63d4307a596a8d56f5b7a4",
+    "materialized_sha256": "f22f0f7dd3bef41b6f3a15a7800b1c77ba4b7c878d3bdbec66d262a0ad3fd65d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-evaluation-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-evaluation-service/requirements.txt",
+    "raw_sha256": "4cc8729d85bf20695a72857471d894ebe2fbf29dfc119afb56e22ac6e5a9bd58",
+    "materialized_sha256": "4cc8729d85bf20695a72857471d894ebe2fbf29dfc119afb56e22ac6e5a9bd58",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/app/__init__.py",
+    "raw_sha256": "10a05ac885a4903aca0c830bedad7dec68f63b822e0b2386b7c0796ddab433ba",
+    "materialized_sha256": "10a05ac885a4903aca0c830bedad7dec68f63b822e0b2386b7c0796ddab433ba",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/app/main.py",
+    "raw_sha256": "f717813b1e2881d951d07b23e986ea2098f8c16a39304136b6af6152d3ec3875",
+    "materialized_sha256": "a124d07b9651026d265985356aeeaa93906cca4b7b5766482d26b79dfb1da18c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/app/api.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/app/api.py",
+    "raw_sha256": "447309c806ea3c928999df8c36ba17f4648af653de95f513e07ba35010ad5e31",
+    "materialized_sha256": "d5f1ad1c41a1772f940e9c5dde22033e6a049ca850900fef80ba7c30ccbde2ee",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/app/consumer.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/app/consumer.py",
+    "raw_sha256": "642d0d3438ca299e9a186b4837c22b2f6cccdee2a3e07e40c66a8f944c613f73",
+    "materialized_sha256": "a742902dbbd6e16aa457430ce86e881f6c4166985aabfa04facabb4ed6d73786",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/app/db.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/app/db.py",
+    "raw_sha256": "c820e824a065bb4d8854957886063f66e23991d7f5eb57347efd275d8dfe0207",
+    "materialized_sha256": "ed0db284c69b42e320fc24c7df6f23b07ec0ea15ae650ecdf195f060339b2368",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/app/schemas.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/app/schemas.py",
+    "raw_sha256": "1efa457d7df33dca5e39143d53f2d502afbc66498e1e0862423fb6fc07f04dbc",
+    "materialized_sha256": "74635e3fe7dd03f1bb1f5ec535249d29ae9b3c0b281a9ac92ab84f7bbb8590c7",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/tests/test_api.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/tests/test_api.py",
+    "raw_sha256": "25f01917dc20d2726df06d2b40bf380af1bf41038efc1d1c5a250cb1add03ecd",
+    "materialized_sha256": "faabdf029cb96e6635d1daa79cf816ed0818f881e1d8da908f911a429b5fd369",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/Dockerfile",
+    "raw_sha256": "4483e0bde2dd28b30b1a12842039315daa2892d3c80f911ef317a3ed66d0e624",
+    "materialized_sha256": "4483e0bde2dd28b30b1a12842039315daa2892d3c80f911ef317a3ed66d0e624",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/README.md",
+    "raw_sha256": "0833b0bcda71950633bdbbafea93bb576f78919547469e5bd6ffaf40230ebf76",
+    "materialized_sha256": "be17709e86d7946030ead1c0642c747b68cc9925292d9b3fe54c9f4f8b3aadd5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-registry-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-registry-service/requirements.txt",
+    "raw_sha256": "3726f9205df49e7a35bb0f2e122a9439d22051f2ae0ca931bb15d0b85f2c84ce",
+    "materialized_sha256": "3726f9205df49e7a35bb0f2e122a9439d22051f2ae0ca931bb15d0b85f2c84ce",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/app/__init__.py",
+    "raw_sha256": "b5d8ec9b8dee7d84796c390c37ac39dbfdad4fe11eb02e0828b91f405c223503",
+    "materialized_sha256": "a721cab870ae89e01985c888a8362feb87a99f7a4e9118f81167f337e50ad36e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/app/main.py",
+    "raw_sha256": "db286248c364f8d9e5ee55cdae978054c0c7e6ae9b1208ae1bf9290e2134fa86",
+    "materialized_sha256": "37f98507c815d8f822accf8c6a921848a7b4d348e340aee4721227ab4da0722b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/app/loader.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/app/loader.py",
+    "raw_sha256": "f0158e5237927dd191043864dded587a905e6aee556937a8f8c09c1eb11ef196",
+    "materialized_sha256": "8114746e5f45009e1f7505916cb0d4aeac9fef60364d2116548e72ebef2e9574",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/app/predictor.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/app/predictor.py",
+    "raw_sha256": "74e0d415a91c0f95bdee2f24fe23e98050954c91c04cb70f5ee050db8afdf607",
+    "materialized_sha256": "414efe4086b42984d3a48c5b18cf6803306545dfd55178859192aa9fca2f8ecd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/app/monitor.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/app/monitor.py",
+    "raw_sha256": "6fba5cd83ac1742537e86951fad47c22101b409bd0036d613ec350ec7db20879",
+    "materialized_sha256": "23669b8cd9084cb937e5432372ff935a16e16a5da2fdc291068fd3412002a3ff",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/tests/test_predictor.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/tests/test_predictor.py",
+    "raw_sha256": "d441a1e1767acbbed0ccbd8ab88a6838ab94f81720b0b281ebcd20090e61e891",
+    "materialized_sha256": "6ee319cff23a6cb571f55fc64cf35cadf2a3ca3e8520da0f28a99cd225b5bc49",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/Dockerfile",
+    "raw_sha256": "faf3f32e403483c9c881ed5a95636338af1fa7b6f51c3d28863d643fc1bece03",
+    "materialized_sha256": "faf3f32e403483c9c881ed5a95636338af1fa7b6f51c3d28863d643fc1bece03",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/README.md",
+    "raw_sha256": "8ae94fde234ee3d6b6cf5c7f74614e15a08ce97776f777d957e77e0f98389f01",
+    "materialized_sha256": "d8f157c6648e35826099700ae779a3919dcdbea637917b4440393515afa03cb0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/model-serving-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/model-serving-service/requirements.txt",
+    "raw_sha256": "5f50a881ed5625f2ec92a3f7942cc9558c94a8b4ab296e0c2567ac1b00235491",
+    "materialized_sha256": "5f50a881ed5625f2ec92a3f7942cc9558c94a8b4ab296e0c2567ac1b00235491",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/app/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/app/__init__.py",
+    "raw_sha256": "58e9e923c1ba646354a44db732eda9e7cf04d6705d73d825a8d0e72e63450675",
+    "materialized_sha256": "1e17a75bdc24ff29c8209df7d82574f680dd27489ff8ce19f6b3c769f83cbaef",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/app/main.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/app/main.py",
+    "raw_sha256": "100d65e04be4d0a73a2887c0e73247728161e6440e2ab81f5a616ef83b6565cf",
+    "materialized_sha256": "36a5a2f6a6d7e3eff4311e63f6420347282ac2d187cd5d82f7664a9c8f16ce05",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/app/api.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/app/api.py",
+    "raw_sha256": "81edd8ec1c9fae5482248e1fc6130f6a63f01f4b5ac1d9f208ddade0e98c0278",
+    "materialized_sha256": "23f043fe774b65e4072a758bc852816c6cf96063f8952a69ff9fa6c06c2e7bbd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/app/factory.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/app/factory.py",
+    "raw_sha256": "174afcdec773cb1fa7af0ea6d471e07381d7265fe5490ee58a11ed8db4394049",
+    "materialized_sha256": "f447ff18f1a086f17523564d009794483f088054ca52ea02246a2f194727ef38",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/app/strategies.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/app/strategies.py",
+    "raw_sha256": "c3f21a17b4525c5dc5b675b6304778d375a2f547bb46792845571e4caab03784",
+    "materialized_sha256": "aa517ee096b09f44870261b9484956283a63e262cfced0665e0535c5adb15c16",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/app/consumer.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/app/consumer.py",
+    "raw_sha256": "13c9404c8a085997b6cc084e7e9e09182f531c66f5a53d351f9ae9b49535243a",
+    "materialized_sha256": "c8ce3184ffd0b3d0798abf820af5ada9ab92941ddcca65628dc87597a2245827",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/tests/test_factory.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/tests/test_factory.py",
+    "raw_sha256": "17ce584eff493dfaee3877e4f00ec1479f307145f6538fbfb6694839f7f8dc52",
+    "materialized_sha256": "2c2e7e95a5ad9a5d81aa393a2b66af219b5c3fb7953a76d13f8ac8537db32aad",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/Dockerfile",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/Dockerfile",
+    "raw_sha256": "9006f684584c20fc48a4025f8740818b0f4b39a696241682fc884bd980e664dc",
+    "materialized_sha256": "9006f684584c20fc48a4025f8740818b0f4b39a696241682fc884bd980e664dc",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/README.md",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/README.md",
+    "raw_sha256": "d2fea65ea39ff4a99280cb9258001150654c91456c62c19c49387cb0a3dbd9d3",
+    "materialized_sha256": "93f4f968a15d3a73c710618bc33ba22fd72cd976b8407ac6ee631128f5f57d15",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/services/pipeline-orchestration-service/requirements.txt",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/services/pipeline-orchestration-service/requirements.txt",
+    "raw_sha256": "cb8e5669d41c71b50e1eabcd765aa69fb624721c16bfdc128fc1eef0878c75b2",
+    "materialized_sha256": "cb8e5669d41c71b50e1eabcd765aa69fb624721c16bfdc128fc1eef0878c75b2",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/shared_libs/event_bus/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/shared_libs/event_bus/__init__.py",
+    "raw_sha256": "9b84c73de7be92be612d1a721696070dfffa389d6a8e1423e19f7df10c2e3be3",
+    "materialized_sha256": "e8a8638c6f16141c032444dc6888b006e7bcab109c921225e0706d56264c7e9c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/shared_libs/event_bus/observer.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/shared_libs/event_bus/observer.py",
+    "raw_sha256": "17d7be7b4b0204e0360413c2b0e7d91a3f0e48b423dfddd14f8dc64a80f6e5a7",
+    "materialized_sha256": "53a13cf9dd63cc28514bf33daaae0c8c7f5fdc3808cf7cf230e38b3aa5015d9f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/shared_libs/event_bus/producer.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/shared_libs/event_bus/producer.py",
+    "raw_sha256": "0a80a37a1c69a6fe7b14e163651c925ed7d4fde81c0b099039443eeeb7f929c6",
+    "materialized_sha256": "e1293dbe27cb59ec63e5e0e0bdc8e13a4bdc46591763b0e8c93455f2bcd2f988",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "stagecraft-ai-factory/shared_libs/event_bus/py.typed",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/shared_libs/event_bus/py.typed",
+    "raw_sha256": "9834a14ab9bcaa0f6a8da71073617eac8f004e596a3fa11d807b84631b825d9d",
+    "materialized_sha256": "9834a14ab9bcaa0f6a8da71073617eac8f004e596a3fa11d807b84631b825d9d",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "stagecraft-ai-factory/shared_libs/data_models/__init__.py",
+    "archive_path": "data/generated/python_ml_training_expert_051/stagecraft-ai-factory/shared_libs/data_models/__init__.py",
+    "raw_sha256": "8eace4705047cf59229c76b2472311ba709bcd23461ca033ea247e5f11d7fb0a",
+    "materialized_sha256": "2b544b547eb65a8c8a0a40ef6e37519aa39e8558c5bc42191722514badf45026",
+    "outer_markdown_fence_removed": true
+  }
+]

@@ -1,0 +1,688 @@
+[
+  {
+    "path": "PolyphonicPalette-API-Studio/README.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/README.md",
+    "raw_sha256": "cbddcb57970a11eee04b127bab9194a30789580ad7b9da6688307ca4d1527c94",
+    "materialized_sha256": "2e684b9dacddced25cad6e7895d168c4720694db0357ce0685833515612a9464",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/docker-compose.yml",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/docker-compose.yml",
+    "raw_sha256": "4b0d2d200495fb4275484767081e15d7dec36dce2dfa2d0b9da5cd96faa7f26e",
+    "materialized_sha256": "c6e4552ba84f5c89d352f14bdfa9d8d21181c104e97f31e684cfb2b1321182c0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/Makefile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/Makefile",
+    "raw_sha256": "b558c0a5ca9a62cc3dbcd74ce0e882a58295ec99b8bac1dd17e329667c1435c2",
+    "materialized_sha256": "b558c0a5ca9a62cc3dbcd74ce0e882a58295ec99b8bac1dd17e329667c1435c2",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/docs/architecture.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/docs/architecture.md",
+    "raw_sha256": "6da8f3fe2e9966c64f3a917e284a89c5d884105bbb0ccf1e4901a0f88eab857f",
+    "materialized_sha256": "2e6c8efb39e106bac3932572adb3689c9b661c9301e606b8136d98113ca42282",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/docs/api_conventions.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/docs/api_conventions.md",
+    "raw_sha256": "1d8cd16e915d63d3456031a1e12aed8f564376dafb5d542eff969dd28d31a42c",
+    "materialized_sha256": "53cd78555592e4d1f16f0b3cb78b230bd5ca11aedfb4521a441751f03304c2fa",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/docs/adr/001-microservices-architecture.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/docs/adr/001-microservices-architecture.md",
+    "raw_sha256": "4ef879b11c5297bc82188581085fd41d45ccf53b6eebe54d4a6182fcb1921b52",
+    "materialized_sha256": "4ef879b11c5297bc82188581085fd41d45ccf53b6eebe54d4a6182fcb1921b52",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/docs/adr/002-graphql-federation.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/docs/adr/002-graphql-federation.md",
+    "raw_sha256": "14cf9f76fa21ac7c2a1f6f6fb54f9ffed802be954451dc70fae7d1ad696d7440",
+    "materialized_sha256": "59ac061c0f5a11c6be3a90cbc94dd53831febd61ae09a6ab5a523c0b74e492cc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/docs/adr/003-event-driven-communication.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/docs/adr/003-event-driven-communication.md",
+    "raw_sha256": "f8c2589ec8a9945763d2112f09017f34d72d95bb447adc8faccd17da1d3ffcdc",
+    "materialized_sha256": "0785dc59ca92b27432f73fecad273eb911198d57cf46ec1e522a5bbfb30eb137",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/api-gateway/Dockerfile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/api-gateway/Dockerfile",
+    "raw_sha256": "46777a1cfc3b56ad7846f9f5e0c3f61e6071a5660f72a1eb143fb9263607bdfe",
+    "materialized_sha256": "46777a1cfc3b56ad7846f9f5e0c3f61e6071a5660f72a1eb143fb9263607bdfe",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/api-gateway/index.js",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/api-gateway/index.js",
+    "raw_sha256": "c713956bbeeeae0ff7c54757ce110c5dad74c1c8e592625870e9681cea648ae2",
+    "materialized_sha256": "a1fde0b9bd80fe21763165c628a11c5453f2181b4ab95693364114ede8d8404b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/api-gateway/package.json",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/api-gateway/package.json",
+    "raw_sha256": "1f7bcf64a5ee565bd72fd4de1876d37d73d2e3cba191c0ff1935a18bf20f6dca",
+    "materialized_sha256": "1f7bcf64a5ee565bd72fd4de1876d37d73d2e3cba191c0ff1935a18bf20f6dca",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/README.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/README.md",
+    "raw_sha256": "9703c9248398a14a7361be75c2dbf0b1f9a1c9a286966e82c8611bbd539799cf",
+    "materialized_sha256": "2c895bfa1b917a0371a057492ae359a50a771d779991da9170685e753029d861",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/Dockerfile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/Dockerfile",
+    "raw_sha256": "d5feec0be8adab03bde254ac3e028a3a04f2194265d21050efa9b645ac64ef41",
+    "materialized_sha256": "d5feec0be8adab03bde254ac3e028a3a04f2194265d21050efa9b645ac64ef41",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/pyproject.toml",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/pyproject.toml",
+    "raw_sha256": "7974a3c2d6a7443b29ee4c7f25e46eac7c5d1b1187157d6d285fd298ddb05f85",
+    "materialized_sha256": "1e826fcc7ce117bc6efb48341b2bb3e4798392e59ca99ee0425d81a65e3bf631",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/main.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/main.py",
+    "raw_sha256": "d6f35549c56da6b411de8a42875577ce4773944b89cf13746a6e194e5c7f0654",
+    "materialized_sha256": "0011ac61eb92b0eac65ac0d65e7f55ae70ed4dda788afc4ee9b45e8125ca19c9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/alembic.ini",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/alembic.ini",
+    "raw_sha256": "2da507a6462acbda13503c1fd10897f89a36fec7a69432e29c26b2a826966045",
+    "materialized_sha256": "2da507a6462acbda13503c1fd10897f89a36fec7a69432e29c26b2a826966045",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/app/core/config.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/app/core/config.py",
+    "raw_sha256": "7e8ad109de8d9239183c2ca19a8b38f2304947350216f85ef72152c3d5ecba78",
+    "materialized_sha256": "50205825e86d07f7c352b5ea111c839c3088a236a96a97522b6ccd909a40e19e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/app/api/rest/v1_routes.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/app/api/rest/v1_routes.py",
+    "raw_sha256": "07f1e404e42682d46ffc36c26e21b5bc706e380d756b4f24ec780683b45fd389",
+    "materialized_sha256": "ded607cc27cbfb31ddc765cc22bf68d5c0cb1fad43f372f6b13ea6ebb94df12f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/app/api/rest/v1_schemas.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/app/api/rest/v1_schemas.py",
+    "raw_sha256": "3bcdc532164d03b74efc90820085b7aac6567e1cd39ab3af7d72915cc9fe61ac",
+    "materialized_sha256": "9922a4d1d7301ad4fc01fa53daaf005a9542bb8f6f231a988b315e7ac1c8ed5d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/app/api/graphql/schema.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/app/api/graphql/schema.py",
+    "raw_sha256": "1fafaa2e05da698315c2b1858a38e9d25db8692b57e47798ce61bf9abfad5edf",
+    "materialized_sha256": "24256ae9d8718689c29469299419664e1de50298f5c0eafa750615463b6132f1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/app/services/auth_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/app/services/auth_service.py",
+    "raw_sha256": "89c43a66cbe16e8dbf86101430518a258453b52dad3a0ae5e9fcf8fb7777e8a8",
+    "materialized_sha256": "58910132bb8f175f2e31e5fb06bee1100c97dc2197a632f120236b1ca28b0a57",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/app/db/repository.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/app/db/repository.py",
+    "raw_sha256": "4b612755cdbce4930fef8a93b872a1bb815316470df06b16701c728155fe5b15",
+    "materialized_sha256": "6be99a7e3b8f0a91d73f2f98f8e9c5cc057c0efb6bda5703125d776ed8537d53",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/app/db/models.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/app/db/models.py",
+    "raw_sha256": "0e56bce2f20ee5b36d5fce5a32e5ee0dfc540aa47ab8d4614d5d1002c29e3b3b",
+    "materialized_sha256": "519dc7e12d6b1c5fa195adecc85af1741e2fadc8bf931b9b64ef60cfd5b52b03",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/tests/integration/test_auth_api.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/tests/integration/test_auth_api.py",
+    "raw_sha256": "6296cb680b83d9dd4a2c32d3669874c1907d17314136aed3b2695f66cda90e0a",
+    "materialized_sha256": "98fd3b9c04c2bdc55fa9af8588c8b500739cac11d3643437d5ffe28162ebf562",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/auth-service/tests/unit/test_auth_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/auth-service/tests/unit/test_auth_service.py",
+    "raw_sha256": "3f6df2cda69ebab51a40e4238c019ecb3dddeedd1c5a8689605fdea3b8cbdefa",
+    "materialized_sha256": "d50a84ae8aee519bdf4e4b46c9196ea239ff5858a1f2a2d59e9b5db137707dc0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/README.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/README.md",
+    "raw_sha256": "f02501859bdc87e2424ed5433961a90b743ab5f760d8d2cf7ad712040670a7d4",
+    "materialized_sha256": "07646ceac3a81d3277dbfbde6babcb4c4440bd48240fed67aaf6818f5c5234aa",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/Dockerfile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/Dockerfile",
+    "raw_sha256": "71411a16728464d7d8521b304b1da98b5bf450757fb502e508cfbacedce4dbd5",
+    "materialized_sha256": "71411a16728464d7d8521b304b1da98b5bf450757fb502e508cfbacedce4dbd5",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/pyproject.toml",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/pyproject.toml",
+    "raw_sha256": "d174c55aaa0ee5b859711c376ffe9c4ba4b081942245743cf1e8d0d6a86acc3f",
+    "materialized_sha256": "9c4731231c41428bdce773e3e96066f624249df04ee0575ce7025341ba88cd1d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/main.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/main.py",
+    "raw_sha256": "8641717905851090ab3a5f7fe05c676c6b09b4e62b8c33576b09bc94a2d31be0",
+    "materialized_sha256": "840ca9cd98585f25785f41bb1dac5156fd2ce400216f3e897502d6d1bf2c5d09",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/alembic.ini",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/alembic.ini",
+    "raw_sha256": "3235d4b68c9236a464ac3d2e92b2d0366f79af487f4c8d3fe929603002fe0fe0",
+    "materialized_sha256": "3235d4b68c9236a464ac3d2e92b2d0366f79af487f4c8d3fe929603002fe0fe0",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/core/config.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/core/config.py",
+    "raw_sha256": "298f135652b478ea6505ebea4291f5d12a143469c1db4cb211d0786a5cfcbe67",
+    "materialized_sha256": "9ebbb0f98805211b5f77a47dfcbad4c34fe1065a77f3bd696ec1899302a95e4a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/api/rest/v1_routes.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/api/rest/v1_routes.py",
+    "raw_sha256": "a72fe18b00a0c30e3e9fa48d3cf419dda2400ad56e5e12a01f2915e28a4505e0",
+    "materialized_sha256": "1a2b824e1804268e7cc0d94498c97ce6e7e9082e524e3bb527aaa6e6f64a1866",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/api/rest/v1_schemas.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/api/rest/v1_schemas.py",
+    "raw_sha256": "4d29ffa2de8ed9ac4eec3c3ef451bb5711b11dc5a098013c2eb04e751ab5a937",
+    "materialized_sha256": "978304fb2d40aa84bbe2694c0c0b2d8d78f649120798653846a23c6dfcb1fc46",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/api/graphql/schema.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/api/graphql/schema.py",
+    "raw_sha256": "9ae78cfb24f50c453e7da85194c70ebf3ea08de2f9a770f222c719b90ec88059",
+    "materialized_sha256": "131681c1a782c9337b6d03906c140740fd17a6514580e5756f775cf94a482234",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/services/palette_commands.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/services/palette_commands.py",
+    "raw_sha256": "be2c517ec01435ed6b1dc4cef06d07de314ba250e66595ece976d7c159306a63",
+    "materialized_sha256": "d522530d9c82233718a132104d0e74265484f02aecd6f9f50391240d36efdcee",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/services/palette_queries.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/services/palette_queries.py",
+    "raw_sha256": "cf2affb2775981c6b6d12090c9fcb09eae09be1710455b5a14b51e4dc0cf81d5",
+    "materialized_sha256": "1dad7cf5b5f7308a5e41f86f6ae4c02f70fb0aa74b56b92ae7894a77573b204f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/db/repository.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/db/repository.py",
+    "raw_sha256": "53355486effc5658bbf6ca7f0dea224b26f3746515d02cb2853243c215322659",
+    "materialized_sha256": "2f635bcab1ce3782673e04b94e58cef7610a66e6c57caf79960db99e3a15fe70",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/db/models.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/db/models.py",
+    "raw_sha256": "b8c06c8280ef241bceb607f2866b5d5481081a548bda94e890ac85eaba6ae88e",
+    "materialized_sha256": "b8c06c8280ef241bceb607f2866b5d5481081a548bda94e890ac85eaba6ae88e",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/app/events/publisher.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/app/events/publisher.py",
+    "raw_sha256": "e9f26ba09f0f5af7572cf40ee112007ec9d4433dfbc33c18378904810e6d6272",
+    "materialized_sha256": "f8b2582a170c9b0fd6c75d8ac36c619f0d9d5582c17f0725a8f526f950773944",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/tests/integration/test_palette_endpoints.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/tests/integration/test_palette_endpoints.py",
+    "raw_sha256": "7dd086e5134d3c6538eeea06ff2a18e9ad588a9f29c14ebe91a757c5bd0a9eb3",
+    "materialized_sha256": "98a9f775329e03eee2048790d55bb9c30c2ca565dcd74b860a587445d4cd8421",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/palette-service/tests/unit/test_palette_services.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/palette-service/tests/unit/test_palette_services.py",
+    "raw_sha256": "fd5b3ba44d2b190f938a39e2f52683aea06ac7ebc84623dc4f51ee466cbf600c",
+    "materialized_sha256": "fd5b3ba44d2b190f938a39e2f52683aea06ac7ebc84623dc4f51ee466cbf600c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/README.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/README.md",
+    "raw_sha256": "961f481ac7caa903853102477b1fb7d386d2de4a7c3ea73a43151ead69e60043",
+    "materialized_sha256": "741b42abb26fa6c2dc32209ef91420f51e446910142e2fb91431d8224ce68a62",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/Dockerfile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/Dockerfile",
+    "raw_sha256": "4eec887a3f3c2c427827f65a2ff5f64fbe55c896ae4ff069df126d8b121c4941",
+    "materialized_sha256": "4eec887a3f3c2c427827f65a2ff5f64fbe55c896ae4ff069df126d8b121c4941",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/pyproject.toml",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/pyproject.toml",
+    "raw_sha256": "43fee7f5551078a4fe7eeb283a500af3c9f279965a4b47ade246d5431648345d",
+    "materialized_sha256": "6bddfa6a1a28ac1d4f3cead824c4e93a1928feb5b0067c737b3a129d49f59f16",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/main.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/main.py",
+    "raw_sha256": "54452d56263477c1854757a1e8b4fbf9212adc47a9eccc70d8e0f330ed2ac328",
+    "materialized_sha256": "a8f066434d851f735acfb7631633bf0154704778bfdf94c9fc80f4da17586883",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/alembic.ini",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/alembic.ini",
+    "raw_sha256": "86216d5c7c5dc144972d2917da52a4bac1df24ed5f9e4ca2faacfcf9d0fe9aad",
+    "materialized_sha256": "86216d5c7c5dc144972d2917da52a4bac1df24ed5f9e4ca2faacfcf9d0fe9aad",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/core/config.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/core/config.py",
+    "raw_sha256": "5711694ca981fe6af1774050b9989ecfb1c0a8d7e76e241f28ee8340a5153aed",
+    "materialized_sha256": "902457eb60d8b7a07c8f530a105b26ab0e5542c742998e0512eca94255620f63",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/api/rest/v1_routes.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/api/rest/v1_routes.py",
+    "raw_sha256": "2249e20182205509b349526fcd8a194b6c3daeb2adb4f8f64f5b8b6f3c5a0193",
+    "materialized_sha256": "169e4a29293a3b91e182b3e3c7bd7885f8ca53565e479bf32d50546140f67f2a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/api/rest/v1_schemas.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/api/rest/v1_schemas.py",
+    "raw_sha256": "ca685829436c8f49a0e70b006a0bc69f2f52bfc69a4e139e7a42a64f544edf01",
+    "materialized_sha256": "57117731a7e6daa45ec8bcc8b18f9ed76d19be93cb20b1c1662b35174d2ada51",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/api/graphql/schema.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/api/graphql/schema.py",
+    "raw_sha256": "e9c50b4d3bd0967cfda377ee112792b4534b967028ee2328675965d3dd231dbd",
+    "materialized_sha256": "8921fa77dc1bd89e261846f6044fd587b820d6b042e3807ecb109c32ab069189",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/services/canvas_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/services/canvas_service.py",
+    "raw_sha256": "1ebe4e88715490690a62860347023aa9cb8a13ba6b74a0d080277ca54c7abbc0",
+    "materialized_sha256": "eea096823e1687448e282f950cccda2d8031a0e4c09d0c0036fd3e35817c15ef",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/db/repository.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/db/repository.py",
+    "raw_sha256": "904ec1d711220f34957973311088ff1e3da5b1b7f3fa427f8b2446381c3c3eb6",
+    "materialized_sha256": "6d566af04df8112d789a2d9048a26e013542d8fe64272239492868b3f395f996",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/db/models.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/db/models.py",
+    "raw_sha256": "d55e50937b8818cba3083f46f44770dfda4e496d98f58c3bf280de082aa334f2",
+    "materialized_sha256": "33a0b2085248dee3ca626ade5cc4c938caa57e28d5d5496627b3f0debd5406f5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/app/events/consumer.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/app/events/consumer.py",
+    "raw_sha256": "76ba7e5e109430943a7176ecae0c64c4506e111e231426fe1021f6936760a9f3",
+    "materialized_sha256": "d8a0d9a6eb57af137e22ee13d9e5d6859bfa180c4d285bd82dc870a930046ba4",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/tests/integration/test_canvas_api.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/tests/integration/test_canvas_api.py",
+    "raw_sha256": "5574e2d2537bb11c8109ad54fa0219718ac06750e27ac818eba2bd45e645b8f9",
+    "materialized_sha256": "7030a8ae6dcba996a7622ea1ef69799609126d6818fd6d5b850af1cd758436df",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/canvas-service/tests/unit/test_canvas_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/canvas-service/tests/unit/test_canvas_service.py",
+    "raw_sha256": "668734f5b569cc7e208e3f133f9b896398bbdbff9ca3ae11b46e158664adc71b",
+    "materialized_sha256": "65297a523765443b6e02b00aa7dfdf5517db4bfa7b021f2639d488ac02a98793",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/README.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/README.md",
+    "raw_sha256": "f90830f73dfde88ae072510898c0eb42c36d8f6889475c555bed4411ce6da3e7",
+    "materialized_sha256": "f90830f73dfde88ae072510898c0eb42c36d8f6889475c555bed4411ce6da3e7",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/Dockerfile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/Dockerfile",
+    "raw_sha256": "56887efa69ec1dd8158c2a4c0794d9309ff292c11d05d72b299c0ae2fbb06a42",
+    "materialized_sha256": "56887efa69ec1dd8158c2a4c0794d9309ff292c11d05d72b299c0ae2fbb06a42",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/pyproject.toml",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/pyproject.toml",
+    "raw_sha256": "523bcef6ebe28080d3435fec899031b4f944ace288f10fb8a9f1280a3c222a0c",
+    "materialized_sha256": "523bcef6ebe28080d3435fec899031b4f944ace288f10fb8a9f1280a3c222a0c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/main.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/main.py",
+    "raw_sha256": "6955c95e06495266559ff61bd1488e46608b4ceabaa1ecd417e592517df762f9",
+    "materialized_sha256": "b13e37d39180b313a8c9cff8d2ada755de39ea3fa31a798a5bb36e5051787026",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/alembic.ini",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/alembic.ini",
+    "raw_sha256": "64896ffc5fc37dd39fe09a3a374710e8191e5cfaff09c482b4064012b9469bc3",
+    "materialized_sha256": "64896ffc5fc37dd39fe09a3a374710e8191e5cfaff09c482b4064012b9469bc3",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/app/core/config.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/app/core/config.py",
+    "raw_sha256": "e234417ff21966a9ab3da2e7964cef61d63068533ca6d3396ded9033f96fe09c",
+    "materialized_sha256": "0f7c410e627558af715dba2fd427d7ca97431068df706e8d806fe345f28288e9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/app/api/rest/v1_routes.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/app/api/rest/v1_routes.py",
+    "raw_sha256": "fa0ca4c5a988b09e29ddfa4d4a50ccd506c187ac86adc46422e916a41becaee0",
+    "materialized_sha256": "158f39bccbd12611e7dee03f0651212dd83b47bb389dc69d7130577d9ffefeb9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/app/api/rest/v1_schemas.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/app/api/rest/v1_schemas.py",
+    "raw_sha256": "fd9c643d00dd88f368d72d2c0f8c9400525f26cfa40665e019fc5b3563d780da",
+    "materialized_sha256": "82fc32d96a830683dc6443714b69881d842d270e8e1c5c5b9b9be88bce93bfcc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/app/api/graphql/schema.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/app/api/graphql/schema.py",
+    "raw_sha256": "c23938aa072dfd4ccd668d08ead48387ba4924899381c50fc9bf28b0dd59967a",
+    "materialized_sha256": "185e3beb5d0ad8612c24119a765c50db1dcf704c0b628de45c31bdd205630ddf",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/app/services/timeline_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/app/services/timeline_service.py",
+    "raw_sha256": "d0e95408d19a8d7003b3561deb5f3260292901b5e1e2ed9f5bfce467930cc553",
+    "materialized_sha256": "20d1947c7b8560abb672010a3121dc99d7fbacef5ce3d4ad58cd0ce20cc99072",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/app/db/repository.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/app/db/repository.py",
+    "raw_sha256": "3d4cadae8c75d1eeae4c379556762f3410bdc30516dd66e72e848cb2b5654c9c",
+    "materialized_sha256": "d88e7519e79ab1f4fca939ce6d387f11aa34898bd0b947a2cd777acb6562a7e0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/app/db/models.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/app/db/models.py",
+    "raw_sha256": "4e08a11751f7e7fd3ebf24e8fe683a03fd5481a23e1a23e5da2424d28c274925",
+    "materialized_sha256": "169609fe3baeae7fca0bf191862b18cc24167673f2580e759a10d619222600d0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/tests/integration/test_timeline_endpoints.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/tests/integration/test_timeline_endpoints.py",
+    "raw_sha256": "cf2c64b1f3516c17b787ccf989ae048e92174d8d9ae19fdef19c980f7aaa0424",
+    "materialized_sha256": "e665e7dd279d637bc271a422583e5dcb80759b3386761b36eb69f53af7dd10dc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/timeline-service/tests/unit/test_timeline_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/timeline-service/tests/unit/test_timeline_service.py",
+    "raw_sha256": "0ba4785b13d8cc482eb069bb184e24f5c29554bbedbba5c320eda6bf93f3de40",
+    "materialized_sha256": "93fe4500b730cf9e9e4a4990d6db52aba36817f1c2f868505b1162651bd223b8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/README.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/README.md",
+    "raw_sha256": "280a1f61580096a5934f63b0d52bd584ac996e3860e31d386364cd32ad471c15",
+    "materialized_sha256": "fb1057cd37524f6e34b3f1e6e433a7f911ac4ec8f3d081b02ecbddddaab191f1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/Dockerfile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/Dockerfile",
+    "raw_sha256": "f3ddf6b73a085d7e39f74819703744581e44d4c94102d7d338e699a44af631dd",
+    "materialized_sha256": "f3ddf6b73a085d7e39f74819703744581e44d4c94102d7d338e699a44af631dd",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/pyproject.toml",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/pyproject.toml",
+    "raw_sha256": "afa4ef97a605812a0f51f9bc4c9f5daca3723ac7679e548bf907e2ac836ffe9d",
+    "materialized_sha256": "73f3f0e6fe77a81b7bdf8b0911f9dc59941cb1767b298391c0303e545c7cc8cb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/main.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/main.py",
+    "raw_sha256": "f035bfd7891679a894088bd60a38bfc57ad475d463093680e950f245aa5318f8",
+    "materialized_sha256": "8790497e94bc66547452972788c4817f31ff672cec62115245284f46b2d93d16",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/alembic.ini",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/alembic.ini",
+    "raw_sha256": "8e178fc0b48f3a0170ccb33fab0f18a216dd1ed3cb105cf49cc6278b13f7d72d",
+    "materialized_sha256": "8e178fc0b48f3a0170ccb33fab0f18a216dd1ed3cb105cf49cc6278b13f7d72d",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/app/core/config.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/app/core/config.py",
+    "raw_sha256": "eba832ec565a74dff904cb6b0985ada0f37d14463aebc9fa3733b8a36d8229b0",
+    "materialized_sha256": "118f0b019f938bffc7e8a8f71d0f62b2ea8dea63e7961d40c0fa8f79056ee5c1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/app/api/rest/v1_routes.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/app/api/rest/v1_routes.py",
+    "raw_sha256": "181ecf9dfa3c24674b22cdc302705d1d8756103312f10300580ebb6d2923bc17",
+    "materialized_sha256": "08597b75d3ef2732958533af1a5fe9b2258bffcde26fa9f351e7cb63402c12e9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/app/api/rest/v1_schemas.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/app/api/rest/v1_schemas.py",
+    "raw_sha256": "84812bf2f5fec18168fa4929f88efae867a976a68bac456a6ce7e90d2ebd376a",
+    "materialized_sha256": "6e9a2df863c5ca8213c58c1970367b6c4edab96e061a72d50e62d0e52bce0914",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/app/api/graphql/schema.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/app/api/graphql/schema.py",
+    "raw_sha256": "968fa5b08d4b4884f7e7ba8511a2cde48d7a44d4617a6009d2f1cad57698f1ee",
+    "materialized_sha256": "1f6b03c107f25cd1f0c564f1ef31ba1464b2fc17d85f24d9f3dbed96d94ee677",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/app/services/remix_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/app/services/remix_service.py",
+    "raw_sha256": "a009ca608ccc0d54596e5678604ac677ecfb3b287cbe7f54a2e7e2fa70ba0234",
+    "materialized_sha256": "998dda0901708e0f638a8736cfde2d54d67e35323d67fbd33db3b5b01ea9573c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/app/db/repository.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/app/db/repository.py",
+    "raw_sha256": "934682d0b6304009973d15f19c8108c2a38bd710ee261bd4d6868f1ba17bd0d3",
+    "materialized_sha256": "67c77bde492f878bfc10ae174bad09477d78fda7df7190babf92626b99d67f4b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/app/db/models.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/app/db/models.py",
+    "raw_sha256": "2ac7891af8f774b0198eb338e693690b7254a65e669167e315bfe9755166bfde",
+    "materialized_sha256": "a470a6bd12afa2187f66bc44e86f3faa871c05f929131c984941b01f0dc506ad",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/tests/integration/test_remix_flow.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/tests/integration/test_remix_flow.py",
+    "raw_sha256": "a3c49d8f73d32cf78ccd9c883b2cec9184246d32aea9c944a2a234848581128d",
+    "materialized_sha256": "afe96fc3b6bb2ec24eda6cda7db86410fddfa8e744538cf7833658efc7693cf5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/remix-service/tests/unit/test_remix_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/remix-service/tests/unit/test_remix_service.py",
+    "raw_sha256": "e0b82e84423f9a1a90887b17dbae6c12d2a82ca89013d5c3cc9c387c243fb54e",
+    "materialized_sha256": "a35949864b19fe56ebbffcbb21db9276f34cd11ad16c5ff49b2f5972df5baed6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/README.md",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/README.md",
+    "raw_sha256": "e9eefadeda4adc973929510a3da5fb5098d9935466b16e7f7af334c8e43ec8c9",
+    "materialized_sha256": "06c8f80842befc9bf42fc2c77d7bbc3ddd42abbec675966672a19c4b53ac574f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/Dockerfile",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/Dockerfile",
+    "raw_sha256": "402b1f48fbd6f5951dad42504da50d3210bd5537b50035665465c147ca0a9fc8",
+    "materialized_sha256": "402b1f48fbd6f5951dad42504da50d3210bd5537b50035665465c147ca0a9fc8",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/pyproject.toml",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/pyproject.toml",
+    "raw_sha256": "95bdedf49a02b74a707b6bb8aca13cead74baf39cc5e4f21e3dd8036da5b56da",
+    "materialized_sha256": "ba0b80fb4050552574d7d845101dc1d387a82b2d6a62c4d593539a3bf595a145",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/main.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/main.py",
+    "raw_sha256": "a8f5e7fe6f7f4353c5a877213f90c9805c82eed8ad274e907710d0499903b990",
+    "materialized_sha256": "ba8bd8dca61df3a65da03ec83370b1219e867912738784999704148104f3e27d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/alembic.ini",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/alembic.ini",
+    "raw_sha256": "b909b441803a44a39b291446af0ec3871bdb8e3616c62ad07e413fdd250db2f9",
+    "materialized_sha256": "b909b441803a44a39b291446af0ec3871bdb8e3616c62ad07e413fdd250db2f9",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/app/core/config.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/app/core/config.py",
+    "raw_sha256": "cd07427a68a16e4102f55ed990ff933432a1407191d351b4baa7b839fdbefa64",
+    "materialized_sha256": "1c25cf4cfc556b9a5837e34a58f3083f2b7f8cc9a63b7823a4a7895857c3fe57",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/app/services/aggregation_service.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/app/services/aggregation_service.py",
+    "raw_sha256": "80b710f20fa7dbfd97d5d4423a5c4e2844eda0e55b06ea68fd7da82026f8ee3c",
+    "materialized_sha256": "80b710f20fa7dbfd97d5d4423a5c4e2844eda0e55b06ea68fd7da82026f8ee3c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/app/db/repository.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/app/db/repository.py",
+    "raw_sha256": "559086257f146b1d32c385efb7ae3a0389585ecf26f79611532742bf114b98eb",
+    "materialized_sha256": "39964c7f9db5720907a44e5fc66a2732c74ce909abf910f1b66f6b425d5742d1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/app/db/models.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/app/db/models.py",
+    "raw_sha256": "c3456dc5b05ec8a4f839256ea0bdc0f55c68e8641251d3a4c01207304fae5eb6",
+    "materialized_sha256": "1d42bde2eda8249207a0fb3e94363bd5400fd89c45ece4ddb96de5d6c9084f99",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/app/events/consumer.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/app/events/consumer.py",
+    "raw_sha256": "8d9a12f8fc54cbf4f7caa19af974723e4d04b01bcd5fa14f103dd67557f924a6",
+    "materialized_sha256": "df445daea780276943434f7aed806608de91fb003248e848ed30c7c379e13b15",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "PolyphonicPalette-API-Studio/services/analytics-service/tests/unit/test_aggregation.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/PolyphonicPalette-API-Studio/services/analytics-service/tests/unit/test_aggregation.py",
+    "raw_sha256": "c5b992b3da7496a3415159d326729fcf3813e6d2831674e9b0ca0d66be85c0f4",
+    "materialized_sha256": "f78a3bee553857c339ef30fe0520e86078e9b213f98276c07ebf4a7a58cd22c1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "src/utils.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/src/utils.py",
+    "raw_sha256": "a27aece01b8480793b42993a5b049cdf18f314bc3e915b449f33e9623b617b6d",
+    "materialized_sha256": "b2ce0bdef232f02537d18ebe47dbdd293bf895dbbb7bee538e8b4d407f1763af",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "src/config.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/src/config.py",
+    "raw_sha256": "45b0ebc147c39391f0a463a4d616d273d779d781088ec891492aef87465f3cf6",
+    "materialized_sha256": "d9f10946a1835662d5c063f5591be04dbe030b96a3c7bda8273b0c26e3fa9803",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "src/constants.py",
+    "archive_path": "data/generated/python_api_graphql_expert_007/src/constants.py",
+    "raw_sha256": "3c551d3123e2a59e143af300fd50b529df0a87339b4feb18498e6bfda78b5c2a",
+    "materialized_sha256": "012912edd2a59969ffc4b6e9e55461ac4627f3e9816ebf75fb16c3820e8dfb78",
+    "outer_markdown_fence_removed": true
+  }
+]

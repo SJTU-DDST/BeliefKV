@@ -161,8 +161,7 @@ def inspect(opportunities, replay_events, native_events, receipts, services, *, 
                 "key": key, "complete_budget_tokens": program["complete_budget_tokens"],
                 "service_request_id": rid, "parent_successor": parent,
                 "grant_targets_submitted_join_successor": bool(
-                    parent and grant["event"] == "agent_join_blocked_capacity_admitted"
-                    and rid == key["request_id"]
+                    parent and rid == key["request_id"]
                 ),
                 "status": "join_successor_not_observed" if parent and rid is None else "native_submit_not_observed",
                 "first_service_ts_ms": None, "next_service_after_grant_ts_ms": None,

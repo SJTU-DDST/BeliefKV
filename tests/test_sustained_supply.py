@@ -58,6 +58,28 @@ def test_observed_pending_competition_is_separate_from_physical_feasibility():
     assert report["background_covers_all_measured_completions"] is None
 
 
+def test_three_agent_capacity_competition_does_not_require_an_infeasible_pair():
+    args = list(inputs())
+    args[4]["w0"] = {
+        "workflow_id": "w0", "invocation_id": "w0", "prompt_tokens": 200,
+        "input_increment": 200, "output_tokens": 5,
+    }
+    args[4]["w1"]["prompt_tokens"] = args[4]["w2"]["prompt_tokens"] = 200
+    args[2].append({
+        "kind": "llm_submit", "workflow_id": "w0", "invocation_id": "w0",
+        "ts_ms": 1020., "attributes": {"request_id": "w0"},
+    })
+    args[3][0]["agent_admission"].update(
+        active_invocation_ids=[], paused_pending_invocation_ids=["w0", "w1", "w2"],
+        logical_active_tokens=200,
+    )
+    report = inspect_supply(*args)
+    assert report["sample_counts"]["with_cross_workflow_pair_competition"] == 0
+    assert report["sample_counts"]["with_cross_workflow_set_competition"] == 1
+    assert len(report["competition_snapshots"]) == 1
+    assert report["competition_snapshots"][0]["maximum_set_competing_remaining_work_ratio"] == 5.
+
+
 def test_only_completed_intrinsic_work_is_consumed_and_queue_time_is_not_work():
     args = list(inputs())
     args[2].extend((

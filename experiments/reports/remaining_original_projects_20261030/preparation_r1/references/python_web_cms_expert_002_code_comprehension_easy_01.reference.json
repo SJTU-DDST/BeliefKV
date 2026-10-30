@@ -1,0 +1,79 @@
+{
+  "id": "python_web_cms_expert_002_code_comprehension_easy_01",
+  "task_category": "code_comprehension",
+  "difficulty": "easy",
+  "title": "Trace Content Approval Status Field Through the Full Stack",
+  "description": "As a new developer on the HealPress Cloud CMS project, you need to familiarize yourself with the core content management workflow. A key piece of functionality is the content approval system, which allows senior editors to approve or reject content before it goes live. Your task is to trace a specific data field, `approval_status`, from its origin in the database all the way to the frontend component where it is likely used.",
+  "context_files": [
+    "healpress-cms/docs/api/index.html",
+    "healpress-cms/frontend/public/index.html",
+    "healpress-cms/frontend/src/assets/styles/main.scss",
+    "healpress-cms/frontend/src/App.js",
+    "healpress-cms/frontend/src/index.js",
+    "healpress-cms/frontend/README.md",
+    "healpress-cms/src/app/db/base.py",
+    "healpress-cms/src/app/main.py",
+    "healpress-cms/docs/deployment_guide.md",
+    "healpress-cms/docs/setup_guide.md",
+    "healpress-cms/frontend/src/api/auth.js",
+    "healpress-cms/src/app/services/payment_service.py",
+    "healpress-cms/frontend/src/api/patient.js",
+    "healpress-cms/src/app/utils/error_handling.py",
+    "healpress-cms/frontend/src/hooks/useApi.js",
+    "healpress-cms/src/app/services/auth_service.py",
+    "healpress-cms/frontend/src/api/content.js",
+    "healpress-cms/src/app/services/content_service.py",
+    "healpress-cms/frontend/src/components/common/Modal.jsx",
+    "healpress-cms/src/app/services/notification_service.py",
+    "healpress-cms/frontend/src/pages/admin/ContentEditor.jsx",
+    "healpress-cms/src/app/schemas/content.py",
+    "healpress-cms/src/app/repositories/base_repository.py",
+    "healpress-cms/src/app/models/content.py"
+  ],
+  "context_length": 300089,
+  "task_prompt": "Analyze the codebase to understand how the approval status of a content item is managed. Provide a report that answers the following questions:\n\n1.  In which file and class is the `approval_status` field defined for the database model?\n2.  In which file and class is this field defined for the API data transfer object (Pydantic schema)?\n3.  Which function in the `content_service.py` is responsible for retrieving a single content item, including its approval status, from the database?\n4.  Which frontend component file, located in `frontend/src/pages/admin/`, is responsible for editing content and would therefore need to display or manage the `approval_status`?",
+  "expected_approach": "An expert developer would approach this task by first forming a hypothesis about the data flow: Database Model -> Repository -> Service -> API Schema -> API Endpoint -> Frontend API Client -> Frontend Component.\n\n1.  Use a global search (like `grep` or IDE search) for the term `approval_status` or `status` within the `src/app/` directory.\n2.  This search should quickly identify `healpress-cms/src/app/models/content.py` and `healpress-cms/src/app/schemas/content.py`. The developer would inspect these files to confirm the field's definition in the ORM model and the Pydantic schema.\n3.  Next, the developer would examine `healpress-cms/src/app/services/content_service.py`. They would look for functions that return content objects, such as `get_by_id` or `get_content`, and verify that these functions retrieve and return the model, which includes the status.\n4.  With the backend flow understood, the developer would shift to the frontend. They would hypothesize that a component for editing content would be the most likely consumer of this data.\n5.  They would inspect the file list and identify `healpress-cms/frontend/src/pages/admin/ContentEditor.jsx` as the most probable candidate.\n6.  To confirm, they might search within that file for API calls related to fetching content (e.g., looking at imports from `frontend/src/api/content.js`) or for the rendering of props related to the content's status.",
+  "ground_truth": {
+    "summary": "The `approval_status` field is a core part of the content lifecycle, defined in the backend database model and API schema, handled by the content service, and consumed by the frontend content editor.",
+    "answers": [
+      {
+        "question": "In which file and class is the `approval_status` field defined for the database model?",
+        "file": "healpress-cms/src/app/models/content.py",
+        "details": "The field is defined within the `Content` class, likely as a SQLAlchemy `Column` with a type like `String` or `Enum` (e.g., `approval_status: Mapped[str] = mapped_column(String(50), default='pending')`)."
+      },
+      {
+        "question": "In which file and class is this field defined for the API data transfer object (Pydantic schema)?",
+        "file": "healpress-cms/src/app/schemas/content.py",
+        "details": "The field is defined within a Pydantic `BaseModel` class, likely named `Content` or `ContentRead`. For example: `approval_status: str`."
+      },
+      {
+        "question": "Which function in the `content_service.py` is responsible for retrieving a single content item, including its approval status, from the database?",
+        "file": "healpress-cms/src/app/services/content_service.py",
+        "details": "A function like `get_content_by_id(db: Session, content_id: int)` would be responsible. It uses the repository to fetch the `Content` model from the database, which inherently includes the `approval_status` field."
+      },
+      {
+        "question": "Which frontend component file is responsible for editing content and would therefore need to display or manage the `approval_status`?",
+        "file": "healpress-cms/frontend/src/pages/admin/ContentEditor.jsx",
+        "details": "This component is designed for editing content. It would fetch the full content object, including `approval_status`, via an API call and use that data to render the UI, for example, showing the current status or allowing a user with the right permissions to change it."
+      }
+    ]
+  },
+  "evaluation_criteria": [
+    "Correctly identifies the database model file (`content.py`) for the `approval_status` field.",
+    "Correctly identifies the API schema file (`content.py`) for the `approval_status` field.",
+    "Correctly identifies the specific service function in `content_service.py` responsible for fetching the content data.",
+    "Correctly identifies the primary frontend component (`ContentEditor.jsx`) that consumes this data.",
+    "The overall explanation must be coherent and accurately describe the data flow from backend to frontend.",
+    "Bonus: Provides specific class names for the model and schema."
+  ],
+  "metadata": {
+    "context_length": 300089,
+    "files_count": 24,
+    "information_coverage": 0.30549130829590476,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T19:49:02.704840"
+  }
+}

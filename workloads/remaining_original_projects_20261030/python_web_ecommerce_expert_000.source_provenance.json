@@ -1,0 +1,674 @@
+[
+  {
+    "path": "mercantilo_suite/.env.example",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/.env.example",
+    "raw_sha256": "3e5182694244e18cc0068ccd45fa1963f7057ce3e2d5e9b0f5bddf481f2a24f1",
+    "materialized_sha256": "3e5182694244e18cc0068ccd45fa1963f7057ce3e2d5e9b0f5bddf481f2a24f1",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/.gitignore",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/.gitignore",
+    "raw_sha256": "70bd4b78091d55aa4a5667396e60c35a6b30ceb9cb3c6510dc08939e97e09bd8",
+    "materialized_sha256": "70bd4b78091d55aa4a5667396e60c35a6b30ceb9cb3c6510dc08939e97e09bd8",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/Dockerfile",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/Dockerfile",
+    "raw_sha256": "6026634db3bd4cd8e8c44680ffab267f45a26b3bc43af7bff6ab192d37ca1e2f",
+    "materialized_sha256": "6026634db3bd4cd8e8c44680ffab267f45a26b3bc43af7bff6ab192d37ca1e2f",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/LICENSE",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/LICENSE",
+    "raw_sha256": "c294e995942d3cca835e0b081c50adc73e135aa87483f524e21621def94157dd",
+    "materialized_sha256": "258dbd225cd6a8a96ddd2cc0604a9b8acd4edff0cd42bf7506b3cbfe68b500fc",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/README.md",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/README.md",
+    "raw_sha256": "d04a9dc33a485e99f9e94bbee20a873a489216fac12bfad6b999ee59a7c86f50",
+    "materialized_sha256": "6eb41d3b4c23457282c9ea873334e33cfa580084eb01b35d92e379adb701b46a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/docker-compose.yml",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/docker-compose.yml",
+    "raw_sha256": "1fc14ce159f46a9183a81117980c480684f43922947cd875e01c4787a4bce041",
+    "materialized_sha256": "f65a22edf04b8ac97c0f45a2e6db877abac28988b1cf96fcc7b683290584a99b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/manage.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/manage.py",
+    "raw_sha256": "5d3f318eca53a03ef368f486e0590de2c4dbac40b45f4d23e4a9e5b1c97e66a4",
+    "materialized_sha256": "5d3f318eca53a03ef368f486e0590de2c4dbac40b45f4d23e4a9e5b1c97e66a4",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/requirements.txt",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/requirements.txt",
+    "raw_sha256": "21065f0445007ca941f1d8aaaf1f6cf2b71ae8a876860f9d181c226bdd4e5236",
+    "materialized_sha256": "21065f0445007ca941f1d8aaaf1f6cf2b71ae8a876860f9d181c226bdd4e5236",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/__init__.py",
+    "raw_sha256": "b049e0274e7c7cd37dd14ba98e0fc814ec1fdeb6f8d2eb325bcfe993ed9f321a",
+    "materialized_sha256": "e58edf427c0d676b193474b9eef2989530a55de9a9f712f1a211b33149d0b50b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/asgi.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/asgi.py",
+    "raw_sha256": "33c73e84337ba72c43b52353da8c2cc6a2efcc7c1dc636033791c1c667c2ad67",
+    "materialized_sha256": "649361da0c72580a6a314672c1304e129a4d6c3318895f4d13ad7ef89749ef2d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/celery.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/celery.py",
+    "raw_sha256": "3cee594f84a441f7651ed90e1f6e0375b4e98fd404c451f8b6c47c42fffc1a1f",
+    "materialized_sha256": "1f14b05e977df9425df151519cbd3da8376abf95bed68fb159fb3abae3b7d228",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/settings/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/settings/__init__.py",
+    "raw_sha256": "4d9e729532701a1d4d9b3c8615b345e89a72970f6bf6b3c6afb9653781d17506",
+    "materialized_sha256": "a589884a86a1114d4b4dd2506c8d4a667a961a10486d2ca94800c4ef71f1e0a1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/settings/base.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/settings/base.py",
+    "raw_sha256": "7a4e42dabbbaa1b664e0c3bf1d62d52dea3fa8d52f63d241515b55f2105ed71b",
+    "materialized_sha256": "8b8c81de0f856d4c82b2a13faa445536a5031b2dff43d1a434203a4f177efadb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/settings/local.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/settings/local.py",
+    "raw_sha256": "027f17e7f85656ee4af9ab8b64ade572e616e1e24211fae805dc4b7089388e90",
+    "materialized_sha256": "25923485597bbbf4221ed162b86e34e2c4d700991da41aa5fff75007de380dfb",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/settings/production.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/settings/production.py",
+    "raw_sha256": "3528cdef18ddd7f4e5699918a6e9ef9118fa9cbbeeac0a16d8822c1c11d03709",
+    "materialized_sha256": "3528cdef18ddd7f4e5699918a6e9ef9118fa9cbbeeac0a16d8822c1c11d03709",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/settings/test.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/settings/test.py",
+    "raw_sha256": "17392a8510cd6be67b776c6d86392f1e05607480f9aec9c490668cb86d6c8915",
+    "materialized_sha256": "17392a8510cd6be67b776c6d86392f1e05607480f9aec9c490668cb86d6c8915",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/urls.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/urls.py",
+    "raw_sha256": "e2ab44500b09059275cb2d6f0fee2f3021759b6917106c954f8b1dd36d3475b4",
+    "materialized_sha256": "e2ab44500b09059275cb2d6f0fee2f3021759b6917106c954f8b1dd36d3475b4",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/mercantilo/wsgi.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/mercantilo/wsgi.py",
+    "raw_sha256": "7cfe8071cd2ef1aad92bf655c6d362b27a0fb2ac86cb8f0316e75c4550c0f04f",
+    "materialized_sha256": "7cfe8071cd2ef1aad92bf655c6d362b27a0fb2ac86cb8f0316e75c4550c0f04f",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/__init__.py",
+    "raw_sha256": "ee32198ebe8f11a26f465eab0b3adc53779b15346255c76813f4ac4aea9dbd8e",
+    "materialized_sha256": "4809cf4d81e379d0079032e0743894fa23bf33cfbbadffbf6fb849cf2ac47675",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/__init__.py",
+    "raw_sha256": "0f2fc41d78345a3bd36a156047de297235448ea4aa8a96491c0db5f64a2eb039",
+    "materialized_sha256": "0f2fc41d78345a3bd36a156047de297235448ea4aa8a96491c0db5f64a2eb039",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/admin.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/admin.py",
+    "raw_sha256": "42f5e417165630257469876d058708454ed05a0a4eb67dc70a1c34bf796d5ebe",
+    "materialized_sha256": "bb3fd26d28895c56bcaee6657d011a2bffd93dd80c060a838d6349ef16f46760",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/apps.py",
+    "raw_sha256": "8c6be6eaa818d2c2dd212d70d121f389207565db36b450f69ddd86d95f785378",
+    "materialized_sha256": "b87d04d535b8253a2753baebe9897fc05fae67f98df926607482eab2fb897d0a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/models.py",
+    "raw_sha256": "5a229532f08a360c04d9841dbd8e5463ead33f831262ec36327483bb359d2b7a",
+    "materialized_sha256": "94397bf8305da3d836531a09e03421db339169756e2b8ec1ea8a2128a5ceaaf1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/repositories.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/repositories.py",
+    "raw_sha256": "6f97bbbd867472bad156658ea9404f07f003381be0a35fb558ed95c1ac5881bc",
+    "materialized_sha256": "6f97bbbd867472bad156658ea9404f07f003381be0a35fb558ed95c1ac5881bc",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/services.py",
+    "raw_sha256": "ad1d002f339df9a6d2991c0b085428f50dcfbb23a26884d257025b0a78d90d67",
+    "materialized_sha256": "1115290a2271533f61c0cd12f11e8cd8535b52b896ee276cc09cda6641ed188c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/signals.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/signals.py",
+    "raw_sha256": "44080956b4acfa8e35cec22b976ed1aadbb9e8880f5ac96ff718348cc25f352f",
+    "materialized_sha256": "32b2abddb7dee36296c19d716d668b3d26e4f70488eb4f8751215f219e266f73",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/urls.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/urls.py",
+    "raw_sha256": "42d324f380fec690b0850ea4a54c064d191ec666f4edad4a3d6f93e90373376d",
+    "materialized_sha256": "3a43e3169e9c6e6e023025009ed95d87a977528245dc4fd5389139442129560e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/views.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/views.py",
+    "raw_sha256": "41ec0f85da2e8bbbf9e4689b40031d62187d819b11016d926d67426932520341",
+    "materialized_sha256": "bc0df9bb16dadaddb26c5b35adc77543914a581f1fc3f2525459ee20decdd504",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/tests/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/tests/__init__.py",
+    "raw_sha256": "fdef92843e7ab32f1f90e4519da1b91879fcd8b500eb11c186419d39a7d101c1",
+    "materialized_sha256": "fdef92843e7ab32f1f90e4519da1b91879fcd8b500eb11c186419d39a7d101c1",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/tests/test_models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/tests/test_models.py",
+    "raw_sha256": "8f5af5aa7c88752c22e1a0e3155d101ab64f5443ec63449f283576702fc43f98",
+    "materialized_sha256": "7ece2cf31e0b85ba52b6ce30fd9378eb933bd492784f88cc4d8ba2a8435b884f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/tests/test_services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/tests/test_services.py",
+    "raw_sha256": "2509d2d8601e930f61b142188e05effea9fcc30159f8cb24ec24812a29f2d263",
+    "materialized_sha256": "a1e93b4f7dad5c82c09707e58da43c59d9815938e1e3258fdd39023ee7efb88a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/accounts/tests/test_views.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/accounts/tests/test_views.py",
+    "raw_sha256": "77eedb54256f299a9a016582eafd407c0c0f1630db6254ad8be7e7b0b32c6f9e",
+    "materialized_sha256": "b43a6799bcff76ba5c854b756473d393270a2c769090caecd089f696488ed471",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/__init__.py",
+    "raw_sha256": "c0934c787a927ee28b632e6646d473d6c82cbf89b611dad5f8712be98addb9e2",
+    "materialized_sha256": "508fb3b3576c29d3a2248deff0dd3aca3537c4bf0528c752fbaef9719d3cbaa0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/admin.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/admin.py",
+    "raw_sha256": "5f1a9caba9f303b2a73f3deff6400845150bc1258c0b6ac9c903c95298c8ef7d",
+    "materialized_sha256": "e1c6035f96fdefec7d4d838359ce92acd341392800043ff4040fa9862dd281f5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/apps.py",
+    "raw_sha256": "979516f4ab02394ad49a8a79140257f169cb8edd35c0e51a3cffaa9b14f6dc42",
+    "materialized_sha256": "bd79a268dbb07204c0b4cedb72573b26fe26911083b370f5695788b7a4236b63",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/models.py",
+    "raw_sha256": "3d488b754b30d1bf973885d996faae17e4039efb24abf42e8d5f4772f3ee1097",
+    "materialized_sha256": "61ccd64adf2a8576cc4e591749103d11eeb781244b89df22dd798e1d0dcad041",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/services.py",
+    "raw_sha256": "679f062cfc9e358731809d6d7439c46430f482bcf1c59984029b8d55caaa1c4e",
+    "materialized_sha256": "5bc2844ac6dd0ac1975f8cbf767db4da5d3f4e716a2755521d0cdca59a391d7f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/tasks.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/tasks.py",
+    "raw_sha256": "b4e6b28beb0b924fe506aa303bfd3116f7213cc7ca238c7d6ccbcf4c899f9ee3",
+    "materialized_sha256": "a587a7d36a3a7c490445b64b448d687ab9a199ae4a9d0d480d1526398e7e05dd",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/urls.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/urls.py",
+    "raw_sha256": "b6fd166bcbe3d0378c611e6bbf3668840cc7a596ae394bb34609390efb34d105",
+    "materialized_sha256": "795a66bfe9ab59afb38e63ba226c7f0fe09dfd07c50c553b9b4b616eda06f4ad",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/views.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/views.py",
+    "raw_sha256": "39e19617a000775113efd09b09f6abef9e17ec0c689f6f8a298c58091b6ed58e",
+    "materialized_sha256": "77dfaa48e8598429507b04dcb950f64d90d3fea1b37809cdd030b31cb54e6d46",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/tests/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/tests/__init__.py",
+    "raw_sha256": "be4b4b691bc50e502c2494643d592840d9fe89150dcdabd375d5cf8857767efd",
+    "materialized_sha256": "b48028052e260561831f45712941152e8e65264586ba98748c7d3f45af12607c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/analytics/tests/test_services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/analytics/tests/test_services.py",
+    "raw_sha256": "f17fa2c4b20efa191e08f1c7c6221d1a38e88b33e2dff5d3e0bc200f40912305",
+    "materialized_sha256": "411d61f1d4d780ecbdd7dfbceda5db29ab938eabaed487b5527f2ffecbc19e4b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/__init__.py",
+    "raw_sha256": "c1e51708aa3eb2ec442c5bb99e314b38bbf9a76733c532bdf215c64d98a01c5e",
+    "materialized_sha256": "7bd20fdf08cb3578257747dc66801e5a233229e1a54a805c4a3bdb7c15732dd1",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/apps.py",
+    "raw_sha256": "229240ec390046c1eac86f10bca3cce961d72a47f1ef74f53ef924b857ea331b",
+    "materialized_sha256": "c53ebcc6889b2d27f5aa3d9b541f7b60d6c9c571c0d025200c7fbffe6e74786c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/models.py",
+    "raw_sha256": "91ad5ac94dd7529560b443d6dfdde59aea3eb485840b52249943ba1306fb845e",
+    "materialized_sha256": "a5cbe14bea71087ecc53c4ac4ea5ea76798631affbf48bb4684021b1073a5891",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/repositories.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/repositories.py",
+    "raw_sha256": "91350943c4bc75b085f266aec4be669bbf15dada5555a3179157d280149acf48",
+    "materialized_sha256": "863e0520b9e6b0c58b9f9babf2a823add0176628816d518034047714dbe2ace6",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/services.py",
+    "raw_sha256": "60d31f507faf1660edb4fde88218c2390b3139940fbf05b55ca67a5b080cb8d6",
+    "materialized_sha256": "ccfd500be238c28da54029774ce2d2df8733a7d4e108170a5396e39892fafc25",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/urls.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/urls.py",
+    "raw_sha256": "ce6de7512a49d0f2dd9b97acf9f09af5c2b20acc02fe5e16286b782d4b5073d1",
+    "materialized_sha256": "f7cec1da6da8e8881ab5d021e57a5ae35859afff6780ebae14ec7f4afc1b58db",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/views.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/views.py",
+    "raw_sha256": "46f1f829d530a8b38e50e00bcc3baaddb0f53caa27cb83e0abe9d858dc3568a3",
+    "materialized_sha256": "d008f32abd8f341ea3aeea117c1a93745e5a35be57e0a78e28f1b50f90b953a8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/tests/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/tests/__init__.py",
+    "raw_sha256": "51ff24011adb79e1f0a1a5cb9ccea0710ca50a40a3622fc8572dc66afe45b33b",
+    "materialized_sha256": "51ff24011adb79e1f0a1a5cb9ccea0710ca50a40a3622fc8572dc66afe45b33b",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/b2b/tests/test_services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/b2b/tests/test_services.py",
+    "raw_sha256": "d2c72a0ffbfa7987a1da11fad105cd7fd533c9ae68e131f6beb4d30a8d8b42b9",
+    "materialized_sha256": "79feec84bb0624148127b992b4f96500f4892123bcff3ac368f4295483af3c70",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/__init__.py",
+    "raw_sha256": "b80b6a9fcb53d32c58890c95ae87c9856db1df41a956db8a3187c65f4d63b496",
+    "materialized_sha256": "3d6712e95d0268f40a886532cee1bd706ffe59c737881fc37ce30301146931de",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/admin.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/admin.py",
+    "raw_sha256": "ffbd6e6087bd5833d2323dc9b1d0e701dc8ccb7c37bd439df344d403f3b9ebeb",
+    "materialized_sha256": "10f8b330a76721123222cda23929df0194a2efc42ccbb87d39b8ce75922432be",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/apps.py",
+    "raw_sha256": "3525a3282ad9290539ff24eb294f6b5586c1c67987408c27e07f6706929ecdfc",
+    "materialized_sha256": "e5aab2a6529c2a90a97ee0551bcfa73605e6622d0f733906ee1420efc2995661",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/documents.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/documents.py",
+    "raw_sha256": "f1c53a0333af4a533549987018579512bdb6b916ad195a45c41bda80d69f8062",
+    "materialized_sha256": "8e0d7bb0d1399afed2e1395eac36bf5872ae8353deba66f31bd54b3288e99e54",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/models.py",
+    "raw_sha256": "716ee1a2e9f67ada22b023966ff3097bde1f1f2baa847e49fe9232fa693dfa55",
+    "materialized_sha256": "e1830c12cb59aae8edf4dd015b78ac1d1cd7b8c0968d0cef7ed7559970c0842d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/repositories.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/repositories.py",
+    "raw_sha256": "46c8b063a79f9bcb189d5f7f7282dc174d914713f930ac1638a74212808f3c6c",
+    "materialized_sha256": "46c8b063a79f9bcb189d5f7f7282dc174d914713f930ac1638a74212808f3c6c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/search.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/search.py",
+    "raw_sha256": "5ef3559b884d15a72631e289f61d33065c555699cb0ab30792ae76f6ee208fdc",
+    "materialized_sha256": "69534ca0e0a743548b91df79d1ea9ccee755f60a98499f9043625f623aa8a1a9",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/services.py",
+    "raw_sha256": "d8c734390c5090a74ec4e3ebc35ce5eecffb48275c6ab52843b0a8fd07639db9",
+    "materialized_sha256": "549acbc60ca90f4025c150ad809c85bbbc031a94487a3bf78d788c9d9368c8be",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/tasks.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/tasks.py",
+    "raw_sha256": "329e9562dbad0781c28bcb5fb0b8b1ab74ba9a144b478cefa8509d234e5aafaf",
+    "materialized_sha256": "361bebbfe58774571a1636d09c59ed49966664441b414eef859bf52735621c48",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/urls.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/urls.py",
+    "raw_sha256": "cf4e8ae58006cea71190a5d0ba5fc50d34898acc5c1c2b4f7a49ecce8fb52792",
+    "materialized_sha256": "c642a1381b98915242f43a5b1de023cd268261b9336ae0efec85d19c6d72f99f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/views.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/views.py",
+    "raw_sha256": "aebb3bca0da7357ad50e6d4183f3be2e1aeb0577b501ad5cdcbc21d9b5801d50",
+    "materialized_sha256": "784795e270950152eb56501082d12ed0bb08409d420951c7d7cc848d902fc44a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/tests/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/tests/__init__.py",
+    "raw_sha256": "3b1dd06730daadb1759550e990ba88c2d36c020bb857051f9755c5f76a2aee95",
+    "materialized_sha256": "3b1dd06730daadb1759550e990ba88c2d36c020bb857051f9755c5f76a2aee95",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/tests/test_models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/tests/test_models.py",
+    "raw_sha256": "a32638997f5d34959a2c8edbe28d9a0031b3f96328dd190fdc7a7b8a27ed88c5",
+    "materialized_sha256": "520cafcafc870f174878c5ee9765da79a379085a234fcc001c5dd2145e168e66",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/tests/test_repositories.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/tests/test_repositories.py",
+    "raw_sha256": "41491b4c4b46f9144bb2eeeaad5ee3e17b2734ba8f450abde0cc96450a69b7e9",
+    "materialized_sha256": "e24b96c2cc3b1a845b5d349d153ed4d6d70539310c5aa4c49ffd7066f29bdcea",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/catalog/tests/test_search.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/catalog/tests/test_search.py",
+    "raw_sha256": "b30604a45473d2d1c3434102684ae4eda1c2b22202e50068f8932be2d8699926",
+    "materialized_sha256": "00b9625c22efd0882e98f860a7ed05ecaba92c9ff3a3b2de8efe245d14133149",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/core/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/core/__init__.py",
+    "raw_sha256": "3a2ac6d1813e5e6c7e379e67680460df22abaef793f8e8e0a5f5c6a1355f682c",
+    "materialized_sha256": "3a2ac6d1813e5e6c7e379e67680460df22abaef793f8e8e0a5f5c6a1355f682c",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/core/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/core/apps.py",
+    "raw_sha256": "f6dae45bfb59fecc01051c3183ca7683163d6902bf1bad975d279037a04245e3",
+    "materialized_sha256": "4160b37e41da1a01cc6dbf3d38ea9f97d9b71f505afa62ceba1024be6b2b5a17",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/core/middleware.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/core/middleware.py",
+    "raw_sha256": "ee550356781eebe9954c3dcc285ef64b4c1ccec6bc43453e4a71dc59505f3b71",
+    "materialized_sha256": "dda2a0ce1fa562f8fbf65a4a58cb617294737138c1eb5d1e6c31159235913373",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/core/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/core/models.py",
+    "raw_sha256": "0e34b28487ffd434ef65fdfb65adbdedb70355aec9c0aafa202b0fba137958b9",
+    "materialized_sha256": "a2002dc34c7971bcb4bbae7a46070724eeff96f48c294b72c9eccdd2c18e2569",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/core/management/commands/seed_data.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/core/management/commands/seed_data.py",
+    "raw_sha256": "18eb044695ed30ea7008c24cae357ddd712c1896851ef63386bd73795beda917",
+    "materialized_sha256": "ed425ef9c224d3cc0cebdc5385fd5bbf732a65d341918debac0ae4d8a210e0fe",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/core/utils/cache.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/core/utils/cache.py",
+    "raw_sha256": "2bcf6132ec1e0e239645fa55bf483419e23d19323300c11f1b03a6b96b8205c2",
+    "materialized_sha256": "65a4d875ab8dfd861123444d13653894071398a523a5da0f5c9a4b07b09d2a45",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/core/utils/uploads.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/core/utils/uploads.py",
+    "raw_sha256": "548f7fe4e92dab249c140d097645919f0f09e751a062c09dac9ea07bb4e4a591",
+    "materialized_sha256": "51668bd7c3543bf7111026d03548301fec0dbc479de25e6f1955b40e0fe09fe5",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/__init__.py",
+    "raw_sha256": "513a4902e986e33199fa77418805679317434904170437d0f441248779a7b433",
+    "materialized_sha256": "f45f6e70972620611dbdfd05e71a618c635c75a08fa4ca82feb1479eae7f05b8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/apps.py",
+    "raw_sha256": "ac481e8f0ff743ccb6e81337b148e900bd0571de052109da67a7ccb0d0ff2953",
+    "materialized_sha256": "34afeb840c2a82d69e3523a40954a3e21282bbbb918b6665536c33cee144124e",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/models.py",
+    "raw_sha256": "133b8346cd4ab99ba217d9837bef585eaded523f6d71693da1b17bcda3794740",
+    "materialized_sha256": "5ddb0b1690d57d3d792f32404a5b4330127debd6c5ee8071968a6bc2c7d2bad0",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/services.py",
+    "raw_sha256": "d619f262cda183e769075351baf01f8e4a898d525913faab40608dc92c796183",
+    "materialized_sha256": "5c465e4ae70660a58408dd71f8de9e86b856f829711451d37d921bd0276c08a8",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/urls.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/urls.py",
+    "raw_sha256": "b42201a26ac2e5cc56b474a21f6538393d368d6945d960424a606e36b48b7ba7",
+    "materialized_sha256": "b39953f93abb6e42ebb1c8b62fc9778c4fe6954d9aa90baf9cc3b661d0056d3d",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/views.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/views.py",
+    "raw_sha256": "10c5260147f3376d794f3cbe5e296babf356186f540c9fb542d87eb1a0b4ea28",
+    "materialized_sha256": "d9a902cbeefc620e55e72b3e23429a565bdee7f88bef08845b4413bbcb0d0eba",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/tests/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/tests/__init__.py",
+    "raw_sha256": "df13ffd794cddec3e18080b3ee916e1184fcfbee1256377be0972a8f87f8e993",
+    "materialized_sha256": "0847cc73e70fc418c3b681b079f081b53abe607cc63332a28d3b0d231b16f5b2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/crm/tests/test_services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/crm/tests/test_services.py",
+    "raw_sha256": "11ff137ed127437e6e178875328a724bfbd3f1da6fe9b67074a96d11d82f98d4",
+    "materialized_sha256": "6989ec99563bec49a89b40871f4e8c094654786170726c9ccf4d9815f90da01b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/__init__.py",
+    "raw_sha256": "89e1ffa4f51ab5bd14de7945aa8ad0085afa011c3bdc4c5a72a31dbcb49e05fd",
+    "materialized_sha256": "89e1ffa4f51ab5bd14de7945aa8ad0085afa011c3bdc4c5a72a31dbcb49e05fd",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/apps.py",
+    "raw_sha256": "b8bfe90381c9fb7e304c6e586bf3fcc5122f47377853303f312451402ce12e63",
+    "materialized_sha256": "2c2d2ba0e37640557481921b5e8933bda8d927229326df2fef01090e47274002",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/models.py",
+    "raw_sha256": "116281536aa2dafc08f58ac918818ec48668e62694c5617bc5c8cd8a3a7f96b1",
+    "materialized_sha256": "2845b92bee872f4b50d918d3d0dc537d80511e5c56c99a5dedd077c21b52274f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/repositories.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/repositories.py",
+    "raw_sha256": "80b66aace617982740f29dcf8b86143c2b86a8a238f53cedf29909b2571b5627",
+    "materialized_sha256": "c176cef710ace8bef7789d1a27aaf5cf325212f245e63ad8c8fe816e2979b03b",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/services.py",
+    "raw_sha256": "d2478e543cf695e8d758f6a4f14ae833f63acfa2e6f6ad6fcc193b3d2bcc315b",
+    "materialized_sha256": "f3841e01f3d823112a7e692742183f37cef336a57fe7477ac440e57345407473",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/tasks.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/tasks.py",
+    "raw_sha256": "601fd04e3d51be48134981b409ed656a26ac40510e3c1545393b2087467461e9",
+    "materialized_sha256": "b554131512d8cf3ced035ac90cc5266a650a02d92f465d8862804f8ec7132410",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/tests/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/tests/__init__.py",
+    "raw_sha256": "aa63e4051f76dad339d46610b196b01e86447c7d085ed4421497137fcdb21e27",
+    "materialized_sha256": "a78b6df9f73699b802847b2c0290df6d0fde29969e7139f837154db7b0f7c86c",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/fulfillment/tests/test_services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/fulfillment/tests/test_services.py",
+    "raw_sha256": "44d2d82ce2eadbe8e247fcd555033e52d6872edec0fbbbdbe23e6e2253d02b37",
+    "materialized_sha256": "5728d06d9a44de42cbad7cb5da779bef0fb48d953d37e3644ddb6fc31e9f8219",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/orders/__init__.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/orders/__init__.py",
+    "raw_sha256": "0276647ba51f77b89d14aa1ee020fc4e6214846e4d94e14180068666f9d06e76",
+    "materialized_sha256": "0276647ba51f77b89d14aa1ee020fc4e6214846e4d94e14180068666f9d06e76",
+    "outer_markdown_fence_removed": false
+  },
+  {
+    "path": "mercantilo_suite/apps/orders/admin.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/orders/admin.py",
+    "raw_sha256": "75b024079c1857fed8e2c389ad9932d2c6f1477f9ea0a5ebd2e293ac3520be48",
+    "materialized_sha256": "cb891461dde31ba45cfa22546d05efeaaf830415b3f3afffd9af52d72e2dd282",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/orders/apps.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/orders/apps.py",
+    "raw_sha256": "93712b2bd7c5404c415e3a0830f4327f43459072cfc2c1667b7c661d02cbcdd2",
+    "materialized_sha256": "168a174c6a9e6623c3fb2f37cb0615608638507ac8922beab7685e21f673fb6a",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/orders/models.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/orders/models.py",
+    "raw_sha256": "45a5862506555d96d6ea6d42c2ecedeca59b4ca1853888fa61586f193cbf8f3f",
+    "materialized_sha256": "4aad9302efd13c4d71c9ed0dd6c8ec2f7a3de9c4a3fc0f2ec1aaaf412b0e7772",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/orders/repositories.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/orders/repositories.py",
+    "raw_sha256": "104cc60426c352b4360c1f1d2fb1ea5226b132e5427da2f0af174c9855b84cb4",
+    "materialized_sha256": "b124a6b4af37454304cd8edff10891f137e1e2b0023e8038a11d6e6eec5df41f",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/orders/services.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/orders/services.py",
+    "raw_sha256": "6994ddbbf543232347d19deb7354224f088a4e034a669f12b4e69ee6a84cb22d",
+    "materialized_sha256": "a2681dec24a8d1e1088200e7ab1faa1487aeaedb55ec67021ccae02af92820b2",
+    "outer_markdown_fence_removed": true
+  },
+  {
+    "path": "mercantilo_suite/apps/orders/signals.py",
+    "archive_path": "data/generated/python_web_ecommerce_expert_000/mercantilo_suite/apps/orders/signals.py",
+    "raw_sha256": "ead4ed499770c38e2b3fe1d83a0ccdc1ab5cd5e5893581a489f9cb7c38dfee96",
+    "materialized_sha256": "050414b7d22c1f92e88e37b9be4753c3a831416a22bc4a9a48386d4d1e7219ae",
+    "outer_markdown_fence_removed": true
+  }
+]

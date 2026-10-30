@@ -54,6 +54,7 @@ def main():
         "tests/test_composite_workload.py", "tests/test_workflow_cohort.py",
         "tests/test_composite_comparison.py",
         "tests/test_sustained_supply.py", "tests/test_workflow_source_work.py",
+        "tests/test_remaining_original_projects.py",
     )
     names.update(added)
     names.update((
@@ -133,6 +134,14 @@ def main():
         "beliefkv/experiments/sustained_supply.py",
         "beliefkv/experiments/workflow_source_work.py",
         "scripts/audit_sustained_supply.py",
+        "scripts/prepare_remaining_original_projects.py",
+        "configs/workloads/locobench_remaining_original5_coder_20261030.json",
+        "configs/migration/workflow_remaining_original5_native_20261030.json",
+        "experiments/reports/remaining_original_projects_20261030/preparation_r1/declaration.json",
+        "experiments/reports/remaining_original_projects_20261030/preparation_r1/preparation.json",
+        "experiments/reports/remaining_original_projects_20261030/preparation_r1/qualified_manifest.json",
+        "experiments/reports/remaining_original_projects_20261030/preparation_r1/native_qualified.json",
+        "experiments/reports/remaining_original_projects_20261030/preparation_r1/tool_binding.json",
         str(Path(__file__).relative_to(ROOT)),
     ))
     names.update(str(path.resolve().relative_to(ROOT)) for path in args.bind_input)

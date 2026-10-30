@@ -112,6 +112,14 @@ def inspect_supply(arrivals, cohort, events, states, requests, totals, *, bin_se
             "remaining_completion_boundary_work_units": remaining[requests[request]["workflow_id"]],
         } for invocation, request in ready.items() if invocation in paused - marked]
         fitting = [row for row in candidates if row["minimum_logical_tokens"] <= free]
+        fitting_workflows = {row["workflow_id"] for row in fitting}
+        set_competition = (
+            len(fitting_workflows) > 1
+            and sum(row["minimum_logical_tokens"] for row in fitting) > free
+        )
+        work_values = [
+            remaining[workflow] for workflow in fitting_workflows if remaining[workflow] > 0
+        ]
         pair = []
         for index, left in enumerate(fitting):
             for right in fitting[index + 1:]:
@@ -136,6 +144,10 @@ def inspect_supply(arrivals, cohort, events, states, requests, totals, *, bin_se
             "logical_active_fraction": active_tokens / capacity if capacity else None,
             "fitting_paused_agents_lower_bound": len(fitting),
             "cross_workflow_competing_pairs_lower_bound": len(pair),
+            "cross_workflow_set_competition_lower_bound": set_competition,
+            "maximum_set_competing_remaining_work_ratio": (
+                max(work_values) / min(work_values) if set_competition and work_values else None
+            ),
             "maximum_competing_remaining_work_ratio": max(
                 (item["remaining_work_ratio"] for item in pair), default=None,
             ),
@@ -162,6 +174,9 @@ def inspect_supply(arrivals, cohort, events, states, requests, totals, *, bin_se
             "samples_with_cross_workflow_pair_competition": sum(
                 bool(row["competing_pairs"]) for row in rows
             ),
+            "samples_with_cross_workflow_set_competition": sum(
+                row["cross_workflow_set_competition_lower_bound"] for row in rows
+            ),
             "samples_with_competing_remaining_work_ratio_ge_2": sum(
                 (row["maximum_competing_remaining_work_ratio"] or 0) >= 2 for row in rows
             ),
@@ -184,11 +199,16 @@ def inspect_supply(arrivals, cohort, events, states, requests, totals, *, bin_se
             submission_end >= last_measured if set(measured) <= ends.keys() else None
         ),
         "bins": summaries,
-        "competition_snapshots": [row for row in snapshots if row["competing_pairs"]],
+        "competition_snapshots": [
+            row for row in snapshots if row["cross_workflow_set_competition_lower_bound"]
+        ],
         "sample_counts": {
             "common_window": len(snapshots),
             "with_ready_paused": sum(bool(row["ready_paused_agents"]) for row in snapshots),
             "with_cross_workflow_pair_competition": sum(bool(row["competing_pairs"]) for row in snapshots),
+            "with_cross_workflow_set_competition": sum(
+                row["cross_workflow_set_competition_lower_bound"] for row in snapshots
+            ),
             "with_competing_remaining_work_ratio_ge_2": sum(
                 (row["maximum_competing_remaining_work_ratio"] or 0) >= 2 for row in snapshots
             ),

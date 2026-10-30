@@ -171,6 +171,34 @@ def test_parent_association_uses_actual_join_successor_and_server_clock():
     assert observed["groups"][0]["newly_granted_service_start_spread_ms"] is None
 
 
+def test_free_join_grant_can_target_the_already_submitted_exact_successor():
+    row, event, events, _copy = parent_work()
+    row["programs"][0]["key"].update(
+        request_id=event["attributes"]["request_id"], context_epoch=event["context_epoch"],
+    )
+    observed = inspect(
+        [row], events, [event], [receipt(event)], [service(1, event, start=130.)],
+    )
+    program = observed["programs"][0]
+    assert program["grant_targets_submitted_join_successor"]
+    assert program["status"] == "service_after_grant_verified"
+    assert program["grant_to_next_native_service_ms"] == 30.
+
+
+@pytest.mark.parametrize("field", ("context_epoch", "session_id", "session_generation"))
+def test_free_join_submitted_successor_does_not_relax_exact_epoch_or_session(field):
+    row, event, events, _copy = parent_work()
+    row["programs"][0]["key"].update(
+        request_id=event["attributes"]["request_id"], context_epoch=event["context_epoch"],
+    )
+    key = row["programs"][0]["key"]
+    key[field] = "unrelated" if field == "session_id" else key[field] + 1
+    observed = inspect(
+        [row], events, [event], [receipt(event)], [service(1, event, start=130.)],
+    )
+    assert observed["programs"][0]["status"] != "service_after_grant_verified"
+
+
 def blocked_parent_work(*, submitted):
     row, event, events, copy = parent_work()
     row.update(

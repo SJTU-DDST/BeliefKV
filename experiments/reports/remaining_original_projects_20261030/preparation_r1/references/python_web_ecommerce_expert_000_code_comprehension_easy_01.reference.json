@@ -1,0 +1,57 @@
+{
+  "id": "python_web_ecommerce_expert_000_code_comprehension_easy_01",
+  "task_category": "code_comprehension",
+  "difficulty": "easy",
+  "title": "Identify Product Data Caching Logic",
+  "description": "The Mercantilo Unified Commerce Suite uses a sophisticated caching layer to ensure high performance for frequently accessed data, such as product details. A junior developer on the team is tasked with debugging a potential stale cache issue and needs to understand the exact mechanism for how individual product data is cached. The logic is spread across the catalog application's services and the core application's caching utilities.",
+  "context_files": [
+    "mercantilo_suite/README.md",
+    "mercantilo_suite/mercantilo/settings/base.py",
+    "mercantilo_suite/.env.example",
+    "mercantilo_suite/apps/crm/tests/test_services.py",
+    "mercantilo_suite/apps/accounts/tests/__init__.py",
+    "mercantilo_suite/apps/catalog/services.py",
+    "mercantilo_suite/apps/core/apps.py",
+    "mercantilo_suite/apps/core/utils/cache.py",
+    "mercantilo_suite/apps/catalog/models.py",
+    "mercantilo_suite/apps/b2b/repositories.py",
+    "mercantilo_suite/apps/orders/__init__.py",
+    "mercantilo_suite/manage.py",
+    "mercantilo_suite/apps/core/__init__.py",
+    "mercantilo_suite/apps/core/models.py",
+    "mercantilo_suite/apps/accounts/__init__.py",
+    "mercantilo_suite/apps/crm/tests/__init__.py",
+    "mercantilo_suite/apps/accounts/views.py",
+    "mercantilo_suite/apps/fulfillment/services.py",
+    "mercantilo_suite/apps/catalog/__init__.py",
+    "mercantilo_suite/apps/accounts/models.py",
+    "mercantilo_suite/apps/crm/models.py",
+    "mercantilo_suite/apps/fulfillment/tests/__init__.py",
+    "mercantilo_suite/apps/b2b/views.py",
+    "mercantilo_suite/apps/b2b/__init__.py",
+    "mercantilo_suite/apps/crm/views.py"
+  ],
+  "context_length": 330808,
+  "task_prompt": "Your task is to analyze the codebase to understand how a single product's information is cached. You must investigate the relevant files and provide a clear, concise report answering the following questions:\n\n1.  In `mercantilo_suite/apps/catalog/services.py`, which specific function is responsible for fetching the details of a single product?\n2.  How is caching applied to this function? Identify the specific decorator used.\n3.  Based on the implementation in `mercantilo_suite/apps/core/utils/cache.py`, what components are used to generate the cache key for this operation?\n4.  What is the default cache timeout for this product-fetching operation, and in which file is this default value ultimately configured?",
+  "expected_approach": "An expert developer would approach this task by first locating the primary business logic file mentioned, `apps/catalog/services.py`. They would scan this file for function names related to fetching a single product, such as `get_product_by_id`, `fetch_product_details`, or similar.\n\nUpon finding the relevant function, they would inspect its decorators. A caching decorator (e.g., `@cached`) would be the key indicator. They would then trace the import of this decorator to its source file, which the prompt suggests is `apps/core/utils/cache.py`.\n\nIn the cache utility file, they would analyze the decorator's implementation to understand its logic, particularly how it constructs the cache key from the function's name, arguments, or other context. They would also look for a `timeout` parameter.\n\nFinally, if the timeout is defined by a constant (e.g., `DEFAULT_TIMEOUT`), they would perform a global search or deduce that such a configuration value would reside in a settings file, leading them to inspect `mercantilo/settings/base.py` for the constant's definition.",
+  "ground_truth": "The agent's response should contain the following specific insights, referencing the correct files:\n\n1.  **Function Identification:** The function in `apps/catalog/services.py` is `get_product_by_slug_for_customer`.\n2.  **Caching Mechanism:** Caching is applied using the `@cached_by_key` decorator, which is imported from `mercantilo_suite/apps/core/utils/cache.py`.\n3.  **Cache Key Components:** The decorator in `apps/core/utils/cache.py` uses a `key_func` argument. For the `get_product_by_slug_for_customer` function, this is a lambda function: `key_func=lambda slug, customer: f'product:{slug}:price_tier:{customer.price_tier.id}'`. Therefore, the key is constructed from the static string 'product:', the product's slug, the static string ':price_tier:', and the customer's price tier ID.\n4.  **Default Timeout and Configuration:** The `@cached_by_key` decorator in `apps/core/utils/cache.py` has a default `timeout` parameter that defaults to `settings.DEFAULT_CACHE_TTL`. This value is configured in `mercantilo_suite/mercantilo/settings/base.py` as `DEFAULT_CACHE_TTL = 60 * 15`, which is 900 seconds (15 minutes).",
+  "evaluation_criteria": [
+    "Correctly identifies the function `get_product_by_slug_for_customer` in `apps/catalog/services.py`.",
+    "Correctly identifies the `@cached_by_key` decorator.",
+    "Accurately describes all three components used to build the cache key (product slug, customer price tier ID, and static strings).",
+    "Correctly identifies that the default timeout is set via `settings.DEFAULT_CACHE_TTL`.",
+    "Correctly states the final timeout value (900 seconds or 15 minutes).",
+    "Correctly identifies `mercantilo/settings/base.py` as the file where the timeout value is defined.",
+    "The response must explicitly reference the three distinct files (`apps/catalog/services.py`, `apps/core/utils/cache.py`, `mercantilo/settings/base.py`) to demonstrate cross-file understanding."
+  ],
+  "metadata": {
+    "context_length": 330808,
+    "files_count": 25,
+    "information_coverage": 0.30032691991687643,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T19:49:41.189356"
+  }
+}
