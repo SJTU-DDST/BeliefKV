@@ -4353,3 +4353,15 @@
   checks editing tools removed. Fifteen external workload inputs revalidate.
   No shape/performance accepted;fresh freeze/reservation/resources/sampler
   still precede new natural collection.
+- Structured checkpoint6 source now actually records from frozend58efb67 on
+  18908,ops/workflow_structured_checkpoint_pilot6_source_20261030_r1.registration.json.
+  Execution .worktrees/beliefkv-structured6r1-capture-d58efb6701b7,native remains
+  11b84f7c. Fresh1/8/24sampler/BF16 passes. Independent gpu_entry_r1/live_start
+  observes196complete prefix outputs,6rootsemantic and6childcreate semantic
+  boundaries,actualprotocol3/4-8child/8-16root/2048/mixed-off/running24/seed21/
+  native-admission-off,nice0 measured processes and soleGPU. CPUreviewer2205954/
+  start753590755 actually waits from clean d58efb67 atnice19/CUDA99999,
+  finish_r1.registration.json. No follow-up GPU is registered. After complete
+  source/drain/actualexit,inspect shape and run audit_checkpoint_prompt_delivery
+  with the new declaration;do not infer taskconformance,pressure or gains from
+  startup. Keep old6 and new6 whole/tail/negative evidence;goal remains active.

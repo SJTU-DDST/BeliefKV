@@ -84,3 +84,18 @@ model.patch。新增真实Git回归验证尾部上下文及git apply --numstat�
 明确指定的缓存镜像实际执行，原focused与失败断言调试记录均保留。
 原生Qwen3-Coder parser另通过8项CPU检查，覆盖两种schema、双调用、
 1/7/64字符流式分块、数组及空写入范围；这不是模型行为合格的证明。
+
+## 新候选实际采集
+
+协议3候选从冻结d58efb67启动，注册为
+`ops/workflow_structured_checkpoint_pilot6_source_20261030_r1.registration.json`，
+端口18908，原生引擎仍为11b84f7c。新鲜1/8/24采样及BF16检查通过。
+独立只读启动观察验证196份完整输出前缀、六个root语义边界及六个child
+创建语义边界；实际协议3、4/8child、8/16root、2048分块、mixed关闭、
+running24、seed21及原生准入关闭符合声明。测量进程nice0、GPU独占。
+
+CPU后处理2205954在nice19且CUDA隐藏，确认为实际存活，等待完整源、
+fresh drain和实际采集进程退出。其注册及启动证据保存在
+`experiments/reports/structured_checkpoint_pilot6_20261030/`。
+这仍是进行中的自然形态采集，不是完整或合格源；后续还要执行实际
+prompt交付/只读diff审计。没有登记Full、Thunder或其他GPU后续。
