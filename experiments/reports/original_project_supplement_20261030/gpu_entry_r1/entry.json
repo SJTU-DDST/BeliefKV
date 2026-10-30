@@ -1,0 +1,53 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-sustained-original46-20261030-7afcae5d/scripts/run_position_replay_calibration.py",
+    "--source-registration",
+    "/home/longhao/experiment/ops/workflow_sustained_original46_source_20261030_r1.registration.json",
+    "--reference",
+    "/home/longhao/experiment/ops/v128_eos_seeded_modules_resume_20261022.registration.json",
+    "--cpu-report",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/bound_cpu_r1/bound_cpu.xml",
+    "--cpu-sources",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/bound_cpu_r1/sources.json",
+    "--engine",
+    "/home/longhao/experiment/.worktrees/sglang-free-extent-registration-20261029",
+    "--engine-report",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml",
+    "--engine-sources",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/gpu_entry_r1/native_sources.json",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_sustained_original46_position_20261030_r1.registration.json",
+    "--run-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original46_position_20261030_r1",
+    "--comparison-registration",
+    "/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r1.registration.json",
+    "--comparison-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original46_full_20261030_r1",
+    "--port",
+    "18912",
+    "--experiment-config",
+    "/home/longhao/experiment/beliefkv-sustained-original46-20261030-7afcae5d/experiments/reports/original_project_supplement_20261030/sustained46_r3/full.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"registration\": \"/home/longhao/experiment/ops/workflow_sustained_original46_position_20261030_r1.registration.json\",\n  \"watcher\": {\n    \"pid\": 2485003,\n    \"state\": \"R\",\n    \"ppid\": 2484547,\n    \"start_ticks\": \"755243305\",\n    \"argv\": [\n      \"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\",\n      \"/home/longhao/experiment/.worktrees/beliefkv-r1-position-7afcae5d564e/scripts/run_position_replay_calibration.py\",\n      \"--watch\",\n      \"/home/longhao/experiment/ops/workflow_sustained_original46_position_20261030_r1.registration.json\"\n    ]\n  },\n  \"comparison_registration\": \"/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r1.registration.json\"\n}\n",
+  "stderr": "",
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-31T01:42:40.060123+08:00"
+  },
+  "code_commit": "7afcae5d564eb7de53501a04d7604c1e39b4ddee",
+  "position_registration": "/home/longhao/experiment/ops/workflow_sustained_original46_position_20261030_r1.registration.json",
+  "comparison_registration": "/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r1.registration.json",
+  "native_engine_evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/layer_free_extent_20261029/native_cpu_r1/native_cpu.xml",
+    "report_sha256": "06bb7dcf7576f720a835ec98dacd6b8d7126e7a68f10a7e955f885deb2709b5e",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/gpu_entry_r1/native_sources.json",
+    "sources_sha256": "6dc48be50fde637ddea4fe20959825028e4bbb2112f806c419b2d402118b8e72",
+    "tree": "434c35dd66211d0a230717c88bf1452056769a40",
+    "passing_cases": 103,
+    "gpu_validation_pending": true
+  },
+  "performance_accepted": false
+}

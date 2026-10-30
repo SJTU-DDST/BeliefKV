@@ -530,6 +530,21 @@ def complete_source_population(summary, graph):
     return count
 
 
+def source_timing_metrics(quality, matched_baseline):
+    if quality.get("source_kind") == COMPOSED_SOURCE:
+        if matched_baseline is not None:
+            raise ValueError("composed sources have no matched natural capture timing")
+        return {
+            "mean_jct_ms": None, "replay_duration_ms": None,
+            "timing_comparable_to_replay": False,
+        }
+    return {
+        "mean_jct_ms": matched_baseline["mean_jct_ms"] if matched_baseline else None,
+        "replay_duration_ms": quality["duration_seconds"] * 1000.,
+        "timing_comparable_to_replay": matched_baseline is not None,
+    }
+
+
 def workflow_event_metrics(events, workflow_ids):
     expected, starts, ends = set(workflow_ids), {}, {}
     if not expected:
@@ -1723,11 +1738,7 @@ def register(args):
         "workflow_arrivals_path": str(arrival_path.resolve()) if arrival_path is not None else None,
         "stream_response_metrics": getattr(args, "stream_response_metrics", False),
         "maximum_replay_slowdown": args.maximum_replay_slowdown,
-        "source_metrics": {
-            "mean_jct_ms": natural_baseline["mean_jct_ms"] if native_baseline else None,
-            "replay_duration_ms": quality["duration_seconds"] * 1000.,
-            "timing_comparable_to_replay": native_baseline is not None,
-        },
+        "source_metrics": source_timing_metrics(quality, native_baseline),
         "native_baseline": native_baseline,
         "gpu_replay_qualified": False, "performance_accepted": False,
         "scope": (

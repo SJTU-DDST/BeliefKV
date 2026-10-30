@@ -185,6 +185,11 @@ def test_composed_source_uses_explicit_registration_without_fabricating_capture_
     assert calibration.source_ready({"source_registration": str(registration)})
     assert not calibration.complete_source_metrics(registration)["matched_natural_native_baseline_available"]
     assert comparison.complete_source_population(composed_quality(arm), graph) == 1
+    assert comparison.source_timing_metrics(composed_quality(arm), None) == {
+        "mean_jct_ms": None, "replay_duration_ms": None, "timing_comparable_to_replay": False,
+    }
+    with pytest.raises(ValueError, match="no matched natural"):
+        comparison.source_timing_metrics(composed_quality(arm), {"mean_jct_ms": 1.})
     qualified = []
     monkeypatch.setattr(comparison, "project_disjoint_workload", lambda *a, **kw: qualified.append((a, kw)))
     result = comparison.experiment_source_evidence(
@@ -222,3 +227,13 @@ def test_diversity_selection_retains_whole_short_long_projects_and_excludes_only
         row["source_jct"], row["predictive_gain"] = 0., 0.
     again, _ = prep.select_diverse_projects(rows, minimum_ratio=3., minimum_projects=36)
     assert [row["project"] for row in selected] == [row["project"] for row in again]
+
+
+@pytest.mark.parametrize("matched", (None, {"mean_jct_ms": 250.}))
+def test_natural_capture_timing_remains_explicit_for_original_source_controls(matched):
+    from scripts.run_causal_comparison import source_timing_metrics
+
+    result = source_timing_metrics({"duration_seconds": 1.5}, matched)
+    assert result["replay_duration_ms"] == 1500.
+    assert result["mean_jct_ms"] == (None if matched is None else 250.)
+    assert result["timing_comparable_to_replay"] is (matched is not None)

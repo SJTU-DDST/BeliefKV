@@ -4555,3 +4555,11 @@
 - Final sustained46_r3 source-bound CPU passes5699tests+12subtests,retains all
   previous5699literal IDs,no failures/errors/skips,2153inputs/native unchanged.
   Fresh clean freeze/resource/model-position checks still precede policyGPU.
+- Sustained46 positionr1 passes24exact token/session/native-stop GPU requests
+  and1/8/24native-sampler benchmarks,then stops before Full registration on a
+  composed-source duration_seconds KeyError. No Full work ran. Keep this failed
+  registration/state and successful GPU component receipts. New timing-summary
+  repair records unavailable aggregate source timing asNone,never a fabricated
+  native baseline;5701tests+12subtests pass,retain5699,2153inputs/native unchanged.
+  Only registration analysis changed;the four GPU-checked sampler/receipt
+  modules,native engine,model,workload,tools and arrivals remain byte-identical.
