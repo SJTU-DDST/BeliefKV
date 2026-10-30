@@ -1,0 +1,43 @@
+{
+  "id": "python_mobile_social_medium_022_bug_investigation_easy_01",
+  "task_category": "bug_investigation",
+  "difficulty": "easy",
+  "title": "Missing Geolocation Data on CivicNet Social Share",
+  "description": "The GatherProof application allows users to create incident reports, which include geo-tagged location data. A key feature is the ability to share these incidents to various social media platforms. Users have reported a bug: when an incident is shared to our partner platform 'CivicNet', the resulting post is created successfully but is missing the location information. However, when the exact same incident is shared to another platform, 'GlobalFeed', the location is included correctly. This indicates a platform-specific issue within our sharing mechanism.",
+  "context_files": [
+    "gatherproof_backend//src//core//services.py",
+    "gatherproof_backend//src//adapters//social_sharing.py",
+    "gatherproof_backend//src//handlers//proof_rooms.py",
+    "gatherproof_backend//src//handlers//users.py",
+    "gatherproof_backend//src//handlers//incidents.py"
+  ],
+  "context_length": 75356,
+  "task_prompt": "Your task is to investigate the root cause of the missing geolocation data when sharing an incident to the CivicNet platform. You need to analyze the provided backend source code to pinpoint the exact location of the error.\n\nYour final report should include:\n1. The full path to the file(s) containing the bug.\n2. The specific line number(s) where the error occurs.\n3. A clear explanation of *why* the bug happens and why it only affects CivicNet sharing.",
+  "expected_approach": "An expert developer would start by hypothesizing that the issue lies in the code path specific to 'CivicNet' sharing.\n\n1.  **Identify Entry Point:** The developer would first look for the main sharing logic. A good starting point would be `handlers/incidents.py` to find an endpoint related to sharing, like `/incidents/{id}/share`.\n2.  **Trace to Core Logic:** They would trace the call from the handler to a more generic service in `core/services.py`. Inside a function like `share_incident_to_platform`, they would observe how the incident data, particularly the location, is fetched and prepared before being passed to a platform-specific adapter.\n3.  **Analyze Adapters:** The developer would then navigate to `adapters/social_sharing.py`, which is the most likely place for platform-specific logic. They would expect to find functions like `share_to_globalfeed` and `share_to_civicnet`.\n4.  **Differential Diagnosis:** The key step is to compare the implementation of `share_to_civicnet` with the correctly working `share_to_globalfeed`. They would pay close attention to how the `location` data object is handled in each function.\n5.  **Pinpoint the Bug:** By comparing the two, the developer would spot a difference in how the location data structure is accessed. They would identify that the `core/services.py` module passes location as a dictionary, but the `_format_for_civicnet` helper function incorrectly tries to access it as a list or tuple.",
+  "ground_truth": {
+    "files": [
+      "gatherproof_backend//src//adapters//social_sharing.py"
+    ],
+    "line_numbers": [
+      "~line 315 (within a hypothetical `_format_post_for_civicnet` function)"
+    ],
+    "explanation": "The root cause is a data structure mismatch between the core service and the CivicNet adapter.\n\n1.  In `core/services.py`, the `share_incident` service prepares the location data as a dictionary, for example: `location_data = {'lat': 40.7128, 'lon': -74.0060}`.\n2.  This dictionary is passed to the functions in `adapters/social_sharing.py`.\n3.  The function responsible for sharing to 'GlobalFeed' correctly accesses the data using dictionary keys: `payload['latitude'] = location_data.get('lat')`.\n4.  However, the function for 'CivicNet' incorrectly assumes the location data is a tuple or list and tries to access it with numerical indices: `payload['coords'] = f\"{location_data.get(0)},{location_data.get(1)}\"`. Since `location_data` is a dictionary, `location_data.get(0)` returns `None`, causing the coordinates to be missing in the final post. This fails silently instead of crashing."
+  },
+  "evaluation_criteria": [
+    "correct_file_identification: Agent correctly identifies `adapters/social_sharing.py` as the file containing the bug.",
+    "root_cause_analysis: Agent correctly explains that the bug is due to a data structure mismatch (accessing a dictionary with numerical indices).",
+    "cross_file_reasoning: Agent demonstrates an understanding that the data originates in one format from `core/services.py` and is misinterpreted in `adapters/social_sharing.py`.",
+    "differential_diagnosis: Agent successfully explains why 'GlobalFeed' works while 'CivicNet' fails by comparing their respective data handling logic within the adapter.",
+    "efficiency: Agent focuses its investigation on the relevant files (`incidents.py`, `services.py`, `social_sharing.py`) without spending excessive time on unrelated files like `users.py`."
+  ],
+  "metadata": {
+    "context_length": 75356,
+    "files_count": 5,
+    "information_coverage": 0.3041786417799593,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T20:15:54.114209"
+  }
+}

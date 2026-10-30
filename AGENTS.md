@@ -3994,3 +3994,35 @@
   (-7.4800%)are ACK bytes,not exposed critical waits. Preserve complete results
   under workflow_resume_oracle_20261029,all normal tails and user worktree edits.
   No next GPU arm is queued;the global clear/repeated/all-baseline goal stays active.
+- The latest workload direction requires whole-project-disjoint short/medium/long
+  mixtures and actual same-category ready-paused capacity competition, not only
+  broad output counts. The new CPU inventory groups declared execution controls,
+  verifies exact complete native token work, binds JOIN parents from JOIN_WAIT,
+  and separates logical model work/context from tool and critical-path time.
+  The compatible current32 executions cover18 projects: model-work P90/P10
+  2.2733,max/min4.3910,136JOINs and0nested. Preserve old single-child/no-delegation
+  captures;do not mix their protocols to manufacture wider skew.
+  Scope18 declares six original investigations,six implementation/refactoring
+  tasks and six multi-stage development tasks on the existing18 distinct
+  tool-qualified projects,balanced across context bands. These are hypotheses,
+  not measured size labels. Keep one shared4/8child,8/16root protocol,natural
+  returns,original sources/tests/environments and real tool times in collection.
+  Freeze seeded shuffled burst diagnosis;main uses5warm roots plus independent
+  Poisson slots,with rate pending matched control capacity,not the old120s.
+  Keep5-10x a diagnostic target,not a result filter or hard validity threshold.
+  New explicit ranking metadata is bounded root task/delegation/role only,
+  never the full prompt/future DAG. It is recorded for new model preparation;
+  no tool-aware learned model is trained or promoted by this instrumentation.
+  Keep retained Full size ranking/tool-frontier prefetch/handoff/mixed chunk off.
+  See docs/research/workflow_mix_preparation_20261029_zh.md and the named
+  workflow_mix_20261029 evidence directory. The old oracle and performance
+  controls cannot become matched results for a changed workload/arrival profile.
+- Mixed-scope preparation bound_cpu_r2 actually passes5204 tests plus12 subtests,
+  retains all5178 prior literal identities,no failures/errors/skips,native engine
+  unchanged. New replay arrival formats explicitly bind population permutation
+  and independent Poisson slots;simultaneous root event delivery honors the
+  declared order while later requests retain natural dependencies. Old arrival
+  contracts remain unchanged. The39 original tool/project/context inputs pass.
+  New native collection still requires a clean frozen checkout and fresh
+  sampler/resource/reservation checks;these CPU results are not size diversity,
+  physical competition or performance qualification.

@@ -1,0 +1,55 @@
+{
+  "id": "python_desktop_media_medium_020_bug_investigation_hard_01",
+  "task_category": "bug_investigation",
+  "difficulty": "hard",
+  "title": "Plugin Keyboard Shortcut Fails After Theme Change and Restart",
+  "description": "A high-priority bug has been reported by users of TimeClip Desk. After a user customizes a keyboard shortcut for an action provided by a third-party plugin, the shortcut works correctly. However, if the user then changes the application theme via the settings dialog and restarts the application, the custom shortcut for the plugin action no longer works. The default shortcut for the action (if one exists) remains active. Other custom shortcuts for built-in application features are unaffected. The issue is resolved temporarily if the user re-assigns the shortcut in the settings, but it breaks again on the next restart if the new theme is still active.",
+  "context_files": [
+    "timeclip_desk//timeclip_desk//views//settings_dialog.py",
+    "timeclip_desk//config//default_settings.json",
+    "timeclip_desk//timeclip_desk//core//plugin_manager.py",
+    "timeclip_desk//timeclip_desk//models//preferences.py",
+    "timeclip_desk//timeclip_desk//core//update_service.py",
+    "timeclip_desk//docs//architecture.md",
+    "timeclip_desk//timeclip_desk//views//audio_editor_view.py",
+    "timeclip_desk//timeclip_desk//app.py",
+    "timeclip_desk//timeclip_desk//views//__init__.py",
+    "timeclip_desk//timeclip_desk//core//__init__.py",
+    "timeclip_desk//timeclip_desk//views//image_editor_view.py",
+    "timeclip_desk//setup_guide.md",
+    "timeclip_desk//timeclip_desk//__main__.py",
+    "timeclip_desk//timeclip_desk//models//__init__.py",
+    "timeclip_desk//timeclip_desk//core//shortcut_manager.py",
+    "timeclip_desk//timeclip_desk//views//main_window.py",
+    "timeclip_desk//timeclip_desk//views//__description__",
+    "timeclip_desk//timeclip_desk//models//media_asset.py",
+    "timeclip_desk//timeclip_desk//models//library.py",
+    "timeclip_desk//timeclip_desk//core//event_bus.py",
+    "timeclip_desk//timeclip_desk//views//widgets//media_tray_item.py",
+    "timeclip_desk//config//__description__",
+    "timeclip_desk//timeclip_desk//views//widgets//__description__",
+    "timeclip_desk//__description__"
+  ],
+  "context_length": 340875,
+  "task_prompt": "You are a senior software engineer assigned to investigate this bug. Your task is to perform a root cause analysis. You are not required to write a patch or fix the bug. Your goal is to pinpoint the exact reason for the failure and describe the sequence of events that leads to it. \n\nYour final report should clearly answer:\n1. What is the precise root cause of the bug?\n2. Which file(s) and function(s) are responsible for the incorrect behavior?\n3. Explain the step-by-step chain of events, starting from the user changing the theme to the custom shortcut failing after a restart.",
+  "expected_approach": "An expert developer would approach this problem systematically:\n\n1.  **Hypothesis Formulation:** The symptoms (works before restart, fails after) strongly suggest an issue with state persistence (saving/loading preferences). The trigger (changing theme) seems unrelated to the effect (shortcut failure), suggesting an indirect or subtle interaction. The primary hypothesis should be that saving settings after a theme change corrupts or alters the shortcut configuration in an unexpected way.\n\n2.  **Code Tracing - The 'Save' Path:** Investigate how changing the theme in `timeclip_desk/views/settings_dialog.py` triggers a save operation. Trace this flow to `timeclip_desk/models/preferences.py`. Analyze the `save_preferences` method to see how the user's settings, including themes and shortcuts, are serialized to the JSON configuration file.\n\n3.  **Code Tracing - The 'Load' Path:** Analyze the application startup sequence, likely in `timeclip_desk/app.py`. Identify the order in which subsystems are initialized. Specifically, determine if the `PluginManager` is initialized before or after the `ShortcutManager` loads custom user shortcuts from the `preferences.py` model.\n\n4.  **Configuration Analysis:** The developer should inspect the user's preference file on disk before and after the theme change. They would notice that changing the theme causes the `theme_config` dictionary to be written at the beginning of the JSON file, altering the key order.\n\n5.  **Root Cause Pinpointing:** By connecting the previous steps, the developer would focus their investigation on the `load_preferences` method in `timeclip_desk/models/preferences.py`. They would discover that the loading logic has a subtle, perhaps legacy, parsing path that is conditionally triggered by the presence or order of the `theme_config` key. This faulty path fails to correctly parse the nested `plugin_shortcuts` dictionary, causing it to be loaded as an empty or default value.\n\n6.  **Synthesis:** The final step is to construct the full narrative: The theme change in the UI alters the key order in the saved JSON. On restart, this new key order triggers a latent bug in a specific parsing branch within the preference loading logic. This causes the custom plugin shortcuts to be discarded, so the `ShortcutManager` never receives the user's override and only registers the plugin's default shortcut.",
+  "ground_truth": "The root cause is a latent bug in the preference loading mechanism within `timeclip_desk/models/preferences.py`. \n\n**Causal Chain:**\n1.  In `timeclip_desk/views/settings_dialog.py`, when a user applies a new theme, the `apply_theme_and_save()` method updates the user preferences model and calls `preferences.save()`. The Python `json.dump()` function, without `sort_keys=True`, writes the most recently updated key (`theme_config`) near the top of the resulting JSON file.\n2.  On application restart, `timeclip_desk/app.py` initializes the application's subsystems.\n3.  The `Preferences` model is loaded early in the startup sequence via its `load()` method in `timeclip_desk/models/preferences.py`.\n4.  **The Bug:** The `Preferences.load()` method contains flawed conditional logic. It checks `if 'theme_config' in data and data.keys()[0] == 'theme_config':` to trigger a legacy loading path intended for an older config format. This path correctly loads the theme but fails to properly deserialize the `plugin_shortcuts` nested dictionary, causing it to default to an empty dictionary `{}`.\n5.  Later in the startup sequence, `timeclip_desk/core/plugin_manager.py` loads the plugins and their default actions.\n6.  Then, `timeclip_desk/core/shortcut_manager.py` attempts to load custom shortcuts from the `Preferences` model. Since the `plugin_shortcuts` data was lost during the faulty load, no custom plugin shortcuts are registered.\n7.  As a result, only the default shortcut provided by the plugin is active, and the user's customization is ignored.",
+  "evaluation_criteria": [
+    "**Root Cause Identification:** Was the agent able to correctly identify the faulty conditional parsing logic in `preferences.py` as the primary cause?",
+    "**Causal Chain Accuracy:** Did the agent accurately describe the full sequence of events, from the UI action in `settings_dialog.py` to the incorrect state in `shortcut_manager.py`?",
+    "**Key File Identification:** Did the agent correctly identify the roles of `settings_dialog.py`, `preferences.py`, `app.py`, and `shortcut_manager.py` in the bug?",
+    "**Problem Decomposition:** Did the agent successfully separate the trigger (theme change causing JSON reordering) from the root cause (faulty parsing logic)?",
+    "**Evidence Gathering:** Did the agent correctly deduce that the structure of the saved JSON file changes, even without the ability to directly inspect the file system?",
+    "**Efficiency and Focus:** Did the agent avoid getting sidetracked by irrelevant code paths, such as the actual theme rendering logic or the plugin loading mechanism itself?"
+  ],
+  "metadata": {
+    "context_length": 340875,
+    "files_count": 24,
+    "information_coverage": 0.7148654259937337,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T17:50:49.628744"
+  }
+}

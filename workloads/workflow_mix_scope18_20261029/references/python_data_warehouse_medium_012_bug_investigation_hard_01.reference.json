@@ -1,0 +1,65 @@
+{
+  "id": "python_data_warehouse_medium_012_bug_investigation_hard_01",
+  "task_category": "bug_investigation",
+  "difficulty": "hard",
+  "title": "Investigate Infinite Loop in DLQ Reprocessing Due to Incorrect Error Classification",
+  "description": "The ProdFlow Warehouse system processes productivity data from various sources like Jira and Slack. Recently, the operations team has reported a significant and sustained spike in SQS costs. Monitoring reveals that a small but consistent number of messages are cycling repeatedly through the main event processing queue's Dead-Letter Queue (DLQ). The DLQ reprocessing Lambda (`reprocess_dlq`) appears to be functioning, as it picks up messages from the DLQ and re-queues them for processing. However, these messages invariably fail again, landing back in the DLQ, creating an expensive, infinite loop. The problematic messages seem to be exclusively related to the Jira data source.",
+  "context_files": [
+    "prodflow-warehouse/tests/conftest.py",
+    "prodflow-warehouse/src/utils/logger.py",
+    "prodflow-warehouse/src/core/data_lake.py",
+    "prodflow-warehouse/src/core/__init__.py",
+    "prodflow-warehouse/src/core/event_bus.py",
+    "prodflow-warehouse/src/transformations/base_transformer.py",
+    "prodflow-warehouse/src/utils/__init__.py",
+    "prodflow-warehouse/src/handlers/__init__.py",
+    "prodflow-warehouse/src/handlers/ingest_batch.py",
+    "prodflow-warehouse/src/transformations/__init__.py",
+    "prodflow-warehouse/src/handlers/reprocess_dlq.py",
+    "prodflow-warehouse/src/handlers/process_events.py",
+    "prodflow-warehouse/src/transformations/slack_transformer.py",
+    "prodflow-warehouse/src/core/quality_checker.py",
+    "prodflow-warehouse/tests/__init__.py",
+    "prodflow-warehouse/src/transformations/jira_transformer.py",
+    "prodflow-warehouse/tests/integration/test_e2e_pipeline.py",
+    "prodflow-warehouse/src/handlers/ingest_stream.py"
+  ],
+  "context_length": 239016,
+  "task_prompt": "You are a senior software engineer assigned to investigate this critical production issue. Your primary objective is to perform a root cause analysis. You are not required to write a code fix.\n\nYour investigation must:\n1.  Identify the precise root cause of the infinite message reprocessing loop.\n2.  Provide a clear, step-by-step explanation of the sequence of events, detailing how the interaction between different system components (`process_events` handler, `jira_transformer`, and `reprocess_dlq` handler) leads to this loop.\n3.  Pinpoint the specific file(s) and the logic within them that are responsible for the incorrect behavior. Your analysis should be detailed enough for another engineer to implement a fix.",
+  "expected_approach": "An expert developer would approach this problem systematically:\n1.  **Formulate a Hypothesis:** Based on the symptoms (infinite loop, DLQ, SQS costs, Jira-specific), the primary suspect is the error handling logic. The loop implies that a message considered a 'permanent failure' is being reprocessed as if it were a 'transient failure'.\n2.  **Examine the Loop Enabler:** Start by inspecting `src/handlers/reprocess_dlq.py`. The expert would check how it handles messages. They would likely find that it performs a naive re-queue, simply moving the message from the DLQ back to the main queue without modification or adding metadata (like a retry count). This enables the loop, but is not the root cause.\n3.  **Trace the Failure:** The next step is to understand why the re-queued message fails. The expert would trace the message flow to the main consumer, `src/handlers/process_events.py`.\n4.  **Investigate the Specific Transformer:** Since the issue is Jira-specific, the investigation would focus on the interaction between `process_events.py` and `src/transformations/jira_transformer.py`. The expert would look for failure modes within the `JiraTransformer` that could be misinterpreted by the calling handler. They would likely identify a potential `KeyError` or `ValueError` if certain expected data is missing from a Jira event payload (e.g., a required custom field).\n5.  **Analyze the Core Error Handling:** This is the crucial step. The expert would scrutinize the `try...except` block in `src/handlers/process_events.py` that invokes the transformation logic. They would discover that this block has overly broad exception handling. It likely catches the `KeyError` from the transformer but incorrectly classifies it as a transient, retryable error (like a network timeout or API throttling), instead of a permanent data validation error. After a few internal retries fail, the message is sent to the DLQ.\n6.  **Synthesize the Full Picture:** The expert would connect all the pieces to describe the full lifecycle of the poison pill message:\n    a. A malformed Jira event enters the system.\n    b. `jira_transformer.py` fails with a `KeyError` because a required field is missing.\n    c. `process_events.py` catches the `KeyError` but its exception logic misclassifies it as a transient issue, eventually sending it to the DLQ.\n    d. `reprocess_dlq.py` picks up the message and, without context, re-injects it into the main queue.\n    e. The cycle repeats from step 'a'.",
+  "ground_truth": {
+    "root_cause": "The root cause is a flaw in the error handling logic within the `process_events.py` handler. It improperly classifies a deterministic `KeyError` raised by the `JiraTransformer` as a transient, retryable error. This causes messages with a permanent data format issue to be sent to the DLQ, from which they are continuously re-queued, creating an infinite loop.",
+    "culprit_files": [
+      {
+        "file_path": "src/handlers/process_events.py",
+        "description": "The `try...except` block responsible for executing the data transformation is too generic. It catches the `KeyError` from the transformer but the subsequent logic fails to differentiate this permanent data error from a transient operational error. This misclassification leads to the message being sent to the DLQ instead of being archived or flagged for manual review."
+      },
+      {
+        "file_path": "src/handlers/reprocess_dlq.py",
+        "description": "This handler acts as an enabler for the infinite loop. Its logic is too simplistic; it unconditionally moves messages from the DLQ back to the main processing queue. It lacks any mechanism to detect and break a reprocessing loop, such as checking a retry count in the message attributes."
+      },
+      {
+        "file_path": "src/transformations/jira_transformer.py",
+        "description": "This file is the source of the initial error. It raises a `KeyError` when processing a Jira event that is missing an expected custom field. While the transformer is behaving correctly by raising an error for invalid data, this error is the trigger for the downstream bug."
+      }
+    ]
+  },
+  "evaluation_criteria": [
+    "**Root Cause Identification (Critical):** Did the agent correctly identify the error misclassification in `process_events.py` as the primary root cause, not just the looping behavior in `reprocess_dlq.py`?",
+    "**Causal Chain Analysis (High):** Did the agent accurately and completely describe the sequence of events across the three key components (`jira_transformer`, `process_events`, `reprocess_dlq`)?",
+    "**Code-level Specificity (Medium):** Did the agent pinpoint the specific `try...except` block in `process_events.py` and the naive re-queueing logic in `reprocess_dlq.py` as the problematic code sections?",
+    "**Distinguishing Cause vs. Enabler (High):** Did the agent's analysis correctly distinguish between the root cause (misclassification in `process_events.py`) and the enabler of the loop (naive logic in `reprocess_dlq.py`)?",
+    "**Clarity of Explanation (Medium):** Was the final root cause analysis report clear, well-structured, and easy for a human engineer to understand and act upon?",
+    "**Logical Deduction (Medium):** Did the agent follow a logical investigative path (e.g., from symptom to cause) rather than randomly analyzing files?"
+  ],
+  "metadata": {
+    "context_length": 239016,
+    "files_count": 18,
+    "information_coverage": 0.7017498532002349,
+    "coverage_range": [
+      0.6,
+      0.8
+    ],
+    "generation_timestamp": "2025-08-05T17:28:16.630806"
+  }
+}

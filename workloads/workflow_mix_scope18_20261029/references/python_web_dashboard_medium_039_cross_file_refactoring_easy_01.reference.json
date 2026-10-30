@@ -1,0 +1,39 @@
+{
+  "id": "python_web_dashboard_medium_039_cross_file_refactoring_easy_01",
+  "task_category": "cross_file_refactoring",
+  "difficulty": "easy",
+  "title": "Refactor Email Utility Functions into a Dedicated Service Module",
+  "description": "The PalettePulse Dashboard project has grown, and the `src/utils.py` file has become a 'catch-all' module containing a mix of unrelated helper functions. This violates the Single Responsibility Principle and makes the code harder to navigate and maintain. This task focuses on improving the project's structure by extracting a specific piece of functionality\u2014email notifications\u2014into its own dedicated module.",
+  "context_files": [
+    "tests/test_utils.py",
+    "src/utils.py",
+    "src/config.py",
+    "palettepulse_dashboard",
+    "src/module_8.py",
+    "src/module_7.py",
+    "src/module_4.py"
+  ],
+  "context_length": 95294,
+  "task_prompt": "Your task is to refactor the email-related utility functions from `src/utils.py` into a new, dedicated service module. \n\n**Detailed Steps:**\n1.  **Identify Email Functions:** Examine `src/utils.py` and identify all functions related to sending and formatting email notifications. These functions likely have names containing 'email', 'notify', or 'smtp' and use libraries like `smtplib`.\n2.  **Create New Module:** Create a new file at `src/email_service.py`.\n3.  **Move Functions and Dependencies:** Move the identified email functions from `src/utils.py` to the new `src/email_service.py`. Ensure you also move any necessary imports (e.g., `smtplib`, `email.mime.text`, and any configuration imports from `src.config` like `SMTP_SERVER` or `SENDER_EMAIL`).\n4.  **Update Call Sites:** Search the entire codebase (`palettepulse_dashboard`, `src/module_7.py`, `src/module_8.py`, etc.) for any code that calls the functions you moved. Update these locations to import the functions from the new `src.email_service` module instead of `src.utils`.\n5.  **Refactor Tests:** Identify the tests in `tests/test_utils.py` that correspond to the moved email functions. \n6.  **Create New Test File:** Create a new test file at `tests/test_email_service.py`.\n7.  **Move Tests:** Move the relevant tests from `tests/test_utils.py` to `tests/test_email_service.py` and update their import statements to target `src.email_service`.\n8.  **Final Verification:** Ensure the project remains fully functional and that all tests (both existing and newly moved) pass successfully after your changes.",
+  "expected_approach": "An expert developer would approach this task systematically:\n1.  **Analysis:** First, they would read through `src/utils.py` to identify the target functions. They would look for function names like `send_notification_email`, `format_email_html`, `connect_smtp_server` and their related imports.\n2.  **Impact Assessment:** Using a global search tool (like `grep` or an IDE's 'Find Usages' feature), they would find all files that import and use these functions. This creates a checklist of files that need modification.\n3.  **Code Migration (Source):** They would create `src/email_service.py`, then cut the identified functions and their specific dependencies from `src/utils.py` and paste them into the new file. They would be careful to only move relevant imports.\n4.  **Update Imports:** They would iterate through the file list from the impact assessment and change the import statements. For example, `from src.utils import send_notification_email` would become `from src.email_service import send_notification_email`.\n5.  **Code Migration (Tests):** They would perform a similar migration for the tests, moving the relevant test cases from `tests/test_utils.py` to a new `tests/test_email_service.py` and updating the imports within that new test file.\n6.  **Verification:** Finally, they would run the entire test suite using a command like `pytest` to confirm that the refactoring was successful and introduced no regressions.",
+  "ground_truth": "The expected outcome is a structural improvement to the codebase without any change in functionality.\n\nKey changes should include:\n- A new file, `src/email_service.py`, exists and contains functions previously in `src/utils.py` (e.g., `send_notification_email`, `format_error_email_body`). It should also contain the necessary imports like `smtplib` and configuration variables from `src.config`.\n- The file `src/utils.py` no longer contains the email-related functions or their specific imports.\n- A new test file, `tests/test_email_service.py`, exists and contains the tests for the email functions, with imports updated to point to `src.email_service`.\n- The file `tests/test_utils.py` no longer contains the tests for the email functions.\n- Files that use the email functionality (e.g., `palettepulse_dashboard`, `src/module_7.py`) now have updated import statements: `from src.email_service import ...`.",
+  "evaluation_criteria": [
+    "**Correctness of Refactoring:** Were the correct functions (and only the correct functions) moved from `src/utils.py` to `src/email_service.py`?",
+    "**Completeness of Import Updates:** Were all import statements in all affected application files updated to point to the new `src.email_service` module?",
+    "**Test Suite Integrity:** Were the corresponding tests correctly moved to `tests/test_email_service.py` and their imports updated?",
+    "**Dependency Management:** Were all necessary dependencies (standard libraries, third-party packages, and internal config variables) correctly imported into the new `src.email_service.py`?",
+    "**No Functional Regressions:** Does the entire test suite pass after the refactoring, indicating no functionality was broken?",
+    "**Code Cleanliness:** Were the moved functions and tests cleanly removed from their original files (`src/utils.py`, `tests/test_utils.py`)?",
+    "**File Creation:** Were the new files `src/email_service.py` and `tests/test_email_service.py` created in the correct locations?"
+  ],
+  "metadata": {
+    "context_length": 95294,
+    "files_count": 7,
+    "information_coverage": 0.32938256754841677,
+    "coverage_range": [
+      0.2,
+      0.4
+    ],
+    "generation_timestamp": "2025-08-05T19:42:46.211156"
+  }
+}

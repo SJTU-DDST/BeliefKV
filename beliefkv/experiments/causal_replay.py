@@ -534,6 +534,7 @@ async def execute_causal_replay(
     *,
     timing_policy: ReplayTimingPolicy | None = None,
     workflow_arrival_offsets_ms: Mapping[str, float] | None = None,
+    workflow_release_order: tuple[str, ...] | None = None,
 ) -> dict:
     """Release only ready work; a backend must report its actual native completion."""
     nodes = {node.node_id: node for node in plan.nodes}
@@ -551,6 +552,15 @@ async def execute_causal_replay(
         validate_offsets(plan, workflow_arrival_offsets_ms)
         if timing_policy is not None and timing_policy != ReplayTimingPolicy():
             raise CausalReplayError("external workflow arrivals cannot use idle timer compression")
+    release_rank = None
+    if workflow_release_order is not None:
+        if (
+            workflow_arrival_offsets_ms is None
+            or len(set(workflow_release_order)) != len(workflow_release_order)
+            or set(workflow_release_order) != set(workflow_arrival_offsets_ms)
+        ):
+            raise CausalReplayError("release order must cover each declared workflow once")
+        release_rank = {workflow: index for index, workflow in enumerate(workflow_release_order)}
     sorter = TopologicalSorter(plan.dependency_graph())
     try:
         sorter.prepare()
@@ -638,7 +648,16 @@ async def execute_causal_replay(
             now = time.monotonic() * 1000.
             busy = {nodes[key].workflow_id for key in running.values()}
             idle_clock.adjust(deadlines, busy, now)
-            for key in tuple(key for key, deadline in deadlines.items() if deadline <= now):
+            due = tuple(key for key, deadline in deadlines.items() if deadline <= now)
+            if release_rank is not None and len(workflow_releases) < len(release_rank):
+                roots = {
+                    key for key in due if nodes[key].event is not None
+                    and nodes[key].event.kind is Kind.WORKFLOW_START
+                }
+                if len(roots) > 1:
+                    ordered_roots = iter(sorted(roots, key=lambda key: release_rank[nodes[key].workflow_id]))
+                    due = tuple(next(ordered_roots) if key in roots else key for key in due)
+            for key in due:
                 node = nodes[key]
                 del deadlines[key]
                 if node.request_id is not None:
@@ -701,4 +720,6 @@ async def execute_causal_replay(
             workflow_arrival_origin_monotonic_ms=origin,
             workflow_arrival_clock_domain=clock_domain,
         )
+    if workflow_release_order is not None:
+        result["workflow_release_order"] = list(workflow_release_order)
     return result

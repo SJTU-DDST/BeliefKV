@@ -146,6 +146,11 @@ async def run(args) -> dict:
                     workflow_arrival_offsets_ms=(
                         arrival_offsets_ms(arrivals) if arrivals is not None else None
                     ),
+                    **({
+                        "workflow_release_order": tuple(
+                            row["workflow_id"] for row in arrivals["arrival_schedule"]
+                        ),
+                    } if arrivals is not None and arrivals["schema_version"] in (3, 4) else {}),
                 )
             except BaseException as error:
                 failure = error

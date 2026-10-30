@@ -38,6 +38,7 @@ from beliefkv.predictor.command_class import (
 )
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.predictor.same_input_history import SameInputToolHistory
+from beliefkv.predictor.workflow_rank_input import WorkflowRankInput
 from beliefkv.runtime.agent_safety import classify_tool_outcome
 from beliefkv.predictor.taxonomy import ToolTaxonomy
 from beliefkv.runtime.agent_runtime_adapter import RuntimeEventSink
@@ -402,7 +403,13 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._first_control_delivery_failure: RuntimeControlDeliveryFailure | None = None
         self._last_control_delivery_failure: RuntimeControlDeliveryFailure | None = None
 
-    def start(self) -> None:
+    def start(self, *, task_instructions: str | None = None) -> None:
+        ranking_input = None
+        if task_instructions is not None:
+            ranking_input = WorkflowRankInput.from_instructions(
+                task_instructions=task_instructions,
+                agent_role=self.root_metadata.agent_definition_id or "",
+            ).to_dict()
         with self._lock:
             if self._started:
                 raise RuntimeError("Deep Agents runtime adapter already started")
@@ -412,7 +419,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._event(
                 RuntimeEventKind.WORKFLOW_START,
                 ts_ms=ts_ms,
-                attributes={"source": "deepagents"},
+                attributes={
+                    "source": "deepagents",
+                    **({"workflow_ranking_input": ranking_input} if ranking_input is not None else {}),
+                },
             ),
             self._event(
                 RuntimeEventKind.INVOCATION_CREATE,
@@ -477,7 +487,8 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         """Declare planner-selected children before code dispatches their runs.
 
         ``tasks`` contains ``(subagent_type, description)`` pairs produced at
-        runtime. No task bodies are written to the event stream.
+        runtime. The stream retains a bounded task-description prefix and role
+        for workflow ranking, independently of the model's full prompt.
         """
 
         if not tasks:
@@ -1908,6 +1919,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             description_sha256 = hashlib.sha256(
                 description.encode("utf-8")
             ).hexdigest()
+            ranking_input = WorkflowRankInput.from_instructions(
+                delegation_instructions=description, agent_role=subagent_type,
+            ).to_dict()
             child_suffix = _digest(f"{parent_invocation_id}:{tool_call_id}")
             child_invocation_id = f"deepagents-invocation:{child_suffix}"
             child_context_id = f"deepagents-context:{child_suffix}"
@@ -1962,6 +1976,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                             "source": "deepagents_task",
                             "description_chars": description_chars,
                             "description_sha256": description_sha256,
+                            "workflow_ranking_input": ranking_input,
                             **({
                                 "reusable_subagent": True, "agent_handle": agent_handle,
                                 "resumed": resumed,

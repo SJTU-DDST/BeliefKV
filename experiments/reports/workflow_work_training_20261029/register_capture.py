@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--registration", type=Path, default=OPS / "workflow_work_train8_source_20261029_r1.registration.json")
     parser.add_argument("--run-root", type=Path, default=MAIN / "experiments/raw/workflow_work_train8_source_20261029_r1")
     parser.add_argument("--port", type=int, default=18891)
+    parser.add_argument("--purpose", default="predictor_training_not_performance_baseline")
     args = parser.parse_args()
     if git_source_state(ROOT)["dirty"] or os.getpriority(os.PRIO_PROCESS, os.getpid()) != 0:
         raise ValueError("native training capture requires clean committed sources and nice0")
@@ -73,7 +74,7 @@ def main():
     capture.reservation.write_json(args.output_dir / "entry.json", {
         "command": command, "returncode": completed.returncode,
         "stdout": completed.stdout, "stderr": completed.stderr,
-        "purpose": "predictor_training_not_performance_baseline",
+        "purpose": args.purpose,
     })
     print(completed.stdout, end="")
     if completed.returncode:

@@ -1,0 +1,66 @@
+{
+  "id": "python_game_simulation_medium_033_bug_investigation_expert_01",
+  "task_category": "bug_investigation",
+  "difficulty": "expert",
+  "title": "Networked Physics Desynchronization Under High Object Churn",
+  "description": "PhySage Academy is a real-time, collaborative physics sandbox. In a networked session, one user acts as the 'host' running the authoritative simulation, while other 'clients' connect to their session. A critical bug has been reported where clients experience severe visual artifacts. While the simulation runs perfectly for the host, clients see objects jittering, moving erratically, and their positions 'snapping' back and forth. The issue is negligible in simple, static scenes but becomes extreme when scripts are used to dynamically and rapidly create and destroy physics objects (e.g., a cannon firing projectiles that are removed on impact). This desynchronization makes the collaborative features unusable for complex experiments.",
+  "context_files": [
+    "physage_academy/src/physage_academy/ai/__init__.py",
+    "physage_academy/tests/test_editor.py",
+    "physage_academy/src/physage_academy/editor/service.py",
+    "physage_academy/src/physage_academy/editor/__init__.py",
+    "physage_academy/src/physage_academy/editor/commands.py",
+    "physage_academy/tests/test_integration.py",
+    "physage_academy/src/physage_academy/physics/engine.py",
+    "physage_academy/src/physage_academy/resources/__init__.py",
+    "physage_academy/src/physage_academy/scripting/__init__.py",
+    "physage_academy/src/physage_academy/engine/scene.py",
+    "physage_academy/src/physage_academy/engine/game_loop.py",
+    "physage_academy/src/physage_academy/main.py",
+    "physage_academy/LICENSE",
+    "physage_academy/src/physage_academy/core/config.py",
+    "physage_academy/src/physage_academy/engine/__init__.py",
+    "physage_academy/src/physage_academy/resources/manager.py",
+    "physage_academy/src/physage_academy/common/events.py",
+    "physage_academy/run.py",
+    "physage_academy/src/physage_academy/networking/manager.py",
+    "physage_academy/src/physage_academy/networking/__init__.py",
+    "physage_academy/src/physage_academy/scripting/engine.py",
+    "physage_academy/src/physage_academy/networking/protocol.py",
+    "physage_academy/src/physage_academy/ai/tutor.py",
+    "physage_academy/src/physage_academy/core/__init__.py",
+    "physage_academy/src/physage_academy/resources/object_pool.py",
+    "physage_academy/src/physage_academy/physics/__init__.py",
+    "physage_academy/src/physage_academy/common/__init__.py",
+    "physage_academy/src/physage_academy/core/event_bus.py",
+    "physage_academy/src/physage_academy/__init__.py",
+    "physage_academy/tests/test_core_systems.py",
+    "physage_academy/config/scenarios.yaml"
+  ],
+  "context_length": 450060,
+  "task_prompt": "You are an expert developer tasked with investigating a critical physics desynchronization bug in the PhySage Academy's networking layer. The user-facing symptom is severe object jitter and position snapping on client machines, particularly in scenarios with high object creation and destruction managed by user scripts.\n\nYour goal is to perform a root cause analysis. You are NOT required to write a patch or fix the code. Your final output must be a detailed report that:\n1.  Identifies the specific module(s) and function(s) containing the logical flaw.\n2.  Provides a step-by-step explanation of how the bug occurs, detailing the incorrect interaction between the client-side prediction and the server-side state updates.\n3.  Explains precisely why scenarios with high object churn (rapid creation/destruction) significantly worsen the problem.",
+  "expected_approach": "An expert developer would approach this by first forming a hypothesis that this is a state reconciliation problem, common in networked physics. The investigation would proceed as follows:\n\n1.  **Identify Key Systems:** The developer would recognize that the bug lies at the intersection of the physics engine, the networking manager, the main game loop, and the scripting engine.\n2.  **Initial Code Review:** They would start by examining the most likely culprits:\n    *   `physage_academy/networking/manager.py`: To understand how game state packets are sent by the host and received/processed by the client. The focus would be on the client-side code that handles incoming state updates.\n    *   `physage_academy/engine/game_loop.py`: To check the order of operations. Is it `input -> network_receive -> physics_update -> render`? The order is critical for synchronization.\n    *   `physage_academy/physics/engine.py`: To understand how a single physics step is calculated. This helps in understanding what the client is 'predicting' between server updates.\n    *   `physage_academy/scripting/__init__.py`: To see how user scripts interface with the scene to create/destroy objects, confirming how the high churn scenario is initiated.\n3.  **Trace State Flow:** The developer would trace the flow of an object's state from the host to the client.\n    *   Host: `physics_engine` updates object position -> `network_manager` serializes and sends the state.\n    *   Client: Runs its own `physics_engine` step (prediction) -> `network_manager` receives a state packet from the host -> The client code attempts to reconcile its predicted state with the host's authoritative state.\n4.  **Pinpoint the Flaw:** The core of the investigation is analyzing this reconciliation logic. The developer would look for common errors: Is the client simply overwriting its state (causing snapping)? Is it trying to smoothly interpolate (which can feel laggy)? Or is it, as is likely in this case, incorrectly combining its predicted state with the server's state?\n5.  **Analyze the 'High Churn' Condition:** The developer would reason that when new objects are created, there's a small delay before the client is notified. During this delay, the client has no knowledge of the object, while the host is already simulating it. The first state update the client receives for this new object will have a large discrepancy from the client's initial state, making the flawed reconciliation logic's effects (like massive velocity changes) much more obvious and severe.",
+  "ground_truth": {
+    "culprit_file": "physage_academy/networking/manager.py",
+    "culprit_logic_description": "The root cause is a logical flaw in the client-side state update handler within the `NetworkManager`. The client performs predictive physics simulation locally to create smooth motion between server updates. However, when it receives an authoritative state packet from the host, instead of correcting its state, it incorrectly **compounds** it.\n\nSpecifically, in a method like `_apply_network_state_update`, the code for updating an object's velocity is implemented as:\n\n```python\n# FLAWED LOGIC in physage_academy/networking/manager.py\n# ... inside a client-side handler for state updates ...\n\nfor object_id, state_data in update_packet.object_states.items():\n    local_object = self.scene.get_object(object_id)\n    if local_object:\n        # The client has already calculated a new velocity in its own physics step.\n        # This line incorrectly ADDS the server's authoritative velocity to the\n        # client's predicted velocity, causing it to accelerate incorrectly on every update.\n        local_object.physics_body.velocity += state_data['velocity']\n\n        # A similar, but less severe, error might exist for position, where it\n        # attempts a faulty blend instead of a proper interpolation or snap.\n        # ... \n```\n\nThe correct approach would be to **set** the velocity, or gently interpolate it, to align the client with the server's authoritative state:\n\n```python\n# CORRECTED LOGIC\n# ...\nlocal_object.physics_body.velocity = state_data['velocity']\n# For position, a smooth correction (e.g., LERP) is often used:\n# local_object.position = lerp(local_object.position, state_data['position'], 0.2)\n# ...\n```\n",
+    "high_churn_explanation": "High object churn exacerbates this bug for two reasons:\n1.  **Initial State Discrepancy:** When a new object is created by a script on the host, there's a network delay before the client creates its local representation. The host's object has already been moving and accelerating for several frames. The first state update the client receives contains a velocity that is significantly different from the client object's initial velocity (which is likely zero). The flawed `velocity += ...` logic causes a massive, instantaneous jump in the client-side object's speed, leading to extreme jitter.\n2.  **Accumulated Error:** The high frequency of updates for many new, fast-moving objects means the compounding error accumulates very rapidly across the entire scene, leading to chaotic and completely desynchronized behavior."
+  },
+  "evaluation_criteria": [
+    "Accurately identifies `physage_academy/networking/manager.py` as the primary location of the bug.",
+    "Correctly pinpoints the logical flaw as compounding (e.g., using `+=`) the object's velocity from server updates instead of setting or correcting it.",
+    "Clearly explains the flawed interaction between the client's local physics prediction and the handling of authoritative server state packets.",
+    "Provides a coherent and accurate explanation for why high object creation/destruction rates make the desynchronization dramatically worse, linking it to initial state discrepancy.",
+    "Demonstrates an understanding of the roles of the interconnected systems (`physics`, `networking`, `game_loop`).",
+    "Avoids getting stuck on red herrings like floating-point determinism or simple network latency without evidence of the core logical flaw."
+  ],
+  "metadata": {
+    "context_length": 450060,
+    "files_count": 31,
+    "information_coverage": 0.9017575917866846,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T16:10:07.510880"
+  }
+}

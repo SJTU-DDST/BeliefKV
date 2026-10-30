@@ -1,0 +1,53 @@
+{
+  "id": "python_blockchain_nft_medium_035_bug_investigation_expert_01",
+  "task_category": "bug_investigation",
+  "difficulty": "expert",
+  "title": "Staking Reward Miscalculation After Governance-Driven Rate Changes",
+  "description": "The ShowTime Stash platform allows users to stake their NFTs to earn rewards. A key feature is community governance, where token holders can vote on proposals to change platform parameters, including the staking reward APR. A critical bug has been reported by users: after a governance proposal successfully changes the reward rate, the subsequent reward distribution seems to apply the new rate retroactively to the entire staking period, not just the period after the change. This allows users to benefit from a rate increase they didn't stake under, or be penalized by a decrease, leading to an unfair and potentially exploitable system that is draining the treasury.",
+  "context_files": [
+    "showtime-stash//contracts//ShowTimeNFT.sol",
+    "showtime-stash//src/showtime_stash//domain//governance.py",
+    "showtime-stash//contracts//Governance.sol",
+    "showtime-stash//tests//test_nft_state_machine.py",
+    "showtime-stash//src/showtime_stash//application//rewards.py",
+    "showtime-stash//src/showtime_stash//infrastructure//blockchain_connector.py",
+    "showtime-stash//src/showtime_stash//application//factories.py",
+    "showtime-stash//src/showtime_stash//application//services.py",
+    "showtime-stash//src/showtime_stash//infrastructure//database.py",
+    "showtime-stash//src/showtime_stash//main.py",
+    "showtime-stash//src/showtime_stash//interfaces//api.py",
+    "showtime-stash//src/showtime_stash//domain//nft.py",
+    "showtime-stash//contracts//StakingPool.sol",
+    "showtime-stash//tests//contract_tests//test_staking_pool.py",
+    "showtime-stash//README.md"
+  ],
+  "context_length": 210595,
+  "task_prompt": "You are an expert developer tasked with investigating a critical bug in the ShowTime Stash rewards system. Users report that staking rewards are being calculated incorrectly after a change in the reward rate via a governance vote. Your task is to perform a root cause analysis and propose a solution.\n\n**Objectives:**\n1.  **Identify the Root Cause:** Pinpoint the exact source of the bug in the codebase. This will likely involve analyzing the interaction between the Python application logic and the smart contracts.\n2.  **Explain the Flaw:** Clearly articulate why the current implementation is incorrect. Describe the logical error that leads to retroactive reward rate application.\n3.  **Propose a Fix:** Outline a detailed, robust solution. Your proposal should not only fix the immediate issue but also make the system more resilient to future, similar problems. Specify which files need to be modified and the nature of the changes.",
+  "expected_approach": "An expert developer would approach this by first forming a hypothesis based on the bug report. The report's key phrase 'applies the new rate retroactively' strongly suggests a time-of-check-to-time-of-use (TOCTOU) vulnerability, where the system uses a 'live' value when a 'historical' or 'snapshotted' value is required.\n\n1.  **Trace the Reward Calculation:** The investigation should start in the Python backend, likely in `src/showtime_stash/application/rewards.py`, which is the most probable location for reward calculation logic.\n2.  **Analyze Data Fetching:** The developer would examine how the `rewardRate` is obtained. They would trace the call from `rewards.py` through to the `src/showtime_stash/infrastructure/blockchain_connector.py`.\n3.  **Identify the Live Call:** The trace will reveal that `blockchain_connector.py` makes a live `eth_call` to a getter function (e.g., `getRewardRate()`) on the `Governance.sol` smart contract.\n4.  **Examine the Contract:** The developer would then inspect `contracts/Governance.sol` to confirm it stores the reward rate as a single, mutable state variable. They would also look for an event, like `RewardRateUpdated`, which signals a change but is likely being ignored by the rewards calculation logic.\n5.  **Synthesize the Root Cause:** The developer would conclude that the root cause is the `rewards.py` service calculating rewards for a past epoch using the *current* reward rate fetched live from the blockchain, instead of the rate that was active *during* that epoch.\n6.  **Formulate a Solution:** The ideal solution involves making the system aware of historical state. The developer would propose:\n    a.  Creating a new service (or modifying an existing one) to listen for `RewardRateUpdated` events from the `Governance.sol` contract.\n    b.  Storing a history of reward rates and their effective start/end timestamps (or block numbers) in the application's database (requiring changes to `src/showtime_stash/infrastructure/database.py`).\n    c.  Refactoring the logic in `src/showtime_stash/application/rewards.py` to query this new historical table to find the correct rate for the specific epoch being calculated, rather than making a live call.",
+  "ground_truth": {
+    "root_cause": "The root cause of the bug lies in the `calculate_rewards_for_epoch` function within `src/showtime_stash/application/rewards.py`. This function calculates rewards for all stakers for a given period. To do so, it fetches the current staking reward rate by calling a service that ultimately queries the `currentRewardRate` state variable directly from the `Governance.sol` smart contract via the `blockchain_connector.py`. This implementation is flawed because it retrieves the rate at the time of *calculation*, not the rate that was active during the *staking period* being rewarded. Consequently, any governance-approved rate change is incorrectly applied to past staking activity.",
+    "key_files_implicated": [
+      "src/showtime_stash/application/rewards.py",
+      "src/showtime_stash/infrastructure/blockchain_connector.py",
+      "contracts/Governance.sol"
+    ],
+    "proposed_solution": "The correct and robust solution is to implement historical state tracking for the reward rate.\n\n1.  **Event Listener:** Create a background worker that subscribes to the `RewardRateUpdated(uint256 newRate, uint256 effectiveAtBlock)` event on the `Governance.sol` contract.\n2.  **Database Schema Change:** Add a new table, `reward_rate_history`, to the database (managed in `src/showtime_stash/infrastructure/database.py`). This table should store `rate`, `start_block`, and `end_block`.\n3.  **Update Logic:** When the listener detects a `RewardRateUpdated` event, it should update the `end_block` of the previous rate entry and insert a new entry with the `newRate` and its `effectiveAtBlock` as the `start_block`.\n4.  **Refactor Reward Calculation:** Modify the `calculate_rewards_for_epoch` function in `src/showtime_stash/application/rewards.py`. Instead of making a live call for the rate, it must now query the `reward_rate_history` table to fetch the rate(s) that were active during the block range of the epoch being calculated. If a rate changed mid-epoch, the calculation must be split to accurately reflect the rewards earned under each rate."
+  },
+  "evaluation_criteria": [
+    "**Root Cause Accuracy:** Did the agent correctly identify that the use of a live, current reward rate instead of a historical, epoch-specific rate is the core problem?",
+    "**Code Localization:** Was the agent able to pinpoint the flawed logic within `src/showtime_stash/application/rewards.py` and trace the data source through `blockchain_connector.py` to `Governance.sol`?",
+    "**Cross-Component Understanding:** Did the agent's explanation demonstrate a clear understanding of the flawed interaction between the Python backend and the Solidity smart contract?",
+    "**Solution Robustness:** Did the agent propose a comprehensive, event-driven solution involving historical data storage, or a less robust fix like simple snapshotting?",
+    "**Clarity and Detail:** Was the explanation of the bug and the proposed fix clear, well-structured, and detailed enough for a developer to implement?"
+  ],
+  "metadata": {
+    "context_length": 210595,
+    "files_count": 15,
+    "information_coverage": 0.9218226784268236,
+    "coverage_range": [
+      0.8,
+      1.0
+    ],
+    "generation_timestamp": "2025-08-05T16:18:33.252915"
+  }
+}

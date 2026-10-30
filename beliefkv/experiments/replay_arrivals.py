@@ -3,6 +3,7 @@
 import json
 import math
 from pathlib import Path
+import random
 
 from beliefkv.experiments.arrival_schedule import (
     arrival_schedule_digest, build_poisson_workflow_arrivals,
@@ -35,8 +36,48 @@ def poisson_arrival_plan(workflow_ids, *, rate_per_second, seed, initial_workflo
     }
 
 
+def permuted_poisson_arrival_plan(
+    workflow_ids, *, rate_per_second, seed, permutation_seed, initial_workflows,
+):
+    if type(permutation_seed) is not int or permutation_seed < 0:
+        raise ValueError("arrival permutation requires a nonnegative independent seed")
+    identities = sorted(workflow_ids)
+    random.Random(permutation_seed).shuffle(identities)
+    plan = poisson_arrival_plan(
+        identities, rate_per_second=rate_per_second, seed=seed,
+        initial_workflows=initial_workflows,
+    )
+    if initial_workflows <= 0:
+        raise ValueError("permuted warm arrivals require an initial population")
+    return {
+        **plan, "schema_version": 4, "mode": "permuted_warm_start_poisson",
+        "permutation_seed": permutation_seed,
+    }
+
+
 def validate_arrival_plan(plan, workflow_ids):
     identities = list(workflow_ids)
+    if (plan.get("schema_version"), plan.get("mode")) == (3, "simultaneous"):
+        from beliefkv.experiments.workload_mix import burst_arrivals
+
+        rows = plan.get("arrival_schedule", ())
+        ordered_ids = [row.get("workflow_id") for row in rows]
+        if (
+            len(identities) != len(ordered_ids)
+            or set(identities) != set(ordered_ids)
+            or plan != burst_arrivals(ordered_ids)
+        ):
+            raise ValueError("burst arrivals differ from the declared workflow population")
+        return plan
+    if (plan.get("schema_version"), plan.get("mode")) == (4, "permuted_warm_start_poisson"):
+        expected = permuted_poisson_arrival_plan(
+            identities, rate_per_second=plan.get("rate_per_second"), seed=plan.get("seed"),
+            permutation_seed=plan.get("permutation_seed"),
+            initial_workflows=plan.get("initial_workflows"),
+        )
+        if plan != expected:
+            raise ValueError("permuted arrivals differ from the seeded population and slots")
+        return expected
     if (
         (plan.get("schema_version"), plan.get("mode")) not in (
             (1, "poisson"), (2, "warm_start_poisson"),

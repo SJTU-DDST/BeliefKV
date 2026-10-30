@@ -5134,7 +5134,7 @@ def _run_workflow(
     completion: WorkflowCompletion | None = None
     try:
         backend.start()
-        adapter.start()
+        adapter.start(task_instructions=workload.problem_statement)
         deadline_controller.start(config.loop_guard.activation_wall_clock_s)
         if config.mode == "autonomous":
             result, plan_payload, child_reports = _run_autonomous(

@@ -1,0 +1,56 @@
+{
+  "id": "python_web_social_hard_001_bug_investigation_medium_01",
+  "task_category": "bug_investigation",
+  "difficulty": "medium",
+  "title": "Stale Course Module Data Returned by API due to Flawed Cache Invalidation",
+  "description": "The CampusConnect 360 platform is experiencing a data consistency issue. When an administrator updates a course module's details (e.g., its title) via the admin panel, the changes are not immediately reflected on the main course page. Users report seeing the old module information for several minutes before it finally updates. Deeper investigation reveals that the API endpoint responsible for listing all modules for a course (`GET /api/v1/courses/{course_id}/modules`) is serving stale data. However, if one were to query for a single module's details directly, the correct, updated information is returned. This suggests a caching problem related to the list of modules.",
+  "context_files": [
+    "CampusConnect360/services/course_service/tests/test_course_logic.py",
+    "CampusConnect360/services/course_service/app/db/repository.py",
+    "CampusConnect360/services/course_service/tests/test_courses_api.py",
+    "src/config.py",
+    "src/utils.py",
+    "CampusConnect360/services/course_service/app/api/v1/modules.py",
+    "CampusConnect360/services/auth_service/app/api/v1/auth.py",
+    "CampusConnect360/services/auth_service/app/main.py",
+    "CampusConnect360/services/auth_service/app/services/jwt_service.py",
+    "CampusConnect360/services/course_service/app/__init__.py",
+    "CampusConnect360/docs/architecture.md",
+    "CampusConnect360/services/payment_service/app/services/stripe_webhook_handler.py",
+    "CampusConnect360/services/course_service/app/schemas/course_schema.py",
+    "CampusConnect360/services/payment_service/app/main.py",
+    "CampusConnect360/services/notification_service/app/worker.py",
+    "CampusConnect360/services/notification_service/app/consumer.py",
+    "CampusConnect360/services/social_timeline_service/app/main.py",
+    "CampusConnect360/services/course_service/app/main.py",
+    "CampusConnect360/docs/C4_diagrams.md",
+    "CampusConnect360/services/social_timeline_service/app/api/v1/posts.py",
+    "src/constants.py"
+  ],
+  "context_length": 279187,
+  "task_prompt": "You are a senior developer tasked with fixing a critical bug in the Course Service. Users are reporting that updates to course modules are not appearing in real-time.\n\nYour objectives are:\n1.  Investigate the code to find the root cause of this stale data issue.\n2.  Identify the specific file(s) and function(s) that contain the flawed logic.\n3.  Provide a clear, step-by-step explanation of why the bug occurs. The explanation should detail the interaction between the data retrieval, data update, and caching mechanisms.\n4.  Propose a precise code modification to resolve the bug, ensuring that module updates are immediately reflected.",
+  "expected_approach": "An expert developer would approach this problem systematically:\n1.  **Hypothesize:** The symptoms (stale data that eventually updates) strongly suggest a caching issue. The primary hypothesis is that a cache is not being properly invalidated after an update.\n2.  **Analyze the Read Path:** Start by examining the endpoint that serves the stale data: `GET /api/v1/courses/{course_id}/modules`. This would lead the developer to `CampusConnect360/services/course_service/app/api/v1/modules.py`.\n3.  **Trace Data Source:** In `modules.py`, the developer would trace where the data comes from. The API handler will call a function in the service or repository layer, likely in `CampusConnect360/services/course_service/app/db/repository.py`. Let's assume a function named `get_modules_by_course_id` exists there.\n4.  **Confirm Caching:** The developer would inspect `get_modules_by_course_id` and confirm that it uses a caching layer. They would identify the pattern: check cache -> if hit, return cached data -> if miss, query DB, store result in cache, and then return. They would note the specific cache key being used, for example: `f'course:{course_id}:modules'`. \n5.  **Analyze the Write Path:** Next, the developer would investigate the update logic. This corresponds to the `PUT /api/v1/modules/{module_id}` endpoint, also defined in `modules.py`. \n6.  **Trace Update Logic:** This endpoint handler would call an update function in the repository, for example, `update_module(module_id, ...)` in `repository.py`.\n7.  **Identify the Flaw:** By inspecting `update_module`, the developer would discover the core of the bug. The function updates the module in the database but fails to invalidate the cache for the *list of modules*. It might invalidate a cache for the single module (e.g., `f'module:{module_id}'`) or, more likely, it does not perform any cache invalidation at all because it lacks the `course_id` needed to construct the list's cache key (`f'course:{course_id}:modules'`).\n8.  **Formulate Solution:** The developer would conclude that to fix this, the `update_module` function must first retrieve the module's `course_id` before performing the update. After the database update is successful, it must then use that `course_id` to explicitly delete the `f'course:{course_id}:modules'` key from the cache.",
+  "ground_truth": {
+    "root_cause": "The root cause is a flawed cache invalidation strategy. The function responsible for updating a single module (`update_module` in the repository) successfully modifies the data in the database but fails to invalidate the separate cache entry that stores the list of all modules for the parent course. As a result, subsequent requests for the module list receive the old, cached version until its Time-To-Live (TTL) expires.",
+    "file_and_function": "The bug is located in the `update_module` function within `CampusConnect360/services/course_service/app/db/repository.py`.",
+    "explanation": "1. The `get_modules_by_course_id` function in `repository.py` fetches the list of modules for a given course. To improve performance, it caches this entire list in Redis under a key like `f'course:{course_id}:modules'`.\n2. When an admin updates a single module, the frontend calls the `PUT /api/v1/modules/{module_id}` endpoint.\n3. This endpoint invokes the `update_module(module_id, ...)` function in `repository.py`.\n4. The `update_module` function receives only the `module_id` and the update payload. It does not have the `course_id`. Consequently, while it correctly updates the module's record in the PostgreSQL database, it has no logic to find and delete the `f'course:{course_id}:modules'` cache key.\n5. Therefore, the cache for the module list remains stale, and the `get_modules_by_course_id` function continues to serve the old data until the cache entry expires naturally.",
+    "proposed_fix": "Modify the `update_module` function in `CampusConnect360/services/course_service/app/db/repository.py`. \n\nBefore updating the database, the function must first fetch the existing module to retrieve its `course_id`. After the database update operation completes successfully, the function must use this `course_id` to construct the correct cache key and issue a command to delete it from the cache.\n\n**Example (conceptual code):**\n```python\n# Inside repository.py\n\nasync def update_module(self, module_id: int, module_update: ModuleUpdateSchema) -> Optional[Module]:\n    # 1. Fetch the module to get its course_id\n    module_to_update = await self.db.get(Module, module_id)\n    if not module_to_update:\n        return None\n    \n    course_id_for_cache = module_to_update.course_id\n\n    # ... (code to update module_to_update with data from module_update)\n    \n    await self.db.commit()\n    await self.db.refresh(module_to_update)\n\n    # 2. Invalidate the cache for the list of modules for the parent course\n    cache_key = f'course:{course_id_for_cache}:modules'\n    await self.cache.delete(cache_key)\n\n    return module_to_update\n```"
+  },
+  "evaluation_criteria": [
+    "**Root Cause Identification:** Was the agent able to correctly identify that the problem is due to a failure in cache invalidation?",
+    "**Code Localization:** Did the agent accurately pinpoint the `update_module` function in `CampusConnect360/services/course_service/app/db/repository.py` as the source of the bug?",
+    "**Logical Explanation:** How well did the agent explain the discrepancy between the read path (caching the list) and the write path (failing to invalidate the list cache)?",
+    "**Solution Correctness:** Is the proposed solution logically sound? Does it correctly identify the need to fetch the `course_id` first and then use it to delete the specific list cache key?",
+    "**Efficiency of Investigation:** Did the agent follow a logical path from symptom (stale data) to cause (caching logic), or did it waste time on irrelevant files (e.g., auth service, payment service)?"
+  ],
+  "metadata": {
+    "context_length": 279187,
+    "files_count": 21,
+    "information_coverage": 0.5165184443782527,
+    "coverage_range": [
+      0.4,
+      0.6
+    ],
+    "generation_timestamp": "2025-08-05T18:07:20.118858"
+  }
+}
