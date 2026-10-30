@@ -51,7 +51,7 @@ def main():
             if binding != {name: sha256_file(Path(name)) for name in binding}:
                 raise ValueError("pilot reviewer inputs changed")
             state["checked_at"] = datetime.now(timezone.utc).isoformat()
-            write(args.output_dir / "state.json", state)
+            capture.reservation.write_json(args.output_dir / "state.json", state)
             source = capture.load(args.registration.with_suffix(".state.json"))
             if source_ready(plan, source, alive=lambda value: bool(value) and capture.reservation.alive(value)):
                 break
@@ -85,7 +85,7 @@ def main():
     except BaseException as error:
         state.update(status="stopped_preserve_pilot_evidence", error=repr(error))
     state["finished_at"] = datetime.now(timezone.utc).isoformat()
-    write(args.output_dir / "state.json", state)
+    capture.reservation.write_json(args.output_dir / "state.json", state)
     print(state)
 
 

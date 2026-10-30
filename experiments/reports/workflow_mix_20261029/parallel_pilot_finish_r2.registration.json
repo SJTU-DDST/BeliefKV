@@ -1,0 +1,56 @@
+{
+  "registered_at": "2026-10-30T09:49:04.182704+00:00",
+  "application": {
+    "commit": "392490cc366b4ff4f1aa7e45e59b4cfcdaa263ef",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "1bea3206c7e6c74c810b27dd000323fc23e6b0ba61864151fe3a4cdd5cf79606"
+  },
+  "source_registration": "/home/longhao/experiment/ops/workflow_parallel_pilot6_source_20261030_r2.registration.json",
+  "source_registration_sha256": "9b4916a86f8a0ad9a65a3778fc7e98bcabc5791a4fea75d3af7b3046a91c606a",
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-pilot6r2-capture-392490cc366b/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_parallel_pilot6_source_20261030_r2.registration.json",
+    "--declaration",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/parallel_pilot6_declaration.json",
+    "--model-cost-evidence",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/parallel_pilot_finish_r2"
+  ],
+  "process": {
+    "pid": 2064549,
+    "state": "R",
+    "ppid": 2064531,
+    "start_ticks": "752400728",
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-pilot6r2-capture-392490cc366b/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_parallel_pilot6_source_20261030_r2.registration.json",
+      "--declaration",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/parallel_pilot6_declaration.json",
+      "--model-cost-evidence",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/parallel_pilot_finish_r2"
+    ]
+  },
+  "log": "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/parallel_pilot_finish_r2.worker.log",
+  "nice": 19,
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "waits_complete_native_work_fresh_drain_and_actual_owned_exit": true,
+  "GPU_followup_registered": false,
+  "performance_accepted": false
+}

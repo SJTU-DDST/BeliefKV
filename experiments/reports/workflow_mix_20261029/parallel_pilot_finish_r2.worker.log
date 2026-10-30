@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/home/longhao/experiment/.worktrees/beliefkv-pilot6r2-capture-392490cc366b/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py", line 93, in <module>
+    main()
+  File "/home/longhao/experiment/.worktrees/beliefkv-pilot6r2-capture-392490cc366b/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py", line 88, in main
+    write(args.output_dir / "state.json", state)
+  File "/home/longhao/experiment/.worktrees/beliefkv-pilot6r2-capture-392490cc366b/scripts/train_workflow_work.py", line 43, in write
+    with path.open("x") as handle:
+         ^^^^^^^^^^^^^^
+  File "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/pathlib.py", line 1044, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileExistsError: [Errno 17] File exists: '/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/parallel_pilot_finish_r2/state.json'

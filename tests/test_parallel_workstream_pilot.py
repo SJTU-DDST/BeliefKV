@@ -157,3 +157,49 @@ def test_new_collection_waits_complete_equal_work_and_reviewer_exit(monkeypatch,
     else:
         with pytest.raises(ValueError):
             registration.predecessor_complete(control, oracle, Path("/test/review"), Path("/test/worker"))
+
+
+@pytest.mark.parametrize("failure", (False, True))
+def test_cpu_pilot_reviewer_rewrites_heartbeat_and_persists_terminal_state(tmp_path, monkeypatch, failure):
+    from experiments.reports.workflow_mix_20261029 import finish_parallel_pilot as finish
+    import sys
+
+    source, declaration, cost, output = (tmp_path / name for name in ("source.json", "decl.json", "cost.json", "out"))
+    rows = [{"task_id": f"task-{i}", "project": f"locobench/project-{i}", "eligible": True} for i in range(6)]
+    source.write_text(json.dumps({"run_root": str(tmp_path / "run")}))
+    source.with_suffix(".state.json").write_text("{}")
+    declaration.write_text(json.dumps({
+        "assignments": [{"instance_id": row["task_id"], "project": row["project"]} for row in rows],
+        "shape_review": {},
+    }))
+    cost.write_text(json.dumps({"model_cost_calibration": {"model_seconds_per_work_token": .02}}))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
+    monkeypatch.setattr(sys, "argv", [
+        "finish", "--registration", str(source), "--declaration", str(declaration),
+        "--model-cost-evidence", str(cost), "--output-dir", str(output),
+    ])
+    observations = []
+    def ready(*_args, **_kwargs):
+        observations.append(json.loads((output / "state.json").read_bytes())["status"])
+        return len(observations) >= 3
+    def complete(*_args):
+        if failure:
+            raise ValueError("preserved failure fixture")
+        return {"complete": True}
+    monkeypatch.setattr(finish, "source_ready", ready)
+    monkeypatch.setattr(finish, "audit_finished_source", complete)
+    monkeypatch.setattr(finish.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(finish, "inventory_capture", lambda *_a, **_k: {"workflows": rows})
+    monkeypatch.setattr(finish, "population_summary", lambda values: {"count": len(values)})
+    monkeypatch.setattr(finish, "audit", lambda _arm: {"summary": {"children": 12}})
+    finish.main()
+    state = json.loads((output / "state.json").read_bytes())
+    assert observations == ["waiting_complete_native_pilot"] * 3
+    assert state["status"] == (
+        "stopped_preserve_pilot_evidence" if failure else "complete_pilot_requires_shape_review"
+    )
+    assert state["finished_at"] and state["GPU_followup_registered"] is False
+    if failure:
+        assert "preserved failure fixture" in state["error"]
+    else:
+        assert json.loads((output / "review.json").read_bytes())["all_workflows_naturally_eligible"] is True

@@ -4173,3 +4173,10 @@
   r1 literal identities,no failures/errors/skips,2072inputs/native unchanged.
   Its two added tests traverse actual shell native/Full launch entries with
   the new profile and no GPU. Freeze this repaired source for explicit r2.
+- Parallel pilot GPU r2 actually records from frozen392490cc on18906 after
+  fresh sampler;client has six declared derived tasks. Keep this GPU snapshot
+  unchanged. Its first CPU-only reviewer exits because exclusive-create write()
+  was used for repeated state heartbeats. Preserve its stale state/error log;
+  repair only the offline observer with existing atomic write_json. Twenty
+  focused CPU cases pass,including three heartbeats and successful/failed final
+  states. Relaunch the CPU observer separately,never restart the GPU for this.
