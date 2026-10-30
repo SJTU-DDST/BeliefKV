@@ -4120,3 +4120,10 @@
   complete work,online control-cost acceptance or performance. CPU-only
   review_oracle preserves complete equal work/drain/actual exit and binds the
   exact declared retained control before metrics/plots/mechanism audits.
+- New oracle CPU complete reviewer now actually waits from frozen60d27783,
+  PID2035256/start752041049,nice19/CUDA99999,registered in
+  workflow_mix_20261029/burst_oracle_review_r1.registration.json. Independent
+  liveness/priority/environment inspection passes. It waits complete equal
+  work,fresh drain/actual owned exit then reports metrics/plots/five mechanism
+  audits;it creates no GPU follow-up. Current c5bd820f oracle remains running
+  unchanged and whole-run gains are pending. Keep the global goal active.

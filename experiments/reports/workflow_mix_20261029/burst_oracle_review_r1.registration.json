@@ -1,0 +1,54 @@
+{
+  "registered_at": "2026-10-30T08:49:07.448544+00:00",
+  "application": {
+    "commit": "60d27783b501735bc7ff0b41929a4db176aaa379",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "7ce494389cb4b5ed713ceba0ccf2374f2ae8fcca4d08c9bbbbef6b58fb2648df"
+  },
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/experiments/reports/workflow_mix_20261029/review_oracle.py",
+    "--oracle",
+    "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json",
+    "--control",
+    "/home/longhao/experiment/ops/workflow_mix_burst_full_20261030_r1.registration.json",
+    "--population",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_finish_r1/population.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_oracle_review_r1",
+    "--wait"
+  ],
+  "process": {
+    "pid": 2035256,
+    "state": "R",
+    "ppid": 2035177,
+    "start_ticks": "752041049",
+    "argv": [
+      "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+      "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/experiments/reports/workflow_mix_20261029/review_oracle.py",
+      "--oracle",
+      "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json",
+      "--control",
+      "/home/longhao/experiment/ops/workflow_mix_burst_full_20261030_r1.registration.json",
+      "--population",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_finish_r1/population.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_oracle_review_r1",
+      "--wait"
+    ]
+  },
+  "nice": 19,
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "operator_sha256": "5a7db99dcefd4dcfcd9a0226795b7a2c8d857d0b2bc38c601e71366b4ca7814e",
+  "GPU_action": false,
+  "waits_complete_work_fresh_drain_and_actual_owned_exit": true,
+  "GPU_followup_registered": false,
+  "performance_accepted": false
+}

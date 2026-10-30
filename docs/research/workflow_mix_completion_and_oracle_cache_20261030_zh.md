@@ -199,6 +199,12 @@ decode 曲线、真实容量竞争及原生恢复/JOIN/sibling/EOS 审计，保�
 工作量排序开启、2s 控制、500ms 免费补位关闭和其他固定开关。此观察不代表
 完整 work、完整控制成本或排序性能验收。
 
+CPU 收尾已从独立冻结提交 `60d27783` 实际启动，登记在
+`burst_oracle_review_r1.registration.json`，进程 2035256/start ticks
+752041049；独立检查确认进程存活、nice19、`CUDA_VISIBLE_DEVICES=99999`。
+它等待当前 oracle 的完整结束，目标输出为 `burst_oracle_review_r1/`，
+不注册其他 GPU 实验。运行中的 GPU 源码仍冻结于 `c5bd820f`。
+
 ## 持续到达表的诊断限制
 
 `prepare_main_arrivals.py` 已从完整对照生成 `main_arrivals_r1/`，初始 5 条，
