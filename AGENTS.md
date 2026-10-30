@@ -4063,3 +4063,30 @@
   ranking off and the same user-disabled features off,on fixed new arrivals/
   TraceLab timing. It has not yet run;fresh source-bound position/sampler and
   actual completion/cleanup remain required. Global performance goal is active.
+- New scope18 burst position now passes24exact token/session/native-stop requests,
+  all24native stops,and fresh sampler checks. Frozen44b4aa9c retained Full
+  actually runs on18904,ops/workflow_mix_burst_full_20261030_r1.registration.json.
+  Independent burst_full_entry_r1/live_start_r1 verifies1797completed prefix
+  receipts,source counts/native exact-token flags/position path,nice0 owned
+  watcher/server/driver/scheduler and sole GPU ownership. This is not complete
+  work or performance. Preserve the initial read-only graph-summary type mismatch
+  and its correction;no model retry or running-source change followed.
+  New review_burst completion uses the declared new4246/148235495/607248 work,
+  fresh drain and actual owned exit,instead of the old3674 hardcode.
+- New mixed-workload oracle preparation waits the complete new retained Full
+  and calibrates its model proxy from that control's complete weighted decode.
+  Change only within-category continuous remaining model/tool critical-path
+  ranking,with all non-ranking settings fixed;500ms free dispatch stays off.
+  This is a separately declared comparison,not the old2s/500ms oracle replay.
+  Keep explicit future=true/deployable=false,parallel-max tool semantics,
+  no size-driven active preemption and complete normal tails. New measured
+  model-work tertiles label diagnostics only. Actual complete-event progress,
+  current source-bound CPU,fresh token/session/native-stop/sampler and resource/
+  reservation checks precede the oracle GPU run. Tool-aware bounded-input
+  learned training and sustained-arrival performance remain pending.
+- Mixed-workload bound_cpu_r4 actually passes5243tests plus12subtests,retains
+  all5216prior literal IDs,no failures/errors/skips,2063bound inputs/native
+  unchanged. New completion/calibration tests reject stale work,timing,arrivals,
+  model cost,live owners and stale idle drains. This qualifies the new CPU
+  operators only;cached oracle GPU/performance remain pending. Preserve current
+  Full,all normal tails,user worktree edits and the active incomplete goal.
