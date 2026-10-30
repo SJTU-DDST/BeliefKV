@@ -4681,3 +4681,16 @@
   Separate11periodic-auditor/configtests pass;preserve earlyjournalfixture's
   method-identityfailure and corrected inherited-tick proof. NoGPU comparison
   accepted;fresh committedfreeze/resources/position-and-sampler still required.
+- Sustained52Fullr1 now actually runs from8eb485f1/native434c35dd on18914,
+  ops/workflow_sustained_original52_full_20261030_r1.registration.json.
+  Fresh24exact token/session/native-stop requests(all24native stops)and1/8/24
+  sampler pass. Independentgpu_entry_sustained52_r1/live_full_r1 verifies
+  216completeprefixreceipts/19arrivals,soleGPU/nice0,actual2048/running24/
+  mixedoff/dispatch500/control2000/worksortingoff/toolprefetchoff/layeroff,
+  predictedoffload/prepareon. CPUreviewer2598458/start756403143actuallywaits
+  nice19/CUDA99999,full_review_sustained52_r1.registration.json;after complete
+  work/freshdrain/ownedexit it runs control/cohort/supply/periodic audits.
+  NoGPUfollowup registered. Early107commonstatesready-pausedP504,4logical
+  setcompetitions/127actualticks,not fullentrycoverage/physicalfit/JCTgain.
+  Intrinsicfixedtool/modelcausalpathP80/P20=3.911604isCPUproxyonly. Keepall
+  normal tails and reviewlate supply/Hostbefore phase1acceptance ororacle.

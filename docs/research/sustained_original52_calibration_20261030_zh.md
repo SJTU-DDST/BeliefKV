@@ -82,3 +82,34 @@ oracle原型已修正参考集合被提前排序、超时丢弃可行改进和�
 独立的周期决策审计与配置检查共11项通过。早期包装tick的两项失败证据
 保留，修正后继续继承原控制方法。GPU资源和真实position/sampler检查
 仍是独立的启动条件。
+
+## 实际启动与早期观察
+
+冻结应用`8eb485f1`、原生树`434c35dd`，登记为
+`ops/workflow_sustained_original52_full_20261030_r1.registration.json`，
+端口18914。实际position检查完成24条精确token/session请求，24条均走
+原生stop；真实native sampler保留，1/8/24采样组件检查完成后才登记Full。
+独立`gpu_entry_sustained52_r1/live_full_r1.json`验证实际服务及唯一GPU进程
+nice0、running24/2048/mixed关闭、500ms补位/2秒控制、排序关闭和物理配置。
+早期前缀已核验19个workflow到达及216份精确完成回执，不是完整结果。
+
+CPU审查器PID2598458从nice19、CUDA隐藏环境实际等待，完成并排空、owned
+退出后顺序运行完整控制、固定测量组、供给和周期决策四项审查。没有登记
+oracle、学习预测或其他baseline GPU后继。
+
+早期共同窗口107份状态的ready-paused中位数为4，application-ready
+均值16.27，在途workflow均值18.64；暂未出现有逻辑空额度却无ready候选
+的状态。127次实际周期控制有4次跨workflow逻辑集合竞争，15次恢复中
+没有立即被原压力撤销，14次已关联后续精确attempt服务；独立日志前缀
+的时间边界不同，尚未关联的一次仍是未知。这里未覆盖全部500ms补位
+候选，也没有反事实证明native物理准入，更不代表整轮选择收益。
+
+早期物理样本HBM驻留约99.87%、Host约71.45%；驻留包含缓存及在途状态，
+不是独占有用agent工作集。已服务同session公共前缀丢失代理仍为0。
+这些是`live_supply_r1`的有界前缀，必须等全程确认后半程供给及Host压力。
+
+按先前46控制的固定模型成本代理，把本轮固定工具overlay纳入因果路径，
+模型＋工具路径P80/P20=3.911604，模型总工作＋外部路径代理为3.623953。
+工具路径取并行max，未累加所有工具。它们是
+`remaining_original_projects_20261030/intrinsic_work_r1.json`的CPU诊断，
+不含队列，且假设各模型操作独立服务，不能当成共享GPU的实际JCT预测。

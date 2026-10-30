@@ -112,6 +112,10 @@ S0取原入口顺序而非先被oracle排序；JOIN已获得的恢复权限作�
 身份，2,169项输入及原生源码在执行中未变化。
 当前仍在第一阶段；oracle和预测收益未建立，没有登记新的oracle或
 baseline GPU实验。完整判断见[控制验收](../research/sustained_original46_control_20261030_zh.md)。
+新的52项目Full已从冻结`8eb485f1`实际运行，24条token/session/原生stop
+及1/8/24采样检查完成。独立CPU审查实际等待完整结束后输出cohort、供给
+和精确周期决策。早期ready-paused供给改善，仍不提前接受整个负载或
+oracle收益。见[52项目校准](../research/sustained_original52_calibration_20261030_zh.md)。
 
 会话目标登记接口无法改写尚未完成的旧目标；本次尝试被接口拒绝。
 旧目标没有被虚假标为完成；实际执行顺序以本次用户要求和本文为准。
