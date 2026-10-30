@@ -48,9 +48,10 @@ class RootWorkBudgetMiddleware(ChildWorkBudgetMiddleware):
     notice_key = "root_work_notice"
     audit_prefix = "root_work_budget"
 
-    def __init__(self, *, adapter, **kwargs):
+    def __init__(self, *, adapter, parallel_tool_name=None, **kwargs):
         super().__init__(**kwargs)
         self.adapter = adapter
+        self.parallel_tool_name = parallel_tool_name
 
     def _model_call_progress(self, request):
         joins = self.adapter.completed_join_count()
@@ -80,7 +81,13 @@ class RootWorkBudgetMiddleware(ChildWorkBudgetMiddleware):
             )
             + "Use the observed evidence to narrow the next integration or validation "
             "milestone. Delegate substantial independent remaining questions through "
-            "task when useful, then integrate their reports. Complete active commands, "
+            + (
+                f"{self.parallel_tool_name} when ready together, or task for an "
+                "indivisible checkpoint, then integrate their reports. "
+                if self.parallel_tool_name else
+                "task when useful, then integrate their reports. "
+            )
+            + "Complete active commands, "
             "edits, pending JOINs and necessary focused validation. This does not "
             "limit total workflow turns: do not skip requirements, pad delegation, "
             "or finalize unfinished work to meet a turn count. Continue genuine "

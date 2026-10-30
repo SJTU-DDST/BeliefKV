@@ -130,6 +130,9 @@ from beliefkv.runtime.checkpoint_subagents import (
     CheckpointSubAgentMiddleware, PARALLEL_TASK_TOOL, checkpoint_schema,
     parallel_checkpoint_schema,
 )
+from beliefkv.runtime.checkpoint_repository_tools import (
+    FOCUSED_TOOL_DESCRIPTIONS, FOCUSED_TOOL_PROFILE, configure_focused_read_tool,
+)
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 from beliefkv.runtime.experiment_randomness import seed_experiment_process
 
@@ -390,6 +393,12 @@ class SweBenchWorkload:
     frozen_repository_context: FrozenRepositoryContext | None = None
     test_entrypoint_scope: str | None = None
     task_access: str = "read_write"
+    child_task_access: str = "inherit"
+    repository_tool_profile: str = "native"
+
+    @property
+    def children_read_only(self):
+        return self.task_access == "read_only" or self.child_task_access == "read_only"
 
 
 def repository_sandbox_contract(workload: SweBenchWorkload) -> str:
@@ -469,6 +478,8 @@ def load_workload_bundle(path: Path) -> WorkloadBundle:
             sandbox_environment=project_environment(item.get("sandbox_environment")),
             task_kind=str(item.get("task_kind", "swebench")),
             task_access=str(item.get("task_access", "read_write")),
+            child_task_access=str(item.get("child_task_access", "inherit")),
+            repository_tool_profile=str(item.get("repository_tool_profile", "native")),
             frozen_repository_context=parse_repository_context(
                 item.get("frozen_repository_context")
             ),
@@ -480,6 +491,10 @@ def load_workload_bundle(path: Path) -> WorkloadBundle:
     for item in workloads:
         if item.task_access not in ("read_only", "read_write"):
             raise ValueError(f"unsupported task access: {item.task_access}")
+        if item.child_task_access not in ("inherit", "read_only"):
+            raise ValueError(f"unsupported child task access: {item.child_task_access}")
+        if item.repository_tool_profile not in ("native", FOCUSED_TOOL_PROFILE):
+            raise ValueError(f"unsupported repository tool profile: {item.repository_tool_profile}")
         if item.task_kind not in ("swebench", "locobench_agent"):
             raise ValueError(f"unsupported repository task kind: {item.task_kind}")
         if item.task_kind == "locobench_agent" and item.frozen_repository_context is None:
@@ -762,6 +777,13 @@ class DockerWorkspaceBackend(FilesystemBackend, SandboxBackendProtocol):
         if relative == ".":
             return self.shell_workdir
         return f"{self.shell_workdir}/{relative}"
+
+    def glob(self, pattern: str, path: str | None = None):
+        # Shell-absolute patterns name the mount, not a directory inside it.
+        prefix = self.shell_workdir + "/"
+        if pattern.startswith(prefix):
+            pattern, path = pattern[len(prefix):], self.shell_workdir
+        return super().glob(pattern, path)
 
     def _docker_environment_args(self) -> list[str]:
         path = (
@@ -2610,6 +2632,8 @@ again merely to establish a known path. If location is the actual unknown, assig
 only that location question and request its result before broadening the scope.
 Keep the primary implementation, integration and final verification in the root.
 Children supply independent bounded evidence or a small disjoint supporting edit.
+Keep evidence tables, integration decisions and the final report in the root.
+Do not delegate a new child only to reformat already established conclusions.
 After a material root change, use complementary reviews of the changed boundaries
 when needed; avoid one serial child per broad phase. A newly discovered unrelated
 failure becomes a precise handoff, not permission to expand every child task.
@@ -3142,9 +3166,16 @@ def _native_completion_stage_tool() -> BaseTool:
 
 
 def _filesystem_middleware(
-    backend: DockerWorkspaceBackend, *, allow_direct_edits: bool
+    backend: DockerWorkspaceBackend, *, allow_direct_edits: bool, profile: str = "native",
 ) -> FilesystemMiddleware:
-    middleware = FilesystemMiddleware(backend=backend)
+    if profile not in ("native", FOCUSED_TOOL_PROFILE):
+        raise ValueError("unsupported repository tool profile")
+    middleware = FilesystemMiddleware(
+        backend=backend,
+        custom_tool_descriptions=(FOCUSED_TOOL_DESCRIPTIONS if profile == FOCUSED_TOOL_PROFILE else None),
+    )
+    if profile == FOCUSED_TOOL_PROFILE:
+        configure_focused_read_tool(next(tool for tool in middleware.tools if tool.name == "read_file"))
     if not allow_direct_edits:
         middleware.tools = [
             item
@@ -3410,6 +3441,14 @@ def _autonomous_system_prompt(
             else AUTONOMOUS_NATIVE_SYSTEM_PROMPT
         )
     return prompt + (
+        "\nCHILD ACCESS: READ ONLY. Keep implementation, edits, integration, "
+        "evidence tables and final reporting in the root. Delegate bounded "
+        "source checks, reproduction evidence and reviews to children; they "
+        "cannot accept edit assignments. After a material change, group new "
+        "independent boundary checks when useful, then integrate their evidence. "
+        "Do not add checks merely to reach a round count.\n"
+        if workload.child_task_access == "read_only" else ""
+    ) + (
         "\nTASK ACCESS: READ ONLY. This assignment requests evidence, not "
         "a patch. Keep project source and tests unchanged, and delegate "
         "read-only checkpoints. Report missing interfaces or bugs without "
@@ -3668,7 +3707,7 @@ def _autonomous_subagents(
     subagents: list[dict[str, Any]] = []
     read_only = (
         config.subagent_fanout_profile in READ_ONLY_SUBAGENT_FANOUT_PROFILES
-        or workload.task_access == "read_only"
+        or workload.children_read_only
     )
     specs = (
         PARALLEL_ANALYSIS_SUBAGENT_SPECS
@@ -3730,9 +3769,9 @@ def _autonomous_subagents(
                     )
                     + ("\n\n" + PARALLEL_WORKSTREAM_CHILD_PROMPT if parallel_workstreams else "")
                     + (
-                        "\nThis workflow permits read-only evidence. Do not edit "
+                        "\nThis child permits read-only evidence. Do not edit "
                         "project source or tests; return findings to the parent.\n"
-                        if workload.task_access == "read_only" else ""
+                        if read_only else ""
                     )
                     + (
                         budget_instruction(
@@ -3764,7 +3803,8 @@ def _autonomous_subagents(
                     ),
                     *([] if parallel_workstreams else [TodoListMiddleware()]),
                     _filesystem_middleware(
-                        backend, allow_direct_edits=not read_only
+                        backend, allow_direct_edits=not read_only,
+                        profile=workload.repository_tool_profile,
                     ),
                     _context_lifecycle_middleware(
                         config,
@@ -3815,7 +3855,7 @@ def _autonomous_subagents(
             subagents[-1]["middleware"].extend([
                 _task_middleware(
                     config, adapter,
-                    checkpoint_read_only=workload.task_access == "read_only",
+                    checkpoint_read_only=workload.children_read_only,
                     checkpoint_parent_role=name, checkpoint_parent_depth=1,
                     backend=backend,
                     private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
@@ -3885,6 +3925,7 @@ def _build_autonomous_agent(
         TodoListMiddleware(),
         _filesystem_middleware(
             backend, allow_direct_edits=workload.task_access != "read_only",
+            profile=workload.repository_tool_profile,
         ),
     ]
     dynamic = config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
@@ -3894,6 +3935,10 @@ def _build_autonomous_agent(
             adapter=adapter, warning_calls=config.root_work_budget_warning_calls,
             target_calls=config.root_work_budget_target_calls,
             audit=backend.audit, scope="autonomous:supervisor",
+            parallel_tool_name=(
+                PARALLEL_TASK_TOOL
+                if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+            ),
         ))
     if delegation_enabled and dynamic:
         middleware.insert(0, DynamicDelegationPromptMiddleware(
@@ -3914,7 +3959,7 @@ def _build_autonomous_agent(
         middleware.append(
             _task_middleware(
                 config, adapter,
-                checkpoint_read_only=workload.task_access == "read_only",
+                checkpoint_read_only=workload.children_read_only,
                 backend=backend,
                 private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                 **({
@@ -5263,11 +5308,11 @@ def _run_workflow(
         root_metadata,
         control_sink=control_sink,
         task_arguments_schema=(
-            checkpoint_schema(read_only=workload.task_access == "read_only")
+            checkpoint_schema(read_only=workload.children_read_only)
             if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
         ),
         parallel_task_arguments_schema=(
-            parallel_checkpoint_schema(read_only=workload.task_access == "read_only")
+            parallel_checkpoint_schema(read_only=workload.children_read_only)
             if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
         ),
         reusable_subagents=(

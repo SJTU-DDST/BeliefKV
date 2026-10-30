@@ -4425,3 +4425,21 @@
   2100inputs/native unchanged. Actual complete_review_r1 passes complete
   source/drain/ownedexit and retains six shape/conformance shortfalls.
   No natural capture of this role repair or formal comparison has run.
+- Latest user rejects narrowing original dataset deliverables to create short
+  tasks. Withdraw focused_review_pilot6_20261030 before GPU registration;keep
+  its prepared inputs and CPU evidence,never launch it. Prior completed derived
+  pilots retain their historical identities,not original-task success labels.
+  New candidates must preserve complete original title/description/task_prompt,
+  original scenario IDs and pinned hashes. Select genuine simpler originals.
+  Short-context projects are explicitly allowed;also retain long-context tasks.
+  Context length,dataset difficulty and measured work are separate dimensions.
+  Keep each root on a distinct original project;do not select on Full wins or
+  native recomputation. Source/tests remain agent responsibilities. See
+  original_task_selection_20261030_zh.md and the withdrawn candidate's marker.
+- The withdrawn candidate's complete bound_cpu_r1 actually passes5629tests
+  and12subtests,retaining5609literalIDs,2107sourceinputs/native unchanged.
+  Runtime glob now maps mount-absolute patterns back to the workspace root;
+  seven actual sync/async regression cases fail on the prior code. Optional
+  focused400 repository tools/readonly-child protocol remain disabled by
+  default and do not authorize changing original task requirements. No new
+  natural GPU source or comparison is qualified by these CPU results.

@@ -169,18 +169,19 @@ def configuration(tmp_path, profile=NESTED_IN_GRAPH_PROFILE):
 
 
 @pytest.mark.parametrize("deliver_control", [False, True])
-@pytest.mark.parametrize("profile,source_context,task_access", [
-    pytest.param(NESTED_IN_GRAPH_PROFILE, False, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-False"),
-    pytest.param(NESTED_IN_GRAPH_PROFILE, True, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-True"),
-    pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, False, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-False"),
-    pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, True, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-True"),
-    pytest.param(SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=SHORT_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
-    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, False, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-False"),
-    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
-    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_only", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-read_only"),
+@pytest.mark.parametrize("profile,source_context,task_access,child_access,tool_profile", [
+    pytest.param(NESTED_IN_GRAPH_PROFILE, False, "read_write", "inherit", "native", id=NESTED_IN_GRAPH_PROFILE + "-False"),
+    pytest.param(NESTED_IN_GRAPH_PROFILE, True, "read_write", "inherit", "native", id=NESTED_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, False, "read_write", "inherit", "native", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-False"),
+    pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, True, "read_write", "inherit", "native", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", "inherit", "native", id=SHORT_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, False, "read_write", "inherit", "native", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-False"),
+    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", "inherit", "native", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_only", "inherit", "native", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-read_only"),
+    pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", "read_only", "focused_checkpoint_v1", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-review-children"),
 ])
 def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
-    tmp_path, monkeypatch, deliver_control, profile, source_context, task_access,
+    tmp_path, monkeypatch, deliver_control, profile, source_context, task_access, child_access, tool_profile,
 ):
     audit = harness.JsonlAudit(tmp_path / "audit.jsonl")
     workspace = tmp_path / "workspace"
@@ -197,11 +198,11 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         ),
         control_sink=queued, native_radix_sessions=sessions,
         task_arguments_schema=(
-            harness.checkpoint_schema(read_only=task_access == "read_only")
+            harness.checkpoint_schema(read_only=task_access == "read_only" or child_access == "read_only")
             if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
         ),
         parallel_task_arguments_schema=(
-            harness.parallel_checkpoint_schema(read_only=task_access == "read_only")
+            harness.parallel_checkpoint_schema(read_only=task_access == "read_only" or child_access == "read_only")
             if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
         ),
     )
@@ -218,6 +219,7 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         instance_id="fixture-1", repo="fixture/repo", base_commit="abc",
         problem_statement="Controlled nested delegation.", difficulty="unknown",
         task_access=task_access,
+        child_task_access=child_access, repository_tool_profile=tool_profile,
     )
     if source_context:
         from dataclasses import replace
@@ -287,8 +289,16 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         )
     if task_access == "read_only":
         assert all(
-            not {"apply_patch_tool", "write_file", "edit_file"} & set(row["tools"])
+            not {"apply_patch", "apply_patch_tool", "write_file", "edit_file"} & set(row["tools"])
             for row in model._requests
+        )
+    if child_access == "read_only":
+        assert all(
+            not {"apply_patch", "apply_patch_tool", "write_file", "edit_file"} & set(row["tools"])
+            for row in model._requests if row["role"] != "root"
+        )
+        assert all(
+            "apply_patch" in row["tools"] for row in model._requests if row["role"] == "root"
         )
 
     graph = RuntimeCausalContextGraph()

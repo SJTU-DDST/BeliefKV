@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="7" time="1.767" timestamp="2026-10-30T07:42:03.206398-07:00" hostname="ddst-12"><testcase classname="tests.test_checkpoint_repository_tools" name="test_shell_absolute_glob_matches_the_existing_mounted_file[False-None]" time="0.003"><failure message="AssertionError: assert [] == ['/workspace/...l_sharing.py']&#10;  &#10;  Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'&#10;  Use -v to get more diff">tests/test_checkpoint_repository_tools.py:26: in test_shell_absolute_glob_matches_the_existing_mounted_file
+    assert [item["path"] for item in result.matches] == [
+E   AssertionError: assert [] == ['/workspace/...l_sharing.py']
+E     
+E     Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_checkpoint_repository_tools" name="test_shell_absolute_glob_matches_the_existing_mounted_file[False-/workspace]" time="0.002"><failure message="AssertionError: assert [] == ['/workspace/...l_sharing.py']&#10;  &#10;  Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'&#10;  Use -v to get more diff">tests/test_checkpoint_repository_tools.py:26: in test_shell_absolute_glob_matches_the_existing_mounted_file
+    assert [item["path"] for item in result.matches] == [
+E   AssertionError: assert [] == ['/workspace/...l_sharing.py']
+E     
+E     Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_checkpoint_repository_tools" name="test_shell_absolute_glob_matches_the_existing_mounted_file[False-/workspace/pkg]" time="0.002"><failure message="AssertionError: assert [] == ['/workspace/...l_sharing.py']&#10;  &#10;  Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'&#10;  Use -v to get more diff">tests/test_checkpoint_repository_tools.py:26: in test_shell_absolute_glob_matches_the_existing_mounted_file
+    assert [item["path"] for item in result.matches] == [
+E   AssertionError: assert [] == ['/workspace/...l_sharing.py']
+E     
+E     Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_checkpoint_repository_tools" name="test_shell_absolute_glob_matches_the_existing_mounted_file[True-None]" time="0.003"><failure message="AssertionError: assert [] == ['/workspace/...l_sharing.py']&#10;  &#10;  Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'&#10;  Use -v to get more diff">tests/test_checkpoint_repository_tools.py:26: in test_shell_absolute_glob_matches_the_existing_mounted_file
+    assert [item["path"] for item in result.matches] == [
+E   AssertionError: assert [] == ['/workspace/...l_sharing.py']
+E     
+E     Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_checkpoint_repository_tools" name="test_shell_absolute_glob_matches_the_existing_mounted_file[True-/workspace]" time="0.002"><failure message="AssertionError: assert [] == ['/workspace/...l_sharing.py']&#10;  &#10;  Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'&#10;  Use -v to get more diff">tests/test_checkpoint_repository_tools.py:26: in test_shell_absolute_glob_matches_the_existing_mounted_file
+    assert [item["path"] for item in result.matches] == [
+E   AssertionError: assert [] == ['/workspace/...l_sharing.py']
+E     
+E     Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_checkpoint_repository_tools" name="test_shell_absolute_glob_matches_the_existing_mounted_file[True-/workspace/pkg]" time="0.002"><failure message="AssertionError: assert [] == ['/workspace/...l_sharing.py']&#10;  &#10;  Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'&#10;  Use -v to get more diff">tests/test_checkpoint_repository_tools.py:26: in test_shell_absolute_glob_matches_the_existing_mounted_file
+    assert [item["path"] for item in result.matches] == [
+E   AssertionError: assert [] == ['/workspace/...l_sharing.py']
+E     
+E     Right contains one more item: '/workspace/pkg/src/adapters/social_sharing.py'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_checkpoint_repository_tools" name="test_relative_glob_stays_scoped_and_absolute_glob_cannot_escape_workspace" time="0.002"><failure message="AssertionError: assert [] == ['/workspace/...ace/b/two.py']&#10;  &#10;  Right contains 2 more items, first extra item: '/workspace/a/one.py'&#10;  Use -v to get more diff">tests/test_checkpoint_repository_tools.py:50: in test_relative_glob_stays_scoped_and_absolute_glob_cannot_escape_workspace
+    assert [item["path"] for item in backend.glob("/workspace/**/*.py").matches] == [
+E   AssertionError: assert [] == ['/workspace/...ace/b/two.py']
+E     
+E     Right contains 2 more items, first extra item: '/workspace/a/one.py'
+E     Use -v to get more diff</failure></testcase></testsuite></testsuites>
