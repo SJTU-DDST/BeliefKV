@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="0.390" timestamp="2026-10-29T18:12:52.506885-07:00" hostname="ddst-12"><testcase classname="tests.test_workflow_work_context" name="test_observed_prompt_lengths_are_available_before_first_completion" time="0.000"><failure message="TypeError: WorkflowProgress.features() got an unexpected keyword argument 'feature_schema'">def test_observed_prompt_lengths_are_available_before_first_completion():
+        progress = WorkflowProgress()
+        progress.event(event(Kind.INVOCATION_CREATE, invocation_id="root", relation_type=RelationType.ROOT))
+        progress.started("r", "root", "c", (1,) * 8192)
+&gt;       observed = values(progress)
+                   ^^^^^^^^^^^^^^^^
+
+tests/test_workflow_work_context.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+progress = WorkflowProgress(counts=Counter({'max_depth': 0}), invocations={'root': ('ready', 0)}, tools=set(), joins=set(), compl..., 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), 0)}, seen_calls=set(), root='root', text='')
+
+    def values(progress):
+&gt;       return dict(zip(CONTEXT_FEATURES, progress.features(feature_schema=CONTEXT_SCHEMA)))
+                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: WorkflowProgress.features() got an unexpected keyword argument 'feature_schema'
+
+tests/test_workflow_work_context.py:33: TypeError</failure></testcase><testcase classname="tests.test_workflow_work_context" name="test_worker_uses_model_schema_without_waiting_for_completion" time="0.000"><failure message="ValueError: incompatible workflow work model">def test_worker_uses_model_schema_without_waiting_for_completion():
+&gt;       model = WorkflowWorkModel(context_model_raw())
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_workflow_work_context.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;beliefkv.predictor.workflow_work.WorkflowWorkModel object at 0x7ba6f1656e10&gt;
+raw = {'schema': 'workflow_remaining_model_work_context_v2', 'features': ['input_tokens', 'output_tokens', 'completed_calls', 'tool_calls', 'completed_tools', 'children', ...], 'vocabulary': ['ab'], 'work_thresholds': [10.0, 20.0], ...}
+
+    def __init__(self, raw):
+        import numpy as np
+    
+        if raw.get("schema") != SCHEMA or raw.get("features") != list(FEATURES):
+&gt;           raise ValueError("incompatible workflow work model")
+E           ValueError: incompatible workflow work model
+
+beliefkv/predictor/workflow_work.py:231: ValueError</failure></testcase></testsuite></testsuites>

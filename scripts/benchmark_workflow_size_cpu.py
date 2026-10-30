@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.paper_baselines import ThunderActingDecayWorkingSet, ThunderProgram
 from beliefkv.policy.workflow_size_resume import WorkflowSizeWorkingSet
-from beliefkv.predictor.workflow_work import FEATURES, WorkflowProgress, WorkflowWorkModel
+from beliefkv.predictor.workflow_work import WorkflowProgress, WorkflowWorkModel
 from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
@@ -78,7 +78,7 @@ def main():
     result["initial_task_projection"] = measure(lambda: model.task_projection(task), 40)
     projection = model.task_projection(task)
     result["cached_task_dynamic_inference"] = measure(
-        lambda: model.predict(projection, [1.] * len(FEATURES)),
+        lambda: model.predict(projection, [1.] * len(model.feature_names)),
     )
     prefix = tuple(range(100000))
     warm = WorkflowProgress()

@@ -1,0 +1,102 @@
+{
+  "registered_at": "2026-10-30T00:27:36.858550+00:00",
+  "application": {
+    "commit": "4c3aaeaadb898596f02a9544893bb8f208b256f5",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "2de40e25e168abcaf05c0f3f1f92212b8b58aa97210927395de58a068a95d6bb"
+  },
+  "queue": "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/queue_r2/registration.json",
+  "actions": {
+    "thunder_output": [
+      "scripts/audit_mixed_output_prefix.py",
+      "--registration",
+      "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/thunder_output.json",
+      "--complete"
+    ],
+    "thunder_decode_gaps": [
+      "scripts/audit_prefill_decode_gaps.py",
+      "--registration",
+      "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/thunder_decode_gaps.json",
+      "--complete"
+    ],
+    "full_output": [
+      "scripts/audit_mixed_output_prefix.py",
+      "--registration",
+      "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/full_output.json",
+      "--complete"
+    ],
+    "full_decode_gaps": [
+      "scripts/audit_prefill_decode_gaps.py",
+      "--registration",
+      "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/full_decode_gaps.json",
+      "--complete"
+    ],
+    "causal_jct": [
+      "scripts/audit_causal_jct_paths.py",
+      "--arm",
+      "Thunder=/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay",
+      "--arm",
+      "Full=/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/causal_jct.json"
+    ],
+    "full_native_demand": [
+      "scripts/audit_demand_prefill_pipeline.py",
+      "--registration",
+      "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/full_native_demand.json"
+    ],
+    "full_prefetch": [
+      "scripts/audit_prefetch_lifecycle.py",
+      "--arm",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/full_prefetch.json",
+      "--summary-only"
+    ],
+    "full_siblings": [
+      "scripts/audit_sibling_native_service.py",
+      "--arm",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/full_siblings.json"
+    ],
+    "full_eos": [
+      "scripts/audit_eos_trigger_lifecycle.py",
+      "--registration",
+      "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json",
+      "--expected-receipts",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/replay/native_requests.jsonl",
+      "--output",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/full_eos.json"
+    ]
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/queue_r2/registration.json": "f8a3b44be3c0d2352c40a833ed66a9d3f1266f476a86ddc685ab2027ebd8b27a",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/experiments/reports/join_blocked_layer_groups_20261028/handoff_ack_review.py": "264a8a4f562aa931121bd761477a798a98dd9e678a6fc66c8f79632954d2c8d7",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/experiments/reports/mixed_chunk_20261029/complete_after_pair.py": "5c170b42fb8dd9756496abd683cb48c58487ff11ac1568673a22625aa1871395",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_causal_jct_paths.py": "ef0fe5c6616157c1095dc31cf7d7f634f3b99cf5eac713c7067fc3d8fdd40665",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_demand_prefill_pipeline.py": "8c09cce02bbcc87f079d5af765bec581593c7ff1604d673d31c5eeba6b1cb2e1",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_eos_trigger_lifecycle.py": "e7c206cb836dcd0073cb13ee11adcd609eee6ee37eb4718f2e52b3aee94d5d4b",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_mixed_output_prefix.py": "05b07feb2fff929fcf60685b9930cbd3f0a217a2a1cf95ba2c8c1ba209cbb023",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_prefetch_lifecycle.py": "1929fa4c56deb82074f6e4ec81a798f583a6b87b1d9a8ff0e6f83ed959a7c7f6",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_prefill_decode_gaps.py": "15ef485d7fd6aba066d5cded9376b1642cbc543a5f3b23af58a5393cbacddebd",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_sibling_native_service.py": "543b65c8d27ab0234e68d8d37d00583b00c433b31f40528ffd0bab10fee17276",
+    "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/scripts/audit_staged_native_restore.py": "fd1f8d3b3a7deff03897b02fa2e93f8e7e6abd7ae332e01a1805c0223a68decc"
+  },
+  "GPU_experiment_registered": false,
+  "performance_accepted": false
+}

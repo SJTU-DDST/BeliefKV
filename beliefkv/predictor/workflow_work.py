@@ -22,11 +22,23 @@ FEATURES = (
     "completion_intents",
 )
 SCHEMA = "workflow_remaining_model_work_v1"
+CONTEXT_SCHEMA = "workflow_remaining_model_work_context_v2"
+CONTEXT_FEATURES = FEATURES + (
+    "initial_prompt_tokens", "active_prompt_tokens", "max_prompt_tokens",
+)
 EXECUTION_INPUT_KIND = "task_plus_declared_execution_instructions_v1"
 EXECUTION_CONTROL_FIELDS = frozenset((
     "profile", "minimum_parallel_join", "child_soft_target",
     "root_phase_target", "maximum_spawn_depth",
 ))
+
+
+def feature_names(schema):
+    if schema == SCHEMA:
+        return FEATURES
+    if schema == CONTEXT_SCHEMA:
+        return CONTEXT_FEATURES
+    raise ValueError("incompatible workflow work feature schema")
 
 
 def execution_controls(values):
@@ -164,6 +176,9 @@ class WorkflowProgress:
         if request in self.seen_calls or request in self.active_calls:
             return
         self.active_calls[request] = invocation, context, prompt, 0
+        self.counts["max_prompt_tokens"] = max(self.counts["max_prompt_tokens"], len(prompt))
+        if invocation == self.root and "initial_prompt_tokens" not in self.counts:
+            self.counts["initial_prompt_tokens"] = len(prompt)
         self._state(invocation, "ready")
 
     def generated(self, request, count):
@@ -205,15 +220,19 @@ class WorkflowProgress:
         self._state(invocation, "idle")
         return necessary
 
-    def features(self):
+    def features(self, *, feature_schema=SCHEMA):
+        names = feature_names(feature_schema)
         values = dict(self.counts)
+        if feature_schema == CONTEXT_SCHEMA:
+            # Logical observed prompt lengths, never physical KV occupancy.
+            values["active_prompt_tokens"] = sum(len(call[2]) for call in self.active_calls.values())
         for state, _depth in self.invocations.values():
             if state in ("ready", "running", "tools", "waiting_join"):
                 values[state] = values.get(state, 0) + 1
         values["root_waiting_join"] = int(
             self.root is not None and self.invocations[self.root][0] == "waiting_join",
         )
-        return tuple(float(values.get(name, 0)) for name in FEATURES)
+        return tuple(float(values.get(name, 0)) for name in names)
 
 
 def ngrams(text):
@@ -227,7 +246,9 @@ class WorkflowWorkModel:
     def __init__(self, raw):
         import numpy as np
 
-        if raw.get("schema") != SCHEMA or raw.get("features") != list(FEATURES):
+        self.schema = raw.get("schema")
+        self.feature_names = feature_names(self.schema)
+        if raw.get("features") != list(self.feature_names):
             raise ValueError("incompatible workflow work model")
         self.raw = raw
         self.metadata = raw["metadata"]
@@ -252,7 +273,7 @@ class WorkflowWorkModel:
             "idf", "center", "scale", "static_weight", "dynamic_weight", "bias",
             "hidden_weight", "hidden_bias", "output_weight", "output_bias",
         )}
-        v, f = len(self.vocabulary), len(FEATURES)
+        v, f = len(self.vocabulary), len(self.feature_names)
         h, k = self.arrays["bias"].size, self.arrays["hidden_bias"].size
         shapes = {
             "idf": (v,), "center": (f,), "scale": (f,),
@@ -299,7 +320,10 @@ class WorkflowWorkModel:
 
         a = self.arrays
         features = np.asarray(features)
-        if features.shape != (len(FEATURES),) or not np.isfinite(features).all() or (features < 0).any():
+        if (
+            features.shape != (len(self.feature_names),)
+            or not np.isfinite(features).all() or (features < 0).any()
+        ):
             raise ValueError("invalid observed workflow features")
         numeric = (np.log1p(features) - a["center"]) / a["scale"]
         hidden = np.maximum(0., projection + np.einsum(

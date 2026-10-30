@@ -1,0 +1,57 @@
+{
+  "counts": {
+    "prefill_forwards": 168,
+    "zero_output_member_observations": 4828,
+    "mixed_prefill_forwards": 4128,
+    "decode_output_tokens_inside_prefill": 30522,
+    "decode_forwards": 84272
+  },
+  "worker_intervals": {
+    "prefill_worker_ms": 12464.26509693265,
+    "mixed_prefill_worker_ms": 492884.61113628,
+    "decode_worker_ms": 1492999.9586176127
+  },
+  "native_forward_frontier_ms": 7493023902.805203,
+  "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+  "observed_requests": 3674,
+  "native_completions_within_frontier": 3674,
+  "exact_receipts_in_common_prefix": 3674,
+  "native_completions_without_client_receipts": 0,
+  "requests_without_observed_native_completion": 0,
+  "observed_output_tokens_by_service_role": {
+    "prefill": 3674,
+    "decode": 545997
+  },
+  "observed_total_output_tokens": 549671,
+  "common_completed_output_tokens": 549671,
+  "all_observed_output_ordinals_contiguous": true,
+  "complete_output_conservation": true,
+  "scope": "Sealed output ordinal/identity checks. Open requests and cross-stream prefix differences remain explicit. Worker intervals include waits and compute; no hidden-time, pure-kernel, complete JCT or performance improvement follows from a collecting prefix.",
+  "performance_accepted": false,
+  "observed_at": "2026-10-30T01:14:04.127022+00:00",
+  "registration": "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json",
+  "registration_sha256": "909009434463dd1a61f5c8188a8b167d2be515521ceeebb9978c872bea086bed",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 433991572,
+      "complete_prefix_sha256": "b8fcc12bdacbb6f9d634080553e2f0015a66079aa5769e1e9466f6411c801d9c",
+      "first_read_limit_bytes": 433991572
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 9570951,
+      "complete_prefix_sha256": "c23351a1a4384355763f76c75d3fa7ed65071da7772859c431d9bedbf169e0e6",
+      "first_read_limit_bytes": 9570951
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 13687449,
+      "complete_prefix_sha256": "7c1ed50cd76a14596943bd8b0d347e16f1d00502703a2014261d1c638a49ee3a",
+      "first_read_limit_bytes": 13687449
+    }
+  },
+  "analysis_sources_sha256": {
+    "scripts/audit_mixed_output_prefix.py": "05b07feb2fff929fcf60685b9930cbd3f0a217a2a1cf95ba2c8c1ba209cbb023",
+    "scripts/audit_decode_batch_efficiency.py": "4732b022a8cc8a8489f7f5fc25b547fb876520da6b7be81971f0954dad252c4c",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46"
+  },
+  "GPU_experiment_started": false
+}

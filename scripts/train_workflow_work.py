@@ -17,7 +17,8 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import (
-    FEATURES, SCHEMA, WorkflowProgress, WorkflowWorkModel, ngrams, task_requirements,
+    CONTEXT_SCHEMA, SCHEMA, WorkflowProgress, WorkflowWorkModel, feature_names, ngrams,
+    task_requirements,
 )
 from beliefkv.runtime.replay_token_capture import decode_tokens
 
@@ -134,8 +135,9 @@ def _native_progress_records(path):
                 yield json.loads(line)
 
 
-def export_capture(capture, *, prefill_weight, native_progress=False):
+def export_capture(capture, *, prefill_weight, native_progress=False, feature_schema=SCHEMA):
     """Only completed same-context histories contribute past logical KV work."""
+    feature_names(feature_schema)
     clients = list(capture.glob("client_*/workflows"))
     if len(clients) != 1:
         raise ValueError("capture needs exactly one client workflow population")
@@ -214,7 +216,7 @@ def export_capture(capture, *, prefill_weight, native_progress=False):
             if isinstance(event, dict):
                 progress.generated(event["request_id"], event["output_tokens"])
                 snapshots.append({
-                    "features": progress.features(),
+                    "features": progress.features(feature_schema=feature_schema),
                     "attained_work": progress.counts["input_tokens"] * prefill_weight
                                      + progress.counts["output_tokens"],
                     "event": "native_decode_progress", "observed_ts_ms": event["ts_ms"],
@@ -240,7 +242,7 @@ def export_capture(capture, *, prefill_weight, native_progress=False):
                 )
             if event.kind in SNAPSHOT_EVENTS:
                 snapshots.append({
-                    "features": progress.features(),
+                    "features": progress.features(feature_schema=feature_schema),
                     "attained_work": progress.counts["input_tokens"] * prefill_weight
                                      + progress.counts["output_tokens"],
                     "event": event.kind.value,
@@ -263,6 +265,7 @@ def export_capture(capture, *, prefill_weight, native_progress=False):
 def fit(
     rows, calibration, *, epochs=300, seed=21, split_mode="project",
     hidden_width=64, vocabulary_size=4096, dropout=0., weight_decay=.03,
+    feature_schema=SCHEMA,
 ):
     import numpy as np
     import torch
@@ -274,6 +277,9 @@ def fit(
     random.seed(seed)
     if not rows or not calibration:
         raise ValueError("training and calibration workflows are required")
+    names = feature_names(feature_schema)
+    if any(len(row["features"]) != len(names) for row in (*rows, *calibration)):
+        raise ValueError("workflow training features differ from the declared schema")
     if split_mode not in ("project", "capture", "workflow"):
         raise ValueError("unknown workflow work split mode")
     if (
@@ -341,7 +347,7 @@ def fit(
     ])
     weight = torch.tensor(balanced, dtype=torch.float32)
     static_layer = torch.nn.Linear(len(vocabulary), hidden_width, bias=False)
-    dynamic_layer = torch.nn.Linear(len(FEATURES), hidden_width)
+    dynamic_layer = torch.nn.Linear(len(names), hidden_width)
     hidden_layer = torch.nn.Linear(hidden_width, max(4, hidden_width // 2))
     output_layer = torch.nn.Linear(max(4, hidden_width // 2), 3)
     parameters = list(static_layer.parameters()) + list(dynamic_layer.parameters())
@@ -360,7 +366,7 @@ def fit(
         return tensor.detach().numpy().tolist()
 
     raw = {
-        "schema": SCHEMA, "features": list(FEATURES), "vocabulary": vocabulary,
+        "schema": feature_schema, "features": list(names), "vocabulary": vocabulary,
         "idf": idf.tolist(), "center": center.tolist(), "scale": scale.tolist(),
         "static_weight": array(static_layer.weight.T),
         "dynamic_weight": array(dynamic_layer.weight.T), "bias": array(dynamic_layer.bias),
@@ -514,6 +520,7 @@ def main():
     export.add_argument("--capture", type=Path, action="append", required=True)
     export.add_argument("--prefill-token-weight", type=float, required=True)
     export.add_argument("--native-progress", action="store_true")
+    export.add_argument("--feature-schema", choices=(SCHEMA, CONTEXT_SCHEMA), default=SCHEMA)
     export.add_argument("--output", type=Path, required=True)
     train = sub.add_parser("fit")
     train.add_argument("--dataset", type=Path, required=True)
@@ -535,12 +542,13 @@ def main():
             rows, bound, rejected = export_capture(
                 capture, prefill_weight=args.prefill_token_weight,
                 native_progress=args.native_progress,
+                feature_schema=args.feature_schema,
             )
             values.extend(rows)
             evidence.update(bound)
             rejections.extend(rejected)
         write(args.output, {
-            "schema": SCHEMA, "rows": values, "sources_sha256": evidence,
+            "schema": args.feature_schema, "rows": values, "sources_sha256": evidence,
             "prefill_token_weight": args.prefill_token_weight,
             "work_unit": "explicit_logical_token_work_proxy_not_calibrated_GPU_seconds",
             "rejected_non_natural_workflows": rejections,
@@ -553,6 +561,10 @@ def main():
     dataset, evaluation = (
         json.loads(path.read_bytes()) for path in (args.dataset, args.evaluation_dataset)
     )
+    feature_schema = dataset.get("schema", SCHEMA)
+    feature_names(feature_schema)
+    if evaluation.get("schema", SCHEMA) != feature_schema:
+        raise ValueError("training and evaluation feature schemas differ")
     if dataset["prefill_token_weight"] != evaluation["prefill_token_weight"]:
         raise ValueError("training and evaluation work units differ")
     observation_contract = progress_contract(dataset)
@@ -565,6 +577,8 @@ def main():
         if args.calibration_dataset is None:
             raise ValueError("execution holdout requires a separate calibration dataset")
         calibrated = json.loads(args.calibration_dataset.read_bytes())
+        if calibrated.get("schema", SCHEMA) != feature_schema:
+            raise ValueError("training and calibration feature schemas differ")
         if calibrated["prefill_token_weight"] != dataset["prefill_token_weight"]:
             raise ValueError("calibration work units differ")
         if progress_contract(calibrated) != observation_contract:
@@ -603,6 +617,7 @@ def main():
         training, calibration, epochs=args.epochs, split_mode=args.split_mode,
         hidden_width=args.hidden_width, vocabulary_size=args.vocabulary_size,
         dropout=args.dropout, weight_decay=args.weight_decay,
+        feature_schema=feature_schema,
     )
     raw["metadata"]["validation_scope"] = split_contract["validation_scope"]
     raw["metadata"].update({

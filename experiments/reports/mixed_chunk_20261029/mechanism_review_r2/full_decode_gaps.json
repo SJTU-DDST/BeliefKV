@@ -1,0 +1,48 @@
+{
+  "counts": {
+    "prefill_batches": 4296,
+    "decode_members_in_prefill_batches": 30776,
+    "prefill_batches_before_first_decode": 373,
+    "decode_batches": 84272,
+    "prefill_runs_between_decode_batches": 2960,
+    "continuing_decode_requests_observed": 22336,
+    "continuing_requests_serviced_inside_prefill_run": 22336,
+    "trailing_prefill_batches_without_decode_bookend": 0
+  },
+  "prefill_worker_interval_union_ms": 505348.87622737885,
+  "quiet_decode_gaps": 0,
+  "prefill_worker_ms_in_quiet_decode_gaps": 0,
+  "quiet_request_prefill_interval_ms": 0,
+  "decode_bookend_gap_ms": {
+    "count": 0
+  },
+  "rows": [],
+  "semantics": [
+    "Both decode bookends show positive observed output progress for the same logical request.",
+    "Quiet requests appear in neither prefill nor mixed decode members inside the gap.",
+    "This proves a recorded generation-service gap containing unrelated prefill worker intervals, not continuous native admission or absence of migration.",
+    "Worker intervals include CPU, waits and compute; they are not exclusive CUDA kernel time.",
+    "Per-request interval sums count a shared gap once per continuing request and are not elapsed wall time.",
+    "Intervals before the first decode and after the last decode remain in coverage counters and are not evidence of a bookended gap.",
+    "Mixed chunk can add compute and capacity costs; these gaps are not removable JCT or a mixed-chunk performance counterfactual."
+  ],
+  "performance_accepted": false,
+  "observed_at": "2026-10-30T01:14:12.052126+00:00",
+  "registration": "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json",
+  "registration_sha256": "909009434463dd1a61f5c8188a8b167d2be515521ceeebb9978c872bea086bed",
+  "complete_work_verified": true,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 433991572,
+      "complete_prefix_sha256": "b8fcc12bdacbb6f9d634080553e2f0015a66079aa5769e1e9466f6411c801d9c",
+      "first_read_limit_bytes": 433991572
+    }
+  },
+  "analysis_sources_sha256": {
+    "scripts/audit_prefill_decode_gaps.py": "15ef485d7fd6aba066d5cded9376b1642cbc543a5f3b23af58a5393cbacddebd",
+    "scripts/audit_decode_transfer_envelopes.py": "0db073af82eed12d6b9fd372ba296d9e9dce56b8589dc0176271ee04a583c6c3",
+    "scripts/audit_native_system_costs.py": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46"
+  },
+  "GPU_experiment_started": false
+}

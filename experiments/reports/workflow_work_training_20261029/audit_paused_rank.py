@@ -197,7 +197,7 @@ def audit(arm, source, dataset_path, model_path, *, native_progress=False):
                     continue
                 workflow, request, size = value
                 state = progress[workflow]
-                features = state.features()
+                features = state.features(feature_schema=model.schema)
                 if workflow not in cache or cache[workflow][0] != features:
                     scores = (
                         model.predict(projections[workflow], features)

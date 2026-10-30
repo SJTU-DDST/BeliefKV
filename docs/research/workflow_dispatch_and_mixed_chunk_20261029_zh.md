@@ -4,8 +4,10 @@
 
 保留原 2 秒控制周期 Full。剩余工作量分档及 500ms 补位组合未取得完整
 JCT、全程输出吞吐同时改善，暂不推广，也不因此启动其他 baseline。
-下一步将原 Full 与 ThunderAgent acting-decay 同时开启原生 mixed chunk；
-这是共同的 serving 参数验证，不将其包装为 predictive 调度创新。
+原 Full 与 ThunderAgent acting-decay 同时开启原生 mixed chunk 的配对已完成。
+FULL 相对该轮 Thunder 的 JCT/吞吐改善 3.2445%/2.4997%，但相对原 mixed-off
+FULL 的 JCT/吞吐均回退，保留 mixed-off。这是共同 serving 参数验证，
+不将其包装为 predictive 调度创新，整体明确/重复获益目标仍未达到。
 
 ## 数据与开发验证
 
@@ -129,7 +131,7 @@ GPU 检查仍然失败：24 条已完成请求的在途重叠描述缺少输出�
 `ops/mixed_chunk_thunder_20261029_r2.registration.json` 已实际启动完整
 ThunderAgent acting-decay，使用同一冻结提交和 common 原生树；queue_r2
 在其完整成功、fresh drain 和实际 owned exit 后才启动 Full 的新资格检查
-及完整执行。当前 Full 尚未开始，完整 JCT、吞吐及总体目标均未通过。
+及完整执行。后续两臂现均完整结束，结果见下文；总体目标仍未通过。
 R1 的失败和独立诊断保留，不与 R2 合并为一次成功执行。
 
 `live_start_r2.json` 独立核对实际 mixed=true/chunk2048/running24/seed21、
@@ -163,3 +165,40 @@ Host FULL 池高水位达到 200GB，已有 467 次 Host-hit 请求及大量真�
 它不启动任何 GPU 工作，不自动重试失败，也不覆盖旧报告。
 显式检查工具/普通预取和物理 handoff 仍为关闭；允许的提前恢复来源是
 `join_ticket`。相关 55 个 CPU 测试已通过，运行中的冻结 GPU 源码未变化。
+
+## R2 完整配对
+
+两臂保留全部 18 个 workflow、3,674 请求、145,565,966 输入和 549,671 输出
+token，原生停止、两次新鲜 idle 状态及实际 owned 进程退出均通过。
+三张完整吞吐趋势、分布和 batch/context 图已逐张查看。
+
+| 方法 | Mixed | 平均 JCT / 秒 | Makespan / 秒 | 全程输出 token/s |
+| --- | --- | ---: | ---: | ---: |
+| 原 ThunderAgent acting-decay | 关 | 1504.072304 | 2305.899187 | 238.375989 |
+| 原 2 秒 FULL | 关 | 1439.457324 | 2253.756840 | 243.890996 |
+| 本轮 ThunderAgent acting-decay | 开 | 1525.197388 | 2335.372979 | 235.367543 |
+| 本轮原 2 秒 FULL | 开 | 1475.712067 | 2278.419409 | 241.251017 |
+
+本轮 FULL 相比本轮 Thunder 的 JCT 降低 3.2445%，输出吞吐提高 2.4997%。
+但新 FULL 平均 JCT 比原 FULL 多 36.254743 秒，输出吞吐也降低。控制臂
+同样回退。只有各配置一次完整执行，且应用修订包含已披露的遥测修复，
+不能将其作为 isolated mixed ablation 或预测调度收益。
+
+完整后处理 `mechanism_review_r2/registration.state.json` 已通过全部九项
+CPU 审计，未启动任何新 GPU 工作：
+
+- 两臂全部 549,671 输出均有连续序号并与 exact 原生回执守恒。
+- FULL 的 4,128 个 mixed prefill forward 产生 30,522 个 decode 输出，
+  Thunder 的 3,986 个产生 27,208 个；持续 decode 的 quiet gap 为零。
+- FULL prefill/mixed worker 区间合计 505.348876 秒，普通 decode 区间
+  1492.999959 秒。原 FULL prefill 为 386.068754 秒、decode 为
+  1575.881254 秒；不能把 mixed 整段同时加在 prefill 和 decode 上。
+- 所有 479 个需求恢复 stage、682 个成员均验证原生 ACK 和后续实际服务，
+  2,482,415,665,152 个 untagged H2D 字节完整核对，无未解释余量。
+- 物理 handoff 为零；提前恢复来源只有 `join_ticket`，工具与普通预取关闭。
+
+FULL 当前 H2D/D2H 为 2724.139893/1006.907130 GB，原 FULL 为
+2659.224748/939.598381 GB，迁移并未减少。以上区间是运行时/等待在内的
+worker 观测，字节是实际传输量，均不能单独归因内核、控制 CPU 或可消除 JCT。
+完整图表和机器可读证据位于本实验的 `queue_r2/complete_review/` 与
+`mechanism_review_r2/`，不新增主实验版本。没有下一项 GPU 工作排队。

@@ -160,7 +160,9 @@ class WorkflowWorkWorker:
                 self.counts["unsupported_task"] += 1
                 continue
             wall, cpu = time.perf_counter(), time.thread_time()
-            probabilities = self.model.predict(projection, progress.features())
+            probabilities = self.model.predict(
+                projection, progress.features(feature_schema=self.model.schema),
+            )
             best = max(range(3), key=lambda index: probabilities[index])
             supported = (
                 max(probabilities) >= .6
@@ -214,6 +216,7 @@ class WorkflowWorkWorker:
             "decision_eligible": self.model.metadata.get("decision_eligible", False),
             "validation_scope": self.model.metadata.get("validation_scope", "unseen_projects"),
             "task_input_kind": self.model.task_input_kind,
+            "feature_schema": self.model.schema,
             "execution_controls": self.model.deployment_controls,
             "task_prefix_sha256": hashlib.sha256(self.task_prefix.encode()).hexdigest(),
             "refresh_interval_ms": 200, "counts": dict(self.counts),

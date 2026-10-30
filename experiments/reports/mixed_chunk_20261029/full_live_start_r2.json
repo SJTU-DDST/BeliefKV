@@ -1,0 +1,173 @@
+{
+  "status": "verified_live_mixed_full_prefix",
+  "observed_at": "2026-10-30T08:54:19.553741+08:00",
+  "registration": "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json",
+  "application_commit": "e3a7e5f16d7dcd9576e2e79869d8ed9d8dfc7a7b",
+  "processes": {
+    "watcher": {
+      "pid": 1775960,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "749056050",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-e3a7e5f16d7d-2de431471ba2/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/mixed_chunk_full_20261029_r2.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 1776544,
+      "state": "S",
+      "ppid": 1775960,
+      "start_ticks": "749058799",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18898",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--enable-mixed-chunk",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18898.sock"
+      ]
+    },
+    "driver": {
+      "pid": 1778314,
+      "state": "S",
+      "ppid": 1775960,
+      "start_ticks": "749074208",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-e3a7e5f16d7d-2de431471ba2/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_parallel_retry_source_20261026_v230/native_capture",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full/replay",
+        "--base-url",
+        "http://127.0.0.1:18898",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/beliefkv-mixed-chunk-20261029-e3a7e5f1/experiments/reports/v311_v230_categorized_network_timing_cpu_20261027.json",
+        "--workflow-arrivals",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/arrivals.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18898.sock"
+      ]
+    }
+  },
+  "scheduler": {
+    "pid": 1776899,
+    "state": "R",
+    "ppid": 1776544,
+    "start_ticks": "749060189",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "nice": 0,
+  "sole_owned_GPU_context": true,
+  "actual_serving": {
+    "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+    "max_running_requests": 24,
+    "chunked_prefill_size": 2048,
+    "enable_mixed_chunk": true,
+    "random_seed": 21
+  },
+  "verified_runtime": {
+    "physical_disabled": false,
+    "agent_control_interval_ms": 2000,
+    "agent_free_dispatch_interval_ms": 0,
+    "workflow_size_resume": false,
+    "tool_prefetch": false,
+    "execution_frontier_restore": false,
+    "layer_handoff_enabled": false,
+    "layer_handoff_free_extent": false,
+    "demand_prefill_pipeline": true,
+    "demand_prefill_pipeline_installed": true,
+    "demand_prefill_pipeline_progress_probe": false,
+    "prepare_host": true,
+    "predicted_tool_offload": true,
+    "tool_offload_min_survival": 0.75,
+    "join_prefetch_trigger": "observed_eos"
+  },
+  "agent_program_identity": "invocation_id",
+  "exact_completed_prefix_requests": 1886,
+  "position_exact_requests": 24,
+  "position_native_stop_requests": 24,
+  "position_mixed_output_conservation": {
+    "forwards": 473,
+    "output_tokens_by_service_role": {
+      "prefill": 24,
+      "decode": 1019
+    },
+    "total_output_tokens": 1043,
+    "exact_request_output_conserved": true,
+    "mixed_prefill_batches": 294,
+    "decode_members_inside_prefill": 421,
+    "decode_output_tokens_inside_prefill": 414,
+    "input_jsonl_prefixes": {
+      "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_full/smoke/native_requests.jsonl": {
+        "complete_prefix_bytes": 62318,
+        "complete_prefix_sha256": "b3b5fef00d8dd7327de32081cb025fa6f60951d1b18b8c2e02b43e28202143de",
+        "first_read_limit_bytes": 62318
+      },
+      "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_position_20261029_r2_full/server/runtime_audit.jsonl": {
+        "complete_prefix_bytes": 1803502,
+        "complete_prefix_sha256": "9d4a296706456fe3d91f00549da290a03044668ec8e0f6ab88fc040e795ea189",
+        "first_read_limit_bytes": 1803502
+      }
+    },
+    "scope": "Actual sampled mixed-batch output conservation after owned cleanup; not workflow performance."
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_full/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 7108488,
+      "complete_prefix_sha256": "fac84ec85c14347e1ad830861a7df6175837f898b6de5646cda2c936f6094873",
+      "first_read_limit_bytes": 7108488
+    }
+  },
+  "all_complete_work_verified": false,
+  "performance_accepted": false
+}

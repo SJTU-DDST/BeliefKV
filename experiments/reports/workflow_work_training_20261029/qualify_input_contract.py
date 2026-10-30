@@ -80,7 +80,9 @@ def qualify_progress_observations(
         ):
             raise ValueError("offline progress differs from the native observation")
         progress = worker._progress[workflow]
-        np.testing.assert_array_equal(progress.features(), expected["features"])
+        np.testing.assert_array_equal(
+            progress.features(feature_schema=model.schema), expected["features"],
+        )
         if progress.text:
             if worker.task_prefix + progress.text != expected["text"]:
                 raise ValueError("streaming Worker task differs from training input")
@@ -189,7 +191,9 @@ def main():
                 offline = grouped[first.workflow_id]
                 if worker.task_prefix + observed.text != offline["text"]:
                     raise ValueError("real ingress task text differs from training input")
-                np.testing.assert_array_equal(observed.features(), offline["features"])
+                np.testing.assert_array_equal(
+                    observed.features(feature_schema=model.schema), offline["features"],
+                )
                 projection = model.task_projection(offline["text"])
                 np.testing.assert_array_equal(worker._projections[first.workflow_id], projection)
                 expected_probabilities = model.predict(projection, offline["features"])

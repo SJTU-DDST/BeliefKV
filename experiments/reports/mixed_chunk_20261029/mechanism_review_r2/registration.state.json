@@ -1,0 +1,31 @@
+{
+  "status": "complete_pair_mechanisms_reviewed",
+  "watcher": {
+    "pid": 1773261,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "749031995",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-mixed-review-20261029-4c3aaeaa/experiments/reports/mixed_chunk_20261029/complete_after_pair.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/mechanism_review_r2/registration.json"
+    ]
+  },
+  "completed_actions": [
+    "thunder_output",
+    "thunder_decode_gaps",
+    "full_output",
+    "full_decode_gaps",
+    "causal_jct",
+    "full_native_demand",
+    "full_prefetch",
+    "full_siblings",
+    "full_eos"
+  ],
+  "GPU_experiment_registered": false,
+  "performance_accepted": false,
+  "checked_at": "2026-10-30T09:13:37.616273+08:00",
+  "current_action": "full_eos",
+  "finished_at": "2026-10-30T09:14:53.909411+08:00"
+}

@@ -13,12 +13,13 @@ HERE = ROOT / "experiments/reports/workflow_work_training_20261029"
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.predictor.workflow_work import FEATURES, SCHEMA
+from beliefkv.predictor.workflow_work import CONTEXT_SCHEMA, FEATURES, SCHEMA, feature_names
 from experiments.reports.workflow_work_training_20261029.profile_text_pilot import augment
 from scripts.train_workflow_work import NATIVE_PROGRESS, export_capture, write
 
 
-def replace_observations(original, exported, evidence, rejections):
+def replace_observations(original, exported, evidence, rejections, *, feature_schema=SCHEMA):
+    feature_names(feature_schema)
     previous = {row["workflow"]: row for row in original["rows"]}
     rows = [row for row in exported if row["workflow"] in previous]
     current = {row["workflow"]: row for row in rows}
@@ -31,7 +32,7 @@ def replace_observations(original, exported, evidence, rejections):
         )):
             raise ValueError("progress repair changed task identity or final logical work")
     return {
-        "schema": SCHEMA, "rows": rows, "sources_sha256": evidence,
+        "schema": feature_schema, "rows": rows, "sources_sha256": evidence,
         "prefill_token_weight": original["prefill_token_weight"],
         "work_unit": original["work_unit"],
         "rejected_non_natural_workflows": rejections,
@@ -39,10 +40,25 @@ def replace_observations(original, exported, evidence, rejections):
     }
 
 
+def verify_context_projection(original, current):
+    """Extra observed features cannot change the existing execution or labels."""
+    if len(original["rows"]) != len(current["rows"]):
+        raise ValueError("context features changed the recorded snapshot population")
+    for before, after in zip(original["rows"], current["rows"]):
+        if (
+            {key: value for key, value in before.items() if key != "features"}
+            != {key: value for key, value in after.items() if key != "features"}
+            or list(before["features"]) != list(after["features"][:len(FEATURES)])
+            or len(after["features"]) != len(feature_names(CONTEXT_SCHEMA))
+        ):
+            raise ValueError("context features changed prior observed features or labels")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-dir", type=Path, default=HERE / "matched6_finish_r1")
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--feature-schema", choices=(SCHEMA, CONTEXT_SCHEMA), default=SCHEMA)
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999":
         raise ValueError("progress repair must explicitly disable CUDA")
@@ -51,6 +67,8 @@ def main():
         str(path.resolve()): sha256_file(path) for path in (
             Path(__file__), ROOT / "scripts/train_workflow_work.py",
             HERE / "profile_text_pilot.py", HERE / "qualify_input_contract.py",
+            ROOT / "beliefkv/predictor/workflow_work.py",
+            ROOT / "beliefkv/runtime/workflow_work_worker.py",
         )
     }
     data = {}
@@ -70,6 +88,7 @@ def main():
             "dropout": .25, "weight_decay": .1, "epochs": 300, "seed": 21,
         },
         "data_repair_only": True, "GPU_experiment_started": False,
+        "feature_schema": args.feature_schema,
         "further_GPU_action_registered": False,
     }
     write(args.output_dir / "plan.json", state)
@@ -78,6 +97,7 @@ def main():
         for i, path in enumerate(paths):
             rows, bound, rejected = export_capture(
                 Path(path), prefill_weight=.01, native_progress=True,
+                feature_schema=args.feature_schema,
             )
             write(args.output_dir / f"source_{i}.json", {
                 "capture": path, "rows": rows, "sources_sha256": bound,
@@ -89,7 +109,11 @@ def main():
             rejections.extend(rejected)
             print(json.dumps({"capture": path, "snapshots": len(rows)}), flush=True)
         for name, original in data.items():
-            dataset = augment(replace_observations(original, exported, evidence, rejections))
+            dataset = augment(replace_observations(
+                original, exported, evidence, rejections, feature_schema=args.feature_schema,
+            ))
+            if args.feature_schema == CONTEXT_SCHEMA:
+                verify_context_projection(original, dataset)
             write(args.output_dir / (name + ".json"), dataset)
             state[name] = {
                 "snapshots": len(dataset["rows"]),

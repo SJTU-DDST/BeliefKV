@@ -3870,3 +3870,22 @@
   action/retry.55related CPU cases pass;these observers are outside the frozen
   e3a7e5f1 GPU qualification and change no live sources. Keep full metrics/
   global goal pending and user worktree edits intact.
+- Mixed R2 now completes both exact3674/18 arms with fresh idle drain and actual
+  owned exit. Full meanJCT1475.712067/output241.251017 versus matched Thunder
+  1525.197388/235.367543 gives3.2445%/2.4997% gains,but both regress versus
+  retained mixed-off profiles;keep original2s/mixed-off Full. Nine complete CPU
+  mechanism audits pass,all549671outputs conserved,Full479demand stages/682
+  service associations and zero unexplained untagged bytes. Handoff0;prefetch
+  source join_ticket only. All three complete PNGs inspected. Keep revision/
+  telemetry and single-pair limits explicit,all normal tails and no extra GPU
+  queue. Global goal remains active.
+- A separate optional workflow_remaining_model_work_context_v2 appends observed
+  initial-root/current-active/maximum submitted prompt lengths. These are logical
+  inputs,not physical KV union or future work. Legacy v1 keeps17features and exact
+  default input compatibility. Worker/export/training/parity/paused audit share
+  the declared schema. Two initial red cases and167related CPU passes are under
+  context_features_r1. Re-export and fit the same34/22/18 whole-execution split
+  once with fixed compact16 parameters before quality/ranking review;do not
+  collect more native solely for project holdout or promote this untrained
+  candidate. Full source-bound runtime/GPU/performance qualification remains
+  pending. Preserve unrelated user docs and the completed frozen GPU sources.

@@ -1,0 +1,23 @@
+{
+  "status": "complete_pair_reviewed",
+  "watcher": {
+    "pid": 1749034,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "748737748",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-mixed-chunk-20261029-e3a7e5f1/scripts/run_mixed_chunk_comparison.py",
+      "--watch",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/queue_r2/registration.json"
+    ]
+  },
+  "completed_arms": [
+    "thunderagent_acting_decay",
+    "full"
+  ],
+  "performance_accepted": false,
+  "current_arm": "full",
+  "checked_at": "2026-10-30T09:13:01.225705+08:00",
+  "finished_at": "2026-10-30T09:13:31.217060+08:00"
+}

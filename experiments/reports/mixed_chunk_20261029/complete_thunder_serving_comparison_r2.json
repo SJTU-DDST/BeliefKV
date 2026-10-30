@@ -1,0 +1,43 @@
+{
+  "status": "complete_thunder_shared_serving_profiles_reviewed",
+  "metrics": {
+    "mixed_off": {
+      "mean_jct_s": 1504.0723042904006,
+      "makespan_s": 2305.899186544418,
+      "end_to_end_output_tokens_per_s": 238.37598937867173,
+      "code_commit": "f502f87ddd0cfecadc8a080780a040c2238ec72f"
+    },
+    "mixed_on": {
+      "mean_jct_s": 1525.197387963348,
+      "makespan_s": 2335.3729792108534,
+      "end_to_end_output_tokens_per_s": 235.3675429548472,
+      "code_commit": "e3a7e5f16d7dcd9576e2e79869d8ed9d8dfc7a7b"
+    }
+  },
+  "mean_jct_reduction_percent": -1.4045258072160394,
+  "whole_run_output_throughput_gain_percent": -1.262059333939658,
+  "same_exact_complete_work_normal_tails_and_actual_owned_exit": true,
+  "matched_contract_only_mixed_flag_differs": true,
+  "paper_working_set_core_sha256": "9e269186e287b556ba1b07d22b51e04b902189a396017369119a0c50a6de8cf3",
+  "adapter_default_five_second_AST_projection_identical": true,
+  "actual_new_paper_control_interval_ms": 5000.0,
+  "adapter_source_hashes": {
+    "mixed_off": "bcb6466df233996710a8cb84bada8a4f1e81945580e4fee597016b1db3254ee4",
+    "mixed_on": "ab1f700ed0bb080b1466589d90324faa4f9b4d64e2d531d5ef4d102207ccc98e"
+  },
+  "preserved_initial_refusal": "Initial byte-identity assertion refused the adapter. Reviewed diff parameterizes default five seconds and adds status fields; exact default projection and actual 5000ms are verified here.",
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json": "e4821865066bab8ebdd4a28791ba9dcabd350fe6ce621a03985903fa13147ec4",
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.state.json": "0be2b843bd6a99ff3cb7b744bc97aaf8cb9e1859bbc2c4328c39704718d8ae28",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/replay/summary.json": "762b2b2af50be659b43ba282d4af1cd86c495004d6713a5ea375e05f35defde8",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/telemetry_drain.json": "2e91cfd8ae379b25556d729b00c0bc46b1fc7fb46b448b7a5626d9d5a6278106",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/owned_process_cleanup.json": "7f5dc66005563903679f624e051d2f8a92301f39626750bec4fd979bd4c3a155",
+    "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json": "9b01d55f97b256a54943bcfc77252f6665ac949bff6cbe6de76efb6baa4fcfad",
+    "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.state.json": "e0971938b53e49367f460aa100b17e4b4f971046f2e9657c9e1f329138a77a1f",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/replay/summary.json": "7af7439cd1dc3ccd1b589175b7932d6d909a2f9c1cb60ae45143e536d5a5284b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/telemetry_drain.json": "a62b509409a0941661d2deb76e9900a4043afa0326d884faed2cfe881b12050c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/owned_process_cleanup.json": "c56f629e8f8f59e059efdaedb19680af01b8c85020f733352d819d43709f5115"
+  },
+  "scope": "Shared serving profile comparison across application revisions including repaired telemetry; not predictive-policy attribution, pure decode worker-cost comparison or an isolated module ablation.",
+  "performance_accepted": false
+}
