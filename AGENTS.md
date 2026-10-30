@@ -4563,3 +4563,15 @@
   native baseline;5701tests+12subtests pass,retain5699,2153inputs/native unchanged.
   Only registration analysis changed;the four GPU-checked sampler/receipt
   modules,native engine,model,workload,tools and arrivals remain byte-identical.
+- Sustained46 Fullr2 now actually runs from frozen8d29bb08/native434c35dd on
+  18912:ops/workflow_sustained_original46_full_20261030_r2.registration.json,
+  execution.worktrees/beliefkv-causal-8d29bb086928-83b30d9edbba. Reused successful
+  positionr1 GPU receipts/sampler checks with unchanged4server modules and
+  rebound native source path/state hash only. Independent live_full_r1 verifies
+  401exact completed prefix receipts,declared46,soleGPU/nice0 measured owners,
+  observed2scontrol,worksorting/toolprefetch/frontier/layeroff,predictedoffloadon.
+  CPUreviewer2499455/start755385216waits atnice19/CUDA99999 with30sheartbeats,
+  full_review_r1.registration.json;it runs complete_work/drain/ownedexit/decode
+  then fixedcohort audit. No Thunder/otherGPU followup is registered. Finish all
+  work and pressure/background review,then match ThunderAgent acting-decay.
+  This startup is not source-shape acceptance,complete results or a speedup.

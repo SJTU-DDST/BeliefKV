@@ -1,0 +1,32 @@
+{
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-c",
+    "import json,os,subprocess,sys,time\nfrom pathlib import Path\nfrom scripts import run_causal_source_capture as capture\ncommands=json.loads(sys.argv[1]); destination=Path(sys.argv[2])\nstate={\"status\":\"waiting_complete_Full\",\"process\":capture.reservation.process(os.getpid()),\"GPU_followup_registered\":False,\"steps\":[]}\ntry:\n for name,command in commands:\n  child=subprocess.Popen(command)\n  state[\"current_step\"]=name\n  while child.poll() is None:\n   state[\"checked_at\"]=capture.reservation.now().isoformat()\n   capture.reservation.write_json(destination,state)\n   try: child.wait(timeout=30.)\n   except subprocess.TimeoutExpired: pass\n  state[\"steps\"].append({\"name\":name,\"returncode\":child.returncode})\n  if child.returncode: raise RuntimeError(name+\" failed\")\n state[\"status\"]=\"complete_Full_requires_pressure_and_baseline_review\"\nexcept BaseException as error:\n state.update(status=\"stopped_preserve_Full_review\",error=repr(error))\nstate[\"finished_at\"]=capture.reservation.now().isoformat()\ncapture.reservation.write_json(destination,state)\n",
+    "[[\"complete_control\", [\"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\", \"/home/longhao/experiment/.worktrees/beliefkv-causal-8d29bb086928-83b30d9edbba/experiments/reports/workflow_mix_20261029/review_burst.py\", \"--registration\", \"/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r2.registration.json\", \"--output-dir\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1\", \"--wait\"]], [\"fixed_cohort\", [\"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\", \"/home/longhao/experiment/.worktrees/beliefkv-causal-8d29bb086928-83b30d9edbba/scripts/audit_workflow_cohort.py\", \"--arm\", \"/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original46_full_20261030_r2/full\", \"--arrivals\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/arrivals.json\", \"--cohort\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/analysis_cohort.json\", \"--output\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1/cohort.json\", \"--bin-seconds\", \"30\"]]]",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1.state.json"
+  ],
+  "process": {
+    "pid": 2499455,
+    "state": "R",
+    "ppid": 2499391,
+    "start_ticks": "755385216",
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "-c",
+      "import json,os,subprocess,sys,time\nfrom pathlib import Path\nfrom scripts import run_causal_source_capture as capture\ncommands=json.loads(sys.argv[1]); destination=Path(sys.argv[2])\nstate={\"status\":\"waiting_complete_Full\",\"process\":capture.reservation.process(os.getpid()),\"GPU_followup_registered\":False,\"steps\":[]}\ntry:\n for name,command in commands:\n  child=subprocess.Popen(command)\n  state[\"current_step\"]=name\n  while child.poll() is None:\n   state[\"checked_at\"]=capture.reservation.now().isoformat()\n   capture.reservation.write_json(destination,state)\n   try: child.wait(timeout=30.)\n   except subprocess.TimeoutExpired: pass\n  state[\"steps\"].append({\"name\":name,\"returncode\":child.returncode})\n  if child.returncode: raise RuntimeError(name+\" failed\")\n state[\"status\"]=\"complete_Full_requires_pressure_and_baseline_review\"\nexcept BaseException as error:\n state.update(status=\"stopped_preserve_Full_review\",error=repr(error))\nstate[\"finished_at\"]=capture.reservation.now().isoformat()\ncapture.reservation.write_json(destination,state)\n",
+      "[[\"complete_control\", [\"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\", \"/home/longhao/experiment/.worktrees/beliefkv-causal-8d29bb086928-83b30d9edbba/experiments/reports/workflow_mix_20261029/review_burst.py\", \"--registration\", \"/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r2.registration.json\", \"--output-dir\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1\", \"--wait\"]], [\"fixed_cohort\", [\"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\", \"/home/longhao/experiment/.worktrees/beliefkv-causal-8d29bb086928-83b30d9edbba/scripts/audit_workflow_cohort.py\", \"--arm\", \"/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original46_full_20261030_r2/full\", \"--arrivals\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/arrivals.json\", \"--cohort\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/analysis_cohort.json\", \"--output\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1/cohort.json\", \"--bin-seconds\", \"30\"]]]",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1.state.json"
+    ]
+  },
+  "source_registration": "/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r2.registration.json",
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "nice": 19,
+  "GPU_followup_registered": false
+}

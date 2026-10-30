@@ -124,3 +124,17 @@ GPU入口的24次精确token/session/原生停止检查、1/8/24采样性能校�
 采集的统计保持原语义。完整共享校验随后通过5,701项与12个子测试，
 2,153项绑定输入及原生引擎不变。四个已GPU验证的采样/收据模块没有
 变化，可复用本次组件检查后重新注册Full，无需重采或重跑模型微检查。
+
+Full第二次注册已实际进入重放，冻结应用`8d29bb08`、原生引擎
+`434c35dd`、端口18912，注册为
+`ops/workflow_sustained_original46_full_20261030_r2.registration.json`。
+独立前缀核验已观察401条完整精确收据，确认46个预定workflow、
+单一GPU占用、测量进程nice0、2秒控制周期、工具预测卸载开启，
+工具预取、普通恢复绑定、逐层handoff与工作量排序关闭。全部策略和
+资源仍以冻结声明为准。
+
+`full_review_r1.registration.json` 记录独立CPU完成审查进程，nice19、
+CUDA隐藏，持续等待全部工作、传输排空与实际退出，随后生成完整decode
+证据和固定组JCT/背景覆盖/共同窗口吞吐。当前未注册下一轮GPU对照，
+尚无本轮优于ThunderAgent的结论。控制完成及压力审查后，再用相同任务、
+工具与到达表运行ThunderAgent acting-decay；排序oracle为独立后续验证。
