@@ -1,0 +1,11 @@
+{
+  "operator": "scripts/audit_checkpoint_prompt_delivery.py",
+  "capture": "experiments/raw/workflow_parallel_checkpoint_pilot6_source_20261030_parallel6r1/native_capture",
+  "attempted_output": "experiments/reports/parallel_checkpoint_pilot6_20261030/prompt_delivery_r1.json",
+  "returncode": 1,
+  "error_type": "ValueError",
+  "error": "checkpoint child has no completed model call",
+  "attempted_output_created": false,
+  "source_artifacts_changed": false,
+  "GPU_action": false
+}

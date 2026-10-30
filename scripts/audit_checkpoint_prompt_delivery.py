@@ -67,11 +67,9 @@ def main():
             if event.relation_type is RelationType.ROOT or event.attributes.get("runtime_internal"):
                 continue
             calls = requests[identity]
-            if not calls:
-                raise ValueError("checkpoint child has no completed model call")
             observations = []
             for index in sorted({0, warning, target, len(calls) - 1}):
-                if index >= len(calls):
+                if not 0 <= index < len(calls):
                     continue
                 request = corpus.get(calls[index])
                 text = tokenizer.decode(request.prompt_tokens, skip_special_tokens=False)
@@ -90,6 +88,7 @@ def main():
             children.append({
                 "workflow_id": identity[0], "invocation_id": identity[1],
                 "role": event.agent_definition_id, "model_calls": len(calls),
+                "has_completed_model_service": bool(calls),
                 "observations": observations,
             })
         token_evidence = corpus.evidence
@@ -146,6 +145,14 @@ def main():
         "token_evidence": token_evidence, "children": children, "patches": patches,
         "summary": {
             "children": len(children), "child_calls": summary([row["model_calls"] for row in children]),
+            "model_served_children": sum(row["has_completed_model_service"] for row in children),
+            "unserved_child_declarations": [
+                {key: row[key] for key in ("workflow_id", "invocation_id", "role")}
+                for row in children if not row["has_completed_model_service"]
+            ],
+            "model_served_child_calls": summary([
+                row["model_calls"] for row in children if row["has_completed_model_service"]
+            ]),
             "roles": dict(Counter(row["role"] for row in children)),
             "children_beyond_soft_target": len(after_target),
             "post_target_prompts_observed": len(next_prompt),
@@ -166,6 +173,7 @@ def main():
         "scope": {
             "actual_prompt_token_hashes_verified": True,
             "sampled_call_boundaries_not_every_prompt": True,
+            "unserved_declarations_retained_without_invented_prompts": True,
             "soft_target_not_a_hard_limit": True,
             "prompt_presence_does_not_prove_obedience": True,
             "changed_paths_do_not_establish_task_success": True,

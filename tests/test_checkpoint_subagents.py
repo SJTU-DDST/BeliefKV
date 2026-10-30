@@ -259,3 +259,97 @@ def test_parallel_reports_preserve_native_file_updates_deletions_and_member_erro
     assert [item["status"] for item in json.loads(message.content)["checkpoint_reports"]] == [
         "returned", "error",
     ]
+
+
+@pytest.mark.parametrize("asynchronous", (False, True))
+@pytest.mark.parametrize("tool_name", ("task", "parallel_tasks"))
+@pytest.mark.parametrize("bad_role", ("=checker", "<checker"))
+def test_actual_rejected_roles_create_no_child_or_join_and_parent_can_retry(
+    asynchronous, tool_name, bad_role,
+):
+    seen = []
+    child = RunnableLambda(
+        lambda state: (seen.append(state["messages"][0].content), state)[1],
+    ) | create_agent(model=ToolModel(responses=[AIMessage(content="Supported evidence.")]))
+    middleware = CheckpointSubAgentMiddleware(
+        backend=object(),
+        subagents=[{"name": "checker", "description": "One checkpoint.", "runnable": child}],
+    )
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("w", "root", "ctx-root", 0),
+        task_arguments_schema=CheckpointTaskSchema,
+        parallel_task_arguments_schema=ParallelCheckpointSchema,
+    )
+    adapter.register_checkpoint_task_scope(parent_role=None, parent_depth=0, roles=["checker"])
+    invalid = {**assignment(), "subagent_type": bad_role}
+    bad_args = (
+        {"assignments": [assignment(), invalid]} if tool_name == "parallel_tasks" else invalid
+    )
+    model = ToolModel(responses=[
+        AIMessage(content="", tool_calls=[{"name": tool_name, "id": "bad", "args": bad_args}]),
+        AIMessage(content="", tool_calls=[{
+            "name": "parallel_tasks", "id": "retry",
+            "args": {"assignments": [assignment(), {
+                **assignment(), "description": "Check another independent property.",
+            }]},
+        }]),
+        AIMessage(content="Integrated actual child reports."),
+    ])
+    agent = create_agent(model=model, middleware=[middleware])
+    adapter.start()
+    inputs, config = {"messages": [HumanMessage(content="Check bounded evidence.")]}, {
+        "callbacks": [adapter],
+    }
+    result = (
+        asyncio.run(agent.ainvoke(inputs, config=config)) if asynchronous
+        else agent.invoke(inputs, config=config)
+    )
+    adapter.finish(outcome="completed")
+    rejected_report = next(
+        message for message in result["messages"] if getattr(message, "tool_call_id", None) == "bad"
+    )
+    assert bad_role in rejected_report.content
+    assert len(seen) == 2
+    events = adapter.trace_sink.events
+    creates = [event for event in events if event.kind is Kind.INVOCATION_CREATE]
+    joins = [event for event in events if event.kind is Kind.JOIN_CREATE]
+    assert len(creates) == 3 and not any(event.agent_definition_id == bad_role for event in creates)
+    assert len(joins) == 1 and len(joins[0].member_invocation_ids) == 2
+    results = [event for event in events if event.kind is Kind.LLM_RESULT]
+    assert len(results) == 5
+    assert sum(event.attributes["rejected_task_call_count"] for event in results) == 1
+    assert adapter.has_completed_join(minimum_members=2)
+    graph = RuntimeCausalContextGraph()
+    graph.apply_batch(events)
+    assert all(item.state.value == "done" for item in graph.invocations.values())
+
+
+def test_checkpoint_roles_follow_the_actual_caller_depth_and_graph_scope():
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("w", "root", "ctx-root", 0),
+        task_arguments_schema=CheckpointTaskSchema,
+        parallel_task_arguments_schema=ParallelCheckpointSchema,
+    )
+    adapter.register_checkpoint_task_scope(
+        parent_role=None, parent_depth=0, roles=["checker", "root-only"],
+    )
+    adapter.register_checkpoint_task_scope(
+        parent_role="checker", parent_depth=1, roles=["checker"],
+    )
+    adapter.start()
+    direct = adapter.declare_runtime_tasks([("checker", "Inspect one boundary.")])[0]
+    leaf = adapter.declare_runtime_tasks(
+        [("checker", "Check a leaf property.")], parent_invocation_id=direct.invocation_id,
+    )[0]
+    call = {"name": "task", "id": "scope", "args": {
+        **assignment(), "subagent_type": "root-only",
+    }}
+    assert adapter._executable_task_calls(call)
+    assert not adapter._executable_task_calls(call, parent_invocation_id=direct.invocation_id)
+    call["args"]["subagent_type"] = "checker"
+    assert adapter._executable_task_calls(call, parent_invocation_id=direct.invocation_id)
+    assert not adapter._executable_task_calls(call, parent_invocation_id=leaf.invocation_id)
+    with pytest.raises(ValueError, match="scope changed"):
+        adapter.register_checkpoint_task_scope(
+            parent_role="checker", parent_depth=1, roles=["root-only"],
+        )

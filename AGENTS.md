@@ -4401,3 +4401,27 @@
   finish_r1.registration.json. No Full/Thunder/expansion or followupGPU queued.
   Retain complete natural outputs/tails,then audit shape,promptdelivery and
   actualreadonlydiffs before qualification;startup is not performance evidence.
+- Parallel API pilot6 and reviewer now actually complete/exit:
+  660requests/30292564input/100317outputtokens,6projects,20recordedJOINs
+  (11single/8double/1triple),9positive shareddecode groups,1nested,
+  rootparallelroundmedian1.5,terminalparalleldeferrals2. WorkP90/P10=3.561;
+  actual28model-servedchildren haveP50/P90=16.5/23,max31. Keep the30declared
+  child/raw16median separately:two malformed nonexistent roles produced
+  zero modelcalls but phantom child/singleton events. Source shape remains
+  insufficient;do not expand or run Full/Thunder on this source.
+- Main now registers actual checkpoint caller role/depth tool scopes before
+  execution;unknown roles and leaf delegation cannot create dependencies.
+  parallel_tasks validates all roles before running any member. Targeted69
+  cases pass with9new actual sync/async invalid-role/retry/scope cases;
+  full source-bound bound_cpu_r2 remains separately required. Preserve
+  b736480b and old raw events;this repair has no matching natural GPU proof.
+  prompt_delivery_r3 retains all30declarations but reconstructs only28served
+  children;all21ninthprompts contain8targetnotice,readonlychanges0/patcherrors0.
+  Keep r1/r2 auditfailures and complete_review/declared_assessment with actual
+  predeclared.6multimember target,distinct from original.5diagnostic. No new
+  GPU followup is registered;goal remains active.
+- Final repaired-role bound_cpu_r2 now passes5609tests+12subtests in one
+  execution,retains all5600prior literalIDs,no failures/errors/skips,
+  2100inputs/native unchanged. Actual complete_review_r1 passes complete
+  source/drain/ownedexit and retains six shape/conformance shortfalls.
+  No natural capture of this role repair or formal comparison has run.

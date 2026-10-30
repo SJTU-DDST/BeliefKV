@@ -187,8 +187,23 @@ def _parallel_reports(assignments, results, tool_call_id):
 
 
 def _parallel_tool(member, schema, roles):
+    def role_error(selected, runtime):
+        invalid = sorted({item.subagent_type for item in selected} - set(roles))
+        if not invalid:
+            return None
+        return Command(update={"messages": [ToolMessage(
+            content=json.dumps({
+                "checkpoint_group_error": "Unsupported subagent roles",
+                "unsupported_roles": invalid, "allowed_roles": list(roles),
+            }),
+            tool_call_id=runtime.tool_call_id, name=PARALLEL_TASK_TOOL, status="error",
+        )]})
+
     def parallel_tasks(assignments: list, runtime: ToolRuntime) -> Command:
         selected = schema.model_validate({"assignments": assignments}).assignments
+        error = role_error(selected, runtime)
+        if error is not None:
+            return error
         results = RunnableLambda(member.invoke).batch(
             _member_calls(selected, runtime),
             config={"max_concurrency": len(selected)}, return_exceptions=True,
@@ -197,6 +212,9 @@ def _parallel_tool(member, schema, roles):
 
     async def aparallel_tasks(assignments: list, runtime: ToolRuntime) -> Command:
         selected = schema.model_validate({"assignments": assignments}).assignments
+        error = role_error(selected, runtime)
+        if error is not None:
+            return error
         results = await asyncio.gather(*(
             member.ainvoke(call) for call in _member_calls(selected, runtime)
         ), return_exceptions=True)

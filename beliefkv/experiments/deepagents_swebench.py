@@ -3816,6 +3816,7 @@ def _autonomous_subagents(
                 _task_middleware(
                     config, adapter,
                     checkpoint_read_only=workload.task_access == "read_only",
+                    checkpoint_parent_role=name, checkpoint_parent_depth=1,
                     backend=backend,
                     private_state_keys=CONTEXT_LIFECYCLE_PRIVATE_STATE_KEYS,
                     **({
@@ -3845,7 +3846,10 @@ def _autonomous_subagents(
     return subagents
 
 
-def _task_middleware(config, adapter, *, checkpoint_read_only=False, **kwargs):
+def _task_middleware(
+    config, adapter, *, checkpoint_read_only=False,
+    checkpoint_parent_role=None, checkpoint_parent_depth=0, **kwargs,
+):
     kwargs["private_state_keys"] = (
         kwargs.get("private_state_keys", frozenset())
         | CHILD_WORK_BUDGET_PRIVATE_KEYS | ROOT_DELEGATION_PRIVATE_KEYS
@@ -3855,6 +3859,10 @@ def _task_middleware(config, adapter, *, checkpoint_read_only=False, **kwargs):
         kwargs.pop("system_prompt", None)
         return ReusableSubAgentMiddleware(adapter=adapter, **kwargs)
     if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
+        adapter.register_checkpoint_task_scope(
+            parent_role=checkpoint_parent_role, parent_depth=checkpoint_parent_depth,
+            roles=(spec["name"] for spec in kwargs["subagents"]),
+        )
         return CheckpointSubAgentMiddleware(read_only=checkpoint_read_only, **kwargs)
     return PrivateStateIsolatingSubAgentMiddleware(**kwargs)
 

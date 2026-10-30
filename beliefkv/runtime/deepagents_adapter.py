@@ -321,6 +321,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.allowed_subagent_types = allowed_subagent_types
         self.task_arguments_schema = task_arguments_schema
         self.parallel_task_arguments_schema = parallel_task_arguments_schema
+        self._checkpoint_task_scopes: dict[tuple[int, str], frozenset[str]] = {}
         self.workspace_digest_provider = workspace_digest_provider
         self.native_radix_sessions = native_radix_sessions
         if reusable_subagents is not None and reusable_subagents.workflow_id != root_metadata.root_workflow_id:
@@ -406,6 +407,31 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._late_terminal_control_event_count = 0
         self._first_control_delivery_failure: RuntimeControlDeliveryFailure | None = None
         self._last_control_delivery_failure: RuntimeControlDeliveryFailure | None = None
+
+    def register_checkpoint_task_scope(self, *, parent_role, parent_depth, roles):
+        key = parent_depth, parent_role or self.root_metadata.agent_definition_id
+        allowed = frozenset(roles)
+        with self._lock:
+            if key in self._checkpoint_task_scopes and self._checkpoint_task_scopes[key] != allowed:
+                raise ValueError("checkpoint caller scope changed its actual available roles")
+            self._checkpoint_task_scopes[key] = allowed
+
+    def _task_roles_for_parent(self, invocation_id=None):
+        if not self._checkpoint_task_scopes:
+            return self.allowed_subagent_types
+        with self._lock:
+            metadata = self._identities[invocation_id or self.root_metadata.invocation_id].metadata
+            cursor, depth = metadata, 0
+            while cursor.parent_invocation_id is not None:
+                cursor = self._identities[cursor.parent_invocation_id].metadata
+                depth += 1
+            allowed = self._checkpoint_task_scopes.get(
+                (depth, metadata.agent_definition_id), frozenset(),
+            )
+        return (
+            allowed if self.allowed_subagent_types is None
+            else allowed & self.allowed_subagent_types
+        )
 
     def start(self, *, task_instructions: str | None = None) -> None:
         ranking_input = None
@@ -1347,7 +1373,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 name == "parallel_tasks" and self.parallel_task_arguments_schema is not None
             ):
                 task_calls.append(call)
-                expanded = self._executable_task_calls(call)
+                expanded = self._executable_task_calls(call, parent_invocation_id=invocation_id)
                 executable_task_calls.extend(expanded)
                 rejected_task_calls += int(not expanded)
                 action_kinds.append(
@@ -1640,9 +1666,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         )
         if (tool_name == "task" or member_tool) and self._task_arguments_valid(payload):
             requested_type = str(payload.get("subagent_type") or "general-purpose")
+            allowed = self._task_roles_for_parent(parent_invocation_id)
             if (
-                self.allowed_subagent_types is not None
-                and requested_type not in self.allowed_subagent_types
+                allowed is not None and requested_type not in allowed
             ):
                 with self._lock:
                     self._ignored_tool_runs.add(key)
@@ -1905,7 +1931,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             return False
         return True
 
-    def _executable_task_calls(self, call):
+    def _executable_task_calls(self, call, *, parent_invocation_id=None):
         payload = call.get("args")
         if call.get("name") == "parallel_tasks":
             from beliefkv.runtime.checkpoint_subagents import checkpoint_member_call_id
@@ -1926,8 +1952,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             if not self._task_arguments_valid(payload):
                 return []
             result = [call]
-        if self.allowed_subagent_types is not None and any(
-            item["args"]["subagent_type"] not in self.allowed_subagent_types for item in result
+        allowed = self._task_roles_for_parent(parent_invocation_id)
+        if allowed is not None and any(
+            item["args"]["subagent_type"] not in allowed for item in result
         ):
             return []
         return result
