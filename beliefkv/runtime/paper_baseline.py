@@ -122,6 +122,8 @@ class ThunderAgentAdapter:
         self.next_tick = now + self.control_interval_s
         # Both new-program arrival and the periodic tick decide capacity.
         self._refresh_streaming_progress()
+        observer = getattr(self, "_begin_control_observation", None)
+        observation = observer() if observer is not None else None
         resumed = self.policy.tick(now=now)
         self.counts["control_ticks"] += 1
         self.counts["resumed"] += len(resumed)
@@ -136,6 +138,7 @@ class ThunderAgentAdapter:
         remaining = self.policy.remaining_capacity()
         pending = [item for item in programs if item.pending and not item.active]
         self._capacity_snapshot = {
+            "resumed_program_ids": resumed,
             "remaining_capacity_tokens": remaining,
             "active_acting_programs": sum(item.active and item.acting for item in programs),
             "active_reasoning_programs": sum(item.active and not item.acting for item in programs),
@@ -147,6 +150,8 @@ class ThunderAgentAdapter:
                 (max(0., now - arrived) for _key, arrived in self.requests.values()), default=0.,
             ),
         }
+        if observation is not None:
+            self._end_control_observation(observation, now=now, resumed=resumed)
 
     def plan(self, native_order, *, running_batch, adder):
         self.tick()

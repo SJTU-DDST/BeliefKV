@@ -4664,3 +4664,20 @@
   subtestspass,retainall5738priorliteralIDs,2169inputs/nativeunchanged.
   These default-off oraclemechanics are not a learnedpredictor orperformance
   result. Add exactinitial/periodicdecisioncoverage before nextcontrol.
+- Sustained52 preparationr1 passes5755testsplus12subtests but is superseded
+  beforeGPU:its0msdispatch would differ from the plannedR5oracle500msdispatch.
+  r2 declares common500msboundeddispatch,2sfullcontrol,12initial/16warm/
+  18measured/18background,mean80s,arrivalseed31/permutation41. Population,
+  exacttokens/tools/arrivals/resources remainunchanged;measuredworkP80/P20
+  3.058225. Preservefirst31--41intrinsicworkseedsearch andno policyoutcomeuse.
+  Full keepsworksortingoff;JOIN/EOSon,toolprefetch/frontier/layer/mixedoff.
+  Exactinitial/periodiclogicaldecisionjournals use readonlyhooks inside the
+  unchanged inheritedThunderAgent tick;do not override thatmethod. R5 can
+  laterconsume the samecadence. Separateperiodicdecisionauditor11targeted
+  tests(includingconfigoverride)pass;it doesnot implyphysicalfit orcausalJCT
+  attribution. Freeze/currentbinding/realGPUposition still precede nextcontrol.
+- Sustained52r2 boundCPU actually passes5756tests+12subtests,retainsall5755
+  priorliteralIDs,no failures/errors/skips,2179inputs/native unchanged.
+  Separate11periodic-auditor/configtests pass;preserve earlyjournalfixture's
+  method-identityfailure and corrected inherited-tick proof. NoGPU comparison
+  accepted;fresh committedfreeze/resources/position-and-sampler still required.

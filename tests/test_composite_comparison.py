@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+import pytest
 
 from scripts.prepare_composite_comparison import BASE, ROOT, configuration, measurement_protocol
 
@@ -43,3 +44,27 @@ def test_initial_fill_is_separate_from_the_arrival_index_warmup_and_measurement(
     assert len(cohort["background_workflow_ids"]) == 18
     assert cohort["measured_workflow_ids"][0] == arrivals["arrival_schedule"][10]["workflow_id"]
     assert cohort["throughput_window_offset_seconds"][0] > arrivals["arrival_schedule"][6]["offset_seconds"]
+
+
+def test_oracle_control_dispatch_override_changes_only_the_declared_common_cadence(tmp_path):
+    timing, prior, arrivals = (tmp_path / name for name in ("timing.json", "prior.json", "arrivals.json"))
+    timing.write_text('{"timing_domain":"declared-observable-network-classes"}')
+    prior.write_text("{}")
+    arrivals.write_text("{}")
+    kwargs = dict(
+        workflow_count=52, workload_manifest=ROOT / "composed/workload_manifest.json",
+        source_registration=tmp_path / "source.registration.json",
+        arrivals=arrivals, timing=timing, prior=prior,
+    )
+    base = json.loads(BASE.read_bytes())
+    original = configuration(base, **kwargs)
+    paired = configuration(base, **kwargs, dispatch_interval_ms=500)
+    common, old = paired["common_environment"], original["common_environment"]
+    assert {name for name in common if common[name] != old[name]} == {
+        "AGENT_FREE_DISPATCH_INTERVAL_MS", "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS",
+    }
+    assert common["AGENT_CONTROL_INTERVAL_MS"] == "2000"
+    assert common["WORKFLOW_SIZE_RESUME"] == "0"
+    assert paired["comparison_contract"]["free_dispatch_interval_ms"] == 500
+    with pytest.raises(ValueError, match="matched 500ms"):
+        configuration(base, **kwargs, dispatch_interval_ms=50)

@@ -149,6 +149,48 @@ def test_native_prefill_filters_paused_agents_with_full_migration_enabled(monkey
     finally:
         live.close()
 
+def test_initial_and_actual_periodic_decisions_preserve_native_policy_and_attempts(monkeypatch, tmp_path):
+    clock = [100.]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    live = full_runtime(monkeypatch, tmp_path, capacity=700)
+    records = []
+    live._opportunity_writer = NS(record=records.append)
+    try:
+        live.on_events((
+            observed(0, Kind.WORKFLOW_START),
+            observed(1, Kind.INVOCATION_CREATE, invocation_id="a", context_id="a-context"),
+            observed(2, Kind.INVOCATION_CREATE, invocation_id="b", context_id="b-context"),
+        ))
+        first = request("first", "a", tokens=500)
+        second = request("second", "b", tokens=300)
+        live.register_visible_request(first)
+        live.register_visible_request(second)
+        a = live._agent_admission
+        arrivals = [row for row in records if row["event"] == "agent_initial_registration_decision"]
+        assert len(arrivals) == 2
+        assert arrivals[0]["active_after_arrival"] and not arrivals[1]["active_after_arrival"]
+        first.output_ids.extend([1] * 30)
+        a.tick(now=clock[0])
+        rows = [row for row in records if row["event"] == "agent_periodic_admission_decision"]
+        assert len(rows) == 1 and rows[0]["resume_capacity_tokens"] == 68
+        b = next(row for row in rows[0]["programs"] if row["invocation_id"] == "b")
+        assert b["application_ready"] and b["key"] == asdict(live.visible["second"])
+        assert not b["active_before"] and not b["active_after_pressure"]
+        old = state(a)
+        a.tick(now=clock[0] + .1)
+        assert state(a) == old
+        assert sum(row["event"] == "agent_periodic_admission_decision" for row in records) == 1
+        assert a.counts["admission_control_including_journal_cpu_ns"] > 0
+        live.on_batch_completed(NS(reqs=[first]))
+        clock[0] += 10.
+        a.tick(now=clock[0])
+        final = [row for row in records if row["event"] == "agent_periodic_admission_decision"][-1]
+        assert final["resumed_program_ids"] == ("b",)
+        assert a.policy.programs["b"].active
+    finally:
+        live._opportunity_writer = None
+        live.close()
+
 
 def test_join_warming_keeps_existing_eligibility_and_rejects_paused_or_stale_owner(monkeypatch, tmp_path):
     live = full_runtime(monkeypatch, tmp_path)

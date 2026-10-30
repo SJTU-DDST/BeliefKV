@@ -37,7 +37,12 @@ def measurement_protocol(
     return arrivals, cohort
 
 
-def configuration(base, *, workflow_count, workload_manifest, source_registration, arrivals, timing, prior):
+def configuration(
+    base, *, workflow_count, workload_manifest, source_registration, arrivals, timing, prior,
+    dispatch_interval_ms=0,
+):
+    if type(dispatch_interval_ms) is not int or dispatch_interval_ms not in (0, 500):
+        raise ValueError("declare unchanged dispatch or matched 500ms bounded dispatch")
     result = deepcopy(base)
     common = result["common_environment"]
     common.update(
@@ -50,7 +55,8 @@ def configuration(base, *, workflow_count, workload_manifest, source_registratio
         WORKFLOW_WORK_SOURCE="learned", BELIEFKV_WORKFLOW_WORK_SOURCE="learned",
         WORKFLOW_WORK_MODEL="", BELIEFKV_WORKFLOW_WORK_MODEL="",
         WORKFLOW_WORK_MODEL_SHA256="", BELIEFKV_WORKFLOW_WORK_MODEL_SHA256="",
-        AGENT_FREE_DISPATCH_INTERVAL_MS="0", BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS="0",
+        AGENT_FREE_DISPATCH_INTERVAL_MS=str(dispatch_interval_ms),
+        BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS=str(dispatch_interval_ms),
         BELIEFKV_TOOL_TIMING_PRIOR=str(prior.resolve()),
         BELIEFKV_TOOL_TIMING_PRIOR_SHA256=sha256_file(prior),
     )
@@ -78,6 +84,8 @@ def configuration(base, *, workflow_count, workload_manifest, source_registratio
         source_native_JCT_is_not_a_matched_overlay_control=True,
         measured_cohort_not_delivered_to_scheduler=True,
         tool_prefetch_disabled_by_user=True, layer_handoff=False,
+        free_dispatch_interval_ms=dispatch_interval_ms,
+        free_dispatch_cadence_must_match_future_oracle=True,
     )
     return result
 
@@ -94,6 +102,7 @@ def main():
     parser.add_argument("--measured", type=int, default=18)
     parser.add_argument("--arrival-seed", type=int, default=31)
     parser.add_argument("--permutation-seed", type=int, default=31)
+    parser.add_argument("--dispatch-interval-ms", type=int, choices=(0, 500), default=0)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve all arrival/cohort/configuration declarations")
@@ -118,6 +127,7 @@ def main():
         workload_manifest=args.source_arm / "workload_manifest.json",
         source_registration=args.source_registration, arrivals=arrival_path, timing=args.tool_timing,
         prior=prior,
+        dispatch_interval_ms=args.dispatch_interval_ms,
     )
     config_path = args.output_dir / "full.json"
     write(config_path, config)
@@ -128,6 +138,7 @@ def main():
         "arrival_rate_per_second": args.rate_per_second,
         "mean_arrival_interval_seconds": 1. / args.rate_per_second,
         "arrival_seed": args.arrival_seed, "permutation_seed": args.permutation_seed,
+        "free_dispatch_interval_ms": args.dispatch_interval_ms,
         "common_submission_end_seconds": arrivals["arrival_schedule"][-1]["offset_seconds"],
         "inputs_sha256": {str(path.resolve()): sha256_file(path)
                           for path in (BASE, args.tool_timing, prior, Path(__file__))},

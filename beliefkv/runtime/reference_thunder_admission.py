@@ -78,6 +78,18 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             raise ValueError("an agent cannot change workflow or context identity")
         super().registered(req, key)
         self.latest[key.invocation_id] = key
+        writer = getattr(self.runtime, "_opportunity_writer", None)
+        item = self.policy.programs[key.invocation_id]
+        if writer is not None and item.steps == 1:
+            writer.record({
+                "event": "agent_initial_registration_decision",
+                "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
+                "key": asdict(key), "complete_budget_tokens": item.tokens + self.policy.buffer_tokens,
+                "active_after_arrival": item.active,
+                "remaining_after_tokens": self.policy.remaining_capacity(),
+                "before_extra_join_or_continuation_grants": True,
+                "physical_capacity_credit": False,
+            })
         if self._join_handoff is not None:
             self._join_handoff.next_attempt = 0.
             self._join_handoff.ready_parents(preferred=key)
@@ -86,6 +98,54 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         if self.coadmit_join_children:
             for join_id in sorted(self.runtime._join_by_invocation.get(key.invocation_id, ())):
                 self._coadmit_join(join_id)
+
+    def _begin_control_observation(self):
+        writer = getattr(self.runtime, "_opportunity_writer", None)
+        if writer is None:
+            return None
+        cpu, wall = time.thread_time_ns(), time.perf_counter_ns()
+        before = []
+        for item in self.policy.programs.values():
+            key = self.latest.get(item.identity)
+            invocation = self.runtime.graph.invocations.get(item.identity)
+            before.append((item, {
+                "key": asdict(key) if key is not None else None,
+                "invocation_id": item.identity, "active_before": item.active,
+                "marked_before": item.marked_for_pause,
+                "pending_before": item.pending, "acting_before": item.acting,
+                "queue_sequence_before": item.queue_sequence, "steps": item.steps,
+                "application_ready": bool(
+                    key is not None and self.requests.get(key.request_id, (None,))[0] == key
+                    and self.runtime.visible.get(key.request_id) == key
+                    and invocation is not None
+                    and invocation.state in (InvocationState.READY, InvocationState.RUNNING_LLM)
+                    and not invocation.active_tool_calls and not invocation.blocking_child_ids
+                ),
+            }))
+        return writer, cpu, wall, before
+
+    def _end_control_observation(self, observation, *, now, resumed):
+        writer, cpu, wall, before = observation
+        writer.record({
+            "event": "agent_periodic_admission_decision",
+            "ts_ms": time.time() * 1000., "monotonic_s": now,
+            "resume_capacity_tokens": self.policy.last_resume_capacity_tokens,
+            "resumed_program_ids": resumed,
+            "remaining_after_pressure_tokens": self.policy.remaining_capacity(),
+            "programs": [{
+                **row, "observed_context_tokens": item.tokens,
+                "complete_budget_tokens": item.tokens + self.policy.buffer_tokens,
+                "active_after_pressure": item.active,
+                "marked_after_pressure": item.marked_for_pause,
+            } for item, row in before],
+            "semantic_revision": self.runtime.semantic_revision,
+            "scope": "exact_periodic_boundary_logical_decision; native_feasibility_not_implied",
+            "streaming_refresh_precedes_observation": True,
+            "control_and_observation_cpu_ns_before_write": time.thread_time_ns() - cpu,
+            "physical_capacity_credit": False,
+        })
+        self.counts["admission_control_including_journal_cpu_ns"] += time.thread_time_ns() - cpu
+        self.counts["admission_control_including_journal_wall_ns"] += time.perf_counter_ns() - wall
 
     def events(self, events):
         if self._join_handoff is not None or self._siblings is not None:
