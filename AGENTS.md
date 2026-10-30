@@ -4575,3 +4575,16 @@
   then fixedcohort audit. No Thunder/otherGPU followup is registered. Finish all
   work and pressure/background review,then match ThunderAgent acting-decay.
   This startup is not source-shape acceptance,complete results or a speedup.
+- Latest user resets the next objective:validate sustained workload/arrivals/
+  fixed-cohort complete JCT first,then compare oracle short-workflow/JOIN-set
+  admission with the identical retained Full control. Defer ThunderAgent and
+  other baselines and any new learned work predictor until clear oracle gains.
+  Diagnose actual ready-capacity competition,all admission entrypoints,packing,
+  pressure revocation/native service and total control cost;retain JOIN/EOS.
+  Replace inadequate original-task mixes/arrival supply with disclosed matched
+  controls if needed,never select policy winners or promise SJF must improve.
+  R5section14 is the predictor-stage reference:6candidates,8only when needed,
+  0.5ms new combination softbudget,total metadata/native/background costs extra.
+  See docs/design/oracle_first_validation_goal_20261030_zh.md. The active goal
+  API refused replacement of an unfinished objective;do not falsely complete
+  the old goal to bypass it. Latest user scope and this record govern work.
