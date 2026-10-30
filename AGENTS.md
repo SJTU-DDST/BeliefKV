@@ -4614,3 +4614,10 @@
   unchanged. Preserve failedr1 and all source observations. Running8d29bb08
   control remains frozen;use new CPU cohort/output/supply analysis after complete
   work/drain/ownedexit. No oracle/learned/baseline performance accepted.
+- Corrected completeCPUreview now actually waits from clean frozenaa12207a:
+  original_project_supplement_20261030/corrected_full_review_r1.registration.json,
+  PID2528822/start755762380,nice19/CUDA99999/OMP1/OpenBLAS1 verified. After
+  completework/freshdrain/actualexit,it runs corrected cohort outputs/receipt
+  reconciliation and complete supply audit. Preserve/supersede old cohort;
+  do not hot-edit serving8d29bb08. No GPUfollowup registered and no workload/
+  steady-state/oracle acceptance. Stage1remains active under the latest goal.

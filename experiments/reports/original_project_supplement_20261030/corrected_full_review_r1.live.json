@@ -1,0 +1,38 @@
+{
+  "observed_at": "2026-10-31T03:11:38.003835+08:00",
+  "registration": "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/corrected_full_review_r1.registration.json",
+  "registration_sha256": "aec99957751a00294c7bfe389ae0ebc2bdad693be0c709609d3d02f378765a28",
+  "process": {
+    "pid": 2528822,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "755762380",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "-c",
+      "import json,os,subprocess,sys,time\nfrom pathlib import Path\nfrom scripts import run_causal_source_capture as capture\nfrom experiments.reports.workflow_mix_20261029.review_burst import complete_work\nregistration, destination, output = map(Path,sys.argv[1:4])\ncommands=json.loads(sys.argv[4])\nstate={'status':'waiting_complete_Full','process':capture.reservation.process(os.getpid()),'GPU_followup_registered':False,'steps':[],'source_commit':sys.argv[5]}\ndef publish():\n state['checked_at']=capture.reservation.now().isoformat()\n capture.reservation.write_json(destination,state)\ntry:\n deadline=time.monotonic()+4*3600\n while True:\n  current=capture.load(registration.with_suffix('.state.json'))\n  if current.get('status')=='stopped_for_investigation':\n   raise RuntimeError('Full stopped; preserve its incomplete work: '+str(current.get('error')))\n  if current.get('status')=='collected_performance_review_pending' and complete_work(registration) is not None:\n   break\n  if time.monotonic()>deadline: raise TimeoutError('complete control review deadline exceeded')\n  publish();time.sleep(10.)\n output.mkdir(parents=True,exist_ok=False)\n for name,command in commands:\n  state.update(status='reviewing_complete_Full',current_step=name);publish()\n  child=subprocess.Popen(command)\n  while child.poll() is None:\n   publish()\n   try: child.wait(timeout=30.)\n   except subprocess.TimeoutExpired: pass\n  state['steps'].append({'name':name,'returncode':child.returncode})\n  if child.returncode: raise RuntimeError(name+' failed')\n state['status']='complete_requires_workload_and_oracle_decision'\n state['formal_workload_qualified']=False\nexcept BaseException as error:\n state.update(status='stopped_preserve_corrected_review',error=repr(error))\nstate['finished_at']=capture.reservation.now().isoformat();publish()\n",
+      "/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r2.registration.json",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/corrected_full_review_r1.state.json",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/corrected_full_review_r1",
+      "[[\"fixed_cohort_corrected_outputs\", [\"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\", \"/home/longhao/experiment/.worktrees/beliefkv-workload-review-aa12207a/scripts/audit_workflow_cohort.py\", \"--arm\", \"/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original46_full_20261030_r2/full\", \"--arrivals\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/arrivals.json\", \"--cohort\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/analysis_cohort.json\", \"--output\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/corrected_full_review_r1/cohort.json\", \"--bin-seconds\", \"30\"]], [\"complete_supply\", [\"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\", \"/home/longhao/experiment/.worktrees/beliefkv-workload-review-aa12207a/scripts/audit_sustained_supply.py\", \"--registration\", \"/home/longhao/experiment/ops/workflow_sustained_original46_full_20261030_r2.registration.json\", \"--cohort\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/sustained46_r3/analysis_cohort.json\", \"--output\", \"/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/corrected_full_review_r1/supply.json\"]]]",
+      "aa12207ad4313101cac19695dc5eeba8f6990c4c"
+    ]
+  },
+  "nice": 19,
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "99999",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "state_at_observation": {
+    "status": "waiting_complete_Full",
+    "checked_at": "2026-10-31T03:11:31.520692+08:00",
+    "source_commit": "aa12207ad4313101cac19695dc5eeba8f6990c4c",
+    "GPU_followup_registered": false,
+    "steps": []
+  },
+  "frozen_source_verified": true,
+  "GPU_followup_registered": false,
+  "workload_qualified": false,
+  "performance_accepted": false
+}
