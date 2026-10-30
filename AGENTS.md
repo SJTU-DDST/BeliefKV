@@ -3961,3 +3961,15 @@
   21multi-member batches verified,55EOSfinals observed. Preserve full results
   under predicted_acting_pressure_20261029 and all user worktree edits.
   Both GPU and CPU reviewers have actually exited;no next GPU job is queued.
+- The user now explicitly requests a real GPU oracle experiment and then
+  explicitly includes future tool durations in ranking. The separately
+  declared model/tool critical-path oracle may read the exact fixed workload
+  tokens, tool timing map and dependency DAG for rank computation only.
+  Mark future information/deployable=false in runtime and registration;
+  normal learned and paper modes retain future=false. Use actual observed
+  progress, parallel max rather than summed tool branches, and a predeclared
+  original-control model-time proxy. This is not an optimal-JCT bound.
+  Retain the learned dispatch 2s/500ms settings, all fixed work/arrivals/tools/
+  capacities/native stops and existing Full/Thunder controls. Complete fresh
+  source-bound CPU and token/session/native-stop/sampler qualification before
+  the oracle-only Full. Do not claim offline local-choice counts as JCT gain.

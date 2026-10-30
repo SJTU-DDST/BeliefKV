@@ -1088,6 +1088,11 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("workflow size resume requires reference Full continuation admission")
         self.workflow_size_resume = workflow_size == "1"
+        self.workflow_work_source = os.environ.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned")
+        if self.workflow_work_source not in ("learned", "oracle") or (
+            self.workflow_work_source == "oracle" and not self.workflow_size_resume
+        ):
+            raise ValueError("oracle requires explicitly enabled Full workflow size admission")
         self.workflow_work_model = os.environ.get("BELIEFKV_WORKFLOW_WORK_MODEL", "")
         self.workflow_work_model_sha256 = os.environ.get("BELIEFKV_WORKFLOW_WORK_MODEL_SHA256", "")
         self.workflow_work_tokenizer_path = model_path
@@ -1170,7 +1175,12 @@ class NativeAdmissionRuntime:
                 if self.workflow_size_resume:
                     from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
 
-                    self._agent_admission = WorkflowSizeAdmission(self)
+                    if self.workflow_work_source == "oracle":
+                        from beliefkv.runtime.workflow_oracle_admission import WorkflowOracleAdmission
+
+                        self._agent_admission = WorkflowOracleAdmission(self)
+                    else:
+                        self._agent_admission = WorkflowSizeAdmission(self)
                 elif pressure_policy == "predicted_acting":
                     from beliefkv.runtime.predicted_acting_pressure import PredictedActingPressureAdmission
 
@@ -2891,6 +2901,7 @@ class NativeAdmissionRuntime:
                 "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
                 "agent_control_interval_ms": self.agent_control_interval_ms,
                 "workflow_size_resume": self.workflow_size_resume,
+                "workflow_work_source": self.workflow_work_source,
                 "workflow_work_model_sha256": (
                     self.workflow_work_model_sha256 if self.workflow_size_resume else None
                 ),

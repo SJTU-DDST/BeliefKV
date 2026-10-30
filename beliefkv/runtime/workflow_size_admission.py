@@ -15,6 +15,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     join_free_policy_name = ReferenceFreeContinuationAdmission.join_free_policy_name + "_workflow_size"
     sibling_policy_name = ReferenceFreeContinuationAdmission.sibling_policy_name + "_workflow_size"
     join_sibling_policy_name = ReferenceFreeContinuationAdmission.join_sibling_policy_name + "_workflow_size"
+    rank_kind = "learned_work_class"
 
     def __init__(self, runtime):
         self._task_seen = set()
@@ -25,11 +26,23 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             capacity, rank=self._rank, sibling_group=self._resume_groups.get, **kwargs,
         )
         super().__init__(runtime)
-        self._work = WorkflowWorkWorker(
+        self._work = self._create_work(runtime)
+
+    def _create_work(self, runtime):
+        return WorkflowWorkWorker(
             runtime.workflow_work_model, runtime.workflow_work_model_sha256,
             tokenizer_path=getattr(runtime, "workflow_work_tokenizer_path", None),
             execution_environment=os.environ,
         )
+
+    def _priority(self, prediction):
+        return 1 if prediction is None else prediction.bucket
+
+    def _supported(self, prediction):
+        return prediction is not None and prediction.evidence == "model"
+
+    def _dispatch_prediction_fields(self, prediction):
+        return {}
 
     def _prediction(self, invocation):
         workflow = self.workflows.get(invocation)
@@ -38,8 +51,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         return self._rank_cache[workflow]
 
     def _rank(self, invocation, now):
-        prediction = self._prediction(invocation)
-        return 1 if prediction is None else prediction.bucket
+        return self._priority(self._prediction(invocation))
 
     def _order_dispatch_keys(self, keys, joins):
         if len(keys) < 2:
@@ -54,7 +66,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             if workflow not in predictions:
                 predictions[workflow] = self._work.prediction(workflow)
             prediction = predictions[workflow]
-            bucket = 1 if prediction is None else prediction.bucket
+            bucket = self._priority(prediction)
             req = self._live_requests.get(key.request_id)
             join = (
                 key.invocation_id in joins and req is not None
@@ -65,7 +77,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 item.tokens, item.queue_sequence, index,
             )
         supported = any(
-            prediction is not None and prediction.evidence == "model"
+            self._supported(prediction)
             for prediction in predictions.values()
         )
         ordered = (
@@ -83,10 +95,14 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "event": "workflow_size_free_dispatch_order",
                 "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
                 "ordered": [
-                    {"key": asdict(key), "priority": priorities.get(key)}
+                    {
+                        "key": asdict(key), "priority": priorities.get(key),
+                        **self._dispatch_prediction_fields(predictions.get(key.root_workflow_id)),
+                    }
                     for key in ordered
                 ],
                 "scope": "bounded_pending_window_order_only; actual_grants_logged_separately",
+                "rank_kind": self.rank_kind,
                 "physical_capacity_credit": False,
             })
         return ordered
@@ -136,7 +152,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 prediction = self._prediction(identity)
                 if (
                     identity not in self._resume_groups
-                    and prediction is not None and prediction.evidence == "model"
+                    and self._supported(prediction)
                     and self._ready_sibling(identity, join) is not None
                 ):
                     self._resume_groups[identity] = join.join_id
@@ -169,6 +185,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "event": "workflow_size_resume_selection", "ts_ms": time.time() * 1000.,
                 "monotonic_s": now, **choice,
                 "control_thread_cpu_us": control_cpu_us, "control_wall_us": control_wall_us,
+                "rank_kind": self.rank_kind,
                 "candidates": [
                     {
                         "key": asdict(self.latest[identity]),

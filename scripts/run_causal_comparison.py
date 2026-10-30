@@ -75,6 +75,7 @@ SERVER_FIELDS = (
     "AGENT_FREE_DISPATCH_INTERVAL_MS",
     "AGENT_CONTROL_INTERVAL_MS",
     "WORKFLOW_SIZE_RESUME", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",
+    "WORKFLOW_WORK_SOURCE",
     "DEMAND_PREFILL_PIPELINE",
     "FREE_PAGE_H2D_FENCE",
 )
@@ -325,14 +326,22 @@ def preflight_runtime(settings, model_path):
     if settings["BELIEFKV_INTERNAL_COMPARISON_MODE"] == "native_matched":
         return {"native_runtime_not_enabled": True}
     if settings.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0") == "1":
-        from beliefkv.predictor.workflow_work import WorkflowWorkModel
+        if settings.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
+            from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact
 
-        work_model = WorkflowWorkModel.load(
-            settings["BELIEFKV_WORKFLOW_WORK_MODEL"], settings["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
-        )
-        if work_model.metadata.get("decision_eligible") is not True:
-            raise ValueError("workflow work model has not passed held-out calibration for GPU comparison")
-        work_model.task_input_prefix(settings)
+            WorkflowWorkOracleArtifact.load(
+                settings["BELIEFKV_WORKFLOW_WORK_MODEL"],
+                settings["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
+            )
+        else:
+            from beliefkv.predictor.workflow_work import WorkflowWorkModel
+
+            work_model = WorkflowWorkModel.load(
+                settings["BELIEFKV_WORKFLOW_WORK_MODEL"], settings["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
+            )
+            if work_model.metadata.get("decision_eligible") is not True:
+                raise ValueError("workflow work model has not passed held-out calibration for GPU comparison")
+            work_model.task_input_prefix(settings)
     expected = {
         "profile_shared_path": settings.get("BELIEFKV_PROFILE_SHARED_PATH", "0") == "1",
         "profile_shared_path_sample_every": 64,
@@ -359,6 +368,7 @@ def preflight_runtime(settings, model_path):
         )),
         "agent_control_interval_ms": int(settings.get("BELIEFKV_AGENT_CONTROL_INTERVAL_MS", "5000")),
         "workflow_size_resume": settings.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0") == "1",
+        "workflow_work_source": settings.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned"),
         "coadmit_join_children": settings.get("BELIEFKV_AGENT_COADMIT_JOIN_CHILDREN", "0") == "1",
         "agent_join_dependency_admission": settings.get("BELIEFKV_AGENT_JOIN_DEPENDENCY_ADMISSION", "0") == "1",
         "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
@@ -914,6 +924,9 @@ def observed_configuration(plan, label, arm, *, final=False):
         if join_free and agent_strategy != "thunderagent_reference":
             raise ValueError("free-capacity JOIN admission lacks its declared reference core")
         actual_agents = state.get("agent_admission")
+        oracle = mode == "full" and common.get(
+            "BELIEFKV_WORKFLOW_WORK_SOURCE", common.get("WORKFLOW_WORK_SOURCE", "learned"),
+        ) == "oracle"
         if expected_agents:
             reference_policy = None
             if agent_strategy == "thunderagent_reference":
@@ -933,6 +946,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                     from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
 
                     reference_type = WorkflowSizeAdmission
+                    if oracle:
+                        from beliefkv.runtime.workflow_oracle_admission import WorkflowOracleAdmission
+
+                        reference_type = WorkflowOracleAdmission
                 reference_policy = reference_type.composition_name(
                     join_free_admission=join_free,
                     coadmit_join_children=plan["reference_environment"].get(
@@ -952,7 +969,7 @@ def observed_configuration(plan, label, arm, *, final=False):
                     else "agent_working_set_with_native_migration"
                 )
                 or actual_agents.get("identity") != "invocation_id"
-                or actual_agents.get("future_information_used") is not False
+                or actual_agents.get("future_information_used") is not oracle
                 or actual_agents.get("native_capacity_authority_preserved") is not True
                 or actual_agents.get("counts", {}).get("registered") != plan["source_plan"]["requests"]
                 or actual_agents.get("counts", {}).get("completed") != plan["source_plan"]["requests"]
@@ -990,11 +1007,27 @@ def observed_configuration(plan, label, arm, *, final=False):
                         "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256",
                         common.get("WORKFLOW_WORK_MODEL_SHA256"),
                     ),
+                    workflow_work_source="oracle" if oracle else "learned",
                     pressure_pause_policy=common.get(
                         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY",
                         common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
                     ),
                 )
+                if oracle and final:
+                    predictor = actual_agents["workflow_work_predictor"]
+                    artifact = load(Path(common["BELIEFKV_WORKFLOW_WORK_MODEL"]))
+                    counts = predictor["counts"]
+                    if (
+                        counts.get("completed_requests") != plan["source_plan"]["requests"]
+                        or counts.get("observed_output_tokens") != plan["source_plan"]["output_tokens"]
+                        or counts.get("observed_input_tokens") != sum(
+                            item["input_increment"] for item in artifact["requests"].values()
+                        )
+                        or counts.get("closed_workflows") != len(plan["workflow_ids"])
+                        or any(predictor["remaining_work_units"].values())
+                        or counts.get("unmodeled_core_event_observations", 0)
+                    ):
+                        raise ValueError("oracle actual progress does not conserve the complete fixed work")
             if state.get("agent_join_free_admission", False) is not join_free:
                 raise ValueError("effective free-capacity JOIN admission differs from declaration")
             if state.get("agent_join_blocked_handoff", False) is not (
@@ -1417,6 +1450,20 @@ def register(args):
     ):
         raise ValueError("coding replay did not measure its original native sampling path")
     graph, expected, evidence = source_plan(args.source_arm)
+    oracle_common = reference["arms"]["full"]
+    if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
+        from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact
+
+        WorkflowWorkOracleArtifact.load(
+            oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL"],
+            oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
+        ).validate_source(args.source_arm, graph, evidence)
+        oracle_binding = load(Path(oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL"]))["source_binding"]
+        if (
+            args.tool_duration_overlay is None
+            or sha256_file(args.tool_duration_overlay) != oracle_binding["tool_overlay_sha256"]
+        ):
+            raise ValueError("oracle and actual replay tool timings differ")
     summaries = list(args.source_arm.glob("client_*/summary.json"))
     quality = load(summaries[0])
     source_roots = complete_source_population(quality, graph)
@@ -1572,6 +1619,8 @@ def register(args):
         "TOOL_TIMING_ARTIFACT", "H2D_SEED_ARTIFACT", "TRANSFER_SERVICE_SEED",
         "BELIEFKV_TOOL_TIMING_PRIOR",
     ) if reference["arms"]["full"].get(name))
+    if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
+        inputs.append(Path(oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL"]))
     reuse_selection = (
         reusable_source(quality, graph, expected_workflows=source_roots)
         if args.retention_config is not None else None
@@ -1643,6 +1692,15 @@ def register(args):
             "Auxiliary same-work causal controls; retain all tails and source guard qualifications."
         ),
     }
+    if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
+        plan["oracle_information"] = {
+            "deployable": False, "future_model_token_work_used": True,
+            "future_tool_durations_used": True, "future_dependency_graph_used_for_rank_only": True,
+            "rank": "remaining_model_tool_critical_path_seconds",
+            "source_bound_artifact_sha256": oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
+            "model_service_seconds": "predeclared_context_and_batch_averaged_proxy",
+            "optimal_JCT_bound": False,
+        }
     if args.maximum_replay_slowdown is not None:
         source_speed_check(plan["source_metrics"], plan["source_metrics"], args.maximum_replay_slowdown)
     predecessor_ready(plan)

@@ -423,6 +423,7 @@ def validate_reference_admission(
     control_interval_ms=5000,
     workflow_size_resume=False,
     workflow_work_model_sha256=None,
+    workflow_work_source="learned",
     pressure_pause_policy="reference",
 ):
     if any(type(value) is not bool for value in (
@@ -456,6 +457,15 @@ def validate_reference_admission(
         from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
 
         admission_type = WorkflowSizeAdmission
+    if workflow_work_source not in ("learned", "oracle") or (
+        workflow_work_source == "oracle" and not workflow_size_resume
+    ):
+        raise ValueError("oracle must be explicitly declared with workflow size admission")
+    oracle = workflow_work_source == "oracle"
+    if oracle:
+        from beliefkv.runtime.workflow_oracle_admission import WorkflowOracleAdmission
+
+        admission_type = WorkflowOracleAdmission
     expected = {
         "policy": admission_type.composition_name(
             join_free_admission=join_free_admission,
@@ -470,7 +480,7 @@ def validate_reference_admission(
         "undiscounted_capacity_enforced": True,
         "physical_capacity_credit": False,
         "native_capacity_authority_preserved": True,
-        "future_information_used": False,
+        "future_information_used": oracle,
         "control_interval_ms": float(control_interval_ms),
         "blocked_lending": "disabled",
         "logical_borrowing_enabled": False,
@@ -502,7 +512,14 @@ def validate_reference_admission(
         if (
             model.get("artifact_sha256") != workflow_work_model_sha256 or model.get("error")
             or model.get("scheduler_waits_for_inference") is not False
-            or model.get("future_trace_used_online") is not False
+            or model.get("future_trace_used_online") is not oracle
+            or oracle and (
+                state.get("workflow_work_source") != "oracle"
+                or state.get("deployable") is not False
+                or model.get("deployable") is not False
+                or model.get("future_tool_durations_used") is not True
+                or model.get("rank") != "remaining_model_tool_critical_path_seconds"
+            )
         ):
             raise ValueError("reference ThunderAgent workflow prediction did not remain healthy")
     elif isinstance(state, dict) and state.get("workflow_size_resume", False):

@@ -215,6 +215,14 @@ def arm_environment(
     ):
         raise ValueError("workflow size resume requires reference Full continuation admission")
     workflow_size = workflow_size if mode == "full" else "0"
+    workflow_source = common.get(
+        "BELIEFKV_WORKFLOW_WORK_SOURCE", common.get("WORKFLOW_WORK_SOURCE", "learned"),
+    )
+    if workflow_source not in ("learned", "oracle") or (
+        mode == "full" and workflow_source == "oracle" and workflow_size != "1"
+    ):
+        raise ValueError("declared oracle requires reference Full workflow size resume")
+    workflow_source = workflow_source if mode == "full" else "learned"
     workflow_model = common.get("BELIEFKV_WORKFLOW_WORK_MODEL", common.get("WORKFLOW_WORK_MODEL", ""))
     workflow_sha = common.get(
         "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256", common.get("WORKFLOW_WORK_MODEL_SHA256", ""),
@@ -378,6 +386,8 @@ def arm_environment(
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS": control_interval,
         "WORKFLOW_SIZE_RESUME": workflow_size,
         "BELIEFKV_WORKFLOW_SIZE_RESUME": workflow_size,
+        "WORKFLOW_WORK_SOURCE": workflow_source,
+        "BELIEFKV_WORKFLOW_WORK_SOURCE": workflow_source,
         "WORKFLOW_WORK_MODEL": workflow_model,
         "BELIEFKV_WORKFLOW_WORK_MODEL": workflow_model,
         "WORKFLOW_WORK_MODEL_SHA256": workflow_sha,
