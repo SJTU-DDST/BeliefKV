@@ -45,7 +45,9 @@ from beliefkv.experiments.delegation_policy import (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE,
     DYNAMIC_NESTED_IN_GRAPH_PROFILES,
     REUSABLE_NESTED_IN_GRAPH_PROFILE,
+    PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
     SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILES,
     IN_GRAPH_SUBAGENT_PROFILES,
     NESTED_COORDINATOR_ROLE,
     NESTED_IN_GRAPH_PROFILE,
@@ -2561,6 +2563,50 @@ Require relevant implementation evidence or necessary real tool results.
 Do not duplicate finished investigations or repeat tools to increase waiting.
 """
 
+PARALLEL_WORKSTREAM_ROOT_PROMPT = """
+PARALLEL, BOUNDED DELEGATION ROUNDS
+When independent evidence is needed, form a group of two to four complementary
+deliverables and emit all task calls in ONE assistant response. They run together;
+waiting for one child before issuing the next serializes the round. Use this
+pattern for newly exposed independent questions after integration as well as for
+the first investigation. Do not save the only parallel round for the final answer.
+Keep dependent edits and integration in the parent. A genuinely indivisible
+question may use one child; do not split it into duplicate or meaningless work.
+There is no fixed number of rounds or required role sequence.
+
+Name the relevant path, symbol or observed failure in each assignment. Ask a child
+to locate one call path, reproduce one behavior, make one bounded disjoint edit,
+or review one concrete property. Do not send the entire project objective as a
+child assignment. Independent editors must have disjoint write scopes. Supply
+already known paths and evidence so each child can start without rediscovering
+the repository. Integrate an incomplete report and assign only its unresolved
+checkpoint next. When a bounded subsystem question really needs two independent
+checks, a coordinating child may delegate those checks and join their reports.
+"""
+
+PARALLEL_WORKSTREAM_CHILD_PROMPT = """
+ONE CHECKPOINT, THEN HAND OFF
+Work only on the assigned symbol, reproduction, bounded edit or review property.
+Start with the paths and evidence provided. Prefer one or two focused repository
+operations over broad exploration. Return as soon as this checkpoint is answered;
+the parent owns the end-to-end repair, integration and further assignments.
+Do not maintain a todo list for an atomic assignment or repeatedly announce plans.
+Use a concise report: status, concrete evidence and paths, any command outcome,
+and the exact unresolved checkpoint. Three to six short evidence bullets usually
+suffice. Do not copy full files, long command output or repeated project summaries.
+If the small scope cannot be completed in the soft work session, return PARTIAL:
+or BLOCKED: with what was established and a precise next action. Finish an in-flight
+tool, active edit or nested JOIN before reporting; never invent a successful result.
+"""
+
+PARALLEL_WORKSTREAM_TASK_PROMPT = """
+For independent checkpoints, issue two to four task calls together in one assistant
+response, before awaiting any child. Each description names one bounded deliverable,
+known paths or symbols, existing evidence, and any disjoint write scope. The parent
+integrates results and owns the complete project objective. Serial singleton rounds
+are for genuinely dependent or indivisible work, not a default delegation pattern.
+"""
+
 
 class NativeDelegationRoundPromptMiddleware(AgentMiddleware[Any, Any, Any]):
     """Persist stage instructions in task results, keeping future KV prefixes stable."""
@@ -2667,7 +2713,8 @@ class DynamicDelegationPromptMiddleware(AgentMiddleware[Any, Any, Any]):
 
     def __init__(self, *, profile: str = DYNAMIC_NESTED_IN_GRAPH_PROFILE) -> None:
         super().__init__()
-        self.short_workstreams = profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+        self.short_workstreams = profile in SHORT_WORKSTREAM_IN_GRAPH_PROFILES
+        self.parallel_workstreams = profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE
 
     def wrap_model_call(self, request: ModelRequest, handler: Any) -> ModelResponse:
         return handler(request.override(model_settings={
@@ -2696,6 +2743,13 @@ class DynamicDelegationPromptMiddleware(AgentMiddleware[Any, Any, Any]):
                 " Give each new child one small unresolved deliverable and let it "
                 "report promptly. Use necessary real project tools; do not repeat "
                 "finished checks or expand the task to create more rounds."
+            )
+        if self.parallel_workstreams:
+            instruction += (
+                " After integrating all reports, submit newly needed independent "
+                "checkpoints together as two to four task calls in ONE response. "
+                "Give each child known paths and one bounded result; keep dependent "
+                "integration in the parent. Return naturally if no work remains."
             )
         updated = [
             message.model_copy(update={"content": _message_text(message) + instruction})
@@ -2805,6 +2859,11 @@ def _autonomous_fanout_prompt(
         return DYNAMIC_NESTED_ROOT_PROMPT
     if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE:
         return DYNAMIC_NESTED_ROOT_PROMPT + "\n" + SHORT_WORKSTREAM_ROOT_PROMPT
+    if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
+        return (
+            DYNAMIC_NESTED_ROOT_PROMPT + "\n" + SHORT_WORKSTREAM_ROOT_PROMPT
+            + "\n" + PARALLEL_WORKSTREAM_ROOT_PROMPT
+        )
     if config.subagent_fanout_profile == NESTED_IN_GRAPH_PROFILE:
         return NATIVE_NESTED_2TO4_PROMPT
     return AUTONOMOUS_NATURAL_SUBAGENT_PROMPT
@@ -3488,6 +3547,39 @@ PARALLEL_ANALYSIS_SUBAGENT_SPECS = (
     ),
 )
 
+BOUNDED_WORKSTREAM_SUBAGENT_SPECS = (
+    (
+        "repository-explorer",
+        "Locate one specified symbol, call path or invariant; return bounded read-only evidence.",
+        "Inspect only the assigned code path or property. Do not modify files or "
+        "perform a whole-project investigation. Report the supporting locations.",
+    ),
+    (
+        "test-analyst",
+        "Reproduce one specified behavior or execute one focused real-project check.",
+        "Resolve the assigned reproduction or validation checkpoint. Distinguish "
+        "task failures from environment blockers. Do not repair the whole project.",
+    ),
+    (
+        "bounded-editor",
+        "Implement one bounded change within the parent's explicit disjoint write scope.",
+        "Make only the assigned bounded edit. Preserve unrelated files. Validate "
+        "the changed boundary when feasible and report the exact remaining gaps.",
+    ),
+    (
+        "compatibility-analyst",
+        "Review one named interface, compatibility property or patch invariant.",
+        "Check the one assigned property against concrete project code. Do not "
+        "repeat other children or expand the review into a full repair.",
+    ),
+    (
+        "general-purpose",
+        "Complete one explicitly bounded evidence or edit checkpoint, then hand it back.",
+        "Honor the narrow checkpoint and write scope in the assignment. The parent "
+        "owns end-to-end implementation and integration. Do not take over that task.",
+    ),
+)
+
 
 def _context_lifecycle_middleware(
     config: DeepAgentsExperimentConfig,
@@ -3533,6 +3625,9 @@ def _autonomous_subagents(
         and config.subagent_fanout_profile in NESTED_IN_GRAPH_PROFILES
     )
     dynamic = config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
+    parallel_workstreams = config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE
+    if parallel_workstreams:
+        specs = BOUNDED_WORKSTREAM_SUBAGENT_SPECS
     if nested:
         specs = ((
             NESTED_COORDINATOR_ROLE,
@@ -3573,9 +3668,10 @@ def _autonomous_subagents(
                     )
                     + (
                         "\n\n" + SHORT_WORKSTREAM_CHILD_PROMPT
-                        if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+                        if config.subagent_fanout_profile in SHORT_WORKSTREAM_IN_GRAPH_PROFILES
                         else ""
                     )
+                    + ("\n\n" + PARALLEL_WORKSTREAM_CHILD_PROMPT if parallel_workstreams else "")
                     + (
                         budget_instruction(
                             config.child_work_budget_warning_calls,
@@ -3604,7 +3700,7 @@ def _autonomous_subagents(
                         )]
                         if config.child_final_report_shadow else []
                     ),
-                    TodoListMiddleware(),
+                    *([] if parallel_workstreams else [TodoListMiddleware()]),
                     _filesystem_middleware(
                         backend, allow_direct_edits=not read_only
                     ),
@@ -3662,10 +3758,12 @@ def _autonomous_subagents(
                     **({
                         "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT + (
                             SHORT_WORKSTREAM_TASK_PROMPT
-                            if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+                            if config.subagent_fanout_profile in SHORT_WORKSTREAM_IN_GRAPH_PROFILES
                             else ""
+                        ) + (PARALLEL_WORKSTREAM_TASK_PROMPT if parallel_workstreams else ""),
+                        "task_description": DYNAMIC_TASK_DESCRIPTION + (
+                            PARALLEL_WORKSTREAM_TASK_PROMPT if parallel_workstreams else ""
                         ),
-                        "task_description": DYNAMIC_TASK_DESCRIPTION,
                     } if dynamic else {}),
                     subagents=_autonomous_subagents(
                         config, workload, backend, adapter, model, summary_model,
@@ -3746,10 +3844,16 @@ def _build_autonomous_agent(
                 **({
                     "system_prompt": DYNAMIC_TASK_SYSTEM_PROMPT + (
                         SHORT_WORKSTREAM_TASK_PROMPT
-                        if config.subagent_fanout_profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE
+                        if config.subagent_fanout_profile in SHORT_WORKSTREAM_IN_GRAPH_PROFILES
                         else ""
+                    ) + (
+                        PARALLEL_WORKSTREAM_TASK_PROMPT
+                        if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else ""
                     ),
-                    "task_description": DYNAMIC_TASK_DESCRIPTION,
+                    "task_description": DYNAMIC_TASK_DESCRIPTION + (
+                        PARALLEL_WORKSTREAM_TASK_PROMPT
+                        if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else ""
+                    ),
                 } if dynamic else {}),
                 subagents=_autonomous_subagents(
                     config,

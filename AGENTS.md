@@ -4127,3 +4127,37 @@
   work,fresh drain/actual owned exit then reports metrics/plots/five mechanism
   audits;it creates no GPU follow-up. Current c5bd820f oracle remains running
   unchanged and whole-run gains are pending. Keep the global goal active.
+- New scope18 cached oracle and its CPU reviewer now actually complete/exit:
+  exact18/4246/148235495/607248,meanJCT1445.406697 versus retained1444.020012,
+  whole-run output283.233280 versus282.442530. JCT regresses.0960%,throughput
+  rises.2800%;do not promote ranking. All three complete PNGs inspected.
+  Only4/1067controls have defined ready-paused short/long capacity competition.
+  New complete source shape audit finds78singleton/19double JOINs,116children,
+  child model-call median29/P9044.5 and no nesting;all19parallel groups have
+  positive shared native decode. Keep these diagnostics and all normal tails.
+- User rejects proposed child2/4:retain shared4/8 soft reminders,root8/16.
+  The separately declared six-project parallel checkpoint pilot uses fixed
+  context bands1/4,two narrow diagnoses/two bounded edits/two original full
+  multi-stage objectives. Explicit derived IDs/provenance distinguish reduced
+  deliverables from original full-task success. Keep original source/tests/
+  environment/context and true tool timing;new actual task semantics precede
+  reference context. New parallel_workstreams profile removes child todos only,
+  narrows roles/reports and prompts simultaneous independent task calls;keep
+  auto first choice,real parallel minimum,natural returns and depth2. No new
+  call/output hard cap or fixed DAG. Pilot is a shape diagnostic,not evidence
+  of eighteen-root pressure or scheduler superiority. Inspect complete child
+  lengths,fanout,nesting,offered overlap and positive native service before
+  expansion;do not automatically launch eighteen or discard normal failures.
+- User authorizes regenerating the bad seed22 arrival realization. main_arrivals_r2
+  uses one predeclared seed23 draw with the same independent permutation21/
+  five warm roots/old-population calibrated rate. Maximum gap393.93s and last
+  arrival1579.22s;retain old875.05s/2485.85s r1 without clipping. This is still
+  CPU preparation,not sustained-pressure qualification. New task scopes require
+  new matching rate calibration;do not transfer the old132.72s parameter blindly.
+- Parallel pilot bound CPU actually passes5266+12,retains all5243 prior literal
+  identities,no failures/errors/skips,2072inputs and native engine unchanged.
+  Fifteen external tool/project/context inputs revalidate. Source-bound tests
+  include real nested harness/session/auto-first/todo boundaries,explicit derived
+  task scope and complete shape/native ownership/positive-service diagnostics.
+  New pilot GPU collection still requires clean freeze,fresh sampler,current
+  reservation/resources and complete prior comparison/reviewer actual exit.

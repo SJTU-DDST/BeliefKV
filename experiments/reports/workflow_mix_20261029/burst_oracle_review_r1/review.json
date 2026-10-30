@@ -1,0 +1,150 @@
+{
+  "observed_at": "2026-10-30T09:16:26.195341+00:00",
+  "complete_equal_work_fresh_drain_and_actual_exit": true,
+  "requests": 4246,
+  "workflows": 18,
+  "metrics": {
+    "oracle": {
+      "mean_jct_s": 1445.4066967058714,
+      "makespan_s": 2143.9853411569597,
+      "end_to_end_output_tokens_per_s": 283.23327979113446,
+      "decode": {
+        "batches": 109591,
+        "request_steps": 606987,
+        "worker_ms": 1517580.5861819535,
+        "request_step_ms": 12166075.123529881,
+        "output_tokens": 603002,
+        "context_tokens": 25142059964,
+        "graph_batches": 109591,
+        "graph_request_steps": 606987,
+        "configured_bucket_rows": 710062,
+        "batches_needing_padding": 50861,
+        "worker_ms_in_batches_needing_padding": 951557.9496789724,
+        "mean_batch": 5.538657371499484,
+        "worker_weighted_mean_batch": 8.016757221531302,
+        "worker_interval_sum_s": 1517.5805861819535,
+        "mean_worker_interval_ms": 13.84767532171395,
+        "output_tokens_per_worker_interval_second": 397.3443028268298,
+        "mean_observed_request_context_tokens": 41421.08474151835,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.16981418053434427
+      }
+    },
+    "retained Full": {
+      "mean_jct_s": 1444.020011912611,
+      "makespan_s": 2149.987822450638,
+      "end_to_end_output_tokens_per_s": 282.4425299803957,
+      "decode": {
+        "batches": 111924,
+        "request_steps": 607007,
+        "worker_ms": 1521134.621203877,
+        "request_step_ms": 12143200.425927527,
+        "output_tokens": 603002,
+        "context_tokens": 25143806996,
+        "graph_batches": 111924,
+        "graph_request_steps": 607007,
+        "configured_bucket_rows": 704043,
+        "batches_needing_padding": 49756,
+        "worker_ms_in_batches_needing_padding": 931570.2562853694,
+        "mean_batch": 5.423385511597155,
+        "worker_weighted_mean_batch": 7.9829886563997805,
+        "worker_interval_sum_s": 1521.134621203877,
+        "mean_worker_interval_ms": 13.59078143386474,
+        "output_tokens_per_worker_interval_second": 396.41593294534573,
+        "mean_observed_request_context_tokens": 41422.59808535981,
+        "graph_batch_fraction": 1.0,
+        "configured_padding_rows_per_real_graph_row": 0.15985977097463455
+      }
+    }
+  },
+  "oracle_relative_to_control": {
+    "mean_jct_reduction_percent": -0.09602947201705625,
+    "whole_run_output_throughput_gain_percent": 0.2799683924349594
+  },
+  "streaming_response_metrics": {
+    "oracle": {
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 140933.2442941136,
+        "p50": 106077.55265951157,
+        "p75": 207461.60051226616,
+        "p90": 276929.82370548253,
+        "p95": 299477.40921730996,
+        "p99": 307209.1038351917,
+        "max": 309142.02748966217
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 36293.21682522032,
+        "p50": 31672.112555503845,
+        "p75": 45371.96136426926,
+        "p90": 62231.93460092545,
+        "p95": 66763.02005262375,
+        "p99": 68512.9438031578,
+        "max": 68950.42474079132
+      }
+    },
+    "retained Full": {
+      "workflow_ttft_ms": {
+        "count": 18,
+        "mean": 138935.775794718,
+        "p50": 106078.24606704712,
+        "p75": 203450.7397696972,
+        "p90": 268831.7741191864,
+        "p95": 292610.19306826586,
+        "p99": 327472.62482733716,
+        "max": 336188.2327671051
+      },
+      "workflow_max_post_first_ready_output_gap_ms": {
+        "count": 18,
+        "mean": 32672.382192293804,
+        "p50": 22809.11423921585,
+        "p75": 45340.13797998428,
+        "p90": 62180.06279344559,
+        "p95": 66719.56470503806,
+        "p99": 68452.6817100811,
+        "max": 68885.96096134186
+      }
+    }
+  },
+  "competition_counts": {
+    "controls": 1067,
+    "empty_candidate_controls": 757,
+    "nonempty_controls": 310,
+    "controls_with_ready_short_long_capacity_competition": 4,
+    "competing_controls_with_changed_selected_set": 3
+  },
+  "decode_evidence_sha256": "cfdaf9105eb31c148b77e0de1af4615c05d15dbd8a714afce37192b1a34fc044",
+  "figures": [
+    "decode_timeline",
+    "decode_distributions",
+    "decode_geometry"
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json": "74d2b2cba8487773d4c5434e4fc11fab58b0003ad899059b57fcb0fad97baf54",
+    "/home/longhao/experiment/ops/workflow_mix_burst_full_20261030_r1.registration.json": "f9cd1c4d171f0a10519c9135cd0f0e87a7eebb28b88b3c10192ad40e51ff0350",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_finish_r1/population.json": "b40727c37f77b79daae8ad146c9a2fe6e6bdf198ccf70e3e4cb0fc166da7099f",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/experiments/reports/workflow_mix_20261029/review_oracle.py": "5a7db99dcefd4dcfcd9a0226795b7a2c8d857d0b2bc38c601e71366b4ca7814e",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_workflow_competition.py": "00af3d8cb40199760af5af6483131a75475f73f373db41cba6df1a2b17c511fb",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_demand_prefill_pipeline.py": "8c09cce02bbcc87f079d5af765bec581593c7ff1604d673d31c5eeba6b1cb2e1",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_prefetch_lifecycle.py": "1929fa4c56deb82074f6e4ec81a798f583a6b87b1d9a8ff0e6f83ed959a7c7f6",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_sibling_native_service.py": "543b65c8d27ab0234e68d8d37d00583b00c433b31f40528ffd0bab10fee17276",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_eos_trigger_lifecycle.py": "e7c206cb836dcd0073cb13ee11adcd609eee6ee37eb4718f2e52b3aee94d5d4b",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/replay/summary.json": "0b49bb934289689fef5f15ec59a3a459d3711d52db6a8af7795190e1dfff7dcb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/server/server_info.json": "4318574f44cc51dd447542770fd28928d1dc1a491cec45bb3423a522f195520c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/server/native_telemetry_status.json": "9365f263c7aea502b531f9bac337a2b67deaa58e9afa6edbcc1c0e93ed555261",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/server/native_capacity_census.json": "4dccaf39e981d17a4d4f36df652e9719706029ce2f1143b4588d95db1d2a473e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/opportunities/admission_opportunities.jsonl": "cdf825e85b62536dc5d29c2815391e4511e14a3e8f8946591999413722186353",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/replay/summary.json": "524bea7bf911edb301b3f8d6000269251e633125d75be55d0781398c50eb2150",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/server/server_info.json": "a90e7babcd88eb7fe3811ecbeea09bc085ddecbad6d68eac71329f2f3f0e95b5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/server/native_telemetry_status.json": "34e4a469c151134c8f41bb6a89cb4f9fdbc477fd2e013c260ac9fd22c0bcc8e5",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/server/native_capacity_census.json": "8b4773db12a9ad3b1fa2a9457fb2f6d18b635911ac365d62a8e4b62431ae8af4",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/opportunities/admission_opportunities.jsonl": "ebc657ed1f1fbe5b315b5bcca8b85cfe25e31f35ae92179b64fe70ba143ff89f"
+  },
+  "future_information_used": true,
+  "deployable": false,
+  "optimal_JCT_bound": false,
+  "repeated_run_superiority_established": false,
+  "GPU_followup_registered": false,
+  "performance_accepted": false
+}

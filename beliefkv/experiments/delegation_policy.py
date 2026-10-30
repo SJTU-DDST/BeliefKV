@@ -4,9 +4,13 @@ NESTED_IN_GRAPH_PROFILE = "native_in_graph_nested_2to4"
 DYNAMIC_NESTED_IN_GRAPH_PROFILE = "native_in_graph_dynamic_nested"
 REUSABLE_NESTED_IN_GRAPH_PROFILE = "native_in_graph_reusable_nested"
 SHORT_WORKSTREAM_IN_GRAPH_PROFILE = "native_in_graph_short_workstreams"
+PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE = "native_in_graph_parallel_workstreams"
+SHORT_WORKSTREAM_IN_GRAPH_PROFILES = frozenset({
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILE, PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
+})
 DYNAMIC_NESTED_IN_GRAPH_PROFILES = frozenset({
     DYNAMIC_NESTED_IN_GRAPH_PROFILE, REUSABLE_NESTED_IN_GRAPH_PROFILE,
-    SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+    *SHORT_WORKSTREAM_IN_GRAPH_PROFILES,
 })
 NESTED_COORDINATOR_ROLE = "delegation-coordinator"
 MINIMUM_ROOT_JOIN_MEMBERS = 2
@@ -25,6 +29,7 @@ SUBAGENT_FANOUT_PROFILES = (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE,
     REUSABLE_NESTED_IN_GRAPH_PROFILE,
     SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+    PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
 )
 IN_GRAPH_SUBAGENT_PROFILES = frozenset({
     "native_in_graph_1to4", "native_in_graph_2to4", *NESTED_IN_GRAPH_PROFILES,
@@ -91,7 +96,7 @@ def delegation_contract(profile: str) -> dict:
             concurrent_writers_per_handle=1,
             reuse_api="task(description, subagent_type, agent_id=None);close_agent(agent_id)",
         )
-    if profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE:
+    if profile in SHORT_WORKSTREAM_IN_GRAPH_PROFILES:
         contract.update(
             child_deliverable="one_bounded_evidence_or_change",
             child_work_budget_enforcement="soft_reminders_then_natural_report",
@@ -100,5 +105,18 @@ def delegation_contract(profile: str) -> dict:
             tool_duration_target_seconds=None,
             artificial_tool_delays=False,
             repeated_validation_without_new_evidence=False,
+        )
+    if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
+        contract.update(
+            child_roles="bounded_locator_reproducer_editor_reviewer_and_general_purpose",
+            child_report="concise_evidence_and_explicit_handoff",
+            child_todo_middleware=False,
+            parallel_round_instruction="submit_2_to_4_independent_task_calls_in_one_response",
+            singleton_rounds="allowed_for_indivisible_work_and_reported_in_source_audit",
+            first_tool_choice="auto",
+            parallel_round_count_enforced=False,
+            model_call_limit_enforced=False,
+            report_token_limit_enforced=False,
+            pilot_shape_review_required=True,
         )
     return contract

@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_workflow_competition.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json",
+    "--population",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_finish_r1/population.json",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_oracle_review_r1/competition.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\"controls\": 1067, \"empty_candidate_controls\": 757, \"nonempty_controls\": 310, \"controls_with_ready_short_long_capacity_competition\": 4, \"competing_controls_with_changed_selected_set\": 3}\n",
+  "stderr": ""
+}

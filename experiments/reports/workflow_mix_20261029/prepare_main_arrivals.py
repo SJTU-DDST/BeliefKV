@@ -20,6 +20,7 @@ def main():
     parser.add_argument("--control-review", type=Path, required=True)
     parser.add_argument("--population", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--arrival-seed", type=int, default=22)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve the original arrival calibration")
@@ -50,7 +51,7 @@ def main():
         "registration_sha256": sha256_file(args.control), "mode": plan["workflow_arrivals"]["mode"],
     }
     calibrated = calibrated_arrivals(
-        rows, completed_control=contract, permutation_seed=21, arrival_seed=22,
+        rows, completed_control=contract, permutation_seed=21, arrival_seed=args.arrival_seed,
         initial_workflows=5, offered_load=.9,
     )
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -69,7 +70,7 @@ def main():
         "GPU_action": False, "performance_accepted": False,
     })
     print({
-        "initial_workflows": 5, "permutation_seed": 21, "arrival_seed": 22,
+        "initial_workflows": 5, "permutation_seed": 21, "arrival_seed": args.arrival_seed,
         "rate_per_second": calibrated["arrivals"]["rate_per_second"], "GPU_action": False,
     })
 

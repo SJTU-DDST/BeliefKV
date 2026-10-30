@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_sibling_native_service.py",
+    "--arm",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_oracle_review_r1/siblings.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"journal_records\": 952,\n  \"journal_request_attempts\": 961,\n  \"status_counts\": {\n    \"native_batch_join_and_completed_sessions_verified\": 952\n  },\n  \"verified_records\": 952,\n  \"verified_request_attempts\": 961,\n  \"verified_multi_member_batches\": 9,\n  \"verified_prefill_records\": 952,\n  \"native_worker_samples\": 114671,\n  \"all_journal_records_verified\": true,\n  \"positive_service_evidence\": true\n}\n",
+  "stderr": ""
+}

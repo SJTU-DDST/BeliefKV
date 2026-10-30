@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_demand_prefill_pipeline.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_oracle_review_r1/native_demand.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"untagged_native_h2d_bytes\": 685115867136,\n  \"native_request_host_hit_bytes\": 33516552192,\n  \"layer_handoff_consumer_bytes\": 0,\n  \"staged_native_demand_bytes\": 651599314944,\n  \"unexplained_native_h2d_bytes\": 0,\n  \"exact_physical_bytes_reconciled\": true,\n  \"native_cache_hit_counters_changed\": false\n}\n",
+  "stderr": ""
+}

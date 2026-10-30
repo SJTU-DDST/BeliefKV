@@ -17,7 +17,9 @@ from beliefkv.core.events import RuntimeEventKind
 from beliefkv.experiments.agent_protocol import ActivationDeadline, LoopGuardPolicy
 from beliefkv.experiments.delegation_policy import (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_COORDINATOR_ROLE,
-    NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE, delegation_contract,
+    NESTED_IN_GRAPH_PROFILE, PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
+    SHORT_WORKSTREAM_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILES,
+    delegation_contract,
 )
 from beliefkv.experiments import deepagents_swebench as harness
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
@@ -81,6 +83,8 @@ class NestedFixtureModel(BaseChatModel):
                 "short_root_prompt": "SHORT, EVIDENCE-DRIVEN WORKSTREAMS" in system,
                 "short_child_prompt": "SMALL CHILD DELIVERABLE" in system,
                 "short_task_prompt": "Assign one narrow deliverable per child." in system,
+                "parallel_root_prompt": "PARALLEL, BOUNDED DELEGATION ROUNDS" in system,
+                "parallel_child_prompt": "ONE CHECKPOINT, THEN HAND OFF" in system,
             })
 
         def call(name, args):
@@ -155,6 +159,8 @@ def configuration(tmp_path, profile=NESTED_IN_GRAPH_PROFILE):
     (DYNAMIC_NESTED_IN_GRAPH_PROFILE, False),
     (DYNAMIC_NESTED_IN_GRAPH_PROFILE, True),
     (SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True),
+    (PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, False),
+    (PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True),
 ])
 def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     tmp_path, monkeypatch, deliver_control, profile, source_context,
@@ -177,6 +183,7 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
     model = NestedFixtureModel()
     model._dynamic = profile in (
         DYNAMIC_NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+        PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
     )
     model._adapter, model._sessions, model._closed = adapter, sessions, closed
     monkeypatch.setattr(harness, "_model", lambda *args: model)
@@ -214,7 +221,7 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
             queued.close()
         audit.close()
     assert "Controlled root fixture report" in result["messages"][-1].content
-    if profile == SHORT_WORKSTREAM_IN_GRAPH_PROFILE:
+    if profile in SHORT_WORKSTREAM_IN_GRAPH_PROFILES:
         assert all(
             row["short_root_prompt"] and row["short_task_prompt"]
             for row in model._requests if row["role"] == "root"
@@ -226,6 +233,15 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         assert all(
             row["short_task_prompt"] for row in model._requests
             if row["role"] == "direct"
+        )
+    if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
+        assert all(
+            row["parallel_root_prompt"] and "write_todos" in row["tools"]
+            for row in model._requests if row["role"] == "root"
+        )
+        assert all(
+            row["parallel_child_prompt"] and "write_todos" not in row["tools"]
+            for row in model._requests if row["role"] != "root"
         )
 
     graph = RuntimeCausalContextGraph()
@@ -414,6 +430,25 @@ def test_short_workstreams_keep_dynamic_graph_and_natural_tool_timing():
     assert contract["tool_duration_target_seconds"] is None
     assert not contract["artificial_tool_delays"]
     assert not contract["repeated_validation_without_new_evidence"]
+
+
+def test_parallel_workstreams_keep_soft_budgets_and_automatic_first_choice():
+    contract = delegation_contract(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE)
+    assert contract["root_initial_tool_choice"] == contract["first_tool_choice"] == "auto"
+    assert contract["minimum_completed_root_join_members"] == 2
+    assert contract["maximum_spawn_depth"] == 2
+    assert contract["child_work_budget_enforcement"] == "soft_reminders_then_natural_report"
+    assert contract["child_todo_middleware"] is False
+    assert contract["pilot_shape_review_required"] is True
+    for field in (
+        "parallel_round_count_enforced", "model_call_limit_enforced",
+        "report_token_limit_enforced", "artificial_tool_delays",
+    ):
+        assert contract[field] is False
+    assert {row[0] for row in harness.BOUNDED_WORKSTREAM_SUBAGENT_SPECS} >= {
+        "repository-explorer", "test-analyst", "bounded-editor",
+        "compatibility-analyst", "general-purpose",
+    }
 
 
 def test_dynamic_delegation_allows_final_response_without_any_spawn(tmp_path):

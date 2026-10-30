@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+    "/home/longhao/experiment/beliefkv-workflow-mix-review-20261030-60d27783/scripts/audit_eos_trigger_lifecycle.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json",
+    "--expected-receipts",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_full_20261030_r1/full/replay/native_requests.jsonl",
+    "--output",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_oracle_review_r1/eos.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"exact_completed_receipts\": 4246,\n  \"trigger_records\": 83,\n  \"lifecycle_statuses\": {\n    \"final_request_observed\": 83\n  },\n  \"delimiter_evidence\": {\n    \"no_dedicated_delimiter\": 83\n  },\n  \"all_triggered_requests_observed_final\": true\n}\n",
+  "stderr": ""
+}

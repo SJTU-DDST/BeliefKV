@@ -25,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.delegation_policy import (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+    PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
 )
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.paper_baselines import (
@@ -232,6 +233,7 @@ def experiment_reference(reference, spec):
         or common.get("FANOUT_PROFILE") not in (
             NESTED_IN_GRAPH_PROFILE, DYNAMIC_NESTED_IN_GRAPH_PROFILE,
             SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+            PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
         )
         or common.get("BELIEFKV_SUBAGENT_RETENTION") != "off"
         or any(

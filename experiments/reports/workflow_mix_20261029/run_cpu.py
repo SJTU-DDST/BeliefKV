@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
-    previous_path = ROOT / "experiments/reports/workflow_mix_20261029/bound_cpu_r3/evidence.json"
+    previous_path = ROOT / "experiments/reports/workflow_mix_20261029/bound_cpu_r4/evidence.json"
     previous = json.loads(previous_path.read_bytes())
     retained, bad, _ = identities(Path(previous["report"]["path"]))
     if bad or any(
@@ -35,6 +35,7 @@ def main():
         "tests/test_workflow_oracle_path_cache.py",
         "tests/test_workflow_competition_readiness.py", "tests/test_workflow_competition_audit.py",
         "tests/test_workload_mix_completion.py",
+        "tests/test_parallel_workstream_pilot.py", "tests/test_nested_delegation.py",
     )
     names.update(added)
     names.update((
@@ -54,6 +55,14 @@ def main():
         "experiments/reports/workflow_mix_20261029/qualify_burst_oracle.py",
         "experiments/reports/workflow_mix_20261029/register_burst_oracle.py",
         "experiments/reports/workflow_mix_20261029/live_burst.py",
+        "scripts/prepare_parallel_workstream_pilot.py",
+        "scripts/audit_parallel_workstreams.py",
+        "configs/workloads/locobench_parallel_pilot6_20261030.json",
+        "configs/migration/workflow_parallel_pilot6_native_20261030.json",
+        "experiments/reports/workflow_mix_20261029/parallel_pilot6_declaration.json",
+        "experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+        "experiments/reports/workflow_mix_20261029/register_parallel_pilot.py",
+        "experiments/reports/workflow_mix_20261029/prepare_main_arrivals.py",
         str(Path(__file__).relative_to(ROOT)),
     ))
     before = {name: sha256_file(ROOT / name) for name in sorted(names)}
