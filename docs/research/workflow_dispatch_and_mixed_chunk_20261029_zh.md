@@ -136,3 +136,30 @@ R1 的失败和独立诊断保留，不与 R2 合并为一次成功执行。
 paper 运行配置、nice0 的 watcher/server/driver/scheduler、唯一 owned GPU
 上下文和最初 51 条 exact 完成回执。这些是启动前缀，不能当作完整工作量、
 JCT 或吞吐结论。
+
+## 完整回放前缀与后续审计
+
+新增只读 `scripts/audit_mixed_output_prefix.py` 按原生 forward 时间边界
+核对输出序号、原生完成事件和客户端 exact/native-sampled 回执。仍在执行、
+尚未收到客户端回执、晚于该 forward 边界的事件分别计数；不得把前缀标为
+完整守恒。完整模式还要求所有原生完成、客户端完成及输出请求集合一致。
+
+两个独立封存的 Thunder 前缀分别验证 1,033 和 3,144 条共同完成回执。
+后者包含 3,146 个已观察请求、479,422 个输出 token、3,622 个混合 prefill
+forward 及其中 26,002 个 decode 输出；9 个较晚原生完成和 12 个边界之外
+回执保留为覆盖差异。这些计数不是同一时刻的原子状态或完整性能结果。
+
+另外一个独立 decode 间隔前缀观察到 12,250 次持续 decode 前后边界观察，
+全部在中间的 prefill 段获得服务，quiet gap 为零。此处是重复服务观察，
+不是 12,250 条独立请求。没有把 400.36 秒 prefill worker 区间当作可消除
+JCT，也不能直接与旧完整运行的区间总量比较。后续原生状态样本显示
+Host FULL 池高水位达到 200GB，已有 467 次 Host-hit 请求及大量真实恢复；
+不能把这个较晚状态与上述封存前缀拼成原子观测。
+
+`complete_after_pair.py` 为 CPU 专用的后处理入口，只在原 queue 完整配对
+评审完成、queue watcher 实际退出且两臂 exact work/fresh drain/owned exit
+重新通过后执行。它顺序检查两臂完整混合输出、decode 间隔及共同 JCT 路径，
+再核对 Full 的原生恢复字节/后续服务、JOIN 预取、sibling 和 EOS。
+它不启动任何 GPU 工作，不自动重试失败，也不覆盖旧报告。
+显式检查工具/普通预取和物理 handoff 仍为关闭；允许的提前恢复来源是
+`join_ticket`。相关 55 个 CPU 测试已通过，运行中的冻结 GPU 源码未变化。

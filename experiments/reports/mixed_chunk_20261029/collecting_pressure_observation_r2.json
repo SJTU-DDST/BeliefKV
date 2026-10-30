@@ -1,0 +1,18 @@
+{
+  "source": "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/server/native_telemetry_status.json",
+  "source_snapshot_ts_ms": 1793319332048.991,
+  "full_host_capacity_tokens": 2034506,
+  "full_host_high_water_bytes": 200000077824,
+  "full_host_high_water_tokens": 2034506,
+  "full_bytes_per_token": 98304,
+  "full_d2h_ack_tokens": 17867867,
+  "full_h2d_ack_tokens": 23002685,
+  "full_host_evicted_bytes": 1556492058624,
+  "request_count": 3075,
+  "requests_with_full_host_hit": 467,
+  "failed_records": 0,
+  "dropped_records": 0,
+  "writer_error": null,
+  "scope": "Retained selected fields from the already observed published status. The live status subsequently changes. Not an atomic join with separately sealed output prefixes or complete performance.",
+  "performance_accepted": false
+}

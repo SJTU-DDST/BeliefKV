@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-10-30T00:19:54.709610+00:00",
+  "testcase_records": 55,
+  "failed_error_skipped": 0,
+  "report": "/home/longhao/experiment/BeliefKV/experiments/reports/mixed_chunk_20261029/complete_review_focused_r2.xml",
+  "report_sha256": "baac64cf6fa49c2c79c9f392021a47f8bb0b5ad1e69f957d03fc76f7abf57ea9",
+  "sources_sha256_observed_after_tests": {
+    "scripts/audit_mixed_output_prefix.py": "05b07feb2fff929fcf60685b9930cbd3f0a217a2a1cf95ba2c8c1ba209cbb023",
+    "experiments/reports/mixed_chunk_20261029/complete_after_pair.py": "5c170b42fb8dd9756496abd683cb48c58487ff11ac1568673a22625aa1871395",
+    "tests/test_mixed_output_prefix.py": "5c30126434a5313872c4d95db24e1635f057592b6c58a04819f2ba4c3c62cbcd",
+    "tests/test_mixed_complete_review.py": "ac52bc7db0a11f130e9883c54b44602ef29e64424a4d9c8285e204c6d79b3659"
+  },
+  "scope": "Focused read-only observer/CPU reviewer checks; outside frozen GPU source binding; not a new shared runtime qualification.",
+  "GPU_experiment_started": false,
+  "performance_accepted": false
+}

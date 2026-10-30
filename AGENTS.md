@@ -3858,3 +3858,15 @@
   serving processes nice0 with sole owned GPU context. This is a prefix,not
   complete performance. Preserve frozen e3a7e5f1 and sequential queue_r2;
   no extra native source/performance arm or deferred baseline is queued.
+- New read-only mixed-prefix auditor preserves open work/common completion
+  frontiers and rejects missing ordinals,duplicate samples/receipts,wrong
+  ownership/clocks and false complete claims. Actual separate prefixes verify
+  1033 then3144exact completed receipts;later prefix has3146observed requests/
+  479422outputs,9later native completions/12outside receipts kept unknown.
+  Separate mixed decode-gap prefix has12250continuing observations all served
+  inside prefill and0quiet gaps;not independent requests or full JCT savings.
+  CPU-only complete_after_pair waits actual queue exit/exact full work/drain,
+  then audits full outputs,gaps,JCT,native bytes/JOIN/sibling/EOS,with no GPU
+  action/retry.55related CPU cases pass;these observers are outside the frozen
+  e3a7e5f1 GPU qualification and change no live sources. Keep full metrics/
+  global goal pending and user worktree edits intact.

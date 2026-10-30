@@ -1,0 +1,57 @@
+{
+  "counts": {
+    "prefill_forwards": 30,
+    "zero_output_member_observations": 1877,
+    "mixed_prefill_forwards": 1673,
+    "decode_output_tokens_inside_prefill": 10351,
+    "decode_forwards": 17547
+  },
+  "worker_intervals": {
+    "prefill_worker_ms": 5050.7626524195075,
+    "mixed_prefill_worker_ms": 271541.5038764477,
+    "decode_worker_ms": 421101.0141680017
+  },
+  "native_forward_frontier_ms": 7488600001.723712,
+  "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+  "observed_requests": 1043,
+  "native_completions_within_frontier": 1034,
+  "exact_receipts_in_common_prefix": 1033,
+  "native_completions_without_client_receipts": 1,
+  "requests_without_observed_native_completion": 9,
+  "observed_output_tokens_by_service_role": {
+    "prefill": 1043,
+    "decode": 159281
+  },
+  "observed_total_output_tokens": 160324,
+  "common_completed_output_tokens": 157973,
+  "all_observed_output_ordinals_contiguous": true,
+  "complete_output_conservation": false,
+  "scope": "Sealed output ordinal/identity checks. Open requests and cross-stream prefix differences remain explicit. Worker intervals include waits and compute; no hidden-time, pure-kernel, complete JCT or performance improvement follows from a collecting prefix.",
+  "performance_accepted": false,
+  "observed_at": "2026-10-29T23:58:58.518023+00:00",
+  "registration": "/home/longhao/experiment/ops/mixed_chunk_thunder_20261029_r2.registration.json",
+  "registration_sha256": "9b01d55f97b256a54943bcfc77252f6665ac949bff6cbe6de76efb6baa4fcfad",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 124420920,
+      "complete_prefix_sha256": "a7324baa1285dfb95bcae06445a3b8f848bd271bef3bb3ec91db430bc76437ca",
+      "first_read_limit_bytes": 124420920
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 3026846,
+      "complete_prefix_sha256": "73c17b246e504abc9d9a1bcd2672f4fa5243c5dd0426a9ebf329a692e91ecb0e",
+      "first_read_limit_bytes": 3026846
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/mixed_chunk_20261029_r2_thunder/thunderagent_acting_decay/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 3892769,
+      "complete_prefix_sha256": "a1cc7b5ef8b95c548e7c4dcd244f7feedd5181b8e4bea53ca2200e8586aafe51",
+      "first_read_limit_bytes": 3892769
+    }
+  },
+  "analysis_sources_sha256": {
+    "scripts/audit_mixed_output_prefix.py": "05b07feb2fff929fcf60685b9930cbd3f0a217a2a1cf95ba2c8c1ba209cbb023",
+    "scripts/audit_decode_batch_efficiency.py": "4732b022a8cc8a8489f7f5fc25b547fb876520da6b7be81971f0954dad252c4c",
+    "scripts/audit_sealed_wait_prefetch.py": "467c33297fdfc1358b91455bb775d58e6edb287cb11dc51dc35d219c00995b46"
+  },
+  "GPU_experiment_started": false
+}
