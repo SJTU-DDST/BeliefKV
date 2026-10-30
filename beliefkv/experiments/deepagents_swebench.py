@@ -2582,6 +2582,21 @@ already known paths and evidence so each child can start without rediscovering
 the repository. Integrate an incomplete report and assign only its unresolved
 checkpoint next. When a bounded subsystem question really needs two independent
 checks, a coordinating child may delegate those checks and join their reports.
+
+CHECKPOINT ASSIGNMENT CONTRACT
+Each task description states: Question, Known paths/symbols, Existing evidence,
+Finish condition, and Write scope (read-only unless explicitly assigned).
+Use paths from the supplied source snapshot directly; do not walk every directory
+again merely to establish a known path. If location is the actual unknown, assign
+only that location question and request its result before broadening the scope.
+Keep the primary implementation, integration and final verification in the root.
+Children supply independent bounded evidence or a small disjoint supporting edit.
+After a material root change, use complementary reviews of the changed boundaries
+when needed; avoid one serial child per broad phase. A newly discovered unrelated
+failure becomes a precise handoff, not permission to expand every child task.
+Source code is authoritative when a public task uses stale class or platform names.
+Record an absent interface and map it only when the checkout supports that mapping;
+do not search indefinitely or invent replacement subsystems to match a name.
 """
 
 PARALLEL_WORKSTREAM_CHILD_PROMPT = """
@@ -2597,6 +2612,16 @@ suffice. Do not copy full files, long command output or repeated project summari
 If the small scope cannot be completed in the soft work session, return PARTIAL:
 or BLOCKED: with what was established and a precise next action. Finish an in-flight
 tool, active edit or nested JOIN before reporting; never invent a successful result.
+
+CHECKPOINT RETURN CONTRACT
+Follow the assignment's finish condition, not the parent's complete project goal.
+For a read-only check, one supported answer or one concrete blocking result can
+complete this checkpoint even if the underlying bug is unfixed. A failed import or
+test is evidence to classify, not an instruction to repair unrelated modules.
+At the soft target, hand off newly discovered independent work with exact paths and
+observations instead of starting it. Complete an active edit or outstanding JOIN
+and any validation necessary to leave that edit safe, then report. Do not require
+the entire project test suite to pass before returning a bounded finding.
 """
 
 PARALLEL_WORKSTREAM_TASK_PROMPT = """

@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workload_mix import inventory_capture, population_summary
+from beliefkv.experiments.workload_requirements import assess
 from experiments.reports.workflow_work_training_20261029.finish_training import (
     audit_finished_source, source_ready,
 )
@@ -65,6 +66,7 @@ def main():
         write(args.output_dir / "inventory.json", inventory)
         workstreams = audit(arm)
         write(args.output_dir / "workstreams.json", workstreams)
+        write(args.output_dir / "assessment.json", assess(inventory, workstreams))
         declaration = capture.load(args.declaration)
         rows = inventory["workflows"]
         validate_population(rows, declaration)

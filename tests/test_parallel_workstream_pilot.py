@@ -192,6 +192,10 @@ def test_cpu_pilot_reviewer_rewrites_heartbeat_and_persists_terminal_state(tmp_p
     monkeypatch.setattr(finish, "inventory_capture", lambda *_a, **_k: {"workflows": rows})
     monkeypatch.setattr(finish, "population_summary", lambda values: {"count": len(values)})
     monkeypatch.setattr(finish, "audit", lambda _arm: {"summary": {"children": 12}})
+    monkeypatch.setattr(finish, "assess", lambda inventory, workstreams: {
+        "formal_comparison_ready": False, "workflows": len(inventory["workflows"]),
+        "children": workstreams["summary"]["children"],
+    })
     finish.main()
     state = json.loads((output / "state.json").read_bytes())
     assert observations == ["waiting_complete_native_pilot"] * 3
@@ -203,3 +207,6 @@ def test_cpu_pilot_reviewer_rewrites_heartbeat_and_persists_terminal_state(tmp_p
         assert "preserved failure fixture" in state["error"]
     else:
         assert json.loads((output / "review.json").read_bytes())["all_workflows_naturally_eligible"] is True
+        assert json.loads((output / "assessment.json").read_bytes()) == {
+            "formal_comparison_ready": False, "workflows": 6, "children": 12,
+        }

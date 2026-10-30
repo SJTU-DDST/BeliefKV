@@ -40,6 +40,9 @@ def main():
         "tests/test_workflow_competition_readiness.py", "tests/test_workflow_competition_audit.py",
         "tests/test_workload_mix_completion.py",
         "tests/test_parallel_workstream_pilot.py", "tests/test_nested_delegation.py",
+        "tests/test_checkpoint_workstream_pilot.py", "tests/test_workload_requirements.py",
+        "tests/test_workflow_combination.py", "tests/test_workflow_combination_runtime.py",
+        "tests/test_sustained_workload.py",
     )
     names.update(added)
     names.update((
@@ -67,6 +70,15 @@ def main():
         "experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
         "experiments/reports/workflow_mix_20261029/register_parallel_pilot.py",
         "experiments/reports/workflow_mix_20261029/prepare_main_arrivals.py",
+        "beliefkv/experiments/workload_requirements.py",
+        "beliefkv/policy/workflow_combination.py",
+        "beliefkv/runtime/workflow_combination.py",
+        "scripts/audit_workload_requirements.py",
+        "scripts/prepare_checkpoint_workstream_pilot.py",
+        "scripts/prepare_sustained_workload.py",
+        "configs/workloads/locobench_checkpoint_pilot6_20261030.json",
+        "configs/migration/workflow_checkpoint_pilot6_native_20261030.json",
+        "experiments/reports/checkpoint_pilot6_20261030/declaration.json",
         str(Path(__file__).relative_to(ROOT)),
     ))
     before = {name: sha256_file(ROOT / name) for name in sorted(names)}

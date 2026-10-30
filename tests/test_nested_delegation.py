@@ -85,6 +85,8 @@ class NestedFixtureModel(BaseChatModel):
                 "short_task_prompt": "Assign one narrow deliverable per child." in system,
                 "parallel_root_prompt": "PARALLEL, BOUNDED DELEGATION ROUNDS" in system,
                 "parallel_child_prompt": "ONE CHECKPOINT, THEN HAND OFF" in system,
+                "checkpoint_root_contract": "CHECKPOINT ASSIGNMENT CONTRACT" in system,
+                "checkpoint_child_contract": "CHECKPOINT RETURN CONTRACT" in system,
             })
 
         def call(name, args):
@@ -236,11 +238,13 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         )
     if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
         assert all(
-            row["parallel_root_prompt"] and "write_todos" in row["tools"]
+            row["parallel_root_prompt"] and row["checkpoint_root_contract"]
+            and "write_todos" in row["tools"]
             for row in model._requests if row["role"] == "root"
         )
         assert all(
-            row["parallel_child_prompt"] and "write_todos" not in row["tools"]
+            row["parallel_child_prompt"] and row["checkpoint_child_contract"]
+            and "write_todos" not in row["tools"]
             for row in model._requests if row["role"] != "root"
         )
 
