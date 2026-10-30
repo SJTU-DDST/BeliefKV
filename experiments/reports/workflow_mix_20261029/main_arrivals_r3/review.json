@@ -1,0 +1,23 @@
+{
+  "arrival_sha256": "8d41d5e304819657ae86dd2384888afb28f8331fe61c5730f9722a23b22e8e42",
+  "selected_seed": 28,
+  "nominal_mean_gap_s": 132.71529768213813,
+  "realized_mean_gap_s": 57.50060485392506,
+  "expected_submission_window_s": 1725.2988698677957,
+  "realized_submission_window_s": 747.5078631010258,
+  "realized_to_expected_window_ratio": 0.43326282544792083,
+  "accepted_for_next_main": false,
+  "reason": "Gap-only screening omitted a lower bound on the full submission window; this realization is too bursty for the intended sustained-arrival diagnostic.",
+  "new_fixed_seed_family": [
+    32,
+    47
+  ],
+  "next_constraints": {
+    "first_gap_max_means": 1,
+    "maximum_gap_max_means": 3,
+    "submission_window_min_expected_ratio": 0.8,
+    "submission_window_max_expected_ratio": 1.2
+  },
+  "all_old_samples_preserved": true,
+  "GPU_action": false
+}

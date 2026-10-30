@@ -4190,3 +4190,33 @@
   identity from that receipt rather than the transient nice wrapper. Its state
   heartbeats update;it has no GPU follow-up. Keep all failed startup/observer
   attempts and user worktree edits;the global performance goal remains active.
+- Latest user requires auditing why oracle working-set choices rarely change
+  admission and whether changed choices reach service,before rejecting the
+  direction. New complete admission_funnel_r3 distinguishes1067controls,
+  750positive-budget/no-paused-candidate,310nonempty,171all-ready-fit and111
+  no-individual-ready-fit. Current remaining-rank same-category competition is
+  10,not the stricter4initial-short/long-tier diagnostic;6sets actually change.
+  All6changed exact request attempts obtain positive native work23-324ms later,
+  without prior service/immediate pressure revocation. Eight actual winner/
+  reference-only pairs are all served in winner order,median lead17.34s;
+  this is not counterfactual JCT. Matched Full propagation has4/6earlier first
+  outputs:selected workflows gain55.85s total,others lose80.81s;meanJCT loses
+  1.387s. Full oracle only ranks paused periodic recovery,free-dispatch0;
+  ordinary83/JOINhandover73/JOINfree9/sibling46event-grant episodes bypass it.
+  Eager first-arrival grants and event competing sets lack exact journals.
+  RankCPU.945s/controlCPU1.059s is measured subset cost,not zero overhead.
+  No online/paper policy was changed;54focused CPU cases pass. Preserve
+  complete audits and see workflow_admission_opportunities_20261030_zh.md.
+- User permits further arrival-seed changes on workload grounds. Fixed24-31
+  slot-only screening initially chooses28,whose747.51s submission window is
+  only43.33%of expected;retain main_arrivals_r3 but do not promote it. Add
+  an80-120%expected-window condition in the next predeclared32-47family,
+  retain every trial/raw interval and use no GPU winner/JCT in selection.
+  Such screening is a conditioned development schedule,not an unconditional
+  Poisson sample or proof of steady pressure. New workload needs matched
+  recalibration;arrival changes alone cannot ensure admission competition.
+- Six-project pilot and its CPU reviewer actually exit completely:
+  1016requests,6natural eligible workflows,model-workP90/P10=2.151,
+  18singleton/6double JOINs,1nested,child calls median24/P9039.1,all6roots
+  have final-return parallel deferrals. Shape still inadequate;retain all
+  outputs and do not automatically expand18or launch another GPU arm.

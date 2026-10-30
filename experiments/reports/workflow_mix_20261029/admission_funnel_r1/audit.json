@@ -1,0 +1,642 @@
+{
+  "counts": {
+    "periodic_controls": 1067,
+    "empty_with_positive_budget": 750,
+    "nonempty_controls": 310,
+    "no_ready_candidate": 2,
+    "one_ready_candidate": 154,
+    "multiple_ready_candidates": 154,
+    "multiple_ready_workflows": 152,
+    "all_ready_fit_together": 171,
+    "no_ready_candidate_fits_individually": 111,
+    "capacity_competition_before_category_restriction": 17,
+    "capacity_competition_within_reference_category": 10,
+    "within_category_competition_with_distinct_remaining_ranks": 10,
+    "changed_order": 127,
+    "changed_selected_set": 6,
+    "selected_episodes": 269,
+    "selected_active_after_pressure": 268,
+    "selected_marked_for_pause": 0,
+    "empty_no_budget": 7,
+    "changed_winners": 6,
+    "changed_winners_served_before_choice": 0,
+    "changed_winners_revoked_by_immediate_pressure": 0,
+    "changed_winners_with_following_positive_service": 6,
+    "changed_winner_loser_pairs": 8,
+    "winner_served_before_reference_only_loser_pairs": 8
+  },
+  "initial_size_tier_competition": {
+    "controls": 1067,
+    "empty_candidate_controls": 757,
+    "nonempty_controls": 310,
+    "controls_with_ready_short_long_capacity_competition": 4,
+    "competing_controls_with_changed_selected_set": 3
+  },
+  "grant_episodes_by_path": {
+    "periodic_resume": 269,
+    "agent_continuation_free_capacity_admitted": 83,
+    "agent_join_blocked_capacity_admitted": 73,
+    "agent_join_free_capacity_admitted": 9,
+    "agent_join_siblings_coadmitted": 46,
+    "eager_first_registration": null
+  },
+  "final_admission_counts": {
+    "control_ticks": 1067,
+    "resumed": 269,
+    "workflow_size_resume_passes": 1067,
+    "workflow_size_resume_cpu_us": 945364.4230054731,
+    "workflow_size_resume_wall_us": 949458.2656770945,
+    "workflow_size_control_cpu_us": 1058630.1800005347,
+    "workflow_size_control_wall_us": 1062749.7117966413,
+    "registered": 4246,
+    "free_continuation_event_checks": 19830,
+    "streaming_progress_checks": 15774,
+    "streaming_progress_updates": 12341,
+    "completed": 4246,
+    "free_continuation_admitted": 83,
+    "free_ordinary_continuation_admitted": 83,
+    "join_free_capacity_insufficient": 87,
+    "join_blocked_handoff_donor_checks": 5078,
+    "join_blocked_handoff_grants": 73,
+    "join_blocked_handoff_paused_agents": 91,
+    "restore_new_join_eligibility": 69,
+    "restore_existing_eligibility": 310,
+    "programs_retired": 134,
+    "join_physical_plan_native_services": 96,
+    "restore_outside_active_set": 111,
+    "join_blocked_handoff_insufficient": 90,
+    "join_blocked_handoff_backoff": 19,
+    "join_free_capacity_admitted": 8,
+    "join_physical_plans_without_logical_handover": 23,
+    "sibling_joint_fast_capacity_skips": 5,
+    "sibling_free_capacity_insufficient": 227,
+    "sibling_release_retry_groups": 221,
+    "sibling_free_groups_admitted": 44,
+    "sibling_free_programs_admitted": 46,
+    "sibling_fitting_subset_grants": 1,
+    "sibling_joint_ready_plan_opportunities": 17,
+    "sibling_native_capacity_prices": 16,
+    "sibling_native_first_services": 961,
+    "sibling_joint_native_service_batches": 9,
+    "sibling_joint_native_capacity_refused": 2,
+    "sibling_joint_batch_plans": 1,
+    "sibling_joint_batch_planned_members": 2,
+    "free_continuation_capacity_changed": 1
+  },
+  "declared_ranking_scope": "paused_within_original_category",
+  "other_admission_paths": "unchanged_join_and_free_continuation",
+  "rank_thread_cpu_us": {
+    "sum": 945364.4230054731,
+    "count": 1067,
+    "min": 2.777000020159903,
+    "p10": 9.83159998213523,
+    "p50": 46.23500012712611,
+    "p90": 3407.5185998972293,
+    "max": 38899.94000002161,
+    "p90_p10": 346.58840942358836
+  },
+  "whole_control_thread_cpu_us": {
+    "sum": 1058630.1800005347,
+    "count": 1067,
+    "min": 33.08600000195838,
+    "p10": 53.39680010365555,
+    "p50": 117.8360000722023,
+    "p90": 3519.256399977166,
+    "max": 38973.80399999406,
+    "p90_p10": 65.9076272949966
+  },
+  "changed_winner_positive_service_delay_ms": {
+    "count": 6,
+    "min": 22.96591567993164,
+    "p10": 23.976691722869873,
+    "p50": 200.91750621795654,
+    "p90": 287.31134366989136,
+    "max": 324.2531385421753,
+    "p90_p10": 11.982943559967573
+  },
+  "actual_winner_lead_over_reference_only_loser_ms": {
+    "count": 8,
+    "min": 241.6226749420166,
+    "p10": 755.4468250274658,
+    "p50": 17344.969489574432,
+    "p90": 45558.01711072922,
+    "max": 45710.25526332855,
+    "p90_p10": 60.306054114494245
+  },
+  "changed_decisions": [
+    {
+      "selection_monotonic_ms": 7519947966.169471,
+      "capacity_tokens": 184682,
+      "competition": [
+        {
+          "category": 1,
+          "remaining_tokens": 184682,
+          "owners": [
+            "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a:root",
+            "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58:root",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:root",
+            "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99:root",
+            "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root",
+            "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50:root",
+            "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e:root",
+            "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273:root",
+            "deepagents-invocation:629832c296eea33f"
+          ],
+          "rank_min": 394.75281536250156,
+          "rank_max": 1989.0849528716888
+        }
+      ],
+      "winners": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a88b-7050-8f16-ce592c72c16f",
+            "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a",
+            "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a:root",
+            "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a:context:root",
+            0,
+            0,
+            "beliefkv-240022d713ea33d3039c7990f58314a0",
+            18
+          ],
+          "category": 1,
+          "remaining_rank": 394.75281536250156,
+          "context_tokens": 109986,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": true,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 221.65535926818848,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ],
+      "reference_only_losers": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a6c1-7ba0-b62f-7a6c6c030484",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:root",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:context:root",
+            0,
+            0,
+            "beliefkv-a2ea42976734828f8d3e6955c7d77356",
+            12
+          ],
+          "category": 1,
+          "remaining_rank": 771.0215750695173,
+          "context_tokens": 78705,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 33384.89047050476,
+          "first_positive_decode_after_choice_ms": null
+        },
+        {
+          "key": [
+            "beliefkv:01a18b72-a70e-7ac3-9aae-7d596e868c1b",
+            "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+            "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root",
+            "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:context:root",
+            0,
+            0,
+            "beliefkv-54403c1c3cb4bdc0436fab24cc6b57c0",
+            10
+          ],
+          "category": 1,
+          "remaining_rank": 1111.3592697523418,
+          "context_tokens": 83243,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 45931.91062259674,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ]
+    },
+    {
+      "selection_monotonic_ms": 7519966909.879758,
+      "capacity_tokens": 141778,
+      "competition": [
+        {
+          "category": 1,
+          "remaining_tokens": 141778,
+          "owners": [
+            "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58:root",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:root",
+            "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99:root",
+            "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a:root",
+            "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e:root",
+            "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273:root"
+          ],
+          "rank_min": 492.1919044677179,
+          "rank_max": 1885.3684659516935
+        }
+      ],
+      "winners": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a7a1-78d0-a365-d2324bf15aee",
+            "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58",
+            "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58:root",
+            "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58:context:root",
+            0,
+            0,
+            "beliefkv-99c272955e6f72b0b4f5acbcbd9a7d15",
+            15
+          ],
+          "category": 1,
+          "remaining_rank": 492.1919044677179,
+          "context_tokens": 105451,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": true,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 24.987467765808105,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ],
+      "reference_only_losers": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a6c1-7ba0-b62f-7a6c6c030484",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:root",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:context:root",
+            0,
+            0,
+            "beliefkv-a2ea42976734828f8d3e6955c7d77356",
+            12
+          ],
+          "category": 1,
+          "remaining_rank": 771.0215750695173,
+          "context_tokens": 78705,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 14441.180183410645,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ]
+    },
+    {
+      "selection_monotonic_ms": 7520004093.682205,
+      "capacity_tokens": 130486,
+      "competition": [
+        {
+          "category": 1,
+          "remaining_tokens": 130486,
+          "owners": [
+            "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99:root",
+            "deepagents-invocation:cf3edc1e7b26047b",
+            "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e:root",
+            "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273:root"
+          ],
+          "rank_min": 869.3126984032422,
+          "rank_max": 1885.3684659516935
+        }
+      ],
+      "winners": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a7f5-72b2-82ff-dffa18f53432",
+            "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99",
+            "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99:root",
+            "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99:context:root",
+            0,
+            0,
+            "beliefkv-bc735dd586fd0567fa0c9b7d27eb3852",
+            17
+          ],
+          "category": 1,
+          "remaining_rank": 869.3126984032422,
+          "context_tokens": 121141,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": true,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 250.36954879760742,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ],
+      "reference_only_losers": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a6f5-74d2-b038-3dec9c5b06cb",
+            "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e",
+            "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e:root",
+            "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e:context:root",
+            0,
+            0,
+            "beliefkv-a0d50811312463fb1c81d0a1076dd5b8",
+            14
+          ],
+          "category": 1,
+          "remaining_rank": 1775.0702930678756,
+          "context_tokens": 91608,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 45743.14173698425,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ]
+    },
+    {
+      "selection_monotonic_ms": 7520035592.519176,
+      "capacity_tokens": 118187,
+      "competition": [
+        {
+          "category": 0,
+          "remaining_tokens": 118187,
+          "owners": [
+            "deepagents-invocation:0f3564c1551fe9a2",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:root",
+            "deepagents-invocation:148ae8d247f20677",
+            "deepagents-invocation:cf3edc1e7b26047b",
+            "deepagents-invocation:2572842b493f6cd2"
+          ],
+          "rank_min": 421.48445319342835,
+          "rank_max": 1573.8750298895914
+        }
+      ],
+      "winners": [
+        {
+          "key": [
+            "beliefkv:01a18b76-38b6-7663-bc63-7f06133b04ec",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:root",
+            "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3:context:root",
+            8,
+            0,
+            "beliefkv-a2ea42976734828f8d3e6955c7d77356",
+            12
+          ],
+          "category": 0,
+          "remaining_rank": 744.4748598546406,
+          "context_tokens": 89311,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": true,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 180.1796531677246,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ],
+      "reference_only_losers": [
+        {
+          "key": [
+            "beliefkv:01a18b77-e175-77e0-9f03-abc634597f5a",
+            "deepagents:autonomous:locobench__python_data_lake_medium_050_multi_session_development_hard_01:88cd4ef18a09",
+            "deepagents-invocation:2572842b493f6cd2",
+            "deepagents-context:2572842b493f6cd2",
+            12,
+            0,
+            "beliefkv-df4db254660f8404a4feef851f2aef68",
+            19
+          ],
+          "category": 0,
+          "remaining_rank": 1573.8750298895914,
+          "context_tokens": 19104,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 1155.8368282318115,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ]
+    },
+    {
+      "selection_monotonic_ms": 7520068171.491511,
+      "capacity_tokens": 224031,
+      "competition": [
+        {
+          "category": 1,
+          "remaining_tokens": 224031,
+          "owners": [
+            "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50:root",
+            "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273:root"
+          ],
+          "rank_min": 1473.8073827859573,
+          "rank_max": 1885.3684659516935
+        }
+      ],
+      "winners": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a75f-7983-8688-6c80b1350e19",
+            "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50",
+            "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50:root",
+            "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50:context:root",
+            0,
+            0,
+            "beliefkv-19d6383fe8e63d3a464d02b8a9f01b2c",
+            16
+          ],
+          "category": 1,
+          "remaining_rank": 1473.8073827859573,
+          "context_tokens": 146836,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": true,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 22.96591567993164,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ],
+      "reference_only_losers": [
+        {
+          "key": [
+            "beliefkv:01a18b72-a79a-7723-ad9c-a7c530bdf2ec",
+            "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273",
+            "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273:root",
+            "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273:context:root",
+            0,
+            0,
+            "beliefkv-b1a77fbf9adb4ece9bbd7e99f6d09aaa",
+            13
+          ],
+          "category": 1,
+          "remaining_rank": 1885.3684659516935,
+          "context_tokens": 106321,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 20296.71217918396,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ]
+    },
+    {
+      "selection_monotonic_ms": 7520415807.441343,
+      "capacity_tokens": 48965,
+      "competition": [
+        {
+          "category": 0,
+          "remaining_tokens": 48965,
+          "owners": [
+            "deepagents-invocation:3d0ab3e01d83d815",
+            "deepagents-invocation:2797e5d314a6a484",
+            "deepagents-invocation:629832c296eea33f"
+          ],
+          "rank_min": 747.1407962825696,
+          "rank_max": 1743.0348574710013
+        }
+      ],
+      "winners": [
+        {
+          "key": [
+            "beliefkv:01a18b7c-915d-7310-94ec-41ad21c36b69",
+            "deepagents:autonomous:locobench__python_ml_inference_hard_088_multi_session_development_hard_01:9fe287fa3352",
+            "deepagents-invocation:3d0ab3e01d83d815",
+            "deepagents-context:3d0ab3e01d83d815",
+            43,
+            0,
+            "beliefkv-4c46d7ee71eee20df2e829086c2c56e2",
+            41
+          ],
+          "category": 0,
+          "remaining_rank": 747.1407962825696,
+          "context_tokens": 35149,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": true,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 324.2531385421753,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ],
+      "reference_only_losers": [
+        {
+          "key": [
+            "beliefkv:01a18b7c-dba3-7161-92a9-8e0be2a7ece5",
+            "deepagents:autonomous:locobench__python_web_social_hard_001_bug_investigation_medium_01:40c2250d970d",
+            "deepagents-invocation:133a5d85111dd512",
+            "deepagents-context:133a5d85111dd512",
+            0,
+            0,
+            "beliefkv-aa775233cb6d245585c0793355a0baa9",
+            64
+          ],
+          "category": 1,
+          "remaining_rank": 173.33704237001953,
+          "context_tokens": 6884,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 565.8758134841919,
+          "first_positive_decode_after_choice_ms": null
+        },
+        {
+          "key": [
+            "beliefkv:01a18b79-f83d-7222-87ae-368ad7bb9438",
+            "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50",
+            "deepagents-invocation:2797e5d314a6a484",
+            "deepagents-context:2797e5d314a6a484",
+            34,
+            0,
+            "beliefkv-ed8676767703cfb6241d5819448d677d",
+            34
+          ],
+          "category": 0,
+          "remaining_rank": 1200.003756846218,
+          "context_tokens": 19295,
+          "logical_ready_before_resume": true,
+          "active_after_pressure": false,
+          "marked_for_pause": false,
+          "positive_native_service_before_choice": false,
+          "first_positive_service_after_choice_ms": 2208.5478868484497,
+          "first_positive_decode_after_choice_ms": null
+        }
+      ]
+    }
+  ],
+  "event_counts": {
+    "workflow_size_resume_selection": 1067,
+    "admission_runtime_state": 2108,
+    "idle_cold_full_prepare": 71,
+    "tool_wait_forecast": 17636,
+    "agent_continuation_free_capacity_admitted": 83,
+    "native_demand_restore_staged": 346,
+    "native_demand_restore_ready": 345,
+    "spawn_full_prepare": 84,
+    "parent_pressure_demoted": 3340,
+    "prepare_native_issued": 500,
+    "prepare_candidate_selected": 443,
+    "selected_consumer_capacity_shortfall": 155,
+    "predicted_tool_offload_backup": 53,
+    "child_final_stage_accepted": 93,
+    "agent_join_blocked_capacity_admitted": 73,
+    "critical_parent_headroom": 160,
+    "wait_prefetch_plan": 239,
+    "final_stage_latest_start": 83,
+    "prefetch_native_issued": 2853,
+    "terminal_child_cache_reclaimed": 184,
+    "confirmed_join_ticket": 88,
+    "confirmed_join_client_bound": 80,
+    "confirmed_join_ticket_closed": 86,
+    "agent_join_physical_plan_result": 200,
+    "prefetch_residency_registered": 2691,
+    "prefetch_submit_queue_observed": 2853,
+    "prefetch_demand_submitted": 2691,
+    "parent_capacity_handoff_first_service": 97,
+    "prefetch_residency_released": 2691,
+    "agent_join_planned_physical_release": 10,
+    "wait_prefetch_tail_capacity_reclaimed": 106,
+    "predicted_tool_kv_evicted": 46,
+    "final_request_priority_admitted": 1,
+    "critical_parent_cold_full_prepare": 116,
+    "prefetch_reentry_ready": 22,
+    "prefetch_client_submitted": 23,
+    "host_demand_mirrors_reclaimed": 11,
+    "wait_prefetch_capacity_reclaimed": 3,
+    "wait_prefetch_full_extent_split": 50,
+    "prefetch_prefix_protection_coalesced": 26,
+    "agent_join_free_capacity_admitted": 9,
+    "prefetch_protection_revoked": 4,
+    "agent_join_siblings_coadmitted": 44,
+    "agent_join_siblings_native_service": 952,
+    "prefetch_service_before_ledger_ack": 162,
+    "terminal_workflow_root_cache_reclaimed": 18,
+    "native_demand_restore_admitted": 1
+  },
+  "scope": {
+    "complete_recorded_choices_reproduced": true,
+    "positive_native_progress_required": true,
+    "same_request_attempt_context_and_session_required": true,
+    "competition_uses_current_remaining_ranks": true,
+    "initial_size_tier_competition_is_a_stricter_separate_metric": true,
+    "first_registration_grants_not_explicitly_journaled": true,
+    "event_grant_competing_candidates_not_journaled": true,
+    "removing_category_restrictions_is_only_an_offline_diagnostic": true,
+    "native_physical_fit_of_unchosen_candidates_verified": false,
+    "future_intervening_revocations_excluded": false,
+    "service_order_in_this_run_is_not_a_counterfactual_JCT_gain": true,
+    "GPU_action": false
+  },
+  "registration": "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json",
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/workflow_mix_burst_oracle_20261030_r1.registration.json": "74d2b2cba8487773d4c5434e4fc11fab58b0003ad899059b57fcb0fad97baf54",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_finish_r1/population.json": "b40727c37f77b79daae8ad146c9a2fe6e6bdf198ccf70e3e4cb0fc166da7099f",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_workflow_admission_funnel.py": "d03e5cfa76bf9887a0143ec48b57879a50a1f654139d7a5877635cdf51cfdd74"
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 158279904,
+      "complete_prefix_sha256": "cdf825e85b62536dc5d29c2815391e4511e14a3e8f8946591999413722186353",
+      "first_read_limit_bytes": 158279904
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_burst_oracle_20261030_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 474339409,
+      "complete_prefix_sha256": "d51382bb6f6196cfbb54f3891fb7bce9b9a1ef837e260577be7d402131095508",
+      "first_read_limit_bytes": 474339409
+    }
+  },
+  "GPU_action": false,
+  "performance_accepted": false
+}
