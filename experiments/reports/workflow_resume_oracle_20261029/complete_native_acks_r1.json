@@ -1,0 +1,62 @@
+{
+  "arms": {
+    "original_full": {
+      "native_ack": {
+        "d2h_bytes": 939598381056,
+        "d2h_acks": 12704,
+        "h2d_bytes": 2659224748032,
+        "h2d_acks": 635
+      },
+      "native_ack_input_sha256": "f0f58d194e4f6984e64a524747fea51fceb75359f1c32908fb2133b2b2bb728b",
+      "admission_cost_counts": {
+        "free_continuation_admitted": 119
+      }
+    },
+    "learned": {
+      "native_ack": {
+        "d2h_bytes": 1026276360192,
+        "d2h_acks": 13890,
+        "h2d_bytes": 2868301529088,
+        "h2d_acks": 680
+      },
+      "native_ack_input_sha256": "ef520ac717e9079cb199374a0938f223320d80749fc551955d91dcb019d71fd7",
+      "admission_cost_counts": {
+        "workflow_size_resume_passes": 1132,
+        "workflow_size_resume_cpu_us": 46060.71099806286,
+        "workflow_size_resume_wall_us": 47028.22584658861,
+        "workflow_size_control_cpu_us": 136816.80699906452,
+        "workflow_size_control_wall_us": 137878.56418639421,
+        "free_dispatch_passes": 10090,
+        "free_dispatch_candidate_checks": 19383,
+        "workflow_size_dispatch_passes": 5994,
+        "workflow_size_dispatch_order_changes": 3722,
+        "workflow_size_dispatch_cpu_us": 91387.7830011245,
+        "free_continuation_admitted": 159
+      }
+    },
+    "oracle": {
+      "native_ack": {
+        "d2h_bytes": 869316034560,
+        "d2h_acks": 11270,
+        "h2d_bytes": 2775832854528,
+        "h2d_acks": 682
+      },
+      "native_ack_input_sha256": "336e9e4a57b0e16dbed71b8538ffb0344f82ae1fe50e849d1a3db5fe7991b44e",
+      "admission_cost_counts": {
+        "workflow_size_resume_passes": 1132,
+        "workflow_size_resume_cpu_us": 2362626.9749988774,
+        "workflow_size_resume_wall_us": 2388138.0017846823,
+        "workflow_size_control_cpu_us": 2704793.144000911,
+        "workflow_size_control_wall_us": 2732653.0972495675,
+        "free_dispatch_passes": 9049,
+        "free_dispatch_candidate_checks": 17821,
+        "workflow_size_dispatch_passes": 5016,
+        "workflow_size_dispatch_order_changes": 3970,
+        "workflow_size_dispatch_cpu_us": 26517126.77199311,
+        "free_continuation_admitted": 196
+      }
+    }
+  },
+  "scope": "Native ACK bytes only, not critical-path transfer waits or removable JCT.",
+  "GPU_action": false
+}

@@ -1,0 +1,603 @@
+{
+  "counts": {
+    "controls": 1132,
+    "nonempty_controls": 507,
+    "multi_candidate_controls": 331,
+    "changed_local_selected_sets_from_reference": 34,
+    "external_delay_changed_local_selected_sets": 10,
+    "selected_episodes": 340,
+    "changed_dispatch_orders": 3970
+  },
+  "changed_local_choices": [
+    {
+      "monotonic_s": 7504725.594070242,
+      "actual": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505226.920420918,
+      "actual": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505285.700266557,
+      "actual": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root"
+      ],
+      "reference": [
+        "deepagents-invocation:d469ce62b8941175"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505311.872968436,
+      "actual": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505354.3130769,
+      "actual": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "reference": [
+        "deepagents-invocation:db0dca7d9441ce9e"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505358.359384715,
+      "actual": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents-invocation:c66969c98886ed53"
+      ],
+      "reference": [
+        "deepagents-invocation:c66969c98886ed53",
+        "deepagents-invocation:db0dca7d9441ce9e"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root",
+        "deepagents-invocation:c66969c98886ed53"
+      ]
+    },
+    {
+      "monotonic_s": 7505372.447123072,
+      "actual": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root",
+        "deepagents-invocation:82a3d7252ab98e78"
+      ],
+      "reference": [
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root",
+        "deepagents-invocation:82a3d7252ab98e78"
+      ]
+    },
+    {
+      "monotonic_s": 7505390.567122806,
+      "actual": [
+        "deepagents-invocation:c66969c98886ed53"
+      ],
+      "reference": [
+        "deepagents-invocation:a2cfb5f0bc8f46b4"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:c66969c98886ed53"
+      ]
+    },
+    {
+      "monotonic_s": 7505434.969152927,
+      "actual": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root"
+      ],
+      "reference": [
+        "deepagents-invocation:ac13c35bc1f04732",
+        "deepagents-invocation:46e4ed5303d25a26"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505441.014256015,
+      "actual": [
+        "deepagents-invocation:3e175d02425e2774"
+      ],
+      "reference": [
+        "deepagents-invocation:46e4ed5303d25a26"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:3e175d02425e2774"
+      ]
+    },
+    {
+      "monotonic_s": 7505449.094793439,
+      "actual": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505455.140953398,
+      "actual": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505469.389740449,
+      "actual": [
+        "deepagents-invocation:d03da39ef0461137",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "reference": [
+        "deepagents-invocation:d03da39ef0461137",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:d03da39ef0461137",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505471.562182216,
+      "actual": [
+        "deepagents-invocation:3e175d02425e2774"
+      ],
+      "reference": [
+        "deepagents-invocation:82a3d7252ab98e78"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:3e175d02425e2774"
+      ]
+    },
+    {
+      "monotonic_s": 7505489.824637201,
+      "actual": [
+        "deepagents-invocation:26e0500faee9bdaf"
+      ],
+      "reference": [
+        "deepagents-invocation:82a3d7252ab98e78"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:26e0500faee9bdaf"
+      ]
+    },
+    {
+      "monotonic_s": 7505507.978934756,
+      "actual": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505526.213310197,
+      "actual": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root",
+        "deepagents-invocation:82a3d7252ab98e78"
+      ],
+      "reference": [
+        "deepagents-invocation:82a3d7252ab98e78",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root",
+        "deepagents-invocation:82a3d7252ab98e78"
+      ]
+    },
+    {
+      "monotonic_s": 7505528.214140907,
+      "actual": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505549.132474747,
+      "actual": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root"
+      ],
+      "reference": [
+        "deepagents-invocation:db0dca7d9441ce9e",
+        "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505553.160518468,
+      "actual": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505557.164325948,
+      "actual": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505559.171369736,
+      "actual": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505565.237756941,
+      "actual": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505567.25646471,
+      "actual": [
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505603.862421476,
+      "actual": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root"
+      ],
+      "reference": [
+        "deepagents-invocation:14473377ff0e0097"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:14473377ff0e0097"
+      ]
+    },
+    {
+      "monotonic_s": 7505634.106342699,
+      "actual": [
+        "deepagents-invocation:7cf853377c1975dc",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "reference": [
+        "deepagents-invocation:7cf853377c1975dc",
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:7cf853377c1975dc",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505640.184801432,
+      "actual": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505688.606559527,
+      "actual": [
+        "deepagents-invocation:2907efdaa9adfa07"
+      ],
+      "reference": [
+        "deepagents-invocation:2907efdaa9adfa07"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:db0dca7d9441ce9e"
+      ]
+    },
+    {
+      "monotonic_s": 7505710.741205774,
+      "actual": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "reference": [
+        "deepagents-invocation:db0dca7d9441ce9e"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505722.914858384,
+      "actual": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root"
+      ],
+      "reference": [
+        "deepagents-invocation:db0dca7d9441ce9e"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505741.353380434,
+      "actual": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "reference": [
+        "deepagents-invocation:db0dca7d9441ce9e"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505747.380624715,
+      "actual": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505753.423590141,
+      "actual": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ],
+      "reference": [
+        "deepagents-invocation:db0dca7d9441ce9e"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505761.449275329,
+      "actual": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-invocation:e11d2f741ca17045"
+      ],
+      "reference": [
+        "deepagents-invocation:e11d2f741ca17045",
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+        "deepagents-invocation:75164210ec1e071c",
+        "deepagents-invocation:e11d2f741ca17045"
+      ]
+    },
+    {
+      "monotonic_s": 7505773.50314212,
+      "actual": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+        "deepagents-invocation:e11d2f741ca17045"
+      ],
+      "reference": [
+        "deepagents-invocation:e11d2f741ca17045",
+        "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35:root",
+        "deepagents-invocation:e11d2f741ca17045"
+      ]
+    },
+    {
+      "monotonic_s": 7505785.653418158,
+      "actual": [
+        "deepagents-invocation:7cf853377c1975dc",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ],
+      "reference": [
+        "deepagents-invocation:7cf853377c1975dc",
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root"
+      ],
+      "without_external_delays": [
+        "deepagents-invocation:7cf853377c1975dc",
+        "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505793.743647141,
+      "actual": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ],
+      "reference": [
+        "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46:root"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9:root"
+      ]
+    },
+    {
+      "monotonic_s": 7505795.745701908,
+      "actual": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ],
+      "reference": [
+        "deepagents-invocation:c839861ee808681b"
+      ],
+      "without_external_delays": [
+        "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99:root"
+      ]
+    }
+  ],
+  "resume_sort_CPU_us": {
+    "count": 1132,
+    "sum": 2362626.974998876,
+    "min": 3.6019998788106022,
+    "p50": 49.79500010904303,
+    "p90": 6513.314299974127,
+    "p99": 11899.515099999591,
+    "max": 18847.99900000189
+  },
+  "resume_sort_wall_us": {
+    "count": 1132,
+    "sum": 2388138.0017846823,
+    "min": 4.267320036888123,
+    "p50": 50.620175898075104,
+    "p90": 6616.822816431522,
+    "p99": 12225.891808047894,
+    "max": 19174.47242885828
+  },
+  "complete_control_CPU_us": {
+    "count": 1132,
+    "sum": 2704793.144000916,
+    "min": 32.808999975486586,
+    "p50": 144.59600004101958,
+    "p90": 7029.954699942209,
+    "p99": 14754.169960009449,
+    "max": 24377.138999852832
+  },
+  "complete_control_wall_us": {
+    "count": 1132,
+    "sum": 2732653.0972495675,
+    "min": 33.48942846059799,
+    "p50": 145.5540768802166,
+    "p90": 7223.951630294322,
+    "p99": 15397.74888195102,
+    "max": 24589.80865776539
+  },
+  "complete_control_CPU_s": 2.704793144000911,
+  "complete_control_wall_s": 2.7326530972495675,
+  "runtime_predictor": {
+    "artifact_sha256": "9f1f817b6018c3a16f837a26edd529b126c7353f9d17f08095aa36680efec5c6",
+    "error": "",
+    "kind": "workflow_model_tool_critical_path_oracle_v1",
+    "deployable": false,
+    "future_trace_used_online": true,
+    "scheduler_waits_for_inference": false,
+    "rank": "remaining_model_tool_critical_path_seconds",
+    "work_definition": "0.01*necessary_input_tokens+output_tokens",
+    "input_progress": "completion_only_like_learned_labels",
+    "output_progress": "observed_native_output_every_128_tokens_and_completion",
+    "future_tool_durations_used": true,
+    "future_dependency_graph_used_for_rank_only": true,
+    "model_seconds_per_work_token": 0.02386040346836485,
+    "critical_path_is_optimal_JCT_bound": false,
+    "remaining_work_units": {
+      "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c": 0,
+      "deepagents:autonomous:locobench__python_api_microservice_medium_008_cross_file_refactoring_hard_01:08af10b02055": 0,
+      "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_feature_implementation_expert_01:716bc83d3f70": 0,
+      "deepagents:autonomous:locobench__python_data_analytics_easy_082_integration_testing_expert_01:244f5089a5a1": 0,
+      "deepagents:autonomous:locobench__python_data_lake_medium_050_cross_file_refactoring_hard_01:2d3816515709": 0,
+      "deepagents:autonomous:locobench__python_data_warehouse_medium_012_feature_implementation_hard_01:d1e373ef9f00": 0,
+      "deepagents:autonomous:locobench__python_desktop_media_medium_020_integration_testing_hard_01:69efe05f34f9": 0,
+      "deepagents:autonomous:locobench__python_fintech_trading_medium_066_cross_file_refactoring_hard_01:f186dfef67b9": 0,
+      "deepagents:autonomous:locobench__python_game_simulation_medium_033_integration_testing_expert_01:f3853585eb99": 0,
+      "deepagents:autonomous:locobench__python_ml_inference_hard_088_cross_file_refactoring_hard_01:7e00915d4e67": 0,
+      "deepagents:autonomous:locobench__python_mobile_game_medium_096_feature_implementation_expert_01:747b65393e1d": 0,
+      "deepagents:autonomous:locobench__python_mobile_social_medium_022_feature_implementation_easy_01:025685fb6b46": 0,
+      "deepagents:autonomous:locobench__python_system_networking_hard_027_integration_testing_medium_01:4196d050edfa": 0,
+      "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a": 0,
+      "deepagents:autonomous:locobench__python_web_blog_easy_040_cross_file_refactoring_easy_01:e7c7647f2612": 0,
+      "deepagents:autonomous:locobench__python_web_cms_hard_074_integration_testing_expert_01:418c5f564e35": 0,
+      "deepagents:autonomous:locobench__python_web_dashboard_medium_039_feature_implementation_easy_01:edf9f5dda0d1": 0,
+      "deepagents:autonomous:locobench__python_web_social_hard_001_integration_testing_medium_01:5cfa3afabd4e": 0
+    },
+    "counts": {
+      "matched_graph_event_observations": 14966,
+      "observations": 25003,
+      "observation_thread_cpu_us": 292329.9050012822,
+      "started_requests": 3674,
+      "path_evaluations": 15293,
+      "path_nodes_evaluated": 16029800,
+      "path_thread_cpu_us": 28452437.48401956,
+      "observed_output_tokens": 549671,
+      "observed_input_tokens": 4117249,
+      "completed_requests": 3674,
+      "closed_workflows": 18
+    },
+    "cached_workflows": 0,
+    "queue_depth": 0,
+    "refresh_interval_ms": 0
+  },
+  "scope": "Exact local choices hold observed candidates, categories, sibling membership and decayed budget fixed. Removing external delays removes both tools and fixed replay gaps. This does not simulate subsequent pressure, physical capacity or counterfactual JCT.",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_model_tool_oracle_20261029_r1/full/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 169482279,
+      "complete_prefix_sha256": "612151b0eb69f3f23685a7095afcf8e6ae917ea48a859b3a62f9cc171d28dc8f",
+      "first_read_limit_bytes": 169482279
+    }
+  },
+  "registration_sha256": "90e1239cb0dfd9f48824218c74180b4b9bc7628fab00c9cbdb279a76110661c3",
+  "operator_sha256": "0733dba52b7516e4017d1b41e28534f8a7cc0b1b73ee6284a4a22f6d4d2ee03e",
+  "GPU_action": false,
+  "performance_accepted": false
+}

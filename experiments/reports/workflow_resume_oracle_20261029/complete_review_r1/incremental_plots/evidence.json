@@ -1,0 +1,12 @@
+{
+  "figures": [
+    "decode_timeline",
+    "decode_distributions"
+  ],
+  "inputs_sha256": {
+    "experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/complete_review/decode_evidence.json.gz": "35268de92a3e806e9d5192aee78d32f8725e97dc0cf162fefb602b47159bd1a7",
+    "experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/pair/decode_evidence.json.gz": "6c60bd1761cd402e0cfb4a2c014ec67066231b0129bca484afce523ed41ea5c8"
+  },
+  "scope": "Complete matched work/arrivals and retained normal tails; one execution per method.",
+  "GPU_action": false
+}

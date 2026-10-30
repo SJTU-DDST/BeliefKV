@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/home/longhao/experiment/ops/cpu_plotting_20261027/bin/python",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/arrival_mean120_20261029/review_pair.py",
+    "--thunder",
+    "/home/longhao/experiment/ops/prefill2048_mean120_thunder_20261029_r1.registration.json",
+    "--full",
+    "/home/longhao/experiment/ops/workflow_model_tool_oracle_20261029_r1.registration.json",
+    "--output-dir",
+    "experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/pair"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"metrics\": {\n    \"ThunderAgent decay\": {\n      \"mean_jct_s\": 1504.0723042904006,\n      \"makespan_s\": 2305.899186544418,\n      \"end_to_end_output_tokens_per_s\": 238.37598937867173,\n      \"decode\": {\n        \"batches\": 98826,\n        \"request_steps\": 549514,\n        \"worker_ms\": 1610155.603799969,\n        \"request_step_ms\": 12328154.729839414,\n        \"output_tokens\": 545997,\n        \"context_tokens\": 30623156603,\n        \"graph_batches\": 98826,\n        \"graph_request_steps\": 549514,\n        \"configured_bucket_rows\": 642578,\n        \"batches_needing_padding\": 48378,\n        \"worker_ms_in_batches_needing_padding\": 1071705.7178206742,\n        \"mean_batch\": 5.560419322850262,\n        \"worker_weighted_mean_batch\": 7.656498974847497,\n        \"worker_interval_sum_s\": 1610.155603799969,\n        \"mean_worker_interval_ms\": 16.292833908080556,\n        \"output_tokens_per_worker_interval_second\": 339.0957983883337,\n        \"mean_observed_request_context_tokens\": 55727.70958155752,\n        \"graph_batch_fraction\": 1.0,\n        \"configured_padding_rows_per_real_graph_row\": 0.16935692266257085\n      }\n    },\n    \"FULL\": {\n      \"mean_jct_s\": 1428.7156079446474,\n      \"makespan_s\": 2275.114080267906,\n      \"end_to_end_output_tokens_per_s\": 241.60151122412003,\n      \"decode\": {\n        \"batches\": 88215,\n        \"request_steps\": 549514,\n        \"worker_ms\": 1575461.0954523087,\n        \"request_step_ms\": 13085988.747838885,\n        \"output_tokens\": 545997,\n        \"context_tokens\": 30624746102,\n        \"graph_batches\": 88215,\n        \"graph_request_steps\": 549514,\n        \"configured_bucket_rows\": 638315,\n        \"batches_needing_padding\": 46245,\n        \"worker_ms_in_batches_needing_padding\": 1069936.4220649004,\n        \"mean_batch\": 6.229258062687752,\n        \"worker_weighted_mean_batch\": 8.30613258912747,\n        \"worker_interval_sum_s\": 1575.4610954523087,\n        \"mean_worker_interval_ms\": 17.859333395140382,\n        \"output_tokens_per_worker_interval_second\": 346.5633023729135,\n        \"mean_observed_request_context_tokens\": 55730.60213570537,\n        \"graph_batch_fraction\": 1.0,\n        \"configured_padding_rows_per_real_graph_row\": 0.16159915852917295\n      }\n    }\n  },\n  \"full_relative_to_thunder\": {\n    \"mean_jct_reduction_percent\": 5.010177777411129,\n    \"whole_run_output_throughput_gain_percent\": 1.3531236320636353\n  }\n}\n",
+  "stderr": ""
+}

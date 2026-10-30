@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/BeliefKV/scripts/audit_free_dispatch_service.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_model_tool_oracle_20261029_r1.registration.json",
+    "--expected-receipts",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/prefill2048_mean120_20261029_r1_common/thunderagent_acting_decay/replay/native_requests.jsonl",
+    "--complete",
+    "--output",
+    "experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/free_dispatch.json"
+  ],
+  "returncode": 0,
+  "stdout": "{\n  \"counts\": {\n    \"service_samples_without_full_attempt_session_identity\": 31221,\n    \"grant_episodes\": 196,\n    \"native_input_verified\": 196,\n    \"first_native_service_verified\": 196,\n    \"completed_receipt_verified\": 196,\n    \"unique_granted_request_attempts\": 196,\n    \"repeated_grants_to_same_attempt\": 0,\n    \"open_or_cross_stream_coverage_unknown\": 0\n  },\n  \"grant_to_first_native_service_ms\": {\n    \"count\": 196,\n    \"sum\": 82955.23274707794,\n    \"min\": 10.14484691619873,\n    \"p50\": 195.19573640823364,\n    \"p90\": 997.9182810783386,\n    \"p99\": 2397.893337726603,\n    \"max\": 3301.4792280197144\n  },\n  \"exact_completed_receipts\": 3674,\n  \"complete_work_verified\": true\n}\n",
+  "stderr": ""
+}

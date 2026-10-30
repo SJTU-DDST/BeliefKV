@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_resume_oracle_20261029/review_choices.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_model_tool_oracle_20261029_r1.registration.json",
+    "--output",
+    "experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/oracle_choices.json"
+  ],
+  "returncode": 0,
+  "stdout": "{'controls': 1132, 'nonempty_controls': 507, 'multi_candidate_controls': 331, 'changed_local_selected_sets_from_reference': 34, 'external_delay_changed_local_selected_sets': 10, 'selected_episodes': 340, 'changed_dispatch_orders': 3970}\n",
+  "stderr": ""
+}

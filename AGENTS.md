@@ -3973,3 +3973,24 @@
   capacities/native stops and existing Full/Thunder controls. Complete fresh
   source-bound CPU and token/session/native-stop/sampler qualification before
   the oracle-only Full. Do not claim offline local-choice counts as JCT gain.
+- Model/tool oracle frozene718d34e now completes all18/3674/145565966/549671,
+  72JOINs/92children,original stops,normal tails,fresh drain and actual owned exit.
+  Current bound CPU passes5178+6,retains all5141 prior identities;fresh position
+  passes24exact/session/native-stop(all24stops)and sampler1/8/24. All seven
+  complete read-only review actions pass. MeanJCT1428.715608/output241.601511
+  versus originalFull1439.457324/243.890996 gives only.7462% JCT gain and
+  .9387% throughput loss;versus learned dispatch1432.302431/241.696602 gives
+  only.2504% JCT gain and.0393% throughput loss. Do not promote the oracle or
+  workflow ranking;keep original2s Full and all user-disabled controls.
+  Exact oracle progress ends0 across18workflows,4117249necessary input tokens/
+  549671outputs,14966matched graph events,0unmodeled core/errors. 1132controls
+  have34local selected-set changes,10changes from removing external delays.
+  All196free grants have exact following service/completion. This is local
+  evidence,not causal full-JCT attribution. Oracle rescans DAG per lookup:
+  15293evaluations/16029800nodes cost28.452437sCPU,mostly26.517127s dispatch
+  scoring versus learned.091388s. Do not present this as a zero-cost or optimal
+  JCT bound;cache/incremental scoring needs separate source-bound validation.
+  H2D2775.832855vs2659.224748GB(+4.3850%);D2H869.316035vs939.598381GB
+  (-7.4800%)are ACK bytes,not exposed critical waits. Preserve complete results
+  under workflow_resume_oracle_20261029,all normal tails and user worktree edits.
+  No next GPU arm is queued;the global clear/repeated/all-baseline goal stays active.

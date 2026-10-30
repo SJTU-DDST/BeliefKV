@@ -35,3 +35,46 @@
 完整结束、两份新鲜空闲 telemetry 及实际进程退出后，比较完整平均 JCT、全程输出吞吐、decode 时间分布、控制 CPU、迁移和重算。检查排序是否实际改变选择、工具是否真的影响分数，并验证全部 oracle 模型工作被实际消费、所有 workflow 剩余量为零。保留正常长尾、失败尝试和负结果。
 
 此前离线 `analyze.py` 只在 learned 实验已发生的局部候选集合上替换剩余模型工作量，不能模拟随后容量与轨迹，也没有工具路径；它不替代本轮 GPU 实验。
+
+## 本轮完整 GPU 结果
+
+实现冻结于 `e718d34e`。实际注册为
+`/home/longhao/experiment/ops/workflow_model_tool_oracle_20261029_r1.registration.json`，
+完整日志位于 `experiments/raw/workflow_model_tool_oracle_20261029_r1/full`。
+代码、CPU 绑定和只读审计分别提交，保留此前无工具的离线诊断与浮点测试断言失败记录。
+
+当前来源绑定 CPU 回归实际通过 5178 个测试及 6 个 subtest，保留全部 5141 个旧测试身份，无失败或跳过。新 GPU 校验通过 24 个精确 token/session/native-stop 请求，全部 24 个 native stop，sampler 1/8/24。正式实验随后完成全部 18/3674 工作、145565966 个输入 token、549671 个输出 token、72 次 JOIN、92 个 child，原停止条件及所有正常尾部保留。
+
+oracle 实际消费的必要新增输入为 4117249 token，输出为 549671 token；18 个 workflow 的模型工作余量全部归零，14966 个源图事件匹配，未出现未绑定核心事件或预测器错误。两份新鲜空闲 telemetry、原进程退出与空闲 GPU 均已核对。完整只读分析七项动作全部返回 0；196 次空闲补位均有精确请求/attempt/session 后续服务及完成凭据。三张配对 PNG 已打开检查。
+
+| 方法 | 平均 JCT 秒 | Makespan 秒 | 全程输出 token/s | decode 输出/worker 秒 |
+| --- | ---: | ---: | ---: | ---: |
+| ThunderAgent decay | 1504.072304 | 2305.899187 | 238.375989 | 339.095798 |
+| 原始 2 秒 Full | 1439.457324 | 2253.756840 | 243.890996 | 346.470902 |
+| learned 分档及 500 ms 补位 | 1432.302431 | 2274.218978 | 241.696602 | 原完整结果保留 |
+| 模型与工具联合 oracle | 1428.715608 | 2275.114080 | 241.601511 | 346.563302 |
+
+oracle 相对原始 Full 的平均 JCT 降低 **0.7462%**，仅 10.741716 秒；全程吞吐下降 **0.9387%**，makespan 增加 21.357240 秒。相对更匹配的 learned dispatch，JCT 仅降低 **0.2504%**，吞吐下降 **0.0393%**。相对 ThunderAgent 的 5.0102% JCT 与 1.3531% 吞吐改善包含已有 Full 设计的收益，不能全归于 oracle。decode worker 输出率相对原始 Full 只增 0.0267%，没有明显计算效率改善。
+
+1132 次周期决策中，507 次有候选、331 次有多个候选。局部复现发现 34 次相对原始类别/上下文顺序改变选中集合；去掉工具及固定外部间隔后，有 10 次集合选择不同。这里固定的是当次候选、类别、sibling 关系与剩余逻辑预算，不模拟后续物理容量或完整反事实 JCT。补位记录中有 3970 次顺序变化，但全部实际补位只有 196 次，顺序变化不等于执行集合变化。
+
+## 控制成本与结论边界
+
+本实现每次被查询时遍历该 workflow 的 DAG。15293 次路径计算遍历 16029800 个节点，累计 **28.452437 秒线程 CPU**；观测更新另用 0.292330 秒。周期完整控制累计 CPU 2.704793 秒，P50 0.144596 ms、P99 14.754170 ms。空闲补位评分/排序累计 CPU **26.517127 秒**，对照 learned dispatch 为 0.091388 秒。路径计算已包含在这些控制路径中，不能重复相加，更不能直接从 JCT 中减去 28 秒。
+
+因此，本轮是“具有真实未来模型/工具信息、带实测控制成本的当前恢复策略”结果，不能当作零成本 oracle 或所有 agent 调度策略的最优上界。它尚不支持“仅继续提高剩余工作量预测准确率就能得到明显收益”。保留原始 Full 为默认；oracle 永远保持显式、不可部署的实验模式。
+
+需要优先排除的已确认实现成本是 DAG 的重复计算，适合缓存或增量更新。另一个需要独立验证的问题是：保留原始恢复类别和 active 连续性时，预测到底能在多少有真实容量竞争的场合改变实际执行集合。当前数据只支持这个方向的审计，不证明取消连续性或强行抢占会更优。
+
+原生 ACK 统计显示，oracle H2D 为 2775.832855 GB，对照原始 Full 为 2659.224748 GB，增加 **4.3850%**；D2H 为 869.316035 GB，对照 939.598381 GB，减少 **7.4800%**。较少 D2H 不代表整个迁移更好，也不能将 ACK 字节直接解释为关键路径等待或可消除的 JCT。
+
+完整证据入口：
+
+- `experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/review.json`
+- `experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/oracle_choices.json`
+- `experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/free_dispatch.json`
+- `experiments/reports/workflow_resume_oracle_20261029/complete_native_acks_r1.json`
+- `experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/pair/`：完整配对曲线、分布及几何。
+- `experiments/reports/workflow_resume_oracle_20261029/complete_review_r1/incremental_plots/`：原始 Full、oracle 和 ThunderAgent 的同工作量曲线与分布。
+
+这是每种方法一次完整执行的开发诊断，不是重复实验的显著性证明；不启动其他 baseline，不依据局部观测筛选任务，也不把这轮标为全局性能目标完成。
