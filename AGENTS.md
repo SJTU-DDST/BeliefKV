@@ -4286,3 +4286,23 @@
   CPU set passes68tests+6subtests,no failures/errors/skips. No GPU capture or
   comparison ran here. See workload_acceptance_20261030_zh.md and retained
   sustained36 readiness_review_r1.json;the global optimization goal is active.
+- Source-grounded checkpoint pilot now keeps the same six project/context slots
+  but replaces mismatched short/medium derived deliverables with explicit actual
+  source boundaries. Public CivicNet/GlobalFeed names differ from actual
+  Twitter/Slack adapters;utils has colour helpers rather than the specified
+  email group;CMS has Page/PageRevision rather than Article. Do not repair
+  source/tests,claim these observations reproduce all public bugs,or hide old
+  negative runs. Two long tasks retain their complete public requirements.
+  Initial known paths are verified against source provenance,snapshot and fixed
+  git blobs,never future traces/reference solutions. Parallel profile checkpoint
+  protocol2 records question/path/evidence/finish/write boundaries and root's
+  primary implementation responsibility;4/8child,8/16root,natural return,
+  automatic first tool and depth2 remain. No new cap,forced DAG or round quota.
+- Checkpoint pilot code is committed293a6e55. Actual focusedCPU66passes;shared
+  bound_cpu_r1 passes5308tests+12subtests,retains all5268previous literal IDs,
+  no failures/errors/skips,2086inputs unchanged and native unchanged. Fifteen
+  external project/tool/context inputs revalidate. Reservation/resources were
+  fresh and GPU idle at2026-10-30T20:05Asia/Shanghai;check again at launch.
+  Small six-project natural collection may now qualify shape only;never queue
+  Full/Thunder or expand36 automatically. New CPU reviewer also writes the
+  intrinsic work/shape assessment after complete tokens,drain and actual exit.
