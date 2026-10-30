@@ -4760,3 +4760,12 @@
   Priorcohort_tail_bound_cpu_r1keeps5810pass/1timing-dependentsemanticfixture
   failure;deterministiclogicalclockplusadapterdeadlinefallbacktestfixes
   fixturewithoutchangingproduction500000nsbudget. Keepallfailedproofs.
+- Balanced52completeCPUrevieweractuallywaitsfromclean55671ffb:
+  full_review_balanced52_r1.registration.json,PID2675603/start757283200,
+  verifiednice19/CUDA99999/OMP1/OpenBLAS1. Itcollectsfourcompletereviews;
+  runfinalregular-demandandphaseonedecisionseparatelybeforeoracle.
+  register_sustained_oracle.pyrequiresacceptedhash-boundcompletecontrol,
+  exactnonrankingconditions/aliases/streammetrics,completeoracleprogress,
+  freshresources/position/sampleranduniqueregistrations. NoGPUoraclecalled.
+  registration_bound_cpu_r1passes5828+12subtests,retains5814,
+  2198inputs/nativeunchanged,nofailure/error/skip;focused37pass.

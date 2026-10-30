@@ -1,0 +1,51 @@
+{
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/scripts/finish_sustained_control.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r2.registration.json",
+    "--position-registration",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r2.registration.json",
+    "--analysis-checkout",
+    "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb",
+    "--arrivals",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/arrivals.json",
+    "--cohort",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/analysis_cohort.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/full_review_balanced52_r1"
+  ],
+  "process": {
+    "pid": 2675603,
+    "state": "R",
+    "ppid": 2675577,
+    "start_ticks": "757283200",
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/scripts/finish_sustained_control.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r2.registration.json",
+      "--position-registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r2.registration.json",
+      "--analysis-checkout",
+      "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb",
+      "--arrivals",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/arrivals.json",
+      "--cohort",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/analysis_cohort.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/full_review_balanced52_r1"
+    ]
+  },
+  "helper_sha256": "a7f3da1fa41b661fba4c723719385dcf848075df7230c3e3880809a4dc172e58",
+  "analysis_commit": "55671ffb2dbac54ead6e9581493e5f058801953d",
+  "nice": 19,
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "GPU_followup_registered": false
+}

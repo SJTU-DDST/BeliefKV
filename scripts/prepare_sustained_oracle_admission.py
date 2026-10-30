@@ -262,6 +262,13 @@ def main():
         oracle_is_not_an_optimal_JCT_bound=True,
         minimum_promising_measured_mean_JCT_reduction=.05,
         common_window_output_throughput_noninferiority_fraction=.98,
+        workflow_resume_key=(
+            ["protected_JOIN_reference", "feasible_R5_set_score", "stable_reference_tie"]
+            if combination else
+            ["protected_ready_JOIN", "remaining_model_tool_path", "legacy_category_tie",
+             "context_tokens", "queue_sequence"]
+        ),
+        first_registration_continuation_sibling_dispatch="coalesced_existing_native_boundary",
     )
     preflights = {}
     for mode in ("full", "scheduler_only", "native_matched"):
