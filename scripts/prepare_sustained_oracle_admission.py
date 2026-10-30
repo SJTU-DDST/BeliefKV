@@ -119,6 +119,23 @@ def validate_workload(cohort, supply, periodic, population):
     }
 
 
+def validate_decision(decision, required_inputs):
+    if (
+        decision.get("accepted_for_oracle_diagnostic") is not True
+        or decision.get("failed_checks") != []
+        or not decision.get("checks")
+        or any(value is not True for value in decision["checks"].values())
+    ):
+        raise ValueError("sustained workload has not passed the complete phase-one decision")
+    pins = decision["inputs_sha256"]
+    for path in required_inputs:
+        if pins.get(str(path.resolve())) != sha256_file(path):
+            raise ValueError("workload decision belongs to different complete reviews")
+    for name, digest in pins.items():
+        if sha256_file(Path(name)) != digest:
+            raise ValueError("workload decision input changed: " + name)
+
+
 def oracle_artifact(source, overlay, coefficient, costs, calibration, *, combination=False):
     graph, expected, evidence = source_plan(source)
     with CapturedTokenCorpus(source / "server/request_tokens.jsonl", expected) as corpus:
@@ -165,6 +182,7 @@ def main():
     parser.add_argument("--cohort-review", type=Path, required=True)
     parser.add_argument("--supply-review", type=Path, required=True)
     parser.add_argument("--periodic-review", type=Path, required=True)
+    parser.add_argument("--workload-review", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--selection", choices=("global_remaining_path", "join_combination"),
                         default="global_remaining_path")
@@ -177,7 +195,11 @@ def main():
         )
     )
     source = Path(plan["source_arm"])
-    population = causal.load(source / "composite_source.json")
+    population_path = source / "composite_source.json"
+    population = causal.load(population_path)
+    validate_decision(causal.load(args.workload_review), (
+        args.control_review, args.cohort_review, args.supply_review, args.periodic_review, population_path,
+    ))
     acceptance = validate_workload(cohort, supply, periodic, population)
     base = Path(plan["experiment_configuration"])
     configuration = causal.load(base)
@@ -217,6 +239,10 @@ def main():
             "base": str(base), "base_sha256": sha256_file(base),
             "control_registration": str(args.control.resolve()),
             "control_registration_sha256": sha256_file(args.control),
+            "control_review": str(args.control_review.resolve()),
+            "control_review_sha256": sha256_file(args.control_review),
+            "workload_review": str(args.workload_review.resolve()),
+            "workload_review_sha256": sha256_file(args.workload_review),
             "changed_policy": (
                 "bounded_oracle_JOIN_set_selection_at_existing_admission_boundaries"
                 if combination else "global_ready_remaining_model_tool_path_before_legacy_category"
@@ -251,7 +277,7 @@ def main():
         "constructor_preflights": preflights, "input_jsonl_prefixes": reader.prefixes,
         "inputs_sha256": {str(path.resolve()): sha256_file(path) for path in (
             args.control, args.control_review, args.cohort_review, args.supply_review,
-            args.periodic_review, base, overlay, Path(__file__),
+            args.periodic_review, args.workload_review, base, overlay, Path(__file__),
         )},
         "configuration": str((args.output_dir / "full.json").resolve()),
         "configuration_sha256": sha256_file(args.output_dir / "full.json"),

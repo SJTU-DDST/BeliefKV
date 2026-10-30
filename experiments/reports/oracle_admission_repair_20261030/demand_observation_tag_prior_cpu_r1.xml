@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.394" timestamp="2026-10-30T15:17:43.244243-07:00" hostname="ddst-12"><testcase classname="tests.test_live_kv_demand_cli" name="test_periodic_probe_and_latest_tags_survive_processing_runtime_events" time="0.003"><failure message="AssertionError: assert {'llm_result'...rkflow_start'} == {'latest_even...x_loss_probe'}&#10;  &#10;  Extra items in the left set:&#10;  'workflow_start'&#10;  'tool_start'&#10;  'llm_result'&#10;  Extra items in the right set:&#10;  'latest_event'&#10;  Use -v to get more diff">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7e1ffde9de50&gt;
+tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3463/test_periodic_probe_and_latest0')
+
+    def test_periodic_probe_and_latest_tags_survive_processing_runtime_events(monkeypatch, tmp_path):
+        source, run = tmp_path / "source", tmp_path / "run"
+        (source / "server").mkdir(parents=True)
+        (source / "server/native_capacity_census.json").write_text(json.dumps({
+            "capacity": {"device_full_tokens": 2, "host_full_tokens": 4},
+        }))
+        registration = tmp_path / "registration.json"
+        registration.write_text(json.dumps({"source_arm": str(source), "run_root": str(run)}))
+        identity = {"workflow_id": "w", "invocation_id": "i", "context_id": "c"}
+        events = [
+            {**identity, "ts_ms": when, "kind": kind, "attributes": {"request_id": "r"}}
+            for when, kind in (
+                (0., "workflow_start"), (.5, "invocation_create"),
+                (1., "llm_submit"), (2., "llm_result"), (180000., "tool_start"),
+            )
+        ]
+        source_event = NS(**identity, kind=Kind.LLM_RESULT, attributes={"request_id": "r"})
+        graph = NS(nodes=(NS(node_id="result", event=source_event),),
+                   dependency_graph=lambda: {"result": ()})
+        monkeypatch.setattr(audit, "source_plan", lambda _path: (graph, {}, {}))
+        value = NS(
+            prompt_tokens=array("I", [1, 2]), output_tokens=array("I", [3]),
+            extra_key=None, cache_salt=None,
+        )
+        monkeypatch.setattr(audit, "CapturedTokenCorpus", lambda *_args: nullcontext(NS(get=lambda _r: value)))
+    
+        class Records:
+            prefixes = {}
+    
+            def __call__(self, path):
+                if path.name == "runtime_events.replay.jsonl":
+                    return events
+                if path.name == "admission_opportunities.jsonl":
+                    return [{"event": "admission_runtime_state", "ts_ms": 1000., "monotonic_ms": 0.}]
+                return [{
+                    "event": "context_prefix_reuse_probe", "ts_ms": 121000.,
+                    "request_id": "r", "previously_served_prefix_recompute_proxy_tokens": 2,
+                }]
+    
+        monkeypatch.setattr(audit, "SealedRecords", Records)
+        output = {}
+        monkeypatch.setattr(audit, "write", lambda _path, result: output.update(result))
+        monkeypatch.setattr(audit.sys, "argv", [
+            "audit", "--registration", str(registration), "--output", str(tmp_path / "demand.json"),
+        ])
+        audit.main()
+&gt;       assert {row["observation_kind"] for row in output["observations"]} == {
+            "periodic", "prefix_loss_probe", "latest_event",
+        }
+E       AssertionError: assert {'llm_result'...rkflow_start'} == {'latest_even...x_loss_probe'}
+E         
+E         Extra items in the left set:
+E         'workflow_start'
+E         'tool_start'
+E         'llm_result'
+E         Extra items in the right set:
+E         'latest_event'
+E         Use -v to get more diff
+
+tests/test_live_kv_demand_cli.py:56: AssertionError</failure></testcase></testsuite></testsuites>

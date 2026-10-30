@@ -59,6 +59,8 @@ def main():
         "tests/test_global_workflow_oracle.py",
         "tests/test_sustained_oracle_preparation.py",
         "tests/test_live_kv_demand.py",
+        "tests/test_live_kv_demand_cli.py",
+        "tests/test_sustained_workload_review.py",
     )
     names.update(added)
     names.update((
@@ -151,6 +153,7 @@ def main():
         "scripts/finish_sustained_control.py",
         "scripts/prepare_sustained_oracle_admission.py",
         "scripts/audit_live_kv_demand.py",
+        "scripts/review_sustained_workload.py",
         str(Path(__file__).relative_to(ROOT)),
     ))
     names.update(str(path.resolve().relative_to(ROOT)) for path in args.bind_input)

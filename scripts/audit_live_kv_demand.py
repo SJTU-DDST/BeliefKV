@@ -69,7 +69,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registration", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--sample-interval-s", type=int, default=60)
     args = parser.parse_args()
+    if args.sample_interval_s <= 0:
+        raise ValueError("regular live-state samples require a positive interval")
     if args.output.exists():
         raise FileExistsError("preserve earlier live-state demand observations")
     registration = json.loads(args.registration.read_bytes())
@@ -86,8 +89,14 @@ def main():
     probes = [row for row in reader(arm / "server/eviction_attribution.jsonl")
               if row.get("event") == "context_prefix_reuse_probe"
               and row.get("previously_served_prefix_recompute_proxy_tokens", 0) > 0]
-    points = [(row["ts_ms"] - offset, row["request_id"]) for row in probes]
-    points.append((events[-1]["ts_ms"], None))
+    points = [(row["ts_ms"] - offset, row["request_id"], "prefix_loss_probe") for row in probes]
+    origin = min(row["ts_ms"] for row in events if row["kind"] == "workflow_start")
+    interval = args.sample_interval_s * 1000.
+    points.extend(
+        (origin + index * interval, None, "periodic")
+        for index in range(int((events[-1]["ts_ms"] - origin) // interval) + 1)
+    )
+    points.append((events[-1]["ts_ms"], None, "latest_event"))
     capacity = json.loads((source / "server/native_capacity_census.json").read_bytes())["capacity"]
     ceiling = capacity["device_full_tokens"] + capacity["host_full_tokens"]
     live, ended, served, pending = {}, set(), {}, {}
@@ -106,7 +115,7 @@ def main():
                 )
             return encoded[cache_key]
 
-        for when, request in sorted(points):
+        for when, request, observation_kind in sorted(points, key=lambda item: (item[0], item[1] or "", item[2])):
             if when > events[-1]["ts_ms"]:
                 continue
             while cursor < len(events) and events[cursor]["ts_ms"] <= when:
@@ -147,6 +156,7 @@ def main():
             reusable_tokens = prefix_union(reusable)
             observations.append({
                 "monotonic_ms": when, "recompute_request_id": request,
+                "observation_kind": observation_kind, "arrival_offset_s": (when - origin) / 1000.,
                 "live_workflows": len({key[0] for key in contexts}),
                 "live_contexts": len(contexts), "contexts_with_completed_model_state": len(checkpoints),
                 "pending_first_model_contexts": sum(key not in served for key in contexts),
@@ -162,6 +172,7 @@ def main():
                 encoded.clear()
     write(args.output, {
         "combined_FULL_capacity_tokens": ceiling, "observations": observations,
+        "regular_sample_interval_s": args.sample_interval_s,
         "source_evidence": evidence, "input_jsonl_prefixes": reader.prefixes,
         "scope": {
             "latest_live_invocation_contexts_only": True,

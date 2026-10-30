@@ -2,7 +2,10 @@ from copy import deepcopy
 
 import pytest
 
-from scripts.prepare_sustained_oracle_admission import calibrate_costs, validate_workload
+from beliefkv.experiments.source_provenance import sha256_file
+from scripts.prepare_sustained_oracle_admission import (
+    calibrate_costs, validate_decision, validate_workload,
+)
 
 
 def samples():
@@ -94,3 +97,20 @@ def test_incomplete_workload_or_weak_choice_supply_stays_in_phase_one(mutation):
         population["population"]["model_work_units"]["p80_p20"] = 2.9
     with pytest.raises(ValueError, match="unqualified"):
         validate_workload(cohort, supply, periodic, population)
+
+
+def test_oracle_requires_a_passing_phase_one_decision_bound_to_the_same_reviews(tmp_path):
+    review = tmp_path / "review.json"
+    review.write_text("{}")
+    decision = {
+        "accepted_for_oracle_diagnostic": True, "failed_checks": [],
+        "checks": {"no_loss": True}, "inputs_sha256": {str(review.resolve()): sha256_file(review)},
+    }
+    validate_decision(decision, [review])
+    decision["accepted_for_oracle_diagnostic"] = False
+    with pytest.raises(ValueError, match="phase-one"):
+        validate_decision(decision, [review])
+    decision["accepted_for_oracle_diagnostic"] = True
+    review.write_text('{"changed":true}')
+    with pytest.raises(ValueError, match="different complete reviews"):
+        validate_decision(decision, [review])

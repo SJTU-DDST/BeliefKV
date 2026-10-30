@@ -4725,3 +4725,15 @@
   This isnotyetGPUqualificationoracceptedpressure/background. Completeoldr1
   normally;reviewHostoverflowandcoveragebeforelaunchingmatchedr3control,
   nevercompareitsoraclewithold12initial/80sFull.
+- Phase-one decision now usesreview_sustained_workload.py:completefixedcohort/
+  receiptconservation/backgroundcoverage/modelratio>=3,atleast10actual
+  competitioncontrols,ready-pausedin>=quarterwindowstates,zerosame-context
+  prefixlossproxy,and>=10regular<=60sdemandobservationswhoseCPU next-reuse
+  unionfitscombinedcapacity. Thesearediagnosticminima,notR5shapeorsteady-state
+  proof. Oraclepreparationrequirespassingdecisionwithexactreviewinputhashes.
+  live_demand_r3periodiclabelsareinvalid(overwritteneventloopvariable);keep
+  SUPERSEDEDmarkerandfailedCLIregression. Correctedr4has79regular/63loss/
+  1latestpoints;46of53commonwindowregularsamplesovercapacity,max1.329
+  at2520s(27liveworkflows/50contexts). Fullr1remainsfrozenandrunning.
+  workload_gate_bound_cpu_r2passes5805tests+12subtests,retains5804,
+  2195inputs/nativeunchanged,nofailure/error/skip;focused30passes.
