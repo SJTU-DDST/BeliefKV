@@ -4306,3 +4306,16 @@
   Small six-project natural collection may now qualify shape only;never queue
   Full/Thunder or expand36 automatically. New CPU reviewer also writes the
   intrinsic work/shape assessment after complete tokens,drain and actual exit.
+- Checkpoint pilot source now actually records from frozenbf75bbd7 on18907,
+  ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json,
+  execution .worktrees/beliefkv-pilot6r1-capture-bf75bbd71cc7 and unchanged
+  native11b84f7c. Fresh1/8/24sampler/BF16 passed. Independent gpu_entry_r1/
+  live_start verifies29complete prefix outputs,6distinct projects/rootsemantic
+  boundaries,actual2048/mixed-off/running24/seed21/native-admission-off,
+  checkpointprotocol2/4-8child/8-16root,nice0 measured owners and soleGPU.
+  Read-only live_start operator now accepts declared populations and budgets;
+  the running source/qualified snapshot is unchanged. CPU reviewer2160998/
+  start753260279 actually waits from the clean bf75bbd7 checkout atnice19/
+  CUDA99999;finish_r1.registration.json and live state bind its handle.
+  No next GPU comparison is registered. Keep all natural tails and do not
+  treat this partial launch evidence as source-shape/pressure/performance.

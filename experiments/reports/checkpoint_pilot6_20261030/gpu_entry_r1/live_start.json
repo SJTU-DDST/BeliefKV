@@ -1,0 +1,256 @@
+{
+  "observed_at": "2026-10-30T12:14:03.819365+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json",
+  "registration_sha256": "286941f7b4e6e146e88c59895b823ab797490c986079ce96e2c537ce46fb2103",
+  "code_commit": "bf75bbd71cc7c625ff324fbe4bf3944d1f8dfeab",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture",
+  "processes": {
+    "watcher": {
+      "pid": 2158967,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "753245786",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-pilot6r1-capture-bf75bbd71cc7/scripts/run_causal_source_capture.py",
+        "--watch",
+        "/home/longhao/experiment/ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json"
+      ]
+    },
+    "driver": {
+      "pid": 2159327,
+      "state": "S",
+      "ppid": 2158967,
+      "start_ticks": "753246626",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-pilot6r1-capture-bf75bbd71cc7/scripts/run_qwen35_native_regime_probe.sh"
+      ]
+    },
+    "scheduler": {
+      "pid": 2159744,
+      "state": "R",
+      "ppid": 2159343,
+      "start_ticks": "753247985",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    },
+    "server": {
+      "pid": 2159343,
+      "state": "S",
+      "ppid": 2159327,
+      "start_ticks": "753246631",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18907",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--skip-server-warmup"
+      ]
+    }
+  },
+  "all_owned_processes_nice0": true,
+  "sole_GPU_owner_verified": true,
+  "actual_server_parameters": {
+    "chunked_prefill_size": 2048,
+    "enable_mixed_chunk": false,
+    "max_running_requests": 24,
+    "random_seed": 21,
+    "enable_beliefkv_admission": false
+  },
+  "fresh_sampler_cases": [
+    1,
+    8,
+    24
+  ],
+  "token_receipt_counts": {
+    "request_prompt": 34,
+    "request_output": 29
+  },
+  "event_counts": {
+    "workflow_start": 6,
+    "invocation_create": 6,
+    "llm_submit": 35,
+    "llm_result": 29,
+    "tool_start": 29,
+    "tool_end": 29
+  },
+  "semantic_metadata_counts": {
+    "workflow_start": 6
+  },
+  "workflow_count": 6,
+  "actual_delegation_contract": {
+    "artificial_tool_delays": false,
+    "checkpoint_assignment_fields": [
+      "question",
+      "known_paths_or_symbols",
+      "existing_evidence",
+      "finish_condition",
+      "write_scope"
+    ],
+    "checkpoint_assignment_protocol_version": 2,
+    "child_deliverable": "one_bounded_evidence_or_change",
+    "child_report": "concise_evidence_and_explicit_handoff",
+    "child_roles": "bounded_locator_reproducer_editor_reviewer_and_general_purpose",
+    "child_todo_middleware": false,
+    "child_unrelated_failures": "classify_and_handoff_without_expanding_scope",
+    "child_work_budget_enforcement": "soft_reminders_then_natural_report",
+    "children_per_round": null,
+    "depth_convention": "root=0; direct child=1; grandchild=2",
+    "direct_child_task_tool_enabled": true,
+    "first_tool_choice": "auto",
+    "fixed_role_sequence": false,
+    "follow_up_delegation": "only_for_new_unresolved_deliverables",
+    "initial_fanout_generation_bounds": null,
+    "leaf_task_tool_enabled": false,
+    "maximum_root_delegation_attempts": 2,
+    "maximum_spawn_depth": 2,
+    "minimum_completed_root_join_members": 2,
+    "model_call_limit_enforced": false,
+    "natural_final_response_rejected": true,
+    "nested_coordinator_role": "delegation-coordinator",
+    "nested_delegation_required_for_independent_subproblems": true,
+    "nested_fanout_generation_bounds": null,
+    "nested_initial_tool_choice": "auto",
+    "nested_round_target": null,
+    "parallel_round_count_enforced": false,
+    "parallel_round_instruction": "submit_2_to_4_independent_task_calls_in_one_response",
+    "pilot_shape_review_required": true,
+    "profile": "native_in_graph_parallel_workstreams",
+    "recommended_parallel_children": [
+      2,
+      4
+    ],
+    "recommended_root_rounds": [
+      2,
+      3
+    ],
+    "repeated_validation_without_new_evidence": false,
+    "report_token_limit_enforced": false,
+    "root_initial_tool_choice": "auto",
+    "root_minimum_delegations_prompt": 2,
+    "root_owns_primary_implementation": true,
+    "root_retry_fanout_generation_bounds": [
+      2,
+      4
+    ],
+    "root_retry_tool_choice": "task",
+    "root_round_target": null,
+    "root_terminal_check": "require_completed_model_selected_parallel_join",
+    "round_enforcement": "model_selected_from_task_evidence",
+    "singleton_rounds": "allowed_for_indivisible_work_and_reported_in_source_audit",
+    "terminal_rejection_for_round_count": false,
+    "tool_duration_target_seconds": null,
+    "tool_execution": "necessary_real_project_commands"
+  },
+  "actual_model_and_work_budgets": {
+    "model": "Qwen3-Coder-30B-A3B-Instruct",
+    "subagent_fanout_profile": "native_in_graph_parallel_workstreams",
+    "child_work_budget_warning_calls": 4,
+    "child_work_budget_target_calls": 8,
+    "root_work_budget_warning_calls": 8,
+    "root_work_budget_target_calls": 16
+  },
+  "frozen_sources_verified": true,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture/server/request_tokens.jsonl": {
+      "complete_prefix_bytes": 3151164,
+      "complete_prefix_sha256": "094057078310d91876f72b3c872bfd1f9cd76163b8512346caf0f557ebc03e04",
+      "first_read_limit_bytes": 3151164
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture/client_6/workflows/locobench__python_ml_inference_hard_088_multi_session_development_hard_01__source_checkpoint_v2/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 38615,
+      "complete_prefix_sha256": "9ba851433663df0668cbf1b825285a3f1cbf1c5c1b83404616f0542712f15de0",
+      "first_read_limit_bytes": 38615
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture/client_6/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01__source_checkpoint_v2/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 29351,
+      "complete_prefix_sha256": "d02817a3adefcfa992c0d6ebedab53986146c725528368eda59b17438b67ba34",
+      "first_read_limit_bytes": 29351
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture/client_6/workflows/locobench__python_web_dashboard_medium_039_cross_file_refactoring_easy_01__source_checkpoint_v2/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 29646,
+      "complete_prefix_sha256": "11ec25c57306c6b7d30be06c6289745b58f5289eff6ab472dce0013597995bfd",
+      "first_read_limit_bytes": 29646
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture/client_6/workflows/locobench__python_api_microservice_medium_008_multi_session_development_hard_01__source_checkpoint_v2/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 45179,
+      "complete_prefix_sha256": "00700e8bd1df3ebfc78b8ee2619c44a1a70b86a9ec572838eb42f1451f8126c4",
+      "first_read_limit_bytes": 45179
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture/client_6/workflows/locobench__python_mobile_social_medium_022_bug_investigation_easy_01__source_checkpoint_v2/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 35409,
+      "complete_prefix_sha256": "b91b8b701d1ea2f9b27ebca20e582faaf685d31877736193431474dbd5857ee7",
+      "first_read_limit_bytes": 35409
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_checkpoint_pilot6_source_20261030_pilot6r1/native_capture/client_6/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01__source_checkpoint_v2/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 35792,
+      "complete_prefix_sha256": "bf648f837d9fbae7b80cfcb52dac4527e8814dedb2e65960520ddf7d2ded7b7f",
+      "first_read_limit_bytes": 35792
+    }
+  },
+  "CPU_finisher": {
+    "process": {
+      "pid": 2160998,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "753260279",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/beliefkv-checkpoint-pilot-20261030-bf75bbd7/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+        "--registration",
+        "/home/longhao/experiment/ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json",
+        "--declaration",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/checkpoint_pilot6_20261030/declaration.json",
+        "--model-cost-evidence",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/checkpoint_pilot6_20261030/finish_r1"
+      ]
+    },
+    "nice": 19,
+    "CUDA_VISIBLE_DEVICES": "99999"
+  },
+  "source_capture_complete": false,
+  "measured_size_mix_qualified": false,
+  "new_followup_GPU_action_registered": false,
+  "performance_accepted": false,
+  "operator_sha256": "719712ab9e6b52a78b571b57fe89299c79fb06f28a1210cadaf6f9614111b0eb"
+}

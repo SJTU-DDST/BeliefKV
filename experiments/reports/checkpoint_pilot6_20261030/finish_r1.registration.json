@@ -1,0 +1,51 @@
+{
+  "application": {
+    "commit": "bf75bbd71cc7c625ff324fbe4bf3944d1f8dfeab",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "c675ca96554bf8c14ee843c15df25c11d28cd1c1389576acfcb1df58461d095a"
+  },
+  "source_registration": "/home/longhao/experiment/ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json",
+  "source_registration_sha256": "286941f7b4e6e146e88c59895b823ab797490c986079ce96e2c537ce46fb2103",
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-checkpoint-pilot-20261030-bf75bbd7/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json",
+    "--declaration",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/checkpoint_pilot6_20261030/declaration.json",
+    "--model-cost-evidence",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/checkpoint_pilot6_20261030/finish_r1"
+  ],
+  "log": "/home/longhao/experiment/BeliefKV/experiments/reports/checkpoint_pilot6_20261030/finish_r1.worker.log",
+  "process": {
+    "pid": 2160998,
+    "state": "R",
+    "ppid": 2160929,
+    "start_ticks": "753260279",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-checkpoint-pilot-20261030-bf75bbd7/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json",
+      "--declaration",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/checkpoint_pilot6_20261030/declaration.json",
+      "--model-cost-evidence",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/checkpoint_pilot6_20261030/finish_r1"
+    ]
+  },
+  "nice": 19,
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "GPU_followup_registered": false,
+  "performance_accepted": false
+}

@@ -76,3 +76,21 @@ mixed chunk继续关闭。此文档及CPU准备不证明新负载已合格或有
 输入及实际镜像身份。完整结果在
 `experiments/reports/checkpoint_pilot6_20261030/bound_cpu_r1/`。
 这是采集入口与实现检查，不是模型已遵守新委派边界的证据。
+
+## 实际启动
+
+新六项目自然采集从冻结bf75bbd7启动，注册为
+`ops/workflow_checkpoint_pilot6_source_20261030_r1.registration.json`，
+服务端口18907。新鲜1/8/24采样及BF16检查通过，原生引擎仍为
+11b84f7c；独立live_start核对实际2048分块、mixed关闭、running24、
+seed21、原生准入关闭、checkpoint协议2及4/8和8/16预算。
+
+启动观察时已有29份完整输出前缀和全部六个root的任务语义边界，GPU
+由该作业独占，实际watcher/driver/server/scheduler为nice0。CPU后处理
+2160998在nice19且CUDA隐藏，确认为实际存活；等待完整源、fresh drain
+及实际退出后生成inventory、workstreams与assessment。启动前缀不证明
+完整工作、形态合格、容量压力或性能收益。没有登记后续GPU比较。
+
+注册、原生源绑定和只读启动证据保存在
+`experiments/reports/checkpoint_pilot6_20261030/gpu_entry_r1/`，
+后处理注册为同目录上一级的`finish_r1.registration.json`。

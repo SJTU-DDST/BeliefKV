@@ -1,5 +1,6 @@
-"""Read-only verification of the actually running mixed-scope native source."""
+"""Read-only verification of a declared, actually running native source."""
 
+import argparse
 from collections import Counter
 from datetime import datetime, timezone
 import json
@@ -18,8 +19,19 @@ from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
 def main():
-    registration = Path("/home/longhao/experiment/ops/workflow_mix_scope18_source_20261029_r1.registration.json")
-    output = ROOT / "experiments/reports/workflow_mix_20261029/live_start_r1.json"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--registration", type=Path, default=Path(
+        "/home/longhao/experiment/ops/workflow_mix_scope18_source_20261029_r1.registration.json",
+    ))
+    parser.add_argument("--output", type=Path, default=(
+        ROOT / "experiments/reports/workflow_mix_20261029/live_start_r1.json"
+    ))
+    parser.add_argument("--finisher", type=Path, default=(
+        ROOT / "experiments/reports/workflow_mix_20261029/scope18_finish_r1.registration.json"
+    ))
+    parser.add_argument("--declaration", type=Path)
+    args = parser.parse_args()
+    registration, output = args.registration, args.output
     if output.exists():
         raise FileExistsError("preserve the earlier live-start receipt")
     plan = capture.load(registration)
@@ -78,11 +90,28 @@ def main():
         raise ValueError("source lacks one live client manifest")
     manifest = capture.load(clients[0])
     workload = capture.load(Path(plan["environment"]["WORKLOAD_MANIFEST"]))
+    population = len(workload["workloads"])
     if (
-        len({row["repo"] for row in workload["workloads"]}) != 18
+        population != int(plan["environment"]["ROOT_COUNT"])
+        or len({row["repo"] for row in workload["workloads"]}) != population
         or set(manifest["instance_ids"]) != {row["instance_id"] for row in workload["workloads"]}
     ):
-        raise ValueError("live tasks differ from the eighteen original projects")
+        raise ValueError("live tasks differ from the declared distinct original projects")
+    if args.declaration is not None:
+        declaration = capture.load(args.declaration)
+        protocol = declaration["shared_execution_protocol"]
+        if (
+            manifest["delegation_contract"] != declaration["delegation_contract"]
+            or [
+                manifest["config"]["child_work_budget_warning_calls"],
+                manifest["config"]["child_work_budget_target_calls"],
+            ] != protocol["child_warning_target_calls"]
+            or [
+                manifest["config"]["root_work_budget_warning_calls"],
+                manifest["config"]["root_work_budget_target_calls"],
+            ] != protocol["root_phase_warning_target_calls"]
+        ):
+            raise ValueError("live checkpoint contract or soft budgets differ")
     reader = SealedRecords()
     tokens = Counter(row["event"] for row in reader(run / "server/request_tokens.jsonl"))
     events, semantics = Counter(), Counter()
@@ -95,9 +124,12 @@ def main():
                 semantics[event["kind"]] += 1
                 if event["kind"] == "workflow_start" and not item.task_instructions:
                     raise ValueError("new root did not expose its explicit task metadata")
-    if events["workflow_start"] != 18 or tokens["request_output"] <= 0 or semantics["workflow_start"] != 18:
-        raise ValueError("require actual complete outputs and all eighteen root semantic boundaries")
-    finisher = capture.load(ROOT / "experiments/reports/workflow_mix_20261029/scope18_finish_r1.registration.json")
+    if (
+        events["workflow_start"] != population or tokens["request_output"] <= 0
+        or semantics["workflow_start"] != population
+    ):
+        raise ValueError("require actual complete outputs and every root semantic boundary")
+    finisher = capture.load(args.finisher)
     process = capture.reservation.process(finisher["process"]["pid"])
     if process is None or os.getpriority(os.PRIO_PROCESS, process["pid"]) != 19:
         raise ValueError("CPU postprocessor is not alive at nice19")
@@ -111,7 +143,15 @@ def main():
         "all_owned_processes_nice0": True, "sole_GPU_owner_verified": True,
         "actual_server_parameters": actual, "fresh_sampler_cases": [1, 8, 24],
         "token_receipt_counts": dict(tokens), "event_counts": dict(events),
-        "semantic_metadata_counts": dict(semantics), "workflow_count": 18,
+        "semantic_metadata_counts": dict(semantics), "workflow_count": population,
+        "actual_delegation_contract": manifest["delegation_contract"],
+        "actual_model_and_work_budgets": {
+            name: manifest["config"][name] for name in (
+                "model", "subagent_fanout_profile", "child_work_budget_warning_calls",
+                "child_work_budget_target_calls", "root_work_budget_warning_calls",
+                "root_work_budget_target_calls",
+            )
+        },
         "frozen_sources_verified": True, "input_jsonl_prefixes": reader.prefixes,
         "CPU_finisher": {"process": process, "nice": 19, "CUDA_VISIBLE_DEVICES": "99999"},
         "source_capture_complete": False, "measured_size_mix_qualified": False,
@@ -119,7 +159,7 @@ def main():
         "operator_sha256": sha256_file(Path(__file__)),
     })
     print({
-        "status": "recording_native", "workflows": 18,
+        "status": "recording_native", "workflows": population,
         "completed_output_receipts": tokens["request_output"], "semantic_boundaries": dict(semantics),
     })
 
