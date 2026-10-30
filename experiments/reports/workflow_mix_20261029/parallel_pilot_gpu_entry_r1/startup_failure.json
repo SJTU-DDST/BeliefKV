@@ -1,0 +1,88 @@
+{
+  "registration_state": "/home/longhao/experiment/ops/workflow_parallel_pilot6_source_20261030_r1.registration.state.json",
+  "registration_state_sha256": "345db4f3d7c29160cfc62080a777240c8c60035666e38d83e4fb1874cdff33f4",
+  "state": {
+    "status": "capture_failed",
+    "watcher": {
+      "pid": 2056251,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "752336158",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-pilot6-capture-c0a6d8e05631/scripts/run_causal_source_capture.py",
+        "--watch",
+        "/home/longhao/experiment/ops/workflow_parallel_pilot6_source_20261030_r1.registration.json"
+      ]
+    },
+    "current_arm": "native_capture",
+    "performance_accepted": false,
+    "gpu_replay_qualified": false,
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_pilot6_source_20261030_pilot6",
+    "reservation_aware_queue": true,
+    "checked_at": "2026-10-30T17:38:28.211598+08:00",
+    "resources": {
+      "gpu_free_mib": 143142,
+      "gpu_utilization_percent": 0,
+      "compute_processes": [],
+      "disk_free_bytes": 324319719424,
+      "owned_runs": [],
+      "idle_port": true,
+      "ready": true
+    },
+    "sampling_kernel_preflight": {
+      "path": "/home/longhao/experiment/ops/workflow_parallel_pilot6_source_20261030_r1.registration.sampling.json",
+      "sha256": "8da516e8f3e08055d8b201cd395736118ac7d3ddda5afe716d584b0187543d65",
+      "gpu_sampling_verified": true,
+      "native_kernel_verified": true,
+      "performance_accepted": false,
+      "scope": "Synthetic seeded sampling and native BF16 activation checks before model startup, not a workload result.",
+      "cuda_home": "/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13",
+      "engine": "/home/longhao/experiment/.worktrees/sglang-pilot6-capture-11b84f7c3198",
+      "device_name": "NVIDIA H200 NVL",
+      "torch_cuda_version": "13.0",
+      "pid": 2056409,
+      "elapsed_seconds": 0.333012105897069,
+      "cases": [
+        {
+          "batch_size": 1,
+          "seed_repeated": true,
+          "top_k_support_verified": true
+        },
+        {
+          "batch_size": 8,
+          "seed_repeated": true,
+          "top_k_support_verified": true
+        },
+        {
+          "batch_size": 24,
+          "seed_repeated": true,
+          "top_k_support_verified": true
+        }
+      ]
+    },
+    "driver": {
+      "pid": 2056437,
+      "state": "R",
+      "ppid": 2056251,
+      "start_ticks": "752337131",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-pilot6-capture-c0a6d8e05631/scripts/run_qwen35_native_regime_probe.sh"
+      ]
+    },
+    "original_exit_code": 2,
+    "administratively_interrupted": false,
+    "error": "ValueError('capture lacks final native telemetry')",
+    "finished_at": "2026-10-30T17:38:43.212545+08:00"
+  },
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_parallel_pilot6_source_20261030_pilot6/native_capture.launch.log",
+  "launch_log_sha256": "f14257ba44aeaf56d2680bb9f786346df71b458974156fd68d16ac0d708cc2a2",
+  "failure_stage": "shell_environment_validation_before_server_launch",
+  "cause": "parallel workstream profile missing from shell whitelist",
+  "native_sampler_passed": true,
+  "model_server_launched": false,
+  "natural_trajectory_collected": false,
+  "all_owned_processes_exited": true,
+  "automatic_retry_registered": false
+}

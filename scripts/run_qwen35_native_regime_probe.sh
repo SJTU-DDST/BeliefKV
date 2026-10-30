@@ -142,7 +142,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
-  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" && "$FANOUT_PROFILE" != "native_in_graph_nested_2to4" && "$FANOUT_PROFILE" != "native_in_graph_dynamic_nested" && "$FANOUT_PROFILE" != "native_in_graph_reusable_nested" && "$FANOUT_PROFILE" != "native_in_graph_short_workstreams" ]] \
+  || [[ "$FANOUT_PROFILE" != "native_dynamic_1to4" && "$FANOUT_PROFILE" != "native_in_graph_1to4" && "$FANOUT_PROFILE" != "native_in_graph_2to4" && "$FANOUT_PROFILE" != "native_in_graph_nested_2to4" && "$FANOUT_PROFILE" != "native_in_graph_dynamic_nested" && "$FANOUT_PROFILE" != "native_in_graph_reusable_nested" && "$FANOUT_PROFILE" != "native_in_graph_short_workstreams" && "$FANOUT_PROFILE" != "native_in_graph_parallel_workstreams" ]] \
   || [[ "$AB_MODE" != "off" && "$AB_MODE" != "reactive" && "$AB_MODE" != "predictive_h2d" ]] \
   || [[ "$NATIVE_POLICY_BASELINE" != "0" && "$NATIVE_POLICY_BASELINE" != "1" ]] \
   || [[ "$CHAT_TOKEN_BLOCK_CACHE" != "0" && "$CHAT_TOKEN_BLOCK_CACHE" != "1" ]] \
@@ -172,7 +172,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
       || (( ${BASH_REMATCH[1]:-0} + ${BASH_REMATCH[2]:-0} != 100 )); }; } \
   || [[ ! "$PORT" =~ ^[1-9][0-9]*$ ]] \
   || [[ -e "$RUN_ROOT" || -e "$SOCKET" ]]; then
-  printf 'Usage: PORT=18454 ROOT_COUNT=108 ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 SAMPLING_SEED=21 HICACHE_SIZE_GB=200 HOST_SPLIT=80:20|auto HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_reusable_nested|native_in_graph_dynamic_nested|native_in_graph_nested_2to4|native_in_graph_2to4|native_in_graph_1to4|native_dynamic_1to4 TOOL_PREFETCH_PRIORITY_MS=0 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
+  printf 'Usage: PORT=18454 ROOT_COUNT=108 ARRIVAL_BATCH_SIZE=0 ARRIVAL_BATCH_INTERVAL_MS=0 SAMPLING_SEED=21 HICACHE_SIZE_GB=200 HOST_SPLIT=80:20|auto HICACHE_WRITE_POLICY=write_back|write_through_selective SKIP_SERVER_WARMUP=1 CONFIRMED_JOIN_CANARY=0|1 FANOUT_PROFILE=native_in_graph_parallel_workstreams|native_in_graph_short_workstreams|native_in_graph_reusable_nested|native_in_graph_dynamic_nested|native_in_graph_nested_2to4|native_in_graph_2to4|native_in_graph_1to4|native_dynamic_1to4 TOOL_PREFETCH_PRIORITY_MS=0 SGLANG_PATCH_FLAVOR=staging RUN_ROOT=<new path> bash %s\n' "$0" >&2
   exit 2
 fi
 if [[ "$NATIVE_POLICY_BASELINE" == "1" || "$AB_MODE" == "reactive" || "$ENABLE_TOOL_PREFETCH" == "0" ]]; then

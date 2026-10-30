@@ -329,6 +329,13 @@ def test_reusable_profile_reaches_real_launch_entry_without_a_gpu(tmp_path, comp
     )
 
 
+@pytest.mark.parametrize("comparison", ("full", "native_matched"))
+def test_parallel_checkpoint_profile_reaches_real_launch_entry_without_a_gpu(tmp_path, comparison):
+    test_internal_comparison_effective_environment_before_gpu_launch(
+        tmp_path, comparison, fanout="native_in_graph_parallel_workstreams",
+    )
+
+
 def test_source_reference_capacity_reaches_native_launcher_without_a_gpu(tmp_path):
     test_internal_comparison_effective_environment_before_gpu_launch(
         tmp_path, "native_matched", fanout="native_in_graph_reusable_nested",

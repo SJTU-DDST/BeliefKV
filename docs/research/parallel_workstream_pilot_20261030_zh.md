@@ -108,3 +108,13 @@ control 重标定速率，并保留 seed23 的声明，不直接搬用旧132.72s
 工具区别、自动首选、独立 session、JOIN 归属和自然返回。
 六项目的 15 项原始源码、上下文和工具环境外部输入也已重新核对。
 这不是新源的 GPU 或任务形状验收；启动前仍需冻结及 fresh sampler 检查。
+
+首次 `workflow_parallel_pilot6_source_20261030_r1` 已通过 fresh sampler 1/8/24
+和 native BF16 检查，但 shell launcher 的独立 fanout 白名单漏加新协议，
+在创建模型 server 目录前以退出码2拒绝启动。`startup_failure.json` 保留完整
+状态和 launch log 指纹，确认所有所属进程退出；没有自然轨迹可用于比较。
+已补齐白名单，并通过真实 shell 入口的无 GPU native/Full 两项回归检查。
+后续使用显式 r2 身份重新冻结与资格，不复用或覆盖失败目录。
+修复后的 `parallel_pilot_cpu_r2` 通过 5,268 项及 12 个子测试，保留 r1 全部
+5,266 个测试身份，无失败、错误或跳过；2,072 个绑定输入和 native engine
+在检查期间不变。

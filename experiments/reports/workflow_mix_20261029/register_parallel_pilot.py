@@ -34,6 +34,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cpu-evidence", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--attempt", type=int, choices=(1, 2), default=1)
     args = parser.parse_args()
     predecessor_complete(
         OPS / "workflow_mix_burst_full_20261030_r1.registration.json",
@@ -46,8 +47,11 @@ def main():
         "--cpu-evidence", str(args.cpu_evidence), "--output-dir", str(args.output_dir),
         "--workload", str(ROOT / "configs/workloads/locobench_parallel_pilot6_20261030.json"),
         "--configuration", str(ROOT / "configs/migration/workflow_parallel_pilot6_native_20261030.json"),
-        "--registration", str(OPS / "workflow_parallel_pilot6_source_20261030_r1.registration.json"),
-        "--run-root", str(MAIN / "experiments/raw/workflow_parallel_pilot6_source_20261030_pilot6"),
+        "--registration", str(OPS / f"workflow_parallel_pilot6_source_20261030_r{args.attempt}.registration.json"),
+        "--run-root", str(MAIN / "experiments/raw" / (
+            "workflow_parallel_pilot6_source_20261030_pilot6"
+            + (f"r{args.attempt}" if args.attempt != 1 else "")
+        )),
         "--port", "18906", "--purpose", "derived_deliverable_parallel_shape_pilot",
     ]
     register_capture.main()

@@ -18,9 +18,13 @@ from experiments.reports.layer_free_extent_20261029.run_bound_cpu import identit
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--previous-evidence", type=Path,
+        default=ROOT / "experiments/reports/workflow_mix_20261029/bound_cpu_r4/evidence.json",
+    )
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
-    previous_path = ROOT / "experiments/reports/workflow_mix_20261029/bound_cpu_r4/evidence.json"
+    previous_path = args.previous_evidence
     previous = json.loads(previous_path.read_bytes())
     retained, bad, _ = identities(Path(previous["report"]["path"]))
     if bad or any(

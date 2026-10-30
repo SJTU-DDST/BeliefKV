@@ -4161,3 +4161,15 @@
   task scope and complete shape/native ownership/positive-service diagnostics.
   New pilot GPU collection still requires clean freeze,fresh sampler,current
   reservation/resources and complete prior comparison/reviewer actual exit.
+- First parallel pilot r1 passes fresh1/8/24sampler/nativeBF16 but exits2 in
+  shell validation before model/server startup:new profile was missing from
+  the shell fanout whitelist. Preserve r1 startup_failure.json and raw log/
+  registration;all owned processes actually exit,no natural work is captured.
+  Shell whitelist is repaired and both native/Full actual entry paths pass
+  CPU-only launcher regressions. Explicit r2 uses a new registration/run-root,
+  same tasks/seeds,updated source-bound CPU and fresh reservation/resources/
+  sampler. This is a startup repair,not a second completed workload result.
+- Repaired parallel pilot bound CPU r2 actually passes5268+12,retains all5266
+  r1 literal identities,no failures/errors/skips,2072inputs/native unchanged.
+  Its two added tests traverse actual shell native/Full launch entries with
+  the new profile and no GPU. Freeze this repaired source for explicit r2.
