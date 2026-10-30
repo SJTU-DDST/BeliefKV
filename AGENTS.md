@@ -4040,3 +4040,26 @@
   actual owned exit and writes measured strata/arrival artifacts only.
   No next Full/Thunder/baseline GPU action is queued. Preserve the running
   frozen snapshot and all normal tails;the global optimization goal is active.
+- Scope18 source and CPU finisher now actually complete18/4246/148235495/
+  607248,97JOINs/116children,0guard interventions,original exit0,fresh drain
+  and actual owned exit. Measured model-work P90/P10=2.9554,output3.1634;
+  no nesting,maxrootJOINfanout2 and18parallel-return deferrals remain limits.
+  Keep5-10x diagnostic,not a hard result filter. Retain complete source/tails;
+  use this as a burst competition diagnostic before broader comparisons.
+  New source population/strata/arrivals are in scope18_finish_r1;do not reuse
+  oldV230 performance as a matched control.
+- Oracle cache now invalidates on observed changes and maintains exact continuous
+  external-timer envelopes between changes,with literal fallback for ahead-of-
+  clock observations. Complete old call-boundary CPU comparison13,083queries/
+  525DAGrebuilds shows0local priority order changes,maxdelta1.54e-8s,
+  threadCPU18.3959-to1.2855s. This excludes native partial callback reconstruction:
+  strict exporter rejects positive replay samples after client results;keep
+  oracle_cache_native_progress_rejection_r1 and the original exporter intact.
+  No GPU/JCT gain follows from this CPU microbenchmark. New pregrant logical
+  readiness snapshots and audit_workflow_competition exclude blocked/unready
+  owners,retain first-call admission rules and native physical authority.
+  Bound CPU r3 actually passes5216+12,retains all5204prior identities,no skips/
+  failures,native unchanged. New burst_full prepares retained Full with size
+  ranking off and the same user-disabled features off,on fixed new arrivals/
+  TraceLab timing. It has not yet run;fresh source-bound position/sampler and
+  actual completion/cleanup remain required. Global performance goal is active.

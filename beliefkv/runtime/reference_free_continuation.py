@@ -25,14 +25,14 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
         self._dispatch_pending = OrderedDict()
         self._next_dispatch = 0.
 
-    def _candidate(self, request_id, key):
+    def _candidate(self, request_id, key, *, include_first=False):
         item = self.policy.programs.get(key.invocation_id)
         invocation = self.runtime.graph.invocations.get(key.invocation_id)
         context = self.runtime.graph.contexts.get(key.context_id)
         req = self._live_requests.get(request_id)
         if (
             item is None or item.active or not item.pending
-            or item.steps <= 1 and not self.dispatch_interval_ms
+            or item.steps <= 1 and not self.dispatch_interval_ms and not include_first
             or item.marked_for_pause or self.latest.get(key.invocation_id) != key
             or self.runtime.visible.get(request_id) != key
             or self.requests.get(request_id, (None,))[0] != key or req is None

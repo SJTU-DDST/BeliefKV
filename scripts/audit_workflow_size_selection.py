@@ -33,6 +33,7 @@ def inspect_choice(row):
     capacity = row.get("capacity_tokens")
     ordered = row.get("ordered")
     selected = row.get("selected_in_priority_order")
+    oracle = row.get("rank_kind") == "oracle_remaining_model_tool_critical_path_seconds"
     if (
         row.get("event") != EVENT
         or type(capacity) is not int
@@ -45,8 +46,12 @@ def inspect_choice(row):
         if (
             type(item) is not list or len(item) != 6
             or type(item[0]) is not str or not item[0]
-            or any(type(item[i]) is not int for i in (1, 2, 3, 4))
-            or item[1] not in (0, 1, 2) or item[2] not in (0, 1, 2)
+            or any(type(item[i]) is not int for i in (1, 3, 4))
+            or item[1] not in (0, 1, 2)
+            or (
+                (not finite(item[2]) or item[2] < 0) if oracle
+                else (type(item[2]) is not int or item[2] not in (0, 1, 2))
+            )
             or item[3] <= 0 or item[4] < 0
             or item[5] is not None and (
                 type(item[5]) is not list or len(item[5]) != 3

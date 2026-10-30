@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
-    previous_path = ROOT / "experiments/reports/workflow_resume_oracle_20261029/bound_cpu_r2/evidence.json"
+    previous_path = ROOT / "experiments/reports/workflow_mix_20261029/bound_cpu_r2/evidence.json"
     previous = json.loads(previous_path.read_bytes())
     retained, bad, _ = identities(Path(previous["report"]["path"]))
     if bad or any(
@@ -32,6 +32,8 @@ def main():
     added = (
         "tests/test_workload_mix.py", "tests/test_workflow_rank_input.py",
         "tests/test_permuted_replay_arrivals.py",
+        "tests/test_workflow_oracle_path_cache.py",
+        "tests/test_workflow_competition_readiness.py", "tests/test_workflow_competition_audit.py",
     )
     names.update(added)
     names.update((
@@ -43,6 +45,9 @@ def main():
         "experiments/reports/workflow_mix_20261029/scope18_declaration.json",
         "experiments/reports/workflow_mix_20261029/finish_capture.py",
         "experiments/reports/workflow_mix_20261029/register_capture.py",
+        "experiments/reports/workflow_mix_20261029/live_start.py",
+        "experiments/reports/workflow_mix_20261029/qualify_oracle_cache.py",
+        "scripts/audit_workflow_competition.py",
         str(Path(__file__).relative_to(ROOT)),
     ))
     before = {name: sha256_file(ROOT / name) for name in sorted(names)}

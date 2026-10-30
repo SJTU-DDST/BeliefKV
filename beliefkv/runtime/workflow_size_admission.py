@@ -23,7 +23,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self._resume_groups = {}
         self._rank_cache = {}
         self.working_set_type = lambda capacity, **kwargs: WorkflowSizeWorkingSet(
-            capacity, rank=self._rank, sibling_group=self._resume_groups.get, **kwargs,
+            capacity, rank=self._rank, sibling_group=self._resume_groups.get,
+            observe_ready=self._logical_ready_paused, **kwargs,
         )
         super().__init__(runtime)
         self._work = self._create_work(runtime)
@@ -52,6 +53,13 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def _rank(self, invocation, now):
         return self._priority(self._prediction(invocation))
+
+    def _logical_ready_paused(self, item):
+        key = self.latest.get(item.identity)
+        return (
+            key is not None
+            and self._candidate(key.request_id, key, include_first=True) is not None
+        )
 
     def _order_dispatch_keys(self, keys, joins):
         if len(keys) < 2:

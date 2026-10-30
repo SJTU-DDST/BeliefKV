@@ -15,10 +15,11 @@ def resume_category(item):
 class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
     """Change recovery ordering; inherit decay, pressure, and native authority."""
 
-    def __init__(self, capacity_tokens, *, rank, sibling_group, **kwargs):
+    def __init__(self, capacity_tokens, *, rank, sibling_group, observe_ready=None, **kwargs):
         super().__init__(capacity_tokens, **kwargs)
         self.rank = rank
         self.sibling_group = sibling_group
+        self.observe_ready = observe_ready
         self.last_selection = {}
 
     def _resume(self):
@@ -39,6 +40,10 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
             item for item in self.programs.values()
             if not item.active and (self.resume_eligible is None or self.resume_eligible(item))
         ]
+        readiness = (
+            {item.identity: bool(self.observe_ready(item)) for item in paused}
+            if self.observe_ready is not None else None
+        )
         ranks = {item.identity: self.rank(item.identity, self._resume_now) for item in paused}
         paused.sort(key=lambda item: (
             resume_category(item), ranks[item.identity], item.tokens, item.queue_sequence,
@@ -82,5 +87,6 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
             "selected_in_priority_order": selection_order,
             "thread_cpu_us": (time.thread_time() - cpu) * 1e6,
             "wall_us": (time.perf_counter() - started) * 1e6,
+            **({"logical_ready_paused_before_resume": readiness} if readiness is not None else {}),
         }
         return tuple(item.identity for item in selected)

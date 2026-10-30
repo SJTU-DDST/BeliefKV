@@ -1,0 +1,9 @@
+{
+  "status": "CPU_qualification_precheck_rejected",
+  "reason": "The operator compared complete_work five-field signatures directly with two-field oracle lengths.",
+  "signature_fields": ["prompt_tokens", "output_tokens", "prompt_sha256", "output_sha256", "native_finish_reason"],
+  "correction": "Compare lengths explicitly and validate the complete bound source token file, causal graph and tool overlay separately.",
+  "oracle_paths_evaluated": false,
+  "GPU_action": false,
+  "performance_accepted": false
+}

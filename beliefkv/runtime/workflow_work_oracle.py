@@ -189,6 +189,90 @@ class OracleWorkPrediction(WorkPrediction):
     tool_and_fixed_delay_path_s: float
 
 
+@dataclass(frozen=True)
+class _CachedPaths:
+    finish_floor: float
+    finish_deadline: float
+    model: float
+    external_floor: float
+    external_deadline: float
+    valid_from: float
+
+    def at(self, now):
+        return (
+            max(self.finish_floor, self.finish_deadline - now), self.model,
+            max(self.external_floor, self.external_deadline - now),
+        )
+
+
+def scan_remaining_paths(graph, requests, done_at, active, seconds_per_unit, now):
+    """Literal reference calculation, also covering observations ahead of the clock."""
+    finish, model, tools = [], [], []
+    for node in graph:
+        if node["node_id"] in done_at:
+            finish.append(0.)
+            model.append(0.)
+            tools.append(0.)
+            continue
+        request, dependencies = node["request_id"], node["dependencies"]
+        if request is not None:
+            item = requests[request]
+            units = item["input_increment"] + 100 * (
+                item["output_tokens"] - active.get(request, 0)
+            )
+            duration, external = units / 100. * seconds_per_unit, 0.
+        else:
+            duration, external = 0., node["delay_s"]
+            if dependencies and all(graph[dep]["node_id"] in done_at for dep in dependencies):
+                ready_at = max(done_at[graph[dep]["node_id"]] for dep in dependencies)
+                external = max(0., external - max(0., now - ready_at))
+        finish.append(max((finish[dep] for dep in dependencies), default=0.) + duration + external)
+        model.append(max((model[dep] for dep in dependencies), default=0.) + duration)
+        tools.append(max((tools[dep] for dep in dependencies), default=0.) + external)
+    return finish[-1], model[-1], tools[-1]
+
+
+def cache_remaining_paths(graph, requests, done_at, active, seconds_per_unit):
+    """Build exact elapsed-time envelopes once per observed workflow revision."""
+    finish, model, tools = [], [], []
+    valid_from = -math.inf
+    for node in graph:
+        if node["node_id"] in done_at:
+            finish.append((0., -math.inf))
+            model.append(0.)
+            tools.append((0., -math.inf))
+            continue
+        request, dependencies = node["request_id"], node["dependencies"]
+        if request is not None:
+            item = requests[request]
+            units = item["input_increment"] + 100 * (
+                item["output_tokens"] - active.get(request, 0)
+            )
+            duration, external = units / 100. * seconds_per_unit, 0.
+        else:
+            duration, external = 0., node["delay_s"]
+            if dependencies and all(graph[dep]["node_id"] in done_at for dep in dependencies):
+                ready_at = max(done_at[graph[dep]["node_id"]] for dep in dependencies)
+                valid_from = max(valid_from, ready_at)
+                # All direct predecessors are done, so their remaining paths
+                # are zero. Only this operation's elapsed external delay varies.
+                deadline = ready_at + external
+                finish.append((0., deadline))
+                model.append(0.)
+                tools.append((0., deadline))
+                continue
+        finish.append((
+            max((finish[dep][0] for dep in dependencies), default=0.) + duration + external,
+            max((finish[dep][1] for dep in dependencies), default=-math.inf) + duration + external,
+        ))
+        model.append(max((model[dep] for dep in dependencies), default=0.) + duration)
+        tools.append((
+            max((tools[dep][0] for dep in dependencies), default=0.) + external,
+            max((tools[dep][1] for dep in dependencies), default=-math.inf) + external,
+        ))
+    return _CachedPaths(*finish[-1], model[-1], *tools[-1], valid_from)
+
+
 class WorkflowWorkOracle:
     """Bound future model/tool DAG, updated only by actual observed progress."""
 
@@ -207,11 +291,14 @@ class WorkflowWorkOracle:
         self._revision = Counter()
         self._done_at = {}
         self._event_nodes = {}
+        self._event_workflows = {}
         self._request_nodes = {}
-        for graph in self.artifact.graphs.values():
+        self._path_cache = {}
+        for workflow, graph in self.artifact.graphs.items():
             for node in graph:
                 if node["event_id"] is not None:
                     self._event_nodes[node["event_id"]] = node["node_id"]
+                    self._event_workflows[node["event_id"]] = workflow
                 else:
                     self._request_nodes[node["request_id"]] = node["node_id"]
         self.error = ""
@@ -223,6 +310,7 @@ class WorkflowWorkOracle:
         if remaining < 0:
             raise ValueError("oracle observed work exceeds its fixed total")
         self._revision[workflow] += 1
+        self._path_cache.pop(workflow, None)
         value = remaining / 100.
         bucket = bisect_right(self.artifact.thresholds, value)
         self._predictions[workflow] = OracleWorkPrediction(
@@ -253,7 +341,11 @@ class WorkflowWorkOracle:
                 raise ValueError("oracle event workflow mismatch")
             identity = self._event_nodes.get(getattr(event, "event_id", None))
             if identity is not None:
-                self._done_at.setdefault(identity, event.ts_ms / 1000.)
+                if self._event_workflows[event.event_id] != workflow:
+                    raise ValueError("oracle event identity belongs to another workflow")
+                if identity not in self._done_at:
+                    self._done_at[identity] = event.ts_ms / 1000.
+                    self._path_cache.pop(workflow, None)
                 self.counts["matched_graph_event_observations"] += 1
             else:
                 self.counts["unmodeled_event_observations"] += 1
@@ -267,6 +359,7 @@ class WorkflowWorkOracle:
                     raise ValueError("oracle workflow ended with unconsumed work")
                 self._closed.add(workflow)
                 self._predictions.pop(workflow, None)
+                self._path_cache.pop(workflow, None)
                 self.counts["closed_workflows"] = len(self._closed)
             return
         if workflow in self._closed:
@@ -324,40 +417,31 @@ class WorkflowWorkOracle:
         if prediction is None:
             return None
         started, now = time.thread_time(), time.monotonic()
-        finish, model, tools = [], [], []
-        graph = self.artifact.graphs[workflow]
-        for node in graph:
-            if node["node_id"] in self._done_at:
-                finish.append(0.)
-                model.append(0.)
-                tools.append(0.)
-                continue
-            request = node["request_id"]
-            dependencies = node["dependencies"]
-            if request is not None:
-                item = self.artifact.requests[request]
-                units = item["input_increment"] + 100 * (
-                    item["output_tokens"] - self._active.get(request, 0)
-                )
-                duration = units / 100. * self.artifact.model_seconds_per_work_token
-                external = 0.
-            else:
-                duration, external = 0., node["delay_s"]
-                if dependencies and all(
-                    graph[dep]["node_id"] in self._done_at for dep in dependencies
-                ):
-                    ready_at = max(self._done_at[graph[dep]["node_id"]] for dep in dependencies)
-                    external = max(0., external - max(0., now - ready_at))
-            finish.append(max((finish[dep] for dep in dependencies), default=0.) + duration + external)
-            model.append(max((model[dep] for dep in dependencies), default=0.) + duration)
-            tools.append(max((tools[dep] for dep in dependencies), default=0.) + external)
-        self.counts["path_evaluations"] += 1
-        self.counts["path_nodes_evaluated"] += len(graph)
+        self.counts["path_queries"] += 1
+        if workflow not in self._path_cache:
+            graph = self.artifact.graphs[workflow]
+            self._path_cache[workflow] = cache_remaining_paths(
+                graph, self.artifact.requests, self._done_at, self._active,
+                self.artifact.model_seconds_per_work_token,
+            )
+            self.counts["path_evaluations"] += 1
+            self.counts["path_nodes_evaluated"] += len(graph)
+        else:
+            self.counts["path_cache_hits"] += 1
+        cached = self._path_cache[workflow]
+        if now >= cached.valid_from:
+            values = cached.at(now)
+        else:
+            values = scan_remaining_paths(
+                self.artifact.graphs[workflow], self.artifact.requests, self._done_at,
+                self._active, self.artifact.model_seconds_per_work_token, now,
+            )
+            self.counts["path_future_clock_fallbacks"] += 1
         self.counts["path_thread_cpu_us"] += (time.thread_time() - started) * 1e6
         return OracleWorkPrediction(
             prediction.probabilities, prediction.bucket, prediction.revision, now, "oracle",
             prediction.remaining_work, prediction.remaining_work_units,
-            finish[-1], model[-1], tools[-1],
+            *values,
         )
 
     def status(self):
@@ -373,6 +457,8 @@ class WorkflowWorkOracle:
             "future_dependency_graph_used_for_rank_only": True,
             "model_seconds_per_work_token": self.artifact.model_seconds_per_work_token,
             "critical_path_is_optimal_JCT_bound": False,
+            "path_cache": "observed_revision_and_continuous_elapsed_timer_envelope",
+            "path_lookup_complexity": "O(1)_between_observed_revisions",
             "remaining_work_units": dict(self._remaining),
             "counts": dict(self.counts), "cached_workflows": len(self._predictions),
             "queue_depth": 0, "refresh_interval_ms": 0,
@@ -380,3 +466,4 @@ class WorkflowWorkOracle:
 
     def close(self):
         self._predictions.clear()
+        self._path_cache.clear()

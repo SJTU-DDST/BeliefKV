@@ -1,0 +1,12 @@
+{
+  "status": "CPU_native_progress_contract_rejected",
+  "reason": "The strict native progress exporter found positive decode observations whose journal completion timestamp follows the replay client's result boundary.",
+  "after_client_result_sample_rows": 2623,
+  "example_lag_ms": [0.7397174835205078, 2.091339111328125, 1.982748031616211, 3.665325164794922],
+  "exporter_relaxed": false,
+  "training_data_changed": false,
+  "next_CPU_comparison": "Complete call-boundary events and recorded query groups; partial-progress equivalence remains covered separately by unit tests.",
+  "all_online_callback_timing_reconstructed": false,
+  "GPU_action": false,
+  "performance_accepted": false
+}
