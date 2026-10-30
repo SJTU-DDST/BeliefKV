@@ -62,8 +62,11 @@ def review(inventories, *, each=6, target_ratio=5.):
         "GPU_experiment_started": False, "performance_accepted": False,
         "selection_rules": {
             "whole_complete_workflows_only": True, "one_original_project_per_workflow": True,
-            "same_execution_protocol": True, "stratification": "mean rank of output, necessary input, request count",
-            "tool_durations_separate_from_size_strata": True,
+            "same_execution_protocol": True,
+            "stratification": "model_and_observed_tool_critical_path_after_inventory_refresh",
+            "model_work_ratio_evaluated_separately": True,
+            "tool_durations_separate_from_size_strata": False,
+            "reuse_complete_existing_traces_before_incremental_collection": True,
             "context_crossing_required": True,
             "mechanism": "same resume category; ready-paused short/long candidates individually fit but not jointly",
             "performance_advantage_used_to_select": False,
@@ -83,6 +86,7 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--capture", type=Path, action="append")
     parser.add_argument("--model-cost-evidence", type=Path, required=True)
+    parser.add_argument("--target-ratio", type=float, default=5.)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
     cost = json.loads(args.model_cost_evidence.read_bytes())["metrics"]["FULL"]["decode"]
@@ -104,7 +108,7 @@ def main():
             continue
         inventories.append(value)
         write(args.output_dir / (capture.parent.name + ".json"), value)
-    result = review(inventories)
+    result = review(inventories, target_ratio=args.target_ratio)
     result.update(
         source_rejections=rejected,
         model_cost_evidence={

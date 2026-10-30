@@ -4472,3 +4472,31 @@
   registered. Keep all complete natural outputs/tails;after actualexit/drain,
   inspect intrinsic work,child lengths and positive multi-member JOIN service.
   Startup does not qualify source shape,physical pressure or scheduler gains.
+- Latest user allows reusing prior complete original workflow traces across
+  capture concurrency;collect only missing task-size tiers or distinct projects.
+  Changing arrivals/concurrency does not require whole natural recollection.
+  The latest threshold is model-workP90/P10>=5,superseding the brief3minimum.
+  Keep review_r1's3.081reuse candidate as superseded preparation,not accepted
+  heterogeneity. Tool-aware tiers use model/observed-tool causal paths with
+  parallel max,excluding source queue/runtime gaps;model ratio is independent.
+  Preserve unique original projects/full tokens/dependencies/stopping/tools,
+  normal tails and fixed original-task representatives;never choose lucky
+  repeats or policy winners. No old JCT is a new-load performance result.
+- Reuse inventory covers40different original tasks across18projects from four
+  compatible completed sources. Original prompts and selected raw token/event/
+  work identities are checked. preparation uses CPU-only metric refresh and
+  no newGPU. Current six-root original capture and its reviewer remain frozen.
+  Continue incremental completion of missing tiers/projects;qualify JOIN shape,
+  background supply and physical pressure,and freeze multisource replay bindings
+  before any new performance claim. See reused_original_workflows_20261030_zh.md.
+- Current5threshold reuse review_r2 is explicitly unmet:the40checked compatible
+  original-task pool has max/min model-work envelope4.46559,so cannot supply
+  P90/P10>=5even ignoring project constraints. Keep threshold3review_r1/
+  supersession marker and all full sources. Focused30tests+6subtests pass.
+- Original mix6 source and CPUreviewer now actually complete/exit:
+  970requests/145508outputtokens,6natural eligible roots,fresh drain/owned exit.
+  ModelP90/P10=3.665878,below current5;33children callP50/P90=14/36,max105;
+  22JOINs:14single/6double/1triple/1four,0nested,rootparallelroundmedian1.
+  Keep whole new source and all tails;use its full original workflows only as
+  incremental inventory,not automatic expansion or comparison. Do not re-run
+  whole older populations merely because this shape remains insufficient.

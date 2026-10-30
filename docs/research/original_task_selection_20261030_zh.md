@@ -83,3 +83,14 @@ CPU reviewer 从同一固定 checkout 以 nice19、`CUDA_VISIBLE_DEVICES=99999`
 `finish_r1.registration.json` 和 `finish_r1/state.json`。没有注册 Full、
 ThunderAgent 或扩大人口的后继 GPU 任务。采集完成后须审查全部原题自然返回、
 真实工作量异构、child 调用长度、多成员 JOIN 和实际共享 decode。
+
+后续用户允许复用已有完整原题 trace，只补采缺失任务档位或不同项目。
+改变并发或到达表不再要求整组自然重采。当前模型工作P90/P10门槛为5；
+长短分档另外纳入真实工具关键路径，不能用工具时间绕过模型倍率要求。
+详见`docs/research/reused_original_workflows_20261030_zh.md`。
+
+本次六原题采集与CPU reviewer已完整退出：970请求、145,508输出token，
+六workflow自然返回，fresh drain及owned exit通过。模型工作P90/P10=3.666，
+未达到最新5倍门槛；child调用P50/P90=14/36、最大105，22个JOIN中14个单成员，
+root并行轮次中位数1，仍不是合格的最终负载。保留全部结果，优先复用可用部分，
+只补缺失档位和不同项目，不触发整组重采或自动GPU比较。

@@ -110,13 +110,16 @@ def _paths(plan, increments, *, seconds_per_model_unit):
             if node.event is not None and node.event.kind is Kind.TOOL_END else 0.
         )
         external = node.delay_ms / 1000.
-        costs = (model, tool, external, model * seconds_per_model_unit + external)
+        costs = (
+            model, tool, external, model * seconds_per_model_unit + external,
+            model * seconds_per_model_unit + tool,
+        )
         state[identity] = tuple(
             cost + max((state[dep][index] for dep in node.dependencies), default=0.)
             for index, cost in enumerate(costs)
         )
     return {
-        workflow: tuple(max(row[index] for row in state.values()) for index in range(4))
+        workflow: tuple(max(row[index] for row in state.values()) for index in range(5))
         for workflow, state in paths.items()
     }
 
@@ -270,6 +273,7 @@ def inventory_capture(capture, *, seconds_per_model_unit, plan_loader=None):
             "critical_tool_only_s": paths[workflow][1],
             "critical_external_only_s": paths[workflow][2],
             "critical_model_tool_proxy_s": paths[workflow][3],
+            "critical_model_observed_tool_proxy_s": paths[workflow][4],
             "source_jct_s": (ends[0].ts_ms - starts[0].ts_ms) / 1000.,
             "joins": len(joins),
             "root_join_rounds": sum(join_parents.get(join.join_id) == root for join in joins),
@@ -302,6 +306,7 @@ def inventory_capture(capture, *, seconds_per_model_unit, plan_loader=None):
             "source_jct_used_as_size_label": False,
             "model_work": ".01 * necessary_new_input + generated_output; not exact GPU time",
             "critical_paths_use_parallel_max": True,
+            "model_observed_tool_path_excludes_runtime_and_source_queue_gaps": True,
             "logical_prompt_lengths_are_not_physical_KV_occupancy": True,
             "tool_timing": "original_natural_capture_no_synthetic_overlay",
             "test_assertions_repaired": False, "performance_accepted": False,
@@ -325,8 +330,8 @@ def population_summary(rows):
     }
 
 
-def stratify(rows, *, each=6):
-    """Freeze disjoint thirds by a three-measure rank, independently of tool time."""
+def stratify(rows, *, each=6, include_tools=False):
+    """Keep the historical rank, or explicitly rank model/tool critical paths."""
     if type(each) is not int or each < 1 or len(rows) != each * 3:
         raise ValueError("stratification requires exactly three equal whole-workflow tiers")
     if (
@@ -335,6 +340,26 @@ def stratify(rows, *, each=6):
         or any(row.get("eligible") is not True for row in rows)
     ):
         raise ValueError("mix requires eligible, project-disjoint, protocol-matched workflows")
+    if include_tools:
+        if any(
+            type(row.get("critical_model_observed_tool_proxy_s")) not in (int, float)
+            or not math.isfinite(row["critical_model_observed_tool_proxy_s"])
+            or row["critical_model_observed_tool_proxy_s"] <= 0
+            for row in rows
+        ):
+            raise ValueError("tool-aware tiers require refreshed model/observed-tool causal paths")
+        ordered = sorted(rows, key=lambda row: (
+            row["critical_model_observed_tool_proxy_s"],
+            row["model_work_units"], row["workflow_id"],
+        ))
+        return [
+            {
+                **row, "size_tier": ("short", "medium", "long")[index // each],
+                "size_ranking_policy": "model_and_observed_tool_critical_path",
+                "size_score_seconds": row["critical_model_observed_tool_proxy_s"],
+            }
+            for index, row in enumerate(ordered)
+        ]
     ranks = defaultdict(float)
     for name in ("generated_tokens", "necessary_input_tokens", "requests"):
         ordered = sorted(rows, key=lambda row: row[name])

@@ -63,6 +63,20 @@ def test_source_size_uses_intrinsic_work_not_jct_or_policy_outcomes():
     assert assess(inventory, shape) == previous
 
 
+@pytest.mark.parametrize("ratio,accepted", ((5., True), (4.999, False)))
+def test_current_work_diversity_threshold_is_five_without_rounding(ratio, accepted):
+    inventory, shape = population()
+    for index, row in enumerate(inventory["workflows"]):
+        work = 1000. if index < 3 else 1000. * ratio
+        factor = work / row["model_work_units"]
+        row["model_work_units"] = work
+        for agent in row["agent_work_breakdown"]["agents"]:
+            agent["model_work_units"] *= factor
+    report = assess(inventory, shape)
+    assert report["diagnostic_targets"]["model_work_p90_p10"] == 5.
+    assert ("insufficient_intrinsic_work_diversity" not in report["shape_shortfalls"]) is accepted
+
+
 def test_long_single_child_sources_are_retained_with_diagnostic_shortfalls():
     inventory, shape = population()
     for row in inventory["workflows"]:
