@@ -94,3 +94,26 @@ focused_r4 为 123 通过/8 原生环境跳过，完整 cpu_r1 已在原生环�
 下一步冻结提交，重查 GPU 预约/资源、当前工作量和 native patch 后，
 进行新源码的 position/session/native-stop 和 sampler 资格，再只运行
 这一项 Full。复用已有匹配 ThunderAgent 和原保留 Full，不重采 native。
+
+## 已启动的独立验证
+
+运行时代码冻结于 `46d5b37a`。独立 position 检查已完成 8 个上下文、
+每个 3 轮共 24 条 exact token/session/native-stop 请求，24 条均为原生停止；
+新 sampler 的 1/8/24 测量通过。该小样本未连接 Full policy receiver，
+因此只验证共享数据路径，不宣称已验证工具预测压力选择的 GPU 效果。
+
+正式 Full 已注册于
+`ops/predicted_acting_pressure_20261029_r1.registration.json`，端口 18901。
+实际 watcher/server/driver 和唯一 owned GPU scheduler 已核对为 nice0；
+运行源码及原生树继续保持冻结。控制沿用完整 mixed-off ThunderAgent 和
+原 2 秒 Full，不额外采集 native 性能基线，也不更改本轮到达或工作量。
+
+`complete_review.py` 是独立的纯 CPU 完成审查入口，其 12 个定向测试通过。
+它等待全部原始工作完成、fresh drain 和实际 owned exit，随后生成配对
+decode 时间线/分布，并核查 demand、JOIN 预取、sibling、EOS 与明确的
+pressure 日志。零次有效改变及完整负结果也须保留；局部 victim 变化不
+构成完整反事实，更不能直接折算为物理迁移或 JCT 节省。
+
+开发数据已包含两批额外 native 采集，当前 34/22/18 的整体执行划分足够
+继续验证。遵循用户允许的跨独立执行项目/任务重叠，不为严格项目隔离
+继续消耗 GPU；不拆散同一执行的快照，也不将当前开发评估称为盲测泛化。

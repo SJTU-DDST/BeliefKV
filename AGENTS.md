@@ -3920,3 +3920,16 @@
   hold/resources then qualify fresh position/session/native-stop/sampler before
   Full-only performance,reusing existing complete mixed-off controls. New GPU/
   performance acceptance remains pending and the full goal stays active.
+- Predicted-pressure frozen46d5b37a now passes24exact/session/native-stop
+  requests(all24native stops)and fresh1/8/24sampler qualification. This probe
+  has no live Full policy receiver and proves only the shared data path.
+  Formal ops/predicted_acting_pressure_20261029_r1.registration.json actually
+  runs Full on18901 with nice0 watcher1823035/server1823516/driver1824335/
+  sole owned GPU scheduler1823596. Preserve frozen sources,complete work,
+  normal tails and reuse retained mixed-off Thunder/original2sFull.
+  CPU-only complete_review.py has12passing focused cases and waits full work,
+  fresh drain/actual owned exit before pair plots and mechanism audits.
+  It creates no further GPU action. Record zero changed choices or negative
+  results honestly;local logical choices do not prove physical migration/JCT.
+  Existing34/22/18whole-execution development data already includes two extra
+  native captures;do not collect more solely for strict project separation.
