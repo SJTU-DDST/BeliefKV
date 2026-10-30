@@ -3889,3 +3889,15 @@
   collect more native solely for project holdout or promote this untrained
   candidate. Full source-bound runtime/GPU/performance qualification remains
   pending. Preserve unrelated user docs and the completed frozen GPU sources.
+- Context v2 now completes the fixed34/22/18 export and one compact16 fit from
+  frozend6001b9c with CUDA hidden/nice19. All old17features,snapshots,executions,
+  labels,parameters and paused candidates remain equal. Actual18root/17128
+  progress/17110prediction CPU parity passes. Development macroF1 rises.45016
+  to.53146,but continuous paused correctness falls1332-to1252/1803 repeated
+  observations;first440request pairs are273-to272 and real first-submit
+  accuracy stays9/18. These diagnostics do not establish better native selection.
+  Keep the schema
+  optional,v1 compatible,ranking off and original2s/mixed-off Full retained.
+  Review is under context_features_r1;no new native source or GPU experiment
+  is registered. Preserve the classification/ranking tradeoff and incomplete
+  global goal rather than promoting calibration eligibility as performance.
