@@ -1,0 +1,19 @@
+{
+  "workflow_count": 36,
+  "distinct_project_count": 36,
+  "tool_execution_qualified": true,
+  "qualification_scope": "live_root_child_tools_only",
+  "tool_report": "experiments/reports/sustained36_20261030/preparation_r1/tools.json",
+  "natural_trace_collected_for_this_population": false,
+  "source_shape_qualified": false,
+  "serving_pressure_qualified": false,
+  "formal_comparison_ready": false,
+  "automatic_full_population_collection": false,
+  "reference_diagnostics": [
+    "experiments/reports/workload_requirements_20261030/pilot6_r1/assessment.json",
+    "experiments/reports/workload_requirements_20261030/scope18_r1/assessment.json"
+  ],
+  "reason": "More distinct projects alone does not establish short children, multi-round parallel JOINs, intrinsic size diversity, sustained ready candidates, or feasible live KV pressure. Confirm revised task organization on a small natural capture before population expansion and policy comparisons.",
+  "prior_negative_and_normal_tail_evidence_retained": true,
+  "GPU_action": false
+}

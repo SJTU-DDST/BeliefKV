@@ -4263,3 +4263,26 @@
   OSDI24background-targetJCT,PackServearXiv2609.33224arrival-window warmup and
   NSDI06OpenVersusClosed provide related evidence,not an exact reused protocol.
   No GPU job was launched this turn;global all-baseline goal remains active.
+- Latest workload acceptance separates natural source shape from serving
+  pressure and policy gains. New per-invocation intrinsic-work attribution
+  counts necessary new inputs/output once,with root,children and runtime-internal
+  work separate;do not confuse total child share with largest-child share or
+  use scheduling-contaminated JCT as the size label. The new offline audit
+  preserves original sources/tails and never selects on native recomputation
+  or Full wins. Fixed arrival cohorts follow common warmup,retain complete
+  JCT and need the same sufficiently long frozen background across arms.
+  Ready short/long individually-fitting but jointly-infeasible competition,
+  actual service after grant,physical live KV pressure,tool overlap and
+  loss/recomputation require separate calibration before formal comparisons.
+- workload_requirements_20261030 refreshes full exact work for scope18 and
+  parallel pilot6. Respectively model-workP90/P10=2.955/2.151,multi-childJOIN
+  fractions19.59%/25%,child-callP50/P90=29/44.5 and24/39.1,rootparallelround
+  medians1/1,totalchildworkmedians79.84%/70.23%,largestchild21.36%/22.80%.
+  Both need new candidates;36project tool qualification is not source-shape
+  or serving-pressure acceptance. Actual4/8reminders exist in pilot audit,
+  so do not assume a disconnected counter explains long children. Narrow
+  task scopes/path context while retaining root implementation/integration,
+  natural returns and the unchanged4/8child,8/16root protocol. The new focused
+  CPU set passes68tests+6subtests,no failures/errors/skips. No GPU capture or
+  comparison ran here. See workload_acceptance_20261030_zh.md and retained
+  sustained36 readiness_review_r1.json;the global optimization goal is active.

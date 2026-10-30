@@ -49,6 +49,45 @@ def summary(values):
     }
 
 
+def agent_work_breakdown(calls, root, creates):
+    """Attribute intrinsic model work once, independently of scheduling wall time."""
+    agents = {}
+    for call in calls:
+        owner = call["invocation_id"]
+        if owner not in creates:
+            raise ValueError("model work has no observed invocation owner")
+        item = agents.setdefault(owner, {
+            "invocation_id": owner,
+            "kind": (
+                "root" if owner == root else
+                "runtime_internal" if creates[owner].attributes.get("runtime_internal") else "child"
+            ),
+            "role": creates[owner].agent_definition_id,
+            "model_calls": 0, "generated_tokens": 0, "necessary_input_tokens": 0,
+        })
+        item["model_calls"] += 1
+        item["generated_tokens"] += call["output_tokens"]
+        item["necessary_input_tokens"] += call["necessary_input_tokens"]
+    for item in agents.values():
+        item["model_work_units"] = .01 * item["necessary_input_tokens"] + item["generated_tokens"]
+    rows = sorted(agents.values(), key=lambda item: item["invocation_id"])
+    root_work = sum(row["model_work_units"] for row in rows if row["kind"] == "root")
+    child_work = sum(row["model_work_units"] for row in rows if row["kind"] == "child")
+    task_work = root_work + child_work
+    return {
+        "agents": rows,
+        "root_model_work_units": root_work, "child_model_work_units": child_work,
+        "runtime_internal_model_work_units": sum(
+            row["model_work_units"] for row in rows if row["kind"] == "runtime_internal"
+        ),
+        "child_model_work_fraction": child_work / task_work if task_work else None,
+        "largest_child_model_work_fraction": max(
+            (row["model_work_units"] for row in rows if row["kind"] == "child"), default=0.,
+        ) / task_work if task_work else None,
+        "work_proxy": ".01 * necessary_new_input + generated_output; excludes queueing and tool waits",
+    }
+
+
 def protocol(manifest):
     config = manifest["config"]
     values = {
@@ -222,6 +261,7 @@ def inventory_capture(capture, *, seconds_per_model_unit, plan_loader=None):
             "model_work_units": model_work, "initial_prompt_tokens": next(
                 call["prompt_tokens"] for call in calls if call["invocation_id"] == root
             ),
+            "agent_work_breakdown": agent_work_breakdown(calls, root, creates),
             "prompt_tokens": summary([call["prompt_tokens"] for call in calls]),
             "max_context_tokens": max(call["prompt_tokens"] for call in calls),
             "tools": len(tool_durations), "tool_total_s": sum(tool_durations),
