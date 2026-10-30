@@ -40,9 +40,10 @@ class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, A
 
     state_schema = RootDelegationState
 
-    def __init__(self, *, adapter: Any, audit: Any):
+    def __init__(self, *, adapter: Any, audit: Any, parallel_tool_name: str | None = None):
         self.adapter = adapter
         self.audit = audit
+        self.parallel_tool_name = parallel_tool_name
 
     @staticmethod
     def _finalizing(state):
@@ -66,22 +67,28 @@ class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, A
                 minimum_completed_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
             )
             raise RuntimeError("root could not complete its required model-selected delegation")
-        if sum(getattr(tool, "name", None) == "task" for tool in request.tools) != 1:
+        selected_tool = self.parallel_tool_name or "task"
+        if sum(getattr(tool, "name", None) == selected_tool for tool in request.tools) != 1:
             raise RuntimeError("root delegation requirement needs exactly one task tool")
         self.audit.emit(
             "root_delegation_required_task_attempt", attempt=attempt,
             model_selects_assignment=True,
             model_selected_fanout_bounds=list(ROOT_RETRY_TASK_FANOUT),
+            **({"selected_parallel_tool": selected_tool} if self.parallel_tool_name else {}),
             minimum_completed_join_members=MINIMUM_ROOT_JOIN_MEMBERS,
         )
-        settings = {
-            **request.model_settings, "parallel_tool_calls": True,
-            "extra_body": {
+        settings = {**request.model_settings, "parallel_tool_calls": True}
+        if self.parallel_tool_name is None:
+            settings["extra_body"] = {
                 **(request.model_settings.get("extra_body") or {}),
                 "beliefkv_task_fanout": list(ROOT_RETRY_TASK_FANOUT),
-            },
-        }
-        return request.override(tool_choice="task", model_settings=settings), attempt
+            }
+        else:
+            extra = dict(request.model_settings.get("extra_body") or {})
+            extra.pop("beliefkv_task_fanout", None)
+            if "extra_body" in request.model_settings:
+                settings["extra_body"] = extra
+        return request.override(tool_choice=selected_tool, model_settings=settings), attempt
 
     @staticmethod
     def _record_attempt(response, attempt):
@@ -153,6 +160,12 @@ class RootDelegationRequirementMiddleware(AgentMiddleware[RootDelegationState, A
                 "write scopes. Integrate all reports before finalizing. Choose the "
                 "assignments and specialists yourself; do not repeat completed work "
                 "or claim a failed delegation succeeded."
+                + (
+                    f" Use one {self.parallel_tool_name} call with two to four "
+                    "independent assignments; the runtime executes and joins that "
+                    "group concurrently."
+                    if self.parallel_tool_name else ""
+                )
             ))],
             "structured_response": None,
             "root_delegation_retry_pending": True,

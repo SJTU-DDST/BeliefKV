@@ -109,3 +109,17 @@ root/child工具检查，还没有自然trace与上述形态/压力证据。
 
 完整证据在 `experiments/reports/workload_requirements_20261030/`。
 本轮只是离线审计与负载验收准备，没有新GPU采集或策略性能结论。
+
+## 结构化六项目采集的后续结果
+
+后续结构化采集已完整结束，805个请求、33,667,535个输入token、
+111,073个输出token全部保留。模型工作P90/P10为2.237，child调用
+P50/P90为16/28.6，27个JOIN中21个singleton、6个double，无嵌套；
+root并行轮次仍全部为1。child合计工作占比中位数55.65%，最大单child
+中位数15.26%。全部28个超8次child的第9次输入含软提醒，不能再将
+这些长child简单解释为提示未送达。只读源码变化、patch解析错误均为零。
+
+下一候选保持同任务与预算，只增加显式`parallel_tasks`提交接口，
+使模型在一次工具调用中表达2--4个真实并发的小交付物。该候选先做
+小规模自然形态验证，不启动正式策略比较。完整结果和边界见
+`docs/research/structured_checkpoint_complete_and_parallel_api_20261030_zh.md`。

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="31" time="13.370" timestamp="2026-10-30T06:37:13.226023-07:00" hostname="ddst-12"><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[False-False]" time="0.027" /><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[False-True]" time="0.021" /><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[True-False]" time="0.023" /><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[True-True]" time="0.021" /><testcase classname="tests.test_checkpoint_subagents" name="test_checkpoint_input_is_explicit_and_does_not_mutate_parent_arguments" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[missing_evidence]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[blank_question]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[blank_finish]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[traversal]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[foreign_absolute_path]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[duplicate_path]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[undeclared_write]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[three_write_files]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_read_only_workflow_schema_rejects_edit_assignments" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_runs_real_children_concurrently_with_one_parent_tool_result[False]" time="0.018" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_runs_real_children_concurrently_with_one_parent_tool_result[True]" time="0.017" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[singleton]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[overlapping_writes]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[duplicate]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[read_only_write]" time="0.000" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-False-False]" time="0.591" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-False-True]" time="0.777" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-True-False]" time="0.675" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-True-True]" time="0.710" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-False-False]" time="1.054" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-False-True]" time="1.156" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-True-False]" time="1.218" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-True-True]" time="1.205" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_short_workstreams-True-False]" time="1.221" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_short_workstreams-True-True]" time="1.147" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_parallel_workstreams-False-False]" time="0.896"><failure message="ValueError: parallel checkpoint returns must contain reports, not shared parent state&#10;During task with name 'tools' and id '3f6d9f4a-852c-3893-68ba-99f5d9a3d174'">tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3415/test_real_nested_harness_prese10')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x753dceb8a650&gt;
+deliver_control = False, profile = 'native_in_graph_parallel_workstreams'
+source_context = False, task_access = 'read_write'
+
+    @pytest.mark.parametrize("deliver_control", [False, True])
+    @pytest.mark.parametrize("profile,source_context,task_access", [
+        pytest.param(NESTED_IN_GRAPH_PROFILE, False, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-False"),
+        pytest.param(NESTED_IN_GRAPH_PROFILE, True, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, False, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-False"),
+        pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, True, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=SHORT_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, False, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-False"),
+        pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_only", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-read_only"),
+    ])
+    def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
+        tmp_path, monkeypatch, deliver_control, profile, source_context, task_access,
+    ):
+        audit = harness.JsonlAudit(tmp_path / "audit.jsonl")
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        backend = harness.DockerWorkspaceBackend(
+            workspace, image="fixture:unused", audit=audit, support_dir=None,
+        )
+        trace, control, closed = CollectingSink(), CollectingSink(), []
+        queued = QueuedRuntimeEventSink(control) if deliver_control else None
+        sessions = NativeRadixSessionLeases(closed.append)
+        adapter = DeepAgentsRuntimeAdapter(
+            trace, BeliefKVRequestMetadata(
+                "workflow", "root", "ctx-root", 0, full_prompt_replay_guaranteed=True,
+            ),
+            control_sink=queued, native_radix_sessions=sessions,
+            task_arguments_schema=(
+                harness.checkpoint_schema(read_only=task_access == "read_only")
+                if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+            ),
+            parallel_task_arguments_schema=(
+                harness.parallel_checkpoint_schema(read_only=task_access == "read_only")
+                if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+            ),
+        )
+        model = NestedFixtureModel()
+        model._dynamic = profile in (
+            DYNAMIC_NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+            PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
+        )
+        model._adapter, model._sessions, model._closed = adapter, sessions, closed
+        monkeypatch.setattr(harness, "_model", lambda *args: model)
+        monkeypatch.setattr(harness, "make_summary_model", lambda model, **kwargs: model)
+        deadline = SimpleNamespace(deadline=ActivationDeadline(), register_model=lambda model: model)
+        workload = harness.SweBenchWorkload(
+            instance_id="fixture-1", repo="fixture/repo", base_commit="abc",
+            problem_statement="Controlled nested delegation.", difficulty="unknown",
+            task_access=task_access,
+        )
+        if source_context:
+            from dataclasses import replace
+            from beliefkv.experiments.long_repository_tasks import FrozenRepositoryContext
+    
+            path = tmp_path / "root-source.gz"
+            raw = gzip.compress(b"ROOT_SOURCE_ONLY_SENTINEL\n" * 100, mtime=0)
+            path.write_bytes(raw)
+            workload = replace(
+                workload, task_kind="locobench_agent",
+                frozen_repository_context=FrozenRepositoryContext(
+                    path, hashlib.sha256(raw).hexdigest(), 120000, 1,
+                ),
+            )
+        adapter.start()
+        try:
+            agent = harness._build_autonomous_agent(
+                configuration(tmp_path, profile), workload, backend, adapter, deadline,
+            )
+&gt;           result = agent.invoke(
+                {"messages": [HumanMessage(content="Run the four controlled phases.")]},
+                config={"callbacks": [adapter], "recursion_limit": 64},
+            )
+
+tests/test_nested_delegation.py:240: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/pregel/main.py:3913: in invoke
+    for chunk in self.stream(
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/pregel/main.py:2967: in stream
+    for _ in runner.tick(
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/pregel/_runner.py:207: in tick
+    run_with_retry(
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/pregel/_retry.py:617: in run_with_retry
+    return task.proc.invoke(task.input, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:684: in invoke
+    input = context.run(step.invoke, input, config, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/_internal/_runnable.py:426: in invoke
+    ret = self.func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:822: in _func
+    outputs = list(
+../../miniconda3/envs/beliefkv-next/lib/python3.11/concurrent/futures/_base.py:619: in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/concurrent/futures/_base.py:317: in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+../../miniconda3/envs/beliefkv-next/lib/python3.11/concurrent/futures/thread.py:58: in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain_core/runnables/config.py:650: in _wrapped_fn
+    return contexts.pop().run(fn, *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:1061: in _run_one
+    content = _handle_tool_error(e, flag=self._handle_tool_errors)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:434: in _handle_tool_error
+    content = flag(e)  # type: ignore [assignment, call-arg]
+              ^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:391: in _default_handle_tool_errors
+    raise e
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:1055: in _run_one
+    return self._wrap_tool_call(tool_request, execute)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:662: in composed
+    return outer(request, call_inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/experiments/deepagents_swebench.py:2771: in wrap_tool_call
+    result = handler(request)
+             ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:659: in call_inner
+    return inner(req, execute)
+           ^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:662: in composed
+    return outer(request, call_inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/deepagents/middleware/filesystem.py:2381: in wrap_tool_call
+    tool_result = handler(request)
+                  ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:659: in call_inner
+    return inner(req, execute)
+           ^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:662: in composed
+    return outer(request, call_inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/langchain_tool_safety.py:169: in wrap_tool_call
+    return self._bound(request, handler(request))
+                                ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:659: in call_inner
+    return inner(req, execute)
+           ^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:662: in composed
+    return outer(request, call_inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/langchain_tool_safety.py:766: in wrap_tool_call
+    result = handler(request)
+             ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain/agents/factory.py:659: in call_inner
+    return inner(req, execute)
+           ^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/langchain_tool_safety.py:828: in wrap_tool_call
+    return self._normalize(handler(request), request)
+                           ^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:1051: in execute
+    return self._execute_tool_sync(req, input_type, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:1006: in _execute_tool_sync
+    content = _handle_tool_error(e, flag=self._handle_tool_errors)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:434: in _handle_tool_error
+    content = flag(e)  # type: ignore [assignment, call-arg]
+              ^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:391: in _default_handle_tool_errors
+    raise e
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langgraph/prebuilt/tool_node.py:958: in _execute_tool_sync
+    response = tool.invoke(call_args, config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain_core/tools/base.py:764: in invoke
+    return self.run(tool_input, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain_core/tools/base.py:1132: in run
+    raise error_to_raise
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain_core/tools/base.py:1098: in run
+    response = context.run(self._run, *tool_args, **tool_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/langchain_core/tools/structured.py:152: in _run
+    return self.func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+beliefkv/runtime/checkpoint_subagents.py:183: in parallel_tasks
+    return _parallel_reports(selected, results)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+assignments = [CheckpointTaskSchema(description='Evidence 1: coordinate two independent invariants.', subagent_type='repository-expl...='Independent controlled fixture property.', finish_condition='Return the assigned fixture evidence.', write_paths=[])]
+results = [ValueError('parallel checkpoint returns must contain reports, not shared parent state'), Command(update={'files': {},...plete project objective remain with the parent.', tool_call_id='fixture-36c15771211a494db058f63d25ce12ff:member:1')]})]
+
+    def _parallel_reports(assignments, results):
+        reports = []
+        for assignment, result in zip(assignments, results, strict=True):
+            if isinstance(result, BaseException):
+                reports.append({
+                    "question": assignment.description, "status": "error",
+                    "report": f"{type(result).__name__}: {result}",
+                })
+                continue
+            if not isinstance(result, Command) or not isinstance(result.update, dict):
+                raise ValueError("checkpoint member did not return its native report command")
+            if set(result.update) != {"messages"}:
+&gt;               raise ValueError("parallel checkpoint returns must contain reports, not shared parent state")
+E               ValueError: parallel checkpoint returns must contain reports, not shared parent state
+E               During task with name 'tools' and id '3f6d9f4a-852c-3893-68ba-99f5d9a3d174'
+
+beliefkv/runtime/checkpoint_subagents.py:167: ValueError</failure></testcase></testsuite></testsuites>

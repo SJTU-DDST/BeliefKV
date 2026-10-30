@@ -280,6 +280,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         ),
         allowed_subagent_types: frozenset[str] | None = None,
         task_arguments_schema: type[BaseModel] | None = None,
+        parallel_task_arguments_schema: type[BaseModel] | None = None,
         workspace_digest_provider: (
             Callable[[str, Mapping[str, Any]], str | None] | None
         ) = None,
@@ -319,6 +320,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self.completion_tool_names = completion_tool_names
         self.allowed_subagent_types = allowed_subagent_types
         self.task_arguments_schema = task_arguments_schema
+        self.parallel_task_arguments_schema = parallel_task_arguments_schema
         self.workspace_digest_provider = workspace_digest_provider
         self.native_radix_sessions = native_radix_sessions
         if reusable_subagents is not None and reusable_subagents.workflow_id != root_metadata.root_workflow_id:
@@ -1337,21 +1339,20 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         action_names: list[str] = []
         task_calls: list[dict[str, Any]] = []
         executable_task_calls: list[dict[str, Any]] = []
+        rejected_task_calls = 0
         for call in tool_calls:
             name = str(call.get("name") or "unknown")
             action_names.append(name)
-            if name == "task":
+            if name == "task" or (
+                name == "parallel_tasks" and self.parallel_task_arguments_schema is not None
+            ):
                 task_calls.append(call)
-                args = call.get("args")
-                valid = self._task_arguments_valid(args)
-                if valid and (
-                    self.allowed_subagent_types is None
-                    or args["subagent_type"] in self.allowed_subagent_types
-                ):
-                    executable_task_calls.append(call)
+                expanded = self._executable_task_calls(call)
+                executable_task_calls.extend(expanded)
+                rejected_task_calls += int(not expanded)
                 action_kinds.append(
                     StructuredActionKind.SPAWN
-                    if valid else StructuredActionKind.FUNCTION_CALL
+                    if expanded else StructuredActionKind.FUNCTION_CALL
                 )
             elif name == "handoff" or name.startswith("transfer_to_"):
                 action_kinds.append(StructuredActionKind.HANDOFF)
@@ -1398,8 +1399,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     }
                     if finish_chunk_ts_ms is not None else {}
                 ),
-                "rejected_task_call_count": len(task_calls)
-                - len(executable_task_calls),
+                "rejected_task_call_count": rejected_task_calls,
                 "parser_status": "valid" if action_kinds else "unknown",
                 "structured_action_kinds": [item.value for item in action_kinds],
                 "structured_action_names": action_names,
@@ -1631,7 +1631,14 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             with self._lock:
                 self._ignored_tool_runs.add(key)
             return
-        if tool_name == "task" and self._task_arguments_valid(payload):
+        if tool_name == "parallel_tasks" and self.parallel_task_arguments_schema is not None:
+            with self._lock:
+                self._ignored_tool_runs.add(key)
+            return
+        member_tool = (
+            tool_name == "checkpoint_member" and self.parallel_task_arguments_schema is not None
+        )
+        if (tool_name == "task" or member_tool) and self._task_arguments_valid(payload):
             requested_type = str(payload.get("subagent_type") or "general-purpose")
             if (
                 self.allowed_subagent_types is not None
@@ -1898,6 +1905,33 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             return False
         return True
 
+    def _executable_task_calls(self, call):
+        payload = call.get("args")
+        if call.get("name") == "parallel_tasks":
+            from beliefkv.runtime.checkpoint_subagents import checkpoint_member_call_id
+
+            if self.parallel_task_arguments_schema is None:
+                return []
+            try:
+                group = self.parallel_task_arguments_schema.model_validate(payload)
+                result = [{
+                    "id": checkpoint_member_call_id(call.get("id"), index),
+                    "args": assignment.model_dump(),
+                    "parallel_source_tool_call_id": call["id"],
+                    "parallel_member_index": index,
+                } for index, assignment in enumerate(group.assignments)]
+            except (ValidationError, ValueError):
+                return []
+        else:
+            if not self._task_arguments_valid(payload):
+                return []
+            result = [call]
+        if self.allowed_subagent_types is not None and any(
+            item["args"]["subagent_type"] not in self.allowed_subagent_types for item in result
+        ):
+            return []
+        return result
+
     def _declare_task_group(
         self,
         parent_invocation_id: str,
@@ -1981,6 +2015,11 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                             "description_chars": description_chars,
                             "description_sha256": description_sha256,
                             "workflow_ranking_input": ranking_input,
+                            **({
+                                "parallel_source_tool_call_id": call["parallel_source_tool_call_id"],
+                                "parallel_member_index": call["parallel_member_index"],
+                                "source_tool": "parallel_tasks",
+                            } if "parallel_source_tool_call_id" in call else {}),
                             **({
                                 "reusable_subagent": True, "agent_handle": agent_handle,
                                 "resumed": resumed,

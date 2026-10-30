@@ -215,6 +215,33 @@ def test_parallel_retry_bounds_preserve_tools_and_settings_without_bounding_init
         assert attempt is None
 
 
+@pytest.mark.parametrize("retry_pending", (False, True))
+def test_explicit_parallel_tool_retry_uses_one_group_without_raw_tool_fanout(retry_pending):
+    from langchain.agents.middleware.types import ModelRequest
+
+    middleware = RootDelegationRequirementMiddleware(
+        adapter=NS(has_completed_join=lambda **_: False), audit=Audit(),
+        parallel_tool_name="parallel_tasks",
+    )
+    tools = [NS(name="task"), NS(name="parallel_tasks"), NS(name="execute")]
+    settings = {"temperature": .4, "extra_body": {"seed": 21, "beliefkv_task_fanout": [2, 4]}}
+    request = ModelRequest(
+        model=NS(), state={"root_delegation_retry_pending": retry_pending},
+        messages=[HumanMessage(content="Choose independent questions.")],
+        tools=tools, model_settings=settings,
+    )
+    updated, attempt = middleware._required_task_request(request)
+    assert request.model_settings == settings
+    assert updated.tools == tools
+    if retry_pending:
+        assert attempt == 1 and updated.tool_choice == "parallel_tasks"
+        assert updated.model_settings == {
+            "temperature": .4, "parallel_tool_calls": True, "extra_body": {"seed": 21},
+        }
+    else:
+        assert updated is request and attempt is None
+
+
 @pytest.mark.parametrize("field", ["guard_forcing_completion", "protocol_repair_active"])
 def test_root_requirement_respects_safety_finalization_and_marks_unmet_contract(field):
     audit = Audit()

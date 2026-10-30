@@ -100,7 +100,7 @@ class NestedFixtureModel(BaseChatModel):
             return {"name": name, "args": args, "id": f"fixture-{uuid4().hex}"}
 
         if role == "root":
-            rounds = sum(any(call["name"] == "task" for call in message.tool_calls)
+            rounds = sum(any(call["name"] in ("task", "parallel_tasks") for call in message.tool_calls)
                          for message in prior)
             if self._dynamic and not prior:
                 if self._premature_final:
@@ -142,6 +142,13 @@ class NestedFixtureModel(BaseChatModel):
             calls = [call("announce_completion_intent", {"estimated_final_report_tokens": 32})]
         else:
             calls = []
+        if (
+            "CHECKPOINT" in system and len(calls) >= 2
+            and all(item["name"] == "task" for item in calls)
+        ):
+            calls = [call("parallel_tasks", {
+                "assignments": [item["args"] for item in calls],
+            })]
         return ChatResult(generations=[ChatGeneration(message=AIMessage(
             content="" if calls else f"Controlled {role} fixture report: {assignment}",
             tool_calls=calls,
@@ -191,6 +198,10 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         control_sink=queued, native_radix_sessions=sessions,
         task_arguments_schema=(
             harness.checkpoint_schema(read_only=task_access == "read_only")
+            if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+        ),
+        parallel_task_arguments_schema=(
+            harness.parallel_checkpoint_schema(read_only=task_access == "read_only")
             if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
         ),
     )
@@ -260,6 +271,20 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
             and "write_todos" not in row["tools"]
             for row in model._requests if row["role"] != "root"
         )
+        group_ids = {
+            item["id"] for message in result["messages"] if isinstance(message, AIMessage)
+            for item in message.tool_calls if item["name"] == "parallel_tasks"
+        }
+        group_reports = [
+            message for message in result["messages"]
+            if getattr(message, "tool_call_id", None) in group_ids
+        ]
+        assert len(group_ids) == len(group_reports) == 3
+        assert all(
+            all(item["status"] == "returned" for item in json.JSONDecoder().raw_decode(
+                message.content,
+            )[0]["checkpoint_reports"]) for message in group_reports
+        )
     if task_access == "read_only":
         assert all(
             not {"apply_patch_tool", "write_file", "edit_file"} & set(row["tools"])
@@ -307,10 +332,13 @@ def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
         assert all("task" in request["tools"] for request in first if request["role"] == "direct")
         assert result["messages"][1].tool_calls[0]["name"] == "write_todos"
         root_fanouts = [
-            len([call for call in message.tool_calls if call["name"] == "task"])
+            sum(
+                len(call["args"]["assignments"]) if call["name"] == "parallel_tasks" else 1
+                for call in message.tool_calls if call["name"] in ("task", "parallel_tasks")
+            )
             for message in result["messages"]
             if isinstance(message, AIMessage) and any(
-                call["name"] == "task" for call in message.tool_calls
+                call["name"] in ("task", "parallel_tasks") for call in message.tool_calls
             )
         ]
         assert root_fanouts == [2, 1, 2, 2]

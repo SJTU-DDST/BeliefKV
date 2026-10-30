@@ -4365,3 +4365,28 @@
   source/drain/actualexit,inspect shape and run audit_checkpoint_prompt_delivery
   with the new declaration;do not infer taskconformance,pressure or gains from
   startup. Keep old6 and new6 whole/tail/negative evidence;goal remains active.
+- Structured checkpoint6 and its CPU reviewer now actually complete/exit:
+  805requests/33667535input/111073outputtokens,6projects,33children,
+  21singleton/6double JOINs,0nested. WorkP90/P10=2.237,childP50/P90=16/28.6,
+  max38,rootparallelrounds1each,totalchildworkmedian55.65%,largest15.26%.
+  All6doublegroups have positive shareddecode;all6roots still need terminal
+  parallel reminders. Shape remains insufficient;do not expand or run Full.
+  Exact-token audit finds28children exceed8 and all28ninthprompts carry the
+  target reminder;readonlysourcechanges0,patchparseerrors0. Preserve complete
+  finish_r1/prompt_delivery_r1 and all failures/tails.
+- The next six-project shape candidate retains objectives/access/context/
+  4-8child/8-16root and adds parallel_tasks with2--4 explicit assignments,
+  executing actual native membertasks concurrently then ALL-JOIN. task remains
+  for single checkpoints;firsttoolauto/no fixedDAG/quota/call/outputcap.
+  Keep checkpointformat3 and separate parallelAPI1/fingerprint. Record actual
+  sourcecall/memberidentity without token rewriting. Existing at-most-two
+  terminal minimum attempts use the group API only in this profile,without
+  native outer-call fanout bounds. Targeted80CPU cases pass including actual
+  sync/async concurrency,nestedharness/sessions and native nestedargument
+  parser1/7/64chunks. Current full boundCPU,freshfreeze/reservation/resources/
+  sampler and complete natural source review remain required. This runtime
+  preparation is not a scheduler contribution or performance result.
+- Parallel checkpoint candidate bound_cpu_r1 now passes5600tests+12subtests
+  in one source-bound execution,retains all5571prior literalIDs,no failures/
+  errors/skips,2100inputs/native unchanged. Fresh freeze,reservation/resources/
+  sampler and six-project natural-shape audit still precede any comparison.

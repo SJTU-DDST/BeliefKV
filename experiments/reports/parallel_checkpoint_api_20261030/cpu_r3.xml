@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="32" time="12.828" timestamp="2026-10-30T06:41:36.188885-07:00" hostname="ddst-12"><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[False-False]" time="0.029" /><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[False-True]" time="0.020" /><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[True-False]" time="0.024" /><testcase classname="tests.test_checkpoint_subagents" name="test_real_task_schema_preserves_parallel_callbacks_and_rejects_phantom_children[True-True]" time="0.021" /><testcase classname="tests.test_checkpoint_subagents" name="test_checkpoint_input_is_explicit_and_does_not_mutate_parent_arguments" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[missing_evidence]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[blank_question]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[blank_finish]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[traversal]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[foreign_absolute_path]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[duplicate_path]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[undeclared_write]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_invalid_checkpoint_does_not_silently_become_an_unbounded_assignment[three_write_files]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_read_only_workflow_schema_rejects_edit_assignments" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_runs_real_children_concurrently_with_one_parent_tool_result[False]" time="0.019" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_runs_real_children_concurrently_with_one_parent_tool_result[True]" time="0.017" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[singleton]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[overlapping_writes]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[duplicate]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration[read_only_write]" time="0.000" /><testcase classname="tests.test_checkpoint_subagents" name="test_parallel_reports_preserve_native_file_updates_deletions_and_member_errors" time="0.000" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-False-False]" time="0.620" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-False-True]" time="0.655" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-True-False]" time="0.683" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_nested_2to4-True-True]" time="0.645" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-False-False]" time="1.041" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-False-True]" time="0.998" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-True-False]" time="1.180" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_dynamic_nested-True-True]" time="1.031" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_short_workstreams-True-False]" time="1.121" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_short_workstreams-True-True]" time="1.215" /><testcase classname="tests.test_nested_delegation" name="test_real_nested_harness_preserves_direct_join_ownership_and_sessions[native_in_graph_parallel_workstreams-False-False]" time="1.327"><failure message="assert [1] == [2, 1, 2, 2]&#10;  &#10;  At index 0 diff: 1 != 2&#10;  Right contains 3 more items, first extra item: 1&#10;  Use -v to get more diff">tmp_path = PosixPath('/tmp/pytest-of-longhao/pytest-3416/test_real_nested_harness_prese10')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x709e780e1bd0&gt;
+deliver_control = False, profile = 'native_in_graph_parallel_workstreams'
+source_context = False, task_access = 'read_write'
+
+    @pytest.mark.parametrize("deliver_control", [False, True])
+    @pytest.mark.parametrize("profile,source_context,task_access", [
+        pytest.param(NESTED_IN_GRAPH_PROFILE, False, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-False"),
+        pytest.param(NESTED_IN_GRAPH_PROFILE, True, "read_write", id=NESTED_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, False, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-False"),
+        pytest.param(DYNAMIC_NESTED_IN_GRAPH_PROFILE, True, "read_write", id=DYNAMIC_NESTED_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(SHORT_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=SHORT_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, False, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-False"),
+        pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_write", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-True"),
+        pytest.param(PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE, True, "read_only", id=PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE + "-read_only"),
+    ])
+    def test_real_nested_harness_preserves_direct_join_ownership_and_sessions(
+        tmp_path, monkeypatch, deliver_control, profile, source_context, task_access,
+    ):
+        audit = harness.JsonlAudit(tmp_path / "audit.jsonl")
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        backend = harness.DockerWorkspaceBackend(
+            workspace, image="fixture:unused", audit=audit, support_dir=None,
+        )
+        trace, control, closed = CollectingSink(), CollectingSink(), []
+        queued = QueuedRuntimeEventSink(control) if deliver_control else None
+        sessions = NativeRadixSessionLeases(closed.append)
+        adapter = DeepAgentsRuntimeAdapter(
+            trace, BeliefKVRequestMetadata(
+                "workflow", "root", "ctx-root", 0, full_prompt_replay_guaranteed=True,
+            ),
+            control_sink=queued, native_radix_sessions=sessions,
+            task_arguments_schema=(
+                harness.checkpoint_schema(read_only=task_access == "read_only")
+                if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+            ),
+            parallel_task_arguments_schema=(
+                harness.parallel_checkpoint_schema(read_only=task_access == "read_only")
+                if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+            ),
+        )
+        model = NestedFixtureModel()
+        model._dynamic = profile in (
+            DYNAMIC_NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
+            PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
+        )
+        model._adapter, model._sessions, model._closed = adapter, sessions, closed
+        monkeypatch.setattr(harness, "_model", lambda *args: model)
+        monkeypatch.setattr(harness, "make_summary_model", lambda model, **kwargs: model)
+        deadline = SimpleNamespace(deadline=ActivationDeadline(), register_model=lambda model: model)
+        workload = harness.SweBenchWorkload(
+            instance_id="fixture-1", repo="fixture/repo", base_commit="abc",
+            problem_statement="Controlled nested delegation.", difficulty="unknown",
+            task_access=task_access,
+        )
+        if source_context:
+            from dataclasses import replace
+            from beliefkv.experiments.long_repository_tasks import FrozenRepositoryContext
+    
+            path = tmp_path / "root-source.gz"
+            raw = gzip.compress(b"ROOT_SOURCE_ONLY_SENTINEL\n" * 100, mtime=0)
+            path.write_bytes(raw)
+            workload = replace(
+                workload, task_kind="locobench_agent",
+                frozen_repository_context=FrozenRepositoryContext(
+                    path, hashlib.sha256(raw).hexdigest(), 120000, 1,
+                ),
+            )
+        adapter.start()
+        try:
+            agent = harness._build_autonomous_agent(
+                configuration(tmp_path, profile), workload, backend, adapter, deadline,
+            )
+            result = agent.invoke(
+                {"messages": [HumanMessage(content="Run the four controlled phases.")]},
+                config={"callbacks": [adapter], "recursion_limit": 64},
+            )
+            adapter.finish(outcome="completed")
+        finally:
+            if queued is not None:
+                queued.close()
+            audit.close()
+        assert "Controlled root fixture report" in result["messages"][-1].content
+        if profile in SHORT_WORKSTREAM_IN_GRAPH_PROFILES:
+            assert all(
+                row["short_root_prompt"] and row["short_task_prompt"]
+                for row in model._requests if row["role"] == "root"
+            )
+            assert all(
+                row["short_child_prompt"] for row in model._requests
+                if row["role"] != "root"
+            )
+            assert all(
+                row["short_task_prompt"] for row in model._requests
+                if row["role"] == "direct"
+            )
+        if profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE:
+            assert all(
+                row["parallel_root_prompt"] and row["checkpoint_root_contract"]
+                and "write_todos" in row["tools"]
+                for row in model._requests if row["role"] == "root"
+            )
+            assert all(
+                row["parallel_child_prompt"] and row["checkpoint_child_contract"]
+                and "write_todos" not in row["tools"]
+                for row in model._requests if row["role"] != "root"
+            )
+            group_ids = {
+                item["id"] for message in result["messages"] if isinstance(message, AIMessage)
+                for item in message.tool_calls if item["name"] == "parallel_tasks"
+            }
+            group_reports = [
+                message for message in result["messages"]
+                if getattr(message, "tool_call_id", None) in group_ids
+            ]
+            assert len(group_ids) == len(group_reports) == 3
+            assert all(
+                all(item["status"] == "returned" for item in json.JSONDecoder().raw_decode(
+                    message.content,
+                )[0]["checkpoint_reports"]) for message in group_reports
+            )
+        if task_access == "read_only":
+            assert all(
+                not {"apply_patch_tool", "write_file", "edit_file"} &amp; set(row["tools"])
+                for row in model._requests
+            )
+    
+        graph = RuntimeCausalContextGraph()
+        parent_by_join = {}
+        nested_joins = 0
+        for event in trace.events:
+            graph.apply(event)
+            if event.kind is RuntimeEventKind.JOIN_WAIT:
+                parent_by_join[event.join_id] = event.invocation_id
+            if event.kind is RuntimeEventKind.JOIN_SATISFIED:
+                parent = parent_by_join[event.join_id]
+                if parent != "root":
+                    nested_joins += 1
+                    assert graph.invocations[parent].state is InvocationState.READY
+                    assert graph.invocations["root"].state is InvocationState.WAIT_JOIN
+        assert nested_joins == 4
+        agents = 16 if model._dynamic else 17
+        assert len(graph.invocations) == agents
+        assert all(item.state is InvocationState.DONE for item in graph.invocations.values())
+        assert len(closed) == len(set(closed)) == agents
+    
+        stages = [
+            event for event in trace.events
+            if event.attributes.get("child_completion_signal_kind") == "stage"
+        ]
+        assert len(stages) == agents - 1
+        for event in stages:
+            assert parent_by_join[event.join_id] == graph.invocations[event.invocation_id].parent_invocation_id
+        first = [request for request in model._requests if request["first"]]
+        assert all(
+            request["root_source_present"] == (source_context and request["role"] == "root")
+            for request in model._requests
+        )
+        if model._dynamic:
+            assert not any(request["role"] == "coordinator" for request in first)
+            assert sum(request["role"] == "direct" for request in first) == 7
+            assert all(
+                request["tool_choice"] is None and request["bounds"] is None
+                for request in model._requests
+            )
+            assert all("task" in request["tools"] for request in first if request["role"] == "direct")
+            assert result["messages"][1].tool_calls[0]["name"] == "write_todos"
+            root_fanouts = [
+                len([call for call in message.tool_calls if call["name"] == "task"])
+                for message in result["messages"]
+                if isinstance(message, AIMessage) and any(
+                    call["name"] == "task" for call in message.tool_calls
+                )
+            ]
+&gt;           assert root_fanouts == [2, 1, 2, 2]
+E           assert [1] == [2, 1, 2, 2]
+E             
+E             At index 0 diff: 1 != 2
+E             Right contains 3 more items, first extra item: 1
+E             Use -v to get more diff
+
+tests/test_nested_delegation.py:341: AssertionError</failure></testcase></testsuite></testsuites>

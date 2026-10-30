@@ -1,17 +1,23 @@
 import asyncio
 from copy import deepcopy
+import json
+import threading
 
 from langchain.agents import create_agent
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import ToolMessage
 from langchain_core.runnables import RunnableLambda
 from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic import ValidationError
+from langgraph.types import Command
 import pytest
 
 from beliefkv.control.causal_graph import RuntimeCausalContextGraph
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.runtime.checkpoint_subagents import (
     CheckpointSubAgentMiddleware, CheckpointTaskSchema, ReadOnlyCheckpointTaskSchema,
+    ParallelCheckpointSchema, ReadOnlyParallelCheckpointSchema,
+    _parallel_reports,
 )
 from beliefkv.runtime.deepagents_adapter import DeepAgentsRuntimeAdapter
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
@@ -139,3 +145,117 @@ def test_read_only_workflow_schema_rejects_edit_assignments():
     payload["write_paths"] = ["src/model.py"]
     with pytest.raises(ValidationError):
         ReadOnlyCheckpointTaskSchema.model_validate(payload)
+
+
+@pytest.mark.parametrize("asynchronous", (False, True))
+def test_parallel_api_runs_real_children_concurrently_with_one_parent_tool_result(asynchronous):
+    seen, barrier = [], threading.Barrier(2)
+    def observe(state):
+        seen.append(state["messages"][0].content)
+        barrier.wait(timeout=5.)
+        return state
+    child = RunnableLambda(observe) | create_agent(
+        model=ToolModel(responses=[AIMessage(content="Observed child evidence.")]),
+    )
+    middleware = CheckpointSubAgentMiddleware(
+        backend=object(), private_state_keys=frozenset({"child_work_model_calls"}),
+        subagents=[{"name": "checker", "description": "One evidence checkpoint.", "runnable": child}],
+    )
+    middleware.private_state_keys = frozenset({"child_work_model_calls"})
+    assert [tool.name for tool in middleware.tools] == ["task", "parallel_tasks"]
+    choices = [assignment(), {**assignment(), "description": "Check an independent representation."}]
+    model = ToolModel(responses=[
+        AIMessage(content="", tool_calls=[{
+            "name": "parallel_tasks", "id": "parallel-call",
+            "args": {"assignments": choices},
+        }]),
+        AIMessage(content="Integrated both reports."),
+    ])
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("w", "root", "ctx-root", 0),
+        task_arguments_schema=CheckpointTaskSchema,
+        parallel_task_arguments_schema=ParallelCheckpointSchema,
+    )
+    agent = create_agent(model=model, middleware=[middleware])
+    adapter.start()
+    inputs, config = {"messages": [HumanMessage(content="Check independent properties.")]}, {
+        "callbacks": [adapter],
+    }
+    result = (
+        asyncio.run(agent.ainvoke(inputs, config=config)) if asynchronous
+        else agent.invoke(inputs, config=config)
+    )
+    adapter.finish(outcome="completed")
+    assert len(seen) == 2
+    reports = [message for message in result["messages"] if getattr(message, "tool_call_id", "") == "parallel-call"]
+    assert len(reports) == 1
+    parsed = json.loads(reports[0].content)["checkpoint_reports"]
+    assert len(parsed) == 2 and all(report["status"] == "returned" for report in parsed)
+    graph = RuntimeCausalContextGraph()
+    for event in adapter.trace_sink.events:
+        graph.apply(event)
+    joins = [event for event in adapter.trace_sink.events if event.kind is Kind.JOIN_CREATE]
+    assert len(joins) == 1 and len(joins[0].member_invocation_ids) == 2
+    assert len([event for event in adapter.trace_sink.events if event.kind is Kind.LLM_RESULT]) == 4
+    assert adapter.has_completed_join(minimum_members=2)
+    children = [
+        event for event in adapter.trace_sink.events
+        if event.kind is Kind.INVOCATION_CREATE and event.invocation_id != "root"
+    ]
+    assert len(children) == 2
+    assert {event.attributes["parallel_member_index"] for event in children} == {0, 1}
+    assert all(event.attributes["parallel_source_tool_call_id"] == "parallel-call" for event in children)
+
+
+@pytest.mark.parametrize("variant", ("singleton", "overlapping_writes", "duplicate", "read_only_write"))
+def test_parallel_api_rejects_invalid_groups_before_physical_dependency_declaration(variant):
+    choices = [assignment(), {**assignment(), "description": "Check a distinct property."}]
+    schema = ParallelCheckpointSchema
+    if variant == "singleton":
+        choices.pop()
+    elif variant == "duplicate":
+        choices[1] = assignment()
+    elif variant == "read_only_write":
+        schema = ReadOnlyParallelCheckpointSchema
+        choices[0]["write_paths"] = ["src/model.py"]
+    else:
+        for choice in choices:
+            choice["write_paths"] = ["src/model.py"]
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("w", "root", "ctx-root", 0),
+        task_arguments_schema=CheckpointTaskSchema,
+        parallel_task_arguments_schema=schema,
+    )
+    call = {"name": "parallel_tasks", "id": "group", "args": {"assignments": choices}}
+    assert adapter._executable_task_calls(call) == []
+    with pytest.raises(ValidationError):
+        schema.model_validate(call["args"])
+
+
+def test_parallel_reports_preserve_native_file_updates_deletions_and_member_errors():
+    from deepagents.middleware.filesystem import _file_data_reducer
+
+    choices = [CheckpointTaskSchema.model_validate(assignment()) for _ in range(2)]
+    first = Command(update={
+        "messages": [ToolMessage("Evidence A", tool_call_id="a")],
+        "files": {"remove": None, "new-a": {"content": ["A"]}},
+    })
+    second = Command(update={
+        "messages": [ToolMessage("Evidence B", tool_call_id="b")],
+        "files": {"new-b": {"content": ["B"]}},
+    })
+    combined = _parallel_reports(choices, [first, second], "group")
+    assert _file_data_reducer(
+        {"remove": {"content": ["old"]}, "keep": {"content": ["kept"]}},
+        combined.update["files"],
+    ) == {
+        "keep": {"content": ["kept"]},
+        "new-a": {"content": ["A"]}, "new-b": {"content": ["B"]},
+    }
+    assert combined.update["messages"][0].tool_call_id == "group"
+    failed = _parallel_reports(choices, [first, RuntimeError("member failed")], "failed-group")
+    message = failed.update["messages"][0]
+    assert message.status == "error"
+    assert [item["status"] for item in json.loads(message.content)["checkpoint_reports"]] == [
+        "returned", "error",
+    ]

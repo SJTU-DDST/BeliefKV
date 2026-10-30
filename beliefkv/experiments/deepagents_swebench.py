@@ -126,7 +126,10 @@ from beliefkv.runtime.sglang_v0520_sessions import (
     close_native_radix_session,
 )
 from beliefkv.runtime.subagent_state import PrivateStateIsolatingSubAgentMiddleware
-from beliefkv.runtime.checkpoint_subagents import CheckpointSubAgentMiddleware, checkpoint_schema
+from beliefkv.runtime.checkpoint_subagents import (
+    CheckpointSubAgentMiddleware, PARALLEL_TASK_TOOL, checkpoint_schema,
+    parallel_checkpoint_schema,
+)
 from beliefkv.runtime.tool_wait_shadow import ToolWaitShadowTimer
 from beliefkv.runtime.experiment_randomness import seed_experiment_process
 
@@ -2573,11 +2576,15 @@ Do not duplicate finished investigations or repeat tools to increase waiting.
 
 PARALLEL_WORKSTREAM_ROOT_PROMPT = """
 PARALLEL, BOUNDED DELEGATION ROUNDS
-When independent evidence is needed, form a group of two to four complementary
-deliverables and emit all task calls in ONE assistant response. They run together;
-waiting for one child before issuing the next serializes the round. Use this
-pattern for newly exposed independent questions after integration as well as for
-the first investigation. Do not save the only parallel round for the final answer.
+Use parallel_tasks when two to four independent checkpoints are ready together.
+Supply their full checkpoint parameters in assignments within ONE tool call.
+The runtime starts them concurrently, waits for all reports, and returns the
+group for integration. Use task for a genuinely indivisible single checkpoint.
+Choose further groups when new independent work appears; no round count is fixed.
+Form groups for newly exposed independent questions after integration as well as
+for the first investigation. Multiple individual task calls in one response are
+also supported; waiting for one child before issuing the next serializes them.
+Do not save the only parallel round for the final answer.
 Keep dependent edits and integration in the parent. A genuinely indivisible
 question may use one child; do not split it into duplicate or meaningless work.
 There is no fixed number of rounds or required role sequence.
@@ -2637,8 +2644,10 @@ the entire project test suite to pass before returning a bounded finding.
 """
 
 PARALLEL_WORKSTREAM_TASK_PROMPT = """
-For independent checkpoints, issue two to four task calls together in one assistant
-response, before awaiting any child. Each description names one bounded deliverable,
+Use parallel_tasks(assignments=[...]) for independent checkpoints that are ready
+together, including nested or later rounds; use task for one indivisible question.
+For independent checkpoints, submit their group before awaiting any child.
+Each assignment names one bounded deliverable,
 known paths or symbols, existing evidence, and any disjoint write scope. The parent
 integrates results and owns the complete project objective. Serial singleton rounds
 are for genuinely dependent or indivisible work, not a default delegation pattern.
@@ -2760,7 +2769,7 @@ class DynamicDelegationPromptMiddleware(AgentMiddleware[Any, Any, Any]):
 
     def wrap_tool_call(self, request: Any, handler: Any) -> Any:
         result = handler(request)
-        if request.tool_call.get("name") != "task":
+        if request.tool_call.get("name") not in ("task", PARALLEL_TASK_TOOL):
             return result
         if isinstance(result, ToolMessage):
             messages = [result]
@@ -3990,6 +3999,10 @@ def _build_autonomous_agent(
         # after_model hooks run in reverse order, before natural-return acceptance.
         middleware.append(RootDelegationRequirementMiddleware(
             adapter=adapter, audit=backend.audit,
+            parallel_tool_name=(
+                PARALLEL_TASK_TOOL
+                if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+            ),
         ))
     return create_agent(
         model=model,
@@ -5243,6 +5256,10 @@ def _run_workflow(
         control_sink=control_sink,
         task_arguments_schema=(
             checkpoint_schema(read_only=workload.task_access == "read_only")
+            if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
+        ),
+        parallel_task_arguments_schema=(
+            parallel_checkpoint_schema(read_only=workload.task_access == "read_only")
             if config.subagent_fanout_profile == PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE else None
         ),
         reusable_subagents=(
