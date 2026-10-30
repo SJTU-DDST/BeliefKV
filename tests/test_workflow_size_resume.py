@@ -35,6 +35,27 @@ def test_original_category_precedes_predicted_bucket():
     }
     assert live.tick(now=10.) == ("continuation",)
 
+def test_combination_reference_uses_original_order_before_work_or_sibling_bias():
+    seen = {}
+
+    def choose(ordered, reference, capacity):
+        seen.update(order=tuple(p.identity for p in ordered),
+                    reference=tuple(p.identity for p in reference), capacity=capacity)
+        return reference
+
+    live = WorkflowSizeWorkingSet(
+        10, buffer_tokens=0, rank=lambda name, now: 0 if name == "short" else 2,
+        sibling_group=lambda name: "group" if name in ("short", "peer") else None,
+        select_set=choose,
+    )
+    live.programs = {
+        name: ThunderProgram(name, size, steps=2, pending=True, queue_sequence=index)
+        for index, (name, size) in enumerate((("short", 9), ("small", 4), ("peer", 5)))
+    }
+    assert set(live.tick(now=10.)) == {"small", "peer"}
+    assert seen == {"order": ("small", "peer", "short"),
+                    "reference": ("small", "peer"), "capacity": 10}
+
 
 def test_sibling_preference_is_within_class_and_allows_partial_group():
     live = policy(7, {"a": 0, "b": 0, "c": 0}, {"a": "join", "c": "join"})

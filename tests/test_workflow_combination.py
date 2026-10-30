@@ -91,6 +91,42 @@ def test_deadline_and_incomplete_reference_window_preserve_the_original_set():
     assert result["reason"] == "soft_deadline_reference_fallback"
     assert select(rows, ("missing",))["reason"] == "reference_outside_bounded_window"
 
+def test_deadline_retains_a_better_already_evaluated_feasible_set():
+    rows = [candidate("short", 160000, 1.)]
+    rows += [candidate(str(index), 165000, .25) for index in range(7)]
+    ticks = iter((0, 0, 500_000, 600_000))
+    result = choose_combination(
+        rows, ("6",), Resources(165000, 1000000, 2048, 4), cost(),
+        clock=lambda: next(ticks),
+    )
+    assert result["selected"] == ("short",)
+    assert result["reason"] == "soft_deadline_best_feasible"
+    assert result["evaluated_subsets"] == 8 and not result["search_complete"]
+    assert result["selected_evaluation"]["score"] > result["reference_evaluation"]["score"]
+
+
+def test_join_right_is_preserved_while_other_capacity_can_be_reselected():
+    rows = [
+        candidate("parent", 50000, .25), candidate("long", 115000, .25),
+        candidate("short", 110000, 1.),
+    ]
+    result = select(rows, ("parent", "long"), required=("parent",))
+    assert set(result["selected"]) == {"parent", "short"}
+    assert select(rows, ("long",), required=("parent",))["reason"] == (
+        "unsupported_summary_reference_fallback"
+    )
+
+
+def test_set_can_use_safe_cold_headroom_but_not_invent_capacity():
+    rows = [
+        replace(candidate("a", 160000, .25), missing_extents=((("a", 1.), 1000),)),
+        replace(candidate("b", 160000, 1.), missing_extents=((("b", 1.), 2000),)),
+    ]
+    free = Resources(165000, 1001, 2048, 4)
+    assert select(rows, ("a",), free)["selected"] == ("a",)
+    assert select(rows, ("a",), replace(free, cold_device_tokens=1000))["selected"] == ("b",)
+    assert select(rows, ("a",), replace(free, cold_device_tokens=-1))["selected"] == ("a",)
+
 
 def test_ties_preserve_reference_and_decode_batch_cost_is_not_per_request_sum():
     rows = [candidate("a", 165000, .5), candidate("b", 165000, .5)]

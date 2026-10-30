@@ -1,0 +1,19 @@
+{
+  "original_sources": "/home/longhao/experiment/BeliefKV/experiments/reports/prefill2048_mean120_20261029/queue_r1/thunderagent_acting_decay.native_sources.json",
+  "original_sha256": "ce09324398fa95a7220f86d7e3b776afe5a4b91db0187d9a52ffa0f51f4397ad",
+  "current_sources": "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/gpu_entry_r1/native_sources.json",
+  "evidence": {
+    "report": "/home/longhao/experiment/BeliefKV/experiments/reports/v239b_free_page_fence_native_engine_bound_cpu_20261026.xml",
+    "report_sha256": "b561cbceca6c0ebd08ebdbd0e0531ef9516146e3c9d06aa75c74bff20061bf0e",
+    "sources": "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/gpu_entry_r1/native_sources.json",
+    "sources_sha256": "2a6b7606a4253255c793bb7c2a4e893e3b7e4c7cb957473588ace5cbbcc4ae1b",
+    "tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "passing_cases": 726,
+    "gpu_validation_pending": true
+  },
+  "native_bytes_and_patch_unchanged": true,
+  "only_rebound_fields": [
+    "canonical_patch.path",
+    "state_sha256"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-remaining5r1-capture-4bcfb7952111/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_remaining_original5_source_20261030_r1.registration.json",
+    "--declaration",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/preparation_r1/review_declaration.json",
+    "--model-cost-evidence",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1/review.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/finish_r1"
+  ],
+  "process": {
+    "pid": 2557692,
+    "state": "R",
+    "ppid": 2557628,
+    "start_ticks": "756124360",
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-remaining5r1-capture-4bcfb7952111/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_remaining_original5_source_20261030_r1.registration.json",
+      "--declaration",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/preparation_r1/review_declaration.json",
+      "--model-cost-evidence",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/full_review_r1/review.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/finish_r1"
+    ]
+  },
+  "source_registration": "/home/longhao/experiment/ops/workflow_remaining_original5_source_20261030_r1.registration.json",
+  "source_registration_sha256": "15e30a35c811cd26d752b6b7922444686dc73197d556f807dc4802bc19ad0662",
+  "source_commit": "4bcfb7952111330795e8ae5b7699c05783c0dcce",
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "nice": 19,
+  "GPU_followup_registered": false,
+  "purpose": "complete_five_missing_original_projects_then_review_workload_shape_not_formal_population"
+}

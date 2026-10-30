@@ -33,6 +33,7 @@ class CombinationResources:
     active_context_tokens: int = 0
     chunked_input: bool = False
     input_page_tokens: int = 1
+    cold_device_tokens: int = 0
 
 
 @dataclass(frozen=True)
@@ -103,7 +104,8 @@ def _evaluate(rows, resources, costs):
             return None
     if (
         staged_inputs > resources.input_tokens
-        or missing + staged_inputs + resources.growth_tokens > resources.device_tokens
+        or missing + staged_inputs + resources.growth_tokens
+        > resources.device_tokens + resources.cold_device_tokens
     ):
         return None
     groups, weights = {}, {}
@@ -141,18 +143,26 @@ def _evaluate(rows, resources, costs):
     }
 
 
-def choose_combination(candidates, reference, resources, costs, *, budget_ns=500_000, clock=time.perf_counter_ns):
-    """Keep S0 on unsupported inputs, incomplete windows, ties or a soft deadline."""
+def choose_combination(
+    candidates, reference, resources, costs, *, required=(), budget_ns=500_000,
+    clock=time.perf_counter_ns,
+):
+    """Preserve required rights and S0; keep a better feasible set at the deadline."""
     started = clock()
     reference = tuple(reference)
+    required = frozenset(required)
     by_id = {row.identity: row for row in candidates}
     result = {
         "selected": reference, "reference": reference, "reason": "reference",
         "evaluated_subsets": 0, "search_complete": False,
     }
     try:
+        if type(resources.cold_device_tokens) is not int or resources.cold_device_tokens < 0:
+            raise ValueError("invalid safely reclaimable device capacity")
         if len(by_id) != len(candidates) or len(set(reference)) != len(reference):
             raise ValueError("duplicate combination identity")
+        if not required <= set(reference):
+            raise ValueError("required rights must belong to the reference set")
         if not 1 <= len(candidates) <= 8 or any(identity not in by_id for identity in reference):
             result["reason"] = "reference_outside_bounded_window"
             return result
@@ -173,10 +183,16 @@ def choose_combination(candidates, reference, resources, costs, *, budget_ns=500
             return result
         best_score, selected, best_value = baseline["score"], reference, baseline
         result["reference_evaluation"] = baseline
+        required_mask = sum(
+            1 << index for index, row in enumerate(candidates) if row.identity in required
+        )
+        deadline = False
         for mask in range(1, 1 << len(candidates)):
             if (mask - 1) % 8 == 0 and clock() - started >= budget_ns:
-                result["reason"] = "soft_deadline_reference_fallback"
-                return result
+                deadline = True
+                break
+            if mask & required_mask != required_mask:
+                continue
             rows = [row for index, row in enumerate(candidates) if mask & (1 << index)]
             value = _evaluate(rows, resources, costs)
             result["evaluated_subsets"] += 1
@@ -184,10 +200,12 @@ def choose_combination(candidates, reference, resources, costs, *, budget_ns=500
                 best_score, selected, best_value = (
                     value["score"], tuple(row.identity for row in rows), value,
                 )
-        result.update(
-            selected=selected, reason="combination_changed" if set(selected) != set(reference) else "reference_best_or_tied",
-            search_complete=True, selected_evaluation=best_value,
-        )
+        changed = set(selected) != set(reference)
+        reason = "combination_changed" if changed else "reference_best_or_tied"
+        if deadline:
+            reason = "soft_deadline_best_feasible" if changed else "soft_deadline_reference_fallback"
+        result.update(selected=selected, reason=reason, search_complete=not deadline,
+                      selected_evaluation=best_value)
         return result
     except (TypeError, ValueError, KeyError, OverflowError) as error:
         result.update(reason="unsupported_summary_reference_fallback", error=str(error))

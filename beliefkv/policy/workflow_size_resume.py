@@ -57,13 +57,15 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
         )
         ranks = {item.identity: self.rank(item.identity, self._resume_now) for item in paused}
         paused.sort(key=lambda item: (
-            resume_category(item), ranks[item.identity], item.tokens, item.queue_sequence,
+            (resume_category(item), item.tokens, item.queue_sequence)
+            if self.select_set is not None else
+            (resume_category(item), ranks[item.identity], item.tokens, item.queue_sequence)
         ))
         # Anchor order remains the sorted reference order within each class.
         # Only genuinely ready members of one observed blocking JOIN are moved.
         groups, memberships = defaultdict(list), {}
         for item in paused:
-            group = self.sibling_group(item.identity)
+            group = self.sibling_group(item.identity) if self.select_set is None else None
             if group is not None:
                 key = resume_category(item), ranks[item.identity], group
                 memberships[item.identity] = key

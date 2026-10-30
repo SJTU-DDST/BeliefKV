@@ -89,6 +89,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         )
 
     def _order_dispatch_keys(self, keys, joins):
+        if self._combination is not None:
+            return self._combination.dispatch_keys(keys)
         if len(keys) < 2:
             return keys
         started = time.thread_time()
@@ -140,10 +142,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "rank_kind": self.rank_kind,
                 "physical_capacity_credit": False,
             })
-        return (
-            self._combination.dispatch_keys(ordered)
-            if self._combination is not None else ordered
-        )
+        return ordered
 
     def registered(self, req, key):
         super().registered(req, key)

@@ -126,12 +126,18 @@ def test_missing_resource_summary_preserves_native_reference_grants(monkeypatch,
 
 def test_periodic_resume_uses_the_same_set_evaluation(monkeypatch, tmp_path):
     runtime, a, _env = runtime_with_queue(monkeypatch, tmp_path)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append)
     try:
         a.next_tick = 0.
         a.tick()
         assert set(a.policy.last_selection["selected_in_priority_order"]) == {"b", "c"}
         assert {item.identity for item in a.policy.programs.values() if item.active} == {"b", "c"}
+        journal = [row for row in records if row["event"] == "workflow_combination_selection"]
+        periodic = next(row for row in journal if row["source"] == "periodic_decay_resume")
+        assert set(periodic["decision"]["reference"]) == {"b", "c"}
     finally:
+        runtime._opportunity_writer = None
         runtime.close()
 
 
@@ -151,6 +157,76 @@ def test_combination_journal_serializes_exact_request_and_prediction_snapshots(m
         assert a.counts["workflow_combination_total_cpu_ns"] > 0
     finally:
         runtime._opportunity_writer = None
+        runtime.close()
+
+def test_original_dispatch_reference_is_logged_before_any_work_sort(monkeypatch, tmp_path):
+    runtime, a, _env = runtime_with_queue(monkeypatch, tmp_path)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append)
+    try:
+        a.tick()
+        journal = [row for row in records if row["event"] == "workflow_combination_selection"]
+        assert journal[0]["decision"]["reference"] == ("a",)
+        assert set(journal[0]["decision"]["selected"]) == {"b", "c"}
+        assert not any(row["event"] == "workflow_size_free_dispatch_order" for row in records)
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
+
+
+def test_unavailable_resource_summary_is_logged_without_changing_reference(monkeypatch, tmp_path):
+    runtime, a, _env = runtime_with_queue(monkeypatch, tmp_path)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append)
+    try:
+        runtime._native_max_running = None
+        a.tick()
+        row = next(row for row in records if row["event"] == "workflow_combination_selection")
+        assert row["resources"] is None
+        assert row["decision"]["selected"] == ("a",)
+        assert row["cold_device_extents"] == ()
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
+
+
+@pytest.mark.parametrize("unsafe", (
+    "none", "device_lock", "host_lock", "shared", "generation", "write", "load",
+    "partial_host", "not_blocked", "not_leaf",
+))
+def test_cold_capacity_only_counts_settled_private_blocked_leaves(monkeypatch, tmp_path, unsafe):
+    runtime, a, _env = runtime_with_queue(monkeypatch, tmp_path)
+    try:
+        key = a.latest["a"]
+        data = NS(value=list(range(200)), host_value=list(range(200)),
+                  lock_ref=0, host_lock_ref=0, session_ref=1, session_ids={key.session_id})
+        node = NS(id=42, creation_time=1., key=list(range(200)), backuped=True,
+                  component_data={0: data}, write_through_pending_id=None,
+                  load_back_pending_id=None)
+        cache = runtime._native_cache
+        cache.tree_core = NS(node_by_id=lambda identity: node, evictable_device_leaves=[node])
+        cache.session_refs = NS(_session_generations={key.session_id: key.session_generation})
+        runtime._parent_pressure_candidates = {42: (key, 1.)}
+        monkeypatch.setattr(runtime, "_live_parent_pressure_node", lambda *_args: unsafe != "not_blocked")
+        if unsafe == "device_lock":
+            data.lock_ref = 1
+        elif unsafe == "host_lock":
+            data.host_lock_ref = 1
+        elif unsafe == "shared":
+            data.session_ref = 2
+        elif unsafe == "generation":
+            cache.session_refs._session_generations[key.session_id] = -1
+        elif unsafe == "write":
+            node.write_through_pending_id = 3
+        elif unsafe == "load":
+            node.load_back_pending_id = 3
+        elif unsafe == "partial_host":
+            data.host_value.pop()
+        elif unsafe == "not_leaf":
+            cache.tree_core.evictable_device_leaves.clear()
+        assert a._combination._cold_capacity() == (((42, 1., 200),) if unsafe == "none" else ())
+        assert len(data.value) == 200
+    finally:
         runtime.close()
 
 

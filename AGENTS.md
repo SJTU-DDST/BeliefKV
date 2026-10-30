@@ -4649,3 +4649,18 @@
   /home/longhao/experiment/ops/cpu_plotting_20261027/bin/python for figures:
   beliefkv-next lacks matplotlib;preserve failed emptycontrol_figures,CPUretry
   goes to control_figures_cpu,not a GPU failure or reason to rerun serving.
+- Remaining-original5 frozen4bcfb795 now actually completes777requests/
+  104110outputs,all5naturallyeligible,noguards,freshdrain/ownedexit and independent
+  CPUreviewer actualexit. Retain21JOINs(16single/3double/2triple),5positive
+  shareddecodegroups,28childrenP50/P90calls18.5/33.3 androotparallelmedian1.
+  New53projectpool selects52wholeoriginals by existing nearest-work-median
+  removal rule:9313requests/1253882outputs,modelP80/P20=3.003432,4unmet.
+  Preserve excludedproject andallnormal tails;no idealshape orGPUcompetition
+  accepted. Nextsupplycalibration plansinitial12/mean80s ratherthanblindly
+  doublingrate;18fixedarrival-indexmeasured,completeJCT/commonbackground.
+  Oracleprototype repairs S0 beforeworkranking,retains bestknownfeasible on
+  softdeadline,preserves protectedJOINrights andcounts onlybounded32settled
+  privateblockedcoldleaves inphysicalsummary. Targeted80pass;boundCPU5754plus12
+  subtestspass,retainall5738priorliteralIDs,2169inputs/nativeunchanged.
+  These default-off oraclemechanics are not a learnedpredictor orperformance
+  result. Add exactinitial/periodicdecisioncoverage before nextcontrol.

@@ -20,6 +20,7 @@ from beliefkv.runtime.sglang_v0520_observer import (
 class WorkflowCombinationController:
     max_candidates = 6
     max_sibling_candidates = 8
+    max_cold_nodes = 32
 
     def __init__(self, admission):
         self.admission = admission
@@ -37,6 +38,7 @@ class WorkflowCombinationController:
             raise ValueError("invalid fixed oracle path normalization")
         self.dirty = False
         self.next_dispatch = 0.
+        self.cold_summary = ()
 
     def defer(self, preferred):
         if preferred is not None:
@@ -77,6 +79,7 @@ class WorkflowCombinationController:
         slots = min(maximum, native_maximum - len(running), rows())
         if slots <= 0:
             return None
+        self.cold_summary = self._cold_capacity()
         return CombinationResources(
             capacity, headroom.device_full_free_tokens, input_limit, slots,
             growth_tokens=runtime._native_page_size * (len(running) + slots),
@@ -86,7 +89,47 @@ class WorkflowCombinationController:
             ),
             chunked_input=bool(runtime._native_chunk_input_reserve),
             input_page_tokens=runtime._native_page_size,
+            cold_device_tokens=sum(row[2] for row in self.cold_summary),
         )
+
+    def _cold_capacity(self):
+        """Lower bound from settled private blocked leaves; native still rechecks."""
+        runtime = self.admission.runtime
+        cache = runtime._native_cache
+        candidates = getattr(runtime, "_parent_pressure_candidates", {})
+        tree = getattr(cache, "tree_core", None)
+        leaves = getattr(tree, "evictable_device_leaves", ())
+        sessions = getattr(cache, "session_refs", None)
+        generations = getattr(sessions, "_session_generations", {})
+        result = []
+        for node_id, (key, created) in islice(candidates.items(), self.max_cold_nodes):
+            try:
+                node = tree.node_by_id(node_id)
+                full = node.component_data[0]
+                if (
+                    node.creation_time != created or node not in leaves or not node.backuped
+                    or full.value is None or full.host_value is None
+                    or full.session_ref != 1 or full.session_ids != {key.session_id}
+                    or generations.get(key.session_id) != key.session_generation
+                    or len(full.value) != len(full.host_value)
+                    or len(full.value) != len(node.key)
+                    or node_id in getattr(cache, "ongoing_write_through", {})
+                    or node.write_through_pending_id is not None
+                    or node.load_back_pending_id is not None
+                    or not runtime._live_parent_pressure_node(node_id, created)
+                    or any(
+                        data.lock_ref or data.host_lock_ref or data.session_ref > 1
+                        for data in (
+                            node.component_data.values() if isinstance(node.component_data, dict)
+                            else node.component_data
+                        )
+                    )
+                ):
+                    continue
+                result.append((node_id, created, len(full.value)))
+            except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
+                continue
+        return tuple(result)
 
     def _prefix(self, key, item):
         a, runtime = self.admission, self.admission.runtime
@@ -144,8 +187,8 @@ class WorkflowCombinationController:
                             for identity in members
                             if a._ready_sibling(identity, join) is not None
                         )
-                        groups[join_id] = len(members), active
-                if groups[join_id] is not None:
+                        groups[join_id] = len(members), active, members
+                if groups[join_id] is not None and key.invocation_id in groups[join_id][2]:
                     choices.append((groups[join_id][0], join_id, groups[join_id][1]))
         if choices:
             total, identity, active = min(choices)
@@ -159,25 +202,26 @@ class WorkflowCombinationController:
             "selected": tuple(key.invocation_id for key in reference),
             "reason": "metadata_unavailable_reference_fallback",
         }
-        summaries, candidates = {}, []
+        summaries, candidates, predictions, resources = {}, [], {}, None
+        self.cold_summary = ()
         try:
             if not reference or len(reference) > self.max_sibling_candidates:
                 return list(reference)
             window = list(reference)
-            for key in keys:
-                if key not in window:
-                    window.append(key)
+            for key in islice(keys, self.max_sibling_candidates):
                 if len(window) >= self.max_candidates:
                     break
+                if key not in window:
+                    window.append(key)
             if len(window) == len(reference):
                 result["reason"] = "no_competing_choice"
                 return list(reference)
-            groups, predictions = {}, {}
+            groups = {}
             # Complete a visible sibling window without scanning the queue or graph.
             for key in tuple(window):
                 group, total, _active = self._group(key, groups)
                 if total > 1:
-                    for peer in keys:
+                    for peer in islice(keys, self.max_sibling_candidates):
                         if len(window) >= self.max_sibling_candidates:
                             break
                         if peer not in window and self._group(peer, groups)[0] == group:
@@ -216,6 +260,10 @@ class WorkflowCombinationController:
                 return list(reference)
             result = choose_combination(
                 candidates, [key.invocation_id for key in reference], resources, self.costs,
+                required=[
+                    key.invocation_id for key in reference
+                    if key.invocation_id in runtime._join_priority_pending
+                ],
             )
             return [summaries[identity] for identity in result["selected"]]
         except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError) as error:
@@ -224,7 +272,7 @@ class WorkflowCombinationController:
         finally:
             try:
                 writer = getattr(runtime, "_opportunity_writer", None)
-                if writer is not None and candidates:
+                if writer is not None:
                     writer.record({
                         "event": "workflow_combination_selection", "source": source,
                         "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
@@ -235,7 +283,9 @@ class WorkflowCombinationController:
                             for workflow, value in predictions.items()
                         },
                         "cost_identity": self.cost_identity,
-                        "resources": asdict(resources), "semantic_revision": runtime.semantic_revision,
+                        "resources": asdict(resources) if resources is not None else None,
+                        "cold_device_extents": self.cold_summary,
+                        "semantic_revision": runtime.semantic_revision,
                         "metadata_and_selection_cpu_ns": time.thread_time_ns() - cpu,
                         "metadata_and_selection_wall_ns": time.perf_counter_ns() - started,
                         "physical_capacity_credit": False,
@@ -248,9 +298,6 @@ class WorkflowCombinationController:
 
     def periodic(self, ordered, reference, capacity):
         a = self.admission
-        if any(item.identity in a.runtime._join_priority_pending for item in reference):
-            a.counts["workflow_combination_protected_join_reference"] += 1
-            return reference
         if any(not a._logical_ready_paused(item) for item in reference):
             a.counts["workflow_combination_unready_reference_fallback"] += 1
             return reference
@@ -276,10 +323,6 @@ class WorkflowCombinationController:
             if used + required <= capacity and len(reference) < 4:
                 reference.append(key)
                 used += required
-        # JOIN parents with an existing recovery right remain protected.
-        if any(key.invocation_id in a.runtime._join_priority_pending for key in reference):
-            a.counts["workflow_combination_protected_join_reference"] += 1
-            return reference
         return self.select(
             ready, reference, capacity=capacity, maximum=4, source="undiscounted_free_dispatch",
         )
