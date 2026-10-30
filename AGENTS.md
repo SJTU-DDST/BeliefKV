@@ -4717,3 +4717,11 @@
   global/demandboundCPU_r2actuallypasses5793tests+12subtests,retains5756,
   nofailure/error/skip,2188inputs/nativeunchanged. RunningFull8eb485f1stays
   frozen;newglobal/preparation/summarycodehasnoGPUresultandnopredictor.
+- Sustained52r3 CPU preparation changes onlyarrivalsto10initial/mean100s,
+  retaining16warm/18fixedmeasured/18background,seed31/permutation41,
+  exactlysamecommonenvironment/tools/source/orderandcohortmembersasr2.
+  Commonwindow231.442255776923--4343.970772418398s,fullnormalJCTtails.
+  BoundCPU5793plus12subtestspasses,retainsall5793,2192inputs/nativeunchanged.
+  This isnotyetGPUqualificationoracceptedpressure/background. Completeoldr1
+  normally;reviewHostoverflowandcoveragebeforelaunchingmatchedr3control,
+  nevercompareitsoraclewithold12initial/80sFull.
