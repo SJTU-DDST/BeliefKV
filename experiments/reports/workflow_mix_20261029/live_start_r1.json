@@ -1,0 +1,247 @@
+{
+  "observed_at": "2026-10-30T06:19:32.141438+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_mix_scope18_source_20261029_r1.registration.json",
+  "registration_sha256": "57577a72d1765f1f282ba82f0c22e22062e498be907695eb398d675cd427c50c",
+  "code_commit": "e7dc71a1ff609a7da84d42b9fce6056d1086c555",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture",
+  "processes": {
+    "watcher": {
+      "pid": 1916048,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "751096767",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-scope18-capture-e7dc71a1ff60/scripts/run_causal_source_capture.py",
+        "--watch",
+        "/home/longhao/experiment/ops/workflow_mix_scope18_source_20261029_r1.registration.json"
+      ]
+    },
+    "driver": {
+      "pid": 1916419,
+      "state": "S",
+      "ppid": 1916048,
+      "start_ticks": "751097630",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-scope18-capture-e7dc71a1ff60/scripts/run_qwen35_native_regime_probe.sh"
+      ]
+    },
+    "scheduler": {
+      "pid": 1916775,
+      "state": "R",
+      "ppid": 1916429,
+      "start_ticks": "751098977",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    },
+    "server": {
+      "pid": 1916429,
+      "state": "S",
+      "ppid": 1916419,
+      "start_ticks": "751097635",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18903",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--skip-server-warmup"
+      ]
+    }
+  },
+  "all_owned_processes_nice0": true,
+  "sole_GPU_owner_verified": true,
+  "actual_server_parameters": {
+    "chunked_prefill_size": 2048,
+    "enable_mixed_chunk": false,
+    "max_running_requests": 24,
+    "random_seed": 21,
+    "enable_beliefkv_admission": false
+  },
+  "fresh_sampler_cases": [
+    1,
+    8,
+    24
+  ],
+  "token_receipt_counts": {
+    "request_prompt": 198,
+    "request_output": 191
+  },
+  "event_counts": {
+    "workflow_start": 18,
+    "invocation_create": 19,
+    "llm_submit": 209,
+    "llm_result": 191,
+    "tool_start": 190,
+    "tool_end": 190,
+    "spawn": 1,
+    "join_create": 1,
+    "join_wait": 1,
+    "structured_action": 3
+  },
+  "semantic_metadata_counts": {
+    "workflow_start": 18,
+    "invocation_create": 1
+  },
+  "workflow_count": 18,
+  "frozen_sources_verified": true,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/server/request_tokens.jsonl": {
+      "complete_prefix_bytes": 10194483,
+      "complete_prefix_sha256": "78bc96d006933a009458e0d817b387123a9ed08357022b26ab15f995442a958a",
+      "first_read_limit_bytes": 10194483
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_mobile_social_medium_022_bug_investigation_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 67781,
+      "complete_prefix_sha256": "dc3c4867d84660c9cbe4920b096834dd9e94d7414f7f0bb74296d69122656368",
+      "first_read_limit_bytes": 67781
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_data_warehouse_medium_012_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 62749,
+      "complete_prefix_sha256": "e9d5eea9c696bae4b467edc7afb7a773c4943cd2ec9370c1b8642269e539bf51",
+      "first_read_limit_bytes": 62749
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_fintech_trading_medium_066_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 72639,
+      "complete_prefix_sha256": "fea2602c42c2d1ab6d24b3262e83d23f62ff20acaeacb04638bf27a9dc9974e3",
+      "first_read_limit_bytes": 72639
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_desktop_media_medium_020_bug_investigation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 62363,
+      "complete_prefix_sha256": "d20068fbc636335410a5546e8919e36bc236bd6b202533d3c0d0e1002039b27b",
+      "first_read_limit_bytes": 62363
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_system_security_medium_064_feature_implementation_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 64346,
+      "complete_prefix_sha256": "7ed03c5b7d0cf23d7cb6639d77d2e7e8025a21c8a6ad763975dd3890e02fcc21",
+      "first_read_limit_bytes": 64346
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_system_networking_hard_027_multi_session_development_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 65977,
+      "complete_prefix_sha256": "537782f4b46718d41962dbbf878e3748913b976e62aa84b084c6df8567096616",
+      "first_read_limit_bytes": 65977
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_data_analytics_easy_082_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 77030,
+      "complete_prefix_sha256": "6aeac0d23b82b1ec9c8aaf6cc4f44db74bf26148060cf5740ace3d8558c93f7e",
+      "first_read_limit_bytes": 77030
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_data_lake_medium_050_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 70604,
+      "complete_prefix_sha256": "3d0ace172df0e914483108632507b05dcc3cd85aad7f035fe0f1916cb900bbbd",
+      "first_read_limit_bytes": 70604
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_game_simulation_medium_033_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 69095,
+      "complete_prefix_sha256": "f581a0599eaceefac2b4eb7f7d6ba9bd1f5e1f488836bc136718c2de68ab0c05",
+      "first_read_limit_bytes": 69095
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_api_microservice_medium_008_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 78581,
+      "complete_prefix_sha256": "c4b975ee5587d7a9def8054297809099799777d5a6258e54f02959e733fcecf5",
+      "first_read_limit_bytes": 78581
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_web_social_hard_001_bug_investigation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 67647,
+      "complete_prefix_sha256": "0f75d3c567140937a5a93a58ef5164a303dd1afeee2a22e166c010bf2b4260ce",
+      "first_read_limit_bytes": 67647
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_web_dashboard_medium_039_cross_file_refactoring_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 69755,
+      "complete_prefix_sha256": "445908cf366b7e884917628bb2f310e4da1d14523baeae22f60b3406f9aef060",
+      "first_read_limit_bytes": 69755
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 71289,
+      "complete_prefix_sha256": "c1083927a2347091d4cc5e8481107f52eff9476f6374c244d1a76ab62c4907db",
+      "first_read_limit_bytes": 71289
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_web_cms_hard_074_feature_implementation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 59231,
+      "complete_prefix_sha256": "f5ad1e7d30e53c2e31cb915fd0a0cebb13917560e0fd5678c20abf8f261677d8",
+      "first_read_limit_bytes": 59231
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_ml_inference_hard_088_multi_session_development_hard_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 71264,
+      "complete_prefix_sha256": "33e6d07ba0880d302917283b1b607b8687647a7264d210b9b336af1b1d48a46f",
+      "first_read_limit_bytes": 71264
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 64685,
+      "complete_prefix_sha256": "90691879eba2b3ed70a45170156b6bb218dbd337b64ace76bf082bb565b7d4fb",
+      "first_read_limit_bytes": 64685
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_blockchain_nft_medium_035_bug_investigation_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 68967,
+      "complete_prefix_sha256": "5cc596b3f800bd1409f3548c41625b3c5257b9eb5ef3ff56477e047f601d216e",
+      "first_read_limit_bytes": 68967
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture/client_18/workflows/locobench__python_web_blog_easy_040_multi_session_development_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 62987,
+      "complete_prefix_sha256": "cd8752c3d73ac84bf6ad2c1ce6fd1b901878d068a3894db02f8bc891fbf54e95",
+      "first_read_limit_bytes": 62987
+    }
+  },
+  "CPU_finisher": {
+    "process": {
+      "pid": 1917682,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "751107481",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/beliefkv-workflow-mix-20261029-e7dc71a1/experiments/reports/workflow_mix_20261029/finish_capture.py",
+        "--registration",
+        "/home/longhao/experiment/ops/workflow_mix_scope18_source_20261029_r1.registration.json",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/scope18_finish_r1",
+        "--model-cost-evidence",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/decay_tick2s_no_handoff_20261030/queue_r1/complete_review/review.json"
+      ]
+    },
+    "nice": 19,
+    "CUDA_VISIBLE_DEVICES": "99999"
+  },
+  "source_capture_complete": false,
+  "measured_size_mix_qualified": false,
+  "new_followup_GPU_action_registered": false,
+  "performance_accepted": false,
+  "operator_sha256": "e7c8cab3ed8ea9428db83f857899055505cbcdb13e68c8758782a75f68692634"
+}

@@ -141,3 +141,27 @@ pair 的排序错误、长误判短、控制开销及最终 JCT；不只看总�
 测试身份，无失败、错误或跳过；原生 engine 字节未改。18 个项目的 live root/
 child 工具配置、镜像、源码提交、上下文和 runtime 环境共 39 项输入也已核对。
 此检查没有要求准备阶段修复任务本身的测试断言。
+
+## 本轮实际启动
+
+自然采集已由冻结提交 `e7dc71a1` 启动，注册为
+`ops/workflow_mix_scope18_source_20261029_r1.registration.json`，
+实际数据目录是
+`experiments/raw/workflow_mix_scope18_source_20261029_scope18/native_capture`，
+服务端口 18903。使用原生公共数据面 `11b84f7c`，fresh sampler 1/8/24
+及 native BF16 检查通过；线上实际为 805,198 Device token、200GB Host、
+2048 chunk、mixed 关闭、24 running/decode、seed 21、BeliefKV 准入关闭。
+
+`live_start_r1.json` 独立检查冻结源码、全部外部输入、18 个不同项目、
+实际 server 参数、nice0 的 watcher/driver/server/scheduler 与唯一 GPU
+所有权；检查前缀已有 191 个原生完整输出，18 个 root 及 1 个 child 的受限
+语义输入符合合同。该前缀不是完整轨迹、工作量分层或性能验收。
+
+CPU 收尾进程已在 nice19、`CUDA_VISIBLE_DEVICES=99999` 下实际等待；
+完成后保留完整长尾、检查新鲜遥测和真实退出，再输出实际分层与固定到达表。
+没有排队新的 Full、ThunderAgent 或其他 baseline。
+
+最初 `gpu_entry_r1` 在启动 GPU 前因历史冻结目录命名冲突而拒绝注册；
+失败记录保留。第二次入口使用独立 `scope18` 采集标识，仍为同一负载与代码，
+没有增加一轮模型实验。入口默认值已修正，新增回归检查连同相关检查通过
+27 项及 6 个子测试。运行中的冻结源码保持原样。

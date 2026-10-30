@@ -224,3 +224,16 @@ def test_original_scope_candidates_cross_context_and_never_expose_reference_answ
         for field in ("source_repo", "base_commit", "sandbox_environment", "frozen_repository_context"):
             assert new[field] == old[field]
         assert "size_tier" not in new and "scope_hypothesis" not in new
+
+
+def test_scope_registration_uses_a_unique_native_capture_label(monkeypatch):
+    from experiments.reports.workflow_mix_20261029 import register_capture as scope
+    import sys
+
+    command = []
+    monkeypatch.setattr(sys, "argv", ["register", "--cpu-evidence", "/bound/evidence.json"])
+    monkeypatch.setattr(scope.register_capture, "main", lambda: command.extend(sys.argv))
+    scope.main()
+    run = command[command.index("--run-root") + 1]
+    assert run.rsplit("_", 1)[-1] == "scope18"
+    assert command[command.index("--port") + 1] == "18903"

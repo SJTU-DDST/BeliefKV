@@ -4026,3 +4026,17 @@
   New native collection still requires a clean frozen checkout and fresh
   sampler/resource/reservation checks;these CPU results are not size diversity,
   physical competition or performance qualification.
+- Scope18 now actually records native from frozene7dc71a1 on18903,registered
+  ops/workflow_mix_scope18_source_20261029_r1.registration.json. Its unique
+  run label ends_scope18,avoiding historical engine-worktree label collisions.
+  Preserve the pre-GPU gpu_entry_r1 failure and successful gpu_entry_r2;
+  this is one natural source capture,not two GPU experiments. Native engine
+  remains common11b84f7c,fresh sampler1/8/24 and BF16 checks pass. Independent
+  live_start_r1 verifies18projects,actual2048/mixed-off/running24/seed21/
+  admission-off,nice0 owned processes,sole GPU owner,191complete outputs and
+  bounded semantic input on18roots/1child. This prefix is not complete-work,
+  measured size-diversity or performance qualification. CPU finisher1917682
+  actually waits at nice19 with CUDA hidden,then audits complete source/drain/
+  actual owned exit and writes measured strata/arrival artifacts only.
+  No next Full/Thunder/baseline GPU action is queued. Preserve the running
+  frozen snapshot and all normal tails;the global optimization goal is active.

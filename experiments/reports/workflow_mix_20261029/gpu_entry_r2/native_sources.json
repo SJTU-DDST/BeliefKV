@@ -1,0 +1,23 @@
+{
+  "commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+  "dirty": true,
+  "excluded_provenance_paths": [],
+  "tracked_change_paths": [
+    "python/sglang/srt/managers/cache_controller.py",
+    "python/sglang/srt/managers/scheduler.py",
+    "python/sglang/srt/mem_cache/allocator/token.py",
+    "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+    "test/srt/test_beliefkv_transfer_receipts.py"
+  ],
+  "untracked_paths": [],
+  "tracked_change_tree_sha256": "c6852b16ec683ee2b683ce7f2bab9823d140cf0a2d39d459af9266d2e2770b00",
+  "canonical_patch": {
+    "path": "/home/longhao/experiment/beliefkv-workflow-mix-20261029-e7dc71a1/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "d7dfd6959fb53b998829f1ea69b89ba99234b8fa6ecb78aeaa624e2d2b28044a",
+    "expected_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "actual_tree": "11b84f7c31986782be3fbe699bae2574ef092389",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "state_sha256": "cd5a54ee17b8eda7744f6796d23a5f3b50d51ef802d6a5877ef4dc789187c611"
+}
