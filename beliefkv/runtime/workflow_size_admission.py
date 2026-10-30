@@ -20,6 +20,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def __init__(self, runtime):
         self._combination = None
+        self._deferred_dispatch = None
         combination = getattr(runtime, "workflow_combination_admission", False)
         self._task_seen = set()
         self._output_observed = {}
@@ -33,7 +34,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                     ordered, reference, budget,
                 )
             ) if combination else None,
-            defer_first=combination,
+            defer_first=combination or self.rank_before_category,
             rank_before_category=self.rank_before_category,
         )
         super().__init__(runtime)
@@ -43,19 +44,20 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
             try:
                 self._combination = WorkflowCombinationController(self)
+                self._deferred_dispatch = self._combination
             except Exception:
                 self._work.close()
                 raise
             self.policy_name += "_r5"
 
     def _admit_free_continuation(self, *, preferred=None):
-        if self._combination is not None:
-            return self._combination.defer(preferred)
+        if self._deferred_dispatch is not None:
+            return self._deferred_dispatch.defer(preferred)
         return super()._admit_free_continuation(preferred=preferred)
 
     def _coadmit_join(self, join_id):
-        if self._combination is not None:
-            return self._combination.siblings_pending(join_id)
+        if self._deferred_dispatch is not None:
+            return self._deferred_dispatch.siblings_pending(join_id)
         return super()._coadmit_join(join_id)
 
     def _create_work(self, runtime):
@@ -221,8 +223,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 self._index_resume_groups()
         super().tick(now=now)
         if not due:
-            if self._combination is not None:
-                self._combination.dispatch(now)
+            if self._deferred_dispatch is not None:
+                self._deferred_dispatch.dispatch(now)
             return
         choice = self.policy.last_selection
         control_cpu_us = (time.thread_time() - control_cpu) * 1e6
@@ -256,8 +258,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 ],
                 "physical_capacity_credit": False,
             })
-        if self._combination is not None:
-            self._combination.dispatch(now)
+        if self._deferred_dispatch is not None:
+            self._deferred_dispatch.dispatch(now)
 
     def native_service(self, batch, completed_ids):
         super().native_service(batch, completed_ids)

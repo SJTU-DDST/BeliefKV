@@ -91,6 +91,7 @@ def main():
         "beliefkv/experiments/workload_requirements.py",
         "beliefkv/policy/workflow_combination.py",
         "beliefkv/runtime/workflow_combination.py",
+        "beliefkv/runtime/deferred_free_admission.py",
         "scripts/audit_workload_requirements.py",
         "scripts/prepare_checkpoint_workstream_pilot.py",
         "scripts/prepare_sustained_workload.py",

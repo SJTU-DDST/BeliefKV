@@ -4737,3 +4737,26 @@
   at2520s(27liveworkflows/50contexts). Fullr1remainsfrozenandrunning.
   workload_gate_bound_cpu_r2passes5805tests+12subtests,retains5804,
   2195inputs/nativeunchanged,nofailure/error/skip;focused30passes.
+- First52controlactuallycompleted52/9313/1253882outputs,freshdrain/ownedexit.
+  Fixed18meanJCT2510.579195s/P954365.823872s;commonwindowoutput240.193446tps.
+  Phaseonedecisionrejectsbackgroundcoverage(1376.788suncovered),oldprefix
+  loss6894726/332789113tokens(63requests),andregularreuseunionpeak1.329.
+  Completeperiodicaudit2813controls/322competitions/1259resumes/8revoked/
+  1231followingexactservice. Preservefailedcohortreview:8zero-outputinflight
+  decode rowscompleteafterworkflowreturn,max375.296ms;onlyverifiedunchanged
+  outputcountersandpre-returnlaunchareexempt,positiveoutput/JCTnotshifted.
+  Correctedcohort_r2reconcilesall1253882outputswithreceipts,modulehashbound.
+- Balanced52Fullr2nowactuallyrunsfrom068be28a/native434c35ddon18916,
+  ops/workflow_sustained_original52_full_20261030_r2.registration.json.
+  Fresh24exactposition/session/native-stop(24stops)and1/8/24samplerpass;
+  independentliveproof404completedreceipts,soleGPU/nice0/500ms+2s/profiles.
+  Early830sCPUprefixhas17actualperiodiccompetitions,0oldprefixloss,
+  latestreusableunion84.6%combinedpool;notcompleteacceptanceorsteadystate.
+- Globaloraclefirstregistrations/continuations/siblingnotificationsnowshare
+  DeferredFreeAdmissionwithR5atnativedispatchboundaries;500msisfallback,
+  notmandatoryper-requestdelay. PreserveJOIN/EOSrightsandactivecontinuity;
+  defaultoff,newcodehasnoGPUoraclegain. shared_dispatch_bound_cpu_r2passes
+  5814plus12subtests,retains5814,2196inputs/nativeunchanged. Targeted127pass.
+  Priorcohort_tail_bound_cpu_r1keeps5810pass/1timing-dependentsemanticfixture
+  failure;deterministiclogicalclockplusadapterdeadlinefallbacktestfixes
+  fixturewithoutchangingproduction500000nsbudget. Keepallfailedproofs.

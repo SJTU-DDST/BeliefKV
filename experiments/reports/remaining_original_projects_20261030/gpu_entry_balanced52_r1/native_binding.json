@@ -1,0 +1,13 @@
+{
+  "previous": "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/gpu_entry_sustained52_r1/native_sources.json",
+  "previous_sha256": "a2d1370e871bb940fc0a08f5fc3b66978ddbb216b332a262ebca4956746ca013",
+  "current": "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/gpu_entry_balanced52_r1/native_sources.json",
+  "current_sha256": "0cf3f2c7d58c672b289319f7af0363b2010e6d53050312584a05e7a380576bb4",
+  "only_patch_path_rebound": true,
+  "authorization": {
+    "hold_file": "/home/longhao/experiment/ops/gpu_hold_until_20261022_0600.json",
+    "hold_sha256": "57a02d25be864ec84fc1c4e6c0afba31b1282ce681e18f7c4dd6974f3f788f9d",
+    "checked_at": "2026-10-31T06:33:17.470461+08:00"
+  },
+  "GPU_action": false
+}

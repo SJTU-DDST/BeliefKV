@@ -1,4 +1,4 @@
-"""Seal observed Full startup on the new scope18 burst without performance claims."""
+"""Seal observed Full startup for its registered population and control cadence."""
 
 import argparse
 from datetime import datetime, timezone
@@ -50,15 +50,16 @@ def main():
     latest = causal.qualified.last_runtime_state(arm / "opportunities/admission_opportunities.jsonl")
     common = plan["reference_environment"]
     oracle = common["BELIEFKV_WORKFLOW_WORK_SOURCE"] == "oracle"
+    dispatch = int(common.get("BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS", "0"))
     validate_reference_admission(
         latest["agent_admission"], join_free_admission=True, coadmit_join_children=True,
         free_continuation_admission=True, join_blocked_handoff=True,
-        free_dispatch_interval_ms=0, control_interval_ms=2000, workflow_size_resume=oracle,
+        free_dispatch_interval_ms=dispatch, control_interval_ms=2000, workflow_size_resume=oracle,
         workflow_work_source="oracle" if oracle else "learned",
         workflow_work_model_sha256=common.get("BELIEFKV_WORKFLOW_WORK_MODEL_SHA256", ""),
     )
     expected = {
-        "agent_free_dispatch_interval_ms": 0, "agent_control_interval_ms": 2000,
+        "agent_free_dispatch_interval_ms": dispatch, "agent_control_interval_ms": 2000,
         "workflow_size_resume": oracle, "tool_prefetch": False,
         "execution_frontier_restore": False, "layer_handoff_enabled": False,
         "predicted_tool_offload": True,
@@ -68,7 +69,10 @@ def main():
     reader = SealedRecords()
     graph, _expected, _evidence = source_plan(Path(plan["source_arm"]))
     usage = graph.request_usage
-    if graph.summary() != plan["source_plan"] or len({node.workflow_id for node in graph.nodes}) != 18:
+    if (
+        graph.summary() != plan["source_plan"]
+        or {node.workflow_id for node in graph.nodes} != set(plan["workflow_ids"])
+    ):
         raise ValueError("source work differs from the declaration")
     seen = set()
     for row in reader(arm / "replay/native_requests.jsonl"):

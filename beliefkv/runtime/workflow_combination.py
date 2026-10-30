@@ -12,18 +12,19 @@ from beliefkv.policy.workflow_combination import (
     choose_combination, probability_weight,
 )
 from beliefkv.policy.workflow_size_resume import resume_category
+from beliefkv.runtime.deferred_free_admission import DeferredFreeAdmission
 from beliefkv.runtime.sglang_v0520_observer import (
     observe_static_full_mamba_headroom, observe_unified_node_closure,
 )
 
 
-class WorkflowCombinationController:
+class WorkflowCombinationController(DeferredFreeAdmission):
     max_candidates = 6
     max_sibling_candidates = 8
     max_cold_nodes = 32
 
     def __init__(self, admission):
-        self.admission = admission
+        super().__init__(admission)
         content = Path(admission.runtime.workflow_work_model).read_bytes()
         if hashlib.sha256(content).hexdigest() != admission.runtime.workflow_work_model_sha256:
             raise ValueError("R5 cost profile and prediction artifact differ")
@@ -36,32 +37,7 @@ class WorkflowCombinationController:
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
         if type(self.oracle_reference_path_s) not in (int, float) or not 0 < self.oracle_reference_path_s < float("inf"):
             raise ValueError("invalid fixed oracle path normalization")
-        self.dirty = False
-        self.next_dispatch = 0.
         self.cold_summary = ()
-
-    def defer(self, preferred):
-        if preferred is not None:
-            self.admission._remember_dispatch(preferred)
-        self.dirty = True
-        return False
-
-    def dispatch(self, now):
-        if not self.dirty and now < self.next_dispatch:
-            return
-        self.dirty = False
-        self.next_dispatch = now + self.admission.dispatch_interval_ms / 1000.
-        self.admission._dispatch_free_capacity()
-
-    def siblings_pending(self, join_id):
-        a = self.admission
-        join = a._siblings.join(join_id) if a._siblings is not None else None
-        if join is None:
-            return
-        for identity in join.member_invocation_ids - join.completed_member_ids:
-            if a._ready_sibling(identity, join) is not None:
-                a._remember_dispatch(a.latest[identity])
-        self.dirty = True
 
     def _resources(self, capacity, maximum):
         a, runtime = self.admission, self.admission.runtime

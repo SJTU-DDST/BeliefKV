@@ -1,0 +1,132 @@
+{
+  "observed_at": "2026-10-30T23:00:28.697757+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r2.registration.json",
+  "registration_sha256": "f740cb2aaf4bc49b7f6df9cd321b2a90603f2c9ca2415fd04c6fb38dc39aba00",
+  "code_commit": "068be28a5a56b4f3da31e6f85a3e5b8b9c173738",
+  "engine_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+  "nice0_owned_processes": {
+    "watcher": {
+      "pid": 2657706,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "757106254",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-068be28a5a56-0bb3c215b638/scripts/run_causal_comparison.py",
+        "--watch",
+        "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r2.registration.json"
+      ]
+    },
+    "server": {
+      "pid": 2658182,
+      "state": "S",
+      "ppid": 2657706,
+      "start_ticks": "757108956",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18916",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--enable-custom-logit-processor",
+        "--max-total-tokens",
+        "805198",
+        "--enable-beliefkv-admission",
+        "--beliefkv-event-socket-path",
+        "/tmp/bkv-causal-18916.sock"
+      ]
+    },
+    "driver": {
+      "pid": 2658971,
+      "state": "S",
+      "ppid": 2657706,
+      "start_ticks": "757124290",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-causal-068be28a5a56-0bb3c215b638/scripts/run_causal_gpu_replay.py",
+        "--source-arm",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/composite_pool_r1",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r2/full/replay",
+        "--base-url",
+        "http://127.0.0.1:18916",
+        "--request-timeout-s",
+        "3600.0",
+        "--stream-response-metrics",
+        "--tool-duration-overlay",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/composite52_tool_timing_r1.json",
+        "--workflow-arrivals",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/arrivals.json",
+        "--event-socket",
+        "/tmp/bkv-causal-18916.sock"
+      ]
+    },
+    "GPU_scheduler": {
+      "pid": 2658257,
+      "state": "R",
+      "ppid": 2658182,
+      "start_ticks": "757110372",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    }
+  },
+  "sole_GPU_owner": true,
+  "observed_policy": {
+    "agent_free_dispatch_interval_ms": 500,
+    "agent_control_interval_ms": 2000,
+    "workflow_size_resume": false,
+    "tool_prefetch": false,
+    "execution_frontier_restore": false,
+    "layer_handoff_enabled": false,
+    "predicted_tool_offload": true
+  },
+  "completed_prefix_receipts": 404,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r2/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 1342982,
+      "complete_prefix_sha256": "d27d8744ee986436549d4ebac2ff347642bbd2763a4ea4dfd3a1848a977fe1e9",
+      "first_read_limit_bytes": 1342982
+    }
+  },
+  "operator_sha256": "eb9fb608636ff21f9739cc9e4e53809ede406d4910b1a6adb57a60b7563d9030",
+  "future_information_used": false,
+  "complete_work_verified": false,
+  "receipt_scope": "source counts and native exact-token flags; final source validation remains required",
+  "performance_accepted": false
+}

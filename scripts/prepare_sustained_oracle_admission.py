@@ -247,7 +247,7 @@ def main():
                 "bounded_oracle_JOIN_set_selection_at_existing_admission_boundaries"
                 if combination else "global_ready_remaining_model_tool_path_before_legacy_category"
             ),
-            "first_registration_coalescing_is_part_of_candidate": combination,
+            "first_registration_coalescing_is_part_of_candidate": True,
             "future_information_used": True, "deployable": False,
         },
         workflow_work_qualification={

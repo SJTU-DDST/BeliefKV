@@ -1,0 +1,437 @@
+{
+  "observed_at": "2026-10-30T22:38:43.506075+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r1.registration.json",
+  "registration_sha256": "294f2ed938721d8cff54591a332c9ac33c20a9c6682d4296dddaa67ffbbf38c0",
+  "complete_work_and_actual_exit_verified": true,
+  "requests": 9313,
+  "workflows": 52,
+  "prompt_tokens": 352907836,
+  "output_tokens": 1253882,
+  "metrics": {
+    "mean_jct_s": 2194.422091711833,
+    "makespan_s": 5816.0551031141285,
+    "end_to_end_output_tokens_per_s": 215.58977309699588,
+    "decode": {
+      "batches": 154241,
+      "request_steps": 1253176,
+      "worker_ms": 2897960.1504057646,
+      "request_step_ms": 36522789.5029271,
+      "output_tokens": 1244569,
+      "context_tokens": 53658572471,
+      "graph_batches": 154241,
+      "graph_request_steps": 1253176,
+      "configured_bucket_rows": 1466554,
+      "batches_needing_padding": 69836,
+      "worker_ms_in_batches_needing_padding": 1979768.3787783608,
+      "mean_batch": 8.124791722045371,
+      "worker_weighted_mean_batch": 12.602930201719055,
+      "worker_interval_sum_s": 2897.9601504057646,
+      "mean_worker_interval_ms": 18.78852024044038,
+      "output_tokens_per_worker_interval_second": 429.46380743908395,
+      "mean_observed_request_context_tokens": 42818.06583512611,
+      "graph_batch_fraction": 1.0,
+      "configured_padding_rows_per_real_graph_row": 0.1702697785466687
+    }
+  },
+  "match_contract": {
+    "source_plan": {
+      "causal_graph_compiled": true,
+      "nodes": 47562,
+      "dependency_edges": 66042,
+      "event_counts": {
+        "call": 24,
+        "context_compact": 24,
+        "invocation_create": 392,
+        "join_create": 237,
+        "join_satisfied": 237,
+        "join_wait": 237,
+        "llm_result": 9313,
+        "llm_submit": 9313,
+        "native_request": 9313,
+        "return": 392,
+        "spawn": 316,
+        "structured_action": 382,
+        "tool_end": 8639,
+        "tool_start": 8639,
+        "workflow_end": 52,
+        "workflow_start": 52
+      },
+      "workflows": 52,
+      "requests": 9313,
+      "prompt_tokens": 352907836,
+      "output_tokens": 1253882,
+      "native_completion_boundaries_verified": true,
+      "omitted_diagnostic_events": 19239,
+      "gpu_replay_qualified": false,
+      "performance_accepted": false,
+      "scope": "Causal event/request graph and native usage only. Native service is an unresolved request operation, not its original elapsed time. Exact token execution, native EOS, session equivalence and GPU performance require separate qualification."
+    },
+    "token_source_sha256": "e4218fd49adf4e88e18b123ef992811d8ec5a814dbcd3813778b077f40789cea",
+    "source_capacity": {
+      "device_full_bytes": 79154282496,
+      "device_full_tokens": 805198,
+      "device_mamba_bytes": 0,
+      "device_mamba_slots": 0,
+      "device_total_bytes": 79154282496,
+      "host_full_bytes": 200000077824,
+      "host_full_tokens": 2034506,
+      "host_mamba_bytes": 0,
+      "host_mamba_slots": 0,
+      "host_total_bytes": 200000077824,
+      "pool_layout": "static_full_only"
+    },
+    "source_server_parameters": {
+      "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+      "dtype": "bfloat16",
+      "kv_cache_dtype": "bfloat16",
+      "mem_fraction_static": 0.94,
+      "context_length": 262144,
+      "max_running_requests": 24,
+      "chunked_prefill_size": 2048,
+      "page_size": 1,
+      "mamba_ssm_dtype": null,
+      "mamba_full_memory_ratio": 0.9,
+      "mamba_radix_cache_strategy": "auto",
+      "mamba_track_interval": 256,
+      "mamba_max_states_per_path": -1,
+      "hicache_size": 200,
+      "hicache_mem_layout": "page_first",
+      "hicache_io_backend": "kernel",
+      "hicache_host_memory_mode": "cache",
+      "hicache_write_policy": "write_back",
+      "disable_overlap_schedule": false,
+      "enable_mixed_chunk": false,
+      "radix_cache_backend": null,
+      "radix_eviction_policy": "lru",
+      "schedule_policy": "fcfs",
+      "enable_beliefkv_admission": false
+    },
+    "engine_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+    "sampling_mode": "position",
+    "stream_response_metrics": true,
+    "workflow_ids": [
+      "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+      "deepagents:autonomous:locobench__python_api_graphql_easy_043_code_comprehension_expert_01:09cf2ceade9a",
+      "deepagents:autonomous:locobench__python_api_graphql_expert_007_code_comprehension_medium_01:7b94254370d9",
+      "deepagents:autonomous:locobench__python_api_microservice_medium_008_multi_session_development_hard_01:2ace77580f5b",
+      "deepagents:autonomous:locobench__python_api_microservice_medium_044_feature_implementation_medium_01:60c6270125f3",
+      "deepagents:autonomous:locobench__python_api_rest_easy_006_code_comprehension_hard_01:f10759ab50f9",
+      "deepagents:autonomous:locobench__python_api_rest_easy_078_code_comprehension_expert_01:5bde7f35c5ef",
+      "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_bug_investigation_expert_01:f84fda5d6efa",
+      "deepagents:autonomous:locobench__python_data_analytics_easy_010_code_comprehension_medium_01:2e7bfcc1ca00",
+      "deepagents:autonomous:locobench__python_data_analytics_easy_046_code_comprehension_expert_01:6eb5fe2c4a5a",
+      "deepagents:autonomous:locobench__python_data_analytics_easy_082_feature_implementation_expert_01:91abc9280171",
+      "deepagents:autonomous:locobench__python_data_lake_medium_050_multi_session_development_hard_01:88cd4ef18a09",
+      "deepagents:autonomous:locobench__python_data_streaming_easy_049_code_comprehension_hard_01:bc935199bb2e",
+      "deepagents:autonomous:locobench__python_data_warehouse_hard_048_architectural_understanding_hard_01:46863a6a20d3",
+      "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3",
+      "deepagents:autonomous:locobench__python_desktop_development_expert_021_code_comprehension_expert_01:769a0e1cc3b5",
+      "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58",
+      "deepagents:autonomous:locobench__python_desktop_media_medium_092_code_comprehension_expert_01:c173ff67f8ea",
+      "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e",
+      "deepagents:autonomous:locobench__python_game_simulation_easy_069_code_comprehension_hard_01:fa75dea63393",
+      "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a",
+      "deepagents:autonomous:locobench__python_ml_inference_hard_088_multi_session_development_hard_01:9fe287fa3352",
+      "deepagents:autonomous:locobench__python_ml_nlp_easy_017_code_comprehension_expert_01:8bfc92284007",
+      "deepagents:autonomous:locobench__python_ml_nlp_easy_053_code_comprehension_easy_01:6820ba2fb957",
+      "deepagents:autonomous:locobench__python_ml_nlp_easy_089_code_comprehension_expert_01:bbb3d82cac27",
+      "deepagents:autonomous:locobench__python_ml_training_expert_051_code_comprehension_easy_01:2c5decfed619",
+      "deepagents:autonomous:locobench__python_ml_training_medium_087_feature_implementation_hard_01:7695b1be4c65",
+      "deepagents:autonomous:locobench__python_mobile_game_hard_024_code_comprehension_easy_01:c6898aaab43f",
+      "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:708fe585119c",
+      "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273",
+      "deepagents:autonomous:locobench__python_mobile_social_easy_058_code_comprehension_expert_01:40951edadef2",
+      "deepagents:autonomous:locobench__python_mobile_social_easy_094_code_comprehension_expert_01:684e3ae3b329",
+      "deepagents:autonomous:locobench__python_mobile_social_medium_022_bug_investigation_easy_01:54681ea40c86",
+      "deepagents:autonomous:locobench__python_mobile_utility_medium_023_architectural_understanding_easy_01:ad293ab0191a",
+      "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:5e9399c675e1",
+      "deepagents:autonomous:locobench__python_system_automation_medium_098_feature_implementation_expert_01:73903758ae45",
+      "deepagents:autonomous:locobench__python_system_monitoring_medium_025_code_comprehension_easy_01:7e8a27cc99ad",
+      "deepagents:autonomous:locobench__python_system_monitoring_medium_061_feature_implementation_expert_01:ebf5d2a39df0",
+      "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50",
+      "deepagents:autonomous:locobench__python_system_networking_medium_063_feature_implementation_hard_01:e22c4241d5eb",
+      "deepagents:autonomous:locobench__python_system_security_medium_028_feature_implementation_medium_01:94c6946b8d48",
+      "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+      "deepagents:autonomous:locobench__python_web_blog_easy_004_code_comprehension_expert_01:433a2bd4f096",
+      "deepagents:autonomous:locobench__python_web_blog_easy_040_multi_session_development_easy_01:4b02c45d643f",
+      "deepagents:autonomous:locobench__python_web_blog_hard_076_feature_implementation_medium_01:356b07fa3905",
+      "deepagents:autonomous:locobench__python_web_cms_easy_038_architectural_understanding_medium_01:91bc70a170c4",
+      "deepagents:autonomous:locobench__python_web_cms_expert_002_code_comprehension_easy_01:a840a5f1951c",
+      "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99",
+      "deepagents:autonomous:locobench__python_web_dashboard_medium_039_cross_file_refactoring_easy_01:d1f0a1dac625",
+      "deepagents:autonomous:locobench__python_web_ecommerce_expert_000_code_comprehension_easy_01:43dd2a8633c4",
+      "deepagents:autonomous:locobench__python_web_portfolio_medium_041_code_comprehension_hard_01:0897cc57527b",
+      "deepagents:autonomous:locobench__python_web_social_hard_001_bug_investigation_medium_01:40c2250d970d"
+    ],
+    "request_timeout_s": 3600.0,
+    "workflow_arrivals": {
+      "schema_version": 4,
+      "mode": "permuted_warm_start_poisson",
+      "initial_workflows": 12,
+      "rate_per_second": 0.0125,
+      "seed": 31,
+      "arrival_schedule": [
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_medium_022_bug_investigation_easy_01:54681ea40c86",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_blockchain_nft_medium_035_bug_investigation_expert_01:f84fda5d6efa",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_training_expert_051_code_comprehension_easy_01:2c5decfed619",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_easy_058_code_comprehension_expert_01:40951edadef2",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_portfolio_medium_041_code_comprehension_hard_01:0897cc57527b",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_010_code_comprehension_medium_01:2e7bfcc1ca00",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_medium_096_cross_file_refactoring_expert_01:d4fbbca99273",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_rest_easy_006_code_comprehension_hard_01:f10759ab50f9",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_social_easy_094_code_comprehension_expert_01:684e3ae3b329",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_004_code_comprehension_expert_01:433a2bd4f096",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_streaming_easy_049_code_comprehension_hard_01:bc935199bb2e",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_064_feature_implementation_hard_01:153401a86e2a",
+          "offset_seconds": 0.0
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_security_medium_028_feature_implementation_medium_01:94c6946b8d48",
+          "offset_seconds": 0.9883398255684435
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_ecommerce_expert_000_code_comprehension_easy_01:43dd2a8633c4",
+          "offset_seconds": 10.526964207906524
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_nlp_easy_053_code_comprehension_easy_01:6820ba2fb957",
+          "offset_seconds": 50.44365106186562
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_medium_063_feature_implementation_hard_01:e22c4241d5eb",
+          "offset_seconds": 142.57034251960403
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_044_feature_implementation_medium_01:60c6270125f3",
+          "offset_seconds": 154.51449263011824
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_networking_hard_027_multi_session_development_medium_01:cb22ed972e50",
+          "offset_seconds": 164.05714611092185
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_lake_medium_050_multi_session_development_hard_01:88cd4ef18a09",
+          "offset_seconds": 185.15380462153846
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_graphql_expert_007_code_comprehension_medium_01:7b94254370d9",
+          "offset_seconds": 298.524606575285
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_rest_easy_078_code_comprehension_expert_01:5bde7f35c5ef",
+          "offset_seconds": 311.2819031109283
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_hard_062_multi_session_development_expert_01:5e9399c675e1",
+          "offset_seconds": 419.24964906483615
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_hard_048_architectural_understanding_hard_01:46863a6a20d3",
+          "offset_seconds": 506.065854564804
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_training_medium_087_feature_implementation_hard_01:7695b1be4c65",
+          "offset_seconds": 517.8140403899781
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_024_code_comprehension_easy_01:c6898aaab43f",
+          "offset_seconds": 579.1854003890052
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_microservice_medium_008_multi_session_development_hard_01:2ace77580f5b",
+          "offset_seconds": 626.6858900361797
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_monitoring_medium_061_feature_implementation_expert_01:ebf5d2a39df0",
+          "offset_seconds": 669.2457564838063
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_easy_038_architectural_understanding_medium_01:91bc70a170c4",
+          "offset_seconds": 1118.149858342437
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_easy_069_code_comprehension_hard_01:fa75dea63393",
+          "offset_seconds": 1125.9687101076756
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_nlp_easy_017_code_comprehension_expert_01:8bfc92284007",
+          "offset_seconds": 1127.6148472568655
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_utility_medium_023_architectural_understanding_easy_01:ad293ab0191a",
+          "offset_seconds": 1352.42402713592
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_020_bug_investigation_hard_01:eab7ce116f58",
+          "offset_seconds": 1393.6838192869418
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_dashboard_medium_039_cross_file_refactoring_easy_01:d1f0a1dac625",
+          "offset_seconds": 1411.3852075040313
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_game_simulation_medium_033_bug_investigation_expert_01:d226f1e8c31a",
+          "offset_seconds": 1443.4603657044256
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_blog_easy_040_multi_session_development_easy_01:4b02c45d643f",
+          "offset_seconds": 1479.7775258885615
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_046_code_comprehension_expert_01:6eb5fe2c4a5a",
+          "offset_seconds": 1728.0658170651616
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_mobile_game_hard_060_feature_implementation_expert_01:708fe585119c",
+          "offset_seconds": 1746.957259415734
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_graphql_easy_043_code_comprehension_expert_01:09cf2ceade9a",
+          "offset_seconds": 1766.5195092131491
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_desktop_development_expert_021_code_comprehension_expert_01:769a0e1cc3b5",
+          "offset_seconds": 1836.8585568496121
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_api_gateway_hard_009_cross_file_refactoring_expert_01:acf2d107f21c",
+          "offset_seconds": 1900.275003710418
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_expert_002_code_comprehension_easy_01:a840a5f1951c",
+          "offset_seconds": 2146.1585111916424
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_cms_hard_074_feature_implementation_expert_01:f49969a12f99",
+          "offset_seconds": 2292.109147563791
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_desktop_media_medium_092_code_comprehension_expert_01:c173ff67f8ea",
+          "offset_seconds": 2327.2520944377197
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_automation_medium_098_feature_implementation_expert_01:73903758ae45",
+          "offset_seconds": 2345.4902927533876
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_fintech_trading_medium_066_multi_session_development_hard_01:9b5ced4be80e",
+          "offset_seconds": 2490.3233780263045
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_blog_hard_076_feature_implementation_medium_01:356b07fa3905",
+          "offset_seconds": 2850.9513202673566
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_system_monitoring_medium_025_code_comprehension_easy_01:7e8a27cc99ad",
+          "offset_seconds": 2853.418554599753
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_web_social_hard_001_bug_investigation_medium_01:40c2250d970d",
+          "offset_seconds": 2959.6744190777677
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_analytics_easy_082_feature_implementation_expert_01:91abc9280171",
+          "offset_seconds": 3121.8865194116406
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_data_warehouse_medium_012_bug_investigation_hard_01:a09b788974d3",
+          "offset_seconds": 3206.1357368698527
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_inference_hard_088_multi_session_development_hard_01:9fe287fa3352",
+          "offset_seconds": 3225.8445195543927
+        },
+        {
+          "workflow_id": "deepagents:autonomous:locobench__python_ml_nlp_easy_089_code_comprehension_expert_01:bbb3d82cac27",
+          "offset_seconds": 3353.248730627614
+        }
+      ],
+      "arrival_schedule_sha256": "4b20395122fdca9232d773534888e1eb3f1dd3d7816f65b182c41f6905c58c8c",
+      "jct_boundary": "scheduled_workflow_arrival_to_workflow_end",
+      "permutation_seed": 41
+    },
+    "tool_timing_overlay_sha256": "aa12da0a8face067be8277e6a37657295951402446a9ecd1b53992d40d0a0831",
+    "seeds": {
+      "SERVER_RANDOM_SEED": "21",
+      "SAMPLING_SEED": "21",
+      "PYTHONHASHSEED": "21"
+    },
+    "free_page_h2d_fence": "1",
+    "exact_receipts_sha256": "bed8ba059b619ecf6b768da6c68110891569b345b4182e378ea71cfb3c635de0"
+  },
+  "model_cost_calibration": {
+    "model_seconds_per_work_token": 0.02914418206455207,
+    "definition": "complete_retained_Full_decode_request_step_ms/request_steps/1000",
+    "prefill_equivalent_weight": 0.01,
+    "limitations": "context/batch-averaged proxy, not future exact GPU service seconds"
+  },
+  "decode_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/full_review_sustained52_r1/decode_evidence.json.gz",
+    "sha256": "75d09f72fe8d687bc8195341c133f3698107ca6bbd72e9f637eda1c90fc2200d"
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/replay/runtime_events.replay.jsonl": {
+      "complete_prefix_bytes": 52491470,
+      "complete_prefix_sha256": "eb8de4dba0d443c77019e3c59d1da8b71cc4098362dfde82f6c8b1676fe70f82",
+      "first_read_limit_bytes": 52491470
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/replay/native_requests.jsonl": {
+      "complete_prefix_bytes": 33904470,
+      "complete_prefix_sha256": "ecb40af9d31073fe2afd9a060dba86dcab9fcad6a4de5a26f86d852a31637dec",
+      "first_read_limit_bytes": 33904470
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 946517848,
+      "complete_prefix_sha256": "b27df29a6c70540ce15cfafa8ef882e9253a61ee7548e6950946570e33d3fed2",
+      "first_read_limit_bytes": 946517848
+    }
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r1.registration.json": "294f2ed938721d8cff54591a332c9ac33c20a9c6682d4296dddaa67ffbbf38c0",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r1.registration.state.json": "f07f9c8138bb39a486dca585f8bc9d37edcf31b124bd329bed8f118a89a5b74c",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/telemetry_drain.json": "ea35c32634e10e98a54f9c90d4e146ccc9d37975207c58e70644e243bfb9a709",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/owned_process_cleanup.json": "4c0752efb710b16f782e8bc206c5cb3057968eb19e2dfe288cab666f63a67775",
+    "/home/longhao/experiment/beliefkv-sustained52-20261030-8eb485f1/experiments/reports/workflow_mix_20261029/review_burst.py": "73768aaf295f11a36a088f95e34e176da2ad983b85b50a116586bd7a4b84d6fb",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/replay/summary.json": "bc2abcd06f886375e0605d773e693b39bc595e6ab3416c140199d993e416ee2d",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/server/server_info.json": "b143bc33964e1f34620738ef0e7bde07fc71665776a5c54bd7fddaa496b91d8e",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/server/native_telemetry_status.json": "1610715389b010033615bf9286ee7619b49f73aa8267524d7cac71f0a1b4ee76",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/server/native_capacity_census.json": "41695ece6792304d32f5a3ad4f1031390a38653bf7f1e5102666dbeb4a6057df",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original52_full_20261030_r1/full/opportunities/admission_opportunities.jsonl": "752f4f37fab4a965fd3ab0fa78f8b4f13c2c149277f003b6fef9da015ae6c432"
+  },
+  "GPU_followup_registered": false,
+  "performance_accepted": false
+}

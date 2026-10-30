@@ -1,0 +1,10 @@
+{"requests": 9313, "metrics": {"mean_jct_s": 2194.422091711833, "makespan_s": 5816.0551031141285, "end_to_end_output_tokens_per_s": 215.58977309699588, "decode": {"batches": 154241, "request_steps": 1253176, "worker_ms": 2897960.1504057646, "request_step_ms": 36522789.5029271, "output_tokens": 1244569, "context_tokens": 53658572471, "graph_batches": 154241, "graph_request_steps": 1253176, "configured_bucket_rows": 1466554, "batches_needing_padding": 69836, "worker_ms_in_batches_needing_padding": 1979768.3787783608, "mean_batch": 8.124791722045371, "worker_weighted_mean_batch": 12.602930201719055, "worker_interval_sum_s": 2897.9601504057646, "mean_worker_interval_ms": 18.78852024044038, "output_tokens_per_worker_interval_second": 429.46380743908395, "mean_observed_request_context_tokens": 42818.06583512611, "graph_batch_fraction": 1.0, "configured_padding_rows_per_real_graph_row": 0.1702697785466687}}, "model_seconds_per_work_token": 0.02914418206455207}
+Traceback (most recent call last):
+  File "/home/longhao/experiment/beliefkv-sustained52-20261030-8eb485f1/scripts/audit_workflow_cohort.py", line 74, in <module>
+    main()
+  File "/home/longhao/experiment/beliefkv-sustained52-20261030-8eb485f1/scripts/audit_workflow_cohort.py", line 29, in main
+    report = summarize_cohort(
+             ^^^^^^^^^^^^^^^^^
+  File "/home/longhao/experiment/beliefkv-sustained52-20261030-8eb485f1/beliefkv/experiments/workflow_cohort.py", line 99, in summarize_cohort
+    raise ValueError("native service samples are duplicated, invalid or foreign")
+ValueError: native service samples are duplicated, invalid or foreign

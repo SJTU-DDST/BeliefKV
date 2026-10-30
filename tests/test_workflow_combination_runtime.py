@@ -1,4 +1,5 @@
 from dataclasses import replace
+from functools import partial
 import hashlib
 import json
 from pathlib import Path
@@ -54,6 +55,12 @@ def runtime_with_queue(monkeypatch, tmp_path):
     runtime._native_max_running = 24
     runtime._native_input_reserve = runtime._native_chunk_input_reserve = 2048
     from beliefkv.runtime import workflow_combination as combination
+    # Selection assertions use a deterministic clock; deadline fallback has its
+    # own adapter test and the policy's explicit deadline regressions.
+    monkeypatch.setattr(
+        combination, "choose_combination",
+        partial(combination.choose_combination, clock=lambda: 0),
+    )
     monkeypatch.setattr(combination, "observe_static_full_mamba_headroom", lambda cache: NS(
         observable=True, device_full_free_tokens=10000, device_mamba_free_slots=0,
     ))
@@ -77,6 +84,21 @@ def runtime_with_queue(monkeypatch, tmp_path):
         )
     })
     return runtime, a, env
+
+
+def test_runtime_soft_deadline_preserves_reference_without_changing_the_budget(monkeypatch, tmp_path):
+    from beliefkv.policy.workflow_combination import choose_combination
+    from beliefkv.runtime import workflow_combination as combination
+
+    runtime, a, _env = runtime_with_queue(monkeypatch, tmp_path)
+    ticks = iter((0, 500_000, 600_000))
+    monkeypatch.setattr(combination, "choose_combination", partial(choose_combination, clock=lambda: next(ticks)))
+    try:
+        a.tick()
+        assert {item.identity for item in a.policy.programs.values() if item.active} == {"a"}
+        assert a.counts["workflow_combination_soft_deadline_reference_fallback"] == 1
+    finally:
+        runtime.close()
 
 
 def test_shared_event_selection_changes_actual_eligibility_and_native_service_candidates(

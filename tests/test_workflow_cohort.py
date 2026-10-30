@@ -131,3 +131,48 @@ def test_invalid_common_throughput_bins_are_rejected(width):
     arrivals, cohort, events, samples = fixture()
     with pytest.raises(ValueError):
         summarize_cohort(cohort, arrivals, events, samples, bin_seconds=width)
+
+
+def test_empty_inflight_decode_after_return_does_not_invalidate_complete_output_or_JCT():
+    arrivals, cohort, events, samples = fixture()
+    baseline = summarize_cohort(cohort, arrivals, events, samples)
+    end = next(row["ts_ms"] for row in events if row["kind"] == "workflow_end" and row["workflow_id"] == "w0")
+    samples.append({
+        "event": "gpu_service_sample", "forward_iter": 4, "phase": "decode",
+        "launch_monotonic_ms": end - 1., "complete_monotonic_ms": end + 400.,
+        "monotonic_clock_domain": "clock", "batch_size": 1, "request_samples": [{
+            "workflow_id": "w0", "token_delta": 0, "output_token_delta": 0,
+            "output_tokens_after": 1, "output_tokens_reported_before": 1,
+        }],
+    })
+    report = summarize_cohort(cohort, arrivals, events, samples)
+    for field in ("measured_workflow_JCT_ms", "all_service_output_tokens", "common_window_all_workflows_output_tokens"):
+        assert report[field] == baseline[field]
+    assert report["zero_output_inflight_tail_rows"]["count"] == 1
+    assert report["zero_output_inflight_tail_rows"]["maximum_after_workflow_end_ms"] == 400.
+
+
+@pytest.mark.parametrize("invalid", ("positive_output", "late_launch", "unknown_launch", "changed_counter", "prefill"))
+def test_lifetime_exemption_cannot_hide_new_output_stale_batches_or_unknown_evidence(invalid):
+    arrivals, cohort, events, samples = fixture()
+    end = next(row["ts_ms"] for row in events if row["kind"] == "workflow_end" and row["workflow_id"] == "w0")
+    row = {
+        "event": "gpu_service_sample", "forward_iter": 4, "phase": "decode",
+        "launch_monotonic_ms": end - 1., "complete_monotonic_ms": end + 400.,
+        "monotonic_clock_domain": "clock", "batch_size": 1, "request_samples": [{
+            "workflow_id": "w0", "token_delta": 0, "output_token_delta": 0,
+            "output_tokens_after": 1, "output_tokens_reported_before": 1,
+        }],
+    }
+    if invalid == "positive_output":
+        row["request_samples"][0]["output_token_delta"] = 1
+    elif invalid == "late_launch":
+        row["launch_monotonic_ms"] = end + 1.
+    elif invalid == "unknown_launch":
+        row.pop("launch_monotonic_ms")
+    elif invalid == "changed_counter":
+        row["request_samples"][0]["output_tokens_after"] = 2
+    else:
+        row["phase"] = "prefill"
+    with pytest.raises(ValueError, match="native service"):
+        summarize_cohort(cohort, arrivals, events, [*samples, row])

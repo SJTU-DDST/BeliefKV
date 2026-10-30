@@ -46,6 +46,18 @@ def validate_cohort(cohort, arrivals):
         raise ValueError("cohort changed frozen arrival membership or measurement semantics")
 
 
+def _empty_inflight_tail(sample, member, *, start, end):
+    launch = sample.get("launch_monotonic_ms")
+    after, reported = member.get("output_tokens_after"), member.get("output_tokens_reported_before")
+    return (
+        sample["phase"] == "decode"
+        and type(launch) in (int, float) and math.isfinite(launch) and start <= launch <= end
+        and member["output_token_delta"] == 0
+        and type(member.get("token_delta")) is int and member["token_delta"] == 0
+        and type(after) is int and type(reported) is int and after == reported > 0
+    )
+
+
 def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=30.):
     """Retain full JCT; assign actual output to its native batch completion time."""
     validate_cohort(cohort, arrivals)
@@ -82,6 +94,7 @@ def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=3
     } for index in range(math.ceil((end_s - start_s) / bin_seconds))]
     seen, domains, widths = set(), set(), Counter()
     output = decode = observed_output = 0
+    empty_tails = []
     output_by_workflow = Counter()
     for sample in service_samples:
         if sample.get("event") != "gpu_service_sample":
@@ -93,7 +106,10 @@ def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=3
             or any(row["workflow_id"] not in starts
                    or type(row.get("output_token_delta")) is not int
                    or row["output_token_delta"] < 0
-                   or not starts[row["workflow_id"]] <= when <= ends[row["workflow_id"]]
+                   or when < starts[row["workflow_id"]]
+                   or when > ends[row["workflow_id"]] and not _empty_inflight_tail(
+                       sample, row, start=starts[row["workflow_id"]], end=ends[row["workflow_id"]],
+                   )
                    for row in sample["request_samples"])
         ):
             raise ValueError("native service samples are duplicated, invalid or foreign")
@@ -105,6 +121,8 @@ def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=3
         observed_output += tokens
         for row in sample["request_samples"]:
             output_by_workflow[row["workflow_id"]] += row["output_token_delta"]
+            if when > ends[row["workflow_id"]]:
+                empty_tails.append(when - ends[row["workflow_id"]])
         offset = (when - origin) / 1000.
         if not start_s <= offset < end_s:
             continue
@@ -141,6 +159,12 @@ def summarize_cohort(cohort, arrivals, events, service_samples, *, bin_seconds=3
         "all_service_output_tokens": observed_output,
         "all_service_output_tokens_by_workflow": dict(output_by_workflow),
         "output_accounting_field": "output_token_delta",
+        "zero_output_inflight_tail_rows": {
+            "count": len(empty_tails), "maximum_after_workflow_end_ms": max(empty_tails, default=0.),
+            "rule": "decode_launched_within_workflow;zero_delta;reported_output_counter_unchanged",
+            "positive_output_lifetime_check_unchanged": True,
+            "output_times_clamped_or_JCT_shifted": False,
+        },
         "token_window_assignment": "native_batch_completion; includes_background_and_first_prefill_outputs",
         "all_workflows_completed": True, "normal_tails_removed": False,
         "steady_state_established": False, "performance_accepted": False,

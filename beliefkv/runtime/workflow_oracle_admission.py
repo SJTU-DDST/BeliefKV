@@ -3,6 +3,7 @@
 from dataclasses import asdict
 
 from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission as Base
+from beliefkv.runtime.deferred_free_admission import DeferredFreeAdmission
 from beliefkv.runtime.workflow_size_admission import WorkflowSizeAdmission
 from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracle
 
@@ -13,6 +14,14 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     sibling_policy_name = Base.sibling_policy_name + "_workflow_oracle"
     join_sibling_policy_name = Base.join_sibling_policy_name + "_workflow_oracle"
     rank_kind = "oracle_remaining_model_tool_critical_path_seconds"
+
+    def __init__(self, runtime):
+        super().__init__(runtime)
+        if self.rank_before_category:
+            if not self.dispatch_interval_ms or self._combination is not None:
+                self.close()
+                raise ValueError("global remaining-path oracle requires its separate bounded free dispatch")
+            self._deferred_dispatch = DeferredFreeAdmission(self)
 
     def _create_work(self, runtime):
         oracle = WorkflowWorkOracle(runtime.workflow_work_model, runtime.workflow_work_model_sha256)
@@ -61,7 +70,11 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 "within_reference_category"
             ),
             "workflow_size_other_admission_paths": (
+                "protected_join_unchanged;first_continuation_sibling_use_shared_remaining_path_dispatch"
+                if self.rank_before_category else
                 "join_unchanged;bounded_free_dispatch_uses_oracle_model_tool_path"
                 if self.dispatch_interval_ms else "unchanged_join_and_free_continuation"
             ),
+            "workflow_oracle_eager_first_grant": self._deferred_dispatch is None,
+            "workflow_oracle_shared_free_dispatch": self._deferred_dispatch is not None,
         }

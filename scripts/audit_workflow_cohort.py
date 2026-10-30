@@ -60,7 +60,10 @@ def main():
     report.update(
         input_jsonl_prefixes=reader.prefixes,
         inputs_sha256={str(path.resolve()): sha256_file(path)
-                       for path in (args.arrivals, args.cohort, Path(__file__))},
+                       for path in (
+                           args.arrivals, args.cohort, Path(__file__),
+                           ROOT / "beliefkv/experiments/workflow_cohort.py",
+                       )},
     )
     write(args.output, report)
     print({

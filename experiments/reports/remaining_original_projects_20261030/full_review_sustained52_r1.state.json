@@ -1,0 +1,49 @@
+{
+  "status": "stopped_preserve_sustained_review",
+  "process": {
+    "pid": 2598458,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "756403143",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/BeliefKV/scripts/finish_sustained_control.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r1.registration.json",
+      "--position-registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r1.registration.json",
+      "--analysis-checkout",
+      "/home/longhao/experiment/beliefkv-sustained52-20261030-8eb485f1",
+      "--arrivals",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r2/arrivals.json",
+      "--cohort",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r2/analysis_cohort.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/full_review_sustained52_r1"
+    ]
+  },
+  "steps": [
+    {
+      "name": "complete_control",
+      "returncode": 0
+    },
+    {
+      "name": "fixed_cohort",
+      "returncode": 1
+    }
+  ],
+  "GPU_followup_registered": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/scripts/finish_sustained_control.py": "a7f3da1fa41b661fba4c723719385dcf848075df7230c3e3880809a4dc172e58",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r2/arrivals.json": "9bbbae3480cf9e63f12fa0c8388f90d2929845d9475f38f53e53d64078a3d01f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r2/analysis_cohort.json": "c3b2b11fbd970f60f8097d5793882922a56ca307c75a6ef9312172ea9c509ad8",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r1.registration.json": "c20eba1db2b08725c67369a04ba153e77ca7f25b7ccff300c54b651eb9070998",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r1.registration.json": "294f2ed938721d8cff54591a332c9ac33c20a9c6682d4296dddaa67ffbbf38c0",
+    "/home/longhao/experiment/beliefkv-sustained52-20261030-8eb485f1/experiments/reports/workflow_mix_20261029/review_burst.py": "73768aaf295f11a36a088f95e34e176da2ad983b85b50a116586bd7a4b84d6fb",
+    "/home/longhao/experiment/beliefkv-sustained52-20261030-8eb485f1/scripts/audit_workflow_cohort.py": "6ae02ed1a5f882f71d80eafc02e5182bf070ac5a4ff14c38d15af22ce6f943a0"
+  },
+  "checked_at": "2026-10-30T22:38:45.221015+00:00",
+  "current_step": "fixed_cohort",
+  "error": "RuntimeError('preserve failed CPU review step: fixed_cohort')",
+  "finished_at": "2026-10-30T22:38:45.220983+00:00"
+}
