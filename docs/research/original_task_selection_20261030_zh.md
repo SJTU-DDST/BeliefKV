@@ -63,3 +63,23 @@ child 强制只读或 400 行读取 profile。
 通过 5644 项测试和 12 项 subtests，保留此前 5629 个 literal test ID，
 2121 个源码输入和 native 源在执行期间未变，无失败、错误或跳过。
 这是当前准备版本的 CPU 证据，不是自然工作量、KV 压力或性能收益的证据。
+
+## 自然采集启动证据
+
+六原题采集已从固定应用 `b7ac1491` 启动，native tree 仍为
+`11b84f7c31986782be3fbe699bae2574ef092389`，端口 18910。注册文件为
+`/home/longhao/experiment/ops/workflow_original_task_mix6_source_20261030_r1.registration.json`，
+原始记录位于 `experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/`。
+
+启动前 reservation 与资源检查通过，fresh sampler 的 1/8/24 batch 和 native
+BF16 检查通过。独立 `gpu_entry_r1/live_start.json` 已观察到六个不同项目的
+workflow_start 语义边界与 26 条完整输出，核实实际 2048 prefill chunk、
+mixed 关闭、running 24、seed 21、native admission 关闭、4/8 child、
+8/16 root 和真实并行工具协议，以及实际进程 nice0 与 GPU 独占。
+该时点的启动证据不是完整轨迹验收。
+
+CPU reviewer 从同一固定 checkout 以 nice19、`CUDA_VISIBLE_DEVICES=99999`
+实际等待完整源、fresh drain 与 owned process 退出，记录在
+`finish_r1.registration.json` 和 `finish_r1/state.json`。没有注册 Full、
+ThunderAgent 或扩大人口的后继 GPU 任务。采集完成后须审查全部原题自然返回、
+真实工作量异构、child 调用长度、多成员 JOIN 和实际共享 decode。

@@ -1,0 +1,263 @@
+{
+  "observed_at": "2026-10-30T15:26:15.357563+00:00",
+  "registration": "/home/longhao/experiment/ops/workflow_original_task_mix6_source_20261030_r1.registration.json",
+  "registration_sha256": "b566cfe8b082c02a4f3c5bcadf8755bb4df4408e563f0e5285d6566b6ff294f0",
+  "code_commit": "b7ac1491dcd2c8d5974a6cd2063a7d504102c69d",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture",
+  "processes": {
+    "watcher": {
+      "pid": 2308764,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "754399681",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-original6r1-capture-b7ac1491dcd2/scripts/run_causal_source_capture.py",
+        "--watch",
+        "/home/longhao/experiment/ops/workflow_original_task_mix6_source_20261030_r1.registration.json"
+      ]
+    },
+    "driver": {
+      "pid": 2309126,
+      "state": "S",
+      "ppid": 2308764,
+      "start_ticks": "754400522",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-original6r1-capture-b7ac1491dcd2/scripts/run_qwen35_native_regime_probe.sh"
+      ]
+    },
+    "scheduler": {
+      "pid": 2309502,
+      "state": "R",
+      "ppid": 2309136,
+      "start_ticks": "754401897",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    },
+    "server": {
+      "pid": 2309136,
+      "state": "S",
+      "ppid": 2309126,
+      "start_ticks": "754400528",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "-m",
+        "sglang.launch_server",
+        "--model-path",
+        "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        "--served-model-name",
+        "Qwen3-Coder-30B-A3B-Instruct",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18910",
+        "--dtype",
+        "bfloat16",
+        "--kv-cache-dtype",
+        "bfloat16",
+        "--tensor-parallel-size",
+        "1",
+        "--context-length",
+        "262144",
+        "--mem-fraction-static",
+        "0.94",
+        "--chunked-prefill-size",
+        "2048",
+        "--max-running-requests",
+        "24",
+        "--random-seed",
+        "21",
+        "--tool-call-parser",
+        "qwen3_coder",
+        "--enable-metrics",
+        "--enable-hierarchical-cache",
+        "--hicache-size",
+        "200",
+        "--hicache-write-policy",
+        "write_back",
+        "--hicache-io-backend",
+        "kernel",
+        "--hicache-mem-layout",
+        "page_first",
+        "--enable-session-radix-cache",
+        "--skip-server-warmup"
+      ]
+    }
+  },
+  "all_owned_processes_nice0": true,
+  "sole_GPU_owner_verified": true,
+  "actual_server_parameters": {
+    "chunked_prefill_size": 2048,
+    "enable_mixed_chunk": false,
+    "max_running_requests": 24,
+    "random_seed": 21,
+    "enable_beliefkv_admission": false
+  },
+  "fresh_sampler_cases": [
+    1,
+    8,
+    24
+  ],
+  "token_receipt_counts": {
+    "request_prompt": 32,
+    "request_output": 26
+  },
+  "event_counts": {
+    "workflow_start": 6,
+    "invocation_create": 6,
+    "llm_submit": 32,
+    "llm_result": 26,
+    "tool_start": 26,
+    "tool_end": 26
+  },
+  "semantic_metadata_counts": {
+    "workflow_start": 6
+  },
+  "workflow_count": 6,
+  "actual_delegation_contract": {
+    "artificial_tool_delays": false,
+    "checkpoint_assignment_fields": [
+      "question",
+      "known_paths_or_symbols",
+      "existing_evidence",
+      "finish_condition",
+      "write_scope"
+    ],
+    "checkpoint_assignment_protocol_version": 3,
+    "checkpoint_task_parameters_required": true,
+    "child_deliverable": "one_bounded_evidence_or_change",
+    "child_report": "concise_evidence_and_explicit_handoff",
+    "child_roles": "bounded_locator_reproducer_editor_reviewer_and_general_purpose",
+    "child_supporting_write_paths_max": 2,
+    "child_todo_middleware": false,
+    "child_unrelated_failures": "classify_and_handoff_without_expanding_scope",
+    "child_work_budget_enforcement": "soft_reminders_then_natural_report",
+    "children_per_round": null,
+    "depth_convention": "root=0; direct child=1; grandchild=2",
+    "direct_child_task_tool_enabled": true,
+    "first_tool_choice": "auto",
+    "fixed_role_sequence": false,
+    "follow_up_delegation": "only_for_new_unresolved_deliverables",
+    "initial_fanout_generation_bounds": null,
+    "leaf_task_tool_enabled": false,
+    "maximum_root_delegation_attempts": 2,
+    "maximum_spawn_depth": 2,
+    "minimum_completed_root_join_members": 2,
+    "model_call_limit_enforced": false,
+    "natural_final_response_rejected": true,
+    "nested_coordinator_role": "delegation-coordinator",
+    "nested_delegation_required_for_independent_subproblems": true,
+    "nested_fanout_generation_bounds": null,
+    "nested_initial_tool_choice": "auto",
+    "nested_round_target": null,
+    "parallel_checkpoint_api_version": 1,
+    "parallel_checkpoint_execution": "real_concurrent_tasks_then_all_join",
+    "parallel_checkpoint_members": [
+      2,
+      4
+    ],
+    "parallel_checkpoint_tool": "parallel_tasks",
+    "parallel_round_count_enforced": false,
+    "parallel_round_instruction": "submit_2_to_4_independent_assignments_in_parallel_tasks",
+    "pilot_shape_review_required": true,
+    "profile": "native_in_graph_parallel_workstreams",
+    "recommended_parallel_children": [
+      2,
+      4
+    ],
+    "recommended_root_rounds": [
+      2,
+      3
+    ],
+    "repeated_validation_without_new_evidence": false,
+    "report_token_limit_enforced": false,
+    "root_initial_tool_choice": "auto",
+    "root_minimum_delegations_prompt": 2,
+    "root_owns_primary_implementation": true,
+    "root_retry_fanout_generation_bounds": null,
+    "root_retry_tool_choice": "parallel_tasks",
+    "root_round_target": null,
+    "root_terminal_check": "require_completed_model_selected_parallel_join",
+    "round_enforcement": "model_selected_from_task_evidence",
+    "singleton_rounds": "allowed_for_indivisible_work_and_reported_in_source_audit",
+    "task_access_from_manifest": true,
+    "terminal_rejection_for_round_count": false,
+    "tool_duration_target_seconds": null,
+    "tool_execution": "necessary_real_project_commands"
+  },
+  "actual_model_and_work_budgets": {
+    "model": "Qwen3-Coder-30B-A3B-Instruct",
+    "subagent_fanout_profile": "native_in_graph_parallel_workstreams",
+    "child_work_budget_warning_calls": 4,
+    "child_work_budget_target_calls": 8,
+    "root_work_budget_warning_calls": 8,
+    "root_work_budget_target_calls": 16
+  },
+  "frozen_sources_verified": true,
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture/server/request_tokens.jsonl": {
+      "complete_prefix_bytes": 2808651,
+      "complete_prefix_sha256": "acce1cc7871b6266313afc700c616b2eac8e0d5ba72655a1358dda5f58e29835",
+      "first_read_limit_bytes": 2808651
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture/client_6/workflows/locobench__python_system_automation_hard_062_multi_session_development_expert_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 25188,
+      "complete_prefix_sha256": "492cc37c87abeaa95c7251a5e27d323b13327d10c73510c3f2a62db2b4701cc2",
+      "first_read_limit_bytes": 25188
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture/client_6/workflows/locobench__python_api_microservice_medium_044_feature_implementation_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 35299,
+      "complete_prefix_sha256": "b0b6735965814b1e9d6a31e9b2d342e1dbfca5e75561040f4a8a482db5bd0c28",
+      "first_read_limit_bytes": 35299
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture/client_6/workflows/locobench__python_web_social_hard_001_multi_session_development_medium_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 35927,
+      "complete_prefix_sha256": "fc65677edc5726003d75cd077b4aaf823782f5e6549d24adbf59af2ee3094570",
+      "first_read_limit_bytes": 35927
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture/client_6/workflows/locobench__python_mobile_utility_medium_023_architectural_understanding_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 34739,
+      "complete_prefix_sha256": "4dd3e1b6ce825fc470474cacbc23deeb784dfeca2c8fa8d5adca056442ab4181",
+      "first_read_limit_bytes": 34739
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture/client_6/workflows/locobench__python_ml_nlp_easy_053_code_comprehension_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 27396,
+      "complete_prefix_sha256": "44803c5a5ed9e0c7123e7403b6a8e7af2bf9bfa9f920fdbf1b86bb809b52abf7",
+      "first_read_limit_bytes": 27396
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original_task_mix6_source_20261030_original6r1/native_capture/client_6/workflows/locobench__python_web_blog_easy_040_multi_session_development_easy_01/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 28330,
+      "complete_prefix_sha256": "5b0389141f6c41691defa15c8f0aaadd40bf46527950c8d9180daf556b5a80b5",
+      "first_read_limit_bytes": 28330
+    }
+  },
+  "CPU_finisher": {
+    "process": {
+      "pid": 2310043,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "754404620",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-original6r1-capture-b7ac1491dcd2/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+        "--registration",
+        "/home/longhao/experiment/ops/workflow_original_task_mix6_source_20261030_r1.registration.json",
+        "--declaration",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/original_task_mix6_20261030/preparation_r2/declaration.json",
+        "--model-cost-evidence",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+        "--output-dir",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/original_task_mix6_20261030/finish_r1"
+      ]
+    },
+    "nice": 19,
+    "CUDA_VISIBLE_DEVICES": "99999"
+  },
+  "source_capture_complete": false,
+  "measured_size_mix_qualified": false,
+  "new_followup_GPU_action_registered": false,
+  "performance_accepted": false,
+  "operator_sha256": "719712ab9e6b52a78b571b57fe89299c79fb06f28a1210cadaf6f9614111b0eb"
+}

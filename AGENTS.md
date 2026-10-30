@@ -4460,3 +4460,15 @@
   retained,2121inputs/native unchanged,no failures/errors/skips. All original
   prompt/scenario/source/context and real current-model tokenizer checks pass.
   No natural shape,physical pressure or comparative gain is qualified by this.
+- Original complete-task mix6 now actually records from frozenb7ac1491 on18910:
+  ops/workflow_original_task_mix6_source_20261030_r1.registration.json,
+  execution .worktrees/beliefkv-original6r1-capture-b7ac1491dcd2,native11b84f7c.
+  Fresh1/8/24sampler/BF16 and independent gpu_entry_r1/live_start verify26
+  complete outputs,six distinct original projects/rootsemantic boundaries,
+  actual2048/mixed-off/running24/seed21/native-admission-off,parallelAPI and
+  4-8child/8-16root,nice0 measured owners/soleGPU/frozen sources. CPUreviewer
+  2310043/start754404620 actually waits atnice19/CUDA99999 from the same clean
+  capture checkout;finish_r1.registration.json binds it. No nextGPU arm is
+  registered. Keep all complete natural outputs/tails;after actualexit/drain,
+  inspect intrinsic work,child lengths and positive multi-member JOIN service.
+  Startup does not qualify source shape,physical pressure or scheduler gains.
