@@ -1,0 +1,31 @@
+{
+  "status": "complete_pilot_requires_shape_review",
+  "process": {
+    "pid": 2381056,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "754791019",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-supp26r1-capture-2e8e45cdbf1c/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_original_supplement26_source_20261030_r1.registration.json",
+      "--declaration",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/preparation_r1/declaration.json",
+      "--model-cost-evidence",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/finish_r1"
+    ]
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/workflow_original_supplement26_source_20261030_r1.registration.json": "2941c7adbb2851cb620d180ca8d190f6f2cfd085d4cafa6cbd23dc0d2ef90945",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/preparation_r1/declaration.json": "8ea8d4d9d8d71120efcc3ad0444f34ddf1c855a0d0bf5baf4380e7a407ef58cf",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json": "e6612a322827fe32d2db9916c437fef480f84676952c2400433585b2be2e8fca",
+    "/home/longhao/experiment/.worktrees/beliefkv-supp26r1-capture-2e8e45cdbf1c/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py": "17502e77988bcafe5e9b716b9b07e6dc715592b035aa74f5599a11dad0eb4b1e",
+    "/home/longhao/experiment/.worktrees/beliefkv-supp26r1-capture-2e8e45cdbf1c/scripts/audit_parallel_workstreams.py": "6710cf39c5061d8d5dbd791d8c8458cbb56bc0de6e1e5634f7b3163b9c26edbc"
+  },
+  "GPU_followup_registered": false,
+  "checked_at": "2026-10-30T16:54:48.011589+00:00",
+  "finished_at": "2026-10-30T16:54:56.836215+00:00"
+}

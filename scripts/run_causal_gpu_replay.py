@@ -38,6 +38,10 @@ from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
 def source_plan(arm: Path):
+    if (arm / "composite_source.json").exists():
+        from beliefkv.experiments.composite_workload import load_composed_source
+
+        return load_composed_source(arm)
     summaries = list(arm.glob("client_*/summary.json"))
     if len(summaries) != 1:
         raise ValueError("source must have one completed client summary")
@@ -103,6 +107,8 @@ async def run(args) -> dict:
         arrivals = load_arrival_plan(
             arrivals_path, sorted({node.workflow_id for node in plan.nodes}),
         )
+    if evidence.get("external_workflow_arrivals_required") and arrivals is None:
+        raise ValueError("composed source requires a frozen external workflow arrival plan")
     if not args.base_url.startswith("http://127.0.0.1:"):
         raise ValueError("native replay requires an explicit local server port")
     args.output_dir.mkdir(parents=True, exist_ok=False)

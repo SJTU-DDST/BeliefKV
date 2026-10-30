@@ -154,3 +154,16 @@ def test_intrinsic_attribution_counts_new_input_and_reports_internal_work_separa
     assert value["largest_child_model_work_fraction"] == pytest.approx(31 / 141)
     assert sum(row["model_calls"] for row in value["agents"]) == 4
     assert sum(row["model_work_units"] for row in value["agents"]) == 193.
+
+
+def test_multi_source_protocols_need_explicit_disclosure_without_weakening_project_checks():
+    inventory, shape = population()
+    inventory["workflows"][0]["protocol_sha256"] = "second-recorded-protocol"
+    with pytest.raises(ValueError):
+        assess(inventory, shape)
+    report = assess(inventory, shape, allow_multiple_capture_protocols=True)
+    assert report["capture_protocols"] == ["one-protocol", "second-recorded-protocol"]
+    assert report["heterogeneous_capture_protocols_explicitly_permitted"]
+    inventory["workflows"][1]["project"] = inventory["workflows"][0]["project"]
+    with pytest.raises(ValueError):
+        assess(inventory, shape, allow_multiple_capture_protocols=True)

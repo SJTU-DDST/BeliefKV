@@ -22,6 +22,7 @@ def main():
         "--previous-evidence", type=Path,
         default=ROOT / "experiments/reports/workflow_mix_20261029/bound_cpu_r4/evidence.json",
     )
+    parser.add_argument("--bind-input", type=Path, action="append", default=[])
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=False)
     previous_path = args.previous_evidence
@@ -50,6 +51,8 @@ def main():
         "tests/test_checkpoint_repository_tools.py", "tests/test_focused_review_pilot.py",
         "tests/test_original_task_mix.py",
         "tests/test_original_project_supplement.py", "tests/test_reused_workflow_mix.py",
+        "tests/test_composite_workload.py", "tests/test_workflow_cohort.py",
+        "tests/test_composite_comparison.py",
     )
     names.update(added)
     names.update((
@@ -122,8 +125,13 @@ def main():
         "experiments/reports/original_project_supplement_20261030/preparation_r1/qualified_manifest.json",
         "experiments/reports/original_project_supplement_20261030/preparation_r1/native_qualified.json",
         "experiments/reports/original_project_supplement_20261030/preparation_r1/tool_binding.json",
+        "beliefkv/experiments/composite_workload.py", "beliefkv/experiments/workflow_cohort.py",
+        "scripts/prepare_composite_workload.py", "scripts/register_composite_source.py",
+        "scripts/audit_workflow_cohort.py",
+        "scripts/prepare_composite_comparison.py",
         str(Path(__file__).relative_to(ROOT)),
     ))
+    names.update(str(path.resolve().relative_to(ROOT)) for path in args.bind_input)
     before = {name: sha256_file(ROOT / name) for name in sorted(names)}
     engine = Path(previous["environment"]["SGLANG_SOURCE_CHECKOUT"])
     native = git_source_state(engine)

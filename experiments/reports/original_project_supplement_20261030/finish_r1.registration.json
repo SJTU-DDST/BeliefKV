@@ -1,0 +1,40 @@
+{
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-supp26r1-capture-2e8e45cdbf1c/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_original_supplement26_source_20261030_r1.registration.json",
+    "--declaration",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/preparation_r1/declaration.json",
+    "--model-cost-evidence",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/finish_r1"
+  ],
+  "process": {
+    "pid": 2381056,
+    "state": "R",
+    "ppid": 2380990,
+    "start_ticks": "754791019",
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-supp26r1-capture-2e8e45cdbf1c/experiments/reports/workflow_mix_20261029/finish_parallel_pilot.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_original_supplement26_source_20261030_r1.registration.json",
+      "--declaration",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/preparation_r1/declaration.json",
+      "--model-cost-evidence",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/workflow_mix_20261029/burst_full_review_r1/review.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/original_project_supplement_20261030/finish_r1"
+    ]
+  },
+  "CUDA_VISIBLE_DEVICES": "99999",
+  "GPU_followup_registered": false
+}

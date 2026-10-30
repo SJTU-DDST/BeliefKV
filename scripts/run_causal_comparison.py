@@ -23,6 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
+from beliefkv.experiments.composite_workload import (
+    KIND as COMPOSED_SOURCE, composed_quality, registered_source_arm, verify_composed_registration,
+)
 from beliefkv.experiments.delegation_policy import (
     DYNAMIC_NESTED_IN_GRAPH_PROFILE, NESTED_IN_GRAPH_PROFILE, SHORT_WORKSTREAM_IN_GRAPH_PROFILE,
     PARALLEL_WORKSTREAM_IN_GRAPH_PROFILE,
@@ -294,6 +297,24 @@ def experiment_source_evidence(spec, quality, smoke_server, arm, roots, running)
     source = load(source_path)
     source_env = source["environment"]
     frozen = Path(source_env["WORKLOAD_MANIFEST"])
+    if source.get("source_kind") == COMPOSED_SOURCE:
+        graph, _, _ = verify_composed_registration(source)
+        expected = sha256_file(ROOT / common["WORKLOAD_MANIFEST"])
+        if (
+            common["ROOT_COUNT"] != str(roots)
+            or common["MAX_RUNNING_REQUESTS"] != str(running)
+            or source_env["MAX_RUNNING_REQUESTS"] != str(running)
+            or graph.summary()["workflows"] != roots
+            or registered_source_arm(source).resolve() != arm.resolve()
+            or sha256_file(frozen) != expected
+        ):
+            raise ValueError("composed source differs from the frozen experiment")
+        project_disjoint_workload(frozen, expected_workflows=roots)
+        return {
+            "source_registration": str(source_path.resolve()), "frozen_manifest": str(frozen.resolve()),
+            "manifest_sha256": expected, "basis": "independently_compiled_complete_original_workflows",
+            "matched_natural_native_baseline_available": False,
+        }
     try:
         relative = frozen.relative_to(Path(source["execution_checkout"]))
     except ValueError as error:
@@ -1476,16 +1497,21 @@ def register(args):
             or sha256_file(args.tool_duration_overlay) != oracle_binding["tool_overlay_sha256"]
         ):
             raise ValueError("oracle and actual replay tool timings differ")
+    composed = evidence.get("source_kind") == COMPOSED_SOURCE
     summaries = list(args.source_arm.glob("client_*/summary.json"))
-    quality = load(summaries[0])
+    quality = composed_quality(args.source_arm) if composed else load(summaries[0])
     source_roots = complete_source_population(quality, graph)
-    source_launch = args.source_arm / "server/launch_configuration.json"
-    natural_baseline = captured_native_baseline(quality, graph, load(source_launch))
-    natural_baseline.update(
-        source_arm=str(args.source_arm.resolve()),
-        client_summary_sha256=sha256_file(summaries[0]),
-        launch_configuration_sha256=sha256_file(source_launch),
+    source_launch = args.source_arm / (
+        "composite_source.json" if composed else "server/launch_configuration.json"
     )
+    natural_baseline = None
+    if not composed:
+        natural_baseline = captured_native_baseline(quality, graph, load(source_launch))
+        natural_baseline.update(
+            source_arm=str(args.source_arm.resolve()),
+            client_summary_sha256=sha256_file(summaries[0]),
+            launch_configuration_sha256=sha256_file(source_launch),
+        )
     overlay_path = getattr(args, "tool_duration_overlay", None)
     graph, tool_timing_overlay, native_baseline = timing_reference(
         graph, overlay_path, natural_baseline,
@@ -1510,6 +1536,8 @@ def register(args):
             raise ValueError("Poisson arrivals cannot use the burst-source speed calibration")
         # Trace capture remains reusable; its burst JCT is no matched control.
         native_baseline = None
+    if composed and arrivals is None:
+        raise ValueError("composed comparisons require one frozen external workflow arrival plan")
     validate_timing_prior_contract(reference["arms"]["full"], tool_timing_overlay)
     if overlay_path is not None and not {
         "beliefkv/experiments/tool_timing_overlay.py",
@@ -1622,8 +1650,13 @@ def register(args):
         ))
     inputs.extend(
         Path(name) if Path(name).is_absolute() else ROOT / name
-        for name in evidence["input_jsonl_prefixes"]
+        for name in evidence.get("input_jsonl_prefixes", {})
     )
+    if composed:
+        inputs.extend(Path(name) for name in evidence["original_inputs_sha256"])
+        inputs.extend(
+            args.source_arm / name for name in load(source_launch)["artifacts_sha256"]
+        )
     inputs.extend(summaries)
     if args.after_registration is not None:
         inputs.append(args.after_registration)

@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.composite_workload import (
+    KIND as COMPOSED_SOURCE, composed_quality, registered_source_arm, verify_composed_registration,
+)
 from beliefkv.experiments.native_engine_variant import engine_patch
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from scripts import run_causal_comparison as controls
@@ -59,6 +62,15 @@ def source_root_count(source):
 
 def complete_source_metrics(registration):
     original = load(registration)
+    if original.get("source_kind") == COMPOSED_SOURCE:
+        graph, _, _ = verify_composed_registration(original)
+        return {
+            "composite_source_sha256": original["composition_sha256"],
+            "workflow_count": graph.summary()["workflows"],
+            "joins": graph.summary()["event_counts"].get("join_create", 0),
+            "all_normal_tails_retained": True,
+            "matched_natural_native_baseline_available": False,
+        }
     state = load(registration.with_suffix(".state.json"))
     run = Path(original["run_root"])
     roots = source_root_count(original)
@@ -101,6 +113,9 @@ def complete_source_metrics(registration):
 def source_ready(plan):
     path = Path(plan["source_registration"])
     original = load(path)
+    if original.get("source_kind") == COMPOSED_SOURCE:
+        verify_composed_registration(original)
+        return True
     state = load(path.with_suffix(".state.json"))
     if state.get("run_root") != original["run_root"]:
         raise ValueError("source state belongs to another registration")
@@ -330,7 +345,7 @@ def register(args):
             {"path": str(path.resolve()), "sha256": sha256_file(path)} for path in paths
         ],
         "source_registration": str(args.source_registration.resolve()),
-        "source_arm": str((Path(source["run_root"]) / "native_capture").resolve()),
+        "source_arm": str(registered_source_arm(source).resolve()),
         "reference_registration": str(args.reference.resolve()),
         "hold_file": source["hold_file"], "engine_checkout": str(frozen_engine),
         "engine_tree": evidence["tree"], "engine_evidence": evidence,
@@ -430,7 +445,8 @@ def watch(registration):
             comparison.verify_sources(source)
             arm = Path(plan["source_arm"])
             roots = source_root_count(source)
-            summary = load(arm / f"client_{roots}/summary.json")
+            composed = source.get("source_kind") == COMPOSED_SOURCE
+            summary = composed_quality(arm) if composed else load(arm / f"client_{roots}/summary.json")
             reviewed = plan.get("source_selection_policy", "balanced_join") == "complete"
             predeclared = plan.get("source_selection_policy") == "predeclared"
             if not reviewed and not predeclared and not capture.balanced_source(summary)["accepted"]:
@@ -439,7 +455,7 @@ def watch(registration):
             joins = graph.summary()["event_counts"]["join_create"]
             if predeclared:
                 complete_source_metrics(Path(plan["source_registration"]))
-                if not capture.oneshot_source(
+                if not composed and not capture.oneshot_source(
                     summary, graph, expected_workflows=roots,
                     expected_profile=source["environment"]["FANOUT_PROFILE"],
                 )["accepted"]:

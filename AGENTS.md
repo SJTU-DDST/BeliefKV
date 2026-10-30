@@ -4523,3 +4523,35 @@
   prior literal identities,no failures/errors/skips,2131inputs/native unchanged.
   Fresh freeze/reservation/resources/sampler and actual GPU collection remain
   distinct from this complete CPU result. Preserve all original-source evidence.
+- Supplement26 now actually completes/exits:26natural eligible roots,3885
+  requests/470090outputtokens,108JOINs(74single/24double/5triple/5four),1nested,
+  zero guards,fresh two-snapshot drain and complete CPU reviewer. Source
+  frozen2e8e45cd/native11b84f7c;workP80/P20=2.464,childP50/P90=17/32 and
+  rootparallelroundmedian1retain shape limitations. Do not recapture old pools.
+- Composite48_r1 independently compiles3source clock streams and retains8781requests/
+  1168947outputs. ItsP80/P20=2.916240fails3. Composite46_r1 removes only2whole
+  nearest-median intrinsic-work projects(NFT035bug/CampusConnect001bug),keeps
+  both excluded sources/all tails,and reaches3.074715,not4. This is workload
+  selection on intrinsic work,never policy wins or native recomputation.
+- New composed replay requires explicit source_kind,bound original completion
+  proofs and external arrivals;never fabricate a natural capture or native
+  JCT baseline. Corpus bytes,stopping,source events/protocols and independent
+  native clocks stay bound. The existing natural-source checks remain default.
+  Sustained46_r1 declares6warm/18arrival-index measured/22background,seed31
+  arrivals/permutation,mean80s,submissionend3353.249s,running24. Cohort identity
+  remains private to analysis,full JCT includes tails,all arms share background.
+  The retainedFull control initially keeps work sorting off;oracle/learned
+  ranking and clear gains remain unachieved. Tool prefetch/layerhandoff/mixedoff,
+  JOIN/EOS on;TraceLab observable network classes/heldout durations unchanged.
+  Shape/physical competition/background coverage still require actual review.
+- Before any policy GPU registration,sustained46_r3 supersedesr1/r2. Initial
+  fill6is separate from arrival-index warmup10,then18measured/18background.
+  Arrival seed31 and all offsets stay fixed;permutation33is the first integer
+  seed from31meeting measured modelP80/P20>=3(31:2.406841,32:2.625945,
+  33:3.287564). Full traffic ratio3.074715;4unmet. This disclosed source-work
+  selection uses no policy performance. Common throughput window154.514--
+  3353.249s includes all background output;normal measured tails remain complete.
+  r1/r2have no policy GPU runs and preserve their complete CPU evidence.
+- Final sustained46_r3 source-bound CPU passes5699tests+12subtests,retains all
+  previous5699literal IDs,no failures/errors/skips,2153inputs/native unchanged.
+  Fresh clean freeze/resource/model-position checks still precede policyGPU.

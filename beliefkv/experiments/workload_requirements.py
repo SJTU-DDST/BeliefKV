@@ -15,11 +15,12 @@ DEFAULT_DIAGNOSTICS = {
 }
 
 
-def assess(inventory, shape, *, diagnostics=None):
+def assess(inventory, shape, *, diagnostics=None, allow_multiple_capture_protocols=False):
     """Keep normal runs and negative evidence; do not accept policy wins as inputs."""
     diagnostics = DEFAULT_DIAGNOSTICS if diagnostics is None else diagnostics
     if (
-        diagnostics.keys() != DEFAULT_DIAGNOSTICS.keys()
+        type(allow_multiple_capture_protocols) is not bool
+        or diagnostics.keys() != DEFAULT_DIAGNOSTICS.keys()
         or any(type(value) not in (int, float) or not math.isfinite(value) or value <= 0
                for value in diagnostics.values())
     ):
@@ -29,7 +30,8 @@ def assess(inventory, shape, *, diagnostics=None):
     if (
         not workflows or len(ids) != len(workflows)
         or len({row["project"] for row in workflows}) != len(workflows)
-        or len({row["protocol_sha256"] for row in workflows}) != 1
+        or (not allow_multiple_capture_protocols
+            and len({row["protocol_sha256"] for row in workflows}) != 1)
         or shape["source"] != inventory["capture"]
         or any(row["workflow_id"] not in ids for row in (*shape["children"], *shape["joins"]))
     ):
@@ -94,6 +96,8 @@ def assess(inventory, shape, *, diagnostics=None):
         shortfalls.append("source_contains_ineligible_natural_returns")
     return {
         "workflows": details,
+        "capture_protocols": sorted({row["protocol_sha256"] for row in workflows}),
+        "heterogeneous_capture_protocols_explicitly_permitted": allow_multiple_capture_protocols,
         "summary": {
             "workflows": len(details), "projects": len(details),
             "model_work": work, "child_model_calls": child_calls,
