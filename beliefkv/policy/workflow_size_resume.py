@@ -1,4 +1,4 @@
-"""Workflow work classes within the reference ThunderAgent resume categories."""
+"""Cached workflow work at reference ThunderAgent recovery boundaries."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
 
     def __init__(
         self, capacity_tokens, *, rank, sibling_group, observe_ready=None,
-        select_set=None, defer_first=False, **kwargs,
+        select_set=None, defer_first=False, rank_before_category=False, **kwargs,
     ):
         super().__init__(capacity_tokens, **kwargs)
         self.rank = rank
@@ -25,6 +25,7 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
         self.observe_ready = observe_ready
         self.select_set = select_set
         self.defer_first = defer_first
+        self.rank_before_category = rank_before_category
         self.last_selection = {}
 
     def arrive(self, identity, tokens, *, now):
@@ -50,6 +51,10 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
         paused = [
             item for item in self.programs.values()
             if not item.active and (self.resume_eligible is None or self.resume_eligible(item))
+            and (
+                not self.rank_before_category or self.select_set is not None
+                or self.observe_ready is not None and self.observe_ready(item)
+            )
         ]
         readiness = (
             {item.identity: bool(self.observe_ready(item)) for item in paused}
@@ -59,10 +64,11 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
         paused.sort(key=lambda item: (
             (resume_category(item), item.tokens, item.queue_sequence)
             if self.select_set is not None else
+            (ranks[item.identity], resume_category(item), item.tokens, item.queue_sequence)
+            if self.rank_before_category else
             (resume_category(item), ranks[item.identity], item.tokens, item.queue_sequence)
         ))
-        # Anchor order remains the sorted reference order within each class.
-        # Only genuinely ready members of one observed blocking JOIN are moved.
+        # Only ready members of an observed blocking JOIN may become adjacent.
         groups, memberships = defaultdict(list), {}
         for item in paused:
             group = self.sibling_group(item.identity) if self.select_set is None else None
@@ -108,6 +114,7 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
                 for item in ordered
             ),
             "selected_in_priority_order": selection_order,
+            "rank_before_category": self.rank_before_category and self.select_set is None,
             "thread_cpu_us": (time.thread_time() - cpu) * 1e6,
             "wall_us": (time.perf_counter() - started) * 1e6,
             **({"logical_ready_paused_before_resume": readiness} if readiness is not None else {}),

@@ -133,10 +133,12 @@ class WorkflowCombinationController:
 
     def _prefix(self, key, item):
         a, runtime = self.admission, self.admission.runtime
+        self._prefix_issue = None
         req = a._live_requests[key.request_id]
         observation = runtime._read_request_reentry(req, key=key)
         if observation is None:
             if item.steps != 1:
+                self._prefix_issue = "native_checkpoint_unavailable"
                 return None
             checkpoint, missing, extents = 0, 0, ()
         else:
@@ -147,11 +149,13 @@ class WorkflowCombinationController:
                 or type(missing) is not int or missing < 0
                 or observation.get("missing_mamba_slots") != 0
             ):
+                self._prefix_issue = "invalid_checkpoint_or_state_pool"
                 return None
             extents = []
             if missing:
                 anchors = dict(observation["component_leaves"]).get(0, ())
                 if len(anchors) != 1:
+                    self._prefix_issue = "non_single_full_anchor"
                     return None
                 closure = observe_unified_node_closure(
                     runtime._native_cache, anchors[0][0], max_nodes=64, reject_pending=True,
@@ -159,6 +163,7 @@ class WorkflowCombinationController:
                 if not closure.observable or not closure.nodes or (
                     closure.nodes[0].creation_time != anchors[0][1]
                 ):
+                    self._prefix_issue = "unobservable_missing_closure"
                     return None
                 prefix = 0
                 for node in reversed(closure.nodes):
@@ -168,6 +173,7 @@ class WorkflowCombinationController:
                     if node.full_host_tokens and not node.full_device_tokens:
                         extents.append(((node.node_id, node.creation_time), node.full_host_tokens))
                 if sum(tokens for _identity, tokens in extents) != missing:
+                    self._prefix_issue = "unaccounted_host_extent"
                     return None
         return tuple(extents), len(req.origin_input_ids) - checkpoint
 
@@ -203,6 +209,7 @@ class WorkflowCombinationController:
             "reason": "metadata_unavailable_reference_fallback",
         }
         summaries, candidates, predictions, resources = {}, [], {}, None
+        unavailable = []
         self.cold_summary = ()
         try:
             if not reference or len(reference) > self.max_sibling_candidates:
@@ -228,15 +235,25 @@ class WorkflowCombinationController:
                             window.append(peer)
             resources = self._resources(capacity, maximum)
             if resources is None:
+                result["reason"] = "native_resources_unavailable_reference_fallback"
                 return list(reference)
+            reference_keys = set(reference)
             for key in window:
                 found = a._candidate(key.request_id, key, include_first=True)
                 if found is None:
-                    return list(reference)
-                item, _req = found
-                prefix = self._prefix(key, item)
+                    issue = "candidate_no_longer_ready"
+                    prefix = None
+                else:
+                    item, _req = found
+                    prefix = self._prefix(key, item)
+                    issue = self._prefix_issue if prefix is None else None
                 if prefix is None:
-                    return list(reference)
+                    unavailable.append({"key": asdict(key), "reason": issue})
+                    if key in reference_keys:
+                        result["reason"] = "reference_candidate_summary_unavailable"
+                        return list(reference)
+                    a.counts["workflow_combination_optional_summaries_skipped"] += 1
+                    continue
                 if key.root_workflow_id not in predictions:
                     predictions[key.root_workflow_id] = a._work.prediction(key.root_workflow_id)
                 prediction = predictions[key.root_workflow_id]
@@ -283,6 +300,7 @@ class WorkflowCombinationController:
                             for workflow, value in predictions.items()
                         },
                         "cost_identity": self.cost_identity,
+                        "unavailable_summaries": unavailable,
                         "resources": asdict(resources) if resources is not None else None,
                         "cold_device_extents": self.cold_summary,
                         "semantic_revision": runtime.semantic_revision,

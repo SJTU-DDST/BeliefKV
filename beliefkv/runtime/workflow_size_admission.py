@@ -16,6 +16,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     sibling_policy_name = ReferenceFreeContinuationAdmission.sibling_policy_name + "_workflow_size"
     join_sibling_policy_name = ReferenceFreeContinuationAdmission.join_sibling_policy_name + "_workflow_size"
     rank_kind = "learned_work_class"
+    rank_before_category = False
 
     def __init__(self, runtime):
         self._combination = None
@@ -33,6 +34,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 )
             ) if combination else None,
             defer_first=combination,
+            rank_before_category=self.rank_before_category,
         )
         super().__init__(runtime)
         self._work = self._create_work(runtime)
@@ -110,7 +112,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 and self.runtime._ready_join_parent(req, key)
             )
             priorities[key] = (
-                0 if join else 1, resume_category(item), bucket,
+                0 if join else 1, *((bucket, resume_category(item)) if self.rank_before_category else
+                                   (resume_category(item), bucket)),
                 item.tokens, item.queue_sequence, index,
             )
         supported = any(

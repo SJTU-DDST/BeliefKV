@@ -60,6 +60,18 @@ def test_order_change_with_enough_capacity_does_not_claim_a_set_change():
     assert not result["selected_set_changed"]
     assert inspect([row], [])["counts"]["same_category_cross_workflow_capacity_competition_passes"] == 0
 
+def test_explicit_global_oracle_replays_cross_category_selection_and_service():
+    row = choice()
+    row.update(
+        rank_kind="oracle_remaining_model_tool_critical_path_seconds",
+        rank_before_category=True,
+        ordered=[["short", 1, 1., 600, 2, None], ["small", 0, 100., 300, 1, None]],
+    )
+    result = inspect([row], [service("short", 10200.)])
+    assert result["counts"]["global_remaining_rank_passes"] == 1
+    assert result["counts"]["global_cross_workflow_capacity_competition_passes"] == 1
+    assert result["counts"]["unique_local_choice_changes_with_following_service"] == 1
+
 
 def test_capacity_competition_respects_capacity_used_by_an_earlier_category():
     row = choice()

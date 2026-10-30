@@ -75,6 +75,8 @@ def inspect_choice(row):
     original = ThunderActingDecayWorkingSet(capacity)
     candidate = WorkflowSizeWorkingSet(
         capacity, rank=lambda owner, now: ranks[owner], sibling_group=groups.get,
+        rank_before_category=row.get("rank_before_category", False),
+        observe_ready=lambda item: True,
     )
     for policy in (original, candidate):
         policy.programs = {
@@ -131,6 +133,7 @@ def inspect(opportunities, batches):
         counts["multiple_candidate_passes"] += len(row["ordered"]) > 1
         counts["changed_order_passes"] += comparison["order_changed"]
         counts["changed_selected_set_passes"] += comparison["selected_set_changed"]
+        counts["global_remaining_rank_passes"] += row.get("rank_before_category", False)
         categories = {item[0]: item[1] for item in row["ordered"]}
         metadata = {}
         for item in row.get("candidates", ()):
@@ -165,6 +168,15 @@ def inspect(opportunities, batches):
                     remaining -= item[3] + buffer
         counts["same_category_cross_workflow_capacity_competition_passes"] += competing
         counts["capacity_competition_with_different_effective_ranks_passes"] += distinct_ranks
+        if row.get("rank_before_category"):
+            fitting = [
+                item for item in row["ordered"]
+                if item[3] + buffer <= row["capacity_tokens"] and item[0] in metadata
+            ]
+            counts["global_cross_workflow_capacity_competition_passes"] += (
+                len({metadata[item[0]]["key"]["root_workflow_id"] for item in fitting}) > 1
+                and sum(item[3] + buffer for item in fitting) > row["capacity_tokens"]
+            )
         original = set(comparison["reference_selected"])
         for owner in row["selected_in_priority_order"]:
             counts["selected_agent_episodes"] += 1

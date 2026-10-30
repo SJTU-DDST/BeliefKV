@@ -35,6 +35,22 @@ def test_original_category_precedes_predicted_bucket():
     }
     assert live.tick(now=10.) == ("continuation",)
 
+def test_explicit_global_oracle_crosses_category_only_for_actual_ready_candidates():
+    ranks = {"long": 100., "short": 1., "blocked": 0.}
+    live = WorkflowSizeWorkingSet(
+        10, buffer_tokens=0, rank=lambda name, now: ranks[name],
+        sibling_group=lambda name: None, rank_before_category=True,
+        observe_ready=lambda item: item.identity != "blocked",
+    )
+    live.programs = {
+        "long": ThunderProgram("long", 7, steps=2, pending=True),
+        "short": ThunderProgram("short", 7, steps=1, pending=True),
+        "blocked": ThunderProgram("blocked", 7, steps=2, acting=True),
+    }
+    assert live.tick(now=10.) == ("short",)
+    assert live.last_selection["rank_before_category"]
+    assert [row[0] for row in live.last_selection["ordered"]] == ["short", "long"]
+
 def test_combination_reference_uses_original_order_before_work_or_sibling_bias():
     seen = {}
 

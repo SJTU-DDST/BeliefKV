@@ -155,6 +155,7 @@ def choose_combination(
     result = {
         "selected": reference, "reference": reference, "reason": "reference",
         "evaluated_subsets": 0, "search_complete": False,
+        "required_reference_members": tuple(identity for identity in reference if identity in required),
     }
     try:
         if type(resources.cold_device_tokens) is not int or resources.cold_device_tokens < 0:

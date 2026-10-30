@@ -4694,3 +4694,26 @@
   setcompetitions/127actualticks,not fullentrycoverage/physicalfit/JCTgain.
   Intrinsicfixedtool/modelcausalpathP80/P20=3.911604isCPUproxyonly. Keepall
   normal tails and reviewlate supply/Hostbefore phase1acceptance ororacle.
+- Sustained52 live prefix review now observes109cross-workflow logical set
+  competitions/946actual periodic controls,462resumeepisodes/2pressure
+  revocations/448following exact-attempt service at that prefix. These include
+  outside-window times and are not directly comparable to the old46sampled5.
+  Useful-state loss is nonzero:2,682,026/134,296,472old-inputprefix tokens
+  (~2.0%,24requests);separateHost-block attributed recompute2,892,413FULLunits.
+  CPU next-request-reuse-capped union inlive_demand_r2remains1.042--1.233of
+  combined2,839,704token capacity at38probe/latest points. This future-only
+  diagnosis removes obsolete/no-next-call suffixes and excludes returned
+  temporarychildren;never deliver its future data to online policy. Keepall
+  normal tails;do not acceptHostpressure or automaticallyqueueoracle.
+  Idle mirror recyclefalse isintentional withmutuallyexclusive2GiB demand
+  reserve;nativeHosteviction already reclaims safeFULLduplicates first.
+- The next explicit oracle diagnostic usesglobal_ready_remaining_path across
+  legacy recovery categories while retaining observedJOINpriority,ready-only
+  candidates,activecontinuity andnativeauthority. Missingartifactfield keeps
+  historicalwithin-categorybehavior. KeepR5costcombinationasaseparatebranch:
+  cheapcontinuationutility isnotadirectSJFupperbound. BeforeoracleGPU,review
+  completeworkload/Hostandsupply;freezeinitialtarget>=5%measuredmeanJCTgain
+  and>=98%commonwindowoutputthroughput,nosingle-runstatisticalproof.
+  global/demandboundCPU_r2actuallypasses5793tests+12subtests,retains5756,
+  nofailure/error/skip,2188inputs/nativeunchanged. RunningFull8eb485f1stays
+  frozen;newglobal/preparation/summarycodehasnoGPUresultandnopredictor.

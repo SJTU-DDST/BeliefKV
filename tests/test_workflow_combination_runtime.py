@@ -184,7 +184,54 @@ def test_unavailable_resource_summary_is_logged_without_changing_reference(monke
         row = next(row for row in records if row["event"] == "workflow_combination_selection")
         assert row["resources"] is None
         assert row["decision"]["selected"] == ("a",)
+        assert row["decision"]["reason"] == "native_resources_unavailable_reference_fallback"
         assert row["cold_device_extents"] == ()
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
+
+def test_unreadable_optional_prefix_does_not_hide_a_safe_better_candidate(monkeypatch, tmp_path):
+    runtime, a, _env = runtime_with_queue(monkeypatch, tmp_path)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append)
+    try:
+        a._work._predictions["c"] = WorkPrediction((1., 0., 0.), 0, 1, time.monotonic(), "model")
+        original = a._combination._prefix
+
+        def prefix(key, item):
+            if key.invocation_id == "b":
+                a._combination._prefix_issue = "native_checkpoint_unavailable"
+                return None
+            return original(key, item)
+
+        monkeypatch.setattr(a._combination, "_prefix", prefix)
+        a.tick()
+        assert a.policy.programs["c"].active and not a.policy.programs["a"].active
+        selection = next(row for row in records if row["event"] == "workflow_combination_selection")
+        assert selection["decision"]["reference"] == ("a",)
+        assert selection["decision"]["selected"] == ("c",)
+        assert selection["unavailable_summaries"][0]["key"]["invocation_id"] == "b"
+        assert a.counts["workflow_combination_optional_summaries_skipped"] == 1
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
+
+
+def test_unreadable_reference_prefix_preserves_original_authority(monkeypatch, tmp_path):
+    runtime, a, _env = runtime_with_queue(monkeypatch, tmp_path)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append)
+    try:
+        def unavailable(*_args):
+            a._combination._prefix_issue = "unobservable_missing_closure"
+            return None
+
+        monkeypatch.setattr(a._combination, "_prefix", unavailable)
+        a.tick()
+        assert a.policy.programs["a"].active and not a.policy.programs["c"].active
+        selection = next(row for row in records if row["event"] == "workflow_combination_selection")
+        assert selection["decision"]["reason"] == "reference_candidate_summary_unavailable"
+        assert selection["unavailable_summaries"][0]["key"]["invocation_id"] == "a"
     finally:
         runtime._opportunity_writer = None
         runtime.close()

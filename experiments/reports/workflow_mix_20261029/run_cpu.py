@@ -55,6 +55,10 @@ def main():
         "tests/test_composite_comparison.py",
         "tests/test_sustained_supply.py", "tests/test_workflow_source_work.py",
         "tests/test_remaining_original_projects.py",
+        "tests/test_periodic_admission_decisions.py",
+        "tests/test_global_workflow_oracle.py",
+        "tests/test_sustained_oracle_preparation.py",
+        "tests/test_live_kv_demand.py",
     )
     names.update(added)
     names.update((
@@ -142,6 +146,11 @@ def main():
         "experiments/reports/remaining_original_projects_20261030/preparation_r1/qualified_manifest.json",
         "experiments/reports/remaining_original_projects_20261030/preparation_r1/native_qualified.json",
         "experiments/reports/remaining_original_projects_20261030/preparation_r1/tool_binding.json",
+        "scripts/audit_periodic_admission_decisions.py",
+        "scripts/audit_intrinsic_model_tool_work.py",
+        "scripts/finish_sustained_control.py",
+        "scripts/prepare_sustained_oracle_admission.py",
+        "scripts/audit_live_kv_demand.py",
         str(Path(__file__).relative_to(ROOT)),
     ))
     names.update(str(path.resolve().relative_to(ROOT)) for path in args.bind_input)
