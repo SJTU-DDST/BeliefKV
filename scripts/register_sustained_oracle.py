@@ -16,12 +16,12 @@ from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact
 from experiments.reports.arrival_mean120_20261029.queue_pair import validate_cpu
 from experiments.reports.workflow_mix_20261029.prepare_burst_oracle import RANK_FIELDS
-from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 from scripts import run_causal_comparison as causal
 from scripts import run_causal_source_capture as capture
 from scripts.prepare_sustained_oracle_admission import validate_decision
 from scripts.qualify_free_page_h2d_fence import check_reservation
 from scripts.run_causal_gpu_replay import source_plan
+from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
 def matching_conditions(original, candidate):
@@ -64,13 +64,13 @@ def main():
     if git_source_state(ROOT)["dirty"] or os.getpriority(os.PRIO_PROCESS, os.getpid()):
         raise ValueError("freeze clean qualified sources and retain a nice0 GPU supervisor")
     cpu = validate_cpu(args.cpu_evidence)
-    if complete_work(args.control) is None:
-        raise ValueError("wait for all matched control work, drain and actual owned exit")
     control, candidate = causal.load(args.control), causal.load(args.configuration)
+    provenance = candidate["candidate_provenance"]
+    cohort_path = provenance.get("cohort_definition")
+    completion = verify_execution(args.control, cohort_path)
     causal.comparison.verify_sources(control)
     original = causal.load(Path(control["experiment_configuration"]))
     matching_conditions(original, candidate)
-    provenance = candidate["candidate_provenance"]
     review_path, decision_path = (Path(provenance[name]) for name in ("control_review", "workload_review"))
     review, decision = causal.load(review_path), causal.load(decision_path)
     if (
@@ -78,9 +78,15 @@ def main():
         or provenance["control_review_sha256"] != sha256_file(review_path)
         or provenance["workload_review_sha256"] != sha256_file(decision_path)
         or review["registration_sha256"] != sha256_file(args.control)
-        or review["complete_work_and_actual_exit_verified"] is not True
     ):
         raise ValueError("oracle preparation belongs to another complete control or workload decision")
+    review_matches_execution(review, completion)
+    measured_stop = completion["protocol"] == "all_fixed_measured_workflows_completed"
+    if measured_stop and (
+        provenance.get("cohort_definition_sha256") != completion["cohort_sha256"]
+        or provenance.get("control_completion_certificate_sha256") != completion["certificate_sha256"]
+    ):
+        raise ValueError("oracle preparation changed its measured completion definition")
     validate_decision(decision, [review_path])
     common = candidate["common_environment"]
     artifact_path = Path(common["WORKFLOW_WORK_MODEL"])
@@ -97,15 +103,38 @@ def main():
         progress["artifact_sha256"] != common["WORKFLOW_WORK_MODEL_SHA256"]
         or progress["configuration_sha256"] != sha256_file(args.configuration)
         or progress["control_registration_sha256"] != sha256_file(args.control)
-        or progress["complete_work_conserved"] is not True
-        or progress["counts"]["completed_requests"] != control["source_plan"]["requests"]
-        or progress["counts"]["closed_workflows"] != len(control["workflow_ids"])
+        or ((
+            progress.get("complete_measured_work_conserved") is not True
+            or progress.get("measured_completed_requests") != completion["measured_requests"]
+            or progress.get("measured_observed_output_tokens") != completion["measured_output_tokens"]
+            or progress.get("cohort_sha256") != completion["cohort_sha256"]
+            or progress.get("control_completion_certificate_sha256") != completion["certificate_sha256"]
+            or progress["counts"]["closed_workflows"] != len(completion["completed_workflow_ids"])
+        ) if measured_stop else (
+            progress["complete_work_conserved"] is not True
+            or progress["counts"]["completed_requests"] != control["source_plan"]["requests"]
+            or progress["counts"]["closed_workflows"] != len(control["workflow_ids"])
+        ))
         or progress["counts"].get("unmodeled_core_event_observations", 0)
         or progress["operator_sha256"] != sha256_file(
             ROOT / "experiments/reports/workflow_mix_20261029/qualify_burst_oracle.py"
         )
     ):
         raise ValueError("complete bound oracle progress is unqualified")
+    for name, prefix in progress["input_jsonl_prefixes"].items():
+        path = Path(name)
+        if (
+            path.stat().st_size != prefix["complete_prefix_bytes"]
+            or sha256_file(path) != prefix["complete_prefix_sha256"]
+        ):
+            raise ValueError("qualified oracle progress input changed")
+    required_operator = "scripts/verify_measured_execution.py"
+    operator_sources = progress.get("operator_sources_sha256") or {}
+    if operator_sources.get(required_operator) != sha256_file(ROOT / required_operator):
+        raise ValueError("oracle progress used a different execution verifier")
+    for name, digest in operator_sources.items():
+        if sha256_file(ROOT / name) != digest:
+            raise ValueError("qualified oracle progress operator changed")
     authorization = check_reservation()
     resources = causal.qualified.resources(args.port)
     if not resources["ready"] or Path(f"/tmp/bkv-causal-{args.port}.sock").exists():

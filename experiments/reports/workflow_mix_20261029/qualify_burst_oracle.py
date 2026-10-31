@@ -14,9 +14,9 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracle
-from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts import run_causal_comparison as causal
+from scripts.verify_measured_execution import verify_execution
 
 
 def main():
@@ -27,15 +27,16 @@ def main():
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output.exists():
         raise ValueError("hide CUDA and preserve previous oracle evidence")
-    if complete_work(args.control) is None:
-        raise ValueError("wait for complete control work and actual exit")
     specification = causal.load(args.configuration)
+    cohort_path = specification.get("candidate_provenance", {}).get("cohort_definition")
+    completion = verify_execution(args.control, cohort_path)
+    measured_stop = completion["protocol"] == "all_fixed_measured_workflows_completed"
     common = specification["common_environment"]
     oracle = WorkflowWorkOracle(common["WORKFLOW_WORK_MODEL"], common["WORKFLOW_WORK_MODEL_SHA256"])
     plan = causal.load(args.control)
     if set(plan["workflow_ids"]) != oracle.artifact.workflows.keys():
         raise ValueError("control and oracle workflow populations differ")
-    reader, samples = SealedRecords(), []
+    reader, samples, completed = SealedRecords(), [], set()
     arm = Path(plan["run_root"]) / "full"
     for index, raw in enumerate(reader(arm / "replay/runtime_events.replay.jsonl")):
         event = RuntimeEvent.from_dict(raw)
@@ -50,6 +51,7 @@ def main():
                     oracle.submit(
                         event.workflow_id, "completed", *arguments, range(item["output_tokens"]),
                     )
+                    completed.add(request)
             oracle.submit(event.workflow_id, "event", event)
             if index % 100 == 0:
                 prediction = oracle.prediction(event.workflow_id)
@@ -65,10 +67,22 @@ def main():
     status = oracle.status()
     counts = status["counts"]
     if (
-        status["error"] or any(status["remaining_work_units"].values())
-        or counts["completed_requests"] != plan["source_plan"]["requests"]
-        or counts["observed_output_tokens"] != plan["source_plan"]["output_tokens"]
-        or counts["closed_workflows"] != len(plan["workflow_ids"])
+        status["error"]
+        or counts["completed_requests"] != len(completed)
+        or counts["observed_output_tokens"] != sum(
+            oracle.artifact.requests[key]["output_tokens"] for key in completed
+        )
+        or ((
+            not completion["measured_work"].keys() <= completed
+            or any(status["remaining_work_units"][key] for key in completion["cohort"]["measured_workflow_ids"])
+            or not completed <= set(completion["completed_receipt_requests"])
+            or counts["closed_workflows"] != len(completion["completed_workflow_ids"])
+        ) if measured_stop else (
+            any(status["remaining_work_units"].values())
+            or counts["completed_requests"] != plan["source_plan"]["requests"]
+            or counts["observed_output_tokens"] != plan["source_plan"]["output_tokens"]
+            or counts["closed_workflows"] != len(plan["workflow_ids"])
+        ))
         or counts.get("unmodeled_core_event_observations", 0)
     ):
         raise ValueError("complete observed control progress did not conserve oracle work")
@@ -79,10 +93,25 @@ def main():
         ):
             raise ValueError("completed control event input changed")
     causal.reservation.write_json(args.output, {
-        "artifact_sha256": oracle.digest, "counts": counts, "complete_work_conserved": True,
+        "artifact_sha256": oracle.digest, "counts": counts,
+        "complete_work_conserved": not any(status["remaining_work_units"].values()),
+        **({
+            "complete_measured_work_conserved": True,
+            "measured_completed_requests": completion["measured_requests"],
+            "measured_observed_output_tokens": completion["measured_output_tokens"],
+            "cohort_sha256": completion["cohort_sha256"],
+            "control_completion_certificate_sha256": completion["certificate_sha256"],
+            "unfinished_background_is_not_complete_work": True,
+        } if measured_stop else {}),
         "remaining_path_samples": samples,
         "sample_scope": "complete_call_boundaries_without_claimed_native_partial_callback_reconstruction",
         "operator_sha256": sha256_file(Path(__file__)),
+        "operator_sources_sha256": {
+            name: sha256_file(ROOT / name) for name in (
+                "scripts/verify_measured_execution.py", "scripts/stop_after_measured_cohort.py",
+                "beliefkv/runtime/workflow_work_oracle.py", "scripts/audit_sealed_wait_prefetch.py",
+            )
+        },
         "control_registration": str(args.control.resolve()),
         "control_registration_sha256": sha256_file(args.control),
         "configuration_sha256": sha256_file(args.configuration),

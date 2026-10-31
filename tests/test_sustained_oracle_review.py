@@ -1,5 +1,6 @@
 from copy import deepcopy
 import unittest
+import pytest
 
 from beliefkv.experiments.workflow_metrics import distribution
 from scripts.review_sustained_oracle import compare_cohorts
@@ -28,6 +29,63 @@ def cohort_report(measured=(100., 300.), warmup=50., background=400., throughput
         "common_window_output_tokens_per_second": throughput,
         "background_submission_coverage": {"covers_all_measured_completions": True},
     }
+
+
+def censored_report(*, measured=(100., 300.), background_complete=False):
+    report = cohort_report(measured=measured)
+    report["cohort"].update(
+        schema_version=2, background_submission_stops_when_cohort_finishes=True,
+        nonmeasured_workflows_may_be_right_censored=True,
+    )
+    report.update(
+        all_measured_completed=True, all_workflows_completed=background_complete,
+        measured_service_output_matches_complete_receipts=True,
+        measured_exact_receipt_requests=4,
+        nonmeasured_workflows_right_censored=[] if background_complete else ["background"],
+        service_output_matches_complete_receipts=background_complete,
+    )
+    if not background_complete:
+        report["background_workflow_JCT_ms"] = {}
+        report["all_service_output_tokens_by_workflow"]["background"] = 5
+        report["all_service_output_tokens"] = 35
+    return report
+
+
+def test_background_completion_differences_do_not_change_complete_measured_comparison():
+    control = censored_report()
+    candidate = censored_report(measured=(90., 250.), background_complete=True)
+    result = compare_cohorts(control, candidate)
+    assert result["fixed_cohort_performance_target_met"]
+    assert result["groups"]["measured"]["mean_JCT_reduction_percent"] == pytest.approx(15.)
+    assert result["groups"]["background"]["paired_completed_workflows"] == 0
+    assert result["groups"]["background"]["mean_JCT_reduction_percent"] is None
+    assert result["groups"]["background"]["conditional_on_shared_completion"]
+    assert result["complete_work_scope"] == "fixed_measured_workflows"
+
+
+@pytest.mark.parametrize("change", (
+    "unfinished_measured", "measured_receipts", "measured_requests", "measured_output",
+    "censoring", "zero_background_JCT", "foreign_member",
+))
+def test_censored_comparison_keeps_measured_work_and_background_scope_strict(change):
+    candidate = censored_report(measured=(90., 250.))
+    if change == "unfinished_measured":
+        candidate["all_measured_completed"] = False
+    elif change == "measured_receipts":
+        candidate["measured_service_output_matches_complete_receipts"] = False
+    elif change == "measured_requests":
+        candidate["measured_exact_receipt_requests"] -= 1
+    elif change == "measured_output":
+        candidate["all_service_output_tokens_by_workflow"]["measured-a"] += 1
+        candidate["all_service_output_tokens"] += 1
+    elif change == "censoring":
+        candidate["nonmeasured_workflows_right_censored"] = []
+    elif change == "zero_background_JCT":
+        candidate["background_workflow_JCT_ms"] = {"background": 0.}
+    else:
+        candidate["background_workflow_JCT_ms"] = {"foreign": 10.}
+    with pytest.raises(ValueError):
+        compare_cohorts(censored_report(), candidate)
 
 
 class SustainedOracleReviewTests(unittest.TestCase):

@@ -23,12 +23,12 @@ from beliefkv.policy.workflow_combination import CombinationCosts
 from beliefkv.runtime.workflow_work_oracle import (
     KIND, WorkflowWorkOracleArtifact, critical_path_graphs,
 )
-from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts import run_causal_comparison as causal
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.review_sustained_workload import validate_minimum_work_ratio
 from scripts.train_workflow_work import write
+from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
 def calibrate_costs(batches, transfers):
@@ -99,17 +99,32 @@ def calibrate_costs(batches, transfers):
 
 
 def validate_workload(
-    cohort, supply, periodic, population, *, minimum_model_work_p80_p20=3.,
+    cohort, supply, periodic, population, *, minimum_model_work_p80_p20=3., completion=None,
 ):
     minimum = validate_minimum_work_ratio(minimum_model_work_p80_p20)
+    cohort_stop = cohort.get("cohort", {}).get("schema_version") == 2
+    complete = (
+        completion is not None
+        and completion.get("protocol") == "all_fixed_measured_workflows_completed"
+        and completion.get("cohort") == cohort["cohort"]
+        and completion.get("actual_owned_exit_verified") is True
+        and cohort.get("all_measured_completed") is True
+        and cohort.get("measured_service_output_matches_complete_receipts") is True
+        and type(cohort.get("measured_exact_receipt_requests")) is int
+        and cohort["measured_exact_receipt_requests"] > 0
+        and cohort.get("measured_exact_receipt_requests") == completion.get("measured_requests")
+        if cohort_stop else (
+            cohort.get("all_workflows_completed") is True
+            and cohort.get("service_output_matches_complete_receipts") is True
+            and supply.get("all_workflows_completed") is True
+        )
+    )
     if (
-        cohort.get("all_workflows_completed") is not True
+        not complete
         or cohort.get("normal_tails_removed") is not False
-        or cohort.get("service_output_matches_complete_receipts") is not True
         or cohort.get("background_submission_coverage", {}).get("covers_all_measured_completions") is not True
         or cohort.get("measured_complete_workflow_JCT_ms", {}).get("count") != 18
         or supply.get("all_measured_completed") is not True
-        or supply.get("all_workflows_completed") is not True
         or periodic.get("counts", {}).get("cross_workflow_logical_set_competition_controls", 0) < 10
         or population["population"]["model_work_units"]["p80_p20"] < minimum
     ):
@@ -120,6 +135,7 @@ def validate_workload(
         "full_candidate_and_physical_coverage_proven": False,
         "JOIN_shape_limitations_retained": True,
         "oracle_diagnostic_accepted_not_formal_baseline_or_steady_state_claim": True,
+        "complete_work_scope": "fixed_measured_workflows" if cohort_stop else "whole_population",
     }
 
 
@@ -190,14 +206,19 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--selection", choices=("global_remaining_path", "join_combination"),
                         default="global_remaining_path")
+    parser.add_argument("--cohort", type=Path)
     args = parser.parse_args()
-    if args.output_dir.exists() or complete_work(args.control) is None:
-        raise ValueError("preserve prior preparations and wait for complete control/drain/owned exit")
+    if args.output_dir.exists():
+        raise ValueError("preserve prior oracle preparations")
     plan, review, cohort, supply, periodic = (
         causal.load(path) for path in (
             args.control, args.control_review, args.cohort_review, args.supply_review, args.periodic_review,
         )
     )
+    if cohort.get("cohort", {}).get("schema_version") == 2 and args.cohort is None:
+        raise ValueError("measured completion requires its frozen cohort definition")
+    completion = verify_execution(args.control, args.cohort)
+    review_matches_execution(review, completion)
     source = Path(plan["source_arm"])
     population_path = source / "composite_source.json"
     population = causal.load(population_path)
@@ -208,13 +229,13 @@ def main():
     acceptance = validate_workload(
         cohort, supply, periodic, population,
         minimum_model_work_p80_p20=decision.get("minimum_model_work_p80_p20", 3.),
+        completion=completion,
     )
     base = Path(plan["experiment_configuration"])
     configuration = causal.load(base)
     common = configuration["common_environment"]
     if (
         plan["order"] != ["full"] or configuration["order"] != ["full"]
-        or review["complete_work_and_actual_exit_verified"] is not True
         or review["registration_sha256"] != sha256_file(args.control)
         or common["WORKFLOW_SIZE_RESUME"] != "0" or common["TOOL_PREFETCH"] != "0"
         or common["AGENT_FREE_DISPATCH_INTERVAL_MS"] != "500"
@@ -257,6 +278,13 @@ def main():
             ),
             "first_registration_coalescing_is_part_of_candidate": True,
             "future_information_used": True, "deployable": False,
+            "control_completion_protocol": completion["protocol"],
+            **({
+                "cohort_definition": str(args.cohort.resolve()),
+                "cohort_definition_sha256": sha256_file(args.cohort),
+                "control_completion_certificate": completion["certificate"],
+                "control_completion_certificate_sha256": completion["certificate_sha256"],
+            } if completion["protocol"] == "all_fixed_measured_workflows_completed" else {}),
         },
         workflow_work_qualification={
             "kind": KIND, "artifact": str(artifact_path), "artifact_sha256": sha256_file(artifact_path),
@@ -293,6 +321,8 @@ def main():
         "inputs_sha256": {str(path.resolve()): sha256_file(path) for path in (
             args.control, args.control_review, args.cohort_review, args.supply_review,
             args.periodic_review, args.workload_review, base, overlay, Path(__file__),
+            *((args.cohort, Path(completion["certificate"])) if args.cohort is not None
+              and completion["protocol"] == "all_fixed_measured_workflows_completed" else ()),
         )},
         "configuration": str((args.output_dir / "full.json").resolve()),
         "configuration_sha256": sha256_file(args.output_dir / "full.json"),

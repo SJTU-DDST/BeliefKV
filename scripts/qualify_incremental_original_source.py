@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -28,6 +29,13 @@ def sources(retained_paths=()):
         result[name] = sha256_file(path)
     for path in (ROOT / "configs/docker").glob("*.Dockerfile"):
         result[str(path.relative_to(ROOT))] = sha256_file(path)
+    for name in (
+        "experiments/reports/workflow_mix_20261029/qualify_burst_oracle.py",
+        "experiments/reports/workflow_mix_20261029/prepare_burst_oracle.py",
+        "experiments/reports/workflow_mix_20261029/review_burst.py",
+        "experiments/reports/arrival_mean120_20261029/queue_pair.py",
+    ):
+        result[name] = sha256_file(ROOT / name)
     return result
 
 
@@ -110,6 +118,10 @@ def main():
         )},
         "returncode": status, "unique_test_identities": len(current),
         "junit_tests_including_subtests": reported,
+        "failed_error_skipped_cases": sum(
+            1 for item in ET.parse(here / "bound_cpu.xml").getroot().iter()
+            if item.tag in ("failure", "error", "skipped")
+        ),
         "all_retained_literal_identities_present": retained <= current,
         "all_previous_source_paths_retained": set(retained_paths) <= before.keys(),
         "missing_identities": [list(value) for value in sorted(retained - current)],

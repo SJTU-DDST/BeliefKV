@@ -13,18 +13,138 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workflow_metrics import distribution
-from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 from scripts import run_causal_comparison as causal
 from scripts.prepare_sustained_oracle_admission import validate_decision
 from scripts.register_sustained_oracle import matching_conditions
 from scripts.train_workflow_work import write
+from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
 def positive(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
 
 
+def paired_group(members, reference, candidate):
+    paired = [key for key in members if key in reference and key in candidate]
+    before = distribution(reference[key] for key in paired)
+    after = distribution(candidate[key] for key in paired)
+    return {
+        "control_JCT_ms": before, "oracle_JCT_ms": after,
+        "mean_JCT_reduction_percent": (
+            100 * (1 - after["mean"] / before["mean"]) if paired else None
+        ),
+        "improved_workflows": sum(candidate[key] < reference[key] for key in paired),
+        "worsened_workflows": sum(candidate[key] > reference[key] for key in paired),
+        "paired_completed_workflows": len(paired),
+        "fixed_population": len(members),
+        "control_completed_workflows": len(reference),
+        "oracle_completed_workflows": len(candidate),
+        "conditional_on_shared_completion": len(paired) != len(members),
+        "workflows": [
+            {
+                "workflow_id": key, "control_JCT_ms": reference.get(key),
+                "oracle_JCT_ms": candidate.get(key),
+                "saved_ms": reference[key] - candidate[key] if key in paired else None,
+            } for key in members
+        ],
+    }
+
+
+def censored_cohort_evidence(report):
+    cohort = report["cohort"]
+    groups = ("measured", "warmup", "background")
+    ids, completed = [], set()
+    for name in groups:
+        members, values = cohort[name + "_workflow_ids"], report[name + "_workflow_JCT_ms"]
+        if (
+            not members or len(set(members)) != len(members)
+            or (set(values) != set(members) if name == "measured" else not set(values) <= set(members))
+            or not all(positive(value) for value in values.values())
+        ):
+            raise ValueError("censored execution changed fixed members or complete measured JCT")
+        ids.extend(members)
+        completed.update(values)
+    outputs = report["all_service_output_tokens_by_workflow"]
+    measured = set(cohort["measured_workflow_ids"])
+    expected_censored = set(ids) - completed
+    if (
+        len(set(ids)) != len(ids) or not set(outputs) <= set(ids)
+        or not completed <= outputs.keys()
+        or any(type(value) is not int or value < 0 for value in outputs.values())
+        or any(outputs[key] <= 0 for key in completed)
+        or report.get("all_measured_completed") is not True
+        or report.get("normal_tails_removed") is not False
+        or report.get("measured_service_output_matches_complete_receipts") is not True
+        or type(report.get("measured_exact_receipt_requests")) is not int
+        or report["measured_exact_receipt_requests"] <= 0
+        or report.get("nonmeasured_workflows_right_censored") != sorted(expected_censored)
+        or sum(outputs.values()) != report["all_service_output_tokens"]
+        or not positive(report["common_window_output_tokens_per_second"])
+        or report["measured_complete_workflow_JCT_ms"] != distribution(
+            report["measured_workflow_JCT_ms"].values()
+        )
+    ):
+        raise ValueError("censored execution lacks complete measured receipts or explicit background scope")
+    return {key: outputs[key] for key in measured}
+
+
+def compare_censored_cohorts(control, oracle, *, minimum_jct_gain, minimum_throughput_fraction):
+    cohort = control["cohort"]
+    if (
+        cohort != oracle["cohort"] or cohort.get("schema_version") != 2
+        or cohort["selection_rule"] != "fixed_arrival_indices_before_execution"
+        or cohort["complete_JCT_including_normal_tails"] is not True
+        or cohort["background_submission_stops_when_cohort_finishes"] is not True
+        or cohort.get("nonmeasured_workflows_may_be_right_censored") is not True
+        or not 0 < minimum_jct_gain < 1 or not 0 < minimum_throughput_fraction <= 1
+    ):
+        raise ValueError("compare identical fixed measured completion contracts")
+    outputs = [censored_cohort_evidence(row) for row in (control, oracle)]
+    if outputs[0] != outputs[1] or (
+        control["measured_exact_receipt_requests"] != oracle["measured_exact_receipt_requests"]
+    ):
+        raise ValueError("matched measured executions changed actual complete work")
+    groups = {
+        name: paired_group(
+            cohort[name + "_workflow_ids"],
+            control[name + "_workflow_JCT_ms"], oracle[name + "_workflow_JCT_ms"],
+        ) for name in ("measured", "warmup", "background")
+    }
+    ratio = oracle["common_window_output_tokens_per_second"] / control["common_window_output_tokens_per_second"]
+    checks = {
+        "fixed_measured_mean_JCT_gain": (
+            groups["measured"]["mean_JCT_reduction_percent"] >= minimum_jct_gain * 100
+        ),
+        "common_window_output_throughput_noninferior": ratio >= minimum_throughput_fraction,
+        "background_covers_both_measured_tails": all(
+            row["background_submission_coverage"]["covers_all_measured_completions"] is True
+            for row in (control, oracle)
+        ),
+    }
+    return {
+        "groups": groups, "checks": checks,
+        "fixed_cohort_performance_target_met": all(checks.values()),
+        "common_window_output_throughput": {
+            "window_offset_seconds": cohort["throughput_window_offset_seconds"],
+            "control_tokens_per_second": control["common_window_output_tokens_per_second"],
+            "oracle_tokens_per_second": oracle["common_window_output_tokens_per_second"],
+            "gain_percent": 100 * (ratio - 1),
+        },
+        "thresholds": {
+            "minimum_measured_mean_JCT_reduction": minimum_jct_gain,
+            "minimum_common_window_output_throughput_fraction": minimum_throughput_fraction,
+        },
+        "complete_work_scope": "fixed_measured_workflows",
+        "background_paired_JCT_is_descriptive_not_a_full_population_estimate": True,
+    }
+
+
 def compare_cohorts(control, oracle, *, minimum_jct_gain=.05, minimum_throughput_fraction=.98):
+    if control["cohort"].get("schema_version") == 2:
+        return compare_censored_cohorts(
+            control, oracle, minimum_jct_gain=minimum_jct_gain,
+            minimum_throughput_fraction=minimum_throughput_fraction,
+        )
     if (
         control["cohort"] != oracle["cohort"]
         or control["cohort"]["selection_rule"] != "fixed_arrival_indices_before_execution"
@@ -122,9 +242,9 @@ def main():
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output.exists():
         raise ValueError("hide CUDA and preserve every previous complete comparison")
-    work = complete_work(args.control)
-    if work is None or complete_work(args.oracle) != work:
-        raise ValueError("both executions require equal complete work, fresh drain and actual owned exit")
+    completion = [verify_execution(path, args.cohort) for path in (args.control, args.oracle)]
+    if completion[0]["work"] != completion[1]["work"]:
+        raise ValueError("both executions require equal complete work in their declared scope")
     plans = [causal.load(path) for path in (args.control, args.oracle)]
     specifications = [causal.load(Path(row["experiment_configuration"])) for row in plans]
     matching_conditions(*specifications)
@@ -135,21 +255,22 @@ def main():
     validate_decision(causal.load(decision_path), [])
     contract = specifications[1]["comparison_contract"]
     reviews, cohorts, paths = [], [], [args.control, args.oracle, args.arrivals, args.cohort, decision_path]
-    for registration, directory in (
-        (args.control, args.control_review_dir), (args.oracle, args.oracle_review_dir),
+    for registration, directory, evidence in (
+        (args.control, args.control_review_dir, completion[0]),
+        (args.oracle, args.oracle_review_dir, completion[1]),
     ):
         review_path, cohort_path = directory / "review.json", directory / "cohort.json"
         review, cohort = causal.load(review_path), causal.load(cohort_path)
         if (
             review["registration_sha256"] != sha256_file(registration)
-            or review["complete_work_and_actual_exit_verified"] is not True
             or cohort["cohort"] != causal.load(args.cohort)
             or any(cohort["inputs_sha256"].get(str(path.resolve())) != sha256_file(path)
                    for path in (args.arrivals, args.cohort))
         ):
             raise ValueError("complete reviews belong to another execution or measurement definition")
+        review_matches_execution(review, evidence)
         for report in (review, cohort):
-            for path, prefix in report["input_jsonl_prefixes"].items():
+            for path, prefix in report.get("input_jsonl_prefixes", {}).items():
                 if (
                     Path(path).stat().st_size != prefix["complete_prefix_bytes"]
                     or sha256_file(Path(path)) != prefix["complete_prefix_sha256"]
@@ -165,8 +286,13 @@ def main():
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
-        complete_equal_work_fresh_drain_and_actual_exit=True,
-        whole_population_metrics={name: row["metrics"] for name, row in zip(("control", "oracle"), reviews)},
+        complete_equal_work_fresh_drain_and_actual_exit=all(
+            row["protocol"] == "all_workflows_completed" for row in completion
+        ),
+        complete_measured_work_fresh_drain_and_actual_exit=True,
+        whole_population_metrics={
+            name: row.get("metrics") for name, row in zip(("control", "oracle"), reviews)
+        },
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             *paths, *(Path(plan["experiment_configuration"]) for plan in plans), Path(__file__),
         )},

@@ -126,3 +126,23 @@ def test_oracle_requires_a_passing_phase_one_decision_bound_to_the_same_reviews(
     review.write_text('{"changed":true}')
     with pytest.raises(ValueError, match="different complete reviews"):
         validate_decision(decision, [review])
+
+
+def test_explicit_measured_completion_does_not_require_cancelled_background_to_finish():
+    cohort, supply, periodic, population = deepcopy(reviews())
+    cohort.update(
+        cohort={"schema_version": 2}, all_workflows_completed=False, all_measured_completed=True,
+        measured_service_output_matches_complete_receipts=True, measured_exact_receipt_requests=100,
+    )
+    supply["all_workflows_completed"] = False
+    completion = {
+        "protocol": "all_fixed_measured_workflows_completed", "cohort": cohort["cohort"],
+        "actual_owned_exit_verified": True, "measured_requests": 100,
+    }
+    with pytest.raises(ValueError, match="unqualified"):
+        validate_workload(cohort, supply, periodic, population)
+    result = validate_workload(cohort, supply, periodic, population, completion=completion)
+    assert result["complete_work_scope"] == "fixed_measured_workflows"
+    cohort["measured_service_output_matches_complete_receipts"] = False
+    with pytest.raises(ValueError, match="unqualified"):
+        validate_workload(cohort, supply, periodic, population, completion=completion)

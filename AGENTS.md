@@ -4932,3 +4932,26 @@
   qualify_incremental_original_source.py accepts explicit additional test
   modules while retaining all previous literal cases. FullboundCPU and fresh
   actualGPU qualification remain required;noGPUfollowup launched yet.
+- Mean90Full56now ends by usercohort protocol:18complete/2819requests/362072
+  outputs,53arrived/44ended/12nonmeasuredcensored(3unarrived),meanJCT750.616946s,
+  lastmeasured4504.394432s. Freshdrain/actualownedexit and source receipts are
+  reverified. corrected measured_cohort_complete_original56_corrected_r1 has
+  2215controls/5actualcompetitions/349eventual/305windowcompleted useful grants;
+  gate rejects competition and ready supply. Never claim all56complete.
+- Mean60Full56 is actually running from frozen5f2b2f6c(main8aa11b03) on18924:
+  ops/workflow_sustained_original56_mean60_full_20261030_r1.registration.json.
+  BoundCPU5897+23retains5858/all2219inputs/native;fresh24token/session/native
+  stops(all24)and1/8/24sampling pass. Independentliveproof592receipts,soleGPU/
+  nice0/profile and168unchangedonlinepaths. Observer2862793 actuallyalive,
+  nice19/CUDAhidden/threads1;fixed18stop and corrected supply reader retained.
+  Early782.867sprefix17arrived/7ended,27/424readypaused,0sampledsetcompetition;
+  notcompletepressure/steadystate/oraclegain. Nooracle/baseline followup yet.
+- Developing oracle/cohort protocol adapters does not change frozen5f2b GPU.
+  verify_measured_execution.py rechecks certificate/actual exits/fresh drain/
+  full measured native work. Prep/register/progress/comparison accept schema2
+  explicitly,retain strict schema1;partialbackground is never full work or
+  zeroJCT. 89targeted+11subtests pass;actual8458completed/44closed/348path samples
+  prove complete measured2819/362072 but not full56. Rejectedworkload CLI still
+  creates nooracleconfiguration. See measured_cohort_oracle_comparison_20261030_
+  zh.md and measured_oracle_cpu_original56_r1/progress_bound_r2.json.
+  Fullboundqualification of these adapters is still required before oracleGPU.
