@@ -350,6 +350,18 @@ def engine_evidence(engine: Path, report: Path, sources: Path) -> dict:
     }
 
 
+def freeze_native_engine(checkout: Path, engine: Path, expected_tree: str):
+    patch = engine_patch(checkout, expected_tree)
+    subprocess.run(
+        ["git", "-C", str(engine), "apply", str(patch)],
+        check=True, capture_output=True,
+    )
+    tree = git_source_state(engine, canonical_patch=patch)["canonical_patch"]
+    if not tree["matches_worktree"] or tree["actual_tree"] != expected_tree:
+        raise ValueError("frozen engine differs from the tested capture engine")
+    return tree
+
+
 def observe(arm: Path, *, final=False, expected_capacity=None):
     census = arm / "server/native_capacity_census.json"
     if census.is_file():
@@ -814,15 +826,7 @@ def register(args):
     base = qualified.command(["git", "-C", str(args.engine), "rev-parse", "HEAD"])
     subprocess.run(["git", "-C", str(args.engine), "worktree", "add", "--detach", str(engine), base],
                    check=True, capture_output=True)
-    subprocess.run([
-        "git", "-C", str(engine), "apply",
-        str(checkout / "patches/sglang-v0.5.20-beliefkv-staging.patch"),
-    ], check=True, capture_output=True)
-    tree = git_source_state(
-        engine, canonical_patch=checkout / "patches/sglang-v0.5.20-beliefkv-staging.patch",
-    )["canonical_patch"]
-    if not tree["matches_worktree"] or tree["actual_tree"] != evidence["tree"]:
-        raise ValueError("frozen engine differs from the tested capture engine")
+    tree = freeze_native_engine(checkout, engine, evidence["tree"])
     env = environment(
         reference, checkout, engine, args.run_root, args.port,
         source_profile=args.source_profile, capacity=capacity, source_workload=args.source_workload,

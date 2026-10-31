@@ -148,3 +148,95 @@ CPU 复用既有 LoCoBench JavaScript 清单筛出 26 个未使用、完整上�
 或完成顺序。初次准备因 tokenizer 字段实际为路径而拒绝，校正读取 schema
 后核对原 archive、metadata、scenario hash 与现有 tokenizer 一致。
 尚未启动这些候选的 GPU 采集，也没有改变当前实验的流量或工具时长。
+
+## 后续容量对照与资源 Oracle
+
+CapacityV2 已完成相同固定 18 条，精确工作仍为 2819 请求、
+362072 输出 token；52 条自然结束、4 条非测量背景删失。
+独立复验通过完整收据、两份新鲜 idle 快照和实际进程退出。
+
+| 指标 | ThunderAgent acting-decay | Predictive 控制 | CapacityV2 oracle |
+| --- | ---: | ---: | ---: |
+| 平均完整 JCT / s | 1175.613671 | 1052.994585 | 1047.018559 |
+| P95 完整 JCT / s | 3056.289093 | 2736.140634 | 2682.556302 |
+| 共同窗口全部输出 / token/s | 292.354630 | 301.891902 | 301.550202 |
+
+Predictive 相对 ThunderAgent 的平均 JCT 改善 10.430219%、
+共同窗口吞吐增加 3.262227%。CapacityV2 相对 Predictive 只改善
+0.567527%，吞吐下降 0.113186%，仍不是明确的 oracle 增量收益。
+固定工作、长尾和背景覆盖失败项均保留，不重复运行这两个已完成控制。
+
+新 resource-combination 候选使用深前缀摘要和可行替代集合，
+服务冻结为 `db82e94d`、原生树为 `434c35dd`，端口 18942。
+`calibrated_combination_initial12_mean70_prepare_r7/live_combination_choices_r2.json`
+封存 872 次入口、21 次搜索函数调用、5 次集合变化、2 个新选入成员。
+这两个成员均获得周期授予、保留资格并在同 attempt 获得实际服务和
+有界窗口内的有效完成。这证明选择可以影响服务，不是完整 JCT 收益。
+
+当前继续 12 初始 / 平均 70 秒，而非更换为 8 初始，依据是既有
+ready-paused 供给、容量竞争及可复用的匹配控制。旧 8/70 服务代码不同，
+不能将它与本轮当作单独的到达方式消融，也不按方法胜负筛选到达表。
+工具时长映射不变，即时 A→B 预测卸载、prepare_host、JOIN/EOS 保留，
+工具预取和逐层 handoff 关闭。固定 18 条仍须自然完成后才能收尾。
+
+## 旧前缀丢失对应实际 Prefill
+
+只读审计 `scripts/audit_previous_prefix_prefill.py` 将缺失的已服务 FULL
+前缀区间，与同一个原生请求、attempt、session 的实际 prefill 输入区间
+逐一对应。重复或重叠区间取并集；身份、几何或观测不完整的情况保持未知。
+
+CapacityV2 的完整证据位于
+`capacity_combination_initial12_mean70_comparison_r1/previous_prefix_prefill_work_r1.json`：
+8870 次 probe 中有 12 次正丢失，合计 995562 token；全部 12 次均在实际
+native prefill 区间内得到完整对应，分布于 493 个 prefill batch，
+未观察到重复区间。因此这些 token 确实再次进入 prefill，
+不再只是缓存计数代理。
+
+涉及 batch 的完整 worker 区间合计约 122.710 s，只是受影响 batch 的
+区间总量，不是这些 token 独占的 GPU 时间，也不是可直接消除的 JCT。
+Host 驱逐原因及可避免比例仍未确定。
+
+原生 `drive_host_eviction()` 已有两遍 FULL Host 重复副本回收，
+Full 的 `HostDemandCapacity.ensure()` 也已有最多 64 个候选的安全回收。
+现有配置没有关闭原生重复副本回收。126 次 demand 检查及 78 次
+安全镜像不足，是重复检查计数，不能直接归因于缺少 Host 回收实现，
+也不能据此放宽锁、DMA 或唯一有效副本保护。
+
+## 25 个完整原项目的补采准备
+
+25 个项目已从同一 archive 独立物化，462 个源码/测试文件及完整上下文
+均核对原始 hash，未修改任务、源码、测试或包版本。
+原标签为 5 easy、9 medium、7 hard、4 expert，均为 code comprehension；
+后续自然轨迹的工作量和 child 形状尚未确定。
+
+依赖准备结果为 3 个完整安装、9 个 npm ETARGET、5 个缺少 manifest、
+7 个 ML/GUI 超出有界准备范围、1 个本地 workspace 绑定问题。
+保留全部失败及原版本，不以替代模块伪造应用可执行。
+用户要求解决正常工具执行，不能将这些安装结果等同于 runtime 故障。
+
+独立 CPU 工具资格
+`background_extension_original25_tools_r1/toolchain_live_root_child.json`
+验证全部 25 个项目 root/child 的真实工具调用及 Node fs 原源码 hash 读取，
+同时公开各项目依赖状态。它不宣称 25 个应用或项目测试成功。
+`background_extension_source25_toolchain_r1` 已绑定原题与工具证据，
+沿用 child 4/8、root 8/16 软预算和自然尾部，不加固定 DAG 或硬调用截断。
+
+25 项目绑定的 CPU r1 为 6373 项及 23 子项，保留 2262 个源码输入，
+执行中源码与原生状态不变，无失败、错误或跳过。
+它不能替代后续真实采集中对任务进展、工具失败和正常完成的审计。
+已有 56 条加上这 25 条，最多形成 81 个不同原项目；三个依赖完整项目
+是这 25 条的子集，不能再次累加。
+
+准备时发现 source-capture 注册器虽接受已审核原生变体，冻结时仍硬编码
+应用 common11 补丁。已改为按资格记录的目标原生树选择审核补丁，
+并同时核对 canonical tree 匹配及实际 tree 等于资格中的 expected tree。
+五项真实隔离 git worktree 检查覆盖 common11、free-extent434、
+错误旧补丁、错误 tree 和被修改的审核补丁；相关 161 项定向检查通过。
+旧 `fc1b6a9d` 冻结 operator 不包含该修复，不能用于修复后的采集。
+新完整 CPU r2 已包含该 launcher 和九项旧前缀区间审计检查，
+6387 项及 23 子项全部通过，保留原有 6373 项 literal identity、
+2265 个源码输入及全部先前输入路径，绑定 224 个外部输入。
+执行中源码、外部输入及原生状态不变，无失败、错误或跳过。
+证据为 `background_extension_source25_bound_cpu_r2/evidence.json`。
+仍需从修复后的提交干净冻结并复验实际采集环境；
+尚未登记补采 GPU，不修改正在运行的资源 Oracle。
