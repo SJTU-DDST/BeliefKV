@@ -31,6 +31,12 @@ class PredictedToolOffload:
     def _prediction_allows(self, key):
         return self.runtime._predicted_long_tool_wait(key)
 
+    def rearm(self):
+        self.next_ms = 0.
+        replacement = getattr(self, "replacement", None)
+        if replacement is not None:
+            replacement.next_ms = 0.
+
     def _eligible(self, key):
         runtime = self.runtime
         hint = runtime._live_tool_hint(key)
@@ -79,7 +85,7 @@ class PredictedToolOffload:
     def _action_detail(self):
         return {}
 
-    def _evict_backed(self, key):
+    def _evict_backed(self, key, *, node_ids=None):
         runtime, cache = self.runtime, self.runtime._native_cache
         members = runtime._pressure_candidate_groups().get(key, ())
         if not members:
@@ -87,11 +93,13 @@ class PredictedToolOffload:
         ordered = tuple(members)
         start = self.node_cursor % len(ordered)
         self.node_cursor += self.max_nodes
-        pending = list(islice(
-            (*ordered[start:], *ordered[:start]), self.max_nodes,
-        ))
+        pending = (
+            list(reversed(node_ids)) if node_ids is not None else list(islice(
+                (*ordered[start:], *ordered[:start]), self.max_nodes,
+            ))
+        )
         frontier = self.frontiers.pop(key, None)
-        if frontier is not None and runtime._parent_pressure_candidates.get(frontier[0]) == (
+        if node_ids is None and frontier is not None and runtime._parent_pressure_candidates.get(frontier[0]) == (
             key, frontier[1],
         ):
             pending.append(frontier[0])
@@ -171,8 +179,9 @@ class PredictedToolOffload:
             parent = node.parent
             if parent is not None and parent.id in members:
                 # An ancestor checked before its leaf was released may now fit.
-                visited.discard(parent.id)
-                pending.append(parent.id)
+                if node_ids is None:
+                    visited.discard(parent.id)
+                    pending.append(parent.id)
                 self.frontiers[key] = (parent.id, parent.creation_time)
                 self.frontiers.move_to_end(key)
                 if len(self.frontiers) > 256:
@@ -276,6 +285,12 @@ class DemandAwareToolOffload(PredictedToolOffload):
         self._deficit_records = OrderedDict()
         self._dispatch_stage = "maintenance"
         self._admission_adder = None
+        from beliefkv.runtime.reference_tool_replacement import ReferenceToolReplacement
+
+        self.replacement = ReferenceToolReplacement(self)
+
+    def before_agent_admission(self, candidates, *, running_batch, adder):
+        return self.replacement.run(candidates, running_batch=running_batch, adder=adder)
 
     def _action_detail(self):
         return {**self.action_detail, "dispatch_stage": self._dispatch_stage}
@@ -336,11 +351,18 @@ class DemandAwareToolOffload(PredictedToolOffload):
         runtime = self.runtime
         if not runtime._unallocated_waiting_full_request(key, request):
             return None
+        agents = runtime._agent_admission
+        if (
+            getattr(agents, "strategy", None) == "thunderagent_reference"
+            and not agents.allows(key) and self.replacement.enabled
+            and self.replacement.permits(request, key, donor)
+        ):
+            demand = self.replacement.demand(request, key)
+            return key, demand[0], demand[2]
         observation = runtime._read_request_reentry(request, key=key, refresh=True)
         cost = runtime._request_restore_cost(request, observation)
         if cost is None or not observation["missing_full_tokens"]:
             return None
-        agents = runtime._agent_admission
         if agents is not None and not agents.allows(key):
             if getattr(agents, "strategy", None) == "thunderagent_reference":
                 return None
@@ -441,7 +463,8 @@ class DemandAwareToolOffload(PredictedToolOffload):
         backup = self.runtime._estimate_d2h_service(backup_tokens * unit[0], shape="full") if backup_tokens else None
         agents = self.runtime._agent_admission
         logical_handover_ms = (
-            1000. if agents is not None and not agents.allows(consumer[0]) else 0.
+            1000. if agents is not None and not agents.allows(consumer[0])
+            and self.replacement.consumer is None else 0.
         )
         cold = (
             restore is None or restore.enqueue_to_submit_p90_ms is None

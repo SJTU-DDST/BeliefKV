@@ -2329,6 +2329,16 @@ class NativeAdmissionRuntime:
             paper.events(events)
         if self._agent_admission is not None:
             self._agent_admission.events(events)
+        offload = self._predicted_tool_offload
+        if (
+            getattr(self, "agent_residency_pause", False) and offload is not None
+            and any(event.kind in (
+                RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END,
+                RuntimeEventKind.LLM_SUBMIT, RuntimeEventKind.JOIN_SATISFIED,
+                RuntimeEventKind.RETURN, RuntimeEventKind.WORKFLOW_END,
+            ) for event in events)
+        ):
+            offload.rearm()
         if self._full_prefix_migration is not None:
             self._full_prefix_migration.events(events)
 
@@ -5338,6 +5348,8 @@ class NativeAdmissionRuntime:
             return
         if self.tool_wait_hints.get(key.context_id) is not hint:
             self._tool_prefetch_next_ms = 0.
+            if self.agent_residency_pause and self._predicted_tool_offload is not None:
+                self._predicted_tool_offload.rearm()
         self.tool_wait_hints[key.context_id] = hint
         self._refresh_prefetch_service_leases(context_id=key.context_id)
         self.counts["tool_wait_accepted"] += 1
@@ -11776,7 +11788,7 @@ class NativeAdmissionRuntime:
             ):
                 self._invalidate_wait_transfer_observation(key)
                 if self._predicted_tool_offload is not None:
-                    self._predicted_tool_offload.next_ms = 0.
+                    self._predicted_tool_offload.rearm()
                 if self._critical_tool_donor(key):
                     self._critical_reclaim_next_ms = 0.
             if (
@@ -12398,6 +12410,9 @@ class NativeAdmissionRuntime:
             synchronize = getattr(self._agent_admission, "synchronize_residency", None)
             if synchronize is not None:
                 synchronize(native_order)
+            replacement = getattr(self._predicted_tool_offload, "before_agent_admission", None)
+            if self.agent_residency_pause and replacement is not None:
+                replacement(native_order, running_batch=running_batch, adder=adder)
             if self.workflow_combination_admission:
                 self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
             self._agent_admission.tick()

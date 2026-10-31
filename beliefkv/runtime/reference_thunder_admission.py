@@ -227,6 +227,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         )
         for item in programs:
             item.active = True
+            if self._residency_pause is not None and item.pending:
+                self._residency_pause.compared_requests.add(self.latest[item.identity])
         if writer is not None:
             grant = {
                 "event": event, "ts_ms": time.time() * 1000.,
@@ -476,6 +478,13 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             "residency_pause": self._residency_pause is not None,
             "residency_pause_waits_for_actual_successor": True,
             "residency_pause_does_not_revoke_selected_restore": True,
+            "tool_event_replacement": bool(
+                self._residency_pause is not None
+                and getattr(getattr(self.runtime, "_predicted_tool_offload", None), "replacement", None)
+                and self.runtime._predicted_tool_offload.replacement.enabled
+            ),
+            "tool_event_replacement_waits_for_control_window": False,
+            "tool_event_replacement_restoration": "native_demand_only",
             "identity": "invocation_id",
             "control_interval_ms": self.control_interval_s * 1000.,
             "blocked_lending": "disabled",

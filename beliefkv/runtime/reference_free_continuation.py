@@ -108,6 +108,9 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
     def _order_dispatch_keys(self, keys, joins):
         return keys
 
+    def order_tool_replacement(self, keys):
+        return self._order_dispatch_keys(keys, self.runtime._join_priority_pending)
+
     def _observe_free_capacity_choice(self, programs, remaining, keys, sequence):
         selected = {item.identity for item in programs}
         scope = "actual_dispatch_window" if keys is not None else "bounded_pending_index"
@@ -257,6 +260,11 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
             # Reindex only at that boundary, not on each decode step.
             for key, _arrived in self.requests.values():
                 self._remember_dispatch(key)
+            if self._residency_pause is not None:
+                for identity in self._capacity_snapshot.get("resumed_program_ids", ()):
+                    item = self.policy.programs.get(identity)
+                    if item is not None and item.active and item.pending:
+                        self._residency_pause.compared_requests.add(self.latest[identity])
         if now >= self._next_dispatch:
             self._next_dispatch = now + self.dispatch_interval_ms / 1000.
             self.counts["free_dispatch_fallback_ticks"] += 1
@@ -278,12 +286,20 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
     def registered(self, req, key):
         super().registered(req, key)
         self._admit_free_continuation(preferred=key)
+        self._rearm_tool_replacement()
 
     def completed(self, batch, completed_ids):
         if not completed_ids:
             return
         super().completed(batch, completed_ids)
         self._admit_free_continuation()
+        self._rearm_tool_replacement()
+
+    def _rearm_tool_replacement(self):
+        offload = getattr(self.runtime, "_predicted_tool_offload", None)
+        replacement = getattr(offload, "replacement", None)
+        if replacement is not None and replacement.enabled:
+            offload.rearm()
 
     def events(self, events):
         events = tuple(events)

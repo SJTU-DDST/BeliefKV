@@ -79,6 +79,11 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
             keys = [key for key in keys if self._protected_join(key)]
         return super()._order_dispatch_keys(keys, joins)
 
+    def order_tool_replacement(self, keys):
+        # Tool replacement already has a real blocked donor and native consumer;
+        # use the same rank without delaying that pair for the ordinary window.
+        return super()._order_dispatch_keys(keys, self.runtime._join_priority_pending)
+
     def _begin_control_observation(self):
         result = super()._begin_control_observation()
         deferred = self._deferred_dispatch

@@ -5191,3 +5191,46 @@
   original background-coverage rejection and complete joint-gate results.
   Do not call these new residency/pressure GPU results or attribute all
   regression to one defect. No newbaseline/learned/GPU run queued.
+- Latest user sets the next ordinary coalescing window to2000ms. Preserve the
+  completed020527dd1000ms run and its results. The CPU candidate is
+  event_tool_replacement_window2s_cpu_r1/full.json, with a separately hashed
+  2000ms oracle artifact and unchanged original56/source/tools/arrivals/resources.
+  A new paired control is required to attribute gains specifically to ranking;
+  this preparation registers no GPU experiment.
+- Full residency coupling plus demand-cost/before-admission now admits an
+  event-driven predicted-tool replacement before native eligibility filtering:
+  compare actual ready-paused consumers, identify a blocked safe donor, back up
+  asynchronously if needed, then pause only after real FULL release and grant
+  the selected consumer using fresh complete logical and physical checks.
+  This path does not wait for ordinary2s or periodic2s/5s control. Retain JOIN/EOS,
+  active ready peers, native demand recovery and all lock/DMA/session guards.
+  Tool prefetch, ordinary1500ms leases and layer handoff remain off.
+- Event replacement has its own200ms bounded fallback; maintenance scans cannot
+  consume a new event attempt. Recheck at tool/prediction/request/completion/ACK
+  events, not a predicted tool-return timer. Rank at most8ready consumers, inspect
+  at most8tool owners and16private release nodes per donor; single-donor complete
+  pairs only, not full R5 multiple-donor optimal packing. Fragmented ancestors
+  require native leaf ordering; an absent per-node session label after a native
+  split is not by itself shared ownership. Check live references/anchors and
+  original native authority, never credit a planned release as actual free pages.
+  Known-current selected restores are not paused again before native service.
+- Acting decay already uses wall-time2**(-elapsed) with1s half-life from actual
+  native completion;5s is the paper control cadence, not its decay step.
+  Do not scale half-life by the ordinary1s/2s window ratio. Predicted replacement
+  bypasses waiting for this fallback; unknown forecasts keep the existing decay.
+  Paper ThunderAgent policy and its5s cadence do not inherit Full changes.
+- Final frozen-reader selection audit has2255periodic controls/56order changes/
+  9local set changes/11newly selected attempts with subsequent native service.
+  Event audit reproduces89ordinary conflicts/67local set changes/80newly chosen
+  service episodes;7set changes in the fixed common window,60after. Keep missing/
+  protected/nonobserved choices unknown, and distinguish repeated decisions,
+  actual grants, subsequent service and causal JCT. The1714reorder records are
+  not1714effective choices. Logged control CPU1.584s/free-sort CPU2.975s are not
+  total incremental runtime cost or a causal explanation of the5.813841%regression.
+- Final event_tool_replacement_window2s_bound_cpu_r3 passes6096cases+23subtests,
+  retains all6095prior literal identities and2236source inputs, no failures/
+  errors/skips and unchanged app/native/config/workload during execution.
+  The27new event-path cases also pass separately. Preserve r1's6093pass/1split-
+  ancestor failure and r2's6095pass; r3 adds the stale-candidate guard and final
+  combined candidate bound. This is CPU-only, no new GPU registration or
+  performance gain. See docs/design/event_tool_replacement_window2s_20261031_zh.md.
