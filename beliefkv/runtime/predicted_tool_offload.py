@@ -63,7 +63,10 @@ class PredictedToolOffload:
         return True
 
     def _after_eviction(self, key, freed):
-        pass
+        agents = self.runtime._agent_admission
+        notify = getattr(agents, "full_kv_offloaded", None)
+        if notify is not None:
+            notify(key, freed, source="predicted_tool_offload")
 
     def _prepare_allowed(self, step, headroom):
         return self.runtime._prepare_step_rank(
@@ -485,6 +488,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
         )
 
     def _after_eviction(self, key, freed):
+        super()._after_eviction(key, freed)
         self.evicted_tokens[key] = self.evicted_tokens.get(key, 0) + freed.get(0, 0)
         self.evicted_tokens.move_to_end(key)
         while len(self.evicted_tokens) > 256:

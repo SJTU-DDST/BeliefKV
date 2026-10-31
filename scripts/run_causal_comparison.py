@@ -72,6 +72,7 @@ SERVER_FIELDS = (
     "AGENT_WORKFLOW_ENTRY_MIN_READY", "AGENT_TOOL_LOAN_RETURN",
     "AGENT_JOIN_DEPENDENCY_ADMISSION", "AGENT_BLOCKED_BUDGET_PROOF",
     "AGENT_PRESSURE_PAUSE_POLICY",
+    "AGENT_RESIDENCY_PAUSE",
     "AGENT_LENDING_SELECTION",
     "AGENT_JOIN_FREE_ADMISSION",
     "AGENT_JOIN_BLOCKED_HANDOFF",
@@ -398,6 +399,7 @@ def preflight_runtime(settings, model_path):
         "agent_blocked_budget_proof": settings.get("BELIEFKV_AGENT_BLOCKED_BUDGET_PROOF", "predicted_pressure"),
         "agent_lending_selection": settings.get("BELIEFKV_AGENT_LENDING_SELECTION", "largest"),
         "agent_pressure_pause_policy": settings.get("BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", "reference"),
+        "agent_residency_pause": settings.get("BELIEFKV_AGENT_RESIDENCY_PAUSE", "0") == "1",
         "agent_recall_selection": settings.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest"),
         "agent_tool_loan_return": settings.get("BELIEFKV_AGENT_TOOL_LOAN_RETURN", "0") == "1",
         "free_page_h2d_fence_requested": settings.get("BELIEFKV_FREE_PAGE_H2D_FENCE", "0") == "1",
@@ -1060,6 +1062,9 @@ def observed_configuration(plan, label, arm, *, final=False):
                         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY",
                         common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
                     ),
+                    residency_pause=common.get(
+                        "BELIEFKV_AGENT_RESIDENCY_PAUSE", common.get("AGENT_RESIDENCY_PAUSE", "0"),
+                    ) == "1",
                 )
                 if oracle and final:
                     predictor = actual_agents["workflow_work_predictor"]

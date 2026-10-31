@@ -44,6 +44,11 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.last_forced = set()
         self._capacity_snapshot = {}
         self.latest = {}
+        self._residency_pause = None
+        if getattr(runtime, "agent_residency_pause", False):
+            from beliefkv.runtime.reference_residency_pause import ReferenceResidencyPause
+
+            self._residency_pause = ReferenceResidencyPause(self)
         interval = getattr(runtime, "agent_control_interval_ms", 5000)
         if type(interval) is not int or not 500 <= interval <= 5000:
             raise ValueError("reference Full control interval requires 500..5000 ms")
@@ -61,9 +66,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             from beliefkv.runtime.join_blocked_handoff import JoinBlockedHandoff
 
             self._join_handoff = JoinBlockedHandoff(self)
+        if self._join_handoff is not None or self._residency_pause is not None:
             constructor = self.working_set_type
             self.working_set_type = lambda capacity: constructor(
-                capacity, resume_eligible=self._join_handoff.can_resume,
+                capacity, resume_eligible=self._can_resume,
             )
         self.policy_name = self.composition_name(
             join_free_admission=self.join_free_admission,
@@ -78,6 +84,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             raise ValueError("an agent cannot change workflow or context identity")
         super().registered(req, key)
         self.latest[key.invocation_id] = key
+        if self._residency_pause is not None:
+            self._residency_pause.registered(key)
         writer = getattr(self.runtime, "_opportunity_writer", None)
         item = self.policy.programs[key.invocation_id]
         if writer is not None and item.steps == 1:
@@ -148,9 +156,11 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.counts["admission_control_including_journal_wall_ns"] += time.perf_counter_ns() - wall
 
     def events(self, events):
-        if self._join_handoff is not None or self._siblings is not None:
+        if self._join_handoff is not None or self._siblings is not None or self._residency_pause is not None:
             events = tuple(events)
         super().events(events)
+        if self._residency_pause is not None:
+            self._residency_pause.events(events)
         if self._join_handoff is not None and any(event.kind in (
             Kind.TOOL_START, Kind.TOOL_END, Kind.JOIN_WAIT, Kind.JOIN_SATISFIED,
             Kind.RETURN, Kind.INVOCATION_CANCEL, Kind.LLM_SUBMIT,
@@ -172,6 +182,23 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             ) for event in events):
                 self._siblings.capacity_changed()
                 self._siblings.retry()
+
+    def _can_resume(self, item):
+        if self._join_handoff is not None and not self._join_handoff.can_resume(item):
+            return False
+        return (
+            self._residency_pause is None or item.identity not in self._residency_pause.paused
+            or self._residency_pause.ready(item)
+        )
+
+    def full_kv_offloaded(self, key, freed, *, source):
+        return self._residency_pause is not None and self._residency_pause.offloaded(
+            key, freed, source=source,
+        )
+
+    def synchronize_residency(self, native_order):
+        if self._residency_pause is not None:
+            self._residency_pause.synchronize(native_order)
 
     def _waiting_on_join(self, invocation, join):
         return bool(
@@ -317,6 +344,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             )
 
     def native_service(self, batch, completed_ids):
+        if self._residency_pause is not None:
+            self._residency_pause.serviced(batch)
         if self._join_handoff is not None:
             self._join_handoff.recovery.serviced(batch)
         if self._siblings is not None:
@@ -432,6 +461,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
     def forget(self, invocation, *, now=None):
         super().forget(invocation)
         self.latest.pop(invocation, None)
+        if self._residency_pause is not None:
+            self._residency_pause.forget(invocation)
         if self._siblings is not None:
             self._siblings.forget(invocation)
         if self._join_handoff is not None:
@@ -442,6 +473,9 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         return {
             **super().status(),
             "strategy": self.strategy,
+            "residency_pause": self._residency_pause is not None,
+            "residency_pause_waits_for_actual_successor": True,
+            "residency_pause_does_not_revoke_selected_restore": True,
             "identity": "invocation_id",
             "control_interval_ms": self.control_interval_s * 1000.,
             "blocked_lending": "disabled",
@@ -466,6 +500,12 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             "ordinary_restore_reservation_ms": 0,
             "tool_warming_eligibility": "existing_active_tool_wait_only_no_new_reservation",
             "active_invocation_ids": [item.identity for item in programs if item.active],
+            "paused_invocation_ids": [item.identity for item in programs if not item.active],
+            "residency_paused_invocation_ids": [
+                item.identity for item in programs
+                if not item.active and self._residency_pause is not None
+                and item.identity in self._residency_pause.paused
+            ],
             "paused_pending_invocation_ids": [
                 item.identity for item in programs if item.pending and not item.active
             ],
@@ -484,6 +524,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
     def close(self):
         super().close()
         self.latest.clear()
+        if self._residency_pause is not None:
+            self._residency_pause.close()
         if self._siblings is not None:
             self._siblings.close()
         if self._join_handoff is not None:
@@ -501,12 +543,14 @@ def validate_reference_admission(
     workflow_work_source="learned",
     workflow_combination_admission=False,
     pressure_pause_policy="reference",
+    residency_pause=False,
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
         join_blocked_handoff,
         workflow_size_resume,
         workflow_combination_admission,
+        residency_pause,
     )):
         raise ValueError("JOIN admission declarations must be booleans")
     if (
@@ -523,11 +567,17 @@ def validate_reference_admission(
 
         admission_type = ReferenceFreeContinuationAdmission
     if (
-        pressure_pause_policy not in ("reference", "predicted_acting")
+        pressure_pause_policy not in ("reference", "predicted_acting", "workflow_remaining")
         or not isinstance(state, dict)
         or state.get("pressure_pause_policy", "reference") != pressure_pause_policy
     ):
         raise ValueError("reference ThunderAgent pressure policy differs from declaration")
+    if pressure_pause_policy == "workflow_remaining" and not workflow_size_resume:
+        raise ValueError("workflow pressure requires declared workflow prediction")
+    if not isinstance(state, dict) or state.get("residency_pause", False) is not residency_pause:
+        raise ValueError("reference ThunderAgent residency pause differs from declaration")
+    if residency_pause and (not free_continuation_admission or not free_dispatch_interval_ms):
+        raise ValueError("residency pause requires declared bounded continuation admission")
     if workflow_size_resume:
         if not free_continuation_admission or not workflow_work_model_sha256:
             raise ValueError("workflow size reference composition requires its trained model")
@@ -590,6 +640,13 @@ def validate_reference_admission(
             "pressure_prediction_new_timer": False,
             "planned_release_grants_capacity": False,
         })
+    if residency_pause:
+        expected.update({
+            "residency_pause_waits_for_actual_successor": True,
+            "residency_pause_does_not_revoke_selected_restore": True,
+        })
+    if pressure_pause_policy == "workflow_remaining":
+        expected["workflow_pressure_marks_grant_capacity"] = False
     if workflow_size_resume:
         expected.update({
             "workflow_size_resume": True,

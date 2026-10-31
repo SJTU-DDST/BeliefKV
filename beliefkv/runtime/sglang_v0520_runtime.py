@@ -1137,16 +1137,26 @@ class NativeAdmissionRuntime:
             raise ValueError("fitting lending requires observed-demand retained admission")
         self.agent_lending_selection = lending_selection
         pressure_policy = os.environ.get("BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", "reference")
-        if pressure_policy not in ("reference", "projected_release", "predicted_acting") or (
+        if pressure_policy not in ("reference", "projected_release", "predicted_acting", "workflow_remaining") or (
             pressure_policy == "projected_release" and agent_policy != "thunderagent_retained"
             or pressure_policy == "predicted_acting" and (
                 self.internal_comparison_mode != "full"
                 or agent_policy != "thunderagent_reference"
                 or not self.agent_free_continuation_admission or self.workflow_size_resume
             )
+            or pressure_policy == "workflow_remaining" and not self.workflow_size_resume
         ):
             raise ValueError("pressure policy requires its declared Full agent admission")
         self.agent_pressure_pause_policy = pressure_policy
+        residency_pause = os.environ.get("BELIEFKV_AGENT_RESIDENCY_PAUSE", "0")
+        if residency_pause not in ("0", "1") or (
+            residency_pause == "1" and (
+                self.internal_comparison_mode != "full" or agent_policy != "thunderagent_reference"
+                or not self.agent_free_continuation_admission or not self.agent_free_dispatch_interval_ms
+            )
+        ):
+            raise ValueError("residency pause requires bounded reference Full continuation admission")
+        self.agent_residency_pause = residency_pause == "1"
         recall_selection = os.environ.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest")
         if recall_selection not in ("largest", "cold_fit") or (
             recall_selection != "largest" and blocked_lending != "backed_demand_recall"
@@ -2906,6 +2916,7 @@ class NativeAdmissionRuntime:
                 "agent_free_continuation_admission": self.agent_free_continuation_admission,
                 "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
                 "agent_control_interval_ms": self.agent_control_interval_ms,
+                "agent_residency_pause": self.agent_residency_pause,
                 "workflow_size_resume": self.workflow_size_resume,
                 "workflow_combination_admission": self.workflow_combination_admission,
                 "workflow_work_source": self.workflow_work_source,
@@ -7584,6 +7595,9 @@ class NativeAdmissionRuntime:
         key = record[0]
         if any(freed.values()):
             self._invalidate_wait_transfer_observation(key)
+        notify = getattr(self._agent_admission, "full_kv_offloaded", None)
+        if notify is not None:
+            notify(key, freed, source="native_parent_pressure")
         self.counts["parent_pressure_demoted"] += 1
         invocation = self.graph.invocations.get(key.invocation_id)
         source = "tool_wait" if invocation and invocation.state is InvocationState.WAIT_TOOL else "join_wait"
@@ -12381,6 +12395,9 @@ class NativeAdmissionRuntime:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             return paper.plan(native_order, running_batch=running_batch, adder=adder)
         if self._agent_admission is not None:
+            synchronize = getattr(self._agent_admission, "synchronize_residency", None)
+            if synchronize is not None:
+                synchronize(native_order)
             if self.workflow_combination_admission:
                 self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
             self._agent_admission.tick()

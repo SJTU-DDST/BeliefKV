@@ -39,6 +39,9 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         )
         super().__init__(runtime)
         self._work = self._create_work(runtime)
+        self.workflow_pressure_pause = (
+            getattr(runtime, "agent_pressure_pause_policy", "reference") == "workflow_remaining"
+        )
         if combination:
             from beliefkv.runtime.workflow_combination import WorkflowCombinationController
 
@@ -84,6 +87,25 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def _rank(self, invocation, now):
         return self._priority(self._prediction(invocation))
+
+    def _pressure_preference(self, item, now):
+        prediction = self._prediction(item.identity)
+        if not self._supported(prediction):
+            return None
+        key = self.latest.get(item.identity)
+        req = self._live_requests.get(key.request_id) if key is not None else None
+        if (
+            key is not None and req is not None
+            and item.identity in self.runtime._join_priority_pending
+            and self.runtime._ready_join_parent(req, key)
+        ):
+            return -1.
+        return self._rank(item.identity, now)
+
+    def attach(self, cache):
+        super().attach(cache)
+        if self.workflow_pressure_pause:
+            self.policy.pressure_preference = self._pressure_preference
 
     def _logical_ready_paused(self, item):
         key = self.latest.get(item.identity)
@@ -235,6 +257,17 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self.counts["workflow_size_resume_wall_us"] += choice["wall_us"]
         self.counts["workflow_size_control_cpu_us"] += control_cpu_us
         self.counts["workflow_size_control_wall_us"] += control_wall_us
+        for decision in self.policy.last_pressure:
+            self.counts["workflow_pressure_decisions"] += 1
+            self.counts["workflow_pressure_changed_victims"] += (
+                decision["selected"] != decision["reference_selected"]
+            )
+            if writer is not None:
+                writer.record({
+                    "event": "workflow_remaining_pressure_pause",
+                    "ts_ms": time.time() * 1000., "monotonic_s": now,
+                    **decision,
+                })
         if writer is not None:
             writer.record({
                 "event": "workflow_size_resume_selection", "ts_ms": time.time() * 1000.,
@@ -292,6 +325,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         dispatch = bool(self.dispatch_interval_ms)
         return {
             **super().status(),
+            "pressure_pause_policy": "workflow_remaining" if self.workflow_pressure_pause else "reference",
+            "workflow_pressure_marks_grant_capacity": False,
             "workflow_size_resume": True,
             "workflow_size_resume_scope": (
                 "paused_periodic_and_bounded_free_dispatch"

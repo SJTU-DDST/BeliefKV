@@ -193,6 +193,17 @@ def arm_environment(
     ):
         raise ValueError("bounded free dispatch requires reference Full continuation and 100..5000 ms")
     dispatch_interval = str(int(dispatch_interval)) if mode == "full" else "0"
+    residency_pause = common.get(
+        "BELIEFKV_AGENT_RESIDENCY_PAUSE", common.get("AGENT_RESIDENCY_PAUSE", "0"),
+    )
+    if residency_pause not in ("0", "1") or (
+        mode == "full" and residency_pause == "1" and (
+            agent_admission != "thunderagent_reference" or continuation_free != "1"
+            or not int(dispatch_interval)
+        )
+    ):
+        raise ValueError("residency pause requires bounded reference Full continuation admission")
+    residency_pause = residency_pause if mode == "full" else "0"
     control_interval = common.get(
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS", common.get("AGENT_CONTROL_INTERVAL_MS", "5000"),
     )
@@ -300,13 +311,14 @@ def arm_environment(
     pressure_policy = common.get(
         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
     )
-    if pressure_policy not in ("reference", "projected_release", "predicted_acting") or (
+    if pressure_policy not in ("reference", "projected_release", "predicted_acting", "workflow_remaining") or (
         mode == "full" and (
             pressure_policy == "projected_release" and agent_admission != "thunderagent_retained"
             or pressure_policy == "predicted_acting" and (
                 agent_admission != "thunderagent_reference" or continuation_free != "1"
                 or workflow_size == "1"
             )
+            or pressure_policy == "workflow_remaining" and workflow_size != "1"
         )
     ):
         raise ValueError("pressure policy requires its declared Full agent admission")
@@ -392,6 +404,8 @@ def arm_environment(
         "BELIEFKV_AGENT_FREE_CONTINUATION_ADMISSION": continuation_free,
         "AGENT_FREE_DISPATCH_INTERVAL_MS": dispatch_interval,
         "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS": dispatch_interval,
+        "AGENT_RESIDENCY_PAUSE": residency_pause,
+        "BELIEFKV_AGENT_RESIDENCY_PAUSE": residency_pause,
         "AGENT_CONTROL_INTERVAL_MS": control_interval,
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS": control_interval,
         "WORKFLOW_SIZE_RESUME": workflow_size,

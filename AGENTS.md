@@ -5148,3 +5148,46 @@
   Frozen020527dd GPU remains unchanged, latest observer16/18complete/55arrived
   at2026-10-31T10:20:56Z. No newGPU registered; finish fixed18/receipts/drain/exit
   and evaluate implementation repair before attributing low grants to workload.
+- The latest user explicitly identifies physical offload without eligibility
+  revocation as a policy-coverage defect, and asks to use remaining workflow work
+  for pressure victims too. The separate Full candidate now declares
+  AGENT_RESIDENCY_PAUSE=1 and AGENT_PRESSURE_PAUSE_POLICY=workflow_remaining.
+  Keep old runs/paper ThunderAgent unchanged; neither feature is default-on.
+  Predicted FULL release and native parent-pressure callbacks pause current
+  blocked nonpending owners, while backup alone does not. Actual Host-backed
+  continuation checks catch other native releases at registration/return and a
+  bounded8request/200ms native-boundary rotation. The cheap hint is not authority;
+  verify actual input/session reentry before pausing. Unknown checkpoints stay
+  unknown; pure unbacked discard is not falsely claimed covered.
+- Offloaded tool owners remain paused until actual dependencies and a submitted
+  caller are ready. A selected ordinary restore can remain active during copy;
+  avoid repeatedly revoking the same request and clear its marker at actual
+  native service. Running/allocated/partially generated calls are protected.
+  Add total paused and residency-paused snapshots alongside paused-pending;
+  tools still blocking do not become ready just by changing the label.
+  JOIN/EOS and siblings remain, tool prefetch/layer handoff remain off.
+- Workflow pressure uses cached remaining model/tool work within the reference
+  acting-before-reasoning stages, prioritizing long remaining work and preserving
+  ready JOIN where possible. Missing prediction falls back to context order.
+  Reasoning only gets request-boundary marks sufficient for the deficit, counting
+  existing planned marks, never actual or physical capacity credit. Keep logical
+  token tie-break distinct from unique reclaimable physical bytes; this is not
+  complete R5 or a claimed optimal oracle. See
+  docs/design/residency_coupled_workflow_pressure_20261031_zh.md.
+- Residency/pressure source-bound CPU now passes6069+23, retains6032literalIDs/
+  2234sourceinputs, nofailure/error/skip and unchanged app/native/config/workload.
+  Evidence residency_pressure_bound_cpu_r1;37new focused cases and266combined
+  cases also pass. Actual combined constructor entry accepts the generated
+  residency_workflow_pressure_cpu_r1/full.json. Early entry attempts omitted
+  normal server-field aliases and failed CPU-only; final entry uses the real
+  serving aliases/model path. No GPU startup or registration follows this proof.
+  The candidate keeps old1s artifact for explicit CPU comparison only and requires
+  a new paired control before attributing oracle gain to ranking.
+- Frozen020527dd oracle is now complete for fixed18:2819requests/362072outputs,
+  meanJCT985.656618s versus931.500654s control,5improved/13worse and5.813841%
+  meanregression. Common-window throughput+0.343935%,targetnotmet. Certificate/
+  freshdrain/measuredwork/actualownedexit are verified; all six owned processes
+  actually absent and no GPUcompute owner remains. Keep nonmeasured censoring,
+  original background-coverage rejection and complete joint-gate results.
+  Do not call these new residency/pressure GPU results or attribute all
+  regression to one defect. No newbaseline/learned/GPU run queued.

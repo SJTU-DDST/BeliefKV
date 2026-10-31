@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 import time
 
-from beliefkv.policy.paper_baselines import ThunderActingDecayWorkingSet
+from beliefkv.policy.paper_baselines import ThunderActingDecayWorkingSet, _number
 
 
 def resume_category(item):
@@ -27,6 +27,8 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
         self.defer_first = defer_first
         self.rank_before_category = rank_before_category
         self.last_selection = {}
+        self.pressure_preference = None
+        self.last_pressure = []
 
     def arrive(self, identity, tokens, *, now):
         super().arrive(identity, tokens, now=now)
@@ -120,3 +122,69 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
             **({"logical_ready_paused_before_resume": readiness} if readiness is not None else {}),
         }
         return tuple(item.identity for item in selected)
+
+    def tick(self, *, now):
+        self.last_pressure = []
+        if self.pressure_preference is None:
+            return super().tick(now=now)
+        timestamp = _number(now, "workflow pressure control")
+        self._resume_now = timestamp
+        preferences = {}
+
+        def order(items):
+            for item in items:
+                if item.identity not in preferences:
+                    preferences[item.identity] = self.pressure_preference(item, timestamp)
+            if any(preferences[item.identity] is None for item in items):
+                return sorted(items, key=lambda item: item.tokens), False
+            return sorted(items, key=lambda item: (
+                -preferences[item.identity], -item.tokens, item.queue_sequence,
+            )), True
+
+        def record(selected, reference, *, predicted, marked):
+            self.last_pressure.append({
+                "selected": selected.identity, "reference_selected": reference.identity,
+                "prediction_used": predicted,
+                "remaining_work_priority": preferences.get(selected.identity),
+                "context_tokens": selected.tokens, "marked_for_pause": marked,
+                "remaining_actual_tokens": self.remaining_capacity(),
+                "physical_capacity_credit": False,
+            })
+
+        try:
+            resumed = self._resume()
+            while self.remaining_capacity() < 0:
+                acting = [p for p in self.programs.values() if p.active and p.acting]
+                if acting:
+                    ordered, predicted = order(acting)
+                    selected = ordered[0]
+                    reference = min(acting, key=lambda item: item.tokens)
+                    self._pause(selected, timestamp)
+                    record(selected, reference, predicted=predicted, marked=False)
+                    continue
+                reasoning = [
+                    p for p in self.programs.values()
+                    if p.active and not p.acting and not p.marked_for_pause
+                ]
+                if reasoning:
+                    ordered, predicted = order(reasoning)
+                    deficit = -self.remaining_capacity()
+                    # Existing marks cover future release, never actual capacity.
+                    planned = sum(
+                        p.tokens + self.buffer_tokens for p in self.programs.values()
+                        if p.active and p.marked_for_pause
+                    )
+                    for selected in ordered:
+                        if planned >= deficit:
+                            break
+                        reference = min(
+                            (p for p in reasoning if not p.marked_for_pause),
+                            key=lambda item: item.tokens,
+                        )
+                        selected.marked_for_pause = True
+                        planned += selected.tokens + self.buffer_tokens
+                        record(selected, reference, predicted=predicted, marked=True)
+                break
+            return resumed
+        finally:
+            self._resume_now = None
