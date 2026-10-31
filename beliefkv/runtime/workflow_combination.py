@@ -1,6 +1,6 @@
 """R5 selection at existing admission boundaries, with bounded native summaries."""
 
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from itertools import islice
 import hashlib
 import json
@@ -32,14 +32,17 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             admission, window_ms=raw.get("free_dispatch_coalescing_window_ms", 0),
         )
         profile = raw.get("admission_cost_profile")
-        if not isinstance(profile, dict) or profile.get("kind") != "r5_frozen_batch_cost_proxy":
+        kinds = ("r5_frozen_batch_cost_proxy", "r5_frozen_batch_cost_proxy_capacity_v2")
+        if not isinstance(profile, dict) or profile.get("kind") not in kinds:
             raise ValueError("R5 requires its frozen, fingerprinted admission cost profile")
+        self.include_unreferenced_capacity = profile["kind"] == kinds[1]
         self.costs = CombinationCosts(**profile["costs"])
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
         if type(self.oracle_reference_path_s) not in (int, float) or not 0 < self.oracle_reference_path_s < float("inf"):
             raise ValueError("invalid fixed oracle path normalization")
         self.cold_summary = ()
+        self._prefix_protected_anchors = ()
 
     def _resources(self, capacity, maximum):
         a, runtime = self.admission, self.admission.runtime
@@ -109,9 +112,51 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 continue
         return tuple(result)
 
+    def _unreferenced_capacity(self, protected):
+        """Count only settled, unowned duplicate leaves; do not reclaim them."""
+        cache = self.admission.runtime._native_cache
+        if tuple(getattr(cache, "tree_components", ())) != (0,):
+            return ()
+        tree = getattr(cache, "tree_core", None)
+        leaves = getattr(tree, "evictable_device_leaves", ())
+        result, seen = [], set(protected)
+        for node in islice(leaves, self.max_cold_nodes):
+            self.admission.counts["workflow_combination_unreferenced_leaf_checks"] += 1
+            try:
+                full = node.component_data[0]
+                data = (
+                    node.component_data.values() if isinstance(node.component_data, dict)
+                    else node.component_data
+                )
+                if (
+                    node.id in seen or node is getattr(tree, "root_node", None)
+                    or tree.node_by_id(node.id) is not node
+                    or not node.backuped or full.value is None or full.host_value is None
+                    or not 0 < len(full.value) == len(full.host_value) == len(node.key)
+                    or node.id in getattr(cache, "ongoing_write_through", {})
+                    or node.write_through_pending_id is not None
+                    or node.load_back_pending_id is not None
+                    or any(
+                        type(part.session_ref) is not int or part.session_ref != 0
+                        or type(part.lock_ref) is not int or part.lock_ref != 0
+                        or type(part.host_lock_ref) is not int or part.host_lock_ref != 0
+                        or part.session_ids is not None and (
+                            not isinstance(part.session_ids, (set, frozenset)) or part.session_ids
+                        )
+                        for part in data
+                    )
+                ):
+                    continue
+                result.append((node.id, node.creation_time, len(full.value)))
+                seen.add(node.id)
+            except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
+                continue
+        return tuple(result)
+
     def _prefix(self, key, item):
         a, runtime = self.admission, self.admission.runtime
         self._prefix_issue = None
+        self._prefix_protected_anchors = ()
         req = a._live_requests[key.request_id]
         observation = runtime._read_request_reentry(req, key=key)
         if observation is None:
@@ -120,6 +165,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 return None
             checkpoint, missing, extents = 0, 0, ()
         else:
+            if self.include_unreferenced_capacity:
+                self._prefix_protected_anchors = tuple(
+                    dict(observation.get("component_leaves", ())).get(0, ())
+                )
             checkpoint = observation.get("checkpoint_tokens")
             missing = observation.get("missing_full_tokens")
             if (
@@ -187,7 +236,8 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             "reason": "metadata_unavailable_reference_fallback",
         }
         summaries, candidates, predictions, resources = {}, [], {}, None
-        unavailable = []
+        unavailable, protected_prefixes = [], set()
+        private_blocked_tokens, unreferenced_tokens = None, 0
         self.cold_summary = ()
         try:
             if not getattr(a, "remaining_work_ranking_enabled", True):
@@ -218,6 +268,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             if resources is None:
                 result["reason"] = "native_resources_unavailable_reference_fallback"
                 return list(reference)
+            private_blocked_tokens = resources.cold_device_tokens
             reference_keys = set(reference)
             for key in window:
                 found = a._candidate(key.request_id, key, include_first=True)
@@ -226,7 +277,11 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                     prefix = None
                 else:
                     item, _req = found
+                    self._prefix_protected_anchors = ()
                     prefix = self._prefix(key, item)
+                    protected_prefixes.update(
+                        identity for identity, _created in self._prefix_protected_anchors
+                    )
                     issue = self._prefix_issue if prefix is None else None
                 if prefix is None:
                     unavailable.append({"key": asdict(key), "reason": issue})
@@ -256,6 +311,17 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             if not any(a._supported(value) for value in predictions.values()):
                 result["reason"] = "predictions_unavailable_reference_fallback"
                 return list(reference)
+            if self.include_unreferenced_capacity:
+                self.cold_summary = tuple(
+                    row for row in self.cold_summary if row[0] not in protected_prefixes
+                )
+                protected = protected_prefixes | {row[0] for row in self.cold_summary}
+                unreferenced = self._unreferenced_capacity(protected)
+                unreferenced_tokens = sum(row[2] for row in unreferenced)
+                self.cold_summary += unreferenced
+                resources = replace(
+                    resources, cold_device_tokens=sum(row[2] for row in self.cold_summary),
+                )
             result = choose_combination(
                 candidates, [key.invocation_id for key in reference], resources, self.costs,
                 required=[
@@ -284,6 +350,13 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         "unavailable_summaries": unavailable,
                         "resources": asdict(resources) if resources is not None else None,
                         "cold_device_extents": self.cold_summary,
+                        "capacity_summary_kind": (
+                            "private_blocked_and_unreferenced_settled_leaves"
+                            if self.include_unreferenced_capacity else "private_blocked_settled_leaves"
+                        ),
+                        "protected_prefix_anchor_ids": sorted(protected_prefixes),
+                        "private_blocked_cold_tokens_before_prefix_protection": private_blocked_tokens,
+                        "unreferenced_cold_device_tokens": unreferenced_tokens,
                         "semantic_revision": runtime.semantic_revision,
                         "metadata_and_selection_cpu_ns": time.thread_time_ns() - cpu,
                         "metadata_and_selection_wall_ns": time.perf_counter_ns() - started,

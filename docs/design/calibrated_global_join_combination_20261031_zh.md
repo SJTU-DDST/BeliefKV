@@ -244,6 +244,51 @@ nice19、CUDA 隐藏、OMP/OpenBLAS 单线程，输入 pins 已重新验证。
 还包含无参考准入集合的快路径，不能全解释为真实元数据获取失败。
 这只是早期前缀，不是完整覆盖率、JCT 或吞吐收益。
 
+## r5：补全无会话引用的冷缓存容量
+
+r4 的资源摘要只合计 allocator 当前空闲页与已登记的、私有阻塞 agent
+的可回收副本。原生会话关闭只解除引用，不立即释放缓存页；原生 prefill
+还可以回收无会话引用的缓存。因此摘要可能比实际原生准入更保守。
+
+`choice_resource_gaps_prefix_r1.json` 封存的前缀包含 6 次参考集合资源拒绝。
+在各自原有摘要、候选和 JOIN 保护下枚举全部子集，均无可行集合；
+其中包括需求 2061 token、可用摘要只有 1900 token 的小缺口。
+这证明当时的摘要挡住了比较，不能证明被漏计的安全缓存一定足以补齐缺口。
+旧日志没有记录这些无引用节点，不补造其容量，也不将 6 次都算作已修复机会。
+
+新的显式 profile 为 `r5_frozen_batch_cost_proxy_capacity_v2`，
+在原 32 个阻塞节点检查之外最多检查 32 个原生 device leaf。只接受：
+
+- FULL-only 池中仍由原生树持有的同一节点，排除根和重复身份；
+- 完整且等长的 HBM/Host 副本，原生 device-evictable leaf 集合中的成员；
+- 所有组件的 session、device lock、Host lock 引用均为明确的整数零；
+- 无 session ID、无在途 D2H/H2D，也没有待确认的 write-through；
+- 不属于本轮候选的匹配前缀 anchor，且不与既有阻塞摘要重复计费。
+
+这里只增加资源下界的可观察范围，不释放节点、不启动备份或传输，
+不把逻辑额度当作物理分配权限。原生锁、分配、迁移和 ACK 仍为最终权限。
+候选前缀保护同时作用于旧阻塞摘要和新增无引用摘要。
+日志分别记录原阻塞容量、受保护 anchor、新增无引用容量和摘要类型。
+旧 profile 不启用新增检查，保持原历史路径。
+
+准备目录为 `calibrated_combination_initial12_mean70_prepare_r5`。
+新 profile 的身份同时绑定成本和容量摘要版本；旧 de7 operator 明确拒绝它。
+任务、图、工具时长、到达、18 个测量成员、容量和五档成本全部不变。
+9310 个已完成请求、52 个自然结束 workflow 及固定测量工作
+2819 请求 / 362072 输出再次守恒，383 个 call-boundary 剩余路径与 r4 精确相同。
+`old_operator_rejection_and_scope_r2.json` 保存显式旧版本拒绝及范围核验；
+r1 的外层异常未展开内层 stderr，保留失败并在 r2 补齐证据。
+
+`combination_unreferenced_capacity_bound_cpu_r1/evidence.json`
+验证 6314 项及 23 子项通过，保留全部 6290 个先前 literal identity
+和全部旧源码路径，绑定 2258 个源码输入；执行中源码及原生状态不变，
+无失败、错误或跳过。新增 24 项覆盖引用、锁、DMA、Host 缺口、重复/失效节点、
+有界检查、实际构造、候选前缀保护、真实选择变化和旧 profile 隔离。
+
+该候选仅完成 CPU 验证，尚未注册 GPU，也没有 JCT 收益证据。
+正在运行的 r4 仍使用冻结 de7/native434，不热更新。须先完成其固定
+18 条及完整收尾，再决定是否值得单独验证容量修正。
+
 ## GPU 验收
 
 需要干净冻结源码、当前预约/资源检查、新的 24 请求 position/session/stop

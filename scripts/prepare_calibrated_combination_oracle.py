@@ -59,6 +59,7 @@ def context_prefill_costs(diagnostic, calibration):
 def calibrated_artifact(
     original, calibration, *, calibration_path, calibration_sha256,
     context_calibration=None, context_calibration_path=None, context_calibration_sha256=None,
+    include_unreferenced_capacity=False,
 ):
     WorkflowWorkOracleArtifact(original)
     if (
@@ -109,6 +110,20 @@ def calibrated_artifact(
             "integration": "piecewise_over_missing_input_prefix_to_complete_context",
             "remaining_intrinsic_model_path_uses_original_global_prefill_proxy": True,
             "pure_GPU_time_claimed": False,
+        }
+    if type(include_unreferenced_capacity) is not bool:
+        raise ValueError("capacity summary revision must be explicit")
+    if include_unreferenced_capacity:
+        profile = artifact["admission_cost_profile"]
+        profile["kind"] = "r5_frozen_batch_cost_proxy_capacity_v2"
+        profile["identity"] = hashlib.sha256(json.dumps({
+            "costs": costs, "capacity_summary_kind": profile["kind"],
+        }, sort_keys=True).encode()).hexdigest()
+        artifact["calibrated_model_time"]["capacity_summary_revision"] = {
+            "kind": profile["kind"], "maximum_additional_native_leaf_checks": 32,
+            "requires_no_session_references_or_locks_and_settled_Host_duplicate": True,
+            "candidate_matched_prefix_anchors_protected": True,
+            "native_allocation_and_DMA_authority_unchanged": True,
         }
     WorkflowWorkOracleArtifact(artifact)
     return artifact
@@ -168,6 +183,7 @@ def main():
     for name in ("base", "control", "calibration", "cohort", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--prefill-context-calibration", type=Path)
+    parser.add_argument("--include-unreferenced-cold-cache", action="store_true")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output_dir.exists():
         raise ValueError("hide CUDA and preserve earlier preparations")
@@ -210,6 +226,7 @@ def main():
             sha256_file(args.prefill_context_calibration)
             if args.prefill_context_calibration is not None else None
         ),
+        include_unreferenced_capacity=args.include_unreferenced_cold_cache,
     )
     destination = args.output_dir.resolve()
     artifact_path, config_path = destination / "oracle.json", destination / "full.json"

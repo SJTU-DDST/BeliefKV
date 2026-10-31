@@ -5475,3 +5475,15 @@
   correctlylabeledplotsregistered,noautomaticGPUfollowup.Early200choice
   entries/6replayablestates/0setchangesarenotfullcoverageorJCTgain;default
   metadatafallbackalsoincludesempty-referencefastreturn.Keepgoalactive.
+- New CPU-only capacity_v2 profile counts at most32additional unreferenced,
+  settled, complete Host-backed native FULL device leaves, excluding candidate
+  prefix anchors, duplicate IDs, roots, stale nodes, locks/references and DMA.
+  No allocation/release/backup/transfer authority changes. Legacy profile keeps
+  its old scan; new fingerprint includes capacity kind and old de7 rejects it.
+  r5 preparation retains all tasks/tools/arrivals/cohort/costs and383remaining
+  paths exactly. BoundCPU6314+23retains6290literalIDs/2258sourceinputs with
+  unchanged source/native and nofailures/errors/skips. Six sealed r4 resource
+  refusals have no feasible subsets under old summaries, not proof all six
+  become feasible with missing credit. Historical leaf capacity is unknown.
+  r4 GPU and both observers remain frozen;finish fixed18/drain/exit first.
+  No automatic GPU successor or accepted oracle gain;goal remains active.
