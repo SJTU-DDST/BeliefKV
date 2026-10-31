@@ -5436,3 +5436,11 @@
   Notnative metadata,totalcontrolcostorJCTgain. Sharedbound6240+23retains
   6236/2254inputs,zeroskips/failures,nativeunchanged. Prep r3islatest;
   frozen931Thunderand68observersstayunchanged,nooracleGPUqueued.
+- Clean bf5c6c58 operator now verifies all2254bound source inputs/6240existing
+  cases,external hashes andactual runtime constructor fromprep r3;report
+  clean_freeze_entry_r1.json. No GPU followup registered or service hot edit.
+  New read-only audit_workflow_combination_choices replays actual cutoff masks
+  andlocalS0,then binds exactperiodic grants/postpressure/bounded progress.
+  Free-dispatch service andA-to-B remain separate;missing evidence staysunknown,
+  notcausalJCT.74focusedchecks pass;retainr1two session-lessfixture failures
+  andr2repairwithoutrelaxingidentity. This isanalysis-only,notnewGPUqualification.
