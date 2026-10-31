@@ -1,0 +1,72 @@
+{
+  "observed_at": "2026-10-31T00:44:04.235898+00:00",
+  "command": [
+    "nice",
+    "-n",
+    "19",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/beliefkv-sustained52continuous-20261030-4446f4b3/scripts/finish_sustained_control.py",
+    "--registration",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r3.registration.json",
+    "--position-registration",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r3.registration.json",
+    "--analysis-checkout",
+    "/home/longhao/experiment/beliefkv-sustained52continuous-20261030-4446f4b3",
+    "--arrivals",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r4/arrivals.json",
+    "--cohort",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r4/analysis_cohort.json",
+    "--output-dir",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/full_review_continuous52_r1"
+  ],
+  "application": {
+    "commit": "4446f4b362bad2f6cfe75bf320be7dbfef2f0643",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "f3b48b789da4e3cf8556ef959d8e1c8cf764bd4f2fbb5383b39ab2e70da25134"
+  },
+  "process": {
+    "pid": 2709223,
+    "state": "R",
+    "ppid": 2709206,
+    "start_ticks": "757770733",
+    "argv": [
+      "nice",
+      "-n",
+      "19",
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-sustained52continuous-20261030-4446f4b3/scripts/finish_sustained_control.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r3.registration.json",
+      "--position-registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r3.registration.json",
+      "--analysis-checkout",
+      "/home/longhao/experiment/beliefkv-sustained52continuous-20261030-4446f4b3",
+      "--arrivals",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r4/arrivals.json",
+      "--cohort",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r4/analysis_cohort.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/full_review_continuous52_r1"
+    ]
+  },
+  "inputs_sha256": {
+    "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r3.registration.json": "3ae57c04dc4da6a651fa449e34822e1c7cc07d34745265793b90216d6d2ed233",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r4/arrivals.json": "9f8cee4566af3368e5591c0e89aab49e3ef18e876c576f14fa5897a575cf86c0",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r4/analysis_cohort.json": "a531776ce4dd5d158773ea7a5a2599713e41e8d52466ddcc0aab1c340c3fe98d",
+    "/home/longhao/experiment/beliefkv-sustained52continuous-20261030-4446f4b3/scripts/finish_sustained_control.py": "a7f3da1fa41b661fba4c723719385dcf848075df7230c3e3880809a4dc172e58"
+  },
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "99999",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "nice": 19
+  },
+  "complete_work_drained_actual_exit_required": true,
+  "final_demand_and_workload_gate_still_required": true,
+  "GPU_followup_registered": false,
+  "performance_accepted": false
+}

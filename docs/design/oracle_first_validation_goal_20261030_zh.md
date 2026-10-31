@@ -72,6 +72,12 @@ prompt、私有未来图、未来输出和隐藏工具采样时长。预测缺�
 等待自动消耗模型剩余工作。学习标签、工具感知 oracle 的关键路径和
 真实 JCT 明确区分。
 
+已核实52条来源的WORKFLOW_START均保存`workflow_ranking_input`，原任务指示
+为968--4096字符，并有单独的有界委派/角色字段。旧worker仍读取
+`workflow_task_instructions`并允许prompt尾部回退；预测阶段须显式适配
+新契约，不能把旧字段路径直接当作R5语义输入。当前排序关闭的控制及
+独立oracle不使用该学习worker，不能把这个后续适配项当作当前性能原因。
+
 oracle 收益建立前不训练/推广新工作量预测器，也不启动其他 baseline。
 保留 JOIN/EOS、工具预测卸载、prepare_host 和 agent 连续性；工具预取、
 普通恢复绑定、逐层 handoff 与 mixed chunk 继续关闭。
@@ -101,7 +107,18 @@ oracle 收益建立前不训练/推广新工作量预测器，也不启动其他
 最大间隔由约561秒降至252.688501秒，末次到达3604.564135秒；新测量组
 模型工作P80/P20=3.808575。该种子选择是诊断性准备，不能冒充无条件随机
 多种子证据，也不预先证明容量安全或持续压力。完整准备与条件见
-`full_review_balanced52_final_r1/seed_selection_r1.json`；GPU验证尚待启动。
+`full_review_balanced52_final_r1/seed_selection_r1.json`；这份静态准备本身
+不代表GPU验收，后续实际启动记录如下。
+
+该85秒控制现已实际启动，登记
+`workflow_sustained_original52_full_20261030_r3.registration.json`，冻结应用
+`4446f4b3`、原生树`434c35dd`，端口18918。24条真实position/session/native
+stop检查全部通过，1/8/24采样检查完成。独立启动审查核对415条完成回执，
+唯一GPU owner和nice0测量进程、500ms补位/2秒控制及原策略设置均成立。
+这些只是启动与完成前缀证据，不能接受整个新负载。完整CPU审查已从同一
+冻结提交等待，`full_review_continuous52_r1.registration.json`，实际nice19、
+CUDA隐藏及OMP/OpenBLAS各1线程；结束后仍需最终定时容量审计及阶段判定。
+目前没有登记oracle、其他baseline或新预测器训练。
 
 全局oracle原型现在将首次注册、续调和sibling补入合并到同一有界补位
 过程，与周期恢复使用相同的全局剩余路径偏好；必要JOIN/EOS恢复权与

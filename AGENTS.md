@@ -4790,3 +4790,19 @@
   no JCT/policy winner input;maxgap252.6885s,measured work ratio3.808575.
   Old background work is heavier,not lighter;old mean100 table has~561s gap.
   CPU constructor/nonarrival identity checks pass;new GPU calibration pending.
+- Sustained52 Fullr3 now actually runs from4446f4b3/native434c35dd on18918:
+  ops/workflow_sustained_original52_full_20261030_r3.registration.json,
+  execution.worktrees/beliefkv-causal-4446f4b362ba-f0d55f0af594. Fresh24
+  token/session/native-stop checks(all24stops)and1/8/24sampler pass. Independent
+  gpu_entry_continuous52_r1/live_full_r1 checks415exact complete prefix receipts,
+  soleGPU/nice0,actual500ms/2s/worksortingoff/toolprefetch/layeroff,predicted
+  offload/prepareon,unchanged pools. CPUreviewer2709223/start757770733 actually
+  waits from clean4446f4b3,nice19/CUDA99999/OMP1/OpenBLAS1,report stem
+  full_review_continuous52_r1. Finish all52 normal tails/drain/ownedexit,four
+  reviews,then finalregular-demand and unchanged workload gate. No oracle/
+  learned/baseline GPU followup. Actual previous cohort selfcheck conserves
+  18members/1253882outputs and0%change,not an oracle performance result.
+  All52source root events carrybounded workflow_ranking_input(task968--4096
+  chars);old worker readslegacy workflow_task_instructions/prompt tail. Adapt
+  that contract only at the later learned stage;current unsorted/oracle paths
+  do not use the learned worker,so it is not a current performance cause.

@@ -352,3 +352,22 @@ P80/P20不低于3、初始8个上下文均值不高于总体均值，取首个�
 工具overlay完全一致，Full/scheduler-only/native构造均通过。继续沿用
 未改动的5834项及23子测试源码绑定；下一次实际GPU仍需新position、sampler、
 资源检查及完整压力/容量/尾部验收。不能凭静态时间表预先接受负载。
+
+## 85秒控制实际启动
+
+新的Full登记`workflow_sustained_original52_full_20261030_r3`，冻结应用
+`4446f4b3`、原生树`434c35dd`，端口18918，执行
+`.worktrees/beliefkv-causal-4446f4b362ba-f0d55f0af594`。24条position检查均
+native stop，1/8/24采样检查保留原生采样器且包含dispatch成本。
+独立CPU核对封存415条完成回执，与完整同token旧控制的输入、输出哈希、
+长度及停止条件相同；唯一GPU scheduler owner与nice0测量进程成立，
+实际500ms补位/2秒控制、排序关闭、预测卸载与prepare开启、工具预取和
+layer关闭，物理容量与来源相同。证据在`gpu_entry_continuous52_r1`。
+
+CPU完成审查从干净的同一冻结应用实际等待，进程2709223/start757770733，
+nice19、CUDA99999、OMP/OpenBLAS各1线程。它只在全部52正常结束、
+新鲜排空及实际退出后生成控制、cohort、供给和周期决策。最终容量审计
+及阶段判定仍需另外执行；尚未登记oracle或学习预测器。
+
+固定cohort比较器也通过已完成100秒真实报告的零变化自校验，18成员和
+1253882输出守恒。这只验证分析接口，不是oracle比较结果。
