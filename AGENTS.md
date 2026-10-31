@@ -5056,3 +5056,13 @@
 - Freechoicecodeactuallypassesbound5964cases+23subtests,retains5933literal
   IDs/all2225inputpaths,native/sourcesunchanged,nofailure/error/skip. Evidence
   free_choice_bound_cpu_r1;CPUonly,noperformanceornewGPUqualification.
+- Memoryfollowupdistinguishesmean60latest105.5639%fromearlierpeak113.5819%:
+  mean60_live_r3/demand.json has3225390reusableoldtokensat2580s,26live/
+  41contexts,385686tokensor37.914477GBovercombinedcapacity. Mean70wholepeak
+  2476930/87.2249%at2520s,19live/38contexts;commonpeak45.2224%. Thesefuture
+  CPUunionboundsarenotphysicalallocations,fullgrowthbudgetoronlineinputs.
+  Currentlauncher/preflight/comparisonallcapHostat200GB;newRAMalonechanges
+  nothing. Actualnode1preferredisnotstrictlocalbind;current199.80GiBlocal
+  availabilityestimatecannotprove240GBpool+8GiBreservefits. See
+  docs/research/original56_memory_capacity_20261031_zh.md. Noresourcechange/
+  newGPUregistered;allfuturearmsmustshareanexplicitnewcapacitycontract.
