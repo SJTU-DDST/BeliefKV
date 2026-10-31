@@ -5498,3 +5498,42 @@
   BoundCPU6318+23retains6314/2259inputs/native unchanged,zero failure/error/
   skip;54focusedcasespass. Initial017freeze is not proof for this later source.
   Runningde7 and observers unchanged,noGPUsuccessor registered.
+- R4context-combination fixed18nowcomplete,2819requests/362072outputs match;
+  52naturallyended/4nonmeasuredcensored,freshdrain/actualownedexit reverified.
+  MeanJCT1073.185391vscontrol1052.994585s(-1.917465%gain),commonwindow
+  300.650162vs301.891902tps(-.411319%);do notpromote. Still8.712750%lower
+  meanthanThunder,whereasdisabled-rankingPredictive is10.430219%lower.
+  Fullsummary6003entries/5104empty/169earlyreturns/26realenumerations/4sets;
+  reference-summary149closure/1checkpoint failure. CombinedmetadataCPU.515152s
+  isnotallcontrolcost orcausalJCT;A-to-B/pressure influence remainsseparate.
+  Preservebackground1254.678486suncovered/prefixlossproxy1444930 rejection.
+- Newcapacitycandidate clean7633f764 independentlyverifies2259source inputs/
+  6318CPUcases andactualconstructor againstsame r5config. Entryr1wrapper
+  failedbeforepositionregistration onwrongreference field;preserverawfailure
+  andoldoperator. Entryr2binds referencefrompriorposition,onlynativepatchpath/
+  derivedhashchanged,tree/bytes/plainnative unchanged. Newpositionr1 on18940
+  hascompleted token/session/stop and1/8/24sampling,thenregistered Fullcapacity
+  comparisonr1;actualreplaystartup/CPUobserversstill requirefreshverification.
+  Noexistingcontrol orThunder rerun,noautomaticlaterGPUfollowup.
+- CPUbackground inventoryreusesunchangedLoCoBench originals:26unusedfamilies
+  withcontext<=65536,25passoldsource-diagnostic filter,total898697tokens.
+  Same12/70seed35 continuation slots extendlastarrival3259.858610to4999.366843s
+  whilepreserving56prefix;notanexecutable workload orcoverage/Hostproof.
+  Naturaltracework/childshape andliveroot-childtools remainunqualified,noGPU
+  capture started. Filebackground_extension_original26_inventory_r1 explicitly
+  records25pass. Do notreuseoldruntimeimageprobeasnewqualification.
+  See calibrated_combination_complete_and_capacity_20261031_zh.md;goalactive.
+- Capacityr1 nowactuallyrunning fromfrozen7633/native434on18940 after fresh
+  24token/session/native-stop(all24stop)and1/8/24sampling pass. Independentlive
+  proof675exactprefixreceipts/339new-capacity entries/soleGPUscheduler3224778/
+  nice0 andunchangedactualcapacity passes;correctcostidentityc74c58ef.
+  Cohortobserver3225729/results3225737actuallyalive,nice19/CUDA99999/threads1/
+  allpinsverified. Bootstrap3223477finished;noautomaticGPUsuccessor.
+  Same18normal-tails/receipts/freshdrain/actualexit protocol remains.
+- Newsealedcapacityprefix635entries has8candidate closure failures explicitly
+  "node ancestry exceeds bound",2reference occurrences. Thisconfirms a64-node
+  support limitation for those events,notall149oldmissingclosures. Positive
+  unreferencedcapacityonly2entries/max104tokens isnotphysicalreclaimedcapacity
+  orfullruncoverage. Onechangedsethasnonewmember,notnewservice. Consider
+  low-costvaliddeep-prefixsummaries while preserving nativeauthority;do not
+  unboundscans orforcemigrations. Running7633 staysfrozen,goalremainsactive.
