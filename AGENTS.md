@@ -5097,3 +5097,17 @@
   periodicphases andpairedplots. No subsequentGPUqueued. Keep allfrozen
   source andrequestpins;completeoraclegain remainspending. Earlyfreechoice
   audit isonlyaprefix;plotselfcheckusescontroltwice,notoracleperformance.
+- Latestuser reauthorizes12initial/mean70or80after currentoracle finishes,
+  whenneeded tocreate usefulcompetition. Thisoverrides theearlier skip-only
+  followupinstruction,not currentfrozen1s/source/arrivals or stopprotocol.
+  Prefer12/70withunchanged sustainedrate;use12/80onlyifuseful-statepressure/
+  recompute warrants lowerinflow. Existing12/70and12/80preparations CPUrecheck
+  exactlyreproduces seededarrivals/same56/cohort andidenticalnonarrivalFull.
+  Reuse preparations,no newcapture;preserveoldSUPERSEDED/interruptionrecords.
+  NewarrivalconditionsneedtheirownFullcontrolbeforematchedoracle comparison.
+  No subsequentGPUregistered now. State-dependent earlydispatch remains
+  design-only;never claimcurrentfixed1s alreadybypassesordinaryidlewaiting.
+  Prefixwindow_tradeoff_*_r1 observesonly412.944491--625.626754s commonwindow:
+  GPU99.681986%/zero0s,readypausedtime4.234956%,105periodiccontrols/0competition.
+  Wholeprefix1freeconflict doesconsumeanewusefulbatch butispre-commonwindow.
+  NotfullJCT,notmatchedoldwindowcomparison,noproofwaitingisfree.
