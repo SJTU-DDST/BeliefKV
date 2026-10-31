@@ -5017,3 +5017,19 @@
   stillrequired. Freezeunchangedoriginal56manifest onmainforexecutableclones,
   matchinghistorical5f2hash74592f48. No newGPUregistered;currentf6andobserver
   stayfrozen. Seeoriginal56_initial_population_calibration_20261031_zh.md.
+- Initialpopulationcode bb39293e passesbound5933cases+23subtests,retains5922/
+  all2221paths,sources/nativeunchanged,nofailure/error/skip. Evidence
+  initial12_mean80_bound_cpu_r1. NoGPUqualification/performancepromoted.
+- Latestuseraskswhetherselectionwindow suppressespausedbacklog. Actualmean70
+  fixedwindowjournal has175nonperiodiclogicalgrantrecipients versus104periodic
+  retainedrecipients. All119firstregistrationrecordsareinactiveattheboundary;
+  96grantedbeforenextperiodic,p50registration-to-grant.082859ms,95under1ms.
+  Thisislogicaleligibility,notnative/GPUserviceor119persistentwaiters.
+  registered/completed/events immediatelydispatch;500msisfallback,2snotsole
+  entry. Periodic0competitionscannotproveallsystem0opportunities. Rebinning
+  actualgranttimesinto.5/2/5s gives7/15/30multi-workflowbins,notcounterfactual
+  capacity/JCTproof. Globaloraclealreadydefersfreeevents tonextnativeboundary,
+  notaforced2sdelay. Auditallentrychoicesbeforepromotingnewloadorlengthening
+  control. Keep currentf6GPU/fixed18stop unchanged;candidate12/80CPU-only.
+  Evidence mean70_window_r1/scheduling_window_audit.json and
+  docs/research/original56_scheduling_window_audit_20261031_zh.md.
