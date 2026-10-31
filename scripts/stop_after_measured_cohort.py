@@ -21,6 +21,13 @@ from scripts import run_causal_source_capture as capture
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
+def replay_arm(comparison):
+    order = comparison.get("order")
+    if order not in (["full"], ["thunderagent_acting_decay"]):
+        raise ValueError("measured termination requires one declared Full or ThunderAgent acting-decay arm")
+    return Path(comparison["run_root"]) / order[0]
+
+
 def boundaries(records, starts, ends, allowed):
     for row in records:
         kind = row.get("kind")
@@ -159,7 +166,7 @@ def receipt_proof(comparison, cohort, arm):
 
 def stop_owned(comparison, cohort, output, *, state):
     """Pause only supervision while the existing client cancels and flushes."""
-    arm = Path(comparison["run_root"]) / "full"
+    arm = replay_arm(comparison)
     supervisor, driver, server = (state[name] for name in ("watcher", "driver", "server"))
     if len({row["pid"] for row in (supervisor, driver, server)}) != 3:
         raise ValueError("cohort shutdown requires distinct registered process owners")
@@ -198,7 +205,7 @@ def stop_owned(comparison, cohort, output, *, state):
 def review(plan, comparison, completion):
     output = Path(plan["analysis_output"])
     output.mkdir(parents=True, exist_ok=False)
-    arm = Path(comparison["run_root"]) / "full"
+    arm = replay_arm(comparison)
     common = ["--registration", plan["comparison"]]
     commands = (
         ("cohort", [
@@ -219,6 +226,8 @@ def review(plan, comparison, completion):
             "--output", str(output / "demand.json"),
         ]),
     )
+    if arm.name != "full":
+        commands = commands[:1]
     for name, parts in commands:
         subprocess.run([sys.executable, str(ROOT / parts[0]), *parts[1:]], cwd=ROOT, check=True)
     cohort = causal.load(output / "cohort.json")
@@ -241,6 +250,7 @@ def review(plan, comparison, completion):
         "measured_native_requests": completion["measured_requests"],
         "background_right_censoring_explicit": True,
         "all_workflows_completed": cohort["all_workflows_completed"],
+        "analysis_arm": arm.name,
         "termination_certificate": str(Path(plan["output_dir"]) / "completion.json"),
         "termination_certificate_sha256": sha256_file(Path(plan["output_dir"]) / "completion.json"),
         "model_cost_calibration": {
@@ -252,6 +262,17 @@ def review(plan, comparison, completion):
         "performance_accepted": False,
     }
     capture.reservation.write_json(output / "review.json", control)
+    if arm.name != "full":
+        capture.reservation.write_json(output / "workload_decision.json", {
+            "accepted_for_oracle_diagnostic": False,
+            "failed_checks": ["full_policy_workload_diagnostics_not_evaluated_for_paper_arm"],
+            "not_a_new_workload_acceptance_decision": True,
+            "paper_arm": arm.name,
+            "complete_measured_work_and_censoring_retained": True,
+            "Full_ready_paused_and_periodic_grants_are_not_paper_metrics": True,
+            "GPU_followup_registered": False, "performance_accepted": False,
+        })
+        return
     subprocess.run([
         sys.executable, str(ROOT / "scripts/review_sustained_workload.py"),
         "--control", str(output / "review.json"), "--cohort", str(output / "cohort.json"),
@@ -275,8 +296,9 @@ def watch(registration):
     cohort = causal.load(Path(plan["cohort"]))
     arrivals = causal.load(Path(comparison["workflow_arrivals_path"]))
     validate_cohort(cohort, arrivals)
-    if cohort["schema_version"] != 2 or comparison["order"] != ["full"]:
+    if cohort["schema_version"] != 2:
         raise ValueError("require the explicit measured-cohort stop protocol")
+    arm = replay_arm(comparison)
     output = Path(plan["output_dir"])
     output.mkdir(parents=True, exist_ok=False)
     state_path = registration.with_suffix(".state.json")
@@ -293,7 +315,7 @@ def watch(registration):
     starts, ends, offset, last_count = {}, {}, 0, None
     measured = set(cohort["measured_workflow_ids"])
     allowed = {row["workflow_id"] for row in arrivals["arrival_schedule"]}
-    events_path = Path(comparison["run_root"]) / "full/replay/runtime_events.replay.jsonl"
+    events_path = arm / "replay/runtime_events.replay.jsonl"
     try:
         deadline = time.monotonic() + 4 * 3600
         published = time.monotonic()
@@ -341,7 +363,7 @@ def watch(registration):
             "inputs_sha256": {
                 str(path): sha256_file(path) for path in (
                     output / "intent.json", output / "receipts.json", output / "telemetry_drain.json",
-                    Path(comparison["run_root"]) / "full/owned_process_cleanup.json",
+                    arm / "owned_process_cleanup.json",
                 )
             },
         }

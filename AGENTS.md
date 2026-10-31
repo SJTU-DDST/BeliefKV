@@ -5393,3 +5393,22 @@
   isCPUreplay,notonlinecontrolcost. Keepinitialtargeted3fixturefailures,
   correctedchecks andr1preparation. Sourcefreeze/newGPUqualification and
   actualJCTgain stillpending;see calibrated_global_join_combination design.
+- Latestuser explicitlyauthorizes ThunderAgent comparison whileoracleCPU
+  optimizationcontinues. Selectexisting12initial/mean70forobservedready supply/
+  competitionandcompletepredictivecontrol,notpolicywinnerselection. Old8/70
+  haddifferentservingcode,soitsweak supplyisnotapurearrivalablation. Neworacle
+  GPUisdeferred;noautomaticGPUfollowup. Keeptracetooltimesunchanged.
+- ThunderAgent acting-decay nowactuallyruns on18936 fromfrozen93161529/native
+  434c35dd,ops/workflow_original56_initial12_mean70_thunder_decay_20261031_r1.
+  Fresh24position/session/stop(all24native)and1/8/24samplingpass. Liveproof
+  87completedprefixreceipts/soleGPUscheduler3138882/nice0,actualcapacitymatches
+  completepredictivecontrol. Paperinvocationprograms/5s/1shalf-life retained;
+  Fullmigration/prefetch/prepare/workmodeloff,futureinformationfalse.
+- CPUcohortstop/verifiernowacceptexplicitFullorThunderAgentacting-decayonly.
+  PaperreviewdoesnotfabricateFull-onlysupply/grantmetrics;completefixed18,
+  receipts,freshdrain/actualexit/censoringstayrequired. Newbaselinecomparator
+  validatesexacttraffic/resources andlabels positivegainaspredictivebetter.
+  LatestboundCPU6236+23retains6212/2252inputs,noskips/failures,nativeunchanged.
+  FinaloracleCPUprepr3fixesstalev1qualificationmetadata;keep r1/r2 historical.
+  See sustained_thunder_initial12_mean70_20261031_zh.md. Freezeandarm new
+  CPUcohort/resultsobserversbeforeclaimingautomatedterminationorcomparison.

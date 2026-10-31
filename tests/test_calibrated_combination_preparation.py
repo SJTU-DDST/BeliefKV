@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
-from scripts.prepare_calibrated_combination_oracle import calibrated_artifact
+from scripts.prepare_calibrated_combination_oracle import calibrated_artifact, configuration
 from scripts.review_matched_work_ranking import (
     verify_calibrated_combination_pair, verify_ranking_only_pair,
 )
@@ -99,6 +99,23 @@ def test_combined_comparison_is_accepted_only_with_its_explicit_joint_change_lab
     assert len(verify_calibrated_combination_pair(control, oracle)) == 2
     with pytest.raises(ValueError):
         verify_ranking_only_pair(control, oracle)
+
+
+def test_generated_qualification_points_to_the_actual_v2_artifact(tmp_path):
+    control, oracle = configured_pair(tmp_path)
+    control_path, calibration_path = tmp_path / "control-reg.json", tmp_path / "costs.json"
+    control_path.write_text(json.dumps(control))
+    calibration_path.write_text(json.dumps(calibration()))
+    oracle.update(candidate_provenance={}, gpu_execution={})
+    path = Path(oracle["common_environment"]["WORKFLOW_WORK_MODEL"])
+    candidate = configuration(
+        oracle, artifact_path=path, artifact_sha256=sha256_file(path),
+        control_path=control_path, calibration_path=calibration_path,
+    )
+    declaration = candidate["workflow_work_qualification"]
+    assert declaration["kind"] == artifact()["kind"]
+    assert declaration["artifact"] == str(path)
+    assert declaration["artifact_sha256"] == sha256_file(path)
 
 
 @pytest.mark.parametrize("invalid", ("tools", "host", "intrinsic", "alias", "window", "threshold", "hidden"))

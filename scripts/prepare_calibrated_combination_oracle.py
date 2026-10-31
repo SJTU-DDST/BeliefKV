@@ -101,6 +101,12 @@ def configuration(base, *, artifact_path, artifact_sha256, control_path, calibra
     candidate["gpu_execution"]["registered"] = False
     candidate["gpu_execution"]["requires_new_paired_control"] = False
     candidate["gpu_execution"]["existing_complete_control"] = str(control_path)
+    candidate["workflow_work_qualification"] = {
+        "kind": COST_KIND, "artifact": str(artifact_path), "artifact_sha256": artifact_sha256,
+        "future_information_used": True, "deployable": False,
+        "learned_calibration_requirement_applies": False,
+        "cost_and_set_selection_joint_change": True,
+    }
     candidate["performance_accepted"] = False
     return candidate
 

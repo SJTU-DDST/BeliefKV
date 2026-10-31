@@ -15,10 +15,10 @@ def put(path, value):
     return path
 
 
-def fixture(tmp_path):
+def fixture(tmp_path, label="full"):
     arrivals, cohort, events, _samples = partial_fixture()
     source, run = tmp_path / "source", tmp_path / "run"
-    arm, directory = run / "full", run / "cohort_termination"
+    arm, directory = run / label, run / "cohort_termination"
     arrival_path = put(tmp_path / "arrivals.json", arrivals)
     cohort_path = put(tmp_path / "cohort.json", cohort)
     expected, tokens, receipts = {}, [], []
@@ -52,7 +52,7 @@ def fixture(tmp_path):
         "".join(json.dumps(row) + "\n" for row in events),
     )
     registration = put(tmp_path / "comparison.json", {
-        "run_root": str(run), "source_arm": str(source), "order": ["full"],
+        "run_root": str(run), "source_arm": str(source), "order": [label],
         "workflow_arrivals": arrivals,
         "workflow_arrivals_path": str(arrival_path), "sampling_mode": "position",
         "token_source_sha256": sha256_file(token_path),
@@ -105,6 +105,21 @@ def test_actual_measured_requests_are_complete_while_background_is_censored(tmp_
     assert set(result["measured_work"]) == {"r1", "r2"}
     assert result["actual_owned_exit_verified"]
     assert not result["all_workflows_completed"]
+
+
+def test_thunderagent_uses_the_same_measured_work_drain_and_censoring_contract(tmp_path):
+    registration, cohort, _directory, arm = fixture(tmp_path, label="thunderagent_acting_decay")
+    with patch.object(stop.capture.reservation, "alive", return_value=False):
+        result = verify_measured_execution(registration, cohort)
+    assert arm.name == "thunderagent_acting_decay"
+    assert result["measured_requests"] == result["measured_output_tokens"] == 2
+    assert result["actual_owned_exit_verified"] and not result["all_workflows_completed"]
+
+
+@pytest.mark.parametrize("order", ([], ["full", "thunderagent_acting_decay"], ["unknown"], ["native_matched"]))
+def test_cohort_stop_rejects_ambiguous_or_undeclared_arms(tmp_path, order):
+    with pytest.raises(ValueError, match="one declared"):
+        stop.replay_arm({"run_root": str(tmp_path), "order": order})
 
 
 @pytest.mark.parametrize("change", (

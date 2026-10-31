@@ -117,7 +117,7 @@ def test_supervision_is_resumed_even_if_receipt_validation_fails(tmp_path, broke
         "watcher": {"pid": 11}, "driver": {"pid": 12}, "server": {"pid": 13},
     }
     comparison = {
-        "run_root": str(tmp_path), "token_source_sha256": "source",
+        "run_root": str(tmp_path), "token_source_sha256": "source", "order": ["full"],
     }
     signals = []
     with (

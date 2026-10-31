@@ -16,9 +16,9 @@ def verify_measured_execution(registration, cohort_path):
     if arrivals != plan["workflow_arrivals"]:
         raise ValueError("completed execution's frozen arrival table changed")
     validate_cohort(cohort, arrivals)
-    if cohort["schema_version"] != 2 or plan["order"] != ["full"]:
+    if cohort["schema_version"] != 2:
         raise ValueError("require the explicit fixed-measured completion protocol")
-    arm = Path(plan["run_root"]) / "full"
+    arm = stop.replay_arm(plan)
     directory = Path(plan["run_root"]) / "cohort_termination"
     certificate_path = directory / "completion.json"
     certificate = causal.load(certificate_path)
