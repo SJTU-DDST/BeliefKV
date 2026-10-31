@@ -395,6 +395,14 @@ r2 修正该夹具后还暴露真实 native 创建时间为 NumPy 标量；复�
 未测量整轮六/八候选控制、GPU kernel、拷贝或 JCT，不据此推导全局收益。
 该微基准是独立证据，不冒充前述 6344 项检查的一部分。
 
+提交 `7f75a954` 已在干净 checkout
+`/home/longhao/experiment/.worktrees/beliefkv-deep-combination-operator-7f75a954`
+独立复核。r6 的 `clean_freeze_entry_r1.json` 验证全部 2260 个源码输入、
+绑定外部输入、6344 项报告、原生状态和微基准源文件，
+并实际构造 runtime，确认新聚合 flag、无引用容量 flag 和成本身份一致。
+该核验没有 GPU 动作，也不自动注册后续实验。
+当前 capacity r1 继续使用原冻结 `7633f764`，等待固定 18 条完整收尾。
+
 ### 另外保留的资源选择缺口
 
 完整 r4 的同一封存范围额外枚举了 76 次

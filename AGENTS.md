@@ -5561,3 +5561,9 @@
   Early6state no-subset finding remainsvalid. Localfeasibility isnotactual
   service/JCT; r6doesnotchange reference-resource-unsupported selection yet.
   See calibrated_global_join_combination_20261031_zh.md;goalstillactive.
+- Deep-prefix fix committed7f75a954 andclean-frozen asbeliefkv-deep-combination-
+  operator-7f75a954. r6clean_freeze_entry_r1 independentlyverifies2260sources/
+  allboundexternal/native/6344report/probe inputs andactualconstructor flags/
+  costidentity50be8112. NoGPUaction ornewr6registration/followup. Current
+  capacityr1 stays7633/native434 withfixed18normal-tail observers;global
+  workload/clearoraclebenefit goalremainsunachieved.
