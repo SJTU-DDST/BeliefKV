@@ -33,8 +33,12 @@ def canonical(decision):
     }, allow_nan=False))
 
 
-def replay_choice(row, costs, cost_identity):
+def replay_choice(row, costs, cost_identity, *, allow_feasible_resource_alternatives=False):
     """Reconstruct the recorded bounded search, including its cutoff mask."""
+    if type(allow_feasible_resource_alternatives) is not bool or (
+        row.get("resource_fallback_selection_enabled", False) is not allow_feasible_resource_alternatives
+    ):
+        raise ValueError("resource fallback selection differs from the frozen profile")
     if (
         row.get("event") != EVENT or row.get("source") not in SOURCES
         or row.get("physical_capacity_credit") is not False
@@ -92,6 +96,7 @@ def replay_choice(row, costs, cost_identity):
         return choose_combination(
             candidates, reference, resources, costs, required=required,
             budget_ns=500_000, clock=clock,
+            allow_feasible_resource_alternatives=allow_feasible_resource_alternatives,
         )
 
     actual = run(lambda: 0)
@@ -129,7 +134,7 @@ def replay_choice(row, costs, cost_identity):
     return summary
 
 
-def inspect(records, batches, costs, cost_identity):
+def inspect(records, batches, costs, cost_identity, *, allow_feasible_resource_alternatives=False):
     """Only a following actual periodic grant can consume a periodic selection."""
     progress = periodic_inspect(records, batches)
     episodes = {}
@@ -141,7 +146,10 @@ def inspect(records, batches, costs, cost_identity):
     choices, pending = [], None
     for sequence, row in enumerate(records):
         if row.get("event") == EVENT:
-            choice = replay_choice(row, costs, cost_identity)
+            choice = replay_choice(
+                row, costs, cost_identity,
+                allow_feasible_resource_alternatives=allow_feasible_resource_alternatives,
+            )
             choice["journal_sequence"] = sequence
             choices.append(choice)
             if row["source"] == "periodic_decay_resume":
@@ -243,6 +251,9 @@ def main():
         list(reader(arm / "opportunities/admission_opportunities.jsonl")),
         reader(arm / "server/runtime_audit.jsonl"),
         CombinationCosts(**profile["costs"]), profile["identity"],
+        allow_feasible_resource_alternatives=(
+            profile["kind"] == "r5_frozen_batch_cost_proxy_capacity_v4"
+        ),
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),

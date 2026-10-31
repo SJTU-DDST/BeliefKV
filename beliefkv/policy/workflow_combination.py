@@ -184,9 +184,9 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=
 
 def choose_combination(
     candidates, reference, resources, costs, *, required=(), budget_ns=500_000,
-    clock=time.perf_counter_ns,
+    clock=time.perf_counter_ns, allow_feasible_resource_alternatives=False,
 ):
-    """Preserve required rights and S0; keep a better feasible set at the deadline."""
+    """Preserve required rights and S0 unless a supported alternative is found."""
     started = clock()
     reference = tuple(reference)
     required = frozenset(required)
@@ -197,6 +197,8 @@ def choose_combination(
         "required_reference_members": tuple(identity for identity in reference if identity in required),
     }
     try:
+        if type(allow_feasible_resource_alternatives) is not bool:
+            raise ValueError("resource fallback selection must be explicit")
         if type(resources.cold_device_tokens) is not int or resources.cold_device_tokens < 0:
             raise ValueError("invalid safely reclaimable device capacity")
         if len(by_id) != len(candidates) or len(set(reference)) != len(reference):
@@ -228,10 +230,11 @@ def choose_combination(
             [by_id[identity] for identity in reference], resources, costs,
             active_decode_cost=active_decode_cost, prefill_costs=prefill_costs,
         )
-        if baseline is None:
+        if baseline is None and not allow_feasible_resource_alternatives:
             result["reason"] = "reference_resource_summary_unsupported"
             return result
-        best_score, selected, best_value = baseline["score"], reference, baseline
+        best_score = baseline["score"] if baseline is not None else 0.
+        selected, best_value = reference, baseline
         result["reference_evaluation"] = baseline
         required_mask = sum(
             1 << index for index, row in enumerate(candidates) if row.identity in required
@@ -263,7 +266,9 @@ def choose_combination(
                 prefill_costs=prefill_costs,
             )
             result["evaluated_subsets"] += 1
-            if value is not None and value["score"] > best_score * (1. + costs.relative_tie):
+            if value is not None and (
+                best_value is None or value["score"] > best_score * (1. + costs.relative_tie)
+            ):
                 best_score, selected, best_value = (
                     value["score"], tuple(row.identity for row in rows), value,
                 )
@@ -271,6 +276,16 @@ def choose_combination(
         reason = "combination_changed" if changed else "reference_best_or_tied"
         if deadline:
             reason = "soft_deadline_best_feasible" if changed else "soft_deadline_reference_fallback"
+        if baseline is None:
+            reason = (
+                "feasible_resource_alternative" if best_value is not None
+                else "resource_fallback_no_feasible_subset"
+            )
+            if deadline:
+                reason = (
+                    "soft_deadline_feasible_resource_alternative" if best_value is not None
+                    else "soft_deadline_resource_fallback"
+                )
         result.update(selected=selected, reason=reason, search_complete=not deadline,
                       selected_evaluation=best_value)
         return result

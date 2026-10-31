@@ -429,5 +429,82 @@ r2 修正该夹具后还暴露真实 native 创建时间为 NumPy 标量；复�
 - sibling 的实际服务覆盖、Host 前缀丢失及迁移/重算；
 - 长 workflow 和背景任务退化，以及背景到达覆盖的原失败项。
 
+## Capacity r1 完整结果与 r7 可行组合恢复
+
+2026-10-31 21:08 UTC，capacity r1 的固定 18 个测量成员、收据、
+新鲜排空与所有权进程退出均完成。独立再次核验 predictive、
+ThunderAgent acting-decay 和本轮 oracle 的工作完全一致：
+2819 请求、362072 输出 token；各有 52 个 workflow 自然结束，
+其余 4 个非测量成员右删失。不能将 supervisor 因背景取消记录的
+`stopped_for_investigation` 单独当作全量正常完成或测量失败，
+结论以明确的固定测量组协议和原始 completion 证据为准。
+
+| 相同固定测量组或共同窗口 | ThunderAgent acting-decay | Predictive 控制 | Capacity oracle |
+| --- | ---: | ---: | ---: |
+| 平均完整 JCT / s | 1175.614 | 1052.995 | 1047.019 |
+| P95 完整 JCT / s | 3056.289 | 2736.141 | 2682.556 |
+| 共同窗口全部输出 / token/s | 292.355 | 301.892 | 301.550 |
+
+Predictive 相对 ThunderAgent 的均值改善仍为 10.430%，共同窗口吞吐
+增加 3.262%。本轮 oracle 相对 Predictive 仅改善 0.568%，吞吐下降
+0.113%，10 个测量成员改善、8 个变慢，尚未达到明显 oracle 收益。
+Oracle 相对 ThunderAgent 的总体均值差为 10.939%，不能将其全部归因于
+剩余工作排序，也不据此宣称统计显著或稳态 serving 已通过。
+
+完整组合审计有 5772 次入口，4838 次空参考快路径，706 次无竞争，
+67 次参考集合资源摘要不支持，140 次参考候选摘要失败。
+仅 21 次实际进行子集枚举，3 次改变集合，且都没有加入参考集合外的成员。
+`searches_replayed=190` 还包含枚举前返回，不能当作 190 次有效搜索。
+即时 A→B 与压力暂停仍单独计数，不能将组合审计当作全部 oracle 覆盖率。
+全部元数据与选择线程 CPU 合计约 0.550 s，不含其他控制路径或 writer。
+
+完整原生拒绝诊断观察到 336 次深度超限、98 次 checkpoint 不可用；
+参考候选分别为 138 和 2 次。这些是重复观察，不是唯一请求数。
+它确认 r6 的深前缀支持具有实际覆盖对象，但尚不能证明修复后的 GPU 收益。
+
+证据目录：
+`capacity_combination_initial12_mean70_comparison_r1`，包括
+`comparison.json`、`independent_complete_verification_r1.json`、
+`combination_choices_and_periodic_service.json`、
+`native_prefix_reasons_complete_r1.json` 和已目视核对的两张图。
+背景到达覆盖与旧前缀丢失检查仍未通过，本轮前缀丢失代理为 995562 token。
+继续使用 12 初始、平均 70 秒及原任务/工具时长，不因方法输赢另选到达表。
+
+### 可行替代集合
+
+新增显式 profile `r5_frozen_batch_cost_proxy_capacity_v4`，在 r6 的深前缀
+支持之上，修正已知参考集合无法通过资源下界时直接跳过所有其他组合的问题：
+
+- 只有候选摘要与资源可观测时，才进入相同六/八候选的受限搜索；
+- 保留所有必须执行的参考 JOIN 成员，使用相同逻辑额度、原生槽位、
+  缺失前缀、完整输入或下一 chunk 预算及增长预留；
+- 不给不可评估的参考集合虚构分数，也不声称替代集合比它的未知分数更好；
+- 截止前确实检查到可行集合才替换；无可行集合或尚未检查到时保持原参考；
+- 已可评估参考集合及旧 profile 的选择、平局和截止行为保持原样；
+- 这只改变当前 paused 成员的资格选择，不增加驱逐、分配、传输权限，
+  不抢占已有 active；原生实际准入仍负责最后检查。
+
+只读审计器从冻结 profile 显式获得该能力，不能仅凭日志反向开启它。
+日志记录 `resource_fallback_selection_enabled`，重放同时核验该声明、
+实际截止边界、JOIN 权利与选中集合。
+
+新准备目录为 `calibrated_combination_initial12_mean70_prepare_r7`。
+任务、工具、到达、固定成员、成本与其他策略不变，383 个剩余路径样本
+与 r6 精确一致，固定测量工作继续守恒。当前实际构造开启三个修复能力，
+旧冻结 `7f75a954` 的实际构造明确拒绝新 profile；没有静默复用旧服务。
+
+对旧 r4 的同一完整封存日志重新运行真实选择器：默认路径逐项复现
+76 次原拒绝；新路径在其中 15 次得到可行集合，3 次包含参考外成员，
+与独立枚举审计一致。无新容量或未来服务假设。这是完整搜索的 CPU 诊断，
+不是线上 0.5 ms 截止前必然得到相同结果或已经改善 JCT 的证明。
+
+新定向检查、原生集成和历史路径回归通过 6360 项及 23 子项，
+保留全部 6344 个先前 literal identity 和旧输入路径，绑定 2261 个源码输入，
+执行中源码与原生状态不变，无失败、错误或跳过。
+有效修复前复现保存在 `combination_resource_fallback_cpu_r1/before.xml`；
+第一次定向 160 项通过，随后增加必须保留 JOIN parent 的组合检查。
+完整证据为 `combination_resource_fallback_bound_cpu_r1/evidence.json`。
+尚需干净冻结和新的 GPU position/session/stop、采样与完整对比。
+
 不得因某次集合评分更高就宣称 JCT 改善。此文档记录 CPU 候选，
 GPU 与性能结果在后续父实验的命名证据目录中保存。

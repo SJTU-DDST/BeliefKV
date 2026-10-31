@@ -5567,3 +5567,23 @@
   costidentity50be8112. NoGPUaction ornewr6registration/followup. Current
   capacityr1 stays7633/native434 withfixed18normal-tail observers;global
   workload/clearoraclebenefit goalremainsunachieved.
+- Capacityr1fixed18andbothobserversnowcomplete/exit;independent3armverification
+  retains2819requests/362072outputs,52naturalends/4nonmeasuredcensored,
+  freshdrain/actualexit.Mean1047.018559vscontrol1052.994585s(.567527%gain),
+  commonwindow301.550202vs301.891902tps(-.113186%);notclearoraclegain.
+  RelativeThundermean10.938552%lowerisoverall,notrankingattribution.
+  Choiceaudit5772entries/21actualenumerations/3setchanges/0newmembers;
+  referenceclosure138depth-limit/2checkpointfailuresconfirmdeepfixcoverage.
+  Preservebackground/prefixloss995562rejections,normalmeasuredtailsandplots.
+- NewCPU-onlycapacity_v4retainsdeep/unreferencedsummariesandallowsbounded
+  feasiblealternativeswhentheknownreferencecannotpassexistingresourcelower
+  bounds.PreserveallrequiredJOINmembers,samelimits/deadline,nophysical
+  authorityoractiveshort-workpreemption;donotinventunsupportedreferencescore.
+  NofeasibleevaluatedsubsetretainsS0;oldsupported/defaultpathsunchanged.
+  Read-onlyauditrequiresfrozenexplicitflagandreplaysnewcutoffs.
+- Preparationr7keepsalltasks/tools/arrivals/cohort/resources/costsand383paths
+  identicaltor6.Actualold7f75constructorrejectsv4;newactualconstructoraccepts.
+  Same76sealedhistoricalrefusalsdefault-exactlyreproduced;newcompletesearch
+  finds15feasiblealternatives/3outsidemembers,notonlinecutofforJCTproof.
+  BoundCPU6360+23retains6344identities/2261sourceinputs/nativeunchanged,
+  zerofailures/errors/skips.GPUfreeze/newpositionandcompletegainstillpending.

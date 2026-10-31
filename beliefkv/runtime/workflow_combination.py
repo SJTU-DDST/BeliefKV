@@ -35,12 +35,13 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         profile = raw.get("admission_cost_profile")
         kinds = (
             "r5_frozen_batch_cost_proxy", "r5_frozen_batch_cost_proxy_capacity_v2",
-            "r5_frozen_batch_cost_proxy_capacity_v3",
+            "r5_frozen_batch_cost_proxy_capacity_v3", "r5_frozen_batch_cost_proxy_capacity_v4",
         )
         if not isinstance(profile, dict) or profile.get("kind") not in kinds:
             raise ValueError("R5 requires its frozen, fingerprinted admission cost profile")
         self.include_unreferenced_capacity = profile["kind"] in kinds[1:]
-        self.allow_deep_prefix_aggregate = profile["kind"] == kinds[2]
+        self.allow_deep_prefix_aggregate = profile["kind"] in kinds[2:]
+        self.allow_feasible_resource_alternatives = profile["kind"] == kinds[3]
         self.costs = CombinationCosts(**profile["costs"])
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
@@ -415,6 +416,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                     key.invocation_id for key in reference
                     if key.invocation_id in runtime._join_priority_pending
                 ],
+                allow_feasible_resource_alternatives=self.allow_feasible_resource_alternatives,
             )
             return [summaries[identity] for identity in result["selected"]]
         except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError) as error:
@@ -434,6 +436,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                             for workflow, value in predictions.items()
                         },
                         "cost_identity": self.cost_identity,
+                        "resource_fallback_selection_enabled": self.allow_feasible_resource_alternatives,
                         "unavailable_summaries": unavailable,
                         "prefix_summaries": prefix_summaries,
                         "resources": asdict(resources) if resources is not None else None,

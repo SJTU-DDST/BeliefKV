@@ -60,6 +60,7 @@ def calibrated_artifact(
     original, calibration, *, calibration_path, calibration_sha256,
     context_calibration=None, context_calibration_path=None, context_calibration_sha256=None,
     include_unreferenced_capacity=False, allow_deep_prefix_aggregate=False,
+    allow_feasible_resource_alternatives=False,
 ):
     WorkflowWorkOracleArtifact(original)
     if (
@@ -111,14 +112,20 @@ def calibrated_artifact(
             "remaining_intrinsic_model_path_uses_original_global_prefill_proxy": True,
             "pure_GPU_time_claimed": False,
         }
-    if type(include_unreferenced_capacity) is not bool or type(allow_deep_prefix_aggregate) is not bool:
+    if any(type(flag) is not bool for flag in (
+        include_unreferenced_capacity, allow_deep_prefix_aggregate,
+        allow_feasible_resource_alternatives,
+    )):
         raise ValueError("capacity summary revision must be explicit")
     if allow_deep_prefix_aggregate and not include_unreferenced_capacity:
         raise ValueError("deep prefix aggregation requires the explicit capacity revision")
+    if allow_feasible_resource_alternatives and not allow_deep_prefix_aggregate:
+        raise ValueError("resource alternatives require the complete deep-prefix capacity contract")
     if include_unreferenced_capacity:
         profile = artifact["admission_cost_profile"]
         profile["kind"] = (
-            "r5_frozen_batch_cost_proxy_capacity_v3" if allow_deep_prefix_aggregate
+            "r5_frozen_batch_cost_proxy_capacity_v4" if allow_feasible_resource_alternatives
+            else "r5_frozen_batch_cost_proxy_capacity_v3" if allow_deep_prefix_aggregate
             else "r5_frozen_batch_cost_proxy_capacity_v2"
         )
         profile["identity"] = hashlib.sha256(json.dumps({
@@ -137,6 +144,15 @@ def calibrated_artifact(
                 "maximum_additional_native_checkpoint_reads_per_candidate": 1,
                 "requires_fresh_FULL_only_checkpoint_and_live_anchor": True,
                 "request_private_extent_identity_overcounts_shared_missing_pages": True,
+                "native_allocation_and_DMA_authority_unchanged": True,
+            }
+        if allow_feasible_resource_alternatives:
+            artifact["calibrated_model_time"]["capacity_summary_revision"]["resource_fallback_selection"] = {
+                "requires_complete_candidate_summaries_and_known_resources": True,
+                "preserves_required_reference_JOIN_members": True,
+                "same_bounded_search_and_soft_deadline": True,
+                "no_feasible_evaluated_subset_retains_reference": True,
+                "unsupported_reference_score_is_not_invented_or_compared": True,
                 "native_allocation_and_DMA_authority_unchanged": True,
             }
     WorkflowWorkOracleArtifact(artifact)
@@ -199,6 +215,7 @@ def main():
     parser.add_argument("--prefill-context-calibration", type=Path)
     parser.add_argument("--include-unreferenced-cold-cache", action="store_true")
     parser.add_argument("--allow-deep-prefix-aggregate", action="store_true")
+    parser.add_argument("--allow-feasible-resource-alternatives", action="store_true")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output_dir.exists():
         raise ValueError("hide CUDA and preserve earlier preparations")
@@ -243,6 +260,7 @@ def main():
         ),
         include_unreferenced_capacity=args.include_unreferenced_cold_cache,
         allow_deep_prefix_aggregate=args.allow_deep_prefix_aggregate,
+        allow_feasible_resource_alternatives=args.allow_feasible_resource_alternatives,
     )
     destination = args.output_dir.resolve()
     artifact_path, config_path = destination / "oracle.json", destination / "full.json"
