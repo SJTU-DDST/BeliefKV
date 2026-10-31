@@ -4769,3 +4769,12 @@
   freshresources/position/sampleranduniqueregistrations. NoGPUoraclecalled.
   registration_bound_cpu_r1passes5828+12subtests,retains5814,
   2198inputs/nativeunchanged,nofailure/error/skip;focused37pass.
+- Sustained oracle comparison now has a fixed-cohort CPU reader:
+  scripts/review_sustained_oracle.py. Require the same frozen cohort/window,
+  full per-workflow output and request conservation; whole-population JCT is
+  secondary. Bound CPU cohort_comparison_bound_cpu_r1 passes5834+23subtests,
+  retains5828 literal identities,2200inputs/native unchanged,no failure/error/
+  skip. Balanced52 Full remains frozen068be28a and running. All18 measured
+  members finished by3189.034921s, before final background arrival4343.970772s;
+  wait for all52 normal tails, complete reviews/final demand and workload gate
+  before oracle registration. No new predictor training or oracle GPU result.
