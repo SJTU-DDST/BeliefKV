@@ -1,6 +1,7 @@
 """Use already free complete budgets between reference scheduling ticks."""
 
 from collections import OrderedDict
+from dataclasses import asdict
 from itertools import islice
 import time
 
@@ -107,6 +108,82 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
     def _order_dispatch_keys(self, keys, joins):
         return keys
 
+    def _observe_free_capacity_choice(self, programs, remaining, keys, sequence):
+        selected = {item.identity for item in programs}
+        scope = "actual_dispatch_window" if keys is not None else "bounded_pending_index"
+        if keys is None:
+            keys = tuple(islice(self._dispatch_pending.values(), self.max_continuation_checks))
+        selected_keys = [self.latest[item.identity] for item in programs]
+        self.counts["free_choice_observed_grants"] += 1
+        if len({key.root_workflow_id for key in (*selected_keys, *keys)}) < 2:
+            self.counts["free_choice_single_workflow_key_windows"] += 1
+            return None
+        started = time.thread_time_ns()
+        candidates, checked = [], set()
+        selected_ready = True
+        protected = False
+        for key in (*selected_keys, *keys):
+            if key.invocation_id in checked:
+                continue
+            checked.add(key.invocation_id)
+            found = self._candidate(key.request_id, key, include_first=True)
+            chosen = key.invocation_id in selected
+            if found is None and not chosen:
+                continue
+            item = self.policy.programs[key.invocation_id] if chosen else found[0]
+            req = self._live_requests.get(key.request_id)
+            is_join = bool(
+                key.invocation_id in self.runtime._join_priority_pending
+                and req is not None and self.runtime._ready_join_parent(req, key)
+            )
+            protected |= is_join
+            if chosen:
+                selected_ready &= found is not None
+            candidates.append({
+                "key": asdict(key), "complete_budget_tokens": item.tokens + self.policy.buffer_tokens,
+                "selected": chosen, "application_ready": found is not None,
+                "protected_join": is_join,
+            })
+        fitting = [
+            row for row in candidates
+            if row["complete_budget_tokens"] <= remaining
+        ]
+        competition = (
+            len({row["key"]["root_workflow_id"] for row in fitting}) > 1
+            and sum(row["complete_budget_tokens"] for row in fitting) > remaining
+        )
+        self.counts["free_choice_multi_workflow_key_windows"] += 1
+        self.counts["free_choice_candidate_checks"] += len(checked)
+        self.counts["free_choice_logical_competitions"] += competition
+        self.counts["free_choice_collection_cpu_ns"] += time.thread_time_ns() - started
+        if not competition:
+            return None
+        rankable = selected_ready and not protected
+        self.counts["free_choice_ready_unprotected_competitions"] += rankable
+        return {
+            "schema_version": 1, "ts_ms": time.time() * 1000.,
+            "monotonic_s": time.monotonic(), "remaining_before_tokens": remaining,
+            "selected_tokens": sum(
+                item.tokens + self.policy.buffer_tokens for item in programs
+            ),
+            "candidates": candidates, "candidate_scope": scope,
+            "dispatch_sequence": sequence,
+            "pending_index_members": len(self._dispatch_pending),
+            "pending_index_members_outside_observation": (
+                len(self._dispatch_pending)
+                - sum(invocation in self._dispatch_pending for invocation in checked)
+            ),
+            "all_selected_application_ready": selected_ready,
+            "protected_join_present": protected,
+            "ready_unprotected_competition": rankable,
+            "logical_capacity_only": True,
+            "physical_feasibility_proven": False,
+            "semantics": (
+                "Bounded live alternatives observed before the published logical grant; "
+                "several grants from one dispatch are correlated, not independent choices."
+            ),
+        }
+
     def _dispatch_free_capacity(self, *, preferred=None):
         if self.policy is None:
             return False
@@ -137,7 +214,8 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
                 keys.append(key)
                 checked.add(invocation)
         granted = 0
-        for key in self._order_dispatch_keys(keys, joins):
+        ordered = self._order_dispatch_keys(keys, joins)
+        for key in ordered:
             self.counts["free_dispatch_candidate_checks"] += 1
             found = self._candidate(key.request_id, key)
             if found is None:
@@ -153,6 +231,7 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
                 continue
             if not self._admit_from_free_capacity(
                 (item,), event="agent_dispatch_free_capacity_admitted", join_id=join_id,
+                choice_keys=ordered, choice_sequence=self.counts["free_dispatch_passes"],
             ):
                 self.counts["free_continuation_capacity_changed"] += 1
                 break
@@ -228,6 +307,10 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
             "free_continuation_max_grants_per_event": 1,
             "free_continuation_new_programs": False,
             "free_continuation_physical_prefetch": False,
+            "free_capacity_choice_observation_version": 1,
+            "free_capacity_choice_observation_enabled": (
+                getattr(self.runtime, "_opportunity_writer", None) is not None
+            ),
         }
         if self.dispatch_interval_ms:
             result.update(

@@ -5033,3 +5033,26 @@
   control. Keep currentf6GPU/fixed18stop unchanged;candidate12/80CPU-only.
   Evidence mean70_window_r1/scheduling_window_audit.json and
   docs/research/original56_scheduling_window_audit_20261031_zh.md.
+- Mean70fixed18nowactuallycomplete/2819requests/362072outputs,meanJCT
+  931.500654s,lastmeasured4425.261825s;56arrived/51naturallyended/5nonmeasured
+  explicitlycensored. Completioncertificate,exactwork/freshdrain/actualowned
+  exitsindependentlyreverified. Originalsupervisorinterruptionremainsexpected,
+  notall56complete. Backgroundends3671.178788s,754.083037suncovered;ready
+  paused81/1384commonstatesstill5.85%. Oldprefixlossproxy0/9408probesdoesnot
+  eraseotherHostblockattributedrecompute. Gatecontinuesrejectingbackground/
+  supply;noneworacleorGPUfollowup. Completeperiodicphases:common703controls/
+  0competitions;wholemeasuredspan1957/34;postcommon1254/34. Preservefixed
+  throughputwindowandcompleteJCT,notpolicydependentwindowreplacement.
+- Newreadonlyfreegrantchoiceobserverpreservesactualselection/budgets/order:
+  actualboundeddispatchkeysorlabelledfirst8pendingfallback,selectedmembers
+  included;singleworkflowfastpath,onlyconflictsjournalled,boundedomittedcount.
+  Bindobservations topublishedgrantanddeduplicatesamedispatch;warming/
+  protectedJOINsnotordinaryrankingchoices. Nonfreedonorpathsnotfullycovered.
+  Historicalf6runhasnoinstrumentation:free_choices.json saysunobserved/null,
+  never0. CPUrealasyncwriterbench eightcandidates medianextra2.16--2.92us
+  sameworkflow/88.83--107.41uscrossworkflow;preservefirst-roundprocessCPU
+  outlier118.60usandallrawrounds,notend-to-end/GPUproof. Seeparentmean70
+  evidence;12/80remainsCPU-onlyandalloldgatefailurespreserved.
+- Freechoicecodeactuallypassesbound5964cases+23subtests,retains5933literal
+  IDs/all2225inputpaths,native/sourcesunchanged,nofailure/error/skip. Evidence
+  free_choice_bound_cpu_r1;CPUonly,noperformanceornewGPUqualification.

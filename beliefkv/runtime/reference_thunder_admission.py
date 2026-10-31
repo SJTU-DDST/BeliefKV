@@ -183,18 +183,25 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             and invocation.invocation_id in join.waiter_invocation_ids - join.released_waiter_ids
         )
 
-    def _admit_from_free_capacity(self, programs, *, event, join_id):
+    def _admit_from_free_capacity(
+        self, programs, *, event, join_id, choice_keys=None, choice_sequence=None,
+    ):
         # Extra grants can occur between the reference policy's periodic ticks.
         self._refresh_streaming_progress()
         remaining = self.policy.remaining_capacity()
         required = sum(item.tokens + self.policy.buffer_tokens for item in programs)
         if required > remaining:
             return False
+        writer = getattr(self.runtime, "_opportunity_writer", None)
+        observe = getattr(self, "_observe_free_capacity_choice", None)
+        choice = (
+            observe(programs, remaining, choice_keys, choice_sequence)
+            if writer is not None and observe is not None else None
+        )
         for item in programs:
             item.active = True
-        writer = getattr(self.runtime, "_opportunity_writer", None)
         if writer is not None:
-            writer.record({
+            grant = {
                 "event": event, "ts_ms": time.time() * 1000.,
                 "monotonic_s": time.monotonic(), "join_id": join_id,
                 "programs": [
@@ -209,7 +216,15 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                 "remaining_after_tokens": remaining - required,
                 "native_capacity_authority_preserved": True,
                 "semantics": "Logical eligibility grant only; no physical allocation or transfer.",
-            })
+            }
+            writer.record(grant)
+            if choice is not None:
+                writer.record({
+                    **choice, "event": "agent_free_capacity_choice",
+                    "grant_event": event, "join_id": join_id,
+                    "grant_monotonic_s": grant["monotonic_s"],
+                    "grant_published": True,
+                })
         return True
 
     def _coadmit_join(self, join_id):
