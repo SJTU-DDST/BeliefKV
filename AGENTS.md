@@ -5066,3 +5066,23 @@
   availabilityestimatecannotprove240GBpool+8GiBreservefits. See
   docs/research/original56_memory_capacity_20261031_zh.md. Noresourcechange/
   newGPUregistered;allfuturearmsmustshareanexplicitnewcapacitycontract.
+- Latest user explicitly requests oracle now with1or2s ordinary admission
+  coalescing;choose1000ms,reuse complete8initial/mean70control andfixed18.
+  Do not run another12initial/mean70calibration. The12initial/mean80Full was
+  administratively stopped on request at14arrivals/256requests/0measured:
+  actualexit/freshdrainverified,completeJCTnull;preserve shutdown artifact.
+  New12/70config is preparation only,superseded without launch.
+  This explicit diagnostic order overrides prior supply/background gate order,
+  not exactwork/resources/nativeauthority/completeJCT. Bound request preserves
+  original rejection and waives only two named supply/background deficiencies.
+  Periodic andfree ordinary grants share the1s gate;active continuity and
+  protectedJOIN/EOS recovery remain. Default0preserves old native-boundary
+  coalescing. No newbaseline or learnedtraining. Report jointcoalescing/ranking
+  effect,actual retainedgrants/useful service andfixed-windowthroughput.
+  Preparation andtargeted126CPU passes are not GPUgain;details in
+  docs/research/original56_mean70_oracle_window_20261031_zh.md.
+- Oraclewindow1s boundCPU nowpasses6011+23subtests,retains5964literalcases/
+  allpreviouspaths,total2229sourceinputs,native/sourceunchanged,nofailure/
+  error/skip. progress.json rechecks9403completed/51closed andcomplete
+  measured2819requests/362072outputs;5unfinishedbackgroundsremaincensored.
+  Freeze then freshGPUchecks,notCPUperformancepromotion.

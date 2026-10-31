@@ -15,11 +15,13 @@ from tests.test_workflow_size_admission import settings
 from tests.test_workflow_work_oracle import add_serial_graphs, oracle_file, source
 
 
-def queued(monkeypatch, tmp_path, *, global_order, activate_first=True):
+def queued(monkeypatch, tmp_path, *, global_order, activate_first=True, window_ms=0):
     raw = source()
     raw["requests"], raw["workflows"] = {}, {}
     if global_order:
         raw["admission_order"] = "global_ready_remaining_path"
+    if window_ms:
+        raw["free_dispatch_coalescing_window_ms"] = window_ms
     for name, tokens, outputs in (("active", 400, 10000), ("long", 100, 1000), ("short", 300, 10)):
         workflow = name + "-work"
         raw["requests"][name + "-request"] = {

@@ -1,0 +1,18 @@
+{
+  "kind": "user_requested_oracle_coalescing_diagnostic_v1",
+  "requested_by": "user",
+  "instruction": "Run the oracle with a one- or two-second candidate coalescing window first; reuse the completed 70-second-arrival control without another arrival calibration.",
+  "coalescing_window_ms": 1000,
+  "control_registration": "/home/longhao/experiment/ops/workflow_sustained_original56_mean70_full_20261030_r1.registration.json",
+  "control_registration_sha256": "4507ca4f1d021ce86df9c798043f768ebb2f9a3f5872b63303043c9577e62967",
+  "workload_decision": "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/measured_cohort_complete_original56_mean70_r1/workload_decision.json",
+  "workload_decision_sha256": "1bdd6ecd682acc57aa99ce6d424408afaf36eb2c5c71d921ea8b0aa71a6c3a62",
+  "waived_workload_checks": [
+    "background_arrivals_cover_measured_tails",
+    "ready_paused_supply_in_at_least_quarter_of_window_samples"
+  ],
+  "preserve_original_workload_rejection": true,
+  "formal_workload_accepted": false,
+  "tools_Host_capacity_and_arrivals_unchanged": true,
+  "joint_coalescing_and_ranking_diagnostic": true
+}

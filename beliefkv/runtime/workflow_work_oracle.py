@@ -50,6 +50,11 @@ class WorkflowWorkOracleArtifact:
             or raw.get("deployable") is not False or raw.get("prefill_token_weight") != .01
         ):
             raise ValueError("require an explicitly declared model-work oracle")
+        window = raw.get("free_dispatch_coalescing_window_ms", 0)
+        if type(window) is not int or window not in (0, 1000, 2000) or (
+            window and raw.get("admission_order") != "global_ready_remaining_path"
+        ):
+            raise ValueError("timed coalescing requires a global oracle and 0, 1000 or 2000 ms")
         self.raw = raw
         self.requests = raw["requests"]
         self.workflows = raw["workflows"]

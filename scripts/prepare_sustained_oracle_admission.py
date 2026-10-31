@@ -1,4 +1,4 @@
-"""Prepare oracle set admission only after a sustained workload's complete review."""
+"""Prepare reviewed oracle admission, including explicit user diagnostic exceptions."""
 
 import argparse
 from bisect import bisect_left
@@ -29,6 +29,45 @@ from scripts.run_causal_gpu_replay import source_plan
 from scripts.review_sustained_workload import validate_minimum_work_ratio
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
+
+
+DIAGNOSTIC_KIND = "user_requested_oracle_coalescing_diagnostic_v1"
+DIAGNOSTIC_CHECKS = frozenset((
+    "background_arrivals_cover_measured_tails",
+    "ready_paused_supply_in_at_least_quarter_of_window_samples",
+    "repeated_actual_periodic_competition",
+))
+
+
+def diagnostic_waivers(request):
+    if request is None:
+        return set()
+    waived = request.get("waived_workload_checks")
+    if (
+        request.get("kind") != DIAGNOSTIC_KIND or request.get("requested_by") != "user"
+        or request.get("preserve_original_workload_rejection") is not True
+        or request.get("formal_workload_accepted") is not False
+        or request.get("coalescing_window_ms") not in (1000, 2000)
+        or type(request.get("coalescing_window_ms")) is not int
+        or not isinstance(waived, list) or len(set(waived)) != len(waived)
+        or not set(waived) <= DIAGNOSTIC_CHECKS
+    ):
+        raise ValueError("invalid explicit user oracle diagnostic exception")
+    return set(waived)
+
+
+def load_diagnostic_request(path, control_path, decision_path):
+    request = causal.load(path)
+    diagnostic_waivers(request)
+    if any(
+        request.get(name + "_sha256") != sha256_file(target)
+        or request.get(name) != str(target.resolve())
+        for name, target in (
+            ("control_registration", control_path), ("workload_decision", decision_path),
+        )
+    ):
+        raise ValueError("oracle diagnostic request belongs to another control or decision")
+    return request
 
 
 def calibrate_costs(batches, transfers):
@@ -100,7 +139,9 @@ def calibrate_costs(batches, transfers):
 
 def validate_workload(
     cohort, supply, periodic, population, *, minimum_model_work_p80_p20=3., completion=None,
+    diagnostic=None,
 ):
+    waived = diagnostic_waivers(diagnostic)
     minimum = validate_minimum_work_ratio(minimum_model_work_p80_p20)
     cohort_stop = cohort.get("cohort", {}).get("schema_version") == 2
     complete = (
@@ -123,9 +164,11 @@ def validate_workload(
         not complete
         or cohort.get("normal_tails_removed") is not False
         or cohort.get("background_submission_coverage", {}).get("covers_all_measured_completions") is not True
+        and "background_arrivals_cover_measured_tails" not in waived
         or cohort.get("measured_complete_workflow_JCT_ms", {}).get("count") != 18
         or supply.get("all_measured_completed") is not True
         or periodic.get("counts", {}).get("cross_workflow_logical_set_competition_controls", 0) < 10
+        and "repeated_actual_periodic_competition" not in waived
         or population["population"]["model_work_units"]["p80_p20"] < minimum
     ):
         raise ValueError("complete cohort, background, heterogeneity or repeated decision competition is unqualified")
@@ -136,16 +179,33 @@ def validate_workload(
         "JOIN_shape_limitations_retained": True,
         "oracle_diagnostic_accepted_not_formal_baseline_or_steady_state_claim": True,
         "complete_work_scope": "fixed_measured_workflows" if cohort_stop else "whole_population",
+        **({
+            "explicit_user_diagnostic": True, "formal_workload_accepted": False,
+            "waived_workload_checks": sorted(waived),
+            "original_workload_rejection_preserved": True,
+        } if diagnostic is not None else {}),
     }
 
 
-def validate_decision(decision, required_inputs):
+def validate_decision(decision, required_inputs, *, diagnostic=None):
+    waived = diagnostic_waivers(diagnostic)
+    failed = decision.get("failed_checks")
+    exceptional = (
+        diagnostic is not None and isinstance(failed, list) and set(failed) == waived
+        and set(failed) == {
+            name for name, passed in decision.get("checks", {}).items() if passed is False
+        }
+        and all(
+            passed is True for name, passed in decision.get("checks", {}).items()
+            if name not in waived
+        )
+    )
     if (
         decision.get("accepted_for_oracle_diagnostic") is not True
         or decision.get("failed_checks") != []
         or not decision.get("checks")
         or any(value is not True for value in decision["checks"].values())
-    ):
+    ) and not exceptional:
         raise ValueError("sustained workload has not passed the complete phase-one decision")
     pins = decision["inputs_sha256"]
     for path in required_inputs:
@@ -156,7 +216,13 @@ def validate_decision(decision, required_inputs):
             raise ValueError("workload decision input changed: " + name)
 
 
-def oracle_artifact(source, overlay, coefficient, costs, calibration, *, combination=False):
+def oracle_artifact(
+    source, overlay, coefficient, costs, calibration, *, combination=False, coalescing_window_ms=0,
+):
+    if type(coalescing_window_ms) is not int or coalescing_window_ms not in (0, 1000, 2000) or (
+        combination and coalescing_window_ms
+    ):
+        raise ValueError("timed windows apply to the separately declared global oracle")
     graph, expected, evidence = source_plan(source)
     with CapturedTokenCorpus(source / "server/request_tokens.jsonl", expected) as corpus:
         requests, totals = reconstruct_work(graph, corpus)
@@ -190,6 +256,8 @@ def oracle_artifact(source, overlay, coefficient, costs, calibration, *, combina
         },
         "scope": "Exact future model/tool DAG and observed progress rank legal ready-paused sets only; no readiness, JOIN or native capacity authority from future data.",
         "threshold_scope": "intrinsic_complete_work_tertiles_for_diagnostics_only",
+        **({"free_dispatch_coalescing_window_ms": coalescing_window_ms}
+           if coalescing_window_ms else {}),
     }
     WorkflowWorkOracleArtifact(result).validate_source(source, graph, evidence)
     return result
@@ -207,6 +275,8 @@ def main():
     parser.add_argument("--selection", choices=("global_remaining_path", "join_combination"),
                         default="global_remaining_path")
     parser.add_argument("--cohort", type=Path)
+    parser.add_argument("--coalescing-window-ms", type=int, choices=(0, 1000, 2000), default=0)
+    parser.add_argument("--diagnostic-request", type=Path)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise ValueError("preserve prior oracle preparations")
@@ -223,13 +293,19 @@ def main():
     population_path = source / "composite_source.json"
     population = causal.load(population_path)
     decision = causal.load(args.workload_review)
+    diagnostic = (
+        load_diagnostic_request(args.diagnostic_request, args.control, args.workload_review)
+        if args.diagnostic_request is not None else None
+    )
+    if diagnostic is not None and diagnostic["coalescing_window_ms"] != args.coalescing_window_ms:
+        raise ValueError("requested and prepared oracle coalescing windows differ")
     validate_decision(decision, (
         args.control_review, args.cohort_review, args.supply_review, args.periodic_review, population_path,
-    ))
+    ), diagnostic=diagnostic)
     acceptance = validate_workload(
         cohort, supply, periodic, population,
         minimum_model_work_p80_p20=decision.get("minimum_model_work_p80_p20", 3.),
-        completion=completion,
+        completion=completion, diagnostic=diagnostic,
     )
     base = Path(plan["experiment_configuration"])
     configuration = causal.load(base)
@@ -249,7 +325,10 @@ def main():
     overlay = Path(configuration["tool_timing_overlay"]["path"])
     coefficient = review["model_cost_calibration"]["model_seconds_per_work_token"]
     combination = args.selection == "join_combination"
-    artifact = oracle_artifact(source, overlay, coefficient, costs, calibration, combination=combination)
+    artifact = oracle_artifact(
+        source, overlay, coefficient, costs, calibration, combination=combination,
+        coalescing_window_ms=args.coalescing_window_ms,
+    )
     artifact["model_cost_calibration"] = review["model_cost_calibration"]
     artifact_path = args.output_dir.resolve() / "oracle.json"
     write(artifact_path, artifact)
@@ -280,6 +359,14 @@ def main():
             "future_information_used": True, "deployable": False,
             "control_completion_protocol": completion["protocol"],
             **({
+                "diagnostic_request": {
+                    "path": str(args.diagnostic_request.resolve()),
+                    "sha256": sha256_file(args.diagnostic_request),
+                },
+                "formal_workload_accepted": False,
+                "original_workload_rejection_preserved": True,
+            } if diagnostic is not None else {}),
+            **({
                 "cohort_definition": str(args.cohort.resolve()),
                 "cohort_definition_sha256": sha256_file(args.cohort),
                 "control_completion_certificate": completion["certificate"],
@@ -304,7 +391,13 @@ def main():
             ["protected_ready_JOIN", "remaining_model_tool_path", "legacy_category_tie",
              "context_tokens", "queue_sequence"]
         ),
-        first_registration_continuation_sibling_dispatch="coalesced_existing_native_boundary",
+        first_registration_continuation_sibling_dispatch=(
+            "coalesced_timed_admission_epochs" if args.coalescing_window_ms
+            else "coalesced_existing_native_boundary"
+        ),
+        free_dispatch_coalescing_window_ms=args.coalescing_window_ms,
+        coalescing_and_oracle_ranking_are_joint_change=bool(args.coalescing_window_ms),
+        join_eos_recovery_bypasses_ordinary_coalescing_window=True,
     )
     preflights = {}
     for mode in ("full", "scheduler_only", "native_matched"):
@@ -323,6 +416,7 @@ def main():
             args.periodic_review, args.workload_review, base, overlay, Path(__file__),
             *((args.cohort, Path(completion["certificate"])) if args.cohort is not None
               and completion["protocol"] == "all_fixed_measured_workflows_completed" else ()),
+            *((args.diagnostic_request,) if args.diagnostic_request is not None else ()),
         )},
         "configuration": str((args.output_dir / "full.json").resolve()),
         "configuration_sha256": sha256_file(args.output_dir / "full.json"),

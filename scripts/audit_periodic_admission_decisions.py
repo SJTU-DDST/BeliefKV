@@ -86,11 +86,17 @@ def inspect(records, batches):
             metadata[owner]["complete_budget_tokens"] for owner in resumed
         ) > max(0, capacity):
             raise ValueError("periodic selection exceeds its recorded resume budget")
-        ready = [
+        application_ready = [
             item for item in programs
             if item["application_ready"] and item["pending_before"]
             and not item["active_before"] and not item["marked_before"]
         ]
+        if any(type(item.get("resume_window_eligible", True)) is not bool for item in programs):
+            raise ValueError("invalid periodic admission window eligibility")
+        ready = [item for item in application_ready if item.get("resume_window_eligible", True)]
+        if len(ready) != len(application_ready):
+            counts["controls_with_window_deferred_ready_paused"] += 1
+            counts["window_deferred_ready_paused_observations"] += len(application_ready) - len(ready)
         fitting = [item for item in ready if item["complete_budget_tokens"] <= capacity]
         owners = {}
         for item in ready:
@@ -141,6 +147,31 @@ def inspect(records, batches):
                     owner for owner in resumed if metadata[owner]["active_after_pressure"]
                 ],
             })
+    progress = associate_progress(grants, controls, interventions, batches, counts)
+    return {
+        "counts": dict(counts), "competition_decisions": decisions,
+        "control_observations": observations, **progress,
+        "scope": {
+            "exact_periodic_resume_budget_and_before_after_state": True,
+            "cross_category_competition_is_diagnostic_not_original_permission": True,
+            "logical_fit_does_not_prove_physical_feasibility": True,
+            "earlier_and_foreign_attempt_service_excluded": True,
+            "intervening_grants_or_exclusive_causal_benefit_proven": False,
+            "bounded_progress_ends_at_next_control_or_recorded_same_agent_intervention": True,
+            "bounded_progress_requires_new_launch_and_positive_model_progress": True,
+            "launch_clock_is_scheduler_run_batch_entry_not_CUDA_submission": True,
+            "service_start_clock_is_worker_interval_not_kernel_start": True,
+            "completion_clock_has_observed_positive_native_progress": True,
+            "open_prefix_windows_are_unknown_not_negative_results": True,
+            "unlogged_interventions_and_exclusive_causal_benefit_not_proven": True,
+            "other_admission_entries_require_their_separate_audits": True,
+            "independently_sealed_prefixes_not_atomic": True,
+        },
+    }
+
+
+def associate_progress(grants, controls, interventions, batches, counts):
+    """Associate exact-attempt progress within each observed grant's lifetime."""
     target = {row["key"] for row in grants}
     services, launches = defaultdict(list), defaultdict(list)
     domains = set()
@@ -186,11 +217,14 @@ def inspect(records, batches):
         values.sort()
     latencies, launch_latencies, bounded_service_latencies, completion_latencies = [], [], [], []
     for row in grants:
+        retained = row.get("selection_retained", row.get("active_after_pressure"))
+        if type(retained) is not bool:
+            raise ValueError("grant progress requires observed eligibility at selection")
         values = services[row["key"]]
         index = bisect_left(values, row["selection_ms"])
         row["following_native_service_ms"] = (
             values[index] - row["selection_ms"]
-            if row["active_after_pressure"] and index < len(values) else None
+            if retained and index < len(values) else None
         )
         if row["following_native_service_ms"] is not None:
             latencies.append(row["following_native_service_ms"])
@@ -210,7 +244,7 @@ def inspect(records, batches):
         index = bisect_left(candidates, (row["selection_ms"], -1., -1.))
         selected = (
             candidates[index]
-            if row["active_after_pressure"] and index < len(candidates) else None
+            if retained and index < len(candidates) else None
         )
         launched = selected is not None and end is not None and selected[0] < end
         served = launched and selected[1] < end
@@ -236,28 +270,10 @@ def inspect(records, batches):
         if completed:
             completion_latencies.append(row["first_new_useful_completion_ms"])
     return {
-        "counts": dict(counts), "competition_decisions": decisions,
-        "control_observations": observations,
         "ready_grant_episodes": grants, "following_service_ms": distribution(latencies),
         "within_window_new_launch_ms": distribution(launch_latencies),
         "within_window_new_service_ms": distribution(bounded_service_latencies),
         "within_window_new_completion_ms": distribution(completion_latencies),
-        "scope": {
-            "exact_periodic_resume_budget_and_before_after_state": True,
-            "cross_category_competition_is_diagnostic_not_original_permission": True,
-            "logical_fit_does_not_prove_physical_feasibility": True,
-            "earlier_and_foreign_attempt_service_excluded": True,
-            "intervening_grants_or_exclusive_causal_benefit_proven": False,
-            "bounded_progress_ends_at_next_control_or_recorded_same_agent_intervention": True,
-            "bounded_progress_requires_new_launch_and_positive_model_progress": True,
-            "launch_clock_is_scheduler_run_batch_entry_not_CUDA_submission": True,
-            "service_start_clock_is_worker_interval_not_kernel_start": True,
-            "completion_clock_has_observed_positive_native_progress": True,
-            "open_prefix_windows_are_unknown_not_negative_results": True,
-            "unlogged_interventions_and_exclusive_causal_benefit_not_proven": True,
-            "other_admission_entries_require_their_separate_audits": True,
-            "independently_sealed_prefixes_not_atomic": True,
-        },
     }
 
 

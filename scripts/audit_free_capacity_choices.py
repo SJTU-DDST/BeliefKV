@@ -1,7 +1,7 @@
 """Validate bounded pregrant alternatives without treating missing telemetry as zero."""
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 import json
 from pathlib import Path
 import sys
@@ -12,7 +12,10 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts.audit_free_dispatch_service import identity
 from scripts.audit_native_system_costs import finite_number
-from scripts.audit_periodic_admission_decisions import EXTRA_GRANTS
+from scripts.audit_periodic_admission_decisions import (
+    EVENT as PERIODIC_EVENT, EXTRA_GRANTS, associate_progress,
+    inspect as inspect_periodic, intervention, observation_phases,
+)
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import verify_execution
@@ -23,6 +26,12 @@ EVENT = "agent_free_capacity_choice"
 
 def grant_identity(event, when, keys):
     return event, when, tuple(sorted(keys))
+
+
+def choice_identity(row):
+    if row["candidate_scope"] == "actual_dispatch_window":
+        return row["candidate_scope"], row["dispatch_sequence"]
+    return row["candidate_scope"], row["journal_sequence"]
 
 
 def inspect(records):
@@ -166,11 +175,139 @@ def inspect(records):
     }
 
 
+def service_progress(result, records, batches):
+    if result["instrumentation"] == "unobserved":
+        return {"instrumentation": "unobserved", "counts": None, "ready_grant_episodes": []}
+    choices = {
+        grant_identity(row["grant_event"], row["grant_monotonic_s"], (
+            identity(member["key"], grant=True)
+            for member in row["candidates"] if member["selected"]
+        )): row for row in result["observations"]
+    }
+    controls, changes, grants, found = [], defaultdict(list), [], set()
+    counts = Counter()
+    for sequence, row in enumerate(records):
+        intervention(row, sequence, changes)
+        if row.get("event") == PERIODIC_EVENT:
+            now = row.get("monotonic_s")
+            if not finite_number(now) or now < 0:
+                raise ValueError("service boundary needs an observed periodic clock")
+            controls.append((now * 1000., sequence))
+        if row.get("event") not in EXTRA_GRANTS:
+            continue
+        key = grant_identity(row["event"], row["monotonic_s"], (
+            identity(member["key"], grant=True) for member in row["programs"]
+        ))
+        choice = choices.get(key)
+        if choice is None:
+            continue
+        if key in found:
+            raise ValueError("progress journal repeats an observed conflict grant")
+        found.add(key)
+        for member in choice["candidates"]:
+            if not member["selected"]:
+                continue
+            if not member["application_ready"]:
+                counts["warming_selected_members_excluded"] += 1
+                continue
+            grants.append({
+                "key": identity(member["key"], grant=True),
+                "selection_ms": row["monotonic_s"] * 1000.,
+                "journal_sequence": sequence, "selection_retained": True,
+                "choice_identity": choice_identity(choice),
+                "ready_unprotected_competition": choice["ready_unprotected_competition"],
+                "grant_event": row["event"],
+            })
+    if found != choices.keys():
+        raise ValueError("service journal does not contain every audited conflict grant")
+    controls.sort()
+    counts["selected_ready_grant_episodes"] = len(grants)
+    progress = associate_progress(grants, controls, changes, batches, counts) if grants else {
+        "ready_grant_episodes": [],
+    }
+    completed = {
+        row["choice_identity"] for row in grants
+        if row["new_completion_before_next_control_or_intervention"] is True
+    }
+    unprotected = {
+        row["choice_identity"] for row in grants
+        if row["ready_unprotected_competition"]
+        and row["new_completion_before_next_control_or_intervention"] is True
+    }
+    return {
+        "instrumentation": result["instrumentation"],
+        "counts": dict(counts), **progress,
+        "deduplicated_decisions_with_bounded_useful_completion": len(completed),
+        "deduplicated_unprotected_decisions_with_bounded_useful_completion": len(unprotected),
+        "scope": {
+            "exact_request_context_attempt_session_required": True,
+            "warming_targets_excluded_from_ready_service": True,
+            "bounded_by_next_periodic_control_or_recorded_same_agent_intervention": True,
+            "requires_new_launch_and_positive_native_progress": True,
+            "launch_is_scheduler_entry_and_service_is_worker_interval": True,
+            "open_windows_unknown_not_failures": True,
+            "unlogged_interventions_or_exclusive_causal_gain_proven": False,
+        },
+    }
+
+
+def choice_phases(result, phases):
+    origin = phases["origin_monotonic_ms"] / 1000.
+    rows, episodes = result["observations"], result.get(
+        "native_progress", {},
+    ).get("ready_grant_episodes", [])
+    instrumented = result["instrumentation"] != "unobserved"
+    summaries = {}
+    for name, phase in phases["phases"].items():
+        left, right = phase["start_s"], phase["end_s"]
+        selected = [
+            row for row in rows if row["grant_monotonic_s"] - origin >= left
+            and (right is None or row["grant_monotonic_s"] - origin < right)
+        ]
+        completed = [
+            row for row in episodes if row["selection_ms"] / 1000. - origin >= left
+            and (right is None or row["selection_ms"] / 1000. - origin < right)
+            and row["new_completion_before_next_control_or_intervention"] is True
+        ]
+        summaries[name] = {
+            "start_s": left, "end_s": right,
+            "periodic_boundary_coverage_complete": phase["complete_phase_observed"],
+            "conflict_grant_records": len(selected) if instrumented else None,
+            "deduplicated_conflict_decisions": len({
+                choice_identity(row) for row in selected
+            }) if instrumented else None,
+            "deduplicated_ready_unprotected_decisions": len({
+                choice_identity(row) for row in selected if row["ready_unprotected_competition"]
+            }) if instrumented else None,
+            "deduplicated_decisions_with_bounded_useful_completion": len({
+                tuple(row["choice_identity"]) for row in completed
+            }) if result.get("native_progress", {}).get("counts") is not None else None,
+            "deduplicated_unprotected_decisions_with_bounded_useful_completion": len({
+                tuple(row["choice_identity"]) for row in completed
+                if row["ready_unprotected_competition"]
+            }) if result.get("native_progress", {}).get("counts") is not None else None,
+        }
+    return {
+        "origin_monotonic_ms": phases["origin_monotonic_ms"],
+        "all_measured_completed": phases["all_measured_completed"],
+        "last_measured_completion_offset_s": phases["last_measured_completion_offset_s"],
+        "phases": summaries,
+        "scope": {
+            "fixed_half_open_throughput_window_preserved": True,
+            "completion_dependent_execution_span_diagnostic_only": True,
+            "overlapping_phases_must_not_be_added": True,
+            "deduplicated_dispatches_still_not_independent_randomized_opportunities": True,
+            "workload_acceptance_gate_changed": False,
+        },
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registration", type=Path, required=True)
     parser.add_argument("--cohort", type=Path)
     parser.add_argument("--complete", action="store_true")
+    parser.add_argument("--with-service", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
@@ -180,6 +317,24 @@ def main():
     path = Path(plan["run_root"]) / "full/opportunities/admission_opportunities.jsonl"
     reader = SealedRecords()
     result = inspect(reader(path))
+    arm = path.parents[1]
+    if args.with_service:
+        result["native_progress"] = service_progress(
+            result, reader(path), reader(arm / "server/runtime_audit.jsonl"),
+        )
+    if args.cohort is not None:
+        arrivals_path = Path(plan["workflow_arrivals_path"])
+        arrivals = json.loads(arrivals_path.read_bytes())
+        if arrivals != plan["workflow_arrivals"]:
+            raise ValueError("choice phases used a changed arrival table")
+        phases = observation_phases(
+            inspect_periodic(reader(path), ()), arrivals, json.loads(args.cohort.read_bytes()),
+            reader(arm / "replay/runtime_events.replay.jsonl"),
+        )
+        result["observation_phases"] = choice_phases(result, phases)
+        result["phase_inputs_sha256"] = {
+            str(name.resolve()): sha256_file(name) for name in (args.cohort, arrivals_path)
+        }
     if args.complete and any(
         Path(name).stat().st_size != prefix["complete_prefix_bytes"]
         or sha256_file(Path(name)) != prefix["complete_prefix_sha256"]

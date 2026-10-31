@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workflow_metrics import distribution
 from scripts import run_causal_comparison as causal
-from scripts.prepare_sustained_oracle_admission import validate_decision
+from scripts.prepare_sustained_oracle_admission import load_diagnostic_request, validate_decision
 from scripts.register_sustained_oracle import matching_conditions
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
@@ -22,6 +22,21 @@ from scripts.verify_measured_execution import review_matches_execution, verify_e
 
 def positive(value):
     return type(value) in (int, float) and math.isfinite(value) and value > 0
+
+
+def validate_declared_decision(provenance, control):
+    decision_path = Path(provenance["workload_review"])
+    if provenance["workload_review_sha256"] != sha256_file(decision_path):
+        raise ValueError("original workload decision changed")
+    binding = provenance.get("diagnostic_request")
+    diagnostic = None
+    if binding is not None:
+        path = Path(binding["path"])
+        if sha256_file(path) != binding["sha256"]:
+            raise ValueError("explicit user oracle diagnostic request changed")
+        diagnostic = load_diagnostic_request(path, control, decision_path)
+    validate_decision(causal.load(decision_path), [], diagnostic=diagnostic)
+    return decision_path, diagnostic
 
 
 def paired_group(members, reference, candidate):
@@ -251,8 +266,7 @@ def main():
     provenance = specifications[1]["candidate_provenance"]
     if provenance["control_registration_sha256"] != sha256_file(args.control):
         raise ValueError("oracle declares another control")
-    decision_path = Path(provenance["workload_review"])
-    validate_decision(causal.load(decision_path), [])
+    decision_path, diagnostic = validate_declared_decision(provenance, args.control)
     contract = specifications[1]["comparison_contract"]
     reviews, cohorts, paths = [], [], [args.control, args.oracle, args.arrivals, args.cohort, decision_path]
     for registration, directory, evidence in (
@@ -284,6 +298,21 @@ def main():
         minimum_jct_gain=contract["minimum_promising_measured_mean_JCT_reduction"],
         minimum_throughput_fraction=contract["common_window_output_throughput_noninferiority_fraction"],
     )
+    if diagnostic is not None:
+        paths.append(Path(provenance["diagnostic_request"]["path"]))
+        result["explicit_user_diagnostic"] = {
+            "request": diagnostic,
+            "original_workload_rejection_preserved": True,
+            "formal_workload_accepted": False,
+            "numeric_JCT_and_throughput_targets_met": all(
+                result["checks"][name] for name in (
+                    "fixed_measured_mean_JCT_gain", "common_window_output_throughput_noninferior",
+                )
+            ),
+            "coalescing_and_ranking_are_joint_change": contract[
+                "coalescing_and_oracle_ranking_are_joint_change"
+            ],
+        }
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
         complete_equal_work_fresh_drain_and_actual_exit=all(

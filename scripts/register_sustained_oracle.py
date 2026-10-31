@@ -18,7 +18,7 @@ from experiments.reports.arrival_mean120_20261029.queue_pair import validate_cpu
 from experiments.reports.workflow_mix_20261029.prepare_burst_oracle import RANK_FIELDS
 from scripts import run_causal_comparison as causal
 from scripts import run_causal_source_capture as capture
-from scripts.prepare_sustained_oracle_admission import validate_decision
+from scripts.prepare_sustained_oracle_admission import load_diagnostic_request, validate_decision
 from scripts.qualify_free_page_h2d_fence import check_reservation
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
@@ -87,10 +87,24 @@ def main():
         or provenance.get("control_completion_certificate_sha256") != completion["certificate_sha256"]
     ):
         raise ValueError("oracle preparation changed its measured completion definition")
-    validate_decision(decision, [review_path])
+    request_binding = provenance.get("diagnostic_request")
+    diagnostic = None
+    if request_binding is not None:
+        request_path = Path(request_binding["path"])
+        if sha256_file(request_path) != request_binding["sha256"]:
+            raise ValueError("explicit user oracle diagnostic request changed")
+        diagnostic = load_diagnostic_request(request_path, args.control, decision_path)
+    validate_decision(decision, [review_path], diagnostic=diagnostic)
     common = candidate["common_environment"]
     artifact_path = Path(common["WORKFLOW_WORK_MODEL"])
     artifact = WorkflowWorkOracleArtifact.load(artifact_path, common["WORKFLOW_WORK_MODEL_SHA256"])
+    if artifact.raw.get("free_dispatch_coalescing_window_ms", 0) != candidate[
+        "comparison_contract"
+    ].get("free_dispatch_coalescing_window_ms", 0) or (
+        diagnostic is not None
+        and artifact.raw.get("free_dispatch_coalescing_window_ms") != diagnostic["coalescing_window_ms"]
+    ):
+        raise ValueError("effective oracle window differs from its declared diagnostic")
     combination = common["WORKFLOW_COMBINATION_ADMISSION"] == "1"
     if artifact.raw["admission_order"] != (
         "within_reference_category" if combination else "global_ready_remaining_path"
