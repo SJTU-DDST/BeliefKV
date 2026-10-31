@@ -5311,3 +5311,27 @@
   Current12/70 control background arrivals have exhausted before fixed18 ends;
   preserve this failure. Any matched oracle is diagnostic until workload gates
   also pass;do not rerun unchanged control or change trace tools/arrivals midrun.
+- Tool-aware12/70 control now finishes fixed18/2819requests/362072outputs;
+  meanJCT1052.994585s/commonwindow301.891902tps,fresh drain and actual exit
+  independently reverified.52workflows ended,4nonmeasured censored,not56complete.
+  Supply507/1524states,135periodic logical conflicts;local ordered-candidate
+  oracle replay has134conflicts/85set changes,7incommonwindow/78after. Preserve
+  local scopes,not actual oracle service or JCT. Gate rejects background by
+  1155.993278s and1015094oldprefixloss proxy tokens;all12lossprobes are postwindow,
+  383400tokensin4measuredrequests.Whole-span reusable union peaks1.086834 at3120s;
+  early.646779commonwindow bound cannot dismiss late capacity pressure.
+- Matched oracle now actually runs from frozen93161529/native434c35dd on18934,
+  ops/workflow_original56_initial12_mean70_toolaware_oracle_20261031_r1.
+  Same original56/tools/12initial-mean70/cohort/resources;ranking alone enabled.
+  Preserve rejected workload;this is a mechanism diagnostic,not accepted
+  steady-state workload or paper baseline. Fresh24position/session/stop plus
+  1/8/24sampling pass.Independent live_oracle_r1 verifies102completed prefix
+  receipts,soleGPU scheduler3091622,nice0,2000ms,eventoffloadon,prefetch/handoffoff.
+  CPU entry writer's pre-registration KeyError is preserved;noGPU had started
+  at that failure. No measured result or subsequent GPU followup claimed.
+- Oracle fixed18observer3091973 andCPUresultsobserver3092045 are actually alive,
+  nice19/CUDA99999/threads1. Results use frozen analysis11582099 after complete
+  measured receipts/drain/actual exit,then matched reviewer,both free-service
+  and periodic-phase audits,and common-window plots. Preserve failed workload
+  checks regardless of numeric gains;see toolaware_initial12_mean70_control_
+  complete_and_oracle_start_20261031_zh.md. Goal remains active.

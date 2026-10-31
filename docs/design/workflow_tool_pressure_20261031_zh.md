@@ -40,4 +40,6 @@ Full 显式选择 `AGENT_PRESSURE_PAUSE_POLICY=workflow_tool_aware`。同一控�
 
 12/70 修复对照注册于 `/home/longhao/experiment/ops/workflow_original56_initial12_mean70_toolaware_control_20261031_r1.registration.json`，端口 18932。独立启动核对位于 `gpu_entry_toolaware_initial12_mean70_control_r1/live_control_r1.json`，确认真实请求已经服务、A→B 为启用、工具感知压力策略生效、普通窗口 2000 ms、剩余工作量排序关闭。原有工具时长映射没有修改。
 
-测量组仍为 12 warmup、18 measured、26 background。共同吞吐窗口固定为到达原点后的 55.6927713505 至 1638.9548502657 秒，测量组完整 JCT 不在该窗口末尾截断。独立 nice19/CUDA 隐藏观察器已启动，只有全部 18 个测量成员自然结束后才取消非测量背景，随后验证收据、新鲜排空及实际退出。当前尚无完整 JCT 或收益结论，oracle GPU 臂尚未注册。
+测量组仍为 12 warmup、18 measured、26 background。共同吞吐窗口固定为到达原点后的 55.6927713505 至 1638.9548502657 秒，测量组完整 JCT 不在该窗口末尾截断。独立 nice19/CUDA 隐藏观察器已启动，只有全部 18 个测量成员自然结束后才取消非测量背景，随后验证收据、新鲜排空及实际退出。启动时尚无完整 JCT，oracle GPU 臂也尚未注册。
+
+后续对照已完成全部 18 个测量成员并验证收据、排空及实际退出，平均完整 JCT 为 1052.994585 秒。背景覆盖与旧前缀丢失两项门槛未通过；保留失败并在同一条件下启动匹配 oracle 机制诊断。完整数据、局部选择机会与实际启动证明见 [对照完成与 oracle 启动记录](../research/toolaware_initial12_mean70_control_complete_and_oracle_start_20261031_zh.md)；当前尚无 oracle 的完整性能结果。
