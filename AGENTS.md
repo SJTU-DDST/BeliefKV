@@ -5379,3 +5379,17 @@
   newartifact/fullshared/GPUqualification andperformance remainpending.
   KeepA-to-B/prepare_host/JOIN/EOSon,ordinary2s;notrace-toolchanges or
   repeatedunchangedcontrol. See toolaware_oracle_complete_and_costs doc.
+- Next explicit calibrated global JOIN-combination candidate keeps current12/70,
+  all56/cohort/tools/resources andordinary2s. ExistingR5controller nowshares
+  thiswindow,globalperiodicrecovery checks realreadiness andretainsJOINrights.
+  A-to-Busesworkorderthenactualsingledonorpairs,notpre-releasefree-setbudget;
+  learnedandoracle admission sharethisfix. No active short-workpreemption.
+  Disabledranking returnsS0 withoutfuture-pathsetutility. Newreader labels
+  calibratedcost+setselectionasjointchange,notranking-onlyoroptimalJCT.
+- Finalpreparationr2 hasactualconstructorproof;sharedboundCPU_r1passes
+  6212tests+23subtests,retains6135literalIDs/2249inputs/nativeunchanged,
+  nofailure/error/skip. Completecontrolcall-boundaryprogress9310requests/
+  52closed andfixedmeasured2819/362072conserved;383pathqueries855.978ms
+  isCPUreplay,notonlinecontrolcost. Keepinitialtargeted3fixturefailures,
+  correctedchecks andr1preparation. Sourcefreeze/newGPUqualification and
+  actualJCTgain stillpending;see calibrated_global_join_combination design.

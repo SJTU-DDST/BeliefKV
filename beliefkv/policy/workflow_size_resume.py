@@ -101,7 +101,7 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
                 or not self.tool_state(item, self._resume_now).blocked
             )
             and (
-                not self.rank_before_category or self.select_set is not None
+                not self.rank_before_category
                 or self.observe_ready is not None and self.observe_ready(item)
             )
         ]
@@ -110,19 +110,24 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
             if self.observe_ready is not None else None
         )
         ranks = {item.identity: self.rank(item.identity, self._resume_now) for item in paused}
+        reference_ranks = {
+            identity: 0. if value == 0. else 1. for identity, value in ranks.items()
+        } if self.select_set is not None and self.rank_before_category else ranks
         paused.sort(key=lambda item: (
             (resume_category(item), item.tokens, item.queue_sequence)
-            if self.select_set is not None else
-            (ranks[item.identity], resume_category(item), item.tokens, item.queue_sequence)
+            if self.select_set is not None and not self.rank_before_category else
+            (reference_ranks[item.identity], resume_category(item), item.tokens, item.queue_sequence)
             if self.rank_before_category else
             (resume_category(item), ranks[item.identity], item.tokens, item.queue_sequence)
         ))
         # Only ready members of an observed blocking JOIN may become adjacent.
         groups, memberships = defaultdict(list), {}
         for item in paused:
-            group = self.sibling_group(item.identity) if self.select_set is None else None
+            group = self.sibling_group(item.identity) if (
+                self.select_set is None or self.rank_before_category
+            ) else None
             if group is not None:
-                key = resume_category(item), ranks[item.identity], group
+                key = resume_category(item), reference_ranks[item.identity], group
                 memberships[item.identity] = key
                 groups[key].append(item)
         ordered, seen = [], set()

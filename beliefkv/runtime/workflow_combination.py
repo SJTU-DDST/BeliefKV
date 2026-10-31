@@ -24,11 +24,13 @@ class WorkflowCombinationController(DeferredFreeAdmission):
     max_cold_nodes = 32
 
     def __init__(self, admission):
-        super().__init__(admission)
         content = Path(admission.runtime.workflow_work_model).read_bytes()
         if hashlib.sha256(content).hexdigest() != admission.runtime.workflow_work_model_sha256:
             raise ValueError("R5 cost profile and prediction artifact differ")
         raw = json.loads(content)
+        super().__init__(
+            admission, window_ms=raw.get("free_dispatch_coalescing_window_ms", 0),
+        )
         profile = raw.get("admission_cost_profile")
         if not isinstance(profile, dict) or profile.get("kind") != "r5_frozen_batch_cost_proxy":
             raise ValueError("R5 requires its frozen, fingerprinted admission cost profile")
@@ -188,6 +190,9 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         unavailable = []
         self.cold_summary = ()
         try:
+            if not getattr(a, "remaining_work_ranking_enabled", True):
+                result["reason"] = "remaining_work_ranking_disabled_reference"
+                return list(reference)
             if not reference or len(reference) > self.max_sibling_candidates:
                 return list(reference)
             window = list(reference)
@@ -311,6 +316,13 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         ready = [
             key for key in keys if a._candidate(key.request_id, key, include_first=True) is not None
         ]
+        if a.rank_before_category:
+            ready.sort(key=lambda key: (
+                0 if a._protected_join(key) else 1,
+                resume_category(a.policy.programs[key.invocation_id]),
+                a.policy.programs[key.invocation_id].tokens,
+                a.policy.programs[key.invocation_id].queue_sequence,
+            ))
         reference, used = [], 0
         for key in ready:
             required = a.policy.programs[key.invocation_id].tokens + a.policy.buffer_tokens

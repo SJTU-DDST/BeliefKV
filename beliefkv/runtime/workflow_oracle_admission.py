@@ -19,12 +19,13 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     def __init__(self, runtime):
         super().__init__(runtime)
         if self.rank_before_category:
-            if not self.dispatch_interval_ms or self._combination is not None:
+            if not self.dispatch_interval_ms:
                 self.close()
                 raise ValueError("global remaining-path oracle requires its separate bounded free dispatch")
-            self._deferred_dispatch = DeferredFreeAdmission(
-                self, window_ms=self._work.artifact.raw.get("free_dispatch_coalescing_window_ms", 0),
-            )
+            if self._combination is None:
+                self._deferred_dispatch = DeferredFreeAdmission(
+                    self, window_ms=self._work.artifact.raw.get("free_dispatch_coalescing_window_ms", 0),
+                )
 
     def _create_work(self, runtime):
         oracle = WorkflowWorkOracle(runtime.workflow_work_model, runtime.workflow_work_model_sha256)
@@ -83,11 +84,6 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         ):
             keys = [key for key in keys if self._protected_join(key)]
         return super()._order_dispatch_keys(keys, joins)
-
-    def order_tool_replacement(self, keys):
-        # Tool replacement already has a real blocked donor and native consumer;
-        # use the same rank without delaying that pair for the ordinary window.
-        return super()._order_dispatch_keys(keys, self.runtime._join_priority_pending)
 
     def _begin_control_observation(self):
         result = super()._begin_control_observation()
@@ -158,5 +154,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
             "workflow_oracle_active_continuity_preserved": True,
             "workflow_oracle_reconciles_decay_at_window_deadline": bool(
                 getattr(deferred, "window_ms", 0)
+            ),
+            "workflow_oracle_tool_replacement_selection": (
+                "remaining_path_order_then_actual_single_donor_pair;ordinary_set_budget_not_applied"
             ),
         }

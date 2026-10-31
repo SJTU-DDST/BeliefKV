@@ -82,6 +82,70 @@ def verify_ranking_only_pair(control, oracle):
     return paths
 
 
+def verify_calibrated_combination_pair(control, oracle):
+    from beliefkv.runtime.workflow_work_oracle import COST_KIND, KIND, WorkflowWorkOracleArtifact
+
+    allowed = {
+        prefix + name
+        for prefix in ("", "BELIEFKV_")
+        for name in ("WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",
+                     "WORKFLOW_COMBINATION_ADMISSION")
+    }
+    old, new = control["common_environment"], oracle["common_environment"]
+    if (
+        control["order"] != ["full"] or oracle["order"] != ["full"]
+        or any(control.get(name) != oracle.get(name) for name in (
+            "source_registration", "workflow_arrivals", "tool_timing_overlay",
+            "stream_response_metrics", "workload_acceptance",
+        ))
+        or old.keys() != new.keys()
+        or any(old[name] != new[name] for name in old.keys() - allowed)
+        or old.get("WORKFLOW_COMBINATION_ADMISSION") != "0"
+        or new.get("WORKFLOW_COMBINATION_ADMISSION") != "1"
+        or new.get("AGENT_CONTROL_INTERVAL_MS") != "2000"
+        or new.get("AGENT_FREE_DISPATCH_INTERVAL_MS") != "500"
+        or new.get("AGENT_PRESSURE_PAUSE_POLICY") != "workflow_tool_aware"
+        or control["comparison_contract"].get("workflow_work_ranking") is not False
+        or oracle["comparison_contract"].get("workflow_work_ranking") is not True
+        or oracle["comparison_contract"].get("matched_pair_changes_only_remaining_work_ranking") is not False
+        or oracle["comparison_contract"].get("oracle_cost_and_set_selection_are_joint_change") is not True
+    ):
+        raise ValueError("calibrated combination changed traffic or undeclared policy conditions")
+    artifacts, paths = [], []
+    for spec, ranking, kind in ((control, False, KIND), (oracle, True, COST_KIND)):
+        common = spec["common_environment"]
+        if any(common.get(name) != common.get("BELIEFKV_" + name) for name in (
+            "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256", "WORKFLOW_COMBINATION_ADMISSION",
+        )):
+            raise ValueError("calibrated combination aliases disagree")
+        path = Path(common["WORKFLOW_WORK_MODEL"])
+        artifact = WorkflowWorkOracleArtifact.load(path, common["WORKFLOW_WORK_MODEL_SHA256"]).raw
+        if (
+            artifact["kind"] != kind or artifact.get("remaining_work_ranking_enabled") is not ranking
+            or artifact.get("admission_order") != "global_ready_remaining_path"
+            or artifact.get("free_dispatch_coalescing_window_ms") != 2000
+        ):
+            raise ValueError("calibrated combination requires explicit artifact kinds and the same window")
+        artifacts.append(artifact)
+        paths.append(path)
+    changed_fields = {
+        "kind", "remaining_work_ranking_enabled", "model_seconds_per_work_token",
+        "model_prefill_seconds_per_token", "model_prefill_progress",
+        "admission_cost_profile", "calibrated_model_time",
+    }
+    if (
+        {k: v for k, v in artifacts[0].items() if k not in changed_fields}
+        != {k: v for k, v in artifacts[1].items() if k not in changed_fields}
+        or any(control["comparison_contract"].get(name) != oracle["comparison_contract"].get(name)
+               for name in (
+                   "minimum_promising_measured_mean_JCT_reduction",
+                   "common_window_output_throughput_noninferiority_fraction",
+               ))
+    ):
+        raise ValueError("calibrated combination changed intrinsic work, source graph or acceptance thresholds")
+    return paths
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in (
@@ -89,6 +153,7 @@ def main():
         "arrivals", "cohort", "output",
     ):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--pair-kind", choices=("ranking", "calibrated_combination"), default="ranking")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output.exists():
         raise ValueError("hide CUDA and preserve earlier comparison evidence")
@@ -98,7 +163,10 @@ def main():
         if plan["workflow_arrivals_path"] != str(args.arrivals.resolve()):
             raise ValueError("comparison uses another frozen arrival table")
     configurations = [causal.load(Path(row["experiment_configuration"])) for row in plans]
-    artifacts = verify_ranking_only_pair(*configurations)
+    ranking_only = args.pair_kind == "ranking"
+    artifacts = (
+        verify_ranking_only_pair if ranking_only else verify_calibrated_combination_pair
+    )(*configurations)
     completion = [verify_execution(path, args.cohort) for path in (args.control, args.oracle)]
     if completion[0]["work"] != completion[1]["work"]:
         raise ValueError("matched executions changed complete measured native work")
@@ -143,8 +211,10 @@ def main():
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
-        matched_repaired_control_with_same_progress_bookkeeping=True,
-        only_remaining_work_ranking_changed=True,
+        matched_repaired_control_with_same_progress_bookkeeping=ranking_only,
+        only_remaining_work_ranking_changed=ranking_only,
+        calibrated_oracle_cost_and_set_selection_joint_change=not ranking_only,
+        pair_kind=args.pair_kind,
         complete_measured_work_fresh_drain_and_actual_exit=True,
         workload_decisions=decisions,
         original_workload_rejections_preserved=True,

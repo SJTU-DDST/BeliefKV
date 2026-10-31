@@ -123,8 +123,18 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         )
 
     def _order_dispatch_keys(self, keys, joins):
+        if not keys:
+            return keys
         if self._combination is not None:
             return self._combination.dispatch_keys(keys)
+        return self._order_work_keys(keys, joins)
+
+    def order_tool_replacement(self, keys):
+        # A donor pair must not be filtered by the pre-release free budget or
+        # delayed by the ordinary admission window.
+        return self._order_work_keys(keys, self.runtime._join_priority_pending)
+
+    def _order_work_keys(self, keys, joins):
         if len(keys) < 2:
             return keys
         started = time.thread_time()
