@@ -506,5 +506,25 @@ Oracle 相对 ThunderAgent 的总体均值差为 10.939%，不能将其全部归
 完整证据为 `combination_resource_fallback_bound_cpu_r1/evidence.json`。
 尚需干净冻结和新的 GPU position/session/stop、采样与完整对比。
 
+后续已将代码提交为 `db82e94d`，冻结到
+`/home/longhao/experiment/.worktrees/beliefkv-resource-combination-operator-db82e94d`。
+`r7/clean_freeze_entry_r1.json` 再次验证 2261 个源码输入、6360 项既有检查、
+外部证据及真实构造的三个能力 flag，成本身份为 `4edae7c7`。
+
+2026-10-31 21:24 UTC，新的 position 资格注册
+`ops/workflow_original56_initial12_mean70_resource_combination_position_20261031_r1.registration.json`
+实际处于 `checking_position_tokens_sessions_stop`，端口 18942，
+服务及原生树分别冻结为 `db82e94d` 和 `434c35dd`。
+watcher 3262139、GPU scheduler 3262518 实际存活；资格尚未完成，
+因此不能说已通过 24 请求、采样检查或开始正式 oracle 测量。
+同一注册将在资格通过后创建 resource-combination 比较，
+没有重复运行已有 Predictive 或 ThunderAgent。
+
+独立 CPU 观察器 bootstrap 3262660 已实际启动，
+nice19、CUDA 隐藏、单线程，等待正式 replay 后登记固定 18 成员收尾及结果观察器；
+bootstrap 不等于两个最终观察器已就绪。
+正式比较依旧保留完整测量尾部、背景删失、收据、新鲜排空和实际退出要求，
+不登记该比较以外的自动 GPU 后继。
+
 不得因某次集合评分更高就宣称 JCT 改善。此文档记录 CPU 候选，
 GPU 与性能结果在后续父实验的命名证据目录中保存。

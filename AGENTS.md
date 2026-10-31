@@ -5587,3 +5587,13 @@
   finds15feasiblealternatives/3outsidemembers,notonlinecutofforJCTproof.
   BoundCPU6360+23retains6344identities/2261sourceinputs/nativeunchanged,
   zerofailures/errors/skips.GPUfreeze/newpositionandcompletegainstillpending.
+- Resourcecandidatecommitteddb82e94dandclean-frozenasbeliefkv-resource-
+  combination-operator-db82e94d;r7clean_freeze_entry_r1revalidates2261source
+  inputs/6360cases/external/nativeandactual3controllerflags,costidentity4edae7c7.
+  Freshpositionregistrationresource_combination_position_20261031_r1on18942
+  actuallychecking_position_tokens_sessions_stopat21:24UTC,watcher3262139/
+  soleGPUscheduler3262518live/nice0.24request/samplerqualificationnotyet
+  complete;formalcomparisonnotyetrunning.Donotclaimnewperformance.
+  CPUbootstrap3262660actuallylive/nice19/CUDAhidden/threads1;itawaitsreplay
+  beforearmingfixed18cohortandresultsobservers,notproofthose2arealreadyarmed.
+  ReusecompletePredictive/Thunder,noautomaticGPUbeyondthissamecomparison.
