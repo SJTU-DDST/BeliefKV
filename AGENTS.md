@@ -5363,3 +5363,19 @@
   existing JCT/free-service/periodic/plot steps. Cohort observer3091973 and GPU
   93161529 remain untouched.15:11UTC status14/18measured/48arrived,no complete
   oracle JCT or further GPU followup. Goal remains active.
+- Matched tool-aware12/70 oracle and both CPU observers now complete/exit.
+  Fixed18 exact2819requests/362072outputs match;both arms52naturallyended/
+  4nonmeasuredcensored,freshdrain/actualexit independentlyreverified.
+  MeanJCT1060.675143vs1052.994585s(-.729401%gain),commonwindowoutput
+  301.567256vs301.891902tps(-.107537%);JCTtargetnotmet,notstatisticalproof.
+  Strictmatched audit2171controls/66setchanges/73newserved/63boundeduseful;
+  commonwindow4/7/5. Packing15fewer/3more/48same-count local alternatives
+  isnotcausalJCToractualdecodewidth. Backgroundcoverage/prefixloss stillfail.
+- Optionalcostoracle v2 separatesprefill/decode timeand explicitobserved-output
+  inputprogress while retaining.01intrinsicwork/source/graphs/tools unchanged.
+  V1rejectsnewcostfields;oldfrozenoperatorrejectsv2kind. Completedcontrol
+  workerproxy.08322525ms/input/23.478283msdecode implies.003544776weight,
+  notpureGPUcostorprovenregressioncause. Targeted154CPUcasespass,noskips;
+  newartifact/fullshared/GPUqualification andperformance remainpending.
+  KeepA-to-B/prepare_host/JOIN/EOSon,ordinary2s;notrace-toolchanges or
+  repeatedunchangedcontrol. See toolaware_oracle_complete_and_costs doc.

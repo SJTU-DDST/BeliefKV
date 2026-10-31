@@ -14,6 +14,7 @@ from beliefkv.runtime.workflow_work_worker import WorkPrediction
 
 
 KIND = "workflow_model_tool_critical_path_oracle_v1"
+COST_KIND = "workflow_model_tool_calibrated_cost_oracle_v2"
 
 
 def critical_path_graphs(plan):
@@ -46,10 +47,23 @@ def _count(value):
 class WorkflowWorkOracleArtifact:
     def __init__(self, raw):
         if (
-            raw.get("kind") != KIND or raw.get("future_information_used") is not True
+            raw.get("kind") not in (KIND, COST_KIND) or raw.get("future_information_used") is not True
             or raw.get("deployable") is not False or raw.get("prefill_token_weight") != .01
         ):
             raise ValueError("require an explicitly declared model-work oracle")
+        cost_fields = ("model_prefill_seconds_per_token", "model_prefill_progress")
+        if raw["kind"] == KIND and any(name in raw for name in cost_fields):
+            raise ValueError("calibrated path costs require the separate v2 oracle declaration")
+        self.model_prefill_seconds_per_token = raw.get("model_prefill_seconds_per_token")
+        self.model_prefill_progress = raw.get("model_prefill_progress", "request_completion")
+        if raw["kind"] == COST_KIND and (
+            any(name not in raw for name in cost_fields)
+            or type(self.model_prefill_seconds_per_token) not in (int, float)
+            or not math.isfinite(self.model_prefill_seconds_per_token)
+            or self.model_prefill_seconds_per_token < 0
+            or self.model_prefill_progress not in ("request_completion", "first_observed_output")
+        ):
+            raise ValueError("v2 oracle requires finite prefill cost and observed progress semantics")
         window = raw.get("free_dispatch_coalescing_window_ms", 0)
         if type(window) is not int or window not in (0, 1000, 2000) or (
             window and raw.get("admission_order") != "global_ready_remaining_path"
@@ -212,7 +226,24 @@ class _CachedPaths:
         )
 
 
-def scan_remaining_paths(graph, requests, done_at, active, seconds_per_unit, now):
+def remaining_model_seconds(
+    item, generated, seconds_per_unit, *, prefill_seconds_per_token=None,
+    prefill_done_after_output=False,
+):
+    output = item["output_tokens"] - generated
+    if prefill_seconds_per_token is None and not prefill_done_after_output:
+        return (item["input_increment"] + 100 * output) / 100. * seconds_per_unit
+    prefill = (
+        0 if prefill_done_after_output and generated > 0 else item["input_increment"]
+    )
+    rate = .01 * seconds_per_unit if prefill_seconds_per_token is None else prefill_seconds_per_token
+    return prefill * rate + output * seconds_per_unit
+
+
+def scan_remaining_paths(
+    graph, requests, done_at, active, seconds_per_unit, now, *,
+    prefill_seconds_per_token=None, prefill_done_after_output=False,
+):
     """Literal reference calculation, also covering observations ahead of the clock."""
     finish, model, tools = [], [], []
     for node in graph:
@@ -223,11 +254,12 @@ def scan_remaining_paths(graph, requests, done_at, active, seconds_per_unit, now
             continue
         request, dependencies = node["request_id"], node["dependencies"]
         if request is not None:
-            item = requests[request]
-            units = item["input_increment"] + 100 * (
-                item["output_tokens"] - active.get(request, 0)
+            duration = remaining_model_seconds(
+                requests[request], active.get(request, 0), seconds_per_unit,
+                prefill_seconds_per_token=prefill_seconds_per_token,
+                prefill_done_after_output=prefill_done_after_output,
             )
-            duration, external = units / 100. * seconds_per_unit, 0.
+            external = 0.
         else:
             duration, external = 0., node["delay_s"]
             if dependencies and all(graph[dep]["node_id"] in done_at for dep in dependencies):
@@ -239,7 +271,10 @@ def scan_remaining_paths(graph, requests, done_at, active, seconds_per_unit, now
     return finish[-1], model[-1], tools[-1]
 
 
-def cache_remaining_paths(graph, requests, done_at, active, seconds_per_unit):
+def cache_remaining_paths(
+    graph, requests, done_at, active, seconds_per_unit, *,
+    prefill_seconds_per_token=None, prefill_done_after_output=False,
+):
     """Build exact elapsed-time envelopes once per observed workflow revision."""
     finish, model, tools = [], [], []
     valid_from = -math.inf
@@ -251,11 +286,12 @@ def cache_remaining_paths(graph, requests, done_at, active, seconds_per_unit):
             continue
         request, dependencies = node["request_id"], node["dependencies"]
         if request is not None:
-            item = requests[request]
-            units = item["input_increment"] + 100 * (
-                item["output_tokens"] - active.get(request, 0)
+            duration = remaining_model_seconds(
+                requests[request], active.get(request, 0), seconds_per_unit,
+                prefill_seconds_per_token=prefill_seconds_per_token,
+                prefill_done_after_output=prefill_done_after_output,
             )
-            duration, external = units / 100. * seconds_per_unit, 0.
+            external = 0.
         else:
             duration, external = 0., node["delay_s"]
             if dependencies and all(graph[dep]["node_id"] in done_at for dep in dependencies):
@@ -301,6 +337,12 @@ class WorkflowWorkOracle:
         self._event_workflows = {}
         self._request_nodes = {}
         self._path_cache = {}
+        self._path_cost_parameters = {
+            "prefill_seconds_per_token": self.artifact.model_prefill_seconds_per_token,
+            "prefill_done_after_output": (
+                self.artifact.model_prefill_progress == "first_observed_output"
+            ),
+        }
         for workflow, graph in self.artifact.graphs.items():
             for node in graph:
                 if node["event_id"] is not None:
@@ -430,6 +472,7 @@ class WorkflowWorkOracle:
             self._path_cache[workflow] = cache_remaining_paths(
                 graph, self.artifact.requests, self._done_at, self._active,
                 self.artifact.model_seconds_per_work_token,
+                **self._path_cost_parameters,
             )
             self.counts["path_evaluations"] += 1
             self.counts["path_nodes_evaluated"] += len(graph)
@@ -442,6 +485,7 @@ class WorkflowWorkOracle:
             values = scan_remaining_paths(
                 self.artifact.graphs[workflow], self.artifact.requests, self._done_at,
                 self._active, self.artifact.model_seconds_per_work_token, now,
+                **self._path_cost_parameters,
             )
             self.counts["path_future_clock_fallbacks"] += 1
         self.counts["path_thread_cpu_us"] += (time.thread_time() - started) * 1e6
@@ -454,7 +498,7 @@ class WorkflowWorkOracle:
     def status(self):
         return {
             "artifact_sha256": self.digest, "error": self.error,
-            "kind": KIND, "deployable": False,
+            "kind": self.artifact.raw["kind"], "deployable": False,
             "future_trace_used_online": True, "scheduler_waits_for_inference": False,
             "rank": "remaining_model_tool_critical_path_seconds",
             "work_definition": "0.01*necessary_input_tokens+output_tokens",
@@ -463,6 +507,9 @@ class WorkflowWorkOracle:
             "future_tool_durations_used": True,
             "future_dependency_graph_used_for_rank_only": True,
             "model_seconds_per_work_token": self.artifact.model_seconds_per_work_token,
+            "model_prefill_seconds_per_token": self.artifact.model_prefill_seconds_per_token,
+            "model_prefill_progress": self.artifact.model_prefill_progress,
+            "model_path_cost_separate_from_intrinsic_work": self.artifact.raw["kind"] == COST_KIND,
             "critical_path_is_optimal_JCT_bound": False,
             "path_cache": "observed_revision_and_continuous_elapsed_timer_envelope",
             "path_lookup_complexity": "O(1)_between_observed_revisions",
