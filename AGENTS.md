@@ -4888,3 +4888,15 @@
   OMP1/OpenBLAS1 areverified;preservefailedr1states. Analysisdiffersfrom the
   GPU's2212inputsnapshotonlyin the separatelytestedcompletion-state guard;
   frozenbe9f062cGPUmeasurementandallfourreviewreadersremainunchanged.
+- The latest user explicitly authorizes stopping after the fixed18measured
+  workflows finish; do not wait for unrelated warmup/background tails. This
+  supersedes earlier all56normal-tail/drain requirements only for nonmeasured
+  work. Keep all18 complete JCT and exact native requests; mark censored and
+  unarrived background explicitly. Preserve old declarations and add schema2
+  with commonthroughputwindow first-to-last measuredarrival530.928631--
+  2368.047777s,independentof policy completion. CurrentfrozenGPU staysunchanged;
+  a separatelyqualifiednice19CUDA-hiddenobserver may cancel remaining work,
+  flush receipts,collectfreshidle snapshots andverifyactualownedexit after
+  measuredcompletion. Retainrawsupervisorstop plus explicitcohortcertificate;
+  neverreportall56completed. Supersede old full-population CPUreviewers and
+  requirethissamecontract/proof forfutureoracle comparisons.

@@ -24,6 +24,18 @@ def inspect(
     minimum_model_work_p80_p20=3.,
 ):
     minimum = validate_minimum_work_ratio(minimum_model_work_p80_p20)
+    cohort_stop = cohort["cohort"].get("schema_version") == 2
+    verified_cohort_stop = (
+        cohort_stop
+        and control.get("measured_cohort_and_owned_exit_verified") is True
+        and control.get("complete_measured_native_work_verified") is True
+        and control.get("termination_protocol") == "all_fixed_measured_workflows_completed"
+        and control.get("background_right_censoring_explicit") is True
+        and control.get("evaluation_cohort") == cohort["cohort"]
+        and type(control.get("measured_native_requests")) is int
+        and control["measured_native_requests"] > 0
+        and control["measured_native_requests"] == cohort.get("measured_exact_receipt_requests")
+    )
     counts = supply.get("sample_counts", {})
     samples, ready = counts.get("common_window", 0), counts.get("with_ready_paused", 0)
     reuse = supply.get("latest_native_counters_not_atomic_with_prefixes", {}).get(
@@ -42,10 +54,15 @@ def inspect(
     ), default=None)
     model_ratio = population["population"]["model_work_units"]["p80_p20"]
     checks = {
-        "complete_control_and_owned_exit": control.get("complete_work_and_actual_exit_verified") is True,
+        "complete_control_and_owned_exit": (
+            verified_cohort_stop if cohort_stop
+            else control.get("complete_work_and_actual_exit_verified") is True
+        ),
         "complete_workflow_population": (
-            cohort.get("all_workflows_completed") is True
-            and supply.get("all_workflows_completed") is True
+            (cohort.get("all_measured_completed") is True if cohort_stop else (
+                cohort.get("all_workflows_completed") is True
+                and supply.get("all_workflows_completed") is True
+            ))
             and supply.get("all_measured_completed") is True
         ),
         "fixed_complete_measured_JCT": (
@@ -55,7 +72,10 @@ def inspect(
             == len(cohort["cohort"]["measured_workflow_ids"])
             and len(cohort["cohort"]["measured_workflow_ids"]) >= 18
         ),
-        "exact_output_receipt_conservation": cohort.get("service_output_matches_complete_receipts") is True,
+        "exact_output_receipt_conservation": (
+            cohort.get("measured_service_output_matches_complete_receipts") is True if cohort_stop
+            else cohort.get("service_output_matches_complete_receipts") is True
+        ),
         "background_arrivals_cover_measured_tails": (
             cohort.get("background_submission_coverage", {}).get("covers_all_measured_completions") is True
         ),
@@ -81,6 +101,10 @@ def inspect(
         "common_window_ready_paused_sample_fraction": ready / samples if samples else None,
         "common_window_regular_demand_samples": len(regular),
         "maximum_sampled_reusable_prior_union_fraction": maximum,
+        "evaluation_termination": (
+            "all_fixed_measured_workflows_completed_with_nonmeasured_censoring"
+            if cohort_stop else "all_workflows_completed"
+        ),
         "full_shape_status": population.get("JOIN_shape_status", "review_separate_shape_assessment"),
         "scope": {
             "diagnostic_minima_not_a_formal_steady_state_or_statistical_proof": True,
@@ -91,6 +115,7 @@ def inspect(
             "JOIN_child_shape_limitations_not_waived_by_this_diagnostic": True,
             "no_policy_winners_or_completed_order_used_for_cohort_selection": True,
             "no_GPU_action": True, "no_automatic_GPU_followup": True,
+            "complete_workflow_population_check_refers_to_fixed_measured_group": cohort_stop,
         },
     }
 
