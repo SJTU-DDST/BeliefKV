@@ -1,11 +1,13 @@
 from copy import deepcopy
 import json
+import os
 import shlex
+import subprocess
 
 import pytest
 
 from scripts.prepare_original_node_projects import candidates, node_preflight
-from scripts.provision_original_node_projects import packages_for
+from scripts.provision_original_node_projects import dependency_lifecycle, packages_for
 
 
 def inventory():
@@ -81,3 +83,36 @@ def test_expensive_native_environment_is_reported_without_rewriting_dependencies
     assert directories == []
     assert reason == "native_ML_or_GUI_environment_outside_this_bounded_supplement"
     assert package.read_bytes() == raw
+
+
+def test_real_npm_runs_direct_and_transitive_hooks_without_executing_the_task_hook(tmp_path):
+    if os.environ.get("BELIEFKV_TEST_SANDBOX_DOCKER") != "1":
+        pytest.skip("requires the explicitly enabled real Docker toolchain fixture")
+    image = "sha256:ae7747bcc4719f63672af1947af26126982180a8e02ac154e091edfd318d8593"
+    root = {
+        "name": "cpu-fixture-root", "version": "1.0.0",
+        "dependencies": {"cpu-fixture-dependency": "1.0.0"},
+        "scripts": {"postinstall": "node -e \"require('fs').writeFileSync('root-ran','yes')\""},
+    }
+    (tmp_path / "package.json").write_text(json.dumps(root))
+    for name, dependencies in (
+        ("cpu-fixture-dependency", {"cpu-fixture-transitive": "1.0.0"}),
+        ("cpu-fixture-transitive", {}),
+    ):
+        directory = tmp_path / "node_modules" / name
+        directory.mkdir(parents=True)
+        (directory / "package.json").write_text(json.dumps({
+            "name": name, "version": "1.0.0", "dependencies": dependencies,
+            "scripts": {"postinstall": "node -e \"require('fs').writeFileSync('installed','yes')\""},
+        }))
+    result = subprocess.run([
+        "docker", "run", "--rm", "--network", "none", "--cpus", "1",
+        "--user", f"{os.getuid()}:{os.getgid()}",
+        "--volume", str(tmp_path) + ":/workspace", "--workdir", "/workspace",
+        "--env", "HOME=/tmp", "--entrypoint", "/bin/sh", image, "-c", dependency_lifecycle(),
+    ], text=True, capture_output=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not (tmp_path / "root-ran").exists()
+    assert json.loads((tmp_path / "package.json").read_text()) == root
+    for name in ("cpu-fixture-dependency", "cpu-fixture-transitive"):
+        assert (tmp_path / "node_modules" / name / "installed").read_text() == "yes"

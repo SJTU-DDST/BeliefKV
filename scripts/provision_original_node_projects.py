@@ -36,6 +36,24 @@ def dependency_link(source, destination):
     return "node -e " + shlex.quote(payload)
 
 
+def dependency_lifecycle():
+    payload = (
+        "const Arborist=require('/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist');"
+        "const {spawnSync}=require('node:child_process');"
+        "(async()=>{const tree=await new Arborist({path:process.cwd()}).loadActual();"
+        "const specs=[...new Set([...tree.inventory.values()]"
+        ".filter(n=>n.location&&n.package.name&&n.package.version"
+        "&&['preinstall','install','postinstall','prepare'].some(k=>n.package.scripts?.[k]))"
+        ".map(n=>n.package.name+'@'+n.package.version))];"
+        "console.log(JSON.stringify({dependency_lifecycle_specs:specs,root_lifecycle_selected:false}));"
+        "if(specs.length){const r=spawnSync('npm',['rebuild','--ignore-scripts=false',"
+        "'--foreground-scripts','--no-audit','--no-fund',...specs],{stdio:'inherit'});"
+        "if(r.error)throw r.error;process.exitCode=r.status??1}})()"
+        ".catch(e=>{console.error(e);process.exitCode=1});"
+    )
+    return "node -e " + shlex.quote(payload)
+
+
 def packages_for(task):
     source = Path(task["source_repo"])
     packages = []
@@ -58,7 +76,7 @@ def packages_for(task):
     return (packages, None) if packages else ([], "original_has_no_dependency_manifest")
 
 
-def install(task, directories, here, *, timeout_s):
+def install(task, directories, here, *, timeout_s, dependency_only=False, cache=None):
     project = task["repo"].split("/", 1)[1]
     workspace = here / "workspaces" / project
     workload = SweBenchWorkload(
@@ -77,14 +95,17 @@ def install(task, directories, here, *, timeout_s):
             "--network", "bridge", "--cpus", "1", "--memory", "4g",
             "--user", f"{os.getuid()}:{os.getgid()}",
             "--volume", str(workspace) + ":/workspace",
-            "--volume", str(here / "npm-cache") + ":/npm-cache",
+            "--volume", str(cache or here / "npm-cache") + ":/npm-cache",
             "--workdir", "/workspace/" + directory.as_posix(),
             "--env", "HOME=/tmp", "--env", "HUSKY=0",
             "--env", "NPM_CONFIG_CACHE=/npm-cache",
             "--env", "PYTHON=/opt/miniconda3/envs/testbed/bin/python",
             "--env", "OMP_NUM_THREADS=1", "--env", "OPENBLAS_NUM_THREADS=1",
             "--entrypoint", "/bin/sh", task["docker_image"], "-c",
-            "npm install --legacy-peer-deps --no-audit --no-fund",
+            (
+                "npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund && "
+                + dependency_lifecycle()
+            ) if dependency_only else "npm install --legacy-peer-deps --no-audit --no-fund",
         ]
         code, timeout = None, False
         try:
@@ -127,21 +148,33 @@ def main():
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--timeout-s", type=float, default=300.)
+    parser.add_argument("--dependency-only", action="store_true")
+    parser.add_argument("--npm-cache", type=Path)
+    parser.add_argument("--project", action="append", default=[])
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve dependency preparation attempts")
     here = args.output_dir.resolve()
     here.mkdir(parents=True, exist_ok=False)
-    (here / "npm-cache").mkdir()
+    cache = args.npm_cache.resolve() if args.npm_cache else here / "npm-cache"
+    cache.mkdir(parents=True, exist_ok=True)
     manifest = json.loads(args.manifest.read_bytes())
+    tasks = manifest["workloads"]
+    if args.project:
+        if not set(args.project) <= {task["repo"].split("/", 1)[1] for task in tasks}:
+            raise ValueError("retry projects must belong to the original prepared population")
+        tasks = [task for task in tasks if task["repo"].split("/", 1)[1] in args.project]
     results, selected = {}, []
-    for task in manifest["workloads"]:
+    for task in tasks:
         project = task["repo"].split("/", 1)[1]
         directories, reason = packages_for(task)
         if reason:
             results[project] = {"installed": False, "not_attempted_reason": reason}
         else:
-            result = install(task, directories, here, timeout_s=args.timeout_s)
+            result = install(
+                task, directories, here, timeout_s=args.timeout_s,
+                dependency_only=args.dependency_only, cache=cache,
+            )
             results[project] = result
             if result["installed"]:
                 selected.append(task)
@@ -174,6 +207,10 @@ def main():
         "projects": results, "dependency_installed_projects": len(selected),
         "task_source_and_tests_modified": False, "private_installation_copies_only": True,
         "original_task_requirements_modified": False, "task_tests_required_to_pass": False,
+        "dependency_only": args.dependency_only,
+        "requested_project_subset": args.project,
+        "root_project_lifecycle_deferred_to_agent": args.dependency_only,
+        "dependency_lifecycle_required_for_success": True,
         "future_image_and_live_root_child_checks_required": True, "GPU_action": False,
         "capture_ready": False, "analysis_sha256": sha256_file(Path(__file__)),
     })

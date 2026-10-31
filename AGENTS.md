@@ -4826,3 +4826,20 @@
   Node preparation31targetedCPU passes;full source-bound capture qualification,
   dependency image/fresh tool proofs and currentGPU actual exit remain required.
   See docs/research/original_node_supplement_20261030_zh.md;noGPUfollowup registered.
+- Sustained52Fullr3 now completes52/9313/1253882outputs,freshdrain and actual
+  ownedexit;fixed18meanJCT1036.292532s/P952507.434638s,commonwindow260.142950tps.
+  Unchanged workloadgate rejects1156.414310s uncoveredarrivaltail,570/2412ready
+  paused(.236318<.25),and5701oldprefixlossproxy on one same-session tradingroot.
+  Regular reuseunion peak.924936ofcombinedcapacity;do not infer globaloverflow.
+  Complete2578controls/34competitions/566eventual/514window-complete useful
+  services. Preserve full_review_continuous52_r1 and final_r1,nooracle/baseline.
+- Node dependencyr1 retains seven unpublished-version failures and two absent
+  original root install-hook failures. Explicit dependency-onlyr2 installs3
+  originals075/034/045:all actual direct/transitive dependency hooks run,root
+  task hooks remain agent responsibility,no source/test/range replacement.
+  Immutable image7c43b97e and3fresh realroot/child toolchecks pass.
+  node_source3_r1 is incremental data capture preparation,not a3taskcomparison.
+  Correct boundCPU_r2 passes5851+23,retains5842literalIDs/all2200prior inputpaths,
+  total2211inputs/native unchanged. R1's5851test passes remain but its2012file
+  source map omitted199legacy inputs;do not use that narrower map for capture.
+  Frozen source/currentGPUresource/sampler checks still precede actual capture.
