@@ -5462,3 +5462,16 @@
   r4actualconstructor/progress9310requests/52closed/fixed2819/362072pass.
   BoundCPU6290+23retains6240literalIDs/2257inputs/nativeunchanged,noerrors/
   failures/skips.R3freeze/entryplanremainr3only;newfreeze/GPUstillpending.
+- R4nowactuallyservesfromcleande7b3e9b/native434c35ddon18938,
+  ops/workflow_original56_initial12_mean70_calibrated_combination_20261031_r1.
+  Firstpositionregistrationrejectedbeforefiles/GPUduetooldcanonicalpatchpath;
+  retainregistration_attempt_r1,rebindonlypath/derivedhashafterexacttree/bytes/
+  plainnative6290proofcomparison.Positionr2passes24native token/session/stops
+  (all24stop)and1/8/24sampler;noextraFullattemptorbaseline rerun.
+  Liveproof176receipts/soleGPUscheduler3184710/nice0,contextcostidentitymatches,
+  eventoffload/prepare/JOIN/EOSon,ordinary2s/toolprefetch/handoffoff.
+  CPUcohortobserver3185277/results3185288actuallyalive,nice19/CUDA99999/OMP1/
+  OpenBLAS1/allpinsverified.Resultsawaitfixed18/drain/exit;newcomboauditand
+  correctlylabeledplotsregistered,noautomaticGPUfollowup.Early200choice
+  entries/6replayablestates/0setchangesarenotfullcoverageorJCTgain;default
+  metadatafallbackalsoincludesempty-referencefastreturn.Keepgoalactive.

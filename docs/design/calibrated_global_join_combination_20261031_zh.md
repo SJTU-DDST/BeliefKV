@@ -212,7 +212,37 @@ r4 已通过实际构造，完整旧对照事件回放仍为 9310 个完成请�
 6290 项及 23 子项，保留先前全部 6240 个 literal identity，2257 个源码
 输入与原生树在执行中不变，无失败、错误或跳过。证据为
 `calibrated_combination_context_cost_bound_cpu_r1/evidence.json`。
-新源码冻结和 GPU 比较尚待完成。
+服务源码已从 `de7b3e9b` 干净冻结，GPU 比较已启动，完整 JCT 尚未产出。
+
+## r4 GPU 启动与观察
+
+正式比较注册为
+`ops/workflow_original56_initial12_mean70_calibrated_combination_20261031_r1.registration.json`，
+端口 18938，原生树仍为 `434c35dd`。复用已有完整 predictive 控制，
+不重跑该控制或刚完成的 ThunderAgent。
+
+首次位置资格注册在创建注册文件和启动 GPU 之前，被原生证据中的旧
+operator 补丁绝对路径拒绝。保留 `registration_attempt_r1.json`；
+逐字段验证真实 native 树、补丁 bytes 和 6290 项检查绑定的原生状态不变后，
+只重绑定路径及派生 state hash。修正证据为 `native_source_path_rebind_r1.json`。
+位置资格使用显式 r2 注册，实际比较仍只有一轮。
+
+新的 24 请求 token/session/原生 stop 检查全部通过，24 次均为原生 stop，
+batch 1/8/24 的 position 采样检查通过。`live_oracle_r1.json` 独立验证：
+实际 `running_full`、176 个完成前缀收据、唯一 GPU scheduler 3184710、
+服务所有者 nice0、完整容量不变，以及正确的上下文成本身份。
+JOIN/EOS、prepare_host、即时预测卸载与两秒普通窗口保持原配置。
+
+固定测量组收尾观察器 3185277、结果观察器 3185288 实际存活，
+nice19、CUDA 隐藏、OMP/OpenBLAS 单线程，输入 pins 已重新验证。
+结果将在完整 18 条、收据、排空和实际退出后生成匹配控制对比、
+组合选择/周期真实服务审计和明确标注的新图表。未注册自动 GPU 后续。
+
+早期 `live_combination_choices_r1.json` 封存 200 次组合入口观察，
+6 条具有可重放搜索状态，尚无改变集合。其余包括无竞争、
+参考集合资源摘要不支持和候选摘要不可用；默认 metadata fallback
+还包含无参考准入集合的快路径，不能全解释为真实元数据获取失败。
+这只是早期前缀，不是完整覆盖率、JCT 或吞吐收益。
 
 ## GPU 验收
 
