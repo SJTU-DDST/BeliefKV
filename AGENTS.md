@@ -4955,3 +4955,28 @@
   creates nooracleconfiguration. See measured_cohort_oracle_comparison_20261030_
   zh.md and measured_oracle_cpu_original56_r1/progress_bound_r2.json.
   Fullboundqualification of these adapters is still required before oracleGPU.
+- Oracle/cohort adapters now pass source-bound5914cases+23subtests, retaining
+  5897literalIDs;2221inputs/native unchanged, nofailure/error/skip. This is CPU
+  evidence only. Mean60Full56 invalidated at14/18measured: common-window GPU
+  99.510989%/zero0s but only2actualcompetitions, later reusable old-prefix union
+  2997703/2839704=1.055639 and812862native-prefill-minus-source-increment tokens
+  across9completedloss requests. Background exhausted3146.724675s. Preserve
+  invalid_calibration/shutdown.json, complete measuredJCTnull, actualownedexit
+  andfreshdrain; never use this as complete matched control.
+- Current arrival calibration is mean70s with unchanged56originals,8initial,
+  seed35/permutation54/cohort12/18/26 and allnonarrival settings. Commonwindow
+  412.944491--1841.814938s,lastbackground3671.178788s. ActualFull registration
+  ops/workflow_sustained_original56_mean70_full_20261030_r1.registration.json,
+  frozenf6f6b9d5/native434c35dd,port18926. Data-onlyfreeze retains2219qualified
+  sourcehashes;fresh24token/session/native-stopmicrochecks and1/8/24sampling
+  complete,not fullperformance/correctness proof. Keep18measuredcompletionstop;
+  supply/competition/useful-statefit/backgroundcoverage still require actual
+  validation. Nooracle,learnedpredictor ornewbaselineGPUfollowup authorized by
+  qualification alone. Keep existingzero-utilizationperiods in allmetrics.
+- Mean70independentliveproof now verifies789completedexactreceipts, soleGPU
+  owner2891155/nice0serving andactualprofile. Fixed18observer2892844/start
+  759943733 isalive,nice19/CUDA99999/OMP1/OpenBLAS1,registeredunder
+  ops/workflow_original56_mean70_measured_completion_20261030_r1.registration.json.
+  Proofgpu_entry_sustained56_mean70_r2/live_full_r1.json. Earlyidleauditor
+  refusedbefore412.944491scommonwindow; noidle_supply_original56_mean70_r1
+  reportwasproduced. Do not treatthatrefusal asrunfailureorwindowevidence.
