@@ -5300,3 +5300,14 @@
   Full successor checkpoint27pauses/median125missingtokens are distinct from
   first-node-only prediction/native-pressurecallbackfields. Preserve all
   prefix bounds and uncertainty;see toolaware_control_opportunity_prefix doc.
+- New read-only review_matched_work_ranking validates the repaired pair with
+  identical oracle progress bookkeeping: same task/tool/arrival/resource/window
+  settings and hashes, artifacts differ only by remaining-work ranking boolean.
+  Both runs must pass fixed measured native work, fresh drain and actual exit.
+  It reuses existing cohort JCT/common-window throughput and preserves workload
+  failures rather than waiving steady-state coverage.44tests+11subtests pass and
+  actual prepared pair verifies;frozen93161529/6135-case serving proof unchanged.
+  Do not use the old review/register sustained-oracle assumptions for this pair.
+  Current12/70 control background arrivals have exhausted before fixed18 ends;
+  preserve this failure. Any matched oracle is diagnostic until workload gates
+  also pass;do not rerun unchanged control or change trace tools/arrivals midrun.
