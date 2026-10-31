@@ -2,7 +2,9 @@ from copy import deepcopy
 
 import pytest
 
-from scripts.audit_periodic_admission_decisions import inspect
+from beliefkv.experiments.replay_arrivals import poisson_arrival_plan
+from beliefkv.experiments.workflow_cohort import declare_cohort
+from scripts.audit_periodic_admission_decisions import inspect, observation_phases
 from tests.test_free_dispatch_service_audit import evidence
 
 
@@ -188,3 +190,90 @@ def test_worker_start_does_not_substitute_for_useful_batch_completion():
     assert report["counts"]["ready_grants_served_within_observation_window"] == 1
     assert report["counts"]["ready_grants_completed_useful_batch_within_observation_window"] == 0
     assert not report["ready_grant_episodes"][0]["new_completion_before_next_control_or_intervention"]
+
+
+def phase_evidence():
+    arrivals = poisson_arrival_plan(
+        ["w0", "w1", "w2", "w3"], rate_per_second=.1, seed=31, initial_workflows=1,
+    )
+    start, end = (row["offset_seconds"] for row in arrivals["arrival_schedule"][1:3])
+    cohort = declare_cohort(
+        arrivals, warmup=1, measured=2, throughput_start_s=start,
+        throughput_end_s=end, stop_after_measured=True,
+    )
+    origin = 100.
+    events = [{
+        "kind": "workflow_start", "workflow_id": row["workflow_id"],
+        "ts_ms": (origin + row["offset_seconds"]) * 1000.,
+    } for row in arrivals["arrival_schedule"]]
+    events += [
+        {"kind": "workflow_end", "workflow_id": "w1", "ts_ms": (origin + end + 2.) * 1000.},
+        {"kind": "workflow_end", "workflow_id": "w2", "ts_ms": (origin + end + 4.) * 1000.},
+        {"kind": "llm_result", "workflow_id": "w1", "ts_ms": (origin + start) * 1000.,
+         "attributes": {"request_id": "left"}},
+        {"kind": "llm_result", "workflow_id": "w2", "ts_ms": (origin + end) * 1000.,
+         "attributes": {"request_id": "right"}},
+    ]
+    choices, batches = records()
+    controls = []
+    for offset in (start, end, end + 1., end + 5.):
+        row = deepcopy(choices[0])
+        row["monotonic_s"] = origin + offset
+        controls.append(row)
+    return inspect(controls, batches), arrivals, cohort, events
+
+
+def test_phase_audit_preserves_fixed_half_open_window_and_complete_measured_span():
+    report = observation_phases(*phase_evidence())
+    fixed = report["phases"]["fixed_common_throughput_window"]
+    tail = report["phases"]["measured_execution_after_common_window"]
+    measured = report["phases"]["measured_execution_observation_span"]
+    assert fixed["actual_periodic_controls"] == fixed["completed_measured_model_requests"] == 1
+    assert tail["actual_periodic_controls"] == 2
+    assert tail["completed_measured_model_requests"] == 1
+    assert measured["actual_periodic_controls"] == 3
+    assert measured["actual_cross_workflow_logical_set_competitions"] == 3
+    assert report["all_measured_completed"]
+    assert not report["scope"]["workload_acceptance_gate_changed"]
+    assert report["scope"]["execution_span_depends_on_policy_completion_diagnostic_only"]
+
+
+def test_phase_audit_never_treats_partial_measured_completions_as_a_complete_span():
+    report, arrivals, cohort, events = phase_evidence()
+    events = [row for row in events if not (
+        row["kind"] == "workflow_end" and row["workflow_id"] == "w2"
+    )]
+    result = observation_phases(report, arrivals, cohort, events)
+    assert not result["all_measured_completed"]
+    assert result["observed_measured_completions"] == 1
+    assert result["last_measured_completion_offset_s"] is None
+    assert result["phases"]["measured_execution_observation_span"]["end_s"] is None
+    assert not result["phases"]["measured_execution_observation_span"]["complete_phase_observed"]
+
+
+def test_phase_audit_keeps_an_unstarted_window_unknown():
+    report, arrivals, cohort, events = phase_evidence()
+    report["control_observations"] = [
+        {**report["control_observations"][0], "monotonic_s": 100.}
+    ]
+    phases = observation_phases(report, arrivals, cohort, events)["phases"]
+    assert not phases["fixed_common_throughput_window"]["phase_started"]
+    assert phases["fixed_common_throughput_window"]["predecision_ready_fraction"] is None
+    assert phases["fixed_common_throughput_window"]["actual_periodic_controls"] == 0
+
+
+@pytest.mark.parametrize("change", ("cohort", "arrival", "duplicate", "foreign", "end"))
+def test_phase_audit_rejects_changed_membership_clocks_and_duplicate_boundaries(change):
+    report, arrivals, cohort, events = phase_evidence()
+    if change == "cohort":
+        cohort["measured_workflow_ids"].reverse()
+    elif change == "arrival":
+        events[0]["ts_ms"] += 1.
+    elif change == "duplicate":
+        events.append(deepcopy(events[0]))
+    elif change == "foreign":
+        events[0]["workflow_id"] = "foreign"
+    else:
+        next(row for row in events if row["kind"] == "workflow_end")["ts_ms"] = 1.
+    with pytest.raises(ValueError):
+        observation_phases(report, arrivals, cohort, events)

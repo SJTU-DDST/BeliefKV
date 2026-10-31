@@ -4980,3 +4980,15 @@
   Proofgpu_entry_sustained56_mean70_r2/live_full_r1.json. Earlyidleauditor
   refusedbefore412.944491scommonwindow; noidle_supply_original56_mean70_r1
   reportwasproduced. Do not treatthatrefusal asrunfailureorwindowevidence.
+- New CPU-onlyperiodicdecisionreader addscontrol_observations/optional--cohort
+  phase diagnostics. Fixedthroughputwindow unchanged; measuredexecutionspan
+  dependsoncompletion, diagnostic only. Incompletecohortend staysnull; never
+  promotephasecounts tocompleteJCT/GPUproof oralterworkloadacceptance.
+  70targetedcasespass. decision_phase_original56_r1 rechecksmean90:0common/5
+  fullmeasuredspancompetitions;mean60:2common/118partialspan/116postcommon.
+  Mean60remainsinvalidforcapacity/loss/background,notacceptedbythese counts.
+  Newmean70idleprefix523.338s:99.704566%GPU/zero0s over110.393scommonprefix;
+  supply538.791s has1267probes/zerooldprefixloss;realperiodicprefix880.947s has
+  0competitions/231controlsafterfirstmeasuredarrival. Preserveallprefixlimits.
+  See docs/research/original56_decision_phase_20261030_zh.md. Runningf6GPU and
+  observer remainfrozen;newreader requiresseparatepostcompletionreanalysis.

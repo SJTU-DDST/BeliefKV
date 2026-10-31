@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.workflow_cohort import validate_cohort
 from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 from scripts.audit_free_dispatch_service import identity
 from scripts.audit_native_system_costs import distribution, finite_number
@@ -53,6 +54,7 @@ def useful_work(member, phase):
 
 def inspect(records, batches):
     counts, decisions, grants = Counter(), [], []
+    observations = []
     controls, interventions = [], defaultdict(list)
     previous = -1.
     for sequence, record in enumerate(records):
@@ -104,6 +106,19 @@ def inspect(records, batches):
         counts["controls_with_ready_paused"] += bool(ready)
         counts["cross_workflow_logical_set_competition_controls"] += competition
         counts["free_budget_without_ready_paused_controls"] += capacity > 100 and not ready
+        observations.append({
+            "monotonic_s": now, "resume_capacity_tokens": capacity,
+            "ready_paused_agents": len(ready),
+            "fitting_ready_paused_agents": len(fitting),
+            "fitting_workflows": len({
+                owners[item["invocation_id"]][1] for item in fitting
+            }),
+            "cross_workflow_logical_set_competition": competition,
+            "resumed_programs": len(resumed),
+            "resumed_retained_after_pressure": sum(
+                metadata[owner]["active_after_pressure"] for owner in resumed
+            ),
+        })
         for owner in resumed:
             item = metadata[owner]
             counts["resumed_program_episodes"] += 1
@@ -222,6 +237,7 @@ def inspect(records, batches):
             completion_latencies.append(row["first_new_useful_completion_ms"])
     return {
         "counts": dict(counts), "competition_decisions": decisions,
+        "control_observations": observations,
         "ready_grant_episodes": grants, "following_service_ms": distribution(latencies),
         "within_window_new_launch_ms": distribution(launch_latencies),
         "within_window_new_service_ms": distribution(bounded_service_latencies),
@@ -245,11 +261,111 @@ def inspect(records, batches):
     }
 
 
+def observation_phases(result, arrivals, cohort, events):
+    """Keep decision-time diagnostics separate from the fixed throughput window."""
+    validate_cohort(cohort, arrivals)
+    offsets = {
+        row["workflow_id"]: row["offset_seconds"]
+        for row in arrivals["arrival_schedule"]
+    }
+    starts, ends, requests = {}, {}, set()
+    model_completions = []
+    for row in events:
+        workflow, when, kind = row["workflow_id"], row["ts_ms"], row["kind"]
+        if workflow not in offsets or not finite_number(when) or when < 0:
+            raise ValueError("phase diagnostics require known workflows and finite clocks")
+        if kind in ("workflow_start", "workflow_end"):
+            mapping = starts if kind == "workflow_start" else ends
+            if workflow in mapping:
+                raise ValueError("duplicate workflow boundary in phase diagnostics")
+            mapping[workflow] = when
+        elif kind == "llm_result":
+            request = row["attributes"]["request_id"]
+            if request in requests:
+                raise ValueError("duplicate model completion in phase diagnostics")
+            requests.add(request)
+            model_completions.append((when, workflow))
+    origins = [when - offsets[workflow] * 1000. for workflow, when in starts.items()]
+    if (
+        not origins or max(origins) - min(origins) > 1e-5
+        or not ends.keys() <= starts.keys()
+        or any(ends[key] < starts[key] for key in ends)
+    ):
+        raise ValueError("phase boundaries differ from the frozen arrival clock")
+    origin = origins[0] / 1000.
+    members = set(cohort["measured_workflow_ids"])
+    complete = members <= ends.keys()
+    measured_end = max(ends[key] / 1000. - origin for key in members) if complete else None
+    start, end = cohort["throughput_window_offset_seconds"]
+    controls = result["control_observations"]
+    if not controls:
+        raise ValueError("phase diagnostics require actual periodic controls")
+    observed_through = max(row["monotonic_s"] for row in controls) - origin
+    windows = {
+        "fixed_common_throughput_window": (start, end),
+        "measured_execution_observation_span": (start, measured_end),
+        "measured_execution_after_common_window": (end, measured_end),
+    }
+    phases = {}
+    for name, (left, right) in windows.items():
+        rows = [
+            row for row in controls if row["monotonic_s"] - origin >= left
+            and (right is None or row["monotonic_s"] - origin < right)
+        ]
+        ready = sum(row["ready_paused_agents"] > 0 for row in rows)
+        completed = [
+            workflow for when, workflow in model_completions
+            if workflow in members and when / 1000. - origin >= left
+            and (right is None or when / 1000. - origin < right)
+        ]
+        phases[name] = {
+            "start_s": left, "end_s": right,
+            "observed_through_offset_s": min(observed_through, right) if right is not None else observed_through,
+            "phase_started": observed_through >= left,
+            "complete_phase_observed": right is not None and observed_through >= right,
+            "actual_periodic_controls": len(rows),
+            "controls_with_predecision_ready_paused": ready,
+            "predecision_ready_fraction": ready / len(rows) if rows else None,
+            "actual_cross_workflow_logical_set_competitions": sum(
+                row["cross_workflow_logical_set_competition"] for row in rows
+            ),
+            "free_budget_without_predecision_ready_paused_controls": sum(
+                row["resume_capacity_tokens"] > 100 and not row["ready_paused_agents"]
+                for row in rows
+            ),
+            "periodic_granted_programs": sum(row["resumed_programs"] for row in rows),
+            "periodic_grants_retained_after_pressure": sum(
+                row["resumed_retained_after_pressure"] for row in rows
+            ),
+            "completed_measured_model_requests": len(completed),
+        }
+    return {
+        "origin_monotonic_ms": origins[0],
+        "all_measured_completed": complete,
+        "observed_measured_completions": len(members & ends.keys()),
+        "last_measured_completion_offset_s": measured_end,
+        "phases": phases,
+        "scope": {
+            "preselection_periodic_state_not_postselection_snapshot": True,
+            "actual_periodic_entries_only_other_grants_remain_separate": True,
+            "fixed_common_window_preserved_for_throughput": True,
+            "execution_span_depends_on_policy_completion_diagnostic_only": True,
+            "overlapping_phase_counts_must_not_be_added": True,
+            "completed_requests_not_token_work_or_GPU_time": True,
+            "logical_fit_not_physical_feasibility": True,
+            "independently_sealed_prefixes_not_atomic": True,
+            "workload_acceptance_gate_changed": False,
+            "GPU_action": False,
+        },
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registration", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--complete", action="store_true")
+    parser.add_argument("--cohort", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve prior decision observations")
@@ -262,6 +378,19 @@ def main():
         reader(arm / "opportunities/admission_opportunities.jsonl"),
         reader(arm / "server/runtime_audit.jsonl"),
     )
+    if args.cohort is not None:
+        arrivals_path = Path(registration["workflow_arrivals_path"])
+        arrivals = json.loads(arrivals_path.read_bytes())
+        if arrivals != registration["workflow_arrivals"]:
+            raise ValueError("phase arrivals differ from the serving registration")
+        result["observation_phases"] = observation_phases(
+            result, arrivals, json.loads(args.cohort.read_bytes()),
+            reader(arm / "replay/runtime_events.replay.jsonl"),
+        )
+        result["phase_inputs_sha256"] = {
+            str(path.resolve()): sha256_file(path)
+            for path in (args.cohort, arrivals_path)
+        }
     if args.complete and any(
         Path(path).stat().st_size != prefix["complete_prefix_bytes"]
         or sha256_file(Path(path)) != prefix["complete_prefix_sha256"]
