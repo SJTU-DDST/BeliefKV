@@ -5614,3 +5614,20 @@
   originals;capturereadyfalse,naturalwork/childshapeunknown.Dependency-only
   privatepreparationrunningnice19/CUDAhidden/1container/1CPU/4GB;preserve
   allfailuresandoriginalpackageversions.NobackgroundtraceorGPUcapturestarted.
+- BackgrounddependencyCPUpreparationfinished3installed/9ETARGET/5missing
+  manifests/7out-of-scopeMLGUI/1localworkspace;allsource/tests/versionsretained.
+  Newimmutableimage50fbe7c65f5a hasreal3projectroot-childtoolproofandcleanup.
+  Source3declarationboundCPU6373+23retains6360IDs/2262sources/nativeunchanged,
+  zerofailure/error/skip;thisis3projectqualification,not25projectqualification.
+- Userboundaryisnormaltools,notrequiringapplicationtestsuccess.All25original
+  tasksarecode_comprehension;dependencyinstallfailurealoneisnotruntimefailure.
+  Separateactual25/25root-childtoolsandNodefsoriginal-sourceSHAreadspass in
+  background_extension_original25_tools_r1,withknownapplicationdependency
+  statusdisclosed.Noapplicationexecution/testcorrectnessclaimed,no source
+  repairsorsynthetictooltiming.Source25_toolchain_r1bindsactualoriginals/
+  4-8child/8-16root/naturaltails;populationCPU/GPUqualificationstillpending,
+  newtraceszero,noGPUcapturequeued.Do notreusethree-projectCPUas25proof.
+- Runningresourceoracler2sealed872choiceshas21searches/5setchanges/2new
+  members,bothactualperiodicgrantsretainedandfollowedbyexactattemptservice/
+  boundedusefulcompletion.Livecounts19deepaggregates/19refreshattempts.
+  NotcausalJCTorcompleteperformance;finishall18measuredtailsnormally.
