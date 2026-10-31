@@ -5444,3 +5444,21 @@
   Free-dispatch service andA-to-B remain separate;missing evidence staysunknown,
   notcausalJCT.74focusedchecks pass;retainr1two session-lessfixture failures
   andr2repairwithoutrelaxingidentity. This isanalysis-only,notnewGPUqualification.
+- Thunder12/70fixed18nowcomplete:both2819requests/362072outputs,52naturally
+  ended/4nonmeasuredcensored,freshdrain/actualownedexitindependentlyreverified.
+  Predictivecontrolmean1052.994585vsThunder1175.613671s(10.430219%lower),
+  P95gain10.475071%;17improve/1worsens4.393s.Commonwindow301.891902vs
+  292.354630tps(+3.262227%).Thisisdisabled-work-rankingPredictive,notoracle
+  rankinggain.BothCPUobserversactuallyexit;finalplotsvisuallychecked.
+  Preservebackgroundcoverage/prefixlossrejections,nosingle-run significance
+  orformalsteady-stateclaim.Seecomparison_r1andindependentverification_r1.
+- Newr4context-admission-costcandidateusesonlycompletedmatchingcontrol:
+  single-requestprefillmedians.034491/.059538/.100981/.171672/.307888ms/token
+  in5nativecontext-afterranges,minimum30samples/bucket,support262144tokens.
+  Integratemissinginputintervaloncepercandidate;cacheacrosssubsets.
+  Legacyconstantprofileexactlyretained;intrinsicremainingpathstillglobal
+  prefillproxy,notcontext-exactoroptimalJCT.Costevidencebindsexactsealed
+  prefix;unchangedtasks/tools/arrivals/cohort/resources.
+  r4actualconstructor/progress9310requests/52closed/fixed2819/362072pass.
+  BoundCPU6290+23retains6240literalIDs/2257inputs/nativeunchanged,noerrors/
+  failures/skips.R3freeze/entryplanremainr3only;newfreeze/GPUstillpending.

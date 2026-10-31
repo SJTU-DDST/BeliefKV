@@ -22,7 +22,44 @@ from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import verify_execution
 
 
-def calibrated_artifact(original, calibration, *, calibration_path, calibration_sha256):
+def context_prefill_costs(diagnostic, calibration):
+    if (
+        diagnostic.get("source_registration") != calibration["registration"]
+        or diagnostic.get("frozen_current_prefill_ms_per_token")
+        != calibration["completed_control_cost_proxy"]["prefill_ms_per_token"]
+        or diagnostic.get("scope", {}).get("same_completed_control") is not True
+        or diagnostic.get("scope", {}).get("sequence_tokens_before_is_native_prefix_not_total_input") is not True
+        or diagnostic.get("scope", {}).get("GPU_action") is not False
+    ):
+        raise ValueError("context costs require the same complete control and native prefix geometry")
+    prefixes = diagnostic.get("input_jsonl_prefixes", {})
+    if len(prefixes) != 1 or any(
+        calibration["input_jsonl_prefixes"].get(name) != prefix
+        for name, prefix in prefixes.items()
+    ):
+        raise ValueError("context costs must cover the exact completed calibration prefix")
+    groups = diagnostic["single_request_prefill_batches_at_least_256_tokens_by_context_after_upper_bound"]
+    bounds = (8192, 32768, 65536, 131072, 262144)
+    names = ("8192", "32768", "65536", "131072", "at_least_131072")
+    if set(groups) != set(names):
+        raise ValueError("context calibration must retain all five context ranges")
+    rates = []
+    for bound, name in zip(bounds, names):
+        group = groups[name]
+        if type(group.get("batch_count")) is not int or group["batch_count"] < 30 or (
+            group["ms_per_input_token"].get("count") != group["batch_count"]
+        ):
+            raise ValueError("context prefill bucket lacks sufficient observed batches")
+        rates.append((bound, group["ms_per_input_token"]["p50"]))
+    costs = {**calibration["completed_control_cost_proxy"], "prefill_ms_per_token_by_context": rates}
+    CombinationCosts(**costs)
+    return costs
+
+
+def calibrated_artifact(
+    original, calibration, *, calibration_path, calibration_sha256,
+    context_calibration=None, context_calibration_path=None, context_calibration_sha256=None,
+):
     WorkflowWorkOracleArtifact(original)
     if (
         original["kind"] != KIND
@@ -36,7 +73,10 @@ def calibrated_artifact(original, calibration, *, calibration_path, calibration_
         or calibration.get("scope", {}).get("same_completed_control_not_partial_oracle") is not True
     ):
         raise ValueError("calibration requires the matching completed two-second control")
-    costs = calibration["completed_control_cost_proxy"]
+    costs = (
+        calibration["completed_control_cost_proxy"] if context_calibration is None
+        else context_prefill_costs(context_calibration, calibration)
+    )
     CombinationCosts(**costs)
     decode = calibration["completed_control_weighted_decode_step_ms"]
     if type(decode) not in (int, float) or not math.isfinite(decode) or decode <= 0:
@@ -58,6 +98,18 @@ def calibrated_artifact(original, calibration, *, calibration_path, calibration_
             "intrinsic_work_population_thresholds_and_source_unchanged": True,
         },
     )
+    if context_calibration is not None:
+        if context_calibration_path is None or not context_calibration_sha256:
+            raise ValueError("context costs require their explicit immutable report")
+        artifact["calibrated_model_time"]["admission_prefill_context_calibration"] = {
+            "report": str(context_calibration_path), "report_sha256": context_calibration_sha256,
+            "context_after_boundaries": [bound for bound, _rate in costs["prefill_ms_per_token_by_context"]],
+            "minimum_observed_single_request_batches_per_bucket": 30,
+            "curve_statistic": "median_worker_ms_per_native_extend_token",
+            "integration": "piecewise_over_missing_input_prefix_to_complete_context",
+            "remaining_intrinsic_model_path_uses_original_global_prefill_proxy": True,
+            "pure_GPU_time_claimed": False,
+        }
     WorkflowWorkOracleArtifact(artifact)
     return artifact
 
@@ -115,6 +167,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("base", "control", "calibration", "cohort", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--prefill-context-calibration", type=Path)
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output_dir.exists():
         raise ValueError("hide CUDA and preserve earlier preparations")
@@ -135,6 +188,12 @@ def main():
             or sha256_file(path) != prefix["complete_prefix_sha256"]
         ):
             raise ValueError("completed control cost observations changed")
+    context = None
+    if args.prefill_context_calibration is not None:
+        context = causal.load(args.prefill_context_calibration)
+        for name, digest in context["inputs_sha256"].items():
+            if sha256_file(Path(name)) != digest:
+                raise ValueError("context prefill calibration input changed: " + name)
     common = base["common_environment"]
     original = WorkflowWorkOracleArtifact.load(
         Path(common["WORKFLOW_WORK_MODEL"]), common["WORKFLOW_WORK_MODEL_SHA256"],
@@ -142,6 +201,15 @@ def main():
     artifact = calibrated_artifact(
         original.raw, calibration, calibration_path=args.calibration.resolve(),
         calibration_sha256=sha256_file(args.calibration),
+        context_calibration=context,
+        context_calibration_path=(
+            args.prefill_context_calibration.resolve()
+            if args.prefill_context_calibration is not None else None
+        ),
+        context_calibration_sha256=(
+            sha256_file(args.prefill_context_calibration)
+            if args.prefill_context_calibration is not None else None
+        ),
     )
     destination = args.output_dir.resolve()
     artifact_path, config_path = destination / "oracle.json", destination / "full.json"
@@ -168,6 +236,7 @@ def main():
         "complete_control_measured_output_tokens": completion["measured_output_tokens"],
         "inputs_sha256": {str(path.resolve()): sha256_file(path) for path in (
             args.base, args.control, args.calibration, args.cohort, Path(__file__),
+            *((args.prefill_context_calibration,) if args.prefill_context_calibration is not None else ()),
         )},
         "artifact_sha256": sha256_file(artifact_path),
         "configuration_sha256": sha256_file(config_path),

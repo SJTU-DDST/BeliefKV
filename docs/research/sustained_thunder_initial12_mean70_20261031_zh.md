@@ -128,3 +128,50 @@ CPU0 顺序微基准中六/八候选完整搜索 P50 缩短约 7%/18%，
 八候选触及软截止的比例从 82.67% 降至 62.00%。
 完整共享检查为 6240 项及 23 子项，保留先前 6236 项；
 这仍是 CPU 候选结果，不是新 oracle GPU 或 JCT 收益。
+
+## 完整的固定测量组对比
+
+2026-10-31 17:57 UTC，两侧固定 18 个成员均已自然完成，精确原生工作为
+2819 请求、362072 输出 token。新鲜 idle drain、所有权进程实际退出、
+测量成员完整收据已独立复验。两侧各有 52 个 workflow 自然完成，
+4 个非测量 workflow 按相同协议删失，不能写成全部 56 个完成。
+
+| 固定测量或共同窗口指标 | ThunderAgent acting-decay | Predictive | Predictive 改善 |
+| --- | ---: | ---: | ---: |
+| 平均完整 JCT | 1175.614 s | 1052.995 s | 10.430% |
+| P50 完整 JCT | 804.803 s | 639.699 s | 20.516% |
+| P95 完整 JCT | 3056.289 s | 2736.141 s | 10.475% |
+| 共同窗口全部输出吞吐 | 292.355 token/s | 301.892 token/s | 3.262% |
+
+18 个配对中 17 个加快、1 个放慢，唯一放慢约 4.393 s。共同吞吐窗口仍为
+55.692771–1638.954850 s，统计所有阶段的真实输出及所有已到达 workflow，
+不是用最后一个 workflow 的完成时间作为吞吐分母。
+
+这里的 Predictive 是已完成的工具感知控制配置，关闭剩余工作量排序。
+因此上述收益不是 oracle 短任务排序的贡献；上一轮单体 oracle 相对该控制
+仍为平均 JCT 回退 0.729%，两项结论不能混淆。
+
+原 workload 局限继续保留：背景到达表先于测量尾部结束，旧控制的前缀丢失
+和后期 Host 压力检查未通过。这是相同固定流量的机制对比，
+不是已经接受的稳态 serving 结果，也没有单次实验统计显著性声明。
+背景共享完成成员的均值只可作条件诊断，不能替代固定 26 个成员的完整均值。
+
+结果、独立复验与图表：
+
+- `predictive_thunder_initial12_mean70_comparison_r1/comparison.json`；
+- 同目录 `independent_complete_verification_r1.json`；
+- `figures/common_window_throughput.{png,pdf,csv}`，包含 decode 与全部输出曲线；
+- `figures/paired_complete_JCT.{png,pdf}`，保留全部 18 个测量尾部。
+
+两张 PNG 已目视核对方法标签、单位和固定成员数。
+`thunder_initial12_mean70_prepare_r1/common_window_decode_geometry_live_r1.json`
+另外记录共同窗口平均 decode batch 为 7.571 / 7.289，
+worker 加权宽度为 8.765 / 8.394，分别对应 Predictive / ThunderAgent。
+这些 worker 区间和 batch 宽度不是纯 GPU 时间或因果收益分解。
+
+Oracle CPU 后续已扩展到 r4 的上下文分档准入成本：
+同一已完成控制的单请求 prefill 中位成本从约 0.034 ms/token 上升到
+长上下文的 0.308 ms/token，旧统一值 0.083 会低估长上下文补入代价。
+新成本逐候选缓存，完整源码资格通过 6290 项及 23 子项；
+任务、工具时长、到达和资源不变。参见前述组合设计文档。
+该候选尚无 GPU 性能结果，不重复运行已有 predictive 或 ThunderAgent 对照。

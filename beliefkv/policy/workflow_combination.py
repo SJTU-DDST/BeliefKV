@@ -47,6 +47,7 @@ class CombinationCosts:
     decode_steps: int = 16
     epsilon_ms: float = .1
     relative_tie: float = .01
+    prefill_ms_per_token_by_context: tuple = ()
 
     def __post_init__(self):
         if (
@@ -62,6 +63,15 @@ class CombinationCosts:
             or not math.isfinite(self.relative_tie) or not 0 <= self.relative_tie < 1
         ):
             raise ValueError("invalid frozen combination cost profile")
+        previous_bound, previous_rate = 0, 0.
+        for bound, rate in self.prefill_ms_per_token_by_context:
+            if (
+                type(bound) is not int or bound <= previous_bound
+                or type(rate) not in (int, float) or not math.isfinite(rate)
+                or rate <= 0 or rate < previous_rate
+            ):
+                raise ValueError("invalid context prefill cost curve")
+            previous_bound, previous_rate = bound, rate
 
     def decode_cost(self, width, contexts):
         if width == 0:
@@ -70,6 +80,24 @@ class CombinationCosts:
             raise ValueError("batch width outside calibrated cost support")
         context_ratio = max(1., contexts / width / self.reference_context_tokens)
         return self.decode_steps * self.decode_ms_by_width[width - 1] * context_ratio
+
+    def prefill_cost(self, tokens, context):
+        if not self.prefill_ms_per_token_by_context:
+            return tokens * self.prefill_ms_per_token
+        if (
+            type(tokens) is not int or type(context) is not int
+            or not 0 <= tokens <= context
+            or context > self.prefill_ms_per_token_by_context[-1][0]
+        ):
+            raise ValueError("prefill context outside frozen cost support")
+        start, total = context - tokens, 0.
+        for bound, rate in self.prefill_ms_per_token_by_context:
+            end = min(context, bound)
+            total += max(0, end - start) * rate
+            start = max(start, end)
+            if start >= context:
+                break
+        return total
 
 
 def probability_weight(probabilities):
@@ -83,7 +111,7 @@ def probability_weight(probabilities):
     return sum(p * factor for p, factor in zip(probabilities, (1., .5, .25)))
 
 
-def _evaluate(rows, resources, costs, *, active_decode_cost=None):
+def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=None):
     if (
         not rows or len(rows) > resources.slots
         or sum(row.logical_tokens for row in rows) > resources.logical_tokens
@@ -134,8 +162,16 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None):
         resources.active_width + len(rows),
         resources.active_context_tokens + sum(row.context_tokens for row in rows),
     )
+    prefill = (
+        sum(
+            prefill_costs[row.identity] if prefill_costs is not None
+            else costs.prefill_cost(row.input_tokens, row.context_tokens)
+            for row in rows
+        )
+        if costs.prefill_ms_per_token_by_context else inputs * costs.prefill_ms_per_token
+    )
     incremental = (
-        missing * costs.h2d_ms_per_token + inputs * costs.prefill_ms_per_token
+        missing * costs.h2d_ms_per_token + prefill
         + max(0., after - before)
     )
     return {
@@ -184,9 +220,13 @@ def choose_combination(
         active_decode_cost = costs.decode_cost(
             resources.active_width, resources.active_context_tokens,
         )
+        prefill_costs = (
+            {row.identity: costs.prefill_cost(row.input_tokens, row.context_tokens) for row in candidates}
+            if costs.prefill_ms_per_token_by_context else None
+        )
         baseline = _evaluate(
             [by_id[identity] for identity in reference], resources, costs,
-            active_decode_cost=active_decode_cost,
+            active_decode_cost=active_decode_cost, prefill_costs=prefill_costs,
         )
         if baseline is None:
             result["reason"] = "reference_resource_summary_unsupported"
@@ -218,7 +258,10 @@ def choose_combination(
                 result["evaluated_subsets"] += 1
                 continue
             rows = [row for index, row in enumerate(candidates) if mask & (1 << index)]
-            value = _evaluate(rows, resources, costs, active_decode_cost=active_decode_cost)
+            value = _evaluate(
+                rows, resources, costs, active_decode_cost=active_decode_cost,
+                prefill_costs=prefill_costs,
+            )
             result["evaluated_subsets"] += 1
             if value is not None and value["score"] > best_score * (1. + costs.relative_tie):
                 best_score, selected, best_value = (

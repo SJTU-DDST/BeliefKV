@@ -173,6 +173,47 @@ r2 给请求绑定 session 后通过，未放宽分析器的身份检查。
 证据为本候选目录的 `choice_audit_cpu_r1.xml` 和 `choice_audit_cpu_r2.xml`。
 分析器没有改变 `bf5c6c58` 服务快照、6240 项既有资格或正在运行的观察器。
 
+## 上下文相关的准入 Prefill 成本
+
+继续审计已完成的同一 predictive 对照发现，单请求、extend 至少 256 token
+的 prefill worker 成本随上下文长度变化明显。上下文使用真实
+`sequence_tokens_before + token_delta`，前者是本批次前缀，不能将它当作
+完整输入或要求它大于 extend。
+
+| 本批完成后的上下文范围 | 样本批次数 | worker ms / extend token 中位数 |
+| --- | ---: | ---: |
+| 小于 8192 | 720 | 0.034491 |
+| 8192–32767 | 3448 | 0.059538 |
+| 32768–65535 | 1192 | 0.100981 |
+| 65536–131071 | 1351 | 0.171672 |
+| 至少 131072 | 725 | 0.307888 |
+
+旧统一成本为 0.083225 ms/token。这不是原生 GPU 时间或 JCT 根因证明，
+但在组合选择中会低估长上下文补入成本。诊断证据为 r3 目录的
+`prefill_context_cost_diagnostic_r1.json`，绑定同一已完成控制的完整
+native prefix，不使用运行中的 baseline 或下一轮 oracle 结果拟合。
+
+`calibrated_combination_initial12_mean70_prepare_r4` 在同一 v2 artifact
+中显式加入五档准入成本，支持至 262144 token。按必要输入区间
+`[context - missing_input, context]` 分段积分，每个候选只计算一次，
+集合枚举复用成本。缺少支持的摘要继续返回原方案，不扩大物理容量。
+不启用这张表时保留旧常数成本及原浮点求和，旧实验保持冻结。
+
+这项变化只细化准入的即时 prefill 成本；完整 workflow 的固有模型/工具
+剩余路径仍沿用 r3 的全局 prefill 代理，未声称其已成为上下文精确模型或
+最优 JCT oracle。任务、token、图、工具、到达、固定测量成员与资源均不变。
+r3 的干净快照和未来启动准备只属于 r3，不自动作为 r4 的运行资格。
+
+r4 已通过实际构造，完整旧对照事件回放仍为 9310 个完成请求、52 个自然
+结束 workflow，固定测量工作守恒为 2819 请求 / 362072 输出；
+383 次 call-boundary 路径查询约 974 ms CPU。这是离线回放成本，
+不包含真实原生 partial callback，不是在线控制或 GPU 收益。
+包含上下文边界、旧成本兼容、候选缓存和显式证据绑定的完整源码回归通过
+6290 项及 23 子项，保留先前全部 6240 个 literal identity，2257 个源码
+输入与原生树在执行中不变，无失败、错误或跳过。证据为
+`calibrated_combination_context_cost_bound_cpu_r1/evidence.json`。
+新源码冻结和 GPU 比较尚待完成。
+
 ## GPU 验收
 
 需要干净冻结源码、当前预约/资源检查、新的 24 请求 position/session/stop
