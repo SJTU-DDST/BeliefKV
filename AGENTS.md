@@ -5421,3 +5421,18 @@
   Newopsplotterhashispinned;identical-controlselfcheckvisuallypassesbutisnot
   aGPUcomparison. NooracleGPUfollowupisregistered. Keep68analysisand931
   servingunchanged;globalgoalremainsactive.
+- Continuation verifiedallThunder/observeractualhandleslive,no runtimeerrors;
+  fixedcommonwindowelapsed. common_window_live_r1 sealsnativeoutputprefix:
+  Thunder292.354630vscompletedpredictive301.891902tps(+3.262227%).
+  Only11/18measuredcompleteat eventprefix;JCTgainnull,finalreceipt/drain/
+  completedcohortrecomputationstillrequired. Do notpromotethisprefix.
+- R5searchCPUoptimization preserves score/subsetorder/JOINrights/budgets/
+  reference/deadline cadence;usesbit-count/integersubsetbudgetprefilterand
+  cachedactivebatchdecodecost. Floatbudgetkeepsliteral summation. Newliteral
+  combinatorialtestsand2rounds/300replaysperwidthhaveexactunboundedsets/
+  scores/counts. Keepunrestrictedr1after/pytestoverlapandallraw measurements.
+  CPU0sequentialr2completeP50six391.265to363.773us,eight1037.861to848.844us;
+  bounded8deadline82.67to62%;sixP99notimproved/eightboundedP99~585us.
+  Notnative metadata,totalcontrolcostorJCTgain. Sharedbound6240+23retains
+  6236/2254inputs,zeroskips/failures,nativeunchanged. Prep r3islatest;
+  frozen931Thunderand68observersstayunchanged,nooracleGPUqueued.

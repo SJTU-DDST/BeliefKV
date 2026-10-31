@@ -102,6 +102,14 @@ CPU 分析提交 `68d37388` 已从干净 checkout 冻结，
 它只是绘图自检，不是 baseline 对比或新收益。
 历史绘图程序和已完成 oracle 证据不改写。
 
+后续固定共同窗口已经走完，封存遥测前缀
+`thunder_initial12_mean70_prepare_r1/common_window_live_r1.json`
+记录 ThunderAgent 全部输出 292.354630 token/s，
+既有 predictive 为 301.891902 token/s，前缀差值为 +3.262227%。
+该事件前缀仅有 11/18 个固定测量成员完成，完整 JCT 改善仍为 null。
+窗口计数使用各阶段的 `output_token_delta`，包括背景输出；
+最终收据核对、排空及全部测量成员完成后必须重新计算，不将它当成完整性能结论。
+
 ## Oracle CPU 后续
 
 当前优化候选仍为 calibrated model/tool oracle 与 JOIN 组合选择：
@@ -114,3 +122,9 @@ r1/r2 只保留为 CPU 准备；r3 修正继承的 qualification sidecar，
 使 kind、模型路径和 hash 指向实际 v2 artifact，而不是旧 v1 文件。
 没有改变工具时长、到达表或运行中的 baseline。
 完整旧对照事件回放再次验证固定测量工作守恒；尚未登记该候选的 GPU 实验。
+
+后续组合搜索的增量容量预检和已有 decode 成本缓存已通过独立参考比较，
+CPU0 顺序微基准中六/八候选完整搜索 P50 缩短约 7%/18%，
+八候选触及软截止的比例从 82.67% 降至 62.00%。
+完整共享检查为 6240 项及 23 子项，保留先前 6236 项；
+这仍是 CPU 候选结果，不是新 oracle GPU 或 JCT 收益。

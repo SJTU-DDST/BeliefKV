@@ -83,7 +83,7 @@ def probability_weight(probabilities):
     return sum(p * factor for p, factor in zip(probabilities, (1., .5, .25)))
 
 
-def _evaluate(rows, resources, costs):
+def _evaluate(rows, resources, costs, *, active_decode_cost=None):
     if (
         not rows or len(rows) > resources.slots
         or sum(row.logical_tokens for row in rows) > resources.logical_tokens
@@ -126,7 +126,10 @@ def _evaluate(rows, resources, costs):
             raise ValueError("invalid unfinished ALL-JOIN coverage")
         coverage[workflow] += ((active + selected) ** 2 - active ** 2) / total ** 2
     benefit = sum(weights[workflow] * min(1., fraction) for workflow, fraction in coverage.items())
-    before = costs.decode_cost(resources.active_width, resources.active_context_tokens)
+    before = (
+        costs.decode_cost(resources.active_width, resources.active_context_tokens)
+        if active_decode_cost is None else active_decode_cost
+    )
     after = costs.decode_cost(
         resources.active_width + len(rows),
         resources.active_context_tokens + sum(row.context_tokens for row in rows),
@@ -178,7 +181,13 @@ def choose_combination(
                 or any(type(tokens) is not int or tokens <= 0 for _key, tokens in row.missing_extents)
             ):
                 raise ValueError("invalid combination candidate")
-        baseline = _evaluate([by_id[identity] for identity in reference], resources, costs)
+        active_decode_cost = costs.decode_cost(
+            resources.active_width, resources.active_context_tokens,
+        )
+        baseline = _evaluate(
+            [by_id[identity] for identity in reference], resources, costs,
+            active_decode_cost=active_decode_cost,
+        )
         if baseline is None:
             result["reason"] = "reference_resource_summary_unsupported"
             return result
@@ -187,15 +196,29 @@ def choose_combination(
         required_mask = sum(
             1 << index for index, row in enumerate(candidates) if row.identity in required
         )
+        logical_by_mask = (
+            [0] * (1 << len(candidates))
+            if all(type(row.logical_tokens) is int for row in candidates) else None
+        )
         deadline = False
         for mask in range(1, 1 << len(candidates)):
             if (mask - 1) % 8 == 0 and clock() - started >= budget_ns:
                 deadline = True
                 break
+            if logical_by_mask is not None:
+                bit = mask & -mask
+                logical_by_mask[mask] = (
+                    logical_by_mask[mask ^ bit] + candidates[bit.bit_length() - 1].logical_tokens
+                )
             if mask & required_mask != required_mask:
                 continue
+            if mask.bit_count() > resources.slots or (
+                logical_by_mask is not None and logical_by_mask[mask] > resources.logical_tokens
+            ):
+                result["evaluated_subsets"] += 1
+                continue
             rows = [row for index, row in enumerate(candidates) if mask & (1 << index)]
-            value = _evaluate(rows, resources, costs)
+            value = _evaluate(rows, resources, costs, active_decode_cost=active_decode_cost)
             result["evaluated_subsets"] += 1
             if value is not None and value["score"] > best_score * (1. + costs.relative_tie):
                 best_score, selected, best_value = (
