@@ -40,7 +40,7 @@ def inspect_supply(arrivals, cohort, events, states, requests, totals, *, bin_se
         raise ValueError("observed workflow starts differ from the frozen arrival table")
     origin = origins[0]
     remaining = dict(totals)
-    pending, tools, joins, completed = {}, set(), set(), set()
+    pending, tools, joins, completed = {}, set(), {}, set()
     observed_starts, observed_ends, cursor = set(), set(), 0
     bins, snapshots = {}, []
     window_start, window_end = cohort["throughput_window_offset_seconds"]
@@ -80,9 +80,9 @@ def inspect_supply(arrivals, cohort, events, states, requests, totals, *, bin_se
                 else:
                     tools.discard(key)
             elif kind == "join_wait":
-                joins.add((invocation, event.get("join_id")))
+                joins[workflow, event.get("join_id")] = invocation
             elif kind in ("join_satisfied", "join_timeout"):
-                joins.discard((invocation, event.get("join_id")))
+                joins.pop((workflow, event.get("join_id")), None)
         offset = (when - origin) / 1000.
         if not window_start <= offset < window_end:
             continue
@@ -95,7 +95,7 @@ def inspect_supply(arrivals, cohort, events, states, requests, totals, *, bin_se
         if any(type(value) is not int or value < 0 for value in (capacity, active_tokens)):
             raise ValueError("native snapshot omits logical capacity")
         free = max(0, capacity - active_tokens)
-        blocked = {key[0] for key in tools | joins}
+        blocked = {key[0] for key in tools} | set(joins.values())
         active, paused, marked = (
             set(a[name]) for name in (
                 "active_invocation_ids", "paused_pending_invocation_ids", "marked_for_pause_invocation_ids",

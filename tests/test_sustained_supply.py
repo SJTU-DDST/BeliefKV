@@ -149,3 +149,16 @@ def test_reader_uses_registered_arrival_path_and_compares_the_embedded_plan(tmp_
     path.write_text(json.dumps(changed))
     with pytest.raises(ValueError, match="arrivals changed"):
         bound_arrivals(registration)
+
+
+@pytest.mark.parametrize("kind", ("join_satisfied", "join_timeout"))
+def test_join_completion_has_no_invocation_but_releases_ready_parent(kind):
+    args = list(inputs())
+    args[2].extend([
+        {"kind": "join_wait", "workflow_id": "w2", "invocation_id": "w2",
+         "ts_ms": 1030., "join_id": "join"},
+        {"kind": kind, "workflow_id": "w2", "invocation_id": None,
+         "ts_ms": 1050., "join_id": "join"},
+    ])
+    report = inspect_supply(*args)
+    assert report["sample_counts"]["with_cross_workflow_pair_competition"] == 1

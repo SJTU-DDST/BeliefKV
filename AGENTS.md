@@ -4909,3 +4909,18 @@
   recordsandmeasured_cohort_stop_r1 evidence. Stopcertificatewillliveunder
   parentGPUrun/cohort_termination;newreviewsundermeasured_cohort_complete_
   original56_r1. Actual shutdown is pending;do not claimcompleted18orall56.
+- Current Full56 GPU-idle CPU audit uses the existing200ms external sampler,
+  not a new GPU run. Fixed530.928631--2368.047777s window is fully observed:
+  timeweightedGPU88.5487%,zero-sample182.138s(9.9143%),161.122s with no client
+  model pending. Longestzero segment22.616s falls in a279.572s arrivalgap,
+  with3liveworkflows/3toolblocked/2JOINparents and no readywork at midpoint.
+  Correctedready-pausedtime3.3232%,59/1794sampledstates,0sampled crossworkflow
+  fitting-setcompetitions;do not call this suitable SJF pressure or CUDA idle.
+  sustained_supply's old JOIN cleanup was wrong for null-invocation satisfied
+  events: now key by(workflow_id,join_id),resolve owner from join_wait.
+  This is an offline reader fix;frozenGPU is unchanged. Recompute old supply
+  before using its gate,including the armed observer's old-reader output.
+  43focusedCPUtests pass. Keep idle_supply_original56_r1 SUPERSEDED,finalr3
+  evidence and original56_gpu_idle_supply_20261030_zh.md. Mean60s with same
+  initial8/seed35/permutation54/cohort is a proposed next calibration only,
+  not launched or accepted;keepcurrent18completionstop and noautomaticGPU.
