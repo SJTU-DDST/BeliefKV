@@ -4778,3 +4778,15 @@
   members finished by3189.034921s, before final background arrival4343.970772s;
   wait for all52 normal tails, complete reviews/final demand and workload gate
   before oracle registration. No new predictor training or oracle GPU result.
+- Balanced52 Fullr2 completes52/9313/1253882outputs,fresh drain and owned exit.
+  Fixed18 meanJCT1083.947379s/P952220.938174s;commonwindow output263.700299tps.
+  Zero old-input-prefix loss proxy,69window regular demand samples peak.890681
+  combined pool,but only552/3930ready-paused states(.140458<.25). Gate rejects
+  supply;27actual periodic competitions/2522controls,7pressure revokes/508
+  resumes/490following exact services. Retain complete reviews and rejection.
+  No oracle/learned/baseline launch. Next static sustained52_r4 keeps52 original
+  tasks/tools/resources,8initial/mean85s,16warm18measured18background,seeds34/46.
+  Static intrinsic/model-tool-path/context balance selects first feasible seeds,
+  no JCT/policy winner input;maxgap252.6885s,measured work ratio3.808575.
+  Old background work is heavier,not lighter;old mean100 table has~561s gap.
+  CPU constructor/nonarrival identity checks pass;new GPU calibration pending.

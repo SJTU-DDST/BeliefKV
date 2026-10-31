@@ -1,0 +1,59 @@
+{
+  "status": "complete_requires_workload_and_oracle_decision",
+  "process": {
+    "pid": 2675603,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "757283200",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/scripts/finish_sustained_control.py",
+      "--registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r2.registration.json",
+      "--position-registration",
+      "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r2.registration.json",
+      "--analysis-checkout",
+      "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb",
+      "--arrivals",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/arrivals.json",
+      "--cohort",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/analysis_cohort.json",
+      "--output-dir",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/full_review_balanced52_r1"
+    ]
+  },
+  "steps": [
+    {
+      "name": "complete_control",
+      "returncode": 0
+    },
+    {
+      "name": "fixed_cohort",
+      "returncode": 0
+    },
+    {
+      "name": "supply",
+      "returncode": 0
+    },
+    {
+      "name": "periodic_decisions",
+      "returncode": 0
+    }
+  ],
+  "GPU_followup_registered": false,
+  "inputs_sha256": {
+    "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/scripts/finish_sustained_control.py": "a7f3da1fa41b661fba4c723719385dcf848075df7230c3e3880809a4dc172e58",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/arrivals.json": "cc65a416f2cb51bba916eab8332e0f1c175c2676cbf9bfdfde3dd3b4fba42115",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/remaining_original_projects_20261030/sustained52_r3/analysis_cohort.json": "38038dc961530fce4ea4dc7304b4f9d9582dce34ce2053bcaa328a7605251873",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_position_20261030_r2.registration.json": "8c13e5661fe29488bef1c98d7cd3291a1d856c5861983c70a09a7fe8cc3c03da",
+    "/home/longhao/experiment/ops/workflow_sustained_original52_full_20261030_r2.registration.json": "f740cb2aaf4bc49b7f6df9cd321b2a90603f2c9ca2415fd04c6fb38dc39aba00",
+    "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/experiments/reports/workflow_mix_20261029/review_burst.py": "73768aaf295f11a36a088f95e34e176da2ad983b85b50a116586bd7a4b84d6fb",
+    "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/scripts/audit_workflow_cohort.py": "d668866879d9fa9fc466f454a87eccc3c4817654c3e840e61e4107f2e5fcf204",
+    "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/scripts/audit_sustained_supply.py": "e2af4671b8a61f273dc1aea100e26dec0a969c77ea751c2d7f78203c2f00b0f9",
+    "/home/longhao/experiment/beliefkv-sustained52-review-20261030-55671ffb/scripts/audit_periodic_admission_decisions.py": "22237617e6d5367eebb347166d3c761eed17794c8b69f77babeb496fa5edb363"
+  },
+  "checked_at": "2026-10-31T00:23:46.817189+00:00",
+  "current_step": "periodic_decisions",
+  "formal_workload_qualified": false,
+  "finished_at": "2026-10-31T00:23:46.817148+00:00"
+}
