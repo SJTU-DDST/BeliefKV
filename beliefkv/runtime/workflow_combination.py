@@ -156,6 +156,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
     def _prefix(self, key, item):
         a, runtime = self.admission, self.admission.runtime
         self._prefix_issue = None
+        self._prefix_issue_detail = None
         self._prefix_protected_anchors = ()
         req = a._live_requests[key.request_id]
         observation = runtime._read_request_reentry(req, key=key)
@@ -191,6 +192,19 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                     closure.nodes[0].creation_time != anchors[0][1]
                 ):
                     self._prefix_issue = "unobservable_missing_closure"
+                    self._prefix_issue_detail = {
+                        "closure_reason": getattr(closure, "reason", None),
+                        "closure_observable": closure.observable,
+                        "closure_node_count": len(closure.nodes),
+                        "maximum_closure_nodes": 64,
+                        "anchor_id": anchors[0][0],
+                        "anchor_creation_matches": (
+                            closure.nodes[0].creation_time == anchors[0][1]
+                            if closure.nodes else None
+                        ),
+                        "checkpoint_tokens": checkpoint,
+                        "missing_full_tokens": missing,
+                    }
                     return None
                 prefix = 0
                 for node in reversed(closure.nodes):
@@ -272,6 +286,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             reference_keys = set(reference)
             for key in window:
                 found = a._candidate(key.request_id, key, include_first=True)
+                self._prefix_issue_detail = None
                 if found is None:
                     issue = "candidate_no_longer_ready"
                     prefix = None
@@ -284,7 +299,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                     )
                     issue = self._prefix_issue if prefix is None else None
                 if prefix is None:
-                    unavailable.append({"key": asdict(key), "reason": issue})
+                    unavailable.append({
+                        "key": asdict(key), "reason": issue,
+                        "detail": self._prefix_issue_detail,
+                    })
                     if key in reference_keys:
                         result["reason"] = "reference_candidate_summary_unavailable"
                         return list(reference)

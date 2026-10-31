@@ -5487,3 +5487,14 @@
   become feasible with missing credit. Historical leaf capacity is unknown.
   r4 GPU and both observers remain frozen;finish fixed18/drain/exit first.
   No automatic GPU successor or accepted oracle gain;goal remains active.
+- Initialcapacitycandidate clean017ea089 passes2258source/external/native/6314
+  report revalidation and actual runtime capacity flag/cost identity checks,
+  noGPUaction. Same sealedr4prefix4027entries has3408empty-reference returns,
+  122search-function earlyreturns and18realenumerations/4setchanges;notall
+  oracle influence. Reference-summary failures93missingclosure/1checkpoint,
+  optional-inclusive220/82 repeated observations. Old logs lack native closure
+  reason,so do not attribute all to64-node limit. New diagnostic preserves
+  exact fallback/scan count,logs reason/node count/anchor match/checkpoint.
+  BoundCPU6318+23retains6314/2259inputs/native unchanged,zero failure/error/
+  skip;54focusedcasespass. Initial017freeze is not proof for this later source.
+  Runningde7 and observers unchanged,noGPUsuccessor registered.

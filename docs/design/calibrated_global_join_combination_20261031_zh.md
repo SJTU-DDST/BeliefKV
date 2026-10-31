@@ -290,6 +290,40 @@ r1 的外层异常未展开内层 stderr，保留失败并在 r2 补齐证据。
 正在运行的 r4 仍使用冻结 de7/native434，不热更新。须先完成其固定
 18 条及完整收尾，再决定是否值得单独验证容量修正。
 
+### 冻结核验与摘要覆盖诊断
+
+初始容量修正已在干净 `017ea089` checkout 中独立核验：
+`calibrated_combination_initial12_mean70_prepare_r5/clean_freeze_entry_r1.json`
+重新检查 2258 个源码输入、全部绑定外部输入、6314 项测试报告和原生状态，
+并实际构造 runtime，确认新容量摘要开启且成本身份一致。
+这项核验不查询或占用 GPU，不自动登记后续实验；它只绑定该初始版本，
+不自动覆盖后续诊断代码。
+
+对 r4 的同一已封存前缀进一步细分：
+`summary_coverage_prefix_r1.json` 与 `live_combination_choices_r3.json`
+绑定完全相同的日志范围。4027 次组合入口中，3408 次是空参考集合快路径，
+122 次进入选择函数但在枚举前返回，真正枚举子集的只有 18 次，
+其中 4 次改变集合。这不是全部 oracle 影响的计数：即时 A→B 的工作排序
+和压力暂停选择不在该组合审计范围内。
+
+94 次参考候选摘要失败中，93 次为 `unobservable_missing_closure`，
+1 次为 `native_checkpoint_unavailable`。包含可选候选时，分别为
+220 和 82 次重复观察，不能当作唯一 agent 数量。
+旧日志没有保存原生 closure 的具体原因，不能据此断言全是路径超过
+64 节点，也不能假设取消这个上限就能安全、低成本地比较。
+
+为后续实际验证增加只读诊断：在原有相同拒绝条件下，记录原生 reason、
+是否 observable、节点数、64 节点上限、anchor 创建时间是否匹配、
+checkpoint 和缺失 FULL token。未增加扫描、重试或放宽在途传输条件。
+四项新增测试覆盖过深路径、待加载、待卸载和 anchor 变化，
+同时验证原参考准入与检查次数保持不变。
+
+`combination_unreferenced_capacity_bound_cpu_r2/evidence.json`
+通过 6318 项及 23 子项，保留全部 6314 个先前 literal identity、
+全部旧源码路径与既有外部输入，绑定 2259 个源码输入，执行中源码及
+原生状态不变，无失败、错误或跳过。54 项定向检查亦通过。
+新诊断与当前运行的 r4 保持隔离，尚无 GPU/JCT 验证。
+
 ## GPU 验收
 
 需要干净冻结源码、当前预约/资源检查、新的 24 请求 position/session/stop
