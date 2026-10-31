@@ -17,6 +17,12 @@ from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 from scripts import run_causal_source_capture as capture
 
 
+def registered_control_complete(registration):
+    if not registration.is_file() or not registration.with_suffix(".state.json").is_file():
+        return False
+    return complete_work(registration) is not None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registration", type=Path, required=True)
@@ -52,7 +58,7 @@ def main():
                     current = json.loads(current_path.read_bytes())
                     if current.get("status") == "stopped_for_investigation":
                         raise RuntimeError(f"preserve stopped experiment: {path}: {current.get('error')}")
-            if args.registration.exists() and complete_work(args.registration) is not None:
+            if registered_control_complete(args.registration):
                 break
             if time.monotonic() >= deadline:
                 raise TimeoutError("complete sustained control review exceeded four hours")

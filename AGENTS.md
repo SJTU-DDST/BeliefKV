@@ -4865,3 +4865,20 @@
   with8initial,mean90sPoisson,12warmup/18fixedmeasured/26background; retain
   complete JCT and identical future oracle arrivals. Supply, background tails,
   useful-state loss and physical/actual-service checks are not waived.
+- Relaxed56 Fullr1 now actually runs from isolatedbe9f062c(main9e15da40) on
+  18922,ops/workflow_sustained_original56_full_20261030_r1.registration.json.
+  Exactly56original projects/9858requests/1305083outputs;8initial/mean90s,
+  seeds35/54,12warm/18fixedmeasured/26background,lastarrival4720.087013s.
+  CPU5858+23passes,retains5851literalIDs/all2212inputs;runtime/policy/native434
+  and2022oldtoolentriesmatchcompleteFullr3. Fresh24token/session/native-stop
+  (24stops)and1/8/24CUDAchecks pass;independentlive141completeprefixreceipts,
+  soleGPU/nice0 andeffective2048/24/mixedoff/500ms+2s/policy settings pass.
+  Earlynice19CUDA-hidden CPUreviewers2822103and2822438exitedbeforeanalysis:
+  comparisonregistrationwasvisiblebeforeitsinitialstate,so complete_work
+  raisedFileNotFoundError. Preservebothr1failures;GPUmeasurementisunchanged.
+  Addregistered_control_completestateguardandtargetedregression,thenrestart
+  independentr2reviewersforcompletework/drain/exit/fourreviews/60sunion/2.9gate.
+  Evidence full_review_original56_r1/final_r1 andgpu_entry_sustained56_r1.
+  Initial natural-source CPU helper refusal was corrected by verifying whole
+  composition/original-input hashes and five actual original completion proofs.
+  No complete pressure/JCT/oracle result yet,no learnedtraining orbaseline.

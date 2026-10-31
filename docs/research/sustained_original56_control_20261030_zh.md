@@ -46,4 +46,38 @@ oracle收益不充分时再审查准入覆盖、实际服务、组合和batch成
 
 准备入口：`scripts/prepare_original56_control.py`。
 数据与配置：`experiments/reports/remaining_original_projects_20261030/sustained56_r1/`。
-启动和完成证据在实际产生后追加，准备文件不代表GPU已启动。
+准备文件不代表GPU已启动，实际启动证据如下。
+
+## 实际启动与完成审查
+
+本轮代码已提交为`9e15da40`，独立目录追加唯一manifest数据提交
+`be9f062c`后执行，未改动主工作区其他文档。完整绑定CPU通过5858项及
+23子测试，保留全部5851项既有测试身份、2212项输入及原生源码。
+首次CPU入口把组合manifest当作自然采集manifest，因缺少单份实时工具
+资格而拒绝；已明确区分组合来源，验证全部原始输入哈希，并在GPU登记
+时绑定五个原采集的完成、排空和实际退出证明，不绕过来源检查。
+
+原生执行树为`434c35dd`，与完整52项目Fullr3一致；runtime/policy
+源码逐项哈希相同，旧52项2022条工具overlay记录也逐条相同。
+本轮改动负载人口、到达和固定测量组，不能把与旧轮的差值归因于策略。
+
+实际登记为：
+
+- `ops/workflow_sustained_original56_position_20261030_r1.registration.json`：
+  24条真实token/session/native-stop检查全部通过，24条原生stop，
+  1/8/24实际CUDA采样通过。
+- `ops/workflow_sustained_original56_full_20261030_r1.registration.json`：
+  端口18922，实际状态`running_full`。独立启动审查核对141条完整回执
+  的源token数量、哈希、身份、停止原因和position采样路径；唯一GPU
+  owner及nice0测量进程成立，2048/24/mixed关闭、500ms/2秒控制、
+  排序关闭和其余策略均与声明一致。
+- `full_review_original56_r1.registration.json`与`final_r1`保留早期启动
+  失败：比较登记文件出现、对应初始状态文件尚未落地时，完成审查调用
+  `complete_work`触发FileNotFoundError，继后的最终审查也退出。两者未
+  执行任何完整结果分析，不影响GPU测量。
+- 审查入口已增加“登记及状态文件均存在”检查，并保留真正完成证据缺失
+  时的错误。随后从单独的已提交分析源码重启r2；GPU仍使用原来的
+  `be9f062c`。新的完成审查和60秒容量/2.9门槛判定均无自动GPU后续。
+
+启动证据：`gpu_entry_sustained56_r1/{entry,freeze,native_binding,live_full_r1}.json`。
+前缀观察不是完整结果；目前尚未接受到达供给、Host容量或oracle收益。
