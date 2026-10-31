@@ -4992,3 +4992,28 @@
   0competitions/231controlsafterfirstmeasuredarrival. Preserveallprefixlimits.
   See docs/research/original56_decision_phase_20261030_zh.md. Runningf6GPU and
   observer remainfrozen;newreader requiresseparatepostcompletionreanalysis.
+- Decisionphasecode dba03c52 passes bound5922cases+23subtests,retains5914literal
+  IDs/all2221inputpaths,sources/nativeunchanged,nofailure/error/skip. Evidence
+  decision_phase_bound_cpu_r1. Mean70r2idleprefix1140.912s:98.367556%GPU,
+  zero7.407s/1.01749%,6.404sno pending and1.003sready-active;notfullwindow.
+  753actualperiodiccontrols have0competition;separatesupplyprefixhas1sampled
+  competition,notproof ofactualdecision ornootherentrychoices. Staticinitial
+  rootprompts8/10/12sum708761/801154/965900vs805198Device tokens,notnativefit.
+  Initialpopulationdiagnostickeepssame56/cohortandregistersnothing. Current
+  GPU/observercontinue;finishfixed18reviewbeforeanyoracleornewcalibration.
+- Mean70fixedcommonwindow now fullyobserved:97.027573%GPU/zero32.222s(2.25507%),
+  27.817sno pending/4.405sready-active;1384states/81readypaused(5.85%<25%),
+  1sampledcompetition. Actual703windowperiodiccontrols/80pre-ready/0competition;
+  nooraclequalification. mean70_window_r1 keepsdemand/supply/periodic;4033probes
+  have0oldprefixloss,regularreusepeak.539309combinedcapacity. Fullfixed18JCT
+  andtailremainpending;finishnormalcohortprotocol,notalreadyqualified.
+- CPU-onlynextarrivalcandidate12initial/mean80s retainssame56originals,
+  seed35/permutation54/12warm18measured26background/allnonarrivalconditions.
+  sustained56_initial12_mean80_r2 isfinalpreparation;r1retainedsupersededbefore
+  GPU. First/lastmeasured63.648882/1873.091257s,lastbackground3725.552697s.
+  prepare_arrival_rate_followup.py now accepts optionalinitialpopulation,
+  preservesdefault/legacyrate-onlycontracts anddeclaresdrawprefixversus
+  slot-scalinghonestly. 124focusedtests pass;fullboundCPU/freshGPUqualification
+  stillrequired. Freezeunchangedoriginal56manifest onmainforexecutableclones,
+  matchinghistorical5f2hash74592f48. No newGPUregistered;currentf6andobserver
+  stayfrozen. Seeoriginal56_initial_population_calibration_20261031_zh.md.

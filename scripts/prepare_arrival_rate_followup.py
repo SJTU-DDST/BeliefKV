@@ -1,4 +1,4 @@
-"""Change only the intensity of an existing seeded arrival experiment."""
+"""Change seeded arrival intensity or initial population, retaining whole tasks."""
 
 import argparse
 from copy import deepcopy
@@ -18,7 +18,9 @@ from beliefkv.experiments.workflow_cohort import declare_cohort, validate_cohort
 from scripts.train_workflow_work import write
 
 
-def followup_protocol(arrivals, cohort, *, mean_interval_seconds):
+def followup_protocol(
+    arrivals, cohort, *, mean_interval_seconds, initial_workflows=None,
+):
     identities = [row["workflow_id"] for row in arrivals["arrival_schedule"]]
     validate_arrival_plan(arrivals, identities)
     validate_cohort(cohort, arrivals)
@@ -29,21 +31,27 @@ def followup_protocol(arrivals, cohort, *, mean_interval_seconds):
         or not math.isfinite(mean_interval_seconds) or mean_interval_seconds <= 0
     ):
         raise ValueError("require seeded permuted arrivals, measured completion and a finite positive mean")
+    initial = arrivals["initial_workflows"] if initial_workflows is None else initial_workflows
+    if type(initial) is not int or initial <= 0 or (
+        initial != arrivals["initial_workflows"]
+        and initial > len(cohort["warmup_workflow_ids"])
+    ):
+        raise ValueError("initial workflows must be a positive integer within the fixed warmup group")
     following = permuted_poisson_arrival_plan(
         identities, rate_per_second=1. / mean_interval_seconds, seed=arrivals["seed"],
         permutation_seed=arrivals["permutation_seed"],
-        initial_workflows=arrivals["initial_workflows"],
+        initial_workflows=initial,
     )
     scale = mean_interval_seconds * arrivals["rate_per_second"]
     if any(
         left["workflow_id"] != right["workflow_id"]
-        or not math.isclose(
+        or initial == arrivals["initial_workflows"] and not math.isclose(
             left["offset_seconds"] * scale, right["offset_seconds"],
             abs_tol=1e-8, rel_tol=1e-12,
         )
         for left, right in zip(arrivals["arrival_schedule"], following["arrival_schedule"])
     ):
-        raise ValueError("changing arrival intensity changed seeded slots or workflow identities")
+        raise ValueError("arrival calibration changed workflow order or unchanged-population seeded slots")
     warmup, measured = len(cohort["warmup_workflow_ids"]), len(cohort["measured_workflow_ids"])
     offsets = [row["offset_seconds"] for row in following["arrival_schedule"]]
     analysis = declare_cohort(
@@ -53,7 +61,7 @@ def followup_protocol(arrivals, cohort, *, mean_interval_seconds):
     if any(analysis[name] != cohort[name] for name in (
         "warmup_workflow_ids", "measured_workflow_ids", "background_workflow_ids",
     )):
-        raise ValueError("rate-only followup changed the fixed cohort")
+        raise ValueError("arrival followup changed the fixed cohort")
     return following, analysis
 
 
@@ -67,7 +75,7 @@ def followup_configuration(previous, arrival_path):
     if {key: value for key, value in result.items() if key != "workflow_arrivals"} != {
         key: value for key, value in previous.items() if key != "workflow_arrivals"
     }:
-        raise ValueError("rate-only calibration changed a nonarrival setting")
+        raise ValueError("arrival calibration changed a nonarrival setting")
     return result
 
 
@@ -79,6 +87,7 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--mean-interval-seconds", type=float, required=True)
+    parser.add_argument("--initial-workflows", type=int)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve earlier arrival and measurement declarations")
@@ -103,6 +112,7 @@ def main():
         raise ValueError("calibration rationale does not belong to the frozen control window")
     following, analysis = followup_protocol(
         arrivals, cohort, mean_interval_seconds=args.mean_interval_seconds,
+        initial_workflows=args.initial_workflows,
     )
     args.output_dir.mkdir(parents=True)
     new_arrivals, new_cohort = args.output_dir / "arrivals.json", args.output_dir / "analysis_cohort.json"
@@ -111,10 +121,16 @@ def main():
     config = followup_configuration(previous, new_arrivals)
     write(args.output_dir / "full.json", config)
     offsets = [row["offset_seconds"] for row in following["arrival_schedule"]]
+    same_initial = following["initial_workflows"] == arrivals["initial_workflows"]
     write(args.output_dir / "preparation.json", {
-        "kind": "same_workload_arrival_intensity_calibration",
+        "kind": (
+            "same_workload_arrival_intensity_calibration" if same_initial
+            else "same_workload_initial_population_and_arrival_intensity_calibration"
+        ),
         "previous_registration": str(args.previous_registration.resolve()),
         "workflow_count": len(offsets), "initial_workflows": following["initial_workflows"],
+        "previous_initial_workflows": arrivals["initial_workflows"],
+        "initial_population_changed": not same_initial,
         "mean_interval_seconds": args.mean_interval_seconds,
         "previous_mean_interval_seconds": 1. / arrivals["rate_per_second"],
         "arrival_seed": following["seed"], "permutation_seed": following["permutation_seed"],
@@ -125,7 +141,10 @@ def main():
         "last_measured_arrival_s": analysis["throughput_window_offset_seconds"][1],
         "last_scheduled_arrival_s": offsets[-1],
         "maximum_arrival_gap_s": max(b - a for a, b in zip(offsets, offsets[1:])),
-        "fixed_members_and_seeded_slot_draws_retained": True,
+        "fixed_members_and_seeded_slot_draws_retained": same_initial,
+        "fixed_cohort_members_retained": True,
+        "common_seeded_interarrival_draw_prefix_retained": True,
+        "workflow_slot_offsets_are_rate_scaled": same_initial,
         "all_nonarrival_configuration_fields_identical": True,
         "all_original_workflows_tools_tokens_and_dependencies_retained": True,
         "complete_measured_JCT_and_explicit_background_censoring": True,

@@ -67,3 +67,69 @@ def test_every_nonarrival_setting_is_preserved_and_cohort_is_private(tmp_path):
     assert result["workflow_arrivals"] != previous["workflow_arrivals"]
     assert "cohort" not in result and "analysis_cohort" not in result
     assert previous["workflow_arrivals"]["path"] == "old"
+
+
+def test_larger_initial_population_keeps_original_tasks_and_private_measured_members():
+    arrivals, cohort = protocol()
+    following, analysis = followup_protocol(
+        arrivals, cohort, mean_interval_seconds=80., initial_workflows=12,
+    )
+    validate_cohort(analysis, following)
+    assert following["initial_workflows"] == 12
+    assert all(row["offset_seconds"] == 0. for row in following["arrival_schedule"][:12])
+    assert following["arrival_schedule"][12]["offset_seconds"] > 0.
+    assert [row["workflow_id"] for row in following["arrival_schedule"]] == [
+        row["workflow_id"] for row in arrivals["arrival_schedule"]
+    ]
+    for name in ("warmup_workflow_ids", "measured_workflow_ids", "background_workflow_ids"):
+        assert analysis[name] == cohort[name]
+    assert analysis["schema_version"] == 2
+    assert not analysis["cohort_identity_available_to_scheduler"]
+
+
+def test_initial_population_change_preserves_the_shared_seeded_interarrival_draw_prefix():
+    arrivals, cohort = protocol()
+    following, _ = followup_protocol(
+        arrivals, cohort, mean_interval_seconds=80., initial_workflows=12,
+    )
+    old = [0.] + [row["offset_seconds"] for row in arrivals["arrival_schedule"][8:]]
+    new = [0.] + [row["offset_seconds"] for row in following["arrival_schedule"][12:]]
+    for old_left, old_right, new_left, new_right in zip(old, old[1:], new, new[1:]):
+        assert math.isclose(new_right - new_left, (old_right - old_left) * 80. / 90.)
+    assert not math.isclose(
+        following["arrival_schedule"][12]["offset_seconds"],
+        arrivals["arrival_schedule"][12]["offset_seconds"] * 80. / 90.,
+    )
+
+
+@pytest.mark.parametrize("initial", (0, -1, True, "12", float("inf"), 13, 56))
+def test_invalid_initial_population_or_initial_measured_members_are_rejected(initial):
+    with pytest.raises(ValueError, match="initial workflows"):
+        followup_protocol(
+            *protocol(), mean_interval_seconds=80., initial_workflows=initial,
+        )
+
+
+def test_explicit_unchanged_initial_population_preserves_the_original_rate_only_protocol():
+    arrivals, cohort = protocol()
+    assert followup_protocol(
+        arrivals, cohort, mean_interval_seconds=60., initial_workflows=8,
+    ) == followup_protocol(arrivals, cohort, mean_interval_seconds=60.)
+
+
+def test_rate_only_followup_retains_legacy_initial_measured_members():
+    arrivals = permuted_poisson_arrival_plan(
+        [f"w{i}" for i in range(56)], rate_per_second=1. / 90.,
+        seed=35, permutation_seed=54, initial_workflows=16,
+    )
+    cohort = declare_cohort(
+        arrivals, warmup=12, measured=18, throughput_start_s=0.,
+        throughput_end_s=arrivals["arrival_schedule"][29]["offset_seconds"],
+        stop_after_measured=True,
+    )
+    default = followup_protocol(arrivals, cohort, mean_interval_seconds=60.)
+    explicit = followup_protocol(
+        arrivals, cohort, mean_interval_seconds=60., initial_workflows=16,
+    )
+    assert default == explicit
+    assert default[0]["initial_workflows"] == 16
