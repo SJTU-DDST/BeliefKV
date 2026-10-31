@@ -4900,3 +4900,12 @@
   measuredcompletion. Retainrawsupervisorstop plus explicitcohortcertificate;
   neverreportall56completed. Supersede old full-population CPUreviewers and
   requirethissamecontract/proof forfutureoracle comparisons.
+- Measured-cohortstop is nowarmed from clean811e55ad after223CPUcasespass:
+  ops/workflow_original56_measured_completion_20261030_r1.registration.json,
+  actualobserverPID2838460,nice19/CUDA99999/OMP1/OpenBLAS1,2spoll and30sheartbeat.
+  Liveinputhash/processproof sees9of18measuredcomplete/24arrivals;GPUbe9f062c
+  remainsrunning,nostopsignalbeforeall18. Oldall-populationr2CPUreviewers
+  2829978/2829996areexplicitlysupersededandactualexitverified. Preservetheir
+  recordsandmeasured_cohort_stop_r1 evidence. Stopcertificatewillliveunder
+  parentGPUrun/cohort_termination;newreviewsundermeasured_cohort_complete_
+  original56_r1. Actual shutdown is pending;do not claimcompleted18orall56.

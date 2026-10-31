@@ -57,3 +57,23 @@ native服务计数一致；非测量已生成但未获得最终回执的输出�
 校验来声称本次已完成56项。历史完整控制和原始证据保持原样。
 
 实现入口：scripts/stop_after_measured_cohort.py。
+
+## 本轮登记
+
+实现与分析提交为`811e55ad`，223项相关CPU测试通过，包括测量组完整性、
+删失统计、增量JSONL、token/停止回执、PID身份、异常时恢复监督进程，
+以及原生客户端取消和session排空回归。冻结观察目录为
+`beliefkv-cohort-stop-20261030-811e55ad`，当前GPU仍为`be9f062c`。
+
+实际登记：
+`ops/workflow_original56_measured_completion_20261030_r1.registration.json`。
+观察器PID2838460，实际nice19、CUDA99999及OMP/OpenBLAS各1线程，
+输入哈希及存活均已核对。启动前缀为9/18测量成员完成、24项已到达，
+状态waiting_fixed_measured_cohort；没有发送GPU停止信号。
+
+原全人口审查PID2829978及2829996已明确取代并验证退出，保留原登记和
+状态。证据在`measured_cohort_stop_r1/{contract,observer_launch,live_observer_r1,
+superseded_full_population_reviewers}.json`。
+结束与完成审查结果将写入原GPU运行目录的`cohort_termination/`及
+`measured_cohort_complete_original56_r1/`。目前只是确认观察器已启用，
+不代表已经完成18项或验证了实际GPU关闭。
