@@ -290,6 +290,19 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
         if not events:
             return
         super().events(events)
+        if self.dispatch_interval_ms and self.policy is not None:
+            for event in events:
+                if event.kind not in (Kind.TOOL_END, Kind.LLM_SUBMIT):
+                    continue
+                key = self.latest.get(event.invocation_id)
+                if key is not None and self._candidate(
+                    key.request_id, key, include_first=True,
+                ) is not None:
+                    # Native ingress may precede delivery of the tool return.
+                    # Revisit that caller even if an earlier pass removed it.
+                    missing = key.invocation_id not in self._dispatch_pending
+                    self._remember_dispatch(key)
+                    self.counts["free_dispatch_ready_event_reindexed"] += missing
         if any(event.kind in (
             Kind.LLM_SUBMIT, Kind.TOOL_END, Kind.JOIN_SATISFIED,
             Kind.RETURN, Kind.INVOCATION_CANCEL, Kind.WORKFLOW_END,

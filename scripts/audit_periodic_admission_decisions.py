@@ -94,12 +94,19 @@ def inspect(records, batches):
         if any(type(item.get("resume_window_eligible", True)) is not bool for item in programs):
             raise ValueError("invalid periodic admission window eligibility")
         ready = [item for item in application_ready if item.get("resume_window_eligible", True)]
-        if len(ready) != len(application_ready):
+        deferred = [item for item in application_ready if not item.get("resume_window_eligible", True)]
+        application_fitting = [
+            item for item in application_ready if item["complete_budget_tokens"] <= capacity
+        ]
+        deferred_fitting = [
+            item for item in deferred if item["complete_budget_tokens"] <= capacity
+        ]
+        if deferred:
             counts["controls_with_window_deferred_ready_paused"] += 1
-            counts["window_deferred_ready_paused_observations"] += len(application_ready) - len(ready)
+            counts["window_deferred_ready_paused_observations"] += len(deferred)
         fitting = [item for item in ready if item["complete_budget_tokens"] <= capacity]
         owners = {}
-        for item in ready:
+        for item in application_ready:
             key = identity(item["key"], grant=True)
             if key[2] != item["invocation_id"]:
                 raise ValueError("periodic request has another invocation owner")
@@ -108,14 +115,40 @@ def inspect(records, batches):
             len({owners[item["invocation_id"]][1] for item in fitting}) > 1
             and sum(item["complete_budget_tokens"] for item in fitting) > capacity
         )
+        application_competition = (
+            len({owners[item["invocation_id"]][1] for item in application_fitting}) > 1
+            and sum(item["complete_budget_tokens"] for item in application_fitting) > capacity
+        )
         counts["controls"] += 1
         counts["controls_with_ready_paused"] += bool(ready)
         counts["cross_workflow_logical_set_competition_controls"] += competition
         counts["free_budget_without_ready_paused_controls"] += capacity > 100 and not ready
+        counts["controls_with_application_ready_paused"] += bool(application_ready)
+        counts["controls_with_window_deferred_fitting_ready_paused"] += bool(deferred_fitting)
+        counts["window_deferred_fitting_ready_paused_observations"] += len(deferred_fitting)
+        counts["cross_workflow_application_ready_set_competition_controls"] += application_competition
+        counts["controls_with_available_resume_budget"] += capacity > 100
+        counts["free_budget_without_application_ready_paused_controls"] += (
+            capacity > 100 and not application_ready
+        )
+        counts["free_budget_with_application_ready_but_none_fitting_controls"] += (
+            capacity > 100 and bool(application_ready) and not application_fitting
+        )
+        counts["free_budget_with_only_window_deferred_fitting_ready_controls"] += (
+            capacity > 100 and bool(application_fitting) and not fitting
+        )
+        counts["free_budget_with_fitting_window_eligible_ready_controls"] += (
+            capacity > 100 and bool(fitting)
+        )
         observations.append({
             "monotonic_s": now, "resume_capacity_tokens": capacity,
             "ready_paused_agents": len(ready),
             "fitting_ready_paused_agents": len(fitting),
+            "application_ready_paused_agents": len(application_ready),
+            "fitting_application_ready_paused_agents": len(application_fitting),
+            "window_deferred_ready_paused_agents": len(deferred),
+            "window_deferred_fitting_ready_paused_agents": len(deferred_fitting),
+            "cross_workflow_application_ready_set_competition": application_competition,
             "fitting_workflows": len({
                 owners[item["invocation_id"]][1] for item in fitting
             }),
@@ -131,7 +164,7 @@ def inspect(records, batches):
             counts["resumed_revoked_by_pressure"] += not item["active_after_pressure"]
             if item["key"] is not None:
                 interventions[owner].append((now * 1000., sequence))
-            if owner in owners:
+            if owner in owners and item.get("resume_window_eligible", True):
                 grants.append({
                     "key": owners[owner], "selection_ms": now * 1000.,
                     "journal_sequence": sequence,
@@ -153,6 +186,9 @@ def inspect(records, batches):
         "control_observations": observations, **progress,
         "scope": {
             "exact_periodic_resume_budget_and_before_after_state": True,
+            "application_readiness_separate_from_timed_resume_eligibility": True,
+            "legacy_no_ready_counter_means_no_window_eligible_candidate": True,
+            "application_ready_competition_is_diagnostic_not_a_grant_opportunity": True,
             "cross_category_competition_is_diagnostic_not_original_permission": True,
             "logical_fit_does_not_prove_physical_feasibility": True,
             "earlier_and_foreign_attempt_service_excluded": True,
@@ -329,6 +365,50 @@ def observation_phases(result, arrivals, cohort, events):
             and (right is None or row["monotonic_s"] - origin < right)
         ]
         ready = sum(row["ready_paused_agents"] > 0 for row in rows)
+        supply_observed = all(
+            all(field in row for field in (
+                "application_ready_paused_agents", "fitting_application_ready_paused_agents",
+                "window_deferred_ready_paused_agents", "window_deferred_fitting_ready_paused_agents",
+                "cross_workflow_application_ready_set_competition",
+            )) for row in rows
+        )
+        supply = {
+            "controls_with_application_ready_paused": sum(
+                row["application_ready_paused_agents"] > 0 for row in rows
+            ),
+            "controls_with_window_deferred_fitting_ready_paused": sum(
+                row["window_deferred_fitting_ready_paused_agents"] > 0 for row in rows
+            ),
+            "application_ready_cross_workflow_logical_set_competitions": sum(
+                row["cross_workflow_application_ready_set_competition"] for row in rows
+            ),
+            "free_budget_without_application_ready_paused_controls": sum(
+                row["resume_capacity_tokens"] > 100 and not row["application_ready_paused_agents"]
+                for row in rows
+            ),
+            "free_budget_with_application_ready_but_none_fitting_controls": sum(
+                row["resume_capacity_tokens"] > 100 and bool(row["application_ready_paused_agents"])
+                and not row["fitting_application_ready_paused_agents"] for row in rows
+            ),
+            "free_budget_with_only_window_deferred_fitting_ready_controls": sum(
+                row["resume_capacity_tokens"] > 100 and bool(row["fitting_application_ready_paused_agents"])
+                and not row["fitting_ready_paused_agents"] for row in rows
+            ),
+            "free_budget_with_fitting_window_eligible_ready_controls": sum(
+                row["resume_capacity_tokens"] > 100 and bool(row["fitting_ready_paused_agents"])
+                for row in rows
+            ),
+        } if supply_observed else {
+            name: None for name in (
+                "controls_with_application_ready_paused",
+                "controls_with_window_deferred_fitting_ready_paused",
+                "application_ready_cross_workflow_logical_set_competitions",
+                "free_budget_without_application_ready_paused_controls",
+                "free_budget_with_application_ready_but_none_fitting_controls",
+                "free_budget_with_only_window_deferred_fitting_ready_controls",
+                "free_budget_with_fitting_window_eligible_ready_controls",
+            )
+        }
         completed = [
             workflow for when, workflow in model_completions
             if workflow in members and when / 1000. - origin >= left
@@ -342,6 +422,8 @@ def observation_phases(result, arrivals, cohort, events):
             "actual_periodic_controls": len(rows),
             "controls_with_predecision_ready_paused": ready,
             "predecision_ready_fraction": ready / len(rows) if rows else None,
+            "application_readiness_diagnostics_observed": supply_observed,
+            **supply,
             "actual_cross_workflow_logical_set_competitions": sum(
                 row["cross_workflow_logical_set_competition"] for row in rows
             ),
@@ -363,6 +445,7 @@ def observation_phases(result, arrivals, cohort, events):
         "phases": phases,
         "scope": {
             "preselection_periodic_state_not_postselection_snapshot": True,
+            "application_readiness_separate_from_timed_resume_eligibility": True,
             "actual_periodic_entries_only_other_grants_remain_separate": True,
             "fixed_common_window_preserved_for_throughput": True,
             "execution_span_depends_on_policy_completion_diagnostic_only": True,

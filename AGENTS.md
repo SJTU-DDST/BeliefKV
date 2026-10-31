@@ -5111,3 +5111,40 @@
   GPU99.681986%/zero0s,readypausedtime4.234956%,105periodiccontrols/0competition.
   Wholeprefix1freeconflict doesconsumeanewusefulbatch butispre-commonwindow.
   NotfullJCT,notmatchedoldwindowcomparison,noproofwaitingisfree.
+- Periodic supply diagnostics now keep application readiness distinct from the
+  timed admission gate, retaining old counters and grants. Available-budget
+  boundaries partition into absent ready work, no fitting ready work, only
+  window-held fitting work, and eligible fitting work. Old precomputed reports
+  without new fields remain unknown. The reader passed bound6026+23 retaining
+  all6011 identities/2230inputs under window_supply_initial12_cpu_r1.
+  In the complete oracle common window704controls partition436/0/253/15;
+  zero periodic competition does not erase observed nonperiodic conflicts.
+- The user's latest tool/paused question is audited in
+  docs/research/tool_ready_paused_chain_20261031_zh.md. Current reference
+  predicted-tool offload changes physical KV only, not logical eligibility;
+  active offloaded callers can bypass paused ranking after actual tool return.
+  Do not wake or grant solely at a predicted return timestamp; actual TOOL_END,
+  all other dependencies and the registered successor determine readiness.
+  Tool prefetch remains off. Tool donor release requires an already eligible,
+  physically capacity-stalled consumer in this reference composition.
+- Two actual lifecycle defects are now fixed for a future candidate. A native
+  successor registered before TOOL_END could be dropped from the dispatch index
+  and not readded until complete control; ready TOOL_END/LLM_SUBMIT now reindex
+  only the event's validated latest caller. Timed oracle windows also prevented
+  periodic decay recovery while raw-only free dispatch could not use that
+  budget at the deadline. A pending timed-window deadline now runs the same
+  decay selection/full-pressure reconciliation before free dispatch. This can
+  expedite the configured2s control; report actual cadence and do not claim a
+  pure ranking change. Zero-window, learned and paper control keep their cadence.
+  Actual ready active requests are not newly preempted; JOIN/EOS remains enabled.
+- Repair before_r2.xml has3target failures/2passes; the earliest before.xml has
+  an unrelated oracle-output fixture error and remains historical. After.xml
+  has22passes. Source-bound tool_readmission_repair_bound_cpu_r1 now passes
+  6032+23 with all6026literalidentities/2231inputs retained and unchanged
+  source/native/workload, nofailure/error/skip. This is CPU-only. Sealed
+  tool_readmission_capacity_prefix_r1 finds225/704common boundaries with
+  window-held ready callers fitting decay but not raw capacity;451 repeated
+  agent observations, not unique callers, physical-feasibility or JCT proof.
+  Frozen020527dd GPU remains unchanged, latest observer16/18complete/55arrived
+  at2026-10-31T10:20:56Z. No newGPU registered; finish fixed18/receipts/drain/exit
+  and evaluate implementation repair before attributing low grants to workload.

@@ -90,6 +90,20 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 )
         return result
 
+    def tick(self, *, now=None):
+        now = time.monotonic() if now is None else now
+        deferred = self._deferred_dispatch
+        if (
+            self.policy is not None and deferred is not None
+            and getattr(deferred, "window_ms", 0) and deferred.window_open(now)
+            and self._dispatch_pending and now < self.next_tick
+        ):
+            # Opening the window must exercise the same decay/pressure control
+            # that was gated while collecting, before raw-budget free dispatch.
+            self.next_tick = now
+            self.counts["oracle_coalescing_reconciliation_ticks"] += 1
+        return super().tick(now=now)
+
     def _priority(self, prediction):
         if prediction is None or prediction.evidence != "oracle":
             raise ValueError("oracle ranking requires its exact bound workflow prediction")
@@ -125,4 +139,7 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
             ),
             "workflow_oracle_join_recovery_bypasses_window": True,
             "workflow_oracle_active_continuity_preserved": True,
+            "workflow_oracle_reconciles_decay_at_window_deadline": bool(
+                getattr(deferred, "window_ms", 0)
+            ),
         }

@@ -1,10 +1,13 @@
+from dataclasses import replace
 import time
 from types import SimpleNamespace as NS
 
 import pytest
 
+from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact
 from tests.test_global_workflow_oracle import queued
+from tests.test_internal_comparison import observed
 from tests.test_workflow_work_oracle import source
 
 
@@ -110,6 +113,80 @@ def test_existing_active_agents_keep_their_eligibility_during_coalescing(monkeyp
         admission.tick(now=clock[0])
         assert {item.identity for item in admission.policy.programs.values() if item.active} == {"active"}
         assert not admission.status()["workflow_size_new_preemption"]
+    finally:
+        runtime.close()
+
+
+def test_window_deadline_reconciles_decay_when_periodic_control_has_another_phase(
+    monkeypatch, tmp_path,
+):
+    clock = [100.]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    runtime, admission = queued(
+        monkeypatch, tmp_path, global_order=True, activate_first=False, window_ms=1000,
+    )
+    try:
+        active = admission.policy.programs["active"]
+        assert admission._admit_from_free_capacity(
+            (active,), event="agent_dispatch_free_capacity_admitted", join_id=None,
+        )
+        admission.completed(
+            NS(reqs=[admission._live_requests["active-request"]]), ("active-request",),
+        )
+        runtime.on_events((replace(observed(
+            20, Kind.TOOL_START, invocation_id="active",
+            attributes={"tool_run_id": "slow-tool"},
+        ), workflow_id="active-work"),))
+        admission.next_tick = 100.5
+        clock[0] = 100.5
+        admission.tick(now=clock[0])
+        assert active.active and active.acting and admission.policy.remaining_capacity() == 0
+        assert not admission.policy.programs["long"].active
+        assert admission.next_tick == 100.5 + admission.control_interval_s
+        clock[0] = 101.
+        assert admission.policy.remaining_capacity_with_decay(now=clock[0]) == 200
+        admission.tick(now=clock[0])
+        assert admission.policy.programs["long"].active
+        assert not active.active
+        assert not admission.policy.programs["short"].active
+        assert admission.policy.remaining_capacity() >= 0
+        assert admission._deferred_dispatch.next_dispatch == 102.
+    finally:
+        runtime.close()
+
+
+def test_delayed_tool_return_reindexes_its_caller_but_respects_the_window(
+    monkeypatch, tmp_path,
+):
+    clock = [100.]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    runtime, admission = queued(
+        monkeypatch, tmp_path, global_order=True, activate_first=False, window_ms=1000,
+    )
+    try:
+        admission.forget("active")
+        admission.forget("long")
+        runtime.on_events((replace(observed(
+            20, Kind.TOOL_START, invocation_id="short",
+            attributes={"tool_run_id": "slow-tool"},
+        ), workflow_id="short-work"),))
+        clock[0] = 101.
+        admission.tick(now=clock[0])
+        assert "short" not in admission._dispatch_pending
+        assert not admission.policy.programs["short"].active
+        clock[0] = 101.1
+        runtime.on_events((replace(observed(
+            21, Kind.TOOL_END, invocation_id="short",
+            attributes={"tool_run_id": "slow-tool"},
+        ), workflow_id="short-work"),))
+        assert "short" in admission._dispatch_pending
+        assert not admission.policy.programs["short"].active
+        admission.tick(now=clock[0])
+        assert not admission.policy.programs["short"].active
+        clock[0] = 102.
+        admission.tick(now=clock[0])
+        assert admission.policy.programs["short"].active
+        assert admission.counts["free_dispatch_ready_event_reindexed"] == 1
     finally:
         runtime.close()
 
