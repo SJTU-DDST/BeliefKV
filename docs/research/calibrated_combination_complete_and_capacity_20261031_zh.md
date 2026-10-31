@@ -240,3 +240,106 @@ Full 的 `HostDemandCapacity.ensure()` 也已有最多 64 个候选的安全回�
 证据为 `background_extension_source25_bound_cpu_r2/evidence.json`。
 仍需从修复后的提交干净冻结并复验实际采集环境；
 尚未登记补采 GPU，不修改正在运行的资源 Oracle。
+
+## Resource Oracle 的完整结果
+
+2026-10-31 22:45 UTC，resource-combination 的固定 18 条全部自然完成。
+三臂独立复验均为 2819 请求、362072 输出 token，实际容量完全相同；
+各有 52 条自然结束、4 条非测量背景删失。两份新鲜 idle 快照、
+完整收据、原到达序号和实际所有权进程退出均已核验。
+
+| 指标 | ThunderAgent acting-decay | Predictive 控制 | Resource oracle |
+| --- | ---: | ---: | ---: |
+| 平均完整 JCT / s | 1175.613671 | 1052.994585 | 1071.047245 |
+| P95 完整 JCT / s | 3056.289093 | 2736.140634 | 2735.947722 |
+| 共同窗口全部输出 / token/s | 292.354630 | 301.891902 | 301.113130 |
+
+Resource oracle 相对 Predictive 平均 JCT 回退 1.714411%，
+共同窗口吞吐下降 0.257964%；18 条中 4 条改善、14 条放慢。
+它相对 ThunderAgent 的总体平均 JCT 改善为 8.894625%，
+共同窗口输出增加 2.995848%。这些是整体差值，不能归因于 oracle，
+也不能代替已完成 Predictive 控制的 10.430219% / 3.262227% 收益。
+该 oracle 不推广为默认配置，继续保留未排序的 Predictive 控制。
+
+完整组合审计为 6484 次入口、5493 次空参考快路径、
+396 次搜索函数调用，其中 29 次在枚举前返回，367 次真正枚举子集。
+65 次改变集合：56 次来自周期恢复、9 次来自免费补位；
+60 次没有加入新成员、只是缩减原集合，只有 5 次加入参考外成员。
+五个新成员均有真实周期授予、压力检查后资格、同 attempt 服务和
+有界有效完成。不能再把结果简单解释为“组合路径没触发”，
+应进一步审计缩减并行对象是否符合实际批次成本与完整 JCT 目标。
+本审计不覆盖全部 A→B 排序和压力暂停影响，也不是其因果收益分解。
+
+完整组合元数据与选择线程 CPU 合计 1.089850 s，
+不包含其他控制路径，不能直接解释均值增加的 18.052660 s。
+缺失候选摘要为 122 次 `native_checkpoint_unavailable` 重复观察；
+原先的深度超限不再出现于这份完整审计。没有取消原生安全边界。
+
+新旧前缀区间审计还确认，本轮 14 次正丢失的 1258680 token
+全部再次进入实际 native prefill，涉及 622 个 batch、没有重复区间。
+其完整 batch worker 区间合计约 153.835 s，不是纯 GPU 时间或
+可直接消除的 JCT。对照仅有前缀丢失代理值时，不作精确因果比较。
+
+背景末次到达仍早于测量尾部，原有两个 workload 失败项继续保留。
+共同窗口 ready-paused 采样占比为 0.311722，P80/P20 仍为 2.931418。
+不因为 oracle 回退换种子筛选输赢，也不继续重复相同控制。
+
+全部证据在 `resource_combination_initial12_mean70_comparison_r1`：
+`comparison.json`、`independent_complete_verification_r1.json`、
+`combination_choices_and_periodic_service.json`、
+`summary_coverage_complete_r1.json`、
+`previous_prefix_prefill_work_r1.json`。
+decode/全部输出曲线和完整配对 JCT 的两张 PNG 已目视核对。
+
+补采 launcher 修复已提交为 `5102ec03`。单独干净 operator 在相同代码上
+提交原始工具资格 manifest 为 `dd7f10a9`，用于让新冻结 checkout 真正携带
+该清单；不改变任何原任务或上下文。完整 CPU 资格仍为 6387 项及 23 子项，
+源码文件与外部绑定保持不变。采集环境明确为 native_matched，
+不构造 Full runtime，不开启工作集调度、预测卸载或工作量 oracle。
+初次只读冻结检查错误地期待 Full constructor 回执，保留其 native proof；
+更正为原生隔离核验后通过，不存在该次检查触发的 GPU 尝试。
+
+### 组合缩减的容量与评分诊断
+
+`packing_feasibility_complete_r1.json` 用实际冻结的成本、候选、容量和
+截止边界重放全部 65 个变化，检查选中集合是否仍可增加一个已就绪候选。
+27 次变化存在满足记录资源下界的单成员扩展，均来自严格缩减参考集合；
+合计 38 个可扩展对象原本就是参考成员。20 次变化的原参考集合本身可评估，
+并非所有缩减都是因为原参考放不下。
+
+一个已记录例子中，原参考为两个成员，新选择只有一个；资源摘要仍允许
+把另一成员加入。单成员输入 175 token、增量成本约 10.557 ms，
+两成员输入 7120 token、下一 chunk 为 2048、估计成本约 254.057 ms。
+局部收益/增量成本比因此偏向单成员。这个例子说明当前目标可能减少
+可准入的并行工作，也说明需要保留 prefill 对已有 active 请求的干扰成本，
+不能把“人数最大”直接替换为新的最优目标。
+
+这些都是记录摘要内的局部可行性，不是新增原生分配权限、实际 GPU 空闲
+或可避免 JCT 的证明。下一候选应先验证不必要的集合缩减与实际服务间隔、
+批次效率的联系，再调整评分或有界补齐，不能为增加改变次数强制迁移。
+本轮 GPU 服务及历史选择没有被热修改。
+
+### 新原项目采集已实际启动
+
+干净冻结检查 r3 再次验证 `dd7f10a9` 的 2265 个源码输入、
+6387 项既有 CPU 资格、外部原题/工具证据、实际 native 隔离环境和
+103 项原生引擎检查。原生树严格为 `434c35dd`；这不是新采集完成证明。
+
+确认 resource oracle 的测量、收尾和全部 GPU/观察进程退出后，
+新注册为 `ops/workflow_original_background25_source_20261031_r1.registration.json`，
+实际服务 checkout 为 `beliefkv-bg25r1-capture-dd7f10a9ab24`，
+端口 18944，原生引擎为 `sglang-bg25r1-capture-434c35dd6621`。
+fresh hold、空闲资源和 batch 1/8/24 CUDA 原生采样检查均通过。
+
+独立进程检查确认 watcher 3342547、driver 3342776、server 3342791、
+唯一 GPU scheduler 3342915，GPU 服务所有者均为 nice0。
+实际 census 仍为 Device 805198 token、Host 2034506 token / 200 GB、
+FULL-only、无 Mamba，running24。客户端清单为 25 个原项目、
+25 个在途 root 窗口，没有未提交的 root backlog。
+
+首轮真实 token 日志检查观察到 492 份 prompt、469 份 output 前缀记录，
+native 遥测已进入 prefill/decode，writer 无错误或丢弃。
+这些是运行中的前缀数量，不是完整自然 trace、应用正确性、正常 root
+完成或新 workload 验收。采集保持真实工具时间，后续仍须检查原题进展、
+真实多成员 JOIN、自然尾部和环境类失败，再决定是否与已有 56 条合并。
+没有登记采集后的自动 GPU 对比，也没有重跑已完成控制。

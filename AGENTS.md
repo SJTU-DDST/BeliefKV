@@ -5651,3 +5651,35 @@
   source/external/nativeunchanged. Includes5actualnativefreezechecksand9
   prefixgeometrychecks. Needsnewcleancommittedoperator/environmentvalidation;
   fc1operatorandoldCPU_r1donotqualifythenewlauncher.NoGPUcapturequeued.
+- Resourceoraclefixed18nowcomplete;independent3armverificationpreserves2819
+  requests/362072outputs,sameactualcapacity,52naturalends/4nonmeasuredcensored,
+  freshdrain/actualownedexit. Mean1071.047245vscontrol1052.994585s(-1.714411%
+  gain),commonwindow301.113130vs301.891902tps(-.257964%);notpromoted.
+  OverallvsThundermean8.894625%lower/output2.995848%higherisnotoraclegain;
+  disabled-rankingPredictivestill10.430219%lower/output3.262227%higher.
+  Newcomplete6484entries/5493empty/367actualenumerations/65setchanges:
+  60shrinkonly,5newmembersallgranted/retained/exactserved/boundeduseful.
+  1.089850sthreadCPUisnotwholecontrolorcausalJCT;122missingcheckpoints,
+  noancestryboundfailures. Prefixaudit14/1258680tokensfullyobserved622batches,
+  nooverlap;batchworker153.835snotpureGPUoravoidableJCT.Keepworkloadfailures.
+- Correctedlaunchercommitted5102ec03;cleanbackground25operatorwithsamecode
+  freezesexactqualifiedmanifestincommitdd7f10a9.Other6387/2265boundinputs
+  unchanged.NativecaptureexplicitlydoesnotconstructFullruntime;initialCPU
+  readerwronglyexpectedFullconstructorreceipt,preservenativeproofandrepair
+  isolationcheck.NoGPUattemptfromthatreader.Newcapturemustfreshlyverify
+  operator/environment/native/resources/holdandsamplerafterresourceactualexit.
+- Completepackingreadonlyauditreproducesall65changedsetswithfrozencostsand
+  actualcutoffs:27strictshrinksallowafeasiblesingle-memberextensionunder
+  recordedresourcebounds,38suchextensionsareomittedreferencemembers.
+  20changedreferenceswerethemselvessupported.Localdensitycanprefer1to2+
+  readyagents;notproofadditionaladmissionimprovesJCToractualGPUwasidle.
+  Retainprefillexternalitytoactivework;donotblindlymaximizecardinality.
+- Correctedbackground25captureactuallyregisteredafterresourceownedexit:
+  ops/workflow_original_background25_source_20261031_r1;frozendd7f10a9/
+  native434,port18944. r3cleancheckrevalidates2265sources/6387CPU/native103,
+  nativeruntimeisolation/externaloriginals;freshhold/resources/1-8-24CUDA
+  samplingpass.Watcher3342547/driver3342776/server3342791/soleGPU3342915
+  actuallylive,nice0;actual805198Device/2034506Host200GB/FULLonly/running24.
+  Firstprefix492prompts/469outputs,nativeprefill/decodehealthywriter.
+  Notcompletecaptureoracceptedworkload;audittaskprogress/tools/JOIN/natural
+  tailsbeforecombiningunchanged56withnew25.NoautomaticGPUsuccessor.
