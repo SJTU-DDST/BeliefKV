@@ -215,3 +215,10 @@ oracle收益。见[52项目校准](../research/sustained_original52_calibration_
 5834项旧身份、2200项输入及原生源码不变。证据在
 `experiments/reports/admission_service_windows_20261030/`。这是分析能力
 补全，不改变冻结85秒控制，不预先接受workload或oracle收益。
+
+同一原数据包的18个新增JavaScript原题已经完整导入并通过真实root/child
+工具链检查，项目依赖准备仍独立进行。来源包含短上下文，保留旧的长
+上下文轨迹；没有改变任务目标或再次只做六题正式比较。见
+[原题环境准备](../research/original_node_supplement_20261030_zh.md)。
+这不是已采集短workflow，也不自动触发GPU；当前仍以52项目完整控制
+的容量、持续供给及测量尾部审查决定下一步。

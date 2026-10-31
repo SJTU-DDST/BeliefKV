@@ -4814,3 +4814,15 @@
   has490eventual/430window-complete episodes. BoundCPU5842+23retains5834,
   all2200inputs/native unchanged,no failures/errors/skips. Evidence lives in
   admission_service_windows_20261030;frozen4446f4b3GPU remains unchanged.
+- Same pinned LoCoBench archive now has18additional complete original JS
+  candidates,6easy/12medium,full current-tokenizer contexts20385--81972.
+  Conservatively exclude53already-captured numbered families across languages.
+  All18realroot/child toolchain/sharedworkspace/nonzero-exit/cleanup checks pass
+  on newNode20.19/npm10.8.2 imageae7747bc;oldPython image stays unchanged.
+  Toolchain success is not project-dependency,natural-shape or capture readiness.
+  Private original-package installation is ongoing;do not repair source/tests,
+  missing install scripts or APIs to force acceptance. NativeML/GUI/local-
+  workspace/unmanifested projects remain separate bounded-preparation exclusions.
+  Node preparation31targetedCPU passes;full source-bound capture qualification,
+  dependency image/fresh tool proofs and currentGPU actual exit remain required.
+  See docs/research/original_node_supplement_20261030_zh.md;noGPUfollowup registered.
