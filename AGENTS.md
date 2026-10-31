@@ -5597,3 +5597,20 @@
   CPUbootstrap3262660actuallylive/nice19/CUDAhidden/threads1;itawaitsreplay
   beforearmingfixed18cohortandresultsobservers,notproofthose2arealreadyarmed.
   ReusecompletePredictive/Thunder,noautomaticGPUbeyondthissamecomparison.
+- Resourcecomparisonnowactuallyrunningdb82/native434on18942after24native
+  stopsand1/8/24sampling;independentliveproof6exactreceipts/26explicitselector
+  entries/soleGPUscheduler3265190/nice0/unchangedcapacitypasses.BothCPU
+  cohort3265978/results3265979actuallylive,nice19/CUDAhidden/threads1.
+  Earlysealed326choiceentrieshave12searches/2feasiblealternatives/0newmembers,
+  notJCTgain;preservewrong-relative-cohortanalysisfailurebeforeabsolute-path
+  repair.GPU/fixed18normal-tailprotocolunchanged,noautomaticnextGPU.
+- CPUbackgroundextensionnowmaterializes25previouslyinventoriedunusedoriginal
+  families,not26;all462source/testfilesandcompletecontextsverifyunchanged.
+  Explicitrepeatableoriginal-difficultyCLIallows5easy/9medium/7hard/4expert
+  withoutrelabeling;defaulteasy/mediumandallotherguardspreserved.Optional
+  disjointsource-diravoidsoldimportassetcoupling.37focusedCPUchecksinclude
+  realnpmhooksand13newpolicycases,zerofailures/skips,notnewGPUqualification.
+  background_extension_original25_population_r1and_preparation_r1bindthe
+  originals;capturereadyfalse,naturalwork/childshapeunknown.Dependency-only
+  privatepreparationrunningnice19/CUDAhidden/1container/1CPU/4GB;preserve
+  allfailuresandoriginalpackageversions.NobackgroundtraceorGPUcapturestarted.

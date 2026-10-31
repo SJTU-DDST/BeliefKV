@@ -23,7 +23,13 @@ from scripts.prepare_original_task_mix import (
 from scripts.train_workflow_work import write
 
 
-def candidates(inventory):
+def candidates(inventory, *, allowed_difficulties=("easy", "medium")):
+    if (
+        not isinstance(allowed_difficulties, (tuple, list)) or not allowed_difficulties
+        or len(set(allowed_difficulties)) != len(allowed_difficulties)
+        or any(value not in ("easy", "medium", "hard", "expert") for value in allowed_difficulties)
+    ):
+        raise ValueError("invalid original difficulty policy")
     if (
         inventory.get("source_and_tests_modified") is not False
         or inventory.get("original_task_requirements_modified") is not False
@@ -39,7 +45,7 @@ def candidates(inventory):
         if (
             not row["project"].startswith("javascript_")
             or row["project"].rsplit("_", 1)[-1] in families
-            or row["original_difficulty"] not in ("easy", "medium")
+            or row["original_difficulty"] not in allowed_difficulties
             or not 8000 <= row["complete_context_tokens"] <= 96000
             or row.get("incidental_python_syntax_diagnostics_not_repaired")
         ):
@@ -67,13 +73,22 @@ def main():
     parser.add_argument("--inventory", type=Path, required=True)
     parser.add_argument("--image", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--source-dir", type=Path,
+        default=ROOT / "workloads/sources/locobench_original_node_20261030",
+    )
+    parser.add_argument(
+        "--allow-original-difficulty", action="append", choices=("easy", "medium", "hard", "expert"),
+        help="Explicitly select original difficulties; repeat for each allowed value.",
+    )
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve original-project preparation evidence")
     inventory, pool, model_metadata = (
         json.loads(path.read_bytes()) for path in (args.inventory, POOL, TOKENIZER_SOURCE)
     )
-    selected = candidates(inventory)
+    difficulties = tuple(args.allow_original_difficulty or ("easy", "medium"))
+    selected = candidates(inventory, allowed_difficulties=difficulties)
     if (
         inventory["archive_sha256"] != pool["archive_sha256"]
         or sha256_file(Path(pool["archive"])) != pool["archive_sha256"]
@@ -100,7 +115,7 @@ def main():
                 raise ValueError("original project metadata changed")
             template = materialize_project(
                 archive, row["project"], row, here / "contexts",
-                ROOT / "workloads/sources/locobench_original_node_20261030", pool, tokenizer,
+                args.source_dir.resolve(), pool, tokenizer,
             )
             context = template["frozen_repository_context"]
             if context["tokens"] != row["complete_context_tokens"]:
@@ -154,6 +169,11 @@ def main():
         purpose="additional_complete_original_Node_projects",
         selection_policy="previously declared original easy/medium short-context candidates",
     )
+    if args.allow_original_difficulty is not None:
+        manifest["selection_policy"] = (
+            "explicit original difficulty policy " + ",".join(difficulties) + "; complete short-context projects"
+        )
+        manifest["original_difficulty_policy"] = list(difficulties)
     write(here / "manifest.json", manifest)
     write(here / "preparation.json", {
         "kind": manifest["purpose"], "assignments": assignments,
@@ -164,6 +184,7 @@ def main():
         "project_dependency_installation_and_live_tools_pending": True,
         "short_workflow_and_JOIN_shape_require_natural_capture": True,
         "capture_ready": False, "GPU_action": False, "existing_running_control_unchanged": True,
+        "original_difficulty_policy": list(difficulties),
         "inputs_sha256": {str(path.resolve()): sha256_file(path) for path in (
             args.inventory, POOL, TOKENIZER_SOURCE, Path(__file__),
         )},
