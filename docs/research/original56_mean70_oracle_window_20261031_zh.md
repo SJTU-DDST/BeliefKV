@@ -62,3 +62,35 @@ oracle进度核验匹配原对照9403条已完成请求、51个自然结束workf
 配置位于`oracle_mean70_window1s_r1/full.json`，进度证据为同目录
 `progress.json`。干净冻结、GPU组件检查及实际oracle运行仍按顺序完成；
 CPU准备不代表已有GPU收益。
+
+## 实际启动与自动结束
+
+从干净冻结提交`020527dd`启动，原生树仍为
+`434c35dd66211d0a230717c88bf1452056769a40`；与旧控制的原生源码、补丁
+字节和状态逐项相同，仅规范补丁所在路径及派生状态摘要改变。
+GPU入口、绑定复核和启动证明在`gpu_entry_oracle_mean70_window1s_r1`。
+24条token/session/native-stop检查全部通过，1/8/24采样检查通过，
+随后oracle Full已经实际服务。
+
+登记为：
+`/home/longhao/experiment/ops/workflow_original56_mean70_oracle_window1s_full_20261031_r1.registration.json`，
+端口18930。独立前缀证明已核对216条完成回执，实际GPU owner2961718、
+nice0服务、完整原采样/停止/token/session核验，以及运行时1000ms窗口、
+JOIN绕过与active连续性。工具预取和逐层handoff均关闭。此为启动前缀，
+没有完整oracle平均JCT或性能结论。
+
+固定测量结束观察器已实际运行，登记后缀为
+`workflow_original56_mean70_oracle_window1s_measured_completion_20261031_r1.registration.json`；
+结果观察器后缀为`workflow_original56_mean70_oracle_window1s_results_20261031_r1.registration.json`。
+两者实际PID分别2962116/2962442，均验证nice19、CUDA隐藏和OMP/OpenBLAS
+单线程。结果任务只在完整测量回执、排空、实际退出及测量审查结束后执行：
+
+1. 使用`review_sustained_oracle.py`核对同一18个完整JCT与共同窗口吞吐。
+2. 关联周期外选择与实际有效native服务，并保留原控制缺少观测的限制。
+3. 分开统计共同窗口与整个测量跨度的周期选择。
+4. 生成相同30秒分桶的decode/全部输出吞吐趋势和18项配对JCT图。
+
+结果文件预定为`oracle_mean70_window1s_r1/comparison.json`，图目录为
+`common_window_figures`；目前尚未产生真实比较结果。绘图自检使用原控制
+与其自身，只证明读取/绘图路径可用，不是oracle结果。自动任务不启动
+任何后续GPU实验。

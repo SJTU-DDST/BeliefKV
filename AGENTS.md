@@ -5086,3 +5086,14 @@
   error/skip. progress.json rechecks9403completed/51closed andcomplete
   measured2819requests/362072outputs;5unfinishedbackgroundsremaincensored.
   Freeze then freshGPUchecks,notCPUperformancepromotion.
+- Oraclemean70window1s nowactuallyserves fromclean020527dd/native434c35dd,
+  port18930,ops/workflow_original56_mean70_oracle_window1s_full_20261031_r1.
+  Fresh24exacttoken/session/native-stop and1/8/24sampler pass. Independent
+  live_full_r1 verifies216completeprefixreceipts,soleGPUowner2961718/nice0,
+  effective1000ms/JOINbypass/activecontinuity andunchangedresources/policy.
+  Fixed18observer2962116 andCPUresultsobserver2962442 actuallyrun withnice19/
+  CUDA99999/OMP1/OpenBLAS1. Results wait formeasuredreview/completework/
+  freshdrain/actualexit,thencomparefixedJCT/commonwindow,free-servicechoices,
+  periodicphases andpairedplots. No subsequentGPUqueued. Keep allfrozen
+  source andrequestpins;completeoraclegain remainspending. Earlyfreechoice
+  audit isonlyaprefix;plotselfcheckusescontroltwice,notoracleperformance.
