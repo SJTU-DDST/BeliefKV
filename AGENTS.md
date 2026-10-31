@@ -5281,3 +5281,22 @@
   existing12warm18measured26background; common window55.6927713505--1638.9548502657s.
   Finish all measured normal tails/receipts/fresh drain/actual exits. No oracle
   GPU followup registered and no complete JCT/gain claimed yet.
+- Current tool-aware control readers now support matched-control floating
+  constant ranks. New read-only audit_control_oracle_opportunities replays the
+  actual choice first, then substitutes logged exact remaining paths under the
+  same candidates/budget/buffers/JOIN groups. Preserve ready JOIN zero rank.
+  Same-workflow cached paths must agree. Its69focused cases pass; not a new
+  shared/GPU qualification and no frozen93161529 source changes.
+- Prefix evidence under control_toolaware_initial12_mean70_live_r1: first
+  periodic258controls/6competitions/109real-service grants; later706controls/
+  386selected requests all subsequently served. Local oracle changes103orders/
+  4sets, all120.37--197.86s, includingwarmup-versus-measured substitutions.
+  Do not turn these local periodic counterfactuals into whole-system coverage
+  or JCT. A-to-B actuallygrants34; log8.06sCPU/4997attempts,4957nocompletepair.
+- Separate prefixes show reusable live-state union peak64.68%ofcombinedpool,
+  while allocatedHBM99.89%includesreclaimablecache.49minute-boundaryshadow
+  comparisons find duplicate active-prefixchargeP508920/max38656tokens
+  (4.80%devicepool),4possiblehiddenfits,notnativeallocationauthority.
+  Full successor checkpoint27pauses/median125missingtokens are distinct from
+  first-node-only prediction/native-pressurecallbackfields. Preserve all
+  prefix bounds and uncertainty;see toolaware_control_opportunity_prefix doc.

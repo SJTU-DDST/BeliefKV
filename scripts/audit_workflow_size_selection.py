@@ -22,6 +22,8 @@ from scripts import run_causal_comparison as causal
 
 
 EVENT = "workflow_size_resume_selection"
+ORACLE_RANK = "oracle_remaining_model_tool_critical_path_seconds"
+MATCHED_CONTROL_RANK = "reference_category_context_with_matched_oracle_bookkeeping"
 
 
 def finite(value):
@@ -33,7 +35,7 @@ def inspect_choice(row):
     capacity = row.get("capacity_tokens")
     ordered = row.get("ordered")
     selected = row.get("selected_in_priority_order")
-    oracle = row.get("rank_kind") == "oracle_remaining_model_tool_critical_path_seconds"
+    scalar_rank = row.get("rank_kind") in (ORACLE_RANK, MATCHED_CONTROL_RANK)
     if (
         row.get("event") != EVENT
         or type(capacity) is not int
@@ -49,7 +51,7 @@ def inspect_choice(row):
             or any(type(item[i]) is not int for i in (1, 3, 4))
             or item[1] not in (0, 1, 2)
             or (
-                (not finite(item[2]) or item[2] < 0) if oracle
+                (not finite(item[2]) or item[2] < 0) if scalar_rank
                 else (type(item[2]) is not int or item[2] not in (0, 1, 2))
             )
             or item[3] <= 0 or item[4] < 0
