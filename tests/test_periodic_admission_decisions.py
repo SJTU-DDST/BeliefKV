@@ -78,3 +78,113 @@ def test_overbudget_or_duplicate_grants_are_rejected():
     choices[0]["resumed_program_ids"] = ["0", "0"]
     with pytest.raises(ValueError, match="boundary"):
         inspect(choices, batches)
+
+
+def window_evidence():
+    choices, batches = records()
+    final = deepcopy(choices[0])
+    final["monotonic_s"] = 2.
+    final["resumed_program_ids"] = []
+    for member in final["programs"]:
+        member["active_before"] = member["active_after_pressure"]
+    choices.append(final)
+    batches[0]["launch_monotonic_ms"] = 1010.
+    batches[0]["request_samples"][0].update(
+        token_delta=200, output_token_delta=0, phase="prefill",
+    )
+    return choices, batches
+
+
+def test_positive_prefill_progress_requires_a_new_launch_within_the_control_window():
+    report = inspect(*window_evidence())
+    assert report["counts"]["ready_grants_launched_within_observation_window"] == 1
+    assert report["counts"]["ready_grants_served_within_observation_window"] == 1
+    assert report["counts"]["ready_grants_completed_useful_batch_within_observation_window"] == 1
+    assert report["within_window_new_launch_ms"]["p50"] == 10.
+    assert report["within_window_new_service_ms"]["p50"] == 15.
+    assert report["within_window_new_completion_ms"]["p50"] == 100.
+    row = report["ready_grant_episodes"][0]
+    assert row["observation_window_end_ms"] == 2000.
+    assert row["observation_window_end_reason"] == "next_control"
+
+
+def test_a_pregrant_launch_with_late_service_does_not_prove_new_grant_progress():
+    choices, batches = window_evidence()
+    batches[0]["launch_monotonic_ms"] = 999.
+    report = inspect(choices, batches)
+    assert report["counts"]["ready_grants_with_following_exact_service"] == 1
+    assert report["counts"]["ready_grants_with_observed_new_useful_launch"] == 0
+    assert report["counts"]["ready_grants_served_within_observation_window"] == 0
+
+
+def test_later_control_service_is_retained_but_not_counted_as_prompt_consumption():
+    choices, batches = window_evidence()
+    batches[0].update(
+        launch_monotonic_ms=2010., service_start_monotonic_ms=2020.,
+        complete_monotonic_ms=2100.,
+    )
+    report = inspect(choices, batches)
+    assert report["counts"]["ready_grants_with_following_exact_service"] == 1
+    assert report["counts"]["ready_grants_with_observed_new_useful_launch"] == 1
+    assert report["counts"]["ready_grants_launched_within_observation_window"] == 0
+
+
+def test_same_agent_free_grant_or_donor_pause_closes_the_earlier_observation_window():
+    for donor in (False, True):
+        choices, batches = window_evidence()
+        key = deepcopy(choices[0]["programs"][0]["key"])
+        member = {"key": key}
+        changed = deepcopy(member)
+        changed["key"].update(invocation_id="parent", request_id="parent")
+        choices.insert(1, {
+            "event": "agent_join_blocked_capacity_admitted" if donor else
+                     "agent_dispatch_free_capacity_admitted",
+            "monotonic_s": 1.005,
+            "programs": [changed] if donor else [member],
+            **({"donors": [member]} if donor else {}),
+        })
+        report = inspect(choices, batches)
+        assert report["counts"]["ready_grants_with_following_exact_service"] == 1
+        assert report["counts"]["ready_grants_served_within_observation_window"] == 0
+        assert report["ready_grant_episodes"][0]["observation_window_end_ms"] == pytest.approx(1005.)
+
+
+def test_empty_decode_tail_is_not_positive_progress_after_a_grant():
+    choices, batches = window_evidence()
+    batches[0]["request_samples"][0].update(phase="decode", token_delta=0)
+    report = inspect(choices, batches)
+    assert report["counts"]["ready_grants_with_following_exact_service"] == 1
+    assert report["counts"]["target_zero_progress_service_samples"] == 1
+    assert report["counts"]["ready_grants_with_observed_new_useful_launch"] == 0
+
+
+def test_live_last_window_without_a_later_control_remains_unknown():
+    choices, batches = window_evidence()
+    choices.pop()
+    report = inspect(choices, batches)
+    assert report["counts"]["ready_grants_with_observed_new_useful_launch"] == 1
+    assert report["counts"]["ready_grants_with_open_observation_window"] == 1
+    assert report["ready_grant_episodes"][0]["new_service_before_next_control_or_intervention"] is None
+
+
+def test_new_launch_and_service_clocks_are_checked_independently():
+    choices, batches = window_evidence()
+    batches[0].update(
+        launch_monotonic_ms=1990., service_start_monotonic_ms=2010.,
+        complete_monotonic_ms=2100.,
+    )
+    report = inspect(choices, batches)
+    assert report["counts"]["ready_grants_launched_within_observation_window"] == 1
+    assert report["counts"]["ready_grants_served_within_observation_window"] == 0
+    batches[0]["launch_monotonic_ms"] = 2020.
+    with pytest.raises(ValueError, match="launch"):
+        inspect(choices, batches)
+
+
+def test_worker_start_does_not_substitute_for_useful_batch_completion():
+    choices, batches = window_evidence()
+    batches[0]["complete_monotonic_ms"] = 2010.
+    report = inspect(choices, batches)
+    assert report["counts"]["ready_grants_served_within_observation_window"] == 1
+    assert report["counts"]["ready_grants_completed_useful_batch_within_observation_window"] == 0
+    assert not report["ready_grant_episodes"][0]["new_completion_before_next_control_or_intervention"]

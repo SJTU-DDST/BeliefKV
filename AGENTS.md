@@ -4806,3 +4806,11 @@
   chars);old worker readslegacy workflow_task_instructions/prompt tail. Adapt
   that contract only at the later learned stage;current unsorted/oracle paths
   do not use the learned worker,so it is not a current performance cause.
+- Periodic admission audit now distinguishes eventual exact-attempt service
+  from a fresh useful batch completed before the next observed control or
+  recorded same-agent grant/donor pause. Exclude pregrant launches and empty
+  decode tails; open live windows remain unknown. Launch/worker clocks are not
+  CUDA kernel starts and unlogged interventions remain unproven. Complete52r2
+  has490eventual/430window-complete episodes. BoundCPU5842+23retains5834,
+  all2200inputs/native unchanged,no failures/errors/skips. Evidence lives in
+  admission_service_windows_20261030;frozen4446f4b3GPU remains unchanged.
