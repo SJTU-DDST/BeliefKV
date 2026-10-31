@@ -39,9 +39,15 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         )
         super().__init__(runtime)
         self._work = self._create_work(runtime)
+        self.pressure_pause_policy = getattr(runtime, "agent_pressure_pause_policy", "reference")
         self.workflow_pressure_pause = (
-            getattr(runtime, "agent_pressure_pause_policy", "reference") == "workflow_remaining"
+            self.pressure_pause_policy in ("workflow_remaining", "workflow_tool_aware")
         )
+        self._tool_pressure = None
+        if self.pressure_pause_policy == "workflow_tool_aware":
+            from beliefkv.runtime.workflow_tool_pressure import WorkflowToolPressure
+
+            self._tool_pressure = WorkflowToolPressure(self)
         if combination:
             from beliefkv.runtime.workflow_combination import WorkflowCombinationController
 
@@ -106,6 +112,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         super().attach(cache)
         if self.workflow_pressure_pause:
             self.policy.pressure_preference = self._pressure_preference
+        if self._tool_pressure is not None:
+            self.policy.tool_pressure_state = self._tool_pressure.observe
 
     def _logical_ready_paused(self, item):
         key = self.latest.get(item.identity)
@@ -202,6 +210,10 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def events(self, events):
         events = tuple(events)
+        if self._tool_pressure is not None:
+            self._tool_pressure.events(events)
+            if self.policy is not None:
+                self.policy.invalidate_tool_states()
         for event in events:
             self._work.submit(event.workflow_id, "event", event)
         super().events(events)
@@ -266,6 +278,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 writer.record({
                     "event": "workflow_remaining_pressure_pause",
                     "ts_ms": time.time() * 1000., "monotonic_s": now,
+                    "pressure_pause_policy": self.pressure_pause_policy,
                     **decision,
                 })
         if writer is not None:
@@ -320,12 +333,19 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 self._output_observed.pop(request, None)
         super().forget(invocation, now=now)
         self._resume_groups.pop(invocation, None)
+        if self._tool_pressure is not None:
+            self._tool_pressure.forget(invocation)
+            if self.policy is not None:
+                self.policy.invalidate_tool_states()
 
     def status(self):
         dispatch = bool(self.dispatch_interval_ms)
         return {
             **super().status(),
-            "pressure_pause_policy": "workflow_remaining" if self.workflow_pressure_pause else "reference",
+            "pressure_pause_policy": (
+                "workflow_tool_aware" if self._tool_pressure is not None else
+                "workflow_remaining" if self.workflow_pressure_pause else "reference"
+            ),
             "workflow_pressure_marks_grant_capacity": False,
             "workflow_size_resume": True,
             "workflow_size_resume_scope": (
@@ -338,6 +358,11 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 if dispatch else "unchanged_join_and_free_continuation"
             ),
             "workflow_size_new_preemption": False,
+            **({
+                **self._tool_pressure.status(),
+                "decay_scope": "tool_weighted_resume_and_pressure_with_undiscounted_enforcement",
+                "decay_age_source": "observed_tool_start_monotonic_or_native_completion",
+            } if self._tool_pressure is not None else {}),
             "workflow_combination_admission": self._combination is not None,
             **({
                 "workflow_combination_scope": "periodic_and_coalesced_first_continuation_sibling_admission",
@@ -357,3 +382,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self._output_observed.clear()
         self._resume_groups.clear()
         self._rank_cache.clear()
+        if self._tool_pressure is not None:
+            self._tool_pressure.starts.clear()
+            if self.policy is not None:
+                self.policy.invalidate_tool_states()

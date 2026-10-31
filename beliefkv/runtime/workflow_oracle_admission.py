@@ -28,6 +28,11 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
 
     def _create_work(self, runtime):
         oracle = WorkflowWorkOracle(runtime.workflow_work_model, runtime.workflow_work_model_sha256)
+        self.remaining_work_ranking_enabled = oracle.artifact.raw.get(
+            "remaining_work_ranking_enabled", True,
+        )
+        if not self.remaining_work_ranking_enabled:
+            self.rank_kind = "reference_category_context_with_matched_oracle_bookkeeping"
         order = oracle.artifact.raw.get("admission_order", "within_reference_category")
         if order not in ("within_reference_category", "global_ready_remaining_path"):
             oracle.close()
@@ -112,7 +117,12 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     def _priority(self, prediction):
         if prediction is None or prediction.evidence != "oracle":
             raise ValueError("oracle ranking requires its exact bound workflow prediction")
-        return prediction.remaining_path_s
+        return prediction.remaining_path_s if self.remaining_work_ranking_enabled else 0.
+
+    def _pressure_preference(self, item, now):
+        if not self.remaining_work_ranking_enabled:
+            return None
+        return super()._pressure_preference(item, now)
 
     def _supported(self, prediction):
         return prediction is not None and prediction.evidence == "oracle"
@@ -126,6 +136,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
             **super().status(),
             "future_information_used": True, "deployable": False,
             "workflow_work_source": "oracle",
+            "workflow_oracle_remaining_work_ranking_enabled": self.remaining_work_ranking_enabled,
+            "workflow_oracle_future_work_used_for_decisions": self.remaining_work_ranking_enabled,
             "workflow_oracle_admission_order": (
                 "global_ready_remaining_path" if self.rank_before_category else
                 "within_reference_category"

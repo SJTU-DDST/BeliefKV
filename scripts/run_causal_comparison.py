@@ -1066,6 +1066,14 @@ def observed_configuration(plan, label, arm, *, final=False):
                         "BELIEFKV_AGENT_RESIDENCY_PAUSE", common.get("AGENT_RESIDENCY_PAUSE", "0"),
                     ) == "1",
                 )
+                if oracle:
+                    artifact = load(Path(common["BELIEFKV_WORKFLOW_WORK_MODEL"]))
+                    if actual_agents.get(
+                        "workflow_oracle_remaining_work_ranking_enabled", True,
+                    ) is not artifact.get("remaining_work_ranking_enabled", True) or actual_agents.get(
+                        "workflow_oracle_future_work_used_for_decisions", True,
+                    ) is not artifact.get("remaining_work_ranking_enabled", True):
+                        raise ValueError("effective oracle ranking differs from declaration")
                 if oracle and final:
                     predictor = actual_agents["workflow_work_predictor"]
                     artifact = load(Path(common["BELIEFKV_WORKFLOW_WORK_MODEL"]))

@@ -46,6 +46,7 @@ def main():
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--additional-tests", nargs="*", default=[])
+    parser.add_argument("--additional-inputs", nargs="*", type=Path, default=[])
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve previous CPU qualifications")
@@ -76,6 +77,9 @@ def main():
         inputs = [
             args.configuration, *declared_workload_inputs(manifest, require_tool_execution=True),
         ]
+    if any(not path.is_file() for path in args.additional_inputs):
+        raise ValueError("additional qualification inputs must exist")
+    inputs.extend(args.additional_inputs)
     external = {str(path.resolve()): sha256_file(path) for path in inputs}
     here = args.output_dir.resolve()
     here.mkdir(parents=True, exist_ok=False)

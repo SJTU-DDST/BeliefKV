@@ -311,14 +311,16 @@ def arm_environment(
     pressure_policy = common.get(
         "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
     )
-    if pressure_policy not in ("reference", "projected_release", "predicted_acting", "workflow_remaining") or (
+    if pressure_policy not in (
+        "reference", "projected_release", "predicted_acting", "workflow_remaining", "workflow_tool_aware",
+    ) or (
         mode == "full" and (
             pressure_policy == "projected_release" and agent_admission != "thunderagent_retained"
             or pressure_policy == "predicted_acting" and (
                 agent_admission != "thunderagent_reference" or continuation_free != "1"
                 or workflow_size == "1"
             )
-            or pressure_policy == "workflow_remaining" and workflow_size != "1"
+            or pressure_policy in ("workflow_remaining", "workflow_tool_aware") and workflow_size != "1"
         )
     ):
         raise ValueError("pressure policy requires its declared Full agent admission")

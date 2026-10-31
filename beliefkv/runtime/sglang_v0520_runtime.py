@@ -1137,14 +1137,16 @@ class NativeAdmissionRuntime:
             raise ValueError("fitting lending requires observed-demand retained admission")
         self.agent_lending_selection = lending_selection
         pressure_policy = os.environ.get("BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY", "reference")
-        if pressure_policy not in ("reference", "projected_release", "predicted_acting", "workflow_remaining") or (
+        if pressure_policy not in (
+            "reference", "projected_release", "predicted_acting", "workflow_remaining", "workflow_tool_aware",
+        ) or (
             pressure_policy == "projected_release" and agent_policy != "thunderagent_retained"
             or pressure_policy == "predicted_acting" and (
                 self.internal_comparison_mode != "full"
                 or agent_policy != "thunderagent_reference"
                 or not self.agent_free_continuation_admission or self.workflow_size_resume
             )
-            or pressure_policy == "workflow_remaining" and not self.workflow_size_resume
+            or pressure_policy in ("workflow_remaining", "workflow_tool_aware") and not self.workflow_size_resume
         ):
             raise ValueError("pressure policy requires its declared Full agent admission")
         self.agent_pressure_pause_policy = pressure_policy

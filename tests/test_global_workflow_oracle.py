@@ -15,9 +15,12 @@ from tests.test_workflow_size_admission import settings
 from tests.test_workflow_work_oracle import add_serial_graphs, oracle_file, source
 
 
-def queued(monkeypatch, tmp_path, *, global_order, activate_first=True, window_ms=0):
+def queued(
+    monkeypatch, tmp_path, *, global_order, activate_first=True, window_ms=0, ranking=True,
+):
     raw = source()
     raw["requests"], raw["workflows"] = {}, {}
+    raw["remaining_work_ranking_enabled"] = ranking
     if global_order:
         raw["admission_order"] = "global_ready_remaining_path"
     if window_ms:

@@ -55,6 +55,8 @@ class WorkflowWorkOracleArtifact:
             window and raw.get("admission_order") != "global_ready_remaining_path"
         ):
             raise ValueError("timed coalescing requires a global oracle and 0, 1000 or 2000 ms")
+        if type(raw.get("remaining_work_ranking_enabled", True)) is not bool:
+            raise ValueError("oracle remaining-work ranking declaration must be boolean")
         self.raw = raw
         self.requests = raw["requests"]
         self.workflows = raw["workflows"]

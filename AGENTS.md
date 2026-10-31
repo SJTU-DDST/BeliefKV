@@ -5234,3 +5234,38 @@
   ancestor failure and r2's6095pass; r3 adds the stale-candidate guard and final
   combined candidate bound. This is CPU-only, no new GPU registration or
   performance gain. See docs/design/event_tool_replacement_window2s_20261031_zh.md.
+- Latest user clarifies "no long-tool replacement" means no changes to trace
+  tool durations. Keep event-driven A-to-B as part of predicted tool offload,
+  not a separate switch. The uncommitted default-off switch is withdrawn.
+  Preserve its superseded CPU preparation/interruption, not as qualification.
+  Keep JOIN/EOS, prepare_host and ordinary2000ms coalescing.
+- New Full-only workflow_tool_aware pressure candidate uses one observed tool
+  retention weight for hypothetical resume budget and pressure choice. Protect
+  one-control-period short waits, use live conditional return forecasts over
+  max(control, cached complete roundtrip), and fall back to elapsed wait decay
+  after that grace. Never read oracle future tool duration for tool retention.
+  Keep raw complete contexts/buffers as enforcement, and never grant physical
+  pages for a logical discount or pending pause mark. Compare cached remaining
+  work within retention bands, preserving JOIN/EOS and selected restores.
+- A registered pending successor can still be tool-blocked. Only a current
+  unstarted request without rows, mutable allocated/committed KV, output,
+  retraction or running-batch membership can immediately yield logical budget.
+  Still-blocked paused owners do not reactivate on a prediction timer. Physical
+  Host/lock/DMA safety remains native; retain the existing event A-to-B path.
+  See docs/design/workflow_tool_pressure_20261031_zh.md. New source-bound CPU
+  evidence and matched repaired two-second control precede GPU gain claims.
+- Next diagnostic uses existing12initial/mean70 arrivals and fixed18 measured
+  originals. Prepare matched repaired control then oracle, including tool
+  retention and event predicted offload in both. An explicit boolean oracle
+  artifact can disable remaining-work decision ranking while retaining the
+  same progress bookkeeping/window/siblings; this is a mechanism control, not
+  a paper ThunderAgent arm. Defaulttrue preserves all historical oracle runs.
+  Recheck supply/Host/background coverage and fresh GPU qualification before
+  launch; future trace work may not silently affect control choices.
+- Final tool-aware12/70 pair passes bound6135tests+23subtests, retaining all
+  6096prior literal cases/2239source inputs with no failure/error/skip and
+  unchanged source/native/pair artifacts during execution. Both configurations,
+  both oracle files and existing12/70 arrivals/fixed18cohort are bound under
+  tool_aware_pressure_initial12_mean70_bound_cpu_r1. The superseded default-off
+  regression was intentionally interrupted after4655+6 on user clarification;
+  keep it and its original inputs, never reuse it as final qualification.

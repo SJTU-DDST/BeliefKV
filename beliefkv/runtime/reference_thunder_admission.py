@@ -576,12 +576,14 @@ def validate_reference_admission(
 
         admission_type = ReferenceFreeContinuationAdmission
     if (
-        pressure_pause_policy not in ("reference", "predicted_acting", "workflow_remaining")
+        pressure_pause_policy not in (
+            "reference", "predicted_acting", "workflow_remaining", "workflow_tool_aware",
+        )
         or not isinstance(state, dict)
         or state.get("pressure_pause_policy", "reference") != pressure_pause_policy
     ):
         raise ValueError("reference ThunderAgent pressure policy differs from declaration")
-    if pressure_pause_policy == "workflow_remaining" and not workflow_size_resume:
+    if pressure_pause_policy in ("workflow_remaining", "workflow_tool_aware") and not workflow_size_resume:
         raise ValueError("workflow pressure requires declared workflow prediction")
     if not isinstance(state, dict) or state.get("residency_pause", False) is not residency_pause:
         raise ValueError("reference ThunderAgent residency pause differs from declaration")
@@ -654,8 +656,16 @@ def validate_reference_admission(
             "residency_pause_waits_for_actual_successor": True,
             "residency_pause_does_not_revoke_selected_restore": True,
         })
-    if pressure_pause_policy == "workflow_remaining":
+    if pressure_pause_policy in ("workflow_remaining", "workflow_tool_aware"):
         expected["workflow_pressure_marks_grant_capacity"] = False
+    if pressure_pause_policy == "workflow_tool_aware":
+        expected.update({
+            "workflow_tool_pressure": True,
+            "workflow_tool_pressure_same_weight_for_resume_and_pause": True,
+            "workflow_tool_pressure_future_tool_durations_used": False,
+            "decay_scope": "tool_weighted_resume_and_pressure_with_undiscounted_enforcement",
+            "decay_age_source": "observed_tool_start_monotonic_or_native_completion",
+        })
     if workflow_size_resume:
         expected.update({
             "workflow_size_resume": True,
