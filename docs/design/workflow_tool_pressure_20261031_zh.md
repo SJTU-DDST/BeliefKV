@@ -33,3 +33,11 @@ Full 显式选择 `AGENT_PRESSURE_PAUSE_POLICY=workflow_tool_aware`。同一控�
 验收保留完整固定测量组 JCT、共同窗口吞吐、实际授予到原生服务、工具暂停/再次恢复、迁移和额外重算，以及控制 CPU 时间。CPU 测试证明状态和容量边界，不证明 GPU 或完整工作负载收益。
 
 最终源码绑定回归位于 `experiments/reports/remaining_original_projects_20261030/tool_aware_pressure_initial12_mean70_bound_cpu_r1/evidence.json`：6135 用例及 23 子用例全部通过，保留此前全部 6096 个用例，2239 项源码输入及原生引擎保持不变，无失败、错误或跳过。两份配置、两份 oracle artifact、既有 12/70 到达表和固定测量组均在此次运行前后绑定。该记录尚不是 GPU 资格或性能结论。
+
+## 本轮启动状态
+
+代码提交 `9316152914dc14fec678b1da4de0919b4ecf5a23` 已冻结。新的 24 请求 GPU 检查全部验证 token、session、position sampling 和原生停止；batch 1/8/24 采样校准通过。原生引擎仍为 `434c35dd66211d0a230717c88bf1452056769a40`。
+
+12/70 修复对照注册于 `/home/longhao/experiment/ops/workflow_original56_initial12_mean70_toolaware_control_20261031_r1.registration.json`，端口 18932。独立启动核对位于 `gpu_entry_toolaware_initial12_mean70_control_r1/live_control_r1.json`，确认真实请求已经服务、A→B 为启用、工具感知压力策略生效、普通窗口 2000 ms、剩余工作量排序关闭。原有工具时长映射没有修改。
+
+测量组仍为 12 warmup、18 measured、26 background。共同吞吐窗口固定为到达原点后的 55.6927713505 至 1638.9548502657 秒，测量组完整 JCT 不在该窗口末尾截断。独立 nice19/CUDA 隐藏观察器已启动，只有全部 18 个测量成员自然结束后才取消非测量背景，随后验证收据、新鲜排空及实际退出。当前尚无完整 JCT 或收益结论，oracle GPU 臂尚未注册。

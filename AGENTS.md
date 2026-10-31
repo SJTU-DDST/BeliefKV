@@ -5269,3 +5269,15 @@
   tool_aware_pressure_initial12_mean70_bound_cpu_r1. The superseded default-off
   regression was intentionally interrupted after4655+6 on user clarification;
   keep it and its original inputs, never reuse it as final qualification.
+- Tool-aware12initial/mean70 repaired control now actually serves from frozen
+  9316152914dc/native434c35dd, port18932. Fresh24position/token/session/native-stop
+  checks and1/8/24sampling pass. Independent live_control_r1 verifies actual
+  request completions, tool_event_replacement=True, workflow_tool_aware pressure,
+  ordinary2000ms window and remaining-work ranking=False. Registration is
+  ops/workflow_original56_initial12_mean70_toolaware_control_20261031_r1.
+  Preserve its source/configuration/tools/cohort; no hot edits.
+- Control supervisor3062989/server3063495/driver3064303 are nice0; fixed18
+  observer3063708 actually runs nice19/CUDA99999 with pinned inputs. Keep
+  existing12warm18measured26background; common window55.6927713505--1638.9548502657s.
+  Finish all measured normal tails/receipts/fresh drain/actual exits. No oracle
+  GPU followup registered and no complete JCT/gain claimed yet.
