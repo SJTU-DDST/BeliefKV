@@ -98,6 +98,21 @@ def _tool_wait_diagnostic(event: RuntimeEvent) -> bool:
     )
 
 
+def _callback_observed_timestamp(event: RuntimeEvent) -> float:
+    names = ("callback_observed_ts_ms", "callback_publication_adjustment_ms")
+    if not any(name in event.attributes for name in names):
+        return event.ts_ms
+    observed, adjustment = (event.attributes.get(name) for name in names)
+    if (
+        any(type(value) not in (int, float) or not math.isfinite(value)
+            for value in (observed, adjustment))
+        or observed < 0 or adjustment <= 0 or observed >= event.ts_ms
+        or not math.isclose(event.ts_ms - observed, adjustment, rel_tol=0., abs_tol=1e-6)
+    ):
+        raise CausalReplayError("invalid callback observation/publication timestamp evidence")
+    return observed
+
+
 def compile_causal_replay(
     events: Iterable[RuntimeEvent], native_events: Iterable[dict],
 ) -> CausalReplayPlan:
@@ -344,9 +359,11 @@ def compile_causal_replay(
             if key not in active_tools[owner]:
                 raise CausalReplayError("tool ends before it starts")
             start = tool_starts[key]
-            duration = event.ts_ms - start.ts_ms
+            # Tool duration uses observation time; causal delivery keeps the
+            # serialized publication time and its original delay.
+            duration = _callback_observed_timestamp(event) - _callback_observed_timestamp(start)
             declared = event.attributes.get("duration_ms")
-            if duration < 0 or declared is not None and (
+            if duration < 0 or event.ts_ms < start.ts_ms or declared is not None and (
                 type(declared) not in (int, float) or not math.isfinite(declared)
                 or abs(declared - duration) > 1.
             ):
@@ -607,7 +624,8 @@ async def execute_causal_replay(
             name: value for name, value in event.attributes.items()
             if name not in {
                 "llm_end_callback_entry_ts_ms", "stream_final_chunk_ts_ms",
-                "stream_first_chunk_ts_ms",
+                "stream_first_chunk_ts_ms", "callback_observed_ts_ms",
+                "callback_publication_adjustment_ms",
             }
         }
         event_ts = now

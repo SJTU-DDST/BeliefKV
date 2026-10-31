@@ -5683,3 +5683,33 @@
   Firstprefix492prompts/469outputs,nativeprefill/decodehealthywriter.
   Notcompletecaptureoracceptedworkload;audittaskprogress/tools/JOIN/natural
   tailsbeforecombiningunchanged56withnew25.NoautomaticGPUsuccessor.
+- Background25captureactuallyfinished25natural/eligible,3249requests/
+  338684outputs/143children/110JOIN/2954tools,driverexit0/allownersgone.
+  Originaltokenauditpassesbutstatecapture_failedbecauseoldcausalcompiler
+  ignoredrecordedcallbackobservation/publicationtimestamps.One read_file
+  observed8.556ms/published12.213ms hasexact3.657msrecordedadjustment;
+  only1of2954pairsexceeds1msduration/publicationdifference.Donotrecollect
+  orrewriterawtrace/state. Newcompilerstrictlyvalidatespairedfinitepositive
+  adjustmentmetadata,checksactualtooltimeinobservationclock,keepspublished
+  DAGdelaysandstripsoldcallbackclocksfromfreshreplay. 13newcasesbefore11fail/
+  2pass,afterrelated320pass.Correctedcausalauditand25eligibleinventorypass.
+  Fullboundr3stillpending. Formalregistermustexplicitlybindanalysis-only
+  requalification;legacycapture_failedandsingle-source-engineguardsremain.
+- Original81planninginventoryhas13107requests/1643767outputs/modelP80P20
+  2.721411,not>=3. Existingwhole-projectmedianremovalretains76for2.900185,
+  69for3.014931,49for4.061859;allremovedwholeprojectskept,notaskrewrite/
+  JCT/winnerselection.New25alone1.789247;81model-toolpath3.238842isnot
+  model-workratio.Arrivals/cohort/backgroundcoverage/pressurestillunqualified.
+- CPUonlycost-floorreplaypreservesactualcutoffs:10s+reducesstrictshrinks60
+  to39/newoutsiders5to11,noJCTsimulation.Full-batch-costdiagnosticon364
+  completeenumerationsreducesshrinks59to41/newoutsiders5to11/25largersets.
+  Itsr1misnamed32exclusionsasdeadline;actual29earlyreturns+3deadlines.
+  Keepreport/codeimmutableandthiscorrectionexplicit.Noonlineprofile/GPU
+  candidateimplementedyet;preserveA-to-B/prepare/JOIN/EOS/activecontinuity.
+- Callbackclockfixfullboundr3passes6400+23,retains6387literalIDs/2266sources/
+  315externalinputs/allpriorpaths;source/external/nativeunchanged,zeroskips/
+  errors/failures.New25actualJOINfanout81singleton/26pairs/2triples/1quad:
+  29multi-member,not110parallelJOINs.AllcaptureregisteredprocessesandGPU
+  ownersactuallygone.GPUidle,noautomaticfollowup.Needcleancommittedfix
+  andexplicitanalysis-requalification/mixed-reviewed-enginecomposition
+  contractsbeforeformalworkloadregistrationorGPUcomparison;goalactive.
