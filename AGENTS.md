@@ -5537,3 +5537,27 @@
   orfullruncoverage. Onechangedsethasnonewmember,notnewservice. Consider
   low-costvaliddeep-prefixsummaries while preserving nativeauthority;do not
   unboundscans orforcemigrations. Running7633 staysfrozen,goalremainsactive.
+- New CPU-only capacity_v3 supports depth-limit failures via one additional
+  fresh native FULL checkpoint read per bounded candidate,validates geometry/
+  session/live anchor,normalizes native NumPy creation time with existing API.
+  Request-private aggregate extents conservatively overcount shared missing
+  pages;64exact-node/6or8candidate/.5mssearch bounds stay. Other native refusal
+  reasons retain fallback,no new allocation/release/backup/transfer authority.
+  Legacy profiles unchanged;actual7633 constructor rejects v3.
+- Preparationr6 retainsall tasks/tools/arrivals/cohort/resources/costs and383
+  remaining paths;9310completed/52closed/fixed2819requests/362072outputs
+  conserved. New26tests plusrelated96pass;boundCPU6344+23retains6318/2260
+  sourceinputs/nativeunchanged,zero failure/error/skip. Keepinitialtwo native
+  fixture80vs64release expectation failures,before_native_r3actualmissing
+  summary reproduction,focusedr1/r2 failures andr3success. Running7633 stays
+  frozen,no r6GPU registered or automaticfollowup.
+- IndependentCPU0/nice19 deep-prefix probe uses realCPUtree/index tensors and
+  qualified IOstandins,300pervariant alternatingorder.80-node/81920token
+  completeprefix CPU P50.429011mslegacy(no summary)vs.619299msnew(valid),
+  newP99.638606ms;80tokenP50.351663vs.468957ms. Bothbypasscheckpointcache.
+  Notwholecontrol/GPU/JCT orsamecoverage speedcomparison;rawsamples retained.
+- CompleteR4resource-fallback audit76states has15somefeasibleprotected subsets,
+  3withoutsidereference members,underexactrecorded budgets/costs/JOINrights.
+  Early6state no-subset finding remainsvalid. Localfeasibility isnotactual
+  service/JCT; r6doesnotchange reference-resource-unsupported selection yet.
+  See calibrated_global_join_combination_20261031_zh.md;goalstillactive.

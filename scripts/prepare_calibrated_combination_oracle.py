@@ -59,7 +59,7 @@ def context_prefill_costs(diagnostic, calibration):
 def calibrated_artifact(
     original, calibration, *, calibration_path, calibration_sha256,
     context_calibration=None, context_calibration_path=None, context_calibration_sha256=None,
-    include_unreferenced_capacity=False,
+    include_unreferenced_capacity=False, allow_deep_prefix_aggregate=False,
 ):
     WorkflowWorkOracleArtifact(original)
     if (
@@ -111,11 +111,16 @@ def calibrated_artifact(
             "remaining_intrinsic_model_path_uses_original_global_prefill_proxy": True,
             "pure_GPU_time_claimed": False,
         }
-    if type(include_unreferenced_capacity) is not bool:
+    if type(include_unreferenced_capacity) is not bool or type(allow_deep_prefix_aggregate) is not bool:
         raise ValueError("capacity summary revision must be explicit")
+    if allow_deep_prefix_aggregate and not include_unreferenced_capacity:
+        raise ValueError("deep prefix aggregation requires the explicit capacity revision")
     if include_unreferenced_capacity:
         profile = artifact["admission_cost_profile"]
-        profile["kind"] = "r5_frozen_batch_cost_proxy_capacity_v2"
+        profile["kind"] = (
+            "r5_frozen_batch_cost_proxy_capacity_v3" if allow_deep_prefix_aggregate
+            else "r5_frozen_batch_cost_proxy_capacity_v2"
+        )
         profile["identity"] = hashlib.sha256(json.dumps({
             "costs": costs, "capacity_summary_kind": profile["kind"],
         }, sort_keys=True).encode()).hexdigest()
@@ -125,6 +130,15 @@ def calibrated_artifact(
             "candidate_matched_prefix_anchors_protected": True,
             "native_allocation_and_DMA_authority_unchanged": True,
         }
+        if allow_deep_prefix_aggregate:
+            artifact["calibrated_model_time"]["capacity_summary_revision"]["deep_prefix_summary"] = {
+                "exact_closure_node_limit": 64,
+                "only_after_node_ancestry_exceeds_bound": True,
+                "maximum_additional_native_checkpoint_reads_per_candidate": 1,
+                "requires_fresh_FULL_only_checkpoint_and_live_anchor": True,
+                "request_private_extent_identity_overcounts_shared_missing_pages": True,
+                "native_allocation_and_DMA_authority_unchanged": True,
+            }
     WorkflowWorkOracleArtifact(artifact)
     return artifact
 
@@ -184,6 +198,7 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--prefill-context-calibration", type=Path)
     parser.add_argument("--include-unreferenced-cold-cache", action="store_true")
+    parser.add_argument("--allow-deep-prefix-aggregate", action="store_true")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output_dir.exists():
         raise ValueError("hide CUDA and preserve earlier preparations")
@@ -227,6 +242,7 @@ def main():
             if args.prefill_context_calibration is not None else None
         ),
         include_unreferenced_capacity=args.include_unreferenced_cold_cache,
+        allow_deep_prefix_aggregate=args.allow_deep_prefix_aggregate,
     )
     destination = args.output_dir.resolve()
     artifact_path, config_path = destination / "oracle.json", destination / "full.json"

@@ -14,7 +14,8 @@ from beliefkv.policy.workflow_combination import (
 from beliefkv.policy.workflow_size_resume import resume_category
 from beliefkv.runtime.deferred_free_admission import DeferredFreeAdmission
 from beliefkv.runtime.sglang_v0520_observer import (
-    observe_static_full_mamba_headroom, observe_unified_node_closure,
+    normalize_native_creation_time, observe_static_full_mamba_headroom,
+    observe_unified_node_closure,
 )
 
 
@@ -32,10 +33,14 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             admission, window_ms=raw.get("free_dispatch_coalescing_window_ms", 0),
         )
         profile = raw.get("admission_cost_profile")
-        kinds = ("r5_frozen_batch_cost_proxy", "r5_frozen_batch_cost_proxy_capacity_v2")
+        kinds = (
+            "r5_frozen_batch_cost_proxy", "r5_frozen_batch_cost_proxy_capacity_v2",
+            "r5_frozen_batch_cost_proxy_capacity_v3",
+        )
         if not isinstance(profile, dict) or profile.get("kind") not in kinds:
             raise ValueError("R5 requires its frozen, fingerprinted admission cost profile")
-        self.include_unreferenced_capacity = profile["kind"] == kinds[1]
+        self.include_unreferenced_capacity = profile["kind"] in kinds[1:]
+        self.allow_deep_prefix_aggregate = profile["kind"] == kinds[2]
         self.costs = CombinationCosts(**profile["costs"])
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
@@ -153,10 +158,67 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 continue
         return tuple(result)
 
+    def _deep_prefix(self, req, key):
+        """Use a fresh native checkpoint as a conservative per-request copy bound."""
+        a, runtime = self.admission, self.admission.runtime
+        a.counts["workflow_combination_deep_prefix_refresh_attempts"] += 1
+        try:
+            observed = runtime._read_request_reentry(req, key=key, refresh=True)
+            if not isinstance(observed, dict) or tuple(runtime._native_cache.tree_components) != (0,):
+                raise ValueError("FULL checkpoint unavailable")
+            checkpoint = observed.get("checkpoint_tokens")
+            missing = observed.get("missing_full_tokens")
+            device = observed.get("device_checkpoint_tokens")
+            if (
+                type(checkpoint) is not int or not 0 <= checkpoint < len(req.origin_input_ids)
+                or type(device) is not int or not 0 <= device <= checkpoint
+                or type(missing) is not int or not 0 <= missing <= checkpoint - device
+                or type(observed.get("reusable_input_tokens")) is not int
+                or observed["reusable_input_tokens"] != checkpoint
+                or type(observed.get("missing_mamba_slots")) is not int
+                or observed["missing_mamba_slots"] != 0
+                or type(key.session_id) is not str or not key.session_id
+                or type(key.session_generation) is not int or key.session_generation < 0
+            ):
+                raise ValueError("invalid FULL checkpoint")
+            components = dict(observed["component_leaves"])
+            if set(components) != {0} or len(components[0]) != 1:
+                raise ValueError("non-single FULL checkpoint anchor")
+            anchor, = components[0]
+            identity, created = anchor
+            created = normalize_native_creation_time(created)
+            if type(identity) is not int or identity < 0:
+                raise ValueError("invalid FULL checkpoint anchor")
+            node = runtime._native_cache.tree_core.node_by_id(identity)
+            if node.id != identity or node.creation_time != created:
+                raise ValueError("FULL checkpoint anchor changed")
+        except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError) as error:
+            a.counts["workflow_combination_deep_prefix_refresh_rejected"] += 1
+            self._prefix_issue_detail["aggregate_rejection"] = str(error)
+            return None
+        self._prefix_protected_anchors = tuple(dict.fromkeys((
+            *self._prefix_protected_anchors, (identity, created),
+        )))
+        # Separate request identities deliberately overcount any shared missing pages.
+        extent = (
+            "aggregate_full_checkpoint", key.session_id, key.session_generation,
+            key.context_id, key.context_epoch, key.request_id, checkpoint,
+        )
+        self._prefix_summary_detail = {
+            "kind": "fresh_native_aggregate", "checkpoint_tokens": checkpoint,
+            "missing_full_tokens": missing, "device_checkpoint_tokens": device,
+            "trigger": "node ancestry exceeds bound", "exact_closure_node_limit": 64,
+            "native_checkpoint_refreshes": 1, "shared_extent_deduplication": False,
+        }
+        self._prefix_issue = None
+        a.counts["workflow_combination_deep_prefix_aggregates"] += 1
+        return (((extent, missing),) if missing else ()), len(req.origin_input_ids) - checkpoint
+
     def _prefix(self, key, item):
         a, runtime = self.admission, self.admission.runtime
         self._prefix_issue = None
         self._prefix_issue_detail = None
+        self._prefix_summary_detail = None
         self._prefix_protected_anchors = ()
         req = a._live_requests[key.request_id]
         observation = runtime._read_request_reentry(req, key=key)
@@ -205,6 +267,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         "checkpoint_tokens": checkpoint,
                         "missing_full_tokens": missing,
                     }
+                    if self.allow_deep_prefix_aggregate and getattr(
+                        closure, "reason", None,
+                    ) == "node ancestry exceeds bound":
+                        return self._deep_prefix(req, key)
                     return None
                 prefix = 0
                 for node in reversed(closure.nodes):
@@ -250,7 +316,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             "reason": "metadata_unavailable_reference_fallback",
         }
         summaries, candidates, predictions, resources = {}, [], {}, None
-        unavailable, protected_prefixes = [], set()
+        unavailable, protected_prefixes, prefix_summaries = [], set(), {}
         private_blocked_tokens, unreferenced_tokens = None, 0
         self.cold_summary = ()
         try:
@@ -287,6 +353,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             for key in window:
                 found = a._candidate(key.request_id, key, include_first=True)
                 self._prefix_issue_detail = None
+                self._prefix_summary_detail = None
                 if found is None:
                     issue = "candidate_no_longer_ready"
                     prefix = None
@@ -308,6 +375,8 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         return list(reference)
                     a.counts["workflow_combination_optional_summaries_skipped"] += 1
                     continue
+                if self._prefix_summary_detail is not None:
+                    prefix_summaries[key.invocation_id] = self._prefix_summary_detail
                 if key.root_workflow_id not in predictions:
                     predictions[key.root_workflow_id] = a._work.prediction(key.root_workflow_id)
                 prediction = predictions[key.root_workflow_id]
@@ -366,6 +435,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         },
                         "cost_identity": self.cost_identity,
                         "unavailable_summaries": unavailable,
+                        "prefix_summaries": prefix_summaries,
                         "resources": asdict(resources) if resources is not None else None,
                         "cold_device_extents": self.cold_summary,
                         "capacity_summary_kind": (

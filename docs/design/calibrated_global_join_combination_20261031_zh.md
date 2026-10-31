@@ -324,6 +324,90 @@ checkpoint 和缺失 FULL token。未增加扫描、重试或放宽在途传输�
 原生状态不变，无失败、错误或跳过。54 项定向检查亦通过。
 新诊断与当前运行的 r4 保持隔离，尚无 GPU/JCT 验证。
 
+## r6：支持超过 64 节点的有效前缀
+
+运行中的 capacity r1 新诊断已确认，早期 8 次缺失 closure 都是
+`node ancestry exceeds bound`，其中 2 次涉及参考候选。
+原生 `inspect_beliefkv_reentry` 本来就能检查完整请求路径；
+限制出现在组合选择器构造精确、可去重的逐节点 extent 时。
+深路径本身不是原生 KV 不可恢复或候选不可执行的证明。
+
+新增显式 profile `r5_frozen_batch_cost_proxy_capacity_v3`：
+
+- 精确路径仍最多检查 64 节点；只在明确报深度超限时尝试新分支；
+- 对同一可执行请求额外调用一次现有原生 checkpoint 读取，强制刷新；
+- 验证 FULL-only 布局、有效 checkpoint/缺失量/驻留前缀、一致的可复用长度、
+  session 身份、单一 anchor 及当前节点创建时间；
+- 将缺失 FULL token 作为该请求独立的聚合 extent，保守地不做跨请求共享去重；
+- 使用刷新后的 checkpoint 计算新增输入，并保护旧、新观察的 anchor；
+- 无有效新摘要时保留原回退，在途读写、布局错误和节点变化不触发聚合分支。
+
+新分支不调用分配、卸载、备份或迁移接口，不扩展物理权限，不改变
+JOIN/EOS、工具预测、普通窗口、原生最终准入或 agent 连续性。
+六候选/按 sibling 扩到八的上限与 0.5 ms 搜索软预算保持原值。
+原生 checkpoint 读取随自身路径长度增长，不能把额外一次读取说成常数成本；
+搜索预算也不代表整个元数据构造一定低于 0.5 ms。
+
+聚合 extent 的身份包含请求、session generation、context/epoch 和 checkpoint。
+不同候选即使引用相同底层前缀也分别计费，因而可能过高估计共同恢复成本，
+不能将它声称为精确共享页去重。这是支持深路径的保守方案，
+共享代价和准入收益仍需实际验证。
+
+新身份同时绑定成本和摘要版本。旧 profile 的行为不变；
+旧冻结 `7633f764` 的实际 runtime 构造明确拒绝 v3。
+准备目录 `calibrated_combination_initial12_mean70_prepare_r6` 保存新配置、
+artifact、构造与历史进度核验。已有成本、任务、工具、到达、测量组与资源
+未改变，383 个剩余路径样本与 r5 精确一致；
+完整控制历史仍为 9310 完成请求、52 自然结束 workflow，
+固定测量工作 2819 请求 / 362072 输出守恒。尚未注册 r6 GPU。
+
+### 验证与 CPU 成本
+
+新增 26 项覆盖实际 runtime 配置隔离、真实选择与日志重放、共享缺失量
+保守计费、刷新后几何变化、无效/过期 checkpoint、有限创建时间、
+在途传输回退及真实原生深路径。96 项相关定向检查通过。
+实际 CPU radix tree 用例含 80 节点、80 token 前缀，其中 64 token 在 Host、
+16 token 在 Device，摘要读取前后 allocator 空闲量和原生 IO 队列不变。
+
+原先用例错误预期一次回收全部 80 token，保留两个夹具失败记录并改为
+使用原生实际释放的 64 token。`before_native_r3.xml` 才是修正前有效深路径
+无法生成摘要的复现。初次定向 r1 中三个失败包含缺少 session 的模拟请求，
+r2 修正该夹具后还暴露真实 native 创建时间为 NumPy 标量；复用现有
+`normalize_native_creation_time` 后，r3 的 96 项全部通过。
+未为使新路径通过而修改原生树、物理回收或传输代码。
+
+源码绑定检查 `combination_deep_prefix_bound_cpu_r1/evidence.json`
+通过 6344 项及 23 子项，保留全部 6318 个先前 literal identity 和原输入路径，
+绑定 2260 个源码输入；执行中源码及原生状态不变，无失败、错误或跳过。
+这不等于 GPU 正确性或 JCT 收益。
+
+独立 CPU 微基准使用真实 native tree/CPU 索引张量及既有 IO stand-in，
+固定 CPU0、nice19，每种路径各 300 次，交替新旧测量顺序：
+
+| 80 节点路径 | 旧路径 CPU P50 | 新路径 CPU P50 | 新路径 CPU P99 |
+| --- | ---: | ---: | ---: |
+| 80 token | 351.663 us | 468.957 us | 485.865 us |
+| 81920 token | 429.011 us | 619.299 us | 638.606 us |
+
+证据为 r6 的 `deep_prefix_cpu_probe_r1.json`，保留全部原始样本。
+两种路径覆盖不同：旧路径返回无摘要，新路径返回有效聚合结果。
+两侧均绕过 native checkpoint 缓存，以包含实际检查成本；
+未测量整轮六/八候选控制、GPU kernel、拷贝或 JCT，不据此推导全局收益。
+该微基准是独立证据，不冒充前述 6344 项检查的一部分。
+
+### 另外保留的资源选择缺口
+
+完整 r4 的同一封存范围额外枚举了 76 次
+`reference_resource_summary_unsupported`：
+15 次存在满足相同资源下界和 JOIN 保护的非空子集，
+其中 3 次可以纳入参考集合之外的成员。
+这与早期仅 6 次拒绝中均无可行子集的结论不冲突。
+证据为 r4 的 `resource_alternatives_complete_r1.json`。
+
+这些是局部可行性审计，不是已经发生的服务或因果 JCT 收益。
+当前 r6 只修正深路径摘要，不同时更改原参考集合资源不支持时的选择规则。
+后续应分开验证可行替代集合、真实原生选批与完成时间，保留 JOIN 权利。
+
 ## GPU 验收
 
 需要干净冻结源码、当前预约/资源检查、新的 24 请求 position/session/stop
