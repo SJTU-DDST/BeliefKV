@@ -4882,3 +4882,9 @@
   Initial natural-source CPU helper refusal was corrected by verifying whole
   composition/original-input hashes and five actual original completion proofs.
   No complete pressure/JCT/oracle result yet,no learnedtraining orbaseline.
+- Original56r2CPUreviewers now actually wait from cleanf33678ef after34targeted
+  casespass:PID2829978(core)and2829996(final),full_review_original56_r2 and
+  full_review_original56_final_r2 registrations. Actualalive/nice19/CUDA99999/
+  OMP1/OpenBLAS1 areverified;preservefailedr1states. Analysisdiffersfrom the
+  GPU's2212inputsnapshotonlyin the separatelytestedcompletion-state guard;
+  frozenbe9f062cGPUmeasurementandallfourreviewreadersremainunchanged.

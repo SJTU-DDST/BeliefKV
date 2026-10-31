@@ -76,8 +76,14 @@ oracle收益不充分时再审查准入覆盖、实际服务、组合和batch成
   `complete_work`触发FileNotFoundError，继后的最终审查也退出。两者未
   执行任何完整结果分析，不影响GPU测量。
 - 审查入口已增加“登记及状态文件均存在”检查，并保留真正完成证据缺失
-  时的错误。随后从单独的已提交分析源码重启r2；GPU仍使用原来的
-  `be9f062c`。新的完成审查和60秒容量/2.9门槛判定均无自动GPU后续。
+  时的错误。34项相关测试通过，提交`f33678ef`。已从独立目录
+  `beliefkv-original56-review-20261030-f33678ef`重启r2，实际完成审查
+  PID2829978、最终判定PID2829996，均核对存活、nice19及CUDA隐藏环境，
+  状态分别为等待完整控制及等待完整审查。两份登记为
+  `full_review_original56_r2.registration.json`和
+  `full_review_original56_final_r2.registration.json`，保留r1失败记录。
+  GPU仍使用原来的`be9f062c`；新的完成审查和60秒容量/2.9门槛判定均无
+  自动GPU后续。
 
 启动证据：`gpu_entry_sustained56_r1/{entry,freeze,native_binding,live_full_r1}.json`。
 前缀观察不是完整结果；目前尚未接受到达供给、Host容量或oracle收益。
