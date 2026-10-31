@@ -5350,3 +5350,16 @@
   Running93161529/native434c35dd are unchanged. Freeze and replace only the CPU
   results observer before final comparison;preserve its existing registration
   and actual exit. See matched_oracle_service_accounting_20261031_zh.md.
+- Analysis97b38425 now frozen;matched_selection_service_prefix_r2 has954actual
+  controls/5matched set changes/8new attempts served/6bounded useful completions.
+  Fixedcommonwindow fully observed:4sets/7served/5bounded completions,notJCTgain.
+  Existing external200ms sampler gives commonwindowGPU99.4440%control versus
+  99.3682%oracle,zero1.401/0.801s;not CUDA utilization ceiling or pure live KV.
+  No sampler/runtime/timing changes. Both reports retain independent seals.
+- Old waiting CPU results observer3092045 actually exited before replacement;
+  preserve r1 registration/state and its .superseded.json. New r2 results
+  observer3102671 actually alive,nice19/CUDA99999/threads1 with all input pins
+  verified. It uses frozen97b38425 and adds complete matched-service audit to
+  existing JCT/free-service/periodic/plot steps. Cohort observer3091973 and GPU
+  93161529 remain untouched.15:11UTC status14/18measured/48arrived,no complete
+  oracle JCT or further GPU followup. Goal remains active.
