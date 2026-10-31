@@ -5335,3 +5335,18 @@
   and periodic-phase audits,and common-window plots. Preserve failed workload
   checks regardless of numeric gains;see toolaware_initial12_mean70_control_
   complete_and_oracle_start_20261031_zh.md. Goal remains active.
+- New read-only audit_matched_oracle_service compares actual oracle with the
+  matching disabled-ranking repaired control,not the older category/context
+  paper reference. Keep ready-JOIN zero rank and observed sibling adjacency in
+  both. Legacy reader remains historical;do not attribute its full changes to
+  work ranking.Final113focused CPU cases pass,includingduplicate-timestamp
+  refusal;preserve earlier112-case report. Actual sealed603control prefix still
+  has4matched set changes/7new request attempts served/5bounded useful batch
+  completions;commonwindow and fixed18 remain incomplete,noJCTgain claimed.
+- Offline service windows now recognize actual residency pauses,event predicted
+  replacement consumers/donors and immediate workflow pressure pauses. Planned
+  pause marks do not revoke current service. Early same-prefix prototype changes
+  none of147useful-completion classifications;not a historical JCT explanation.
+  Running93161529/native434c35dd are unchanged. Freeze and replace only the CPU
+  results observer before final comparison;preserve its existing registration
+  and actual exit. See matched_oracle_service_accounting_20261031_zh.md.

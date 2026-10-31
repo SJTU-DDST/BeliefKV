@@ -151,6 +151,40 @@ def test_same_agent_free_grant_or_donor_pause_closes_the_earlier_observation_win
         assert report["ready_grant_episodes"][0]["observation_window_end_ms"] == pytest.approx(1005.)
 
 
+@pytest.mark.parametrize("kind", ("residency_pause", "pressure_pause", "tool_consumer", "tool_donor"))
+def test_new_logged_pause_and_replacement_paths_bound_earlier_service(kind):
+    choices, batches = window_evidence()
+    key = deepcopy(choices[0]["programs"][0]["key"])
+    other = {**key, "invocation_id": "other", "request_id": "other"}
+    row = {"monotonic_s": 1.005}
+    if kind == "residency_pause":
+        row.update(event="agent_full_offload_paused", key=key)
+    elif kind == "pressure_pause":
+        row.update(event="workflow_remaining_pressure_pause", selected="0", marked_for_pause=False)
+    else:
+        row.update(
+            event="agent_predicted_tool_replacement",
+            consumer=key if kind == "tool_consumer" else other,
+            donor=key if kind == "tool_donor" else other,
+        )
+    choices.insert(1, row)
+    report = inspect(choices, batches)
+    assert report["ready_grant_episodes"][0]["observation_window_end_ms"] == pytest.approx(1005.)
+    assert report["counts"]["ready_grants_with_following_exact_service"] == 1
+    assert report["counts"]["ready_grants_completed_useful_batch_within_observation_window"] == 0
+
+
+def test_a_future_pause_mark_does_not_revoke_the_current_execution_episode():
+    choices, batches = window_evidence()
+    choices.insert(1, {
+        "event": "workflow_remaining_pressure_pause", "monotonic_s": 1.005,
+        "selected": "0", "marked_for_pause": True,
+    })
+    report = inspect(choices, batches)
+    assert report["ready_grant_episodes"][0]["observation_window_end_ms"] == 2000.
+    assert report["counts"]["ready_grants_completed_useful_batch_within_observation_window"] == 1
+
+
 def test_empty_decode_tail_is_not_positive_progress_after_a_grant():
     choices, batches = window_evidence()
     batches[0]["request_samples"][0].update(phase="decode", token_delta=0)

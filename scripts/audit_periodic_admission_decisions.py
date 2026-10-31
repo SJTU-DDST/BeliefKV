@@ -29,13 +29,31 @@ EXTRA_GRANTS = frozenset((
 
 def intervention(record, sequence, interventions):
     name = record.get("event")
-    if name not in EXTRA_GRANTS and name != "agent_initial_registration_decision":
+    immediate = name in ("agent_full_offload_paused", "agent_predicted_tool_replacement")
+    pressure = name == "workflow_remaining_pressure_pause"
+    if pressure:
+        if type(record.get("marked_for_pause")) is not bool:
+            raise ValueError("pressure intervention requires actual versus planned pause")
+        if record["marked_for_pause"]:
+            return
+    if name not in EXTRA_GRANTS and name != "agent_initial_registration_decision" and not (
+        immediate or pressure
+    ):
         return
     when = record.get("monotonic_s")
     if not finite_number(when) or when < 0:
         raise ValueError("admission intervention needs an observed monotonic clock")
+    if pressure:
+        owner = record.get("selected")
+        if type(owner) is not str or not owner:
+            raise ValueError("actual pressure pause requires an observed agent")
+        interventions[owner].append((when * 1000., sequence))
+        return
     members = (
-        [{"key": record["key"]}] if name == "agent_initial_registration_decision"
+        [{"key": record["consumer"]}, {"key": record["donor"]}]
+        if name == "agent_predicted_tool_replacement" else
+        [{"key": record["key"]}]
+        if name in ("agent_initial_registration_decision", "agent_full_offload_paused")
         else [*record["programs"], *record.get("donors", ())]
     )
     for member in members:
