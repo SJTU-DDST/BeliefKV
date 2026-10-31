@@ -5412,3 +5412,12 @@
   FinaloracleCPUprepr3fixesstalev1qualificationmetadata;keep r1/r2 historical.
   See sustained_thunder_initial12_mean70_20261031_zh.md. Freezeandarm new
   CPUcohort/resultsobserversbeforeclaimingautomatedterminationorcomparison.
+- CPUanalysis68d37388 nowclean/frozen;Thundercohortobserver3146824 andresults
+  observer3147250 actuallyalive,nice19/CUDA99999/OMP1/OpenBLAS1 withallpins.
+  Registrationsend_thunder_decay_measured_completion_20261031_r1 and
+  _thunder_decay_results_20261031_r1. Firstcheckedstate17arrived/0of18measured,
+  notcompleteperformance. Resultsawaitfullmeasuredreceipts/freshdrain/actual
+  exitthennewbaselinecomparatorandlabeledfixed-window/JCTfigures.
+  Newopsplotterhashispinned;identical-controlselfcheckvisuallypassesbutisnot
+  aGPUcomparison. NooracleGPUfollowupisregistered. Keep68analysisand931
+  servingunchanged;globalgoalremainsactive.

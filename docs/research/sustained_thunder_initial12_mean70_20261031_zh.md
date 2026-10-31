@@ -80,8 +80,27 @@ Paper 收尾只运行共享 JCT/输出审计，明确标记 Full 专属诊断未
 
 77 项定向检查通过；最新源码绑定共享回归为 6236 项及 23 子项，
 保留原有 6212 项、2252 个源码输入，执行中源码与原生树不变，
-无失败、错误或跳过。GPU 服务仍使用原冻结版本；新 CPU 收尾及比较器
-需从干净提交冻结后启动独立观察器。
+无失败、错误或跳过。GPU 服务仍使用原冻结版本。
+
+CPU 分析提交 `68d37388` 已从干净 checkout 冻结，
+两个独立观察器实际存活、nice19、CUDA 隐藏、OMP/OpenBLAS 单线程：
+
+- 收尾观察器 PID 3146824，注册
+  `ops/workflow_original56_initial12_mean70_thunder_decay_measured_completion_20261031_r1.registration.json`；
+- 结果观察器 PID 3147250，注册
+  `ops/workflow_original56_initial12_mean70_thunder_decay_results_20261031_r1.registration.json`。
+
+首次独立状态复验为 17 个已到达 workflow、0/18 测量完成。
+这只是前缀，不是吞吐或 JCT 结果。结果观察器在收尾、完整收据、
+新鲜排空、实际退出和 cohort 报告完成后才比较。输出目录为
+`experiments/reports/remaining_original_projects_20261030/predictive_thunder_initial12_mean70_comparison_r1`。
+
+绘图使用单独固定 hash 的
+`/home/longhao/experiment/ops/plot_workflow_cohort_comparison_20261031.py`，
+明确标注 ThunderAgent acting-decay / Predictive，生成 decode/全部输出时间曲线、
+完整配对 JCT、PNG/PDF/CSV。使用旧 predictive 对照两次的自检图已目视检查；
+它只是绘图自检，不是 baseline 对比或新收益。
+历史绘图程序和已完成 oracle 证据不改写。
 
 ## Oracle CPU 后续
 
