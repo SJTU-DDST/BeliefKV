@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -12,7 +13,17 @@ from beliefkv.experiments.source_provenance import sha256_file
 from scripts.train_workflow_work import write
 
 
-def inspect(control, cohort, supply, periodic, demand, population):
+def validate_minimum_work_ratio(value):
+    if type(value) not in (int, float) or not math.isfinite(value) or value < 1.:
+        raise ValueError("declare a finite model-work heterogeneity minimum of at least one")
+    return float(value)
+
+
+def inspect(
+    control, cohort, supply, periodic, demand, population, *,
+    minimum_model_work_p80_p20=3.,
+):
+    minimum = validate_minimum_work_ratio(minimum_model_work_p80_p20)
     counts = supply.get("sample_counts", {})
     samples, ready = counts.get("common_window", 0), counts.get("with_ready_paused", 0)
     reuse = supply.get("latest_native_counters_not_atomic_with_prefixes", {}).get(
@@ -48,7 +59,7 @@ def inspect(control, cohort, supply, periodic, demand, population):
         "background_arrivals_cover_measured_tails": (
             cohort.get("background_submission_coverage", {}).get("covers_all_measured_completions") is True
         ),
-        "model_work_p80_p20_ge_3": model_ratio >= 3.,
+        "model_work_p80_p20_meets_declared_minimum": model_ratio >= minimum,
         "repeated_actual_periodic_competition": (
             periodic.get("counts", {}).get("cross_workflow_logical_set_competition_controls", 0) >= 10
         ),
@@ -62,7 +73,10 @@ def inspect(control, cohort, supply, periodic, demand, population):
     return {
         "accepted_for_oracle_diagnostic": all(checks.values()),
         "checks": checks, "failed_checks": [name for name, passed in checks.items() if not passed],
-        "model_work_p80_p20": model_ratio, "model_work_p80_p20_ge_4": model_ratio >= 4.,
+        "minimum_model_work_p80_p20": minimum,
+        "model_work_p80_p20": model_ratio,
+        "model_work_p80_p20_ge_3": model_ratio >= 3.,
+        "model_work_p80_p20_ge_4": model_ratio >= 4.,
         "same_context_prefix_recompute_proxy_tokens": loss,
         "common_window_ready_paused_sample_fraction": ready / samples if samples else None,
         "common_window_regular_demand_samples": len(regular),
@@ -85,12 +99,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("control", "cohort", "supply", "periodic", "demand", "population", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--minimum-model-work-p80-p20", type=float, default=3.)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve every complete workload decision")
     names = ("control", "cohort", "supply", "periodic", "demand", "population")
     paths = [getattr(args, name) for name in names]
-    result = inspect(*(json.loads(path.read_bytes()) for path in paths))
+    result = inspect(
+        *(json.loads(path.read_bytes()) for path in paths),
+        minimum_model_work_p80_p20=args.minimum_model_work_p80_p20,
+    )
     result["inputs_sha256"] = {
         str(path.resolve()): sha256_file(path) for path in (*paths, Path(__file__))
     }

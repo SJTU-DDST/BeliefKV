@@ -80,6 +80,18 @@ def test_oracle_gate_requires_complete_fixed_cohort_and_repeated_actual_decision
     assert not acceptance["full_candidate_and_physical_coverage_proven"]
 
 
+def test_oracle_honors_reviewed_relaxed_work_ratio_without_changing_historical_default():
+    values = deepcopy(reviews())
+    values[-1]["population"]["model_work_units"]["p80_p20"] = 2.93141753477007
+    with pytest.raises(ValueError, match="unqualified"):
+        validate_workload(*values)
+    result = validate_workload(*values, minimum_model_work_p80_p20=2.9)
+    assert result["minimum_model_work_p80_p20"] == 2.9
+    values[2]["counts"]["cross_workflow_logical_set_competition_controls"] = 9
+    with pytest.raises(ValueError, match="unqualified"):
+        validate_workload(*values, minimum_model_work_p80_p20=2.9)
+
+
 @pytest.mark.parametrize("mutation", ("tail", "background", "receipt", "population", "competition", "diversity"))
 def test_incomplete_workload_or_weak_choice_supply_stays_in_phase_one(mutation):
     cohort, supply, periodic, population = deepcopy(reviews())

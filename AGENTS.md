@@ -4843,3 +4843,25 @@
   total2211inputs/native unchanged. R1's5851test passes remain but its2012file
   source map omitted199legacy inputs;do not use that narrower map for capture.
   Frozen source/currentGPUresource/sampler checks still precede actual capture.
+- OriginalNode3 now actually completes from frozenb54b4ae5/common11b84 on18920:
+  ops/workflow_original_node3_source_20261030_r1.registration.json. Actual1/8/24
+  CUDA sampling,3natural roots/300requests/32026outputs,token/causal/freshdrain/
+  ownedexit and independent CPU reviewer allpass. Source3work6154.78/15090.71/
+  15504.00,14childcallsP50/P90=15/24.8,create-returnP50=17.441s/max24.591s;
+  10JOIN(7single/2double/1triple),all3parallel groups positive shareddecode,
+  no nesting,oneparallel round/root,one terminal reminder. No project tests
+  executed by these original comprehension tasks;do not claim tests passed.
+  Finish evidence node_source3_finish_r1;all measured owners/reviewer exited.
+- Composite56_candidates_r1 keeps all56original projects across5source clocks,
+  9858requests/1305083outputs,including the prior median-excluded original.
+  Model-workP80/P20=2.931418fails3,output-only3.145404cannot substitute.
+  This is not a qualified formal workload or source-native performance arm.
+  Keep all original traces and next expand genuine short-task/background
+  supply before another matched control;no oracle/predictor/baseline queued.
+- The latest user explicitly relaxes heterogeneity and requests arrival-based
+  GPU experiments now. Use all56original projects with modelP80/P20=2.931418,
+  declare minimum2.9 for this diagnostic, and stop source collection. Preserve
+  historical default3 and all old rejections. Start a new matched Full control
+  with8initial,mean90sPoisson,12warmup/18fixedmeasured/26background; retain
+  complete JCT and identical future oracle arrivals. Supply, background tails,
+  useful-state loss and physical/actual-service checks are not waived.

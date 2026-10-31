@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.composite_workload import KIND, load_composed_source
 from scripts.qualify_adaptive_tool_policy_cpu import source_manifest
 from scripts.qualify_predicted_tool_offload_cpu import cases
 from scripts.run_causal_source_capture import declared_workload_inputs
@@ -51,7 +52,21 @@ def main():
     before, native = sources(retained_paths), git_source_state(args.engine)
     configuration = json.loads(args.configuration.read_bytes())
     manifest = ROOT / configuration["common_environment"]["WORKLOAD_MANIFEST"]
-    inputs = [args.configuration, *declared_workload_inputs(manifest, require_tool_execution=True)]
+    composition = manifest.parent / "composite_source.json"
+    source_kind = "natural_original_source"
+    if composition.is_file():
+        load_composed_source(manifest.parent)
+        declaration = json.loads(composition.read_bytes())
+        inputs = [
+            args.configuration, composition, manifest,
+            *(manifest.parent / name for name in declaration["artifacts_sha256"]),
+            *(Path(name) for name in declaration["original_inputs_sha256"]),
+        ]
+        source_kind = KIND
+    else:
+        inputs = [
+            args.configuration, *declared_workload_inputs(manifest, require_tool_execution=True),
+        ]
     external = {str(path.resolve()): sha256_file(path) for path in inputs}
     here = args.output_dir.resolve()
     here.mkdir(parents=True, exist_ok=False)
@@ -99,6 +114,8 @@ def main():
         },
         "prior_evidence_sha256": {str(args.previous_evidence.resolve()): sha256_file(args.previous_evidence)},
         "GPU_experiment_started": False, "performance_accepted": False,
+        "source_kind": source_kind,
+        "composition_origins_require_complete_registration_proofs_before_GPU": source_kind == KIND,
     })
     if status or not unchanged or not retained <= current:
         raise SystemExit("incremental source CPU qualification failed; preserve its evidence")

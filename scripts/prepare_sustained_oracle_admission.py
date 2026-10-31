@@ -27,6 +27,7 @@ from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts import run_causal_comparison as causal
 from scripts.run_causal_gpu_replay import source_plan
+from scripts.review_sustained_workload import validate_minimum_work_ratio
 from scripts.train_workflow_work import write
 
 
@@ -97,7 +98,10 @@ def calibrate_costs(batches, transfers):
     }
 
 
-def validate_workload(cohort, supply, periodic, population):
+def validate_workload(
+    cohort, supply, periodic, population, *, minimum_model_work_p80_p20=3.,
+):
+    minimum = validate_minimum_work_ratio(minimum_model_work_p80_p20)
     if (
         cohort.get("all_workflows_completed") is not True
         or cohort.get("normal_tails_removed") is not False
@@ -107,11 +111,11 @@ def validate_workload(cohort, supply, periodic, population):
         or supply.get("all_measured_completed") is not True
         or supply.get("all_workflows_completed") is not True
         or periodic.get("counts", {}).get("cross_workflow_logical_set_competition_controls", 0) < 10
-        or population["population"]["model_work_units"]["p80_p20"] < 3.
+        or population["population"]["model_work_units"]["p80_p20"] < minimum
     ):
         raise ValueError("complete cohort, background, heterogeneity or repeated decision competition is unqualified")
     return {
-        "fixed_measured_workflows": 18, "minimum_model_work_p80_p20": 3.,
+        "fixed_measured_workflows": 18, "minimum_model_work_p80_p20": minimum,
         "minimum_actual_periodic_competition_controls": 10,
         "full_candidate_and_physical_coverage_proven": False,
         "JOIN_shape_limitations_retained": True,
@@ -197,10 +201,14 @@ def main():
     source = Path(plan["source_arm"])
     population_path = source / "composite_source.json"
     population = causal.load(population_path)
-    validate_decision(causal.load(args.workload_review), (
+    decision = causal.load(args.workload_review)
+    validate_decision(decision, (
         args.control_review, args.cohort_review, args.supply_review, args.periodic_review, population_path,
     ))
-    acceptance = validate_workload(cohort, supply, periodic, population)
+    acceptance = validate_workload(
+        cohort, supply, periodic, population,
+        minimum_model_work_p80_p20=decision.get("minimum_model_work_p80_p20", 3.),
+    )
     base = Path(plan["experiment_configuration"])
     configuration = causal.load(base)
     common = configuration["common_environment"]

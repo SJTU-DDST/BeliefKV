@@ -47,6 +47,28 @@ def test_complete_low_loss_workload_with_real_competition_allows_only_an_oracle_
     assert result["scope"]["JOIN_child_shape_limitations_not_waived_by_this_diagnostic"]
 
 
+def test_explicit_relaxation_changes_only_heterogeneity_acceptance():
+    values = reports()
+    values[-1]["population"]["model_work_units"]["p80_p20"] = 2.93141753477007
+    assert not inspect(*values)["accepted_for_oracle_diagnostic"]
+    result = inspect(*values, minimum_model_work_p80_p20=2.9)
+    assert result["accepted_for_oracle_diagnostic"]
+    assert result["minimum_model_work_p80_p20"] == 2.9
+    assert not result["model_work_p80_p20_ge_3"]
+    values[2]["sample_counts"]["with_ready_paused"] = 20
+    result = inspect(*values, minimum_model_work_p80_p20=2.9)
+    assert not result["accepted_for_oracle_diagnostic"]
+    assert result["failed_checks"] == [
+        "ready_paused_supply_in_at_least_quarter_of_window_samples",
+    ]
+
+
+@pytest.mark.parametrize("minimum", (0, -1, float("nan"), float("inf"), True))
+def test_invalid_relaxed_minimum_is_rejected(minimum):
+    with pytest.raises(ValueError, match="finite model-work"):
+        inspect(*reports(), minimum_model_work_p80_p20=minimum)
+
+
 @pytest.mark.parametrize("failure", (
     "truncated_tail", "wrong_output", "uncovered_tail", "no_competition",
     "no_supply", "lost_prefix", "unknown_loss", "overcapacity", "only_loss_probes",
