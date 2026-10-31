@@ -4924,3 +4924,11 @@
   evidence and original56_gpu_idle_supply_20261030_zh.md. Mean60s with same
   initial8/seed35/permutation54/cohort is a proposed next calibration only,
   not launched or accepted;keepcurrent18completionstop and noautomaticGPU.
+- Mean60 same-draw followup is now prepared under sustained56_mean60_r1:
+  first/lastmeasured353.952421/1578.698518s,lastbackground3146.724675s.
+  prepare_arrival_rate_followup.py verifies2/3slot scaling,same8initial,
+  seed35/permutation54/all56and12/18/26members,and identical nonarrival config.
+  Cohort schema2 is private from the start;52focusedCPUtests pass.
+  qualify_incremental_original_source.py accepts explicit additional test
+  modules while retaining all previous literal cases. FullboundCPU and fresh
+  actualGPU qualification remain required;noGPUfollowup launched yet.

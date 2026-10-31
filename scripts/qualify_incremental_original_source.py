@@ -37,6 +37,7 @@ def main():
     parser.add_argument("--configuration", type=Path, required=True)
     parser.add_argument("--engine", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--additional-tests", nargs="*", default=[])
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve previous CPU qualifications")
@@ -78,6 +79,14 @@ def main():
     ]
     if "tests/test_original_node_projects.py" not in command:
         command.append("tests/test_original_node_projects.py")
+    for name in args.additional_tests:
+        path = Path(name)
+        if path.is_absolute() or ".." in path.parts or path.parts[:1] != ("tests",) or not (
+            path.suffix == ".py" and (ROOT / path).is_file()
+        ):
+            raise ValueError("additional qualifications must name existing repository test modules")
+        if name not in command:
+            command.append(name)
     command.append("--junitxml=" + str(here / "bound_cpu.xml"))
     env = {
         **os.environ, **previous["environment"],

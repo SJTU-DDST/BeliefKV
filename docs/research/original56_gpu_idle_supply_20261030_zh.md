@@ -125,3 +125,19 @@ seed35、排列seed54、56个完整原任务及12/18/26分组。保持相同种�
 - 有用 KV 前缀定期采样：
   `experiments/reports/remaining_original_projects_20261030/idle_supply_original56_live_demand_r1.json`
 - 复用入口：`scripts/audit_workflow_idle_supply.py`。
+
+## 60秒候选的实际准备
+
+`scripts/prepare_arrival_rate_followup.py` 已从原90秒配置、schema2测量契约
+和已封存的GPU空闲审计生成 `sustained56_mean60_r1/`。它重新使用同一
+泊松随机抽样，逐项核实全部到达偏移按2/3缩放，三个组的成员完全相同；
+`full.json` 除 `workflow_arrivals` 外所有字段逐项相等。没有将测量成员
+身份加入在线配置。
+
+新窗口为353.952421--1578.698518秒，末次计划背景到达3146.724675秒。
+最大间隔也按2/3缩放；仍保留随机空档，不把它改成均匀到达。
+18项JCT继续完整计入窗口后的执行，背景提交持续到测量组完成或原计划
+耗尽。背景是否覆盖测量尾部、是否真正形成压力仍须实际控制验证。
+
+52项到达、供给、JOIN清理和测量结束相关测试已通过。
+完整源码绑定CPU回归和新鲜GPU入口检查尚未完成，准备文件不代表启动。
