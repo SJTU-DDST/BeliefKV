@@ -39,6 +39,29 @@ original56、初始12条、平均70秒的同负载对比：
 
 JCT降低10.430%，共同窗口吞吐提高3.262%。18条中17条改善，一条回退约4.393秒。保留该负载的背景覆盖与有用前缀丢失审计限制，不能把单次配对称为正式稳态结论。
 
+## 回退负载的native完整结果
+
+`final82_oracle_and_selected_native_r1/native_comparison.json`及独立`native_prefix_io/`均验证两臂固定18条、2,819次精确请求、362,072个输出token、两次新鲜空闲遥测及真实owned进程退出。两臂实际FULL池均为805,198个Device token、2,034,506个Host token；请求上限、到达、工具overlay与公共引擎一致。
+
+| 指标 | 非排序Full | native SGLang |
+| --- | ---: | ---: |
+| 平均完整JCT / 秒 | 1052.994585 | 1215.272844 |
+| P50完整JCT / 秒 | 639.699137 | 668.953625 |
+| P95完整JCT / 秒 | 2736.140634 | 3241.162715 |
+| 共同窗口全部输出token/s | 301.891902 | 297.063263 |
+
+Full平均JCT降低13.353237%，输出吞吐提高1.625458%；15条改善、3条回退。吞吐收益仍较小，不能描述为明显的大幅吞吐提升。保留背景覆盖失败、单次配对和公共测量扩展的限制，不声称原样upstream或稳态显著性。完整JCT配对图及decode/全部输出趋势图已生成并实际检查，位于`native_figures/`。
+
+`native_prefix_io/`还对相同测量请求核对实际prefill输入区间，而非只比较累计未命中计数：
+
+| 相同测量组的旧前缀工作 | 非排序Full | native SGLang |
+| --- | ---: | ---: |
+| 具有先前同context前缀的探测 | 2700 | 2700 |
+| 缺失旧前缀的请求 | 4 | 9 |
+| 已在精确prefill区间观察到的旧前缀token并集 | 383400 | 911509 |
+
+这些正样本均有单一请求attempt/session及完整几何对应，重复范围没有重复计数；不将相关整批worker时长当作纯GPU计算或可消除JCT。全执行H2D描述总量为Full 4.375 TB、native 12.053 TB，D2H分别3.389和10.097 TB，但两臂非测量背景完成进度不同，不能把这些全量复制差直接归给固定测量组。两个重算口径及复制字节也不能相加。
+
 ## 最后一次Oracle的完整结论
 
 `final82_oracle_and_selected_native_r1/oracle_comparison.json`独立核验两臂均完成固定18条、3,093次精确请求和422,130个输出token；两次新鲜空闲遥测、真实owned进程退出均通过。82条全部到达，各79条自然结束，另外3条非测量任务按固定测量组完成规则停止。
@@ -119,7 +142,9 @@ native 对照显式声明为 singleton `native_matched`，清除 Full 的 agent�
 
 CPU入口检查R1发现停止入口遗漏显式native声明校验，原有拒绝未声明native的测试正确失败；修复后R2通过6,574项测试及23项子测试，保留R1失败。继续核对真实registration发现声明保存在已经hash绑定的experiment configuration中，停止入口也支持从该不可变文件验证声明；缺失绑定、文件改变、错误arm与非布尔声明仍然拒绝。R3通过6,580项测试及23项子测试，保留全部R2身份与2,393个源码输入。项目测试与任务内容未改动。
 
-## 实际执行状态
+## 执行过程与历史前缀
+
+以下保留启动资格与当时实时前缀。最终Oracle和native结论以前面完整结果为准，不用早期完成数或部分轨迹替代它们。
 
 新original82 Full使用提交`9072232d`的独立冻结快照，已完成本轮24请求的精确token/session/native-stop检查及1/8/24采样开销检查，正式对照已经启动。固定18条测量任务的观察器已实际挂载；不等待全部82条任务完成。
 
@@ -318,3 +343,9 @@ original82的24对均来自桌面开发workflow。摘要没有使整段约24.8�
 候选已提交`a73fdcb7`并在独立干净worktree中重核2,396个源码输入、全部外部绑定及原生CPU树；与旧Full的runtime AST比较仅`_live_parent_pressure_key`和释放记录来源分类两个方法发生变化。此前711.219秒CALL窗口内，另有104次`critical_parent_headroom`和3次`wait_prefetch_capacity_reclaimed`，覆盖12个CALL窗口，其中13次面向测量workflow。这确认已有真实原生冷回收入口与阻塞窗口相交；仍不能把58条session-referenced拒绝都归给caller或把1,276条unbacked拒绝当作可直接释放。
 
 顺序监控已实际启动，状态为`ops/native_then_foreground_call_20261101_r1.state.json`。它只接管正在运行的native：等待完整18条、结果核验与真实退出后，重新检查预约、资源和绑定，再执行一个CALL候选的24请求位置/session/native-stop与1/8/24采样入口；不因失败自动重试，不追加GPU参数搜索。candidate比较独立核对实际容量、精确测量工作、完整JCT、共同窗口输出、测量组前缀丢失代理及实际CALL释放记录；背景覆盖等原有限制继续保留。
+
+native完整退出后，CALL候选已完成24请求位置/session/native-stop及1/8/24采样，正式回放`workflow_original56_foreground_call_20261031_r1`已经启动。独立`foreground_call_matched_result_r1/live_r1.json`核对1,040个原token回执、唯一GPU scheduler、nice0服务进程与实际祖先、存活的固定18条观察器/顺序监控、相同物理容量和真实runtime设置。工作量排序及未来工作参与决策均关闭；JOIN/EOS、预测卸载、prepare和agent连续性保留，工具预取和逐层handoff关闭。
+
+另有一个评价边界：旧Full首个CALL发生在1,948.978424秒，晚于原始55.692771--1,638.954850秒主吞吐窗口。因此，CALL修复的主窗口吞吐只能约束早期控制开销，不能证明该路径执行时的吞吐。`foreground_call_late_window_r1/declaration.json`在候选尚未出现CALL效果前，独立冻结`[1948.978424, 3259.858610]`秒诊断窗口，规则为“旧Full首个foreground CALL至冻结到达表最后一次到达”；候选任何结果未参与选择。
+
+该窗口统计所有背景及prefill首token输出，作为新路径的额外非劣检查：低于旧Full的98%将否决推广信号；不能用它推广未通过原JCT/主窗口判据的候选。原始cohort与主指标文件不变。候选若在完整诊断窗口之前已按原规则停止，保留诊断不可用，不把缺失输出当零或为绘图重跑GPU。
