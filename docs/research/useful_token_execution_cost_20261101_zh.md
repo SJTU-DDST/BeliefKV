@@ -242,6 +242,50 @@ attention 累计仍为 303.714564 ms，主要瓶颈没有消失。
 保留原日志和清理记录；不计作完成的性能测量。
 修正工具链环境后才运行新的 r2，没有覆盖失败目录。
 
+## 补齐常见 Decode 宽度
+
+后续没有重复已有七组。`additional_width_inputs_r1.json` 从同一原始 token
+记录和同一共同窗口中补充实际宽度 6、10、11、12、14：
+它们对应旧总 worker 时间的 26.3656%，不能将旧七宽度的均值直接套给它们。
+每组仍是实际成员向量，最大单成员上下文 243,804 token；
+宽度 10 的平均上下文约 63.5K，比其他部分形态更长。
+
+`native_additional_default_r1/` 和 `native_additional_combined_r1/`
+分别运行原配置和精确图＋相同压缩 MoE 参数，原生数据面和 Device 容量不变。
+每宽度仍为三次普通 96-token burst，本次不重采已有宽度 9 的 CUDA profile。
+脚本新增显式 widths / no-profile 选择，并去掉分析器对 8/17 对照宽度必须存在的假设。
+
+| 实际宽度 | 原配置 ms/output-token | 组合 ms/output-token | 成本降低 |
+| --- | ---: | ---: | ---: |
+| 6 | 2.464578 | 2.218389 | 9.9891% |
+| 10 | 2.618454 | 2.506052 | 4.2927% |
+| 11 | 2.052677 | 1.964034 | 4.3184% |
+| 12 | 2.052601 | 1.987664 | 3.1636% |
+| 14 | 2.026331 | 1.949200 | 3.8065% |
+
+**159 个普通请求、15,264 个输出 token 全部逐序列一致。**
+宽度 12 的 graph 桶前后均为 12，本组正收益支持 MoE 参数本身也有效；
+它不是整套组合配置不变的环境对照。
+两臂均有实际输出 ordinal 核对、两个新鲜空闲 writer snapshot 和完整进程清理。
+证据为 `additional_width_comparison_r1.json`。
+
+`merge_native_token_cost.py` 只合并不重复的宽度，检查数值一致、原生源状态、
+Device 容量、graph 桶定义与旧成本统计的哈希一致，拒绝重复请求和宽度。
+`combined_12width_summary_r1.json` 包含：
+
+- 12 个实际宽度：3、5、6、7、8、9、10、11、12、13、14、17。
+- 每种模式共 **345 个普通请求、33,120 个输出 token**，全部输出序列一致。
+- 覆盖旧总 worker 区间的 **61.8657%**、decode worker 区间的 **86.6298%**。
+- 未测宽度和 prefill 保持不变时，重加权筛查为约 **63.064361 秒、
+  3.98798% 总 worker 区间改善**。
+
+这是两个互不重复宽度组、各自独立服务器启动的组件结果汇总，
+不是一个新 serving 运行，也不是独立复现实验。
+每宽度仍只有一组上下文；不同上下文和实际批次形态可能改变收益。
+**不能将 3.99% 改写为 JCT 实测改善或严格收益边界。**
+当前不根据这个静态重加权结果修改正式比较指标或旧结果。
+显式配置的 evidence 已指向汇总，并同时保留两个原始比较入口。
+
 ## Attention 参数的有界筛查
 
 `benchmark_attention_token_cost.py` 使用原生 `sgl_kernel.flash_attn`，
@@ -267,6 +311,36 @@ page_size=1 比较 `num_splits=0,1,4,8,16,32,64`。
 五种形态仍保留默认，另外两种仅是合成数据上的局部潜力。
 **当前不更改全局 SplitKV，也不声称真实模型、JCT 或吞吐改善。**
 该结果不支持为这一个参数立即重复完整 workload。
+
+## Attention 读流量的证据边界
+
+`audit_attention_read_cost.py` 读取旧原生宽度 9 的完整 journal、响应回执、
+model config 与 decode profile。它先核对所有组件输出 ordinal，
+再按已注册的“首个完整宽度 9 开始、24 步”规则选择对应 native 前缀，
+并以 1,152 个 FA3 主 kernel / 48 层核对 24 步的形态。
+这里不是 profiler 时钟到硬件 counter 的逐事件关联。
+
+模型为 48 层、4 KV heads、head_dim 128、BF16。
+按每个真实请求、每层各读一次 K 和 V 计算，得到：
+
+| 项目 | 逻辑读当量 |
+| --- | ---: |
+| 24 步 KV 字节数合计 | 1,048,012,259,328 bytes |
+| Attention 与 combine 的 kernel 区间并集 | 302.981041 ms |
+| 二者相除的逻辑 KV 读当量 | 3.459003 TB/s |
+
+NVIDIA H200 官方资料对 H200 NVL 列出的 HBM 带宽为 4.8 TB/s，
+2026-11-01 核对，来源地址保存在
+`logical_attention_read_cost_r1.json` 的 `published_hardware_reference` 中。
+**上表不是实测 DRAM 流量，除以厂商规格也不是 HBM 利用率。**
+共享前缀、L2 复用、重复加载、dummy graph 行和其他流量均没有在公式里重建；
+因此不能据此声称“已达带宽上界”或直接扣出可优化时间。
+
+本机检查中，当前 PATH 没有 `ncu`，驱动 `RmProfilingAdminOnly` 为 1。
+本轮未改变驱动权限、安装 profiling 工具或把硬件计数器作为已完成证据。
+该审计的作用是约束归因：attention 的较大耗时本身不代表同等比例的可消除工作。
+若后续尝试 attention 布局或 kernel，更需要实际模型结果或实际 DRAM counter 支撑；
+不把 3.459 TB/s 当作一次新的引擎优化。
 
 ## 冷 Prefill 的原生归因
 
@@ -316,9 +390,11 @@ prefill MoE 参数仍未调优，不能把 decode 参数表的收益推广到大
 
 已确认主要可见执行成本来自 attention 和 MoE。
 精确 decode 图、MoE launch 调优及二者组合均有真实模型组件级正收益；
-组合的已测形态重加权筛查约为 2.56% 总 worker 改善，没有完整 workflow JCT 结果。
+补齐五个常见宽度后，组合的已测形态重加权筛查约为 **3.99% 总 worker 改善**，
+覆盖旧 decode worker 时间的 86.63%，没有完整 workflow JCT 结果。
 Attention SplitKV 的局部筛查没有支持统一修改默认值。
 新的冷 prefill profile 同样以 attention 为主要可见成本。
+逻辑读流量的审计没有提供实测 HBM 带宽或严格性能上界。
 
 保留原 Full 配置和既有 Full/ThunderAgent/native 对照；
 下一项优化仍需保持相同 KV 容量和实际任务，以真实执行成本验证。
@@ -326,11 +402,12 @@ Attention SplitKV 的局部筛查没有支持统一修改默认值。
 修改工具时长或启用 handoff。
 此前的 48 项 CPU 报告保留；本次改动后的针对性集合为 **37 项全部通过**，
 见 `cpu_checks_r15.xml`，包含自动 profile 收尾及不完整采集拒绝检查。
+新增宽度、互斥汇总与读流量审计后，`cpu_checks_r18.xml` 为 **55 项全部通过**。
 成功的组合和冷 prefill 臂均完成实际输出、新鲜 writer drain 和进程清理；
 失败尝试没有被重标为成功。GPU 已释放。
 
-最新图表在 `useful_token_cost_r1/figures/token_execution_cost_r3.png` 及同名 PDF，
-保留旧 r1/r2 图片。
+最新十二宽度图表在 `useful_token_cost_r1/figures/token_execution_cost_r4.png` 及同名 PDF，
+保留旧 r1/r2/r3 图片。r4 只展示组合候选，不补造未测宽度的独立 graph / MoE 收益。
 颜色固定使用 Okabe-Ito 定性色板：decode 为 `#0072B2`、
 prefill 为 `#E69F00`、精确图为 `#009E73`、MoE 调优为 `#D55E00`、
 组合为 `#CC79A7`。
