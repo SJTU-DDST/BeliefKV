@@ -95,6 +95,14 @@ def compare(root, accounting, *, candidate_dir=None, candidate_label="exact"):
     inputs = json.loads(inputs_path.read_bytes())
     if sha256_file(inputs_path) != plan["inputs_sha256"]:
         raise ValueError("component inputs changed")
+    candidate_plan_path = directories[candidate_label].parent / "plan.json"
+    candidate_plan = json.loads(candidate_plan_path.read_bytes())
+    if (
+        candidate_plan["inputs_sha256"] != plan["inputs_sha256"]
+        or candidate_plan["native"] != plan["native"]
+    ):
+        raise ValueError("candidate inputs or native engine differ from the reference")
+    sources[str(candidate_plan_path.resolve())] = sha256_file(candidate_plan_path)
     numerical = []
     for case in inputs["cases"]:
         width, measurements = case["width"], {}
@@ -184,7 +192,7 @@ def compare(root, accounting, *, candidate_dir=None, candidate_label="exact"):
         } if candidate_label == "exact" else {
             "width8_cost_change_percent": report["8"]["candidate_worker_cost_reduction_percent"],
             "unchanged_config_width17_cost_change_percent": report["17"]["candidate_worker_cost_reduction_percent"],
-        }),
+        } if candidate_label == "tuned_moe" else {}),
         "sample_reweighting": {
             "covered_common_window_worker_fraction": covered / worker,
             "estimated_worker_time_change_seconds": cost / 1000,
@@ -195,7 +203,11 @@ def compare(root, accounting, *, candidate_dir=None, candidate_label="exact"):
         "semantics": [
             "Each cost is the median of three unprofiled request bursts, divided by actual observed output tokens.",
             "CUDA profiling requests are excluded from ordinary cost comparison.",
-            "The exact-graph candidate leaves width8 unchanged; the tuned MoE candidate leaves its width17/padded24 launch config unchanged.",
+            {
+                "exact": "Exact graphs leave width8 on the same bucket as its reference.",
+                "tuned_moe": "Sparse graphs with tuned MoE retain default launch parameters at width17/padded24.",
+                "exact_moe": "Combined exact graphs and tuned MoE have no designated unchanged-width control.",
+            }[candidate_label],
             "Static reweighting applies a few captured context examples to historical width totals. It is a screen, not an end-to-end forecast.",
             "Kernel groups overlap, including programmatic dependent launches; sums are not exclusive execution or removable JCT.",
             "Numerical equality here covers the bounded greedy probes, not every future request or full replay.",
@@ -211,7 +223,7 @@ def main():
     for name in ("root", "accounting", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--candidate-dir", type=Path)
-    parser.add_argument("--candidate-label", choices=("exact", "tuned_moe"), default="exact")
+    parser.add_argument("--candidate-label", choices=("exact", "tuned_moe", "exact_moe"), default="exact")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("preserve earlier cost evidence")

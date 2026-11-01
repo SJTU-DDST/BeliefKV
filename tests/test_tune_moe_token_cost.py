@@ -1,8 +1,11 @@
+import json
+
 import pytest
 
 from scripts.tune_moe_token_cost import (
-    BASE_LARGE, BASE_SMALL, SIZES, compact_table, guarded_lookup_table, select_candidate,
+    BASE_LARGE, BASE_SMALL, SIZES, compact_table, guarded_lookup_table, select_candidate, serve,
 )
+from beliefkv.experiments.source_provenance import sha256_file
 
 
 def test_native_nearest_lookup_keeps_every_untuned_prefill_size_unchanged():
@@ -44,3 +47,29 @@ def test_compact_defaults_preserve_nearest_lookup_and_boundary_ties():
     assert compacted["128"] == BASE_SMALL
     assert compacted["129"] == BASE_LARGE
     assert compacted["2048"] == BASE_LARGE
+
+
+def test_combined_probe_passes_exact_mode_and_restores_environment_on_failure(tmp_path, monkeypatch):
+    config = tmp_path / "launch.json"
+    config.write_text("{}")
+    (tmp_path / "result.json").write_text(json.dumps({
+        "configuration_path": str(config), "configuration_sha256": sha256_file(config),
+    }))
+    monkeypatch.setenv("SGLANG_MOE_CONFIG_DIR", "previous")
+    calls = []
+
+    def fail(inputs, output, *, modes, profile):
+        import os
+
+        calls.append((modes, profile, os.environ["SGLANG_MOE_CONFIG_DIR"]))
+        raise RuntimeError("component failed")
+
+    monkeypatch.setattr("scripts.profile_native_token_cost.run", fail)
+    with pytest.raises(RuntimeError, match="component failed"):
+        serve(tmp_path / "inputs.json", tmp_path, tmp_path / "probe", graph_mode="exact")
+    import os
+
+    assert calls == [(["exact"], True, str(tmp_path.resolve()))]
+    assert os.environ["SGLANG_MOE_CONFIG_DIR"] == "previous"
+    record = json.loads((tmp_path / "probe.configuration.json").read_text())
+    assert record["graph_mode"] == "exact"
