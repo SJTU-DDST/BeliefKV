@@ -562,3 +562,44 @@ CPU 收尾 **4155783**、fixed18 观察器 **4156578** 均实际存活、nice19�
 本次对应收尾进程，不表示已登记一组 GPU 比较。
 此时 measured 为 0/18；这是实际服务前缀，完整 JCT、低重算、
 持续供给和对照收益均待后续完成。
+
+### 运行中的 Host NUMA 物理页分布
+
+2026-11-01 14:15:46（America/Los_Angeles），只读检查实际 scheduler
+`4155327` 的 `/proc/maps`、`numa_maps`、`status` 和 GPU topology，
+证据保存于 `original73_static_balanced_full_live_r2/host_numa.json`。
+审计器为 `ops/audit_registered_host_numa_20261101.py`，
+实际使用 nice19、CUDA 隐藏和单线程环境；没有移动页面、修改内存策略、
+启动 CUDA 操作或改变运行中配置。
+
+找到唯一一段大小与 native census 的完整 FULL Host 分配恰好相同的
+共享 `/dev/zero (deleted)` 映射，全部页面已经驻留：
+
+| 实际观察 | 数值 |
+| --- | ---: |
+| 映射大小 / census Host 分配 | 200,000,077,824 bytes |
+| GPU0 的 NUMA affinity | node1 |
+| 映射策略 | `prefer:1` |
+| node1 驻留 | 152,452,124,672 bytes |
+| node0 驻留 | 47,547,953,152 bytes |
+| 相对 GPU 的远端驻留比例 | 23.773967% |
+| kernel page | 4 KiB |
+| 进程 CPU affinity | `32-63,96-127` |
+| 进程允许内存节点 | `0-1` |
+
+保留原始映射行、各输入 hash 和进程身份，并在读取后重新核对映射与存活状态。
+实际引擎的分配路径为 `HostTensorAllocator.allocate -> alloc_mmap`；
+普通页面路径显式预触页，随后进行 `cudaHostRegister`。
+本次未独立导出 native buffer 指针，映射身份的依据仍是共享类型、
+唯一性和完整容量精确匹配，不能将其描述为指针级归属证明。
+
+这个结果说明当前 200 GB 配置已经存在跨 NUMA 驻留，
+不能继续把跨节点仅视为未来扩大 Host 池才会出现的风险。
+但分配页驻留不等于有用缓存 KV 的分布，也不等于各次 H2D/D2H 的远端比例。
+尚未测量传输带宽损失、互连流量或因果 JCT 收益，
+也未查明页面为何落在 node0；不能仅凭此修改运行中的绑定或宣称性能根因。
+后续匹配 ThunderAgent 对照应使用相同资源和分配策略，并采集同口径证据。
+
+14:21:31 的 fixed18 观察器记录为 6/18 完成、28 个实际到达。
+GPU owner、server、driver 和两个 CPU 收尾观察器均实际存活；
+这仍是未完成前缀，没有注册后继 GPU 或将 workload 标为验收。
