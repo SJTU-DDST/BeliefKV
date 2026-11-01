@@ -138,6 +138,24 @@ ThunderAgent acting-decay。新对照复用共同数据面的成功 r2 资格，
 不重复默认引擎的旧对照，也不使用要求全人口完成的旧
 `--after-registration` 依赖逻辑。
 
+独立现场取证为
+`useful_token_cost_r1/shared_execution_full_live_verified_r1.json`。
+它重新核对冻结源码、实际 HTTP server-info、GPU worker 的进程归属、
+MoE 文件加载和精确 graph，并校验独立封存前缀中的 **3,204 个完成请求**：
+prompt/output 哈希、真实输出序列和 agent/context 身份均与原 trace 相同。
+取证时固定测量组完成 **7/18**；这不是完整测量结果。
+
+实际快照确认工作量排序与组合准入关闭，工具预取、逐层 handoff 关闭，
+JOIN/EOS、预测工具卸载与需求恢复流水线保留。
+旧 Oracle bookkeeping 对象仍存在，其宽泛元数据仍声明
+`future_information_used=true`、`deployable=false`；
+不将这些字段静默改写为可部署。
+相邻的实际决策开关明确为
+`workflow_oracle_future_work_used_for_decisions=false`、
+`workflow_oracle_remaining_work_ranking_enabled=false`，
+工具压力路径也声明不使用未来工具时长。
+本次是非排序控制的执行配置验证，不是新的 Oracle 调度收益。
+
 ## 旧引擎下的完整请求 Interactivity
 
 `audit_measured_request_interactivity.py` 在完整测量工作、退出和 drain 校验后，
@@ -149,11 +167,15 @@ ThunderAgent acting-decay。新对照复用共同数据面的成功 r2 资格，
 | --- | ---: | ---: | ---: |
 | 默认引擎 retained Full | 16.5341 | 20.1768 | 67.0957 s |
 | 默认引擎 ThunderAgent acting-decay | 10.3635 | 14.0341 | 74.3257 s |
+| 默认引擎 native SGLang | 9.6808 | 17.8532 | 57.7503 s |
 
-两组 workflow TTFT 均有 18/18 实际流式首输出覆盖，
+三组 workflow TTFT 均有 18/18 实际流式首输出覆盖，
 不以请求提交时间代替首 token。
 证据位于 `useful_token_cost_r1/default_full_interactivity_r1.json` 和
-`default_thunder_interactivity_r1.json`。
+`default_thunder_interactivity_r1.json`，
+native 补充为 `default_native_interactivity_r1.json`。
+Native 的 workflow TTFT P90 更低；Full 的完整请求 interactivity 更高。
+不把一个指标的改善说成全部服务指标占优。
 这是旧已完成比较的新增分析，不是共同引擎配置的新性能证据；
 每种方法只有一次完整运行，不声明统计显著性。
 
@@ -167,23 +189,31 @@ ThunderAgent acting-decay。新对照复用共同数据面的成功 r2 资格，
 
 对旧已完成比较的重新核对保留了原 `full_accounting_r1.json`，
 另写 `default_full_complete_accounting_r2.json` 与
-`default_thunder_complete_accounting_r1.json`：
+`default_thunder_complete_accounting_r1.json`，
+native 补充为 `default_native_complete_accounting_r1.json`：
 
-| 共同窗口成本 | 默认引擎 Full | 默认引擎 ThunderAgent acting-decay |
-| --- | ---: | ---: |
-| 全部 worker ms/实际输出 token | 3.308463 | 3.407996 |
-| Decode worker ms/decode 输出 token | 2.381707 | 2.429254 |
-| Prefill worker ms/实际 extend 输入 token | 0.102644 | 0.105686 |
-| Decode worker 时间加权有效宽度 | 8.7082 | 8.3410 |
-| 窗口内实际输出，包含背景 | 477,974 | 462,874 |
+| 共同窗口成本 | 默认引擎 Full | 默认引擎 ThunderAgent acting-decay | 默认引擎 native SGLang |
+| --- | ---: | ---: | ---: |
+| 全部 worker ms/实际输出 token | 3.308463 | 3.407996 | 3.365475 |
+| Decode worker ms/decode 输出 token | 2.381707 | 2.429254 | 2.329806 |
+| Prefill worker ms/实际 extend 输入 token | 0.102644 | 0.105686 | 0.113102 |
+| Decode worker 时间加权有效宽度 | 8.7082 | 8.3410 | 9.5244 |
+| 窗口内实际输出，包含背景 | 477,974 | 462,874 | 470,329 |
 
-两组完整测量请求仍均为 2,819 个、362,072 个输出；
+三组完整测量请求仍均为 2,819 个、362,072 个输出；
 窗口内输出量不要求相同，因为它本身就是固定墙钟吞吐的观测结果。
 所有已完成请求的真实输出 ordinal 均与回执一致，
 同时保留被截断背景请求已经生成的输出。
 Worker 包含计算、传输依赖和主机提交，不能把表中的差值直接归因为
 kernel 优化，也不能把普通 extend 输入全部称为重算。
 新共同引擎两臂结束后使用同一分析程序，不用组件微测代替完整结果。
+
+这组数据也限定了底层优化方向：native 的旧 decode 单 token 成本
+低于 Full，并拥有更宽的实际有效 decode batch；
+Full 的旧 prefill 单输入成本更低。
+这些是不同实际批次/上下文混合下的观测，不构成对某段控制代码的因果归因。
+下一步先看共同引擎在完整运行中的成本变化，
+不据此立即增加工作量排序、改变工具时长或重开 handoff。
 
 ## 当前证据边界
 
