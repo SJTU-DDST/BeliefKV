@@ -665,3 +665,71 @@ E2E normalized interactivity 和实际旧前缀 prefill 的匹配报告与图。
 现场唯一 GPU owner 仍为 Full scheduler `4155327`。
 本节更新了此前“没有后继计划”的现场状态，
 不把条件计划写成已启动 ThunderAgent 或已获得完整收益。
+
+### 共同窗口之后的实际前缀损失
+
+后段的 native 计数打破了此前封存前缀中的零损失。
+Full 继续执行固定18的完整尾部；条件对照保留原门槛，
+不会用共同窗口的早期零计数替代最终结果。
+工作量差异最低值仍为用户已接受的 2.931418，没有恢复旧的 3 或 4。
+
+`original73_static_balanced_full_live_r2/first_loss_actual_prefill.json`
+复用已验证的 prefill 区间匹配器，使用独立封存的实时日志：
+
+| 测量组原项目 | 损失 probe 的到达原点偏移 | 已服务旧输入重新 prefill |
+| --- | ---: | ---: |
+| `python_system_security_medium_028` root | 2,321.560961 s | 57,733 token |
+| `python_data_lake_medium_050` root | 2,523.612832 s | 101,800 token |
+| 合计 | 两次 probe | 159,533 token |
+
+两次均核对 request、attempt、session/generation、context 与实际 extend 输入范围，
+全部旧输入完整观察到，没有重复范围计数。
+涉及 79 个 prefill 批次；整批 worker 区间合计 18,044.190178 ms，
+不能将其全部归给旧 token、视为纯 GPU 时间或直接从 JCT 中扣除。
+它是实时前缀，不是整轮最终重算合计，也没有提前声称完整测量验证。
+审计器为 `ops/audit_live_previous_prefix_work_20261101.py`。
+
+`first_loss_demand.json` 在首次 probe 的对应逻辑时点观察到：
+23 个 live workflow、41 个 live context、2 个首次模型 pending context。
+最新已完成状态并集为 2,616,155 token，pending input 或最新状态并集为
+2,720,588 token，占 combined ceiling 的 95.8053%；
+下一请求可复用旧前缀并集为 2,589,569 token，占 **91.1915%**。
+截至该封存前缀的每60秒采样中，下一请求可复用并集最高为
+2,606,520 token，占 91.7884%。
+这些逻辑并集仍不证明物理页可用、迁移暂存空间足够或未采样时刻也可容纳。
+
+`first_loss_host_history.json` 进一步通过 eviction ID、
+完整 namespaced prefix HMAC 和 prefix 长度核对先前 Host 释放与后续回访。
+第一项匹配 62 条重算 block 记录，最后驱逐距回访约 42.47–42.60 秒；
+第二项匹配 110 条，约 124.97–244.52 秒。
+block span 的和分别为 58,005 / 101,966，属于另一统计，
+不与上表去重后的实际旧输入相加。
+该证据保留所有相邻 Host 事件；相邻项可能是 ACK 或 eviction，
+不能将它们自动当作 occupancy snapshot。
+审计器为 `ops/audit_prefix_loss_host_history_20261101.py`。
+
+从同一 Host 日志另外筛选真正的 `host_pool_usage`：
+两项首次关联释放发生在同一对一秒采样之间，
+前一采样时间为 wall 1,793,572,448,179.0562 ms，
+后一采样为 1,793,572,449,182.3977 ms。
+
+| 相邻实际分配采样 | 释放前 | 释放后 |
+| --- | ---: | ---: |
+| Host FULL 使用 | 2,033,452 token | 2,033,689 token |
+| Host 使用比例 | 99.9482% | 99.9598% |
+| HBM 空闲 | 1,900 token | 127,176 token |
+| HBM resident | 803,298 token | 678,022 token |
+| HBM non-evictable | 400,982 token | 603,657 token |
+
+这组邻近采样支持继续检查迁移暂存空间和缓存回收时序，
+尚不能证明两层无法保留全部有用状态，也不能反向证明是扫描或释放实现错误。
+原生 `drive_host_eviction` 已有两遍安全重复副本回收；
+释放前累计 6,593 次调用中，5,623 次已由重复副本回收满足。
+Full 前置 Host demand 管理也已经轮转64候选，并非完全没有备份回收路径。
+block 事件未记录释放当时是否还有 Device 副本，因此具体首因仍待核对，
+不能仅凭 node ID 或一次 occupancy 把责任归给 prepare_host。
+
+14:46:24 的 fixed18 观察器为 15/18 完成、53 个实际到达。
+实验和两个收尾进程、条件对照进程均实际存活，Full 保持冻结配置。
+后续先保留完整结果及负载拒绝，再据完整跨度的容量/供给证据决定修复；
+不因这两次损失改门槛、截短测量尾部或自动扩跑该到达表的 baseline。
