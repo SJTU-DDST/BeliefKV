@@ -166,3 +166,84 @@ P80/P20 为 2.934261，采用此前接受的 2.931418 最低值，
 实际 ready 供给、Host 独占/重复备份、额外重算和测量尾部覆盖仍需实际运行；
 不能用未来尚未提交的到达证明压力成立。
 目前仅完成 CPU 物化，没有注册 GPU 后继，也不替换正在运行的 56 项对照。
+
+## 当前源码绑定、来源注册与实际 Full
+
+上述 56 项对照结束后，扩展候选继续完成以下步骤。
+用户接受的门槛仍为 2.931418，不重新要求 2.934261 达到原 3 或 4。
+
+`background_tail_original56_plus17_bound_cpu_r1` 在一次执行中通过
+**6,795 项测试和 23 项子测试**，保留此前 6,715 个 literal 用例、
+全部既有源码路径，绑定 2,443 个源码输入和 276 个外部输入。
+源码、原生引擎和外部输入在执行期间保持不变，零失败、错误和 skip。
+它包括 Host 扫描轮转、到达扩展、声明人口物化和逐项核对。
+
+干净操作目录为
+`.worktrees/beliefkv-background73-operator-42156309`。
+重新核对全部 2,443 个源码和 276 个外部输入。
+原生引擎仍为 `434c35dd66211d0a230717c88bf1452056769a40`；
+103 项既有 native CPU 证据只重新绑定 canonical patch 路径及其状态 hash，
+补丁字节、实际 tree 和其余状态相同。
+记录在 `background73_nonranking_controls_prepare_r1/clean_operator_and_native_binding_r1.json`。
+
+25 项新增采集的旧 callback-clock 失败保留。
+当前 CPU 重新分析确认原 25 个自然 workflow、3,249 个请求和
+唯一一项 publication-clock 冲突，未重采、改时长或覆盖旧失败。
+新的分析证明为
+`background_tail_original56_plus17_bound_cpu_r1/source_requalification_r1.json`。
+
+73 项合成来源登记为
+`ops/workflow_original73_background_extension_source_20261101_r1.registration.json`，
+绑定六份原始采集完成证据和当前 CPU 分析。
+这是合成来源登记，不伪造新的自然 native capture 或全人口性能结果。
+
+### 两种方法的准备
+
+`ops/prepare_background73_controls_20261101.py` 生成
+`background73_nonranking_controls_prepare_r1/{full,thunderagent_acting_decay}.json`。
+保留共同引擎配置，更新 73 项来源、到达、工具映射和 Full bookkeeping 工件。
+原 2,150 个工具采样和公开预测先验不变。
+
+实际 runtime 构造器确认：
+
+- Full：invocation 粒度，2 s control、2 s 普通合并窗口；
+  JOIN/EOS、预测工具卸载、prepare_host 和 agent 连续性开启。
+- 工作量排序、未来剩余工作决策、组合准入、工具预取与逐层 handoff 关闭。
+  旧 Oracle bookkeeping 的宽泛 `future_information_used=true`、
+  `deployable=false` 元数据保留，未改写为可部署预测器。
+- ThunderAgent：独立 invocation program，5 s control、1 s acting-decay half-life、
+  `periodic_resume_only`；无 Full 的预测卸载或备份策略。
+
+### 新 GPU 入口与测量观察器
+
+新的 position 资格注册为
+`ops/workflow_original73_background_extension_position_20261101_r1.registration.json`，
+端口 **18966**。
+24 个 token/session/stop 请求全部通过，24 次均观察到原生 stop，
+1/8/24 采样检查完成，随后自动登记仅 Full 的比较臂：
+`ops/workflow_original73_background_extension_full_20261101_r1.registration.json`。
+
+实际执行冻结为 `42156309`，原生 engine/configuration 保持共同版本。
+现场核对 BF16、FA3、TP1、805,198-token Device 池、200 GB Host、
+running24、chunk2048、mixed 关闭、decode graph 精确 1..24。
+Supervisor 4106236、server 4106728、scheduler 4106805、
+driver 4107767 均实际存活且 nice0；native writer 健康。
+这是实际执行前缀，不是完整 JCT 或压力验收。
+
+CPU 收尾脚本初次误读 Full 注册中不存在的 `source_registration` 字段，
+退出为 `KeyError('source_registration')`。
+保留
+`ops/workflow_original73_background_extension_full_finish_20261101_r1.plan.state.json`
+及原脚本，不修改或重启 GPU 实验。
+恢复脚本通过 Full 的实际 `experiment_configuration` 和 `source_arm`
+核对相同来源后单独登记观察器。
+记录为 `background73_nonranking_controls_prepare_r1/observer_recovery_r1.json`。
+
+实际 fixed18 观察器为 PID **4108802**，nice19、CUDA 隐藏，
+注册为
+`ops/workflow_original73_background_extension_full_measured_completion_20261101_r1.registration.json`。
+它读取完整事件前缀，只在原固定 18 个成员全部完成后停止非测量背景，
+并核对实际回执、drain 和 owned 退出，再生成 JCT、供给和压力审计。
+额外 token 成本后处理没有由已退出的首个 CPU 收尾脚本自动启动，
+将在完整结束后继续核对。
+当前没有登记 Full 之后的 GPU 后继，workload 和完整性能结论均未验收。

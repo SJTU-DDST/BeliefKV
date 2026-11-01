@@ -384,3 +384,83 @@ ThunderAgent、固定组 observer 和收尾协调器仍实际存活。
 共同执行优化也降低了 baseline 的 decode 成本，
 因此方法收益应继续以相同新引擎下的完整比较为准。
 本次分析没有注册 GPU 后继。
+
+## 同一共同引擎的完整固定组结果
+
+匹配 Full/ThunderAgent 的固定 18 个测量 workflow 均已完成。
+`shared_execution_matched_pair_r1/independent_complete_r1.json`
+重新核对两臂各 2,819 个请求、362,072 个输出 token，
+原始 prompt/output 工作相同，实际模型、Device/Host 池和共同执行配置相同。
+新鲜 idle drain 和 owned 进程实际退出均通过，两个最终图已实际查看。
+
+结果位于 `useful_token_cost_r1/shared_execution_matched_pair_r1/`：
+
+| 固定组/共同窗口指标 | Predictive Full | ThunderAgent acting-decay |
+| --- | ---: | ---: |
+| 完整平均 JCT | 964.2904 s | 1083.1328 s |
+| 完整 P50 JCT | 618.0022 s | 690.9285 s |
+| 完整 P95 JCT | 2478.7245 s | 2864.2511 s |
+| 最大 JCT | 2810.3379 s | 3261.4179 s |
+| 共同窗口全部输出吞吐 | 306.9536 token/s | 299.5638 token/s |
+| 共同窗口 decode 吞吐 | 304.5042 token/s | 297.1719 token/s |
+| 完整请求 E2E normalized interactivity，pooled | 17.7469 token/s | 11.2046 token/s |
+| 各 workflow interactivity 的等权平均 | 21.4942 token/s | 14.8382 token/s |
+| Workflow TTFT P90 | 72.9298 s | 64.0787 s |
+
+平均 JCT 降低 **10.9721%**，P95 降低 **13.4599%**，
+17 个测量 workflow 改善，1 个回退约 1.7891 s。
+共同窗口吞吐提高 **2.4669%**。
+Interactivity 采用完整请求秒数/output token 的 P90 再取倒数，
+包含 TTFT；workflow TTFT 均有实际流式首输出的 18/18 覆盖。
+Full 的 TTFT P90 更高，不能称为所有服务指标均优。
+每种方法只有一次完整运行，不声明统计显著性。
+
+两臂执行代码均冻结为 `45747eb9`，工作量排序与组合准入关闭；
+JOIN/EOS、预测工具卸载、prepare_host 和 agent 连续性是既有 Full 配置。
+后来提交的 `585b41a3` Host 扫描轮转修复不在这两个已完成臂中，
+不能用上述改善证明该修复的收益。
+
+### 完整性与验收边界
+
+原始 supervisor 的 `stopped_for_investigation` 标签保留。
+固定组完成后按协议截断背景，完成证书显式记录
+`raw_supervisor_interruption_is_expected_for_this_frozen_run=true`。
+独立核对以固定组完整回执、截断意图、两个新鲜 idle snapshot 和实际退出为依据；
+未把原始停止标签重写为全人口成功。
+
+Full 自然结束 50 个 workflow、截断 6 个非测量成员；
+ThunderAgent 自然结束 52 个、截断 4 个。
+两者均提交了全部 56 个到达，全部 18 个测量成员保留正常尾部。
+背景任务的完成数量和条件 JCT 不作为全人口吞吐/JCT 估计。
+
+数值上的平均 JCT 门槛和共同窗口吞吐非劣门槛通过，
+但背景覆盖门槛仍失败：
+
+| 方法 | 最后计划到达 | 最后测量完成 | 未覆盖尾部 |
+| --- | ---: | ---: | ---: |
+| Full | 3259.8586 s | 4102.1994 s | 842.3408 s |
+| ThunderAgent | 3259.8586 s | 4553.2794 s | 1293.4208 s |
+
+`fixed_cohort_performance_target_met`、`formal_workload_accepted` 和
+`performance_accepted` 均保留 false。
+当前结果证明这一固定组和窗口下的观测优势，尚未完成持续压力 workload 的验收。
+
+### 实际旧前缀重复 Prefill
+
+`shared_execution_thunder_previous_prefix_prefill_r1.json` 的 18 次正 probe
+全部匹配到真实 native prefill 输入区间，共 1,472,936 个旧 token，
+729 个受影响批次，没有重复区间计数。
+其中固定测量组为 **381,870 token**；
+Full 相同固定组为 **178,356 token**，观测少 53.2941%。
+这两项是相同固定工作下的实际重复输入量，不是首次冷 prefill。
+
+全观察人口的 Full 647,065 与 ThunderAgent 1,472,936 token 包含不同的
+非测量执行前缀，只作为描述，不能当作相同完整人口的严格差值。
+受影响整批 worker 区间分别为 86.8415 s、209.6289 s，
+包含同批其他工作和传输/提交等待，不能将差值当作节省的纯 GPU 时间或 JCT。
+Host-block 回访归因仍是另一口径，不能相加。
+
+后续 73 项背景扩展已独立登记和启动，详见
+`docs/research/background_tail_prefix_extension_20261101_zh.md`。
+它保留本次固定测量组，但属于新的 workload 校准；
+不把新负载结果与本节旧负载差值归因为单一策略修复。
