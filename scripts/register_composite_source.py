@@ -13,16 +13,56 @@ from beliefkv.experiments.composite_workload import (
     KIND, load_composed_source, verify_composed_registration,
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from beliefkv.experiments.native_engine_variant import reviewed_capture_composition
 from experiments.reports.workflow_work_training_20261029.finish_training import (
     audit_finished_source, source_ready,
 )
 from scripts import run_causal_source_capture as capture
+from scripts import requalify_causal_source
+
+
+def qualification_paths(paths):
+    result = {}
+    for path in paths:
+        original = Path(capture.load(path)["original_registration"]).resolve()
+        if original in result:
+            raise ValueError("duplicate analysis requalification for one original capture")
+        result[original] = Path(path).resolve()
+    return result
+
+
+def origin_completion(path, requalifications):
+    path = Path(path).resolve()
+    plan, state = capture.load(path), capture.load(path.with_suffix(".state.json"))
+    if path in requalifications:
+        completion = requalify_causal_source.verify(requalifications[path], path)
+    else:
+        if not source_ready(plan, state):
+            raise ValueError("all original captures must finish with actual owned exit")
+        capture.comparison.verify_sources(plan)
+        completion = audit_finished_source(plan, state)
+    return plan, completion
+
+
+def replay_origin(origins, serving):
+    trees = {row["engine_tree"] for row in origins.values()}
+    target = serving["engine_tree"]
+    if len(trees) > 1:
+        compatibility = reviewed_capture_composition(trees)
+        if serving.get("engine_variant_compatibility") != compatibility or (
+            target != compatibility["replay_engine_tree"]
+        ):
+            raise ValueError("original engine variants require their explicit reviewed composition")
+    if target not in trees:
+        raise ValueError("common replay engine must be one of the qualified original variants")
+    return next(row for row in origins.values() if row["engine_tree"] == target)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-arm", type=Path, required=True)
     parser.add_argument("--origin-registration", type=Path, action="append", required=True)
+    parser.add_argument("--origin-requalification", type=Path, action="append", default=[])
     parser.add_argument("--cpu-report", type=Path, required=True)
     parser.add_argument("--cpu-sources", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -42,22 +82,18 @@ def main():
     declaration = capture.load(arm / "composite_source.json")
     expected_origins = {Path(row["source_capture"]).resolve() for row in declaration["sources"]}
     origins, inputs, completions = {}, set(), {}
+    requalifications = qualification_paths(args.origin_requalification)
+    if not requalifications.keys() <= {path.resolve() for path in args.origin_registration}:
+        raise ValueError("analysis requalification must name an explicitly declared origin")
     for path in args.origin_registration:
-        plan = capture.load(path)
+        plan, completion = origin_completion(path, requalifications)
         state_path = path.with_suffix(".state.json")
-        state = capture.load(state_path)
-        if not source_ready(plan, state):
-            raise ValueError("all original captures must finish with actual owned exit")
-        capture.comparison.verify_sources(plan)
         origins[(Path(plan["run_root"]) / "native_capture").resolve()] = plan
-        completion = audit_finished_source(plan, state)
         completions[str(path.resolve())] = completion
         inputs.update((path, state_path, *(Path(name) for name in completion)))
     if origins.keys() != expected_origins:
         raise ValueError("bind exactly the original sources used in the composed population")
-    first = next(iter(origins.values()))
-    if len({row["engine_tree"] for row in origins.values()}) != 1:
-        raise ValueError("original sources used different native engines")
+    first = replay_origin(origins, capture.load(arm / "serving_source.json"))
     environment = deepcopy(first["environment"])
     environment.update(
         ROOT_COUNT=str(graph.summary()["workflows"]),
@@ -78,6 +114,9 @@ def main():
         ],
         "source_arm": str(arm), "composition_sha256": sha256_file(arm / "composite_source.json"),
         "original_completion_proofs": completions,
+        **({"original_analysis_requalifications": {
+            str(original): str(path) for original, path in requalifications.items()
+        }} if requalifications else {}),
         "engine_checkout": first["engine_checkout"], "engine_tree": first["engine_tree"],
         "engine_evidence": first["engine_evidence"], "hold_file": first["hold_file"],
         "environment": environment,

@@ -17,6 +17,20 @@ FREE_EXTENT_TREE = "434c35dd66211d0a230717c88bf1452056769a40"
 FREE_EXTENT_PATCH_SHA256 = "c3a287b69d8f400f722996930fb6aad6ddabaf1f8859fc98e794f556887b1e15"
 
 
+def reviewed_capture_composition(trees):
+    if set(trees) != {COMMON_TREE, FREE_EXTENT_TREE}:
+        raise ValueError("capture composition requires the two explicitly reviewed native variants")
+    return {
+        "kind": "reviewed_FULL_only_native_capture_variants",
+        "source_engine_trees": sorted((COMMON_TREE, FREE_EXTENT_TREE)),
+        "replay_engine_tree": FREE_EXTENT_TREE,
+        "same_native_capture_timing_claimed": False,
+        "same_serving_fields_and_actual_capacity_required": True,
+        "FULL_only_native_captures_required": True,
+        "fresh_replay_GPU_qualification_required": True,
+    }
+
+
 def engine_patch(root, tree):
     from beliefkv.experiments.source_provenance import sha256_file
 

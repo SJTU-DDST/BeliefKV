@@ -19,6 +19,7 @@ from beliefkv.experiments.composite_workload import (
     KIND, SERVING_FIELDS, merge_plans, plan_dict, load_composed_source,
 )
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.native_engine_variant import reviewed_capture_composition
 from beliefkv.experiments.workload_mix import inventory_capture, population_summary, summary
 from beliefkv.experiments.workload_requirements import assess
 from beliefkv.runtime.replay_token_capture import native_request_expectations
@@ -69,7 +70,7 @@ def select_diverse_projects(rows, *, minimum_ratio, minimum_projects):
     return selected, excluded
 
 
-def serving_artifacts(by_source, proofs, selected):
+def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engine_variants=False):
     """Retain common serving resources while disclosing heterogeneous prompts."""
     common, plans, originals = None, [], {}
     for source in by_source:
@@ -78,13 +79,29 @@ def serving_artifacts(by_source, proofs, selected):
                  arm.parent / "capture_plan.json")
         info, capacity, plan = (json.loads(path.read_bytes()) for path in paths)
         values = ({name: info[name] for name in SERVING_FIELDS}, capacity["capacity"], plan["engine_tree"])
-        if common is not None and values != common:
+        if common is not None and (
+            values[:2] != common[:2]
+            or not allow_reviewed_native_engine_variants and values[2] != common[2]
+        ):
             raise ValueError("composed traces need the same model and declared native resources")
         if plans and plan["hold_file"] != plans[0]["hold_file"]:
             raise ValueError("composed sources have different resource authorization files")
         common = values
         plans.append(plan)
         originals.update({str(path.resolve()): sha256_file(path) for path in paths})
+    engine_tree, compatibility = common[2], None
+    trees = {plan["engine_tree"] for plan in plans}
+    if len(trees) > 1:
+        compatibility = reviewed_capture_composition(trees)
+        if (
+            common[0]["enable_beliefkv_admission"] is not False
+            or common[1].get("pool_layout") != "static_full_only"
+            or any(common[1].get(name) != 0 for name in (
+                "device_mamba_slots", "host_mamba_slots",
+            ))
+        ):
+            raise ValueError("reviewed mixed-engine composition requires FULL-only native captures")
+        engine_tree = compatibility["replay_engine_tree"]
     tasks = {}
     manifest = None
     for proof in proofs:
@@ -116,16 +133,17 @@ def serving_artifacts(by_source, proofs, selected):
         "server/native_capacity_census.json": {"capacity": common[1]},
         "workload_manifest.json": combined,
         "serving_source.json": {
-            "engine_tree": common[2],
+            "engine_tree": engine_tree,
             "original_capture_plans": [str(Path(source).parent / "capture_plan.json") for source in by_source],
             "hold_file": plans[0]["hold_file"],
+            **({"engine_variant_compatibility": compatibility} if compatibility else {}),
         },
     }, originals
 
 
 def prepare(
     inventories, output, *, inventory_paths=(), seconds_per_model_unit=None, audit_shape=False,
-    minimum_work_ratio=None, minimum_projects=36,
+    minimum_work_ratio=None, minimum_projects=36, allow_reviewed_native_engine_variants=False,
 ):
     if output.exists():
         raise FileExistsError("preserve every composed workload preparation")
@@ -204,7 +222,12 @@ def prepare(
             "protocol_sha256": sorted({row["protocol_sha256"] for row in workflows}),
         })
     graph = merge_plans(plans)
-    supporting, supporting_inputs = serving_artifacts(by_source, proofs, selected)
+    supporting, supporting_inputs = (
+        serving_artifacts(
+            by_source, proofs, selected, allow_reviewed_native_engine_variants=True,
+        ) if allow_reviewed_native_engine_variants
+        else serving_artifacts(by_source, proofs, selected)
+    )
     originals.update(supporting_inputs)
     for index, inventory in enumerate(refreshed.values()):
         supporting[f"inventories/source_{index + 1}.json"] = inventory
@@ -277,12 +300,14 @@ def main():
     parser.add_argument("--audit-shape", action="store_true")
     parser.add_argument("--minimum-work-ratio", type=float)
     parser.add_argument("--minimum-projects", type=int, default=36)
+    parser.add_argument("--allow-reviewed-native-engine-variants", action="store_true")
     args = parser.parse_args()
     print(prepare(
         [json.loads(path.read_bytes()) for path in args.inventory], args.output_dir.resolve(),
         inventory_paths=args.inventory, seconds_per_model_unit=args.seconds_per_model_unit,
         audit_shape=args.audit_shape,
         minimum_work_ratio=args.minimum_work_ratio, minimum_projects=args.minimum_projects,
+        allow_reviewed_native_engine_variants=args.allow_reviewed_native_engine_variants,
     ))
 
 

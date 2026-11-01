@@ -5713,3 +5713,25 @@
   ownersactuallygone.GPUidle,noautomaticfollowup.Needcleancommittedfix
   andexplicitanalysis-requalification/mixed-reviewed-enginecomposition
   contractsbeforeformalworkloadregistrationorGPUcomparison;goalactive.
+- Newexplicitrequalify_causal_sourceentrybindscompleteexecution/actualexit/
+  freshdrain/originalfailure/rawprefixes/freshnative-tokenaudit/currentCPU/
+  actualparallelrootJOINandrecordedcallbackclockconflicts. Doesnotrewrite
+  capture_failed. register_composite_sourcerequiressuppliedorigin-sidecar;
+  legacyreadyguardunchanged. Mixedcaptureenginesdefaultreject;explicit
+  reviewedcommon11+434onlyrequiresidenticalserving/capacity/FULL-onlynative,
+  reloadrechecksoriginalfiles,andselectsactual434originforcommonreplay.
+- Composite69actuallymaterializedfrom6sources:11441requests/1460863outputs/
+  304JOIN/modelP80P20=3.014931,initialcontexts29111..241025;notservingproof.
+  Overlay2332callsretains2034oldentriesexactly/298newcalls/116oldwhole-
+  project-excluded,samepublicpool/categories/seed21and949e2b45prior.
+  original69_initial12_mean70_prepare_r1freezes12warm/18measured/39background,
+  arrival35/permutation47(firststatic-balanced47..99),last4174.136284s,
+  fixedarrival-indexfullJCT/measure-completebackgroundstop/commonwallwindow.
+  Fullusesoldnonrankingpolicy/newdisabled-rankingbookkeepingartifact;
+  Full/ThunderdecayactualCPUconstructorspass,nofull-batchobjectiveenabled.
+- Registrationcontracts targeted231pass;retaininitial2fixturemissingchildJOIN
+  failuresand4oldnative-checkmissingenvfailures. Fullbound6451+23retains6400/
+  2269sources/allpriorpaths,source/external/nativeunchanged,zerofailure/error/
+  skip. Needcleancommit/actualrequalification/source-registration/newGPU
+  positionandsampling/fullmeasuredreview. NoGPUcomparisonregisteredyet;
+  backgroundcoverage/pressure/recomputation/oraclegainremainunproven.

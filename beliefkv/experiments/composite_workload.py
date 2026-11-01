@@ -9,6 +9,7 @@ from pathlib import Path
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.causal_replay import CausalReplayPlan, ReplayNode
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.native_engine_variant import reviewed_capture_composition
 
 
 KIND = "composed_complete_original_workflows"
@@ -42,6 +43,48 @@ def composed_quality(arm):
         "delegation_round_count": sum(row["joins"] for row in rows),
         "matched_natural_native_baseline_available": False,
     }
+
+
+def verify_serving_engine_sources(arm, declaration):
+    path = arm / "serving_source.json"
+    if not path.is_file():
+        return
+    serving = json.loads(path.read_bytes())
+    compatibility = serving.get("engine_variant_compatibility")
+    if compatibility is None:
+        return
+    paths = [Path(name).resolve() for name in serving["original_capture_plans"]]
+    expected_paths = {
+        (Path(row["source_capture"]).parent / "capture_plan.json").resolve()
+        for row in declaration["sources"]
+    }
+    if len(paths) != len(expected_paths) or set(paths) != expected_paths:
+        raise ValueError("reviewed engine composition changed its original capture plans")
+    plans = [json.loads(item.read_bytes()) for item in paths]
+    expected = reviewed_capture_composition({plan["engine_tree"] for plan in plans})
+    info = json.loads((arm / "server/server_info.json").read_bytes())
+    capacity = json.loads((arm / "server/native_capacity_census.json").read_bytes())["capacity"]
+    if (
+        compatibility != expected or serving["engine_tree"] != expected["replay_engine_tree"]
+        or info["enable_beliefkv_admission"] is not False
+        or capacity.get("pool_layout") != "static_full_only"
+        or any(capacity.get(name) != 0 for name in ("device_mamba_slots", "host_mamba_slots"))
+    ):
+        raise ValueError("invalid reviewed FULL-only native engine composition")
+    for item in paths:
+        original_info = item.parent / "native_capture/server/server_info.json"
+        original_capacity = item.parent / "native_capture/server/native_capacity_census.json"
+        if not {str(value) for value in (item, original_info, original_capacity)} <= (
+            declaration["original_inputs_sha256"].keys()
+        ):
+            raise ValueError("reviewed engine composition lacks its original resource bindings")
+        if any(sha256_file(value) != declaration["original_inputs_sha256"][str(value)]
+               for value in (item, original_info, original_capacity)):
+            raise ValueError("reviewed original capture resource binding changed")
+        source_info = json.loads(original_info.read_bytes())
+        source_capacity = json.loads(original_capacity.read_bytes())["capacity"]
+        if {name: source_info[name] for name in SERVING_FIELDS} != info or source_capacity != capacity:
+            raise ValueError("reviewed original captures changed common serving resources")
 
 
 def verify_composed_registration(source):
@@ -154,6 +197,7 @@ def load_composed_source(arm):
     for name, digest in declaration["original_inputs_sha256"].items():
         if sha256_file(Path(name)) != digest:
             raise ValueError("original composed source input changed: " + name)
+    verify_serving_engine_sources(arm, declaration)
     data = json.loads((arm / "plan.json").read_bytes())
     plan = CausalReplayPlan(
         tuple(ReplayNode(
