@@ -228,7 +228,7 @@ Oracle的R3周期审计在共同窗口记录782次控制、248次存在ready-pau
 
 该机会比“平均142秒与prefill穿插”更具体，但仍只支持保留有界短续接共批设计，尚不足以登记新的GPU收益实验。后续实现必须在当前原生选批边界证明真实完整前缀、资格、请求行及增长容量，用实际短输入从长chunk中分出预算，并保留长chunk进度和JOIN保护。不能将25.387秒直接从1,052.995秒JCT扣除后宣称优化。
 
-源码时序核对进一步确认：`V0520NativeTelemetry.on_launch()`在首次GPU服务时才填入`cached_tokens_device`、`cached_tokens_host`和checkpoint等属性，然后将`llm_submit.ts_ms`设置为先前保存的提交时间。该行不是提交时的缓存快照。`native_ingress_timing_ms`保留真实入口时刻，但同一行的缓存字段仍属于首次服务观察；即使时间戳早于长chunk，也不能据此消除物理驻留的不确定性。
+源码时序核对进一步确认：`NativeReactiveTelemetry.on_launch()`在首次GPU服务时才填入`cached_tokens_device`、`cached_tokens_host`和checkpoint等属性，然后将`llm_submit.ts_ms`设置为先前保存的提交时间。该行不是提交时的缓存快照。`native_ingress_timing_ms`保留真实入口时刻，但同一行的缓存字段仍属于首次服务观察；即使时间戳早于长chunk，也不能据此消除物理驻留的不确定性。
 
 ### 共批候选与相关工作的边界
 
@@ -240,3 +240,28 @@ Oracle的R3周期审计在共同窗口记录782次控制、248次存在ready-pau
 本候选应按工程优化验收：是否在既有agent资格、真实物理前缀及增长容量内，避免长chunk延迟短续接；是否通过提前完成使后续工具或JOIN关键路径与其他计算重叠。必须同时支付新增控制、多成员prefill形状以及长chunk推迟的实际成本。仅改善TBT、首次服务或合并批次次数，不足以证明完整workflow JCT和吞吐收益。
 
 本地冻结引擎的实际server-info配置为prefill `breakable`、decode `full`。`PrefillCudaGraphRunner.can_replay_locally()`中的请求槽位上限只对Full prefill后端生效，不能把初始化时的`_capture_req_slots=1`当作当前双请求共批必然失去图回放的证据。多请求形状能否实际回放及其CPU/GPU成本仍需单独验证；当前未修改图后端或启动共批GPU候选。
+
+### 摘要前后旧KV失效范围的机会核对
+
+桌面开发workflow的一段较长完整请求间隔对应内部`context-summary:000016`。有界实时尾部实际观察到摘要invocation连续decode，root inactive而摘要invocation active。该观察区分完整请求回执间隔与实际无服务，不据此估算剩余JCT。
+
+考虑过的另一个候选是在摘要开始时，根据运行时已经确定的上下文改写计划，提前停止备份或释放将失效的私有后缀。它需要在摘要前就能证明保留前缀，保留共享页和原生DMA/锁检查；离线知道下一条prompt的LCP不能直接作为线上淘汰权限。
+
+`compaction_prefix_geometry_complete_controls_r1/`复用实际回放的source loader、`CapturedTokenCorpus`及原生前缀比较函数，对已退出的Full记录中每次`context_compact`后的caller请求与其上一个已完成请求比较精确token：
+
+| 观察到的摘要后caller输入对 | original56 | original82 |
+| --- | ---: | ---: |
+| 完整测量记录内已观察并精确比较的输入对 | 17 | 24 |
+| 其中属于固定测量组的输入对 | 0 | 24 |
+| 摘要前输入token中位数 | 248,436 | 248,646 |
+| 仍保留的旧输入前缀比例P50 | 96.770% | 96.688% |
+| 仍保留的旧输入前缀比例最小值 | 96.533% | 96.510% |
+| 被改写的旧输入后缀token中位数 | 8,025 | 8,235 |
+
+original82的24对均来自桌面开发workflow。摘要没有使整段约24.8万token旧上下文失效；大部分旧前缀仍可复用。表内长度是逻辑token几何，不是独占HBM/Host页数、实际复制字节或可消除JCT，也不包含旧输出尾部的物理页核算。original56的17对属于被保留到测量截止点的背景执行记录，不能称为所有背景均已完成。
+
+另外逐一核对original82这24对的`next_prompt_after_common_prefix_tokens`与实际冻结Oracle的`requests[request_id].input_increment`，24对全部一致。工作量清单使用`WorkflowProgress.completed()`比较实际token，不直接将新session的序列化base缺失当作全部新增输入；没有发现把这类约24.8万token后继统一计为全新输入的缺口。
+
+现有adapter已在摘要后的`context_compact`声明`old_kv_disposition=release_ownership`。本次几何证据不足以支持新增提前失效控制路径，尤其不支持整段caller提前丢弃。保持现有运行，不排队这项GPU候选。
+
+初次CPU分析入口把JSON身份列表直接传入要求tuple身份的校验器，被`verify_capture`拒绝。失败代码与错误保存在`compaction_prefix_geometry_cpu_entry_failure_r1/`；修正为调用已有source loader后两组分析通过。原token、已有校验器、项目源码与运行中的GPU实验均未修改。
