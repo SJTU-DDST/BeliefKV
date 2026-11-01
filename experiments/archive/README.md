@@ -4,6 +4,27 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-11-01 Superseded Qwen3.5 Logs
+
+The completed selection covers 239 large server, opportunity and client-mirrored
+log files from 23 old Qwen3.5 runs. Its 72,242,208,768 allocated source bytes
+became 1,920,118,508 compressed bytes, reclaiming approximately 70.32 GB.
+Every selected raw file passed complete GNU tar content comparison before
+removal. The separate review checks archive SHA256, exact member lists,
+unchanged original plans and per-run restoration markers.
+
+The dated [restore index](20261101_unused_logs/README.md) contains every archive
+hash and extraction command. The selection, receipt and independent review are
+under `experiments/reports/unused_archive_20261101/`. Every affected raw directory
+retains `OLD_LOGS_ARCHIVED_20261101.md`.
+
+V29/V58 native references, V108, all Oct 22 or newer runs, recent/live registered
+inputs, source/request token bundles, client workflow events, outcomes, failures,
+workspaces, containers and frozen source trees remain directly available.
+V111 was skipped because the expected original `ab_plan.json` was absent.
+Compression uses one nice19 worker with idle I/O; exact execution timestamps
+remain in the receipt, including overlap with any independently running work.
+
 ## 2026-10-14 Old Support Logs Before V59
 
 Twenty-five stopped log files from V32/V49 client mirrors and V54/V55 server,
