@@ -1,0 +1,143 @@
+{
+  "status": "independently_verified",
+  "observed_at": "2026-11-01T23:56:28.488104+08:00",
+  "pack_groups": [
+    {
+      "pack_name": "pack-2c0dd49741723972374afeff759d388c4a26ccc5.pack",
+      "copies": 125,
+      "canonical": {
+        "pack": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-2c0dd49741723972374afeff759d388c4a26ccc5/pack-2c0dd49741723972374afeff759d388c4a26ccc5.pack",
+        "index": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-2c0dd49741723972374afeff759d388c4a26ccc5/pack-2c0dd49741723972374afeff759d388c4a26ccc5.idx"
+      },
+      "sha256": {
+        "pack": "81383fa02b3d9dd4d6a6a4b1ce91125e4889a511c903cabd81f98dbeb933647c",
+        "index": "d51c80510b967e55fd46c8170978cdb71a68bde4241b62418c1a1a7514011956"
+      },
+      "reclaimed_bytes": 7110680576,
+      "native_git_verify_pack_passed": true,
+      "every_retained_git_head_readable": true
+    },
+    {
+      "pack_name": "pack-3974a816ef87e7cf6ece39d496a567ee50898b69.pack",
+      "copies": 10,
+      "canonical": {
+        "pack": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-3974a816ef87e7cf6ece39d496a567ee50898b69/pack-3974a816ef87e7cf6ece39d496a567ee50898b69.pack",
+        "index": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-3974a816ef87e7cf6ece39d496a567ee50898b69/pack-3974a816ef87e7cf6ece39d496a567ee50898b69.idx"
+      },
+      "sha256": {
+        "pack": "b1446bc71896447ba81ac5f8425d7d5ef2c655190f5f40f8f1951a656fab4edb",
+        "index": "c3a149c307d072d440884e1e2080cd78991501543373e7085b3938cb0b00d879"
+      },
+      "reclaimed_bytes": 509571072,
+      "native_git_verify_pack_passed": true,
+      "every_retained_git_head_readable": true
+    },
+    {
+      "pack_name": "pack-5a724d36f986f066a7076026cf9b86e930766929.pack",
+      "copies": 54,
+      "canonical": {
+        "pack": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-5a724d36f986f066a7076026cf9b86e930766929/pack-5a724d36f986f066a7076026cf9b86e930766929.pack",
+        "index": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-5a724d36f986f066a7076026cf9b86e930766929/pack-5a724d36f986f066a7076026cf9b86e930766929.idx"
+      },
+      "sha256": {
+        "pack": "77ce532149d6f070e92ba5f65beecf58211b165138a977b5def2766251184337",
+        "index": "e5d1662fb76147afe81b26916d60c61ecd5d47c5b0e3e9e009c1a01bcb212d17"
+      },
+      "reclaimed_bytes": 2395365376,
+      "native_git_verify_pack_passed": true,
+      "every_retained_git_head_readable": true
+    },
+    {
+      "pack_name": "pack-82b7e07112179ca056b7b28565b827306af8135d.pack",
+      "copies": 130,
+      "canonical": {
+        "pack": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-82b7e07112179ca056b7b28565b827306af8135d/pack-82b7e07112179ca056b7b28565b827306af8135d.pack",
+        "index": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-82b7e07112179ca056b7b28565b827306af8135d/pack-82b7e07112179ca056b7b28565b827306af8135d.idx"
+      },
+      "sha256": {
+        "pack": "73e518eebeb9a2f9a4517b6283af7ddb69d22b7eef1a33713e0828908844b80e",
+        "index": "4afeee06b878a52b845241af95347696f39f08d16dadc8ee2d5b001312707bf9"
+      },
+      "reclaimed_bytes": 5949640704,
+      "native_git_verify_pack_passed": true,
+      "every_retained_git_head_readable": true
+    },
+    {
+      "pack_name": "pack-eb6ab04d27187e12fe899ca7dde198fe727b834f.pack",
+      "copies": 284,
+      "canonical": {
+        "pack": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-eb6ab04d27187e12fe899ca7dde198fe727b834f/pack-eb6ab04d27187e12fe899ca7dde198fe727b834f.pack",
+        "index": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/git_objects/pack-eb6ab04d27187e12fe899ca7dde198fe727b834f/pack-eb6ab04d27187e12fe899ca7dde198fe727b834f.idx"
+      },
+      "sha256": {
+        "pack": "7c5c15e807406808571a50fff639a2714780fe43fc9e8df9bae3b53f671d3d10",
+        "index": "d3dba462b9420a992bea31c7c36a724edc6b774d28d00c5ff6a2f4460e723493"
+      },
+      "reclaimed_bytes": 86073233408,
+      "native_git_verify_pack_passed": true,
+      "every_retained_git_head_readable": true
+    }
+  ],
+  "log_groups": [
+    {
+      "root": "/home/longhao/experiment/BeliefKV/experiments/ab/p6_h200_high_pressure_v3/20260920_v58_pair",
+      "files": 19,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_1.tar.zst",
+      "archive_bytes": 59516781,
+      "archive_sha256": "842c97aebaa4400cc10b4268abdaccb2d1096a59977e2f768e00833ac79d8d71",
+      "source_allocated_bytes": 1090781184,
+      "net_reclaimed_bytes": 1031258112,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_1.tar.zst --directory /home/longhao/experiment/BeliefKV"
+    },
+    {
+      "root": "/home/longhao/experiment/BeliefKV/experiments/ab/p6_h200_high_pressure_v3/20260921_v59_predictive",
+      "files": 7,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_2.tar.zst",
+      "archive_bytes": 36846790,
+      "archive_sha256": "473d6ac8f415a797c8bbcb2165d8991d7d32abae79243dbc2f955d716d2b542c",
+      "source_allocated_bytes": 690962432,
+      "net_reclaimed_bytes": 654114816,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_2.tar.zst --directory /home/longhao/experiment/BeliefKV"
+    },
+    {
+      "root": "/home/longhao/experiment/BeliefKV/experiments/ab/p6_h200_high_pressure_v3/20260921_v60_predictive_retry1",
+      "files": 7,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_3.tar.zst",
+      "archive_bytes": 31932485,
+      "archive_sha256": "b711672a0a0bebcc93598ed406f9fc2fc667be0876a412ed2c0aecf06d2f5e81",
+      "source_allocated_bytes": 655503360,
+      "net_reclaimed_bytes": 623566848,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_3.tar.zst --directory /home/longhao/experiment/BeliefKV"
+    },
+    {
+      "root": "/home/longhao/experiment/BeliefKV/experiments/shadow/p6_predictive_wait_shadow_v58",
+      "files": 7,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_4.tar.zst",
+      "archive_bytes": 26355572,
+      "archive_sha256": "89c8e09628a5f0749a0f80822c0f2afcf64b49b9adeb994f8190df66ada62e22",
+      "source_allocated_bytes": 456724480,
+      "net_reclaimed_bytes": 430366720,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_home_storage/old_service_logs_4.tar.zst --directory /home/longhao/experiment/BeliefKV"
+    }
+  ],
+  "deduplicated_pack_copies": 598,
+  "verified_pack_reclaimed_bytes": 102038491136,
+  "archived_log_files": 40,
+  "log_net_reclaimed_bytes": 2739306496,
+  "all_canonical_object_sha256_match": true,
+  "all_retained_paths_are_read_only_hardlinks": true,
+  "all_native_git_pack_checks_pass": true,
+  "all_original_git_heads_readable": true,
+  "all_log_archive_sha256_and_members_match": true,
+  "all_small_old_metadata_hashes_match": true,
+  "free_bytes_observed": 354039365632,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/home_storage_cleanup_20261101/inventory.json": "91e1b551d62c3ac6c04a141c70872c680db61468830010417a0921eca9eb7fb6",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/home_storage_cleanup_20261101/receipt.json": "a847ff815b226481e76427a9abe0d4d8d45a27fc8b9c91b3e87146f5af0f05c1",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/home_storage_cleanup_20261101/cleanup_storage.py": "ba92b0aa5e0b14d8138d9ab7d5f569e593d25652b4e1db3ad68fb9534a954e05",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/home_storage_cleanup_20261101/review_cleanup.py": "9eadd2d89bbf46505d23f259f05eb2576ca2f97c29bfe3b56da3aacd88a6ff7a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/home_storage_cleanup_20261101/storage_and_cache_observations.json": "2c1c73fd83dba833bca2c03cf151100190c06829f3bba328e1baf9f660281037"
+  },
+  "scope": "CPU/IO storage maintenance; no GPU run, source checkout removal or result claim.",
+  "verified_reclaimed_bytes_excluding_download_cache": 104777797632
+}

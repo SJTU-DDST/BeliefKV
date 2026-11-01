@@ -4,6 +4,37 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-11-01 Home Storage And Git Object Deduplication
+
+The home-directory audit observed approximately 1.08 TB allocated under
+`/home/longhao`, of which `experiment` accounted for 1.03 TB. The main BeliefKV
+checkout accounted for 524.40 GB and `.worktrees` for 461.42 GB. Many old task
+workspaces independently stored identical Git pack/index files.
+
+After skipping 141 active or container-mounted workspaces, 603 private copies
+of five Git pack/index pairs passed per-copy SHA256 comparison and native
+`git verify-pack`. Their original paths now share read-only canonical objects
+under `20261101_home_storage/git_objects/`, reclaiming 102.04 GB of redundant
+private inodes. No task source, Git reference or frozen checkout was removed.
+The inventory retains original per-copy modes and timestamps; canonical shared
+objects use mode 0444. Independent review verifies the retained inodes, object
+hashes, native pack integrity and every original workspace HEAD.
+
+Forty large old server logs from four September experiment directories passed
+complete tar comparison and were compressed separately, reclaiming another
+2.74 GB. Their outcomes, request tokens and small metadata remain in place;
+each directory retains a recovery marker. Standard pip download-cache purge
+and Conda tarball/index-cache cleanup also completed, with installed packages,
+environments, model caches and compilation caches retained.
+
+The [storage maintenance index](20261101_home_storage/README.md) contains object
+and log details plus log restoration commands. Frozen inventory, execution,
+independent review and initial folder/cache observations are under
+`experiments/reports/home_storage_cleanup_20261101/`. Initial and final free
+space observations were approximately 237 GB and 354 GB; concurrent writes and
+package-cache hardlinks mean this df difference is not an exact exclusive
+per-cache reclamation measurement.
+
 ## 2026-11-01 Historical Derived Reports
 
 The completed cleanup archives 349 untracked, flat versioned analysis reports dated

@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Asia/Shanghai",
+  "scope": "Read-only du/df observations and standard package-download-cache cleanup.",
+  "before_allocated_bytes": {
+    "/home/longhao": 1082092974080,
+    "/home/longhao/experiment": 1032456683520,
+    "/home/longhao/experiment/BeliefKV": 524399542272,
+    "/home/longhao/experiment/.worktrees": 461421817856,
+    "/home/longhao/experiment/BeliefKV/experiments/raw": 435051085824,
+    "/home/longhao/experiment/BeliefKV/experiments/ab": 36630585344,
+    "/home/longhao/experiment/BeliefKV/experiments/shadow": 14675677184,
+    "/home/longhao/experiment/BeliefKV/experiments/reports": 13350858752,
+    "/home/longhao/miniconda3": 26099757056,
+    "/home/longhao/miniconda3/pkgs": 6045511680,
+    "/home/longhao/.cache": 10930515968,
+    "/home/longhao/.cache/pip": 9758883840,
+    "/home/longhao/.codex": 7009845248,
+    "/home/longhao/.vscode-server": 5588684800
+  },
+  "filesystem_free_bytes_before": 237305929728,
+  "cache_actions": [
+    {
+      "argv": [
+        "/home/longhao/miniconda3/bin/python",
+        "-m",
+        "pip",
+        "cache",
+        "purge"
+      ],
+      "returncode": 0,
+      "output": "Files removed: 2520 (9736.8 MB)\nDirectories removed: 73",
+      "cache_allocated_bytes_observed_after": 15798272
+    },
+    {
+      "argv": [
+        "/home/longhao/miniconda3/bin/conda",
+        "clean",
+        "--tarballs",
+        "--index-cache",
+        "--yes",
+        "--json"
+      ],
+      "returncode": 0,
+      "success": true,
+      "tarball_payload_bytes": 869014384,
+      "tarball_warnings": [],
+      "index_cache_paths": ["/home/longhao/miniconda3/pkgs/cache"],
+      "package_directory_allocated_bytes_observed_after": 4176625664,
+      "installed_packages_and_environments_selected_for_removal": false
+    }
+  ],
+  "filesystem_free_bytes_after_cache_cleanup": 249293393920,
+  "observed_free_space_increase_after_cache_bytes": 11987464192,
+  "accounting_note": "du values are allocated-block observations. Package hardlinks and concurrent filesystem writes mean the observed df increase is not an exact exclusive per-cache reclamation proof. Git-object and log reclamation have separate frozen inode inventories and byte checks.",
+  "preserved": [
+    "Installed Conda environments and extracted packages",
+    "Model and compilation caches",
+    "Codex session data and VS Code server installations",
+    "All frozen source checkouts"
+  ]
+}

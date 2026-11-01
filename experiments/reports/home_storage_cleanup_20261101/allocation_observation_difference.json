@@ -1,0 +1,9 @@
+{
+  "scope": "Filesystem allocated-block observations at cleanup and independent-review times.",
+  "receipt_log_net_reclaimed_bytes": 2739310592,
+  "independent_review_log_net_reclaimed_bytes": 2739306496,
+  "independent_minus_receipt_bytes": -4096,
+  "explanation": "The archive files consumed one additional filesystem block at the independent observation. Compressed lengths, archive SHA256, tar member inventories and preserved metadata hashes matched exactly. Both original observations remain unchanged.",
+  "archive_payload_bytes": 154651628,
+  "verified_git_object_reclaimed_bytes_both_observations": 102038491136
+}
