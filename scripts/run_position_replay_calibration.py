@@ -50,6 +50,19 @@ SAMPLING_MODULES = (
 )
 
 
+def valid_comparison_order(spec):
+    order = spec.get("order")
+    if not isinstance(order, list) or not order or any(
+        type(label) is not str or label not in (*controls.CONTROLS, *controls.PAPER_CONTROLS)
+        for label in order
+    ) or len(set(order)) != len(order):
+        return False
+    native = spec.get("comparison_contract", {}).get("native_replay_baseline") is True
+    if "native_matched" in order or native:
+        return native and order == ["native_matched"]
+    return True
+
+
 def source_root_count(source):
     value = source.get("environment", {}).get("ROOT_COUNT", "36")
     if (
@@ -272,12 +285,7 @@ def register(args):
             or sha256_file(ROOT / common["WORKLOAD_MANIFEST"]) != sha256_file(
                 Path(source["environment"]["WORKLOAD_MANIFEST"])
             )
-            or not spec.get("order") or any(
-                label not in (*controls.CONTROLS, *controls.PAPER_CONTROLS)
-                or label == "native_matched"
-                for label in spec["order"]
-            )
-            or len(set(spec["order"])) != len(spec["order"])
+            or not valid_comparison_order(spec)
         ):
             raise ValueError("predeclared source population, batch, tasks or control order differs")
         if source.get("capture_capacity") is not None:

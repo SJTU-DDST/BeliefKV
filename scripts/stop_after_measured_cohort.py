@@ -23,8 +23,11 @@ from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 def replay_arm(comparison):
     order = comparison.get("order")
-    if order not in (["full"], ["thunderagent_acting_decay"]):
-        raise ValueError("measured termination requires one declared Full or ThunderAgent acting-decay arm")
+    native_declared = comparison.get("comparison_contract", {}).get("native_replay_baseline") is True
+    if order not in (["full"], ["thunderagent_acting_decay"], ["native_matched"]) or (
+        order == ["native_matched"] and not native_declared
+    ):
+        raise ValueError("measured termination requires one declared Full, ThunderAgent acting-decay or native arm")
     return Path(comparison["run_root"]) / order[0]
 
 
@@ -265,9 +268,13 @@ def review(plan, comparison, completion):
     if arm.name != "full":
         capture.reservation.write_json(output / "workload_decision.json", {
             "accepted_for_oracle_diagnostic": False,
-            "failed_checks": ["full_policy_workload_diagnostics_not_evaluated_for_paper_arm"],
+            "failed_checks": [
+                "full_policy_workload_diagnostics_not_evaluated_for_native_arm"
+                if arm.name == "native_matched" else
+                "full_policy_workload_diagnostics_not_evaluated_for_paper_arm"
+            ],
             "not_a_new_workload_acceptance_decision": True,
-            "paper_arm": arm.name,
+            **({"native_arm": arm.name} if arm.name == "native_matched" else {"paper_arm": arm.name}),
             "complete_measured_work_and_censoring_retained": True,
             "Full_ready_paused_and_periodic_grants_are_not_paper_metrics": True,
             "GPU_followup_registered": False, "performance_accepted": False,

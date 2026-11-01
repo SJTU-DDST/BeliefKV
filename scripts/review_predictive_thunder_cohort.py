@@ -16,15 +16,18 @@ from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
+TRAFFIC_FIELDS = (
+    "source_arm", "source_plan", "token_source_sha256", "source_capacity",
+    "source_server_parameters", "engine_tree", "workflow_ids", "sampling_mode",
+    "max_running_requests", "request_timeout_s", "stream_response_metrics",
+    "workflow_arrivals", "workflow_arrivals_path", "tool_timing_overlay",
+)
+
+
 def matching_traffic(predictive, thunder):
     if predictive.get("order") != ["full"] or thunder.get("order") != ["thunderagent_acting_decay"]:
         raise ValueError("require predictive and the acting-decay ThunderAgent reproduction")
-    for name in (
-        "source_arm", "source_plan", "token_source_sha256", "source_capacity",
-        "source_server_parameters", "engine_tree", "workflow_ids", "sampling_mode",
-        "max_running_requests", "request_timeout_s", "stream_response_metrics",
-        "workflow_arrivals", "workflow_arrivals_path", "tool_timing_overlay",
-    ):
+    for name in TRAFFIC_FIELDS:
         if name not in predictive or predictive[name] != thunder.get(name):
             raise ValueError("baseline changed fixed traffic or serving conditions: " + name)
     if thunder.get("oracle_information") is not None:
