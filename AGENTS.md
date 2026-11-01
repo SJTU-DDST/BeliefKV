@@ -5757,3 +5757,25 @@
   records similar six-candidate cost and modest eight-candidate cost change,
   not native/full-control/GPU evidence. Full current-source binding and new69
   calibration/GPU qualification remain pending; keep running9ba unchanged.
+- Full-batch CPU binding now passes6467+23, retains6451 literal identities/
+  2270 sources/all prior paths and361 external inputs including prior350,
+  source/external/native unchanged, zero failures/errors/skips.
+  Original69_full_batch_oracle_prepare_r1 binds69 workflows/11441 requests,
+  same tokens/tools/arrivals/cohort; v4/v5 initial remaining paths identical.
+  Actual constructor accepts v5; running9ba constructor rejects it.
+  Clean8e3bbe24 freeze independently verifies all bindings and actual controller
+  identityae3c99d4/full_batch/unreferenced/deep/feasible-alternative flags.
+  Costs explicitly inherited from completed56, not new69 calibration; matching
+  new69 control/workload/cost review and fresh GPU qualification remain pending.
+  No oracle GPU successor registered and running9ba comparison unchanged.
+- Read-only same364 complete-choice weight diagnostic keeps JOIN/resources:
+  regularized path weight selects shortest feasible unprotected workflow in
+  137/140 eligible choices, inverse weight139/140; only8 set changes,6 smaller,
+  no larger, outsiders11to10. Keep original v5 weight; this does not prove JCT
+  optimality or justify new GPU tuning. Exclude29 early returns/3 real deadlines.
+  Thunder still actually running with fixed-cohort/paired coordinator; latest
+  observer31 arrivals/12of18 measured complete. Sealedlive_migration_pressure_r2
+  records H2D5722124/D2H7269522 tokens/Host highwater199999979520bytes.
+  Same-context prior-prefix-loss proxy remains0 but Host-block recomputation
+  now6146 tokens; keep both metrics, never call this completely zero recompute.
+  Writer healthy; these baseline prefixes are not complete new69 acceptance.

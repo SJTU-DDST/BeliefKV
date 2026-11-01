@@ -204,3 +204,67 @@ P50 为 407–416 us，旧目标 405–420 us；八候选新目标 951–983 us�
 新 oracle 的完整源码资格、新 workload 成本标定、干净冻结与 GPU 收益均待完成。
 旧 56 项目 Predictive 相对 ThunderAgent 的 10.430% JCT 改善不归因于此新评分，
 也不代替当前 69 项目测量。
+
+## 完整资格与 69 项目候选冻结
+
+后续共享 CPU 回归通过 6467 项及 23 子项，保留全部 6451 个原测试身份、
+2270 个源码输入和既有输入路径。361 个外部输入包含全部 350 个先前绑定；
+执行期间源码、原生引擎和外部输入未变，无失败、错误或跳过。
+完整证据为 `combination_full_batch_cost_bound_cpu_r1/evidence.json`。
+
+`original69_full_batch_oracle_prepare_r1` 已实际生成新的 69 项目 v5 候选，
+保持相同原题、11441 个完整源请求、工具映射、到达表和固定测量成员。
+它通过源 token/DAG 绑定、与非排序控制的严格配对检查以及实际 runtime 构造。
+v4 成本参考与 v5 新目标的 69 个初始剩余路径完全一致，
+变化仅在组合评分及其声明，不重新定义项目长短或篡改未来工作。
+运行中的旧 `9ba90576` 构造明确拒绝 v5，拒绝证据保留在候选 entry 中。
+
+此候选当前明确复用 **已完成 original56 控制** 的成本曲线，
+没有宣称 original69 的匹配控制或成本标定已完成。
+配置与 entry 均明确要求本轮控制完成、workload 审查、
+成本重新标定或显式复用决定，以及新的 GPU position/采样资格；
+没有登记 oracle GPU 后继。
+
+源码已从提交 `8e3bbe24` 冻结到
+`/home/longhao/experiment/.worktrees/beliefkv-full-batch-operator-8e3bbe24`。
+`original69_full_batch_oracle_prepare_r1/clean_freeze_entry_r1.json`
+独立复验全部 6467 项报告身份、2270 源码输入、外部绑定、原生状态、
+69 项目数据与真实构造。实际成本身份为 `ae3c99d4`，
+`full_batch`、未引用副本容量、深前缀和可行替代集合四项契约均成立。
+本次冻结只完成 CPU 与数据准备，不构成 GPU 或性能验收。
+
+## 剩余路径权重的只读检查
+
+在相同完整旧日志、相同 full-batch 成本、相同容量和 required JOIN 下，
+额外比较了现有 `1/(1+R/600)` 与共同归一化的严格 `1/R` 权重。
+R 是已记录的剩余模型/工具路径；统一归一化只保持权重不超过一，
+不引入新的时间常数。该检查只使用 364 个完整实际枚举；
+29 次搜索函数早返和 3 次真实截止单独排除。
+
+140 次存在可行、未受保护的 workflow 竞争者。
+现有权重在其中 137 次选中至少一个最短可行未受保护 workflow，
+倒数权重为 139 次。两种权重仅改变 8 次集合，
+其中倒数权重 6 次缩小集合，未产生更大的集合；
+参考外成员次数反而从 11 降至 10。
+因此当前证据不支持继续增强长短权重作为首要修复，
+保留 v5 的原权重，不新增 GPU 方案或时间超参数。
+这些局部最短成员命中不证明全局 JCT 最优。
+
+证据为
+`combination_full_batch_cost_cpu_r1/remaining_path_weight_diagnostic.json`，
+所有实际旧决策先按原成本、原截止复现，再比较完整的局部反事实选择；
+没有模拟后续服务或 JCT。
+
+ThunderAgent 当前仍正常推进，最新收尾观察器记录到 31 个到达、
+12/18 测量完成。
+一次较早的遥测读取已记录 Host 接近 200 GB 高水位、
+H2D 4752731 token、D2H 4246869 token，表明迁移压力实际存在。
+随后封存的
+`gpu_entry_original69_initial12_mean70_thunder_decay_r1/live_migration_pressure_r2.json`
+记录 H2D 5722124 token、D2H 7269522 token、Host 高水位 199999979520 bytes。
+已服务同上下文前缀丢失代理仍为零，但 Host block 重算计数已出现 6146 token，
+两者口径不同，不能称为完全零重算；writer 仍健康。
+快照保留实际服务/观察器/协调器身份、原生状态完整内容及 hash、
+物理池日志完整前缀。高水位不是平均有效占用，copy ACK 量也不是独占等待时间。
+这些都是 baseline 前缀观察，不能替代 Predictive 的完整压力、重算及尾部验收。
+顺序比较协调器继续等待固定 18 成员完成，整体目标保持未完成。
