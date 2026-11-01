@@ -16,7 +16,9 @@ from beliefkv.experiments.source_provenance import sha256_file
 from scripts.audit_decode_batch_efficiency import OutputConservation, padding_bucket
 from scripts.audit_native_system_costs import distribution
 from scripts.audit_sealed_wait_prefetch import SealedRecords
+from scripts.stop_after_measured_cohort import replay_arm
 from scripts.train_workflow_work import write
+from scripts.verify_measured_execution import verify_execution
 
 
 def context_bin(tokens):
@@ -187,8 +189,9 @@ def analyze(rows, *, buckets, receipts, measured, window):
 
 
 def inspect(registration, cohort_path):
+    execution = verify_execution(registration, cohort_path)
     plan, cohort = (json.loads(path.read_bytes()) for path in (registration, cohort_path))
-    arm, reader = Path(plan["run_root"]) / "full", SealedRecords()
+    arm, reader = replay_arm(plan), SealedRecords()
     info_path = arm / "server/server_info.json"
     status_path = arm / "server/native_telemetry_status.json"
     info, status = (json.loads(path.read_bytes()) for path in (info_path, status_path))
@@ -226,6 +229,9 @@ def inspect(registration, cohort_path):
             raise ValueError("completed evidence changed")
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
+        method=arm.name,
+        completed_execution_protocol=execution["protocol"],
+        complete_measured_execution_verified=True,
         common_window_offset_seconds=cohort["throughput_window_offset_seconds"],
         engine={
             key: info.get(key) for key in (
@@ -237,7 +243,12 @@ def inspect(registration, cohort_path):
         input_jsonl_prefixes=reader.prefixes,
         inputs_sha256={
             str(path.resolve()): sha256_file(path)
-            for path in (registration, cohort_path, info_path, status_path, Path(__file__))
+            for path in (
+                registration, cohort_path, info_path, status_path, Path(__file__),
+                ROOT / "scripts/verify_measured_execution.py",
+                ROOT / "scripts/stop_after_measured_cohort.py",
+                *map(Path, execution.get("native_execution_evidence", {}).get("inputs_sha256", {})),
+            )
         },
         semantics=[
             "Useful output means actual observed emitted output token deltas, including first prefill outputs.",

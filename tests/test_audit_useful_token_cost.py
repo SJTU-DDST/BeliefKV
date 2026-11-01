@@ -1,7 +1,9 @@
 from copy import deepcopy
+import json
 
 import pytest
 
+from scripts import audit_useful_token_cost as cost
 from scripts.audit_useful_token_cost import analyze
 
 
@@ -81,3 +83,64 @@ def test_corrupted_accounting_is_rejected(change):
         rows[1]["request_samples"][0].update(output_tokens_after=3, output_token_delta=2)
     with pytest.raises(ValueError):
         audit(rows)
+
+
+@pytest.mark.parametrize("method", ["full", "thunderagent_acting_decay"])
+def test_completed_arm_uses_its_own_worker_and_receipt_evidence(tmp_path, monkeypatch, method):
+    arm = tmp_path / method
+    (arm / "server").mkdir(parents=True)
+    (arm / "replay").mkdir()
+
+    def save(path, value):
+        path.write_text(json.dumps(value))
+
+    def save_rows(path, rows):
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+    registration, cohort = tmp_path / "registration.json", tmp_path / "cohort.json"
+    save(registration, {
+        "run_root": str(tmp_path), "order": [method],
+        "workflow_arrivals": {"arrival_schedule": [{"workflow_id": "m", "offset_seconds": 0.}]},
+    })
+    save(cohort, {
+        "measured_workflow_ids": ["m"], "throughput_window_offset_seconds": [0., .025],
+    })
+    save(arm / "server/server_info.json", {
+        "enable_mixed_chunk": False, "cuda_graph_config": {"decode": {"bs": [1]}},
+    })
+    save(arm / "server/native_telemetry_status.json", {
+        "writer_queue_depth": 0,
+        "background_writer_timing": {"categories": {"audit:gpu_service_sample": {"records_seen": 2}}},
+    })
+    save_rows(arm / "replay/runtime_events.replay.jsonl", [
+        {"kind": "workflow_start", "workflow_id": "m", "ts_ms": 0.},
+    ])
+    save_rows(arm / "replay/native_requests.jsonl", [
+        {"request_id": "r", "output_tokens": 2, "native_receipt": {"identity": ["m"]}},
+    ])
+    save_rows(arm / "server/runtime_audit.jsonl", [
+        sample(1, "prefill", 0., 10., after=1),
+        sample(2, "decode", 12., 20., before=1, after=2),
+    ])
+    verified = []
+
+    def verify(registration_path, cohort_path):
+        verified.append((registration_path, cohort_path))
+        return {"protocol": "all_fixed_measured_workflows_completed"}
+
+    monkeypatch.setattr(cost, "verify_execution", verify)
+    result = cost.inspect(registration, cohort)
+    assert verified == [(registration, cohort)]
+    assert result["method"] == method
+    assert result["complete_measured_execution_verified"]
+    assert result["scopes"]["common_window"]["output_tokens"] == 2
+    assert all(str(arm) in path for path in result["input_jsonl_prefixes"])
+
+
+def test_cost_report_rejects_unfinished_execution_before_reading_worker_data(tmp_path, monkeypatch):
+    def incomplete(*args):
+        raise ValueError("no fixed measured completion certificate")
+
+    monkeypatch.setattr(cost, "verify_execution", incomplete)
+    with pytest.raises(ValueError, match="completion certificate"):
+        cost.inspect(tmp_path / "registration.json", tmp_path / "cohort.json")
