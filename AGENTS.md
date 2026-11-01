@@ -5779,3 +5779,36 @@
   Same-context prior-prefix-loss proxy remains0 but Host-block recomputation
   now6146 tokens; keep both metrics, never call this completely zero recompute.
   Writer healthy; these baseline prefixes are not complete new69 acceptance.
+- Original69 Thunder fixed18 complete and independently verified:
+  2827 requests/390934 outputs,mean889.845843s/P952040.038743s,
+  commonoutput278.298208/decode275.887363tps;closed live output count matches.
+  50natural/19nonmeasuredcensored,all69arrived. Lastmeasure4283.243019s exceeds
+  lastarrival4174.136284s by109.106735s;keep coverage failure. Final same-context
+  loss137159/Host-block recomputation198062 tokens,do notsum orkeepoldzeros.
+  Freshdrain/certificate/actualownedexit pass.
+- Same sealed frame proves40 observed multi-ALL-JOIN groups(15measured) have
+  concurrent pending calls and actual shared decode batches. First-service
+  spreadP50203.979ms/P90417.872ms;not streamingTTFT or Full's exclusive gain.
+  Staticmeasured workP80P20=3.866985,19multiJOINs/71total;childcallsmedian20,
+  max60. Keep child-length limitations and distinguish total from single-child
+  contribution.
+- Old364complete searches refine140any-feasible to39multi-workflow-feasible/
+  16cannot-all-fit(10logical/6physical-or-joint);v5selects shortest13of16.
+  Do notcall137/140 true competitive opportunities.224no-feasible snapshots
+  still yield193periodic/278exact grants,allretained/232boundednewservice/
+  231boundedcompletion,P50bounded294.398ms. Later service doesnotprove current
+  or alternative physical fit;keep native authority. Preserve raw delay-label
+  error and resource_refusal_actual_reference_service_bounded correction.
+- Existing direct global oracle CPU preparationoriginal69_direct_global_oracle
+  strictly flips only rankingflag against actualnew69control on clean9ba.
+  Actual global/on,combination/off,2s/JOIN bypass/continuity pass. Not new
+  algorithm or v5;nooracle GPU successor registered. Same tasks/tools/arrivals/
+  cohort/resources/cost coefficient; matching Full review still pending.
+- Coordinator has actually handed off to Full after fresh24/session/native-stop
+  and1/8/24sampling. Independentlive proof1645exactreceipts/soleGPU3455975/
+  nice0/identicalcapacity;fixed18 observer/results coordinatoralive. Fullkeeps
+  rankingoff/JOIN-EOS/prepare/predictedoffload/on,toolprefetch/handoff/off.
+  One live tail_r2 CPU analysis failed receipt matching without saved missingID/
+  failedprefix;later sealed9507pairs and finalmeasured receipts pass. Preserve
+  failure/scope,do not invent exact race or restart GPU. NewPredictive gain,
+  acceptable sustainedworkload and Oracle benefit remain unproven;goalactive.

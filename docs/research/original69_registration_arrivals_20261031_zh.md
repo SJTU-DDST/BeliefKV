@@ -268,3 +268,8 @@ H2D 4752731 token、D2H 4246869 token，表明迁移压力实际存在。
 物理池日志完整前缀。高水位不是平均有效占用，copy ACK 量也不是独占等待时间。
 这些都是 baseline 前缀观察，不能替代 Predictive 的完整压力、重算及尾部验收。
 顺序比较协调器继续等待固定 18 成员完成，整体目标保持未完成。
+
+后续 ThunderAgent 已完整收尾，Predictive 已实际接续运行。
+完整指标、覆盖失败、JOIN 服务证据及 Oracle 容量诊断更新在
+[完整对照与容量诊断](original69_thunder_complete_and_oracle_capacity_20261031_zh.md)；
+上文 live 数字保留为各自前缀，不代替完整结果。
