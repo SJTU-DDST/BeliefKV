@@ -603,3 +603,65 @@ CPU 收尾 **4155783**、fixed18 观察器 **4156578** 均实际存活、nice19�
 14:21:31 的 fixed18 观察器记录为 6/18 完成、28 个实际到达。
 GPU owner、server、driver 和两个 CPU 收尾观察器均实际存活；
 这仍是未完成前缀，没有注册后继 GPU 或将 workload 标为验收。
+
+### 完整共同窗口的只读诊断与条件对照
+
+`original73_static_balanced_full_live_r2/common_window_{supply,periodic,demand}.json`
+是同一运行的三个独立封存前缀，不是三个新实验。
+共同吞吐窗口 `[55.692771, 1638.954850)` s 已完整覆盖；
+供给观察截止到 1,716.099744 s，此时为 30 个实际到达、9/18 测量完成。
+各 JSONL 独立封存，未声称原子快照。
+
+| 共同窗口诊断 | 实际结果 |
+| --- | ---: |
+| 状态样本 | 1,502 |
+| 有 ready-paused 的状态样本 | 447，29.7603% |
+| 跨 workflow 集合竞争状态样本 | 7 |
+| 其中候选剩余工作量比至少 2 的样本 | 5 |
+| 实际 periodic control | 773 |
+| predecision 有 ready-paused 的 control | 348，45.0194% |
+| 实际跨 workflow 逻辑集合竞争 control | 11 |
+| periodic 授予 / 压力检查后保留 | 407 / 407 |
+
+状态样本比例与决策比例分别统计，不是时间加权利用率，也不是 Oracle 生效次数。
+整个 periodic 封存前缀另有 424 次恢复授予，全部具有对应 exact service，
+其中 396 次在下一控制或已记录干预前完成有效批次。
+该数字包含共同窗口以外的观测，不能与表内 407 相加。
+
+供给前缀尾部的旧同 context 输入前缀损失代理仍为 0；
+Host-block 回访记录 **2 token** 重算，两种口径不相加，也不称零重算。
+Host 高水位已接近 200 GB，并已发生 2,000 次 Host eviction 调用；
+仅凭调用数不能判定有用状态丢失或其 JCT 代价。
+每 60 秒采样的下一请求可复用旧前缀并集在此诊断中最高为
+1,849,099 token，占 combined pool 的 **65.1159%**，出现在 1,320 s。
+这仍不是完整测量尾部的容量上界、物理准入证明或线上可用未来信息。
+
+条件对照脚本为 `ops/finish_static73_matched_pair_20261101.py`，
+计划及 state 为
+`ops/workflow_original73_static_balanced_pair_20261101_r1.plan{,.state}.json`。
+CPU 准备重新检查相同 clean `42156309`、已绑定源码与外部输入、
+24 项实际 native-stop 资格、共同执行 identity 和实际 ThunderAgent 构造器。
+单独的 gate 检查接受完整通过记录，并拒绝四种未完成/失败记录；
+没有重跑 GPU 资格或改变 serving 源码。
+
+新固定18从原始 expected 图动态得到 **3,263 请求、424,240 输出 token**。
+不再沿用旧测量组的 2,819 / 362,072。
+条件观察器 **4167313** 已实际启动，尚未创建 ThunderAgent 的 GPU 运行目录。
+它只在以下条件同时满足后登记一次匹配的 acting-decay 对照：
+Full 的完整测量与成本收尾成功、预先声明的 workload 诊断全部通过、
+fresh drain 与实际 owned 退出验证成功、预约与当前 GPU/Host/端口检查通过。
+若任一诊断失败，保留拒绝且不启动该对照。
+
+后续对照保留相同73项、seed148、到达时刻、私有测量组、工具时间、
+Device/Host 容量、共同 graph/MoE 配置及 frozen native `434c35dd`。
+固定18观察器必须等真实 `running_thunderagent_acting_decay`、
+已由 launcher 创建的目录和实际存活 owners 后才启动，
+避免重现本次 R1 的目录竞争；同时采集同口径 Host NUMA 分布。
+两臂完成后核对完整工作，生成 JCT、共同窗口吞吐、token 成本、
+E2E normalized interactivity 和实际旧前缀 prefill 的匹配报告与图。
+比较结束不自动启动其他 GPU，也不启用工作量排序、工具预取或 handoff。
+
+14:32:56 条件观察器心跳为 11/18 测量完成、44 个实际到达；
+现场唯一 GPU owner 仍为 Full scheduler `4155327`。
+本节更新了此前“没有后继计划”的现场状态，
+不把条件计划写成已启动 ThunderAgent 或已获得完整收益。
