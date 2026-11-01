@@ -5830,3 +5830,11 @@
   Thisiswholeliveprefixincludingpost-common,notavoidableJCTororaclebound.
   Donotaddrequestpreemption/restoreleasesjusttotransmittheseorderchanges.
   Runningfrozen9ba/soleGPU3455975andfixed18observerremainunchanged.
+- Neworiginal69Fullr2sealcoversthewholefixedcommonwindow:1547states/245ready
+  paused/1competition;784exactperiodiccontrols/213applicationready/1competition/
+  570freebudgetnoready/19nonefit/264grantsallretained. State15.84%andcontrol
+  27.17%arenottimeweightedandmustnotbesubstitutedforeachother.
+  Wholeprefix47arrived/34ended/14of18measured;1304controls/656readygrants
+  allexactserved/633boundednewservice/632boundedcompletion. Hosthighwater
+  200000077824bytes/contextlossproxy0/Hostblockrecompute6149;keepnonzeroand
+  do notsumdifferentcountersorextendearlier5tokenprefix. Pairnotcomplete.
