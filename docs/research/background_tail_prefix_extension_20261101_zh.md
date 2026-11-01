@@ -406,3 +406,85 @@ CPU 准备为 `original73_context_balanced_arrivals_prepare_r1/`，
 仍需检查实际增长、共享、工具阻塞、ready 供给、迁移与重复 prefill。
 多轮短 child 的原结构局限继续保留。
 当前运行及其 fixed18 观察器不变；先完成并审计当前 Full，再决定是否使用候选。
+
+## 扩展 Full 的完整固定组结果
+
+当前扩展 Full 已按协议结束，fixed18 观察器和成本观察器均实际退出。
+`background73_nonranking_full_review_r1/independent_complete.json`
+再次核对原始工作、共同引擎、两次新鲜 idle snapshot、实际 owned 退出，
+以及成本报告的输出 ordinal。
+固定 18 个 workflow 的 **2,819 个请求、362,072 个输出 token** 全部完成；
+73 个计划到达均已提交，60 个 workflow 自然结束，
+13 个非测量成员按协议截断，不将其作为完整 JCT 样本。
+原始 supervisor 的停止标签继续保留，没有改写为全人口成功。
+
+| 当前固定组/共同窗口指标 | Predictive Full |
+| --- | ---: |
+| 完整平均 JCT | 1,011.467748 s |
+| 完整 P50 JCT | 623.835780 s |
+| 完整 P95 JCT | 2,808.516803 s |
+| 最大 JCT | 3,191.540053 s |
+| 共同窗口全部输出吞吐 | 307.841643 token/s |
+| 共同窗口 decode 吞吐 | 305.387217 token/s |
+| 共同窗口 decode worker 成本 | 2.313829 ms/output-token |
+| 共同窗口 prefill worker 成本 | 0.102452 ms/extend-token |
+
+以上成本仍包含传输依赖和 CPU 提交，不是纯 CUDA kernel 时间。
+当前没有同一 73 项背景流量的 ThunderAgent 完整结果，
+不能用原 56 项对照直接计算本轮方法收益。
+新增背景、执行时序和 Host 扫描修复同时存在，
+也不能将本轮与原 Full 的差异归因为其中一个变化。
+
+### 未通过的负载条件
+
+`workload_decision.json` 保留拒绝，失败项恰为：
+
+1. 末次到达为 4,376.498230 s，末次测量完成为 4,483.401552 s，
+   背景提交仍提前 **106.903322 s** 耗尽。
+2. 14 次旧前缀损失共 **1,121,690 token**，
+   全部匹配到实际 native prefill 区间，没有重复范围计数。
+   其中固定测量组为 **304,835 token**。
+
+实际旧输入涉及 556 个 prefill 批次；
+这些整批 worker 区间合计 140.614210 s，不是旧 token 的独占成本，
+不能直接从 JCT 中扣除。Host-block 回访口径继续单列。
+
+共同窗口 ready-paused 占状态样本的 32.9627%，不是时间加权比例。
+全观察跨度有 2,190 次实际 periodic control、131 次逻辑集合竞争；
+1,808 次授予均有对应实际服务，1,603 次在有界窗口内完成有效批次。
+这些次数不是 Oracle 作用次数，也不能换算为可避免 JCT。
+
+后段下一请求可复用旧前缀并集在 3,420 s 达到
+2,872,248 token，占总池 **101.1460%**；
+pending 输入或最新状态并集在 2,940 s 达到 2,909,268 token，占 **102.4497%**。
+这是离线逻辑并集诊断，不是实际分配或在线保留规则，
+但已经不能把全部额外执行归因于扫描顺序。
+现有门槛中的 regular reuse-fit 只考察共同窗口，
+该项为 true 不表示后段全部状态也能容纳。
+
+本轮不继续扩跑当前到达表的 ThunderAgent，也不把 workload 或性能标为验收。
+下一步先验证上节 seed148 的同人口到达候选。
+`original73_context_balanced_controls_prepare_r1/` 已核对 2,443 个实际源码、
+276 个既有外部输入，并通过两种方法的实际构造器相等检查。
+运行环境全部字段保持不变；新的到达表和私有测量组正在重新绑定 CPU 资格。
+它仍需新的 GPU 入口检查和实际 Full 校准，不能由静态均衡推导收益。
+
+### 新 CPU 绑定的路径修复
+
+首次在干净 operator 内重跑完整集合得到 6,791 通过、4 失败、23 个子测试通过，
+保留 `original73_static_balanced_bound_cpu_r1/` 和同名日志。
+四项失败均因干净目录缺少此前 Main 内存在、但被 Git 忽略的 CPU fixture 路径：
+原生 AST fixture 的 `third_party/sglang-v0.5.20`，
+以及 composite48、事件工具替换和旧 12/70 配置的三个历史 JSON。
+没有修改断言、跳过测试或修改任务原题。
+
+`original73_context_balanced_controls_prepare_r1/CPU_fixture_bindings.json`
+记录四个受限符号链接和五个实际读取文件的原始 hash。
+绑定后 2,443 个应用源码输入逐项未变，operator 仍保持 Git clean。
+这两个原生 AST 输入只服务于既有 CPU fixture，
+不是实际 serving engine；服务仍使用独立冻结的 `434c35dd`。
+
+原四项失败单独重跑已全部通过，见
+`original73_static_balance_missing_fixtures_cpu.xml`。
+完整 R2 正在重跑，并将原失败证据、fixture 原始字节和全部新到达/配置工件一起绑定。
+完整通过及新的实际 GPU 检查仍未由这四项局部通过代替。
