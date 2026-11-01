@@ -388,6 +388,10 @@ prefill MoE 参数仍未调优，不能把 decode 参数表的收益推广到大
 
 ## 本轮结论
 
+共同实验入口的实现、首次 GPU 配置审计失败及修复依据另见
+`docs/research/shared_native_execution_validation_20261101_zh.md`。
+这是后续完整 workflow 验证，不重标本页的组件测量。
+
 已确认主要可见执行成本来自 attention 和 MoE。
 精确 decode 图、MoE launch 调优及二者组合均有真实模型组件级正收益；
 补齐五个常见宽度后，组合的已测形态重加权筛查约为 **3.99% 总 worker 改善**，

@@ -1,0 +1,193 @@
+# 共同原生执行配置验证
+
+2026-11-01，按本地日期命名。服务器的部分记录使用 Asia/Shanghai，
+对应的资格检查时间已经进入 2026-11-02。
+
+## 目标与固定条件
+
+将已经测得组件正收益的精确 decode graph 与 MoE 参数一起提供给
+Predictive Full 和 ThunderAgent acting-decay，然后比较完整测量 JCT、
+共同墙钟窗口吞吐、请求 interactivity 和迁移/重算。
+它是共同引擎优化，不作为 Predictive 专有的调度创新。
+
+保留 original56、initial12、平均 70 秒持续到达，以及原固定 18 个测量成员。
+仍在所有测量成员完成后停止未测量背景工作，保留每个测量 workflow 的完整 JCT。
+不改工具时长、原始 token、任务、依赖、实际 Device/Host 池容量或各方法策略。
+Full 保留 JOIN/EOS、预测工具卸载、prepare_host 和 agent 连续性；
+工具预取与逐层 handoff 保持关闭。
+
+基准配置：
+
+- Full：`tool_aware_pressure_initial12_mean70_pair_cpu_r1/control.json`。
+- ThunderAgent：`thunder_initial12_mean70_prepare_r1/thunderagent_acting_decay.json`。
+- 私有分析组：`sustained56_initial12_mean70_r1/analysis_cohort.json`。
+- 上述路径都相对于 `experiments/reports/remaining_original_projects_20261030/`。
+
+Full 的已有工作量 bookkeeping 仍在，但控制工件
+`remaining_work_ranking_enabled=false`；不重新启用工作量 Oracle 排序。
+
+## 显式配置与资格链
+
+`configs/execution/qwen3_coder_h200_exact_moe_20261101.json` 声明：
+
+- Qwen3-Coder-30B-A3B-Instruct、BF16 权重/KV、FA3、TP=1。
+- Device 805,198 token、running/decode 上限 24、prefill chunk 2048、mixed 关闭。
+- Decode graph 使用 1..24 精确桶，prefill 保持 breakable。
+- MoE 使用既有九键压缩表，不改变大于 24 的参数区间。
+
+`beliefkv/experiments/native_execution.py` 只在共同环境显式提供
+`NATIVE_EXECUTION_CONFIG` 和 `NATIVE_EXECUTION_CONFIG_SHA256` 时生效。
+配置及 kernel 文件必须在冻结 checkout 内，核对各自哈希。
+MoE 目录按 checkout 解析，不引用开发目录中的可变副本。
+
+`prepare_native_execution_comparison.py` 保留每种方法的原配置，
+只增加上述两个共同环境字段；私有 cohort 只留在 launcher/分析元数据，
+不交给调度器。
+已生成声明位于 `useful_token_cost_r1/shared_execution_prepare_r1/`。
+
+新的 position 资格检查验证实际 server-info、GPU worker 加载文件和
+24 个 token/session/stop 请求，再执行 1/8/24 采样成本检查。
+正式注册拒绝旧默认引擎的 smoke；实际运行和最终结果验证也核对共同配置。
+Predictive/ThunderAgent 比较另外核对配置身份，防止 graph 一致但 MoE 不同。
+组件收益不能代替完整 workflow 性能或 Host KV 路径的资格证据。
+
+## 第一轮 CPU 与 GPU 入口
+
+`shared_execution_bound_cpu_r1` 通过 6,714 项测试和 23 项子测试，
+保留此前 6,620 个 literal 测试身份，绑定 2,433 个源码输入。
+源码、原生引擎和外部输入在执行期间保持不变，零失败、错误和 skip。
+
+实现提交为 `f8f9a10c`。操作目录为
+`.worktrees/beliefkv-shared-execution-20261101-f8f9a10c`。
+原生引擎仍是 `434c35dd66211d0a230717c88bf1452056769a40`。
+仅将旧 native CPU 证据的 canonical patch 路径重新绑定到操作目录，
+核对补丁字节、实际 tree 及其余状态全部相同。
+记录为 `shared_execution_prepare_r1/operator_preparation_r1.json`。
+
+GPU 入口注册：
+`ops/workflow_original56_shared_engine_position_20261101_r1.registration.json`。
+模型就绪时，实际 BF16、FA3、805,198-token 池、精确 graph 都符合声明；
+模型日志也明确从该冻结目录加载了正确 MoE 文件。
+随后配置审计拒绝继续：
+
+`ValueError('native GPU worker did not inherit the frozen MoE configuration')`
+
+未提交正式 workload，也未进行 token/session smoke。
+该尝试保留 `stopped_for_investigation`，所有 owned 进程已退出，
+`owned_process_cleanup.json` 的 `remaining_processes=[]`。
+不把它标成已完成资格或性能测量。
+
+## 取证假设修复
+
+旧审计把 `/proc/<pid>/environ` 中缺少变量当成了未继承环境的证据。
+固定原生源码在 scheduler 入口调用 `setproctitle`。
+CPU 复现中，子进程的 `os.environ` 仍有配置值，
+而 `/proc/<pid>/environ` 已不再列出该变量。
+复现记录为 `shared_execution_prepare_r1/proc_environment_visibility_reproducer_r1.json`。
+它不是已退出 GPU worker 的原始环境快照，不能冒充该快照。
+
+修复后，必须有实际原生 loader 的完整文件路径记录、该文件字节哈希，
+以及匹配的实际 server-info。若 `/proc` 仍显示变量，其值也必须正确；
+若未显示，则明确记录 `GPU_worker_environment_verified=false`，
+不再把不可见性当成错误继承。缺日志、错路径、错哈希和错 graph 仍拒绝。
+
+此修改没有改变 CUDA 图、kernel 参数、模型计算或 agent/KV 策略。
+70 项针对性检查通过；随后完整集合重新绑定到修正后的源码。
+下一次 GPU 尝试使用新目录，不覆盖上述失败。
+
+## 第二轮资格与实际 Full
+
+修复提交为 `45747eb9 fix: accept native loader evidence when proc environment is hidden`。
+`shared_execution_bound_cpu_r2` 在一次执行中通过 6,715 项测试和 23 项子测试，
+保留前一轮的所有 literal 测试身份及 2,433 个源码输入；
+源码、原生引擎和外部输入在执行期间保持不变，零失败、错误和 skip。
+`shared_execution_prepare_r1/operator_preparation_r2.json` 记录干净操作目录与
+只改变 canonical patch 路径的原生证据重新绑定。
+
+`workflow_original56_shared_engine_position_20261101_r2` 随后通过新的
+24 个精确 token/session/stop 请求，24 次均观察到原生 stop，
+并完成新的 1/8/24 采样检查。
+实际 BF16/FA3、TP=1、805,198-token Device 池、running24、
+chunk2048、精确 1..24 图和冻结 MoE 文件均通过核对。
+此处 `GPU_worker_environment_verified=false` 表示 `/proc` 不显示变量；
+实际 loader 日志和文件哈希均已核实，不将此字段改写为 true。
+
+Full 注册为
+`ops/workflow_original56_shared_engine_full_20261101_r1.registration.json`，
+实际执行源码仍冻结为 `45747eb9`，没有热更新。
+2026-11-01 09:05 America/Los_Angeles 的现场检查确认
+supervisor、server、GPU scheduler、driver 与固定测量组 observer 均存活，
+server 已处于实际请求回放阶段。NVML 的 GPU 进程对应本轮 scheduler。
+这些是运行状态证据，尚非完整性能结果。
+
+固定 18 个测量成员的预期工作为 2,819 个请求、362,072 个输出 token。
+独立 observer 只有在所有测量成员完成后才停止背景工作，
+随后校验实际回执、两个新鲜空闲 telemetry snapshot 和 owned 进程退出。
+ThunderAgent acting-decay 使用相同执行配置顺序比较；
+此前默认引擎的结果不替代新引擎下的对照。
+
+顺序协调器的声明为
+`ops/workflow_original56_shared_engine_pair_20261101_r1.plan.json`。
+其准备阶段重新核对干净操作源码、6,715 项绑定 CPU 证据、
+共同执行配置、成功的 r2 smoke，以及实际 ThunderAgent runtime 构造。
+2026-11-01 09:15 America/Los_Angeles 的进程检查确认协调器已存活，
+状态为 `waiting_complete_full_fixed18`，尚未注册或启动新的 GPU 臂。
+它在 Full 的完整测量、回执、drain 和真实退出均通过后，
+重新检查 hold、资源、端口和输入哈希，再直接注册同配置的
+ThunderAgent acting-decay。新对照复用共同数据面的成功 r2 资格，
+不重复默认引擎的旧对照，也不使用要求全人口完成的旧
+`--after-registration` 依赖逻辑。
+
+## 旧引擎下的完整请求 Interactivity
+
+`audit_measured_request_interactivity.py` 在完整测量工作、退出和 drain 校验后，
+读取固定成员的全部 2,819 个请求。
+指标为完整 HTTP 请求秒数除以输出 token 数，再对其 P90 取倒数；
+包含 TTFT，零输出请求单独报告为无定义。
+
+| 已完成方法 | 全请求 inverse P90，token/s | 各 workflow 同定义结果的等权平均 | Workflow TTFT P90 |
+| --- | ---: | ---: | ---: |
+| 默认引擎 retained Full | 16.5341 | 20.1768 | 67.0957 s |
+| 默认引擎 ThunderAgent acting-decay | 10.3635 | 14.0341 | 74.3257 s |
+
+两组 workflow TTFT 均有 18/18 实际流式首输出覆盖，
+不以请求提交时间代替首 token。
+证据位于 `useful_token_cost_r1/default_full_interactivity_r1.json` 和
+`default_thunder_interactivity_r1.json`。
+这是旧已完成比较的新增分析，不是共同引擎配置的新性能证据；
+每种方法只有一次完整运行，不声明统计显著性。
+
+## 完整 Token 成本的共同口径
+
+`805f9113 perf: audit complete-cohort token costs and normalized interactivity`
+使成本分析支持 Full 与 ThunderAgent，并在读取 worker 成本前校验固定测量
+完成证书、新鲜 drain 和真实进程退出。18 项针对性检查全部通过，
+报告为 `useful_token_cost_r1/completed_metrics_cpu_r1.xml`。
+运行中的 GPU 冻结源码没有因此改变。
+
+对旧已完成比较的重新核对保留了原 `full_accounting_r1.json`，
+另写 `default_full_complete_accounting_r2.json` 与
+`default_thunder_complete_accounting_r1.json`：
+
+| 共同窗口成本 | 默认引擎 Full | 默认引擎 ThunderAgent acting-decay |
+| --- | ---: | ---: |
+| 全部 worker ms/实际输出 token | 3.308463 | 3.407996 |
+| Decode worker ms/decode 输出 token | 2.381707 | 2.429254 |
+| Prefill worker ms/实际 extend 输入 token | 0.102644 | 0.105686 |
+| Decode worker 时间加权有效宽度 | 8.7082 | 8.3410 |
+| 窗口内实际输出，包含背景 | 477,974 | 462,874 |
+
+两组完整测量请求仍均为 2,819 个、362,072 个输出；
+窗口内输出量不要求相同，因为它本身就是固定墙钟吞吐的观测结果。
+所有已完成请求的真实输出 ordinal 均与回执一致，
+同时保留被截断背景请求已经生成的输出。
+Worker 包含计算、传输依赖和主机提交，不能把表中的差值直接归因为
+kernel 优化，也不能把普通 extend 输入全部称为重算。
+新共同引擎两臂结束后使用同一分析程序，不用组件微测代替完整结果。
+
+## 当前证据边界
+
+已有十二宽度组件比较覆盖旧 decode worker 时间的 86.63%，
+静态重加权筛查约为 3.99% 总 worker 时间改善。
+共同执行配置的完整 workflow JCT、吞吐与 Host KV 影响尚未获得新结果。
+保留原 Full/ThunderAgent/native 比较，不把旧默认引擎基线用于宣称新配置收益。
