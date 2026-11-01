@@ -1,0 +1,1506 @@
+{
+  "status": "independently_verified",
+  "observed_at": "2026-11-02T00:49:24.890357+08:00",
+  "worktrees": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-internal-v110-frozen-5ddb43a64b55-20261021",
+      "commit": "5ddb43a64b55cccd862d23c25953ed12485a1bbc",
+      "tree": "e7aafe306ceaf802b6f4dfc73c7cde17fa18ef9d",
+      "archive_ref": "refs/archive/20261101-worktrees/7a74420c75017ddf/head",
+      "tracked_files": 3225,
+      "source_allocated_bytes": 665903104,
+      "ignored_files": 115,
+      "archive_bytes": 1749308,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-internal-v110-frozen-5ddb43a64b55-20261021 refs/archive/20261101-worktrees/7a74420c75017ddf/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/7a74420c75017ddf/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-internal-v110-frozen-5ddb43a64b55-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-internal-v111-frozen-e0420feda8ee-20261021",
+      "commit": "e0420feda8eeddabbdac967a909a830949c083ac",
+      "tree": "311d5491c6f73828f568f79df3ad48bcd78241c4",
+      "archive_ref": "refs/archive/20261101-worktrees/1faff4926330db7d/head",
+      "tracked_files": 3226,
+      "source_allocated_bytes": 666054656,
+      "ignored_files": 118,
+      "archive_bytes": 1805928,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-internal-v111-frozen-e0420feda8ee-20261021 refs/archive/20261101-worktrees/1faff4926330db7d/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/1faff4926330db7d/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-internal-v111-frozen-e0420feda8ee-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v100-batched-full-faf8249-20261020",
+      "commit": "faf82496b6524bb877f360aaf68374ced1242503",
+      "tree": "65d30cf9c6343c5368819379fc4a72f435e7063f",
+      "archive_ref": "refs/archive/20261101-worktrees/91e1bed9ea62181d/head",
+      "tracked_files": 3175,
+      "source_allocated_bytes": 663916544,
+      "ignored_files": 108,
+      "archive_bytes": 1567295,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v100-batched-full-faf8249-20261020 refs/archive/20261101-worktrees/91e1bed9ea62181d/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/91e1bed9ea62181d/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v100-batched-full-faf8249-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v100-continuous-full-e487044-20261020",
+      "commit": "e4870445b0a911fdee0eb03b41e34deca357faf0",
+      "tree": "1068b214bb18545a6073a96933b0587e9b01188d",
+      "archive_ref": "refs/archive/20261101-worktrees/d9c57fee09179f97/head",
+      "tracked_files": 3175,
+      "source_allocated_bytes": 661991424,
+      "ignored_files": 57,
+      "archive_bytes": 755766,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v100-continuous-full-e487044-20261020 refs/archive/20261101-worktrees/d9c57fee09179f97/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/d9c57fee09179f97/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v100-continuous-full-e487044-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v100-idle-full-0c965ed-20261020",
+      "commit": "0c965ede2acce46fe150748894ed99282101e2af",
+      "tree": "209fac9ebfc9e64687edb28023f2343fbe8fc15e",
+      "archive_ref": "refs/archive/20261101-worktrees/61c7a96f465ab92d/head",
+      "tracked_files": 3175,
+      "source_allocated_bytes": 661983232,
+      "ignored_files": 57,
+      "archive_bytes": 756007,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v100-idle-full-0c965ed-20261020 refs/archive/20261101-worktrees/61c7a96f465ab92d/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/61c7a96f465ab92d/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v100-idle-full-0c965ed-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v101-coalesced-full-8bdc5dc-20261020",
+      "commit": "8bdc5dc17242c33dca49089d40b709840f6fbb2d",
+      "tree": "3379f7db49727a2fcaaa5113afe9784182cf2ab7",
+      "archive_ref": "refs/archive/20261101-worktrees/dfe61f0ce824f177/head",
+      "tracked_files": 3176,
+      "source_allocated_bytes": 663961600,
+      "ignored_files": 108,
+      "archive_bytes": 1568011,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v101-coalesced-full-8bdc5dc-20261020 refs/archive/20261101-worktrees/dfe61f0ce824f177/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/dfe61f0ce824f177/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v101-coalesced-full-8bdc5dc-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1012-cached-resident-gpu-20261015",
+      "commit": "c27ca372f523fd08402e9c198edc185b1074914d",
+      "tree": "ce090e73ba005195e98e6c87decfee52e40b4319",
+      "archive_ref": "refs/archive/20261101-worktrees/6a9e31362e7b78e7/head",
+      "tracked_files": 2543,
+      "source_allocated_bytes": 557314048,
+      "ignored_files": 91,
+      "archive_bytes": 1909123,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v1012-cached-resident-gpu-20261015 refs/archive/20261101-worktrees/6a9e31362e7b78e7/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/6a9e31362e7b78e7/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v1012-cached-resident-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v102-causal-full-d6b8fa4-20261020",
+      "commit": "d6b8fa4685d09c3a6e5f34f76c37f5c94305e9c4",
+      "tree": "85ab85687ef238f3b948a7acad34afe224537607",
+      "archive_ref": "refs/archive/20261101-worktrees/b0935ede573407f0/head",
+      "tracked_files": 3179,
+      "source_allocated_bytes": 662122496,
+      "ignored_files": 57,
+      "archive_bytes": 756448,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v102-causal-full-d6b8fa4-20261020 refs/archive/20261101-worktrees/b0935ede573407f0/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/b0935ede573407f0/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v102-causal-full-d6b8fa4-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-0630569903bd-20261021",
+      "commit": "0630569903bde1b2529efa0f6ae160a48ef26e64",
+      "tree": "b7c843aa8d045e8e13e7ad6515beb5c35f7102c7",
+      "archive_ref": "refs/archive/20261101-worktrees/85d37e1e7c02b59d/head",
+      "tracked_files": 3201,
+      "source_allocated_bytes": 661282816,
+      "ignored_files": 1,
+      "archive_bytes": 142038,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-0630569903bd-20261021 refs/archive/20261101-worktrees/85d37e1e7c02b59d/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/85d37e1e7c02b59d/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-0630569903bd-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-0beffdda014a-20261021",
+      "commit": "0beffdda014a3c14e6861f48b1bf4fcca450cbfd",
+      "tree": "a1de3baa6c736b7d1f83ce0423110fece3a754cd",
+      "archive_ref": "refs/archive/20261101-worktrees/fa3f5ec3b19268c3/head",
+      "tracked_files": 3194,
+      "source_allocated_bytes": 661147648,
+      "ignored_files": 1,
+      "archive_bytes": 141781,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-0beffdda014a-20261021 refs/archive/20261101-worktrees/fa3f5ec3b19268c3/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/fa3f5ec3b19268c3/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-0beffdda014a-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-130829a34165-20261021",
+      "commit": "130829a34165b5b6ab058927f89136cbd6bec82b",
+      "tree": "d26330839fc7b992ec8e5675e67f083d48b2c9d2",
+      "archive_ref": "refs/archive/20261101-worktrees/c5cf32796b9c6b77/head",
+      "tracked_files": 3192,
+      "source_allocated_bytes": 661102592,
+      "ignored_files": 1,
+      "archive_bytes": 141579,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-130829a34165-20261021 refs/archive/20261101-worktrees/c5cf32796b9c6b77/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/c5cf32796b9c6b77/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-130829a34165-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-18b0a5bfb76d-20261021",
+      "commit": "18b0a5bfb76dd5982963cd6cc608277311b2a879",
+      "tree": "88b5fa59d03e7987f0f9fe6e56e736ef8513d778",
+      "archive_ref": "refs/archive/20261101-worktrees/5f44bed8e225ebe9/head",
+      "tracked_files": 3190,
+      "source_allocated_bytes": 661082112,
+      "ignored_files": 1,
+      "archive_bytes": 141380,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-18b0a5bfb76d-20261021 refs/archive/20261101-worktrees/5f44bed8e225ebe9/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/5f44bed8e225ebe9/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-18b0a5bfb76d-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-1c228317bc44-20261021",
+      "commit": "1c228317bc44fc8993e8f667e2c030f712091491",
+      "tree": "26f883a2545c868361e6100a4f899ff7b774bcfe",
+      "archive_ref": "refs/archive/20261101-worktrees/017e3d59b9f19ef2/head",
+      "tracked_files": 3189,
+      "source_allocated_bytes": 661053440,
+      "ignored_files": 1,
+      "archive_bytes": 141061,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-1c228317bc44-20261021 refs/archive/20261101-worktrees/017e3d59b9f19ef2/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/017e3d59b9f19ef2/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-1c228317bc44-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-1e5e54cead72-20261021",
+      "commit": "1e5e54cead7210e36637e1bc0b5216636ba20e99",
+      "tree": "74efd73dd86b5d1f7cc47450eaebcfd984e82a17",
+      "archive_ref": "refs/archive/20261101-worktrees/6b30272ec7172369/head",
+      "tracked_files": 3200,
+      "source_allocated_bytes": 661274624,
+      "ignored_files": 1,
+      "archive_bytes": 141830,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-1e5e54cead72-20261021 refs/archive/20261101-worktrees/6b30272ec7172369/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/6b30272ec7172369/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-1e5e54cead72-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-216fd88aa6e3-20261021",
+      "commit": "216fd88aa6e3419b8389a5e3aeaea38d07288476",
+      "tree": "ff339470421e1de6d5ddcf70625e9edcc3428d8e",
+      "archive_ref": "refs/archive/20261101-worktrees/58b3c5febc18630f/head",
+      "tracked_files": 3204,
+      "source_allocated_bytes": 665411584,
+      "ignored_files": 114,
+      "archive_bytes": 1762427,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-216fd88aa6e3-20261021 refs/archive/20261101-worktrees/58b3c5febc18630f/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/58b3c5febc18630f/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-216fd88aa6e3-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-3d164e3e99a4-20261021",
+      "commit": "3d164e3e99a4f9e0c6b3557e0fe18c15cad8feef",
+      "tree": "e0b7a7c0ec4547d32302b051eede03c11923c5fa",
+      "archive_ref": "refs/archive/20261101-worktrees/eecd08b9ac1900ab/head",
+      "tracked_files": 3189,
+      "source_allocated_bytes": 661065728,
+      "ignored_files": 1,
+      "archive_bytes": 141087,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-3d164e3e99a4-20261021 refs/archive/20261101-worktrees/eecd08b9ac1900ab/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/eecd08b9ac1900ab/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-3d164e3e99a4-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-3f075b23fa37-20261021",
+      "commit": "3f075b23fa3703af0b6290439e8f8bb95a0cf89a",
+      "tree": "c13857dd0677ffa84d4b0df8db214de36bdfddce",
+      "archive_ref": "refs/archive/20261101-worktrees/f4ceca492ec3a11c/head",
+      "tracked_files": 3191,
+      "source_allocated_bytes": 661098496,
+      "ignored_files": 1,
+      "archive_bytes": 141410,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-3f075b23fa37-20261021 refs/archive/20261101-worktrees/f4ceca492ec3a11c/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/f4ceca492ec3a11c/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-3f075b23fa37-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-428b9ecd0727-20261021",
+      "commit": "428b9ecd07279c6fc106defc5ec3d5c61cf9e5d6",
+      "tree": "574e96581a8cedfda4194835c9dba50478a47e11",
+      "archive_ref": "refs/archive/20261101-worktrees/12428c5fa60c45ed/head",
+      "tracked_files": 3196,
+      "source_allocated_bytes": 661180416,
+      "ignored_files": 1,
+      "archive_bytes": 141309,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-428b9ecd0727-20261021 refs/archive/20261101-worktrees/12428c5fa60c45ed/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/12428c5fa60c45ed/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-428b9ecd0727-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-432222833612-20261021",
+      "commit": "432222833612b4ad22287214f45de2def41d40b9",
+      "tree": "b066e7ceecbfe33707815d68326dc0384dccf1f4",
+      "archive_ref": "refs/archive/20261101-worktrees/69740bd6f68c7e09/head",
+      "tracked_files": 3198,
+      "source_allocated_bytes": 661237760,
+      "ignored_files": 1,
+      "archive_bytes": 141304,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-432222833612-20261021 refs/archive/20261101-worktrees/69740bd6f68c7e09/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/69740bd6f68c7e09/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-432222833612-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-5f57f964785a-20261021",
+      "commit": "5f57f964785ab84fecc35ce28c43349743b4a311",
+      "tree": "5cbfd0e27746c0c66f4674b500e7ca4e6dcd6af1",
+      "archive_ref": "refs/archive/20261101-worktrees/2cf352c3d4e95332/head",
+      "tracked_files": 3188,
+      "source_allocated_bytes": 661041152,
+      "ignored_files": 1,
+      "archive_bytes": 141735,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-5f57f964785a-20261021 refs/archive/20261101-worktrees/2cf352c3d4e95332/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/2cf352c3d4e95332/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-5f57f964785a-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-64dd04b2c7ab-20261021",
+      "commit": "64dd04b2c7ab0bfee63abdeb61bc5c7fb803d77c",
+      "tree": "2ca0a447617df62fb3d6a4d394613ef3498c9fb9",
+      "archive_ref": "refs/archive/20261101-worktrees/21b7529d1dd8b410/head",
+      "tracked_files": 3203,
+      "source_allocated_bytes": 661921792,
+      "ignored_files": 2,
+      "archive_bytes": 411864,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-64dd04b2c7ab-20261021 refs/archive/20261101-worktrees/21b7529d1dd8b410/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/21b7529d1dd8b410/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-64dd04b2c7ab-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-75687f20c6a7-20261021",
+      "commit": "75687f20c6a788197b932419271635056608bbb6",
+      "tree": "bc25828f20665a13c8f66d26ed1af3c3768c4541",
+      "archive_ref": "refs/archive/20261101-worktrees/e6dee0e72ec8f652/head",
+      "tracked_files": 3197,
+      "source_allocated_bytes": 661200896,
+      "ignored_files": 1,
+      "archive_bytes": 141759,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-75687f20c6a7-20261021 refs/archive/20261101-worktrees/e6dee0e72ec8f652/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/e6dee0e72ec8f652/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-75687f20c6a7-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-7cfb86a9c066-20261021",
+      "commit": "7cfb86a9c066f5e27fdaee2660ed4623e3c41ffc",
+      "tree": "6ded95c73fdbd72fae80f0149e4ccd1e47509bff",
+      "archive_ref": "refs/archive/20261101-worktrees/f1e2da5415d5afa2/head",
+      "tracked_files": 3193,
+      "source_allocated_bytes": 661127168,
+      "ignored_files": 1,
+      "archive_bytes": 141235,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-7cfb86a9c066-20261021 refs/archive/20261101-worktrees/f1e2da5415d5afa2/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/f1e2da5415d5afa2/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-7cfb86a9c066-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-809b2447d4ab-20261021",
+      "commit": "809b2447d4aba3a6ee02b316ade649e5b6183d74",
+      "tree": "4b3e86ee388b3fa08ab8bae15059f8e67295cc6f",
+      "archive_ref": "refs/archive/20261101-worktrees/9880262661d43481/head",
+      "tracked_files": 3190,
+      "source_allocated_bytes": 661082112,
+      "ignored_files": 1,
+      "archive_bytes": 142092,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-809b2447d4ab-20261021 refs/archive/20261101-worktrees/9880262661d43481/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/9880262661d43481/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-809b2447d4ab-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-9d307607e815-20261021",
+      "commit": "9d307607e815510929a7a19247d49742a20ac45e",
+      "tree": "9b7d07eed41f61f59bbe9b9e05ef18ab6e021049",
+      "archive_ref": "refs/archive/20261101-worktrees/7f55d131bf0b3773/head",
+      "tracked_files": 3202,
+      "source_allocated_bytes": 663289856,
+      "ignored_files": 63,
+      "archive_bytes": 878849,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-9d307607e815-20261021 refs/archive/20261101-worktrees/7f55d131bf0b3773/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/7f55d131bf0b3773/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-9d307607e815-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-b684f20d4f1f-20261021",
+      "commit": "b684f20d4f1fff34bd993736ecef4abb560741c2",
+      "tree": "ecad4b4db4ad6cc033cabcace0e0a0dc88616474",
+      "archive_ref": "refs/archive/20261101-worktrees/ffc7713fdd037844/head",
+      "tracked_files": 3197,
+      "source_allocated_bytes": 661192704,
+      "ignored_files": 1,
+      "archive_bytes": 141307,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-b684f20d4f1f-20261021 refs/archive/20261101-worktrees/ffc7713fdd037844/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/ffc7713fdd037844/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-b684f20d4f1f-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-dd6b8ee1c057-20261021",
+      "commit": "dd6b8ee1c05785c0f80cf8cc6110ae482ba88a7e",
+      "tree": "f8529e9f2a80146e71f0265086c58ad4c9580e66",
+      "archive_ref": "refs/archive/20261101-worktrees/e46876e5290aed96/head",
+      "tracked_files": 3195,
+      "source_allocated_bytes": 661151744,
+      "ignored_files": 1,
+      "archive_bytes": 141821,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-dd6b8ee1c057-20261021 refs/archive/20261101-worktrees/e46876e5290aed96/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/e46876e5290aed96/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-dd6b8ee1c057-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-de448b910349-20261021",
+      "commit": "de448b910349a3f58598c14a5c2b58cbf25f37b5",
+      "tree": "b202ba66cb93ecb3200cf2fb032c06179df4a8d1",
+      "archive_ref": "refs/archive/20261101-worktrees/c81d6c8f873945d3/head",
+      "tracked_files": 3199,
+      "source_allocated_bytes": 661254144,
+      "ignored_files": 1,
+      "archive_bytes": 141441,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-de448b910349-20261021 refs/archive/20261101-worktrees/c81d6c8f873945d3/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/c81d6c8f873945d3/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-de448b910349-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v103-frozen-e46e3b79a9be-20261021",
+      "commit": "e46e3b79a9beee5be25e77e1ff2d3f150dd32ff0",
+      "tree": "9eb0b77df2ac8f1c2483e91f5dd4e9ca0c966e16",
+      "archive_ref": "refs/archive/20261101-worktrees/efef980d200e8165/head",
+      "tracked_files": 3198,
+      "source_allocated_bytes": 661241856,
+      "ignored_files": 1,
+      "archive_bytes": 141623,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-e46e3b79a9be-20261021 refs/archive/20261101-worktrees/efef980d200e8165/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/efef980d200e8165/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v103-frozen-e46e3b79a9be-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v104-frozen-2c377da255fc-20261021",
+      "commit": "2c377da255fcb4475f8ed7f4b9b870641ca95a97",
+      "tree": "76a62157cfadb159804c6a4825d63ca8db28b129",
+      "archive_ref": "refs/archive/20261101-worktrees/c9575707e063b479/head",
+      "tracked_files": 3207,
+      "source_allocated_bytes": 665034752,
+      "ignored_files": 107,
+      "archive_bytes": 1587240,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v104-frozen-2c377da255fc-20261021 refs/archive/20261101-worktrees/c9575707e063b479/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/c9575707e063b479/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v104-frozen-2c377da255fc-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v105-frozen-c119a35ac8f0-20261021",
+      "commit": "c119a35ac8f096b43c0a9dea8f510ecc1b98260a",
+      "tree": "da12e97f29314b3b05693ae101f0b61ca4613482",
+      "archive_ref": "refs/archive/20261101-worktrees/b5c127745b88bafd/head",
+      "tracked_files": 3210,
+      "source_allocated_bytes": 665513984,
+      "ignored_files": 114,
+      "archive_bytes": 1765908,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v105-frozen-c119a35ac8f0-20261021 refs/archive/20261101-worktrees/b5c127745b88bafd/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/b5c127745b88bafd/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v105-frozen-c119a35ac8f0-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v106-frozen-d2aaa510160a-20261021",
+      "commit": "d2aaa510160a347cee5851d3b82d3c51a48f2c05",
+      "tree": "d00123b252e7691949cf3a4e00b5b53bbac20e32",
+      "archive_ref": "refs/archive/20261101-worktrees/3cdeb1bb99b9bb93/head",
+      "tracked_files": 3211,
+      "source_allocated_bytes": 665538560,
+      "ignored_files": 114,
+      "archive_bytes": 1767419,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v106-frozen-d2aaa510160a-20261021 refs/archive/20261101-worktrees/3cdeb1bb99b9bb93/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/3cdeb1bb99b9bb93/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v106-frozen-d2aaa510160a-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v107-frozen-893a7daed4cd-20261021",
+      "commit": "893a7daed4cd4d81d340122fa0e386e1b3fc864b",
+      "tree": "aa60d598c1afd2894ff7109765b50ebcadac7a49",
+      "archive_ref": "refs/archive/20261101-worktrees/5973373c8c733260/head",
+      "tracked_files": 3211,
+      "source_allocated_bytes": 665575424,
+      "ignored_files": 114,
+      "archive_bytes": 1767924,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v107-frozen-893a7daed4cd-20261021 refs/archive/20261101-worktrees/5973373c8c733260/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/5973373c8c733260/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v107-frozen-893a7daed4cd-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1074-workflow-work-gpu-20261016",
+      "commit": "f7aec983e5399e8c125e4c021414af82437f5e80",
+      "tree": "701d8e827935ae09cd33d8939ba4580e71d3e2b7",
+      "archive_ref": "refs/archive/20261101-worktrees/c310c594b8aafa5c/head",
+      "tracked_files": 2545,
+      "source_allocated_bytes": 557928448,
+      "ignored_files": 128,
+      "archive_bytes": 2233418,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v1074-workflow-work-gpu-20261016 refs/archive/20261101-worktrees/c310c594b8aafa5c/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/c310c594b8aafa5c/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v1074-workflow-work-gpu-20261016"
+      ],
+      "pinned_reflog_commits": 3
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v108-frozen-aefa20340b13-20261021",
+      "commit": "aefa20340b135b9d0579dc593b3caf59fd754f16",
+      "tree": "dab8bc7540c5a39ad643db314a5e45825fdea554",
+      "archive_ref": "refs/archive/20261101-worktrees/ee5ddeb318d03854/head",
+      "tracked_files": 3212,
+      "source_allocated_bytes": 665612288,
+      "ignored_files": 114,
+      "archive_bytes": 1768776,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v108-frozen-aefa20340b13-20261021 refs/archive/20261101-worktrees/ee5ddeb318d03854/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/ee5ddeb318d03854/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v108-frozen-aefa20340b13-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v109-frozen-ed06f5366d8a-20261021",
+      "commit": "ed06f5366d8a5c1d4b0fbff51eb49cee8b3ce39a",
+      "tree": "f979aca187ee7d11ca3932cbc3c124f5fa8a5443",
+      "archive_ref": "refs/archive/20261101-worktrees/5aa13cf646e45b17/head",
+      "tracked_files": 3215,
+      "source_allocated_bytes": 665726976,
+      "ignored_files": 114,
+      "archive_bytes": 1771734,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v109-frozen-ed06f5366d8a-20261021 refs/archive/20261101-worktrees/5aa13cf646e45b17/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/5aa13cf646e45b17/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v109-frozen-ed06f5366d8a-20261021"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1094-online-root-gpu-20261016",
+      "commit": "6e85b0a8c49d71e51bfd172465320e3aa64c3086",
+      "tree": "a0b0760cbe5f840d351f84608e4b51b8710db6da",
+      "archive_ref": "refs/archive/20261101-worktrees/4e23a664aff32527/head",
+      "tracked_files": 2547,
+      "source_allocated_bytes": 555966464,
+      "ignored_files": 123,
+      "archive_bytes": 1774267,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v1094-online-root-gpu-20261016 refs/archive/20261101-worktrees/4e23a664aff32527/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/4e23a664aff32527/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v1094-online-root-gpu-20261016"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v112-frozen-8edcb01825b7-20261022",
+      "commit": "8edcb01825b7b559791f55a325564e6ed9e3e13f",
+      "tree": "2131fdf306f20dcbdb4a65be4de28cf734e84a49",
+      "archive_ref": "refs/archive/20261101-worktrees/09bb526a8d8b000b/head",
+      "tracked_files": 3238,
+      "source_allocated_bytes": 664244224,
+      "ignored_files": 72,
+      "archive_bytes": 960704,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v112-frozen-8edcb01825b7-20261022 refs/archive/20261101-worktrees/09bb526a8d8b000b/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/09bb526a8d8b000b/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v112-frozen-8edcb01825b7-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v113-frozen-38c7309641ab-20261022",
+      "commit": "38c7309641abe01bbae40c2398d4751fca21cf0b",
+      "tree": "2581d1a330b0dc0e70cab382db537839001becbe",
+      "archive_ref": "refs/archive/20261101-worktrees/838cb5835e723ad1/head",
+      "tracked_files": 3239,
+      "source_allocated_bytes": 664260608,
+      "ignored_files": 72,
+      "archive_bytes": 960772,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v113-frozen-38c7309641ab-20261022 refs/archive/20261101-worktrees/838cb5835e723ad1/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/838cb5835e723ad1/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v113-frozen-38c7309641ab-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1137-batched-writeback-gpu-20261016",
+      "commit": "2ad32d097dae169ff437ecb9f66098a2dc6ffea4",
+      "tree": "0144bb18f63611ef7eae2fd2b9b6d1c13bb18a37",
+      "archive_ref": "refs/archive/20261101-worktrees/eeca2bcb559d25c0/head",
+      "tracked_files": 2547,
+      "source_allocated_bytes": 555986944,
+      "ignored_files": 119,
+      "archive_bytes": 1750167,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v1137-batched-writeback-gpu-20261016 refs/archive/20261101-worktrees/eeca2bcb559d25c0/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/eeca2bcb559d25c0/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v1137-batched-writeback-gpu-20261016"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v114-frozen-fa68711bce71-20261022",
+      "commit": "fa68711bce7166564100db7a12c6fd606e4fff4d",
+      "tree": "85007f7e7d01661d1f3fe1e2c423a22782fe41b6",
+      "archive_ref": "refs/archive/20261101-worktrees/2132702a6366b707/head",
+      "tracked_files": 3240,
+      "source_allocated_bytes": 664289280,
+      "ignored_files": 72,
+      "archive_bytes": 960680,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v114-frozen-fa68711bce71-20261022 refs/archive/20261101-worktrees/2132702a6366b707/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/2132702a6366b707/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v114-frozen-fa68711bce71-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v115-frozen-63398f4cd68f-20261022",
+      "commit": "63398f4cd68f17ec07c68d93c721291c29ba67ac",
+      "tree": "bcc681554cc1b92acf80c1c0d6a206b5d4a09bce",
+      "archive_ref": "refs/archive/20261101-worktrees/c6ef5c881e784745/head",
+      "tracked_files": 3242,
+      "source_allocated_bytes": 664313856,
+      "ignored_files": 72,
+      "archive_bytes": 960688,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v115-frozen-63398f4cd68f-20261022 refs/archive/20261101-worktrees/c6ef5c881e784745/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/c6ef5c881e784745/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v115-frozen-63398f4cd68f-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v116-frozen-6fec8300bdcb-20261022",
+      "commit": "6fec8300bdcbaead00e912e3a420caef9fbc1bd7",
+      "tree": "d4eb1ee61cbb2252cefb36e56e25e64adf0d4911",
+      "archive_ref": "refs/archive/20261101-worktrees/0d107a78c982d9cb/head",
+      "tracked_files": 3245,
+      "source_allocated_bytes": 664350720,
+      "ignored_files": 72,
+      "archive_bytes": 961073,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v116-frozen-6fec8300bdcb-20261022 refs/archive/20261101-worktrees/0d107a78c982d9cb/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/0d107a78c982d9cb/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v116-frozen-6fec8300bdcb-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v117-frozen-07bffff81720-20261022",
+      "commit": "07bffff8172059c41d7f058509038831c23d1941",
+      "tree": "d4bf35034324be8af9c21124aa0123c230c93b03",
+      "archive_ref": "refs/archive/20261101-worktrees/67d90cab757dd129/head",
+      "tracked_files": 3251,
+      "source_allocated_bytes": 664453120,
+      "ignored_files": 72,
+      "archive_bytes": 962473,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v117-frozen-07bffff81720-20261022 refs/archive/20261101-worktrees/67d90cab757dd129/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/67d90cab757dd129/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v117-frozen-07bffff81720-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v118-frozen-67d904b6c2d2-20261022",
+      "commit": "67d904b6c2d25a11fb191628369e343b86eb039f",
+      "tree": "cddd4bccca94cc516c4673e05deb0bf3df487180",
+      "archive_ref": "refs/archive/20261101-worktrees/6ab086eb5490afa3/head",
+      "tracked_files": 3258,
+      "source_allocated_bytes": 664506368,
+      "ignored_files": 72,
+      "archive_bytes": 962530,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v118-frozen-67d904b6c2d2-20261022 refs/archive/20261101-worktrees/6ab086eb5490afa3/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/6ab086eb5490afa3/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v118-frozen-67d904b6c2d2-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v119-frozen-7e8a3150455a-20261022",
+      "commit": "7e8a3150455a650bd22e4aecb8e17937064eb93d",
+      "tree": "756812ff7e190188a503652b1371cae1b9eff09b",
+      "archive_ref": "refs/archive/20261101-worktrees/64e45cdd39d06e17/head",
+      "tracked_files": 3260,
+      "source_allocated_bytes": 664547328,
+      "ignored_files": 72,
+      "archive_bytes": 962557,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v119-frozen-7e8a3150455a-20261022 refs/archive/20261101-worktrees/64e45cdd39d06e17/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/64e45cdd39d06e17/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v119-frozen-7e8a3150455a-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v120-frozen-9b5a5d16e4f0-20261022",
+      "commit": "9b5a5d16e4f0106b36a5234beb0d26a4fc1a4e12",
+      "tree": "0660aeba5e77a2db37984b13ead645a8e09a2770",
+      "archive_ref": "refs/archive/20261101-worktrees/b063378d15434ccc/head",
+      "tracked_files": 3261,
+      "source_allocated_bytes": 664551424,
+      "ignored_files": 72,
+      "archive_bytes": 962766,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v120-frozen-9b5a5d16e4f0-20261022 refs/archive/20261101-worktrees/b063378d15434ccc/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/b063378d15434ccc/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v120-frozen-9b5a5d16e4f0-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v121-frozen-200728fec023-20261022",
+      "commit": "200728fec02307c1416a6b4e104bf97086036dc0",
+      "tree": "91181e407fd39f3ad52054e5e4b3b6e1b6fd351a",
+      "archive_ref": "refs/archive/20261101-worktrees/0218c43266e19d0a/head",
+      "tracked_files": 3262,
+      "source_allocated_bytes": 666603520,
+      "ignored_files": 121,
+      "archive_bytes": 1818347,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v121-frozen-200728fec023-20261022 refs/archive/20261101-worktrees/0218c43266e19d0a/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/0218c43266e19d0a/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v121-frozen-200728fec023-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v122-frozen-35aa180e0dab-20261022",
+      "commit": "35aa180e0dabf44f6ffca138e41ed44ab0d7abf6",
+      "tree": "c07d9c3dc2d472e735bf63e72b9403640e1c036a",
+      "archive_ref": "refs/archive/20261101-worktrees/df06ba11919e05ec/head",
+      "tracked_files": 3262,
+      "source_allocated_bytes": 666775552,
+      "ignored_files": 126,
+      "archive_bytes": 1886155,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v122-frozen-35aa180e0dab-20261022 refs/archive/20261101-worktrees/df06ba11919e05ec/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/df06ba11919e05ec/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v122-frozen-35aa180e0dab-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v124-frozen-a1f9f7d64fc0-20261022",
+      "commit": "a1f9f7d64fc0ec98960d9349183952bd90ce1366",
+      "tree": "1ed8ed73f14073a22826e93f671046114d23171f",
+      "archive_ref": "refs/archive/20261101-worktrees/8c0dd69e180d65a1/head",
+      "tracked_files": 3276,
+      "source_allocated_bytes": 664829952,
+      "ignored_files": 73,
+      "archive_bytes": 978883,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v124-frozen-a1f9f7d64fc0-20261022 refs/archive/20261101-worktrees/8c0dd69e180d65a1/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/8c0dd69e180d65a1/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v124-frozen-a1f9f7d64fc0-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v124b-frozen-65158cce9c2c-20261022",
+      "commit": "65158cce9c2ceb878745067b8a6ad78ee03c4b45",
+      "tree": "b4af54b8c0ef20f6d9d95f3f28a575ac5994b740",
+      "archive_ref": "refs/archive/20261101-worktrees/54d5366c1692d4d5/head",
+      "tracked_files": 3276,
+      "source_allocated_bytes": 667045888,
+      "ignored_files": 128,
+      "archive_bytes": 1912297,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v124b-frozen-65158cce9c2c-20261022 refs/archive/20261101-worktrees/54d5366c1692d4d5/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/54d5366c1692d4d5/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v124b-frozen-65158cce9c2c-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v125-frozen-4220df8bb297-20261022",
+      "commit": "4220df8bb2979f3d5ad8f63c69e3f55e9a20a82c",
+      "tree": "697b0576b45a47030cad0ae5e334f232e6bbc7f2",
+      "archive_ref": "refs/archive/20261101-worktrees/6009935e39abf000/head",
+      "tracked_files": 3280,
+      "source_allocated_bytes": 668123136,
+      "ignored_files": 137,
+      "archive_bytes": 2161013,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v125-frozen-4220df8bb297-20261022 refs/archive/20261101-worktrees/6009935e39abf000/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/6009935e39abf000/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v125-frozen-4220df8bb297-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v126-eos-pair-frozen-cda19eed7c41-20261022",
+      "commit": "cda19eed7c41cfca0d12c69bc3bd75ff191a6ddd",
+      "tree": "f79f2d7d3fd75963658f3c5a2d94a8f824712e5d",
+      "archive_ref": "refs/archive/20261101-worktrees/049db95b662ee6b6/head",
+      "tracked_files": 3315,
+      "source_allocated_bytes": 667639808,
+      "ignored_files": 135,
+      "archive_bytes": 1976296,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v126-eos-pair-frozen-cda19eed7c41-20261022 refs/archive/20261101-worktrees/049db95b662ee6b6/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/049db95b662ee6b6/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v126-eos-pair-frozen-cda19eed7c41-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v127-eos-pair-frozen-aa1ab19b54d5-20261022",
+      "commit": "aa1ab19b54d547321ff5155d59ed770b45d61cce",
+      "tree": "c84b5210fd1575fe0ff1a60fb83708baa6eb4fe7",
+      "archive_ref": "refs/archive/20261101-worktrees/4e88b8abbee5bd51/head",
+      "tracked_files": 3317,
+      "source_allocated_bytes": 667529216,
+      "ignored_files": 131,
+      "archive_bytes": 1914967,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v127-eos-pair-frozen-aa1ab19b54d5-20261022 refs/archive/20261101-worktrees/4e88b8abbee5bd51/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/4e88b8abbee5bd51/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v127-eos-pair-frozen-aa1ab19b54d5-20261022"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v816-latest-capacity-gpu-20261015",
+      "commit": "a297462ca46c80d9369b8d82cfd80dd8a24d43fd",
+      "tree": "4a607c909b2544e2b88c5436d8ceccc4c71e70a2",
+      "archive_ref": "refs/archive/20261101-worktrees/d8d237ece7f95b08/head",
+      "tracked_files": 2537,
+      "source_allocated_bytes": 555286528,
+      "ignored_files": 116,
+      "archive_bytes": 1680357,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v816-latest-capacity-gpu-20261015 refs/archive/20261101-worktrees/d8d237ece7f95b08/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/d8d237ece7f95b08/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v816-latest-capacity-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v82-nested-prefetch-gpu-20261018",
+      "commit": "44c802fdd8b06af0a0c63180f841fd0a6e80eb29",
+      "tree": "06cb0dc65fd72ea20a36a88a7ab79cf1b45f6050",
+      "archive_ref": "refs/archive/20261101-worktrees/4506354b01b2b702/head",
+      "tracked_files": 2912,
+      "source_allocated_bytes": 664301568,
+      "ignored_files": 111,
+      "archive_bytes": 3599156,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v82-nested-prefetch-gpu-20261018 refs/archive/20261101-worktrees/4506354b01b2b702/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/4506354b01b2b702/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v82-nested-prefetch-gpu-20261018"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v82b-parallel-prefetch-gpu-20261018",
+      "commit": "ab951b94ea3fc5f9f92dcc4272ab05517571980e",
+      "tree": "1bde01a928c1234b29a97ea40cdd25ff642a0cca",
+      "archive_ref": "refs/archive/20261101-worktrees/1f2d2304cf556fe0/head",
+      "tracked_files": 2912,
+      "source_allocated_bytes": 664846336,
+      "ignored_files": 123,
+      "archive_bytes": 3813262,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v82b-parallel-prefetch-gpu-20261018 refs/archive/20261101-worktrees/1f2d2304cf556fe0/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/1f2d2304cf556fe0/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v82b-parallel-prefetch-gpu-20261018"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v83-eos-only-gpu-20261019",
+      "commit": "400b6e0d938aad04204584e42ae247a92bc040ae",
+      "tree": "9edadbaf260ff32951304c4dc99690c12dd2b24f",
+      "archive_ref": "refs/archive/20261101-worktrees/61838725d75dff75/head",
+      "tracked_files": 2921,
+      "source_allocated_bytes": 662151168,
+      "ignored_files": 61,
+      "archive_bytes": 2622050,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v83-eos-only-gpu-20261019 refs/archive/20261101-worktrees/61838725d75dff75/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/61838725d75dff75/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v83-eos-only-gpu-20261019"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v84-256k-running24-gpu-20261019",
+      "commit": "9bd42bfe37c1548a41a1217e21bf450023dfeae5",
+      "tree": "e55dc1e596d321da32ad82ce291ab36c27d16053",
+      "archive_ref": "refs/archive/20261101-worktrees/0127e8d477d4b998/head",
+      "tracked_files": 2921,
+      "source_allocated_bytes": 664379392,
+      "ignored_files": 112,
+      "archive_bytes": 3550658,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v84-256k-running24-gpu-20261019 refs/archive/20261101-worktrees/0127e8d477d4b998/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/0127e8d477d4b998/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v84-256k-running24-gpu-20261019"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v843-cold-full-tail-gpu-20261015",
+      "commit": "deccbf30bdafa868e3ed4128b7d76105d62adecf",
+      "tree": "99610b4cea0ad6bec7889c58abfe768689e3dc5c",
+      "archive_ref": "refs/archive/20261101-worktrees/ee827fcde453c282/head",
+      "tracked_files": 2538,
+      "source_allocated_bytes": 553197568,
+      "ignored_files": 63,
+      "archive_bytes": 789257,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v843-cold-full-tail-gpu-20261015 refs/archive/20261101-worktrees/ee827fcde453c282/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/ee827fcde453c282/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v843-cold-full-tail-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v848-cold-tail-scope-gpu-20261015",
+      "commit": "24a83c9980489a4387a3fc436ed9a0175bc1b5c5",
+      "tree": "c8c324a40bd464e695a8d56a299627b3e5affd3a",
+      "archive_ref": "refs/archive/20261101-worktrees/e7ee03484eea250e/head",
+      "tracked_files": 2538,
+      "source_allocated_bytes": 553197568,
+      "ignored_files": 63,
+      "archive_bytes": 789617,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v848-cold-tail-scope-gpu-20261015 refs/archive/20261101-worktrees/e7ee03484eea250e/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/e7ee03484eea250e/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v848-cold-tail-scope-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v85-locobench-long-gpu-20261019",
+      "commit": "e90d42f424b9d5a85549ab2aa6ab434f6950b5f2",
+      "tree": "940619476cf8db409b09a6afd1cda3baa335068e",
+      "archive_ref": "refs/archive/20261101-worktrees/80a5f3524eb5c41c/head",
+      "tracked_files": 2939,
+      "source_allocated_bytes": 628408320,
+      "ignored_files": 105,
+      "archive_bytes": 1528102,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v85-locobench-long-gpu-20261019 refs/archive/20261101-worktrees/80a5f3524eb5c41c/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/80a5f3524eb5c41c/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v85-locobench-long-gpu-20261019"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v856-full-tail-read-feedback-gpu-20261015",
+      "commit": "5229d982546a0e10d5e261b9dd3708d42e52be3b",
+      "tree": "fd12578d60aa1ab794b245070a22395d725e7df5",
+      "archive_ref": "refs/archive/20261101-worktrees/6be757a56a19c54d/head",
+      "tracked_files": 2539,
+      "source_allocated_bytes": 555245568,
+      "ignored_files": 113,
+      "archive_bytes": 1640044,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v856-full-tail-read-feedback-gpu-20261015 refs/archive/20261101-worktrees/6be757a56a19c54d/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/6be757a56a19c54d/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v856-full-tail-read-feedback-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-0c6cbc6-20261020",
+      "commit": "0c6cbc6395a2278ca6654839e46741a6056c8f59",
+      "tree": "f6e37e4a2a909e3895a9d8873c37142a185eea08",
+      "archive_ref": "refs/archive/20261101-worktrees/df513b0f54d7da51/head",
+      "tracked_files": 3013,
+      "source_allocated_bytes": 634155008,
+      "ignored_files": 57,
+      "archive_bytes": 748518,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-0c6cbc6-20261020 refs/archive/20261101-worktrees/df513b0f54d7da51/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/df513b0f54d7da51/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-0c6cbc6-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-1b8befa-20261020",
+      "commit": "1b8befa904a4079dcb63c7f06c08c224488f1c0c",
+      "tree": "cb81f2e63243712bdccacfd375be7bd6ef863131",
+      "archive_ref": "refs/archive/20261101-worktrees/37c466cbadf6b8e6/head",
+      "tracked_files": 3046,
+      "source_allocated_bytes": 642723840,
+      "ignored_files": 57,
+      "archive_bytes": 749728,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-1b8befa-20261020 refs/archive/20261101-worktrees/37c466cbadf6b8e6/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/37c466cbadf6b8e6/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-1b8befa-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-2b373c6-20261020",
+      "commit": "2b373c6557401ee36dc3c83a8acd52a7e432d742",
+      "tree": "2349797f0ce9cd18d9876ce709ada2408b69cd50",
+      "archive_ref": "refs/archive/20261101-worktrees/386e6840f7a94f38/head",
+      "tracked_files": 3082,
+      "source_allocated_bytes": 653844480,
+      "ignored_files": 57,
+      "archive_bytes": 752258,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-2b373c6-20261020 refs/archive/20261101-worktrees/386e6840f7a94f38/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/386e6840f7a94f38/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-2b373c6-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-423a670-20261020",
+      "commit": "423a670983d9ae23d863e01d9bee752c2519d263",
+      "tree": "bb47b04929b813ec09de421b2e0f21ac5516cd41",
+      "archive_ref": "refs/archive/20261101-worktrees/faa76179e3ee7d10/head",
+      "tracked_files": 3074,
+      "source_allocated_bytes": 650764288,
+      "ignored_files": 57,
+      "archive_bytes": 751402,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-423a670-20261020 refs/archive/20261101-worktrees/faa76179e3ee7d10/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/faa76179e3ee7d10/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-423a670-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-51c0f1f-20261020",
+      "commit": "51c0f1f21f069aaa8303ae16b0294b26227af741",
+      "tree": "ee6edcf0f3e83edd648569ece9194786c8aaf267",
+      "archive_ref": "refs/archive/20261101-worktrees/e70971aa95d21c7d/head",
+      "tracked_files": 3008,
+      "source_allocated_bytes": 633298944,
+      "ignored_files": 57,
+      "archive_bytes": 748281,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-51c0f1f-20261020 refs/archive/20261101-worktrees/e70971aa95d21c7d/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/e70971aa95d21c7d/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-51c0f1f-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-52ccccb-20261020",
+      "commit": "52ccccb48c7fa02d1d72ba00f9e9e16c26736ade",
+      "tree": "ece78de4a56094885a972529e897c6a76776e2f8",
+      "archive_ref": "refs/archive/20261101-worktrees/f4d8cdf3370502fd/head",
+      "tracked_files": 3022,
+      "source_allocated_bytes": 635957248,
+      "ignored_files": 57,
+      "archive_bytes": 748955,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-52ccccb-20261020 refs/archive/20261101-worktrees/f4d8cdf3370502fd/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/f4d8cdf3370502fd/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-52ccccb-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020",
+      "commit": "7502984f53ce0b7e890fbad5e6fc5b7527985332",
+      "tree": "bf5f7b42a6e216ca9d41f2777b666a10d2b116cc",
+      "archive_ref": "refs/archive/20261101-worktrees/29fcf2ff62479991/head",
+      "tracked_files": 3096,
+      "source_allocated_bytes": 659099648,
+      "ignored_files": 115,
+      "archive_bytes": 1722954,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020 refs/archive/20261101-worktrees/29fcf2ff62479991/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/29fcf2ff62479991/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-7502984-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-83d0709-20261020",
+      "commit": "83d0709239074c312551b7116395aa6921f46969",
+      "tree": "85f0ecdfbc179bddb554062d8e98a24ddbbba533",
+      "archive_ref": "refs/archive/20261101-worktrees/21db144df4a87c3a/head",
+      "tracked_files": 3066,
+      "source_allocated_bytes": 647884800,
+      "ignored_files": 57,
+      "archive_bytes": 750376,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-83d0709-20261020 refs/archive/20261101-worktrees/21db144df4a87c3a/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/21db144df4a87c3a/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-83d0709-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-a346b6a-20261020",
+      "commit": "a346b6a7fcbe17cc54e0ffa1526b4ee930f5eabc",
+      "tree": "fee8a751c72c72757feee2a4d4e52e9905877ec3",
+      "archive_ref": "refs/archive/20261101-worktrees/cbc0fcb471b91bf7/head",
+      "tracked_files": 3027,
+      "source_allocated_bytes": 636702720,
+      "ignored_files": 57,
+      "archive_bytes": 748662,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-a346b6a-20261020 refs/archive/20261101-worktrees/cbc0fcb471b91bf7/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/cbc0fcb471b91bf7/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-a346b6a-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-a3bc3cc-20261020",
+      "commit": "a3bc3cce71c8d083abb95d11d6be8d2f4677cb9e",
+      "tree": "4ec98d274330b6b5f819d9726bdcc644f0f49f86",
+      "archive_ref": "refs/archive/20261101-worktrees/090875de31a768b1/head",
+      "tracked_files": 3086,
+      "source_allocated_bytes": 657723392,
+      "ignored_files": 108,
+      "archive_bytes": 1552752,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-a3bc3cc-20261020 refs/archive/20261101-worktrees/090875de31a768b1/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/090875de31a768b1/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-a3bc3cc-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-a8a6aff-20261020",
+      "commit": "a8a6aff0d8157354a35bd7873b2cd3ebaa90e312",
+      "tree": "d1e74f820ec04ae1a57d7274d34eca1550618047",
+      "archive_ref": "refs/archive/20261101-worktrees/c43709a8e3dbbab5/head",
+      "tracked_files": 3078,
+      "source_allocated_bytes": 651853824,
+      "ignored_files": 57,
+      "archive_bytes": 751822,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-a8a6aff-20261020 refs/archive/20261101-worktrees/c43709a8e3dbbab5/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/c43709a8e3dbbab5/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-a8a6aff-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-a9b42a2-20261020",
+      "commit": "a9b42a253fd4bda45a78cd6d6e689fa68c520d36",
+      "tree": "535290b60eb2a4706784fef6a2cca69d52e7e0dc",
+      "archive_ref": "refs/archive/20261101-worktrees/bd2bfba3a7d8ead2/head",
+      "tracked_files": 3018,
+      "source_allocated_bytes": 635437056,
+      "ignored_files": 57,
+      "archive_bytes": 748723,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-a9b42a2-20261020 refs/archive/20261101-worktrees/bd2bfba3a7d8ead2/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/bd2bfba3a7d8ead2/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-a9b42a2-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-cb93eec-20261020",
+      "commit": "cb93eec4975ec37206ba063ef01140f05b981cbd",
+      "tree": "94e0fe4446c9e511b49af65c15e768c4dc7d87c9",
+      "archive_ref": "refs/archive/20261101-worktrees/755a94632e5f89a7/head",
+      "tracked_files": 3059,
+      "source_allocated_bytes": 645111808,
+      "ignored_files": 57,
+      "archive_bytes": 750769,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-cb93eec-20261020 refs/archive/20261101-worktrees/755a94632e5f89a7/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/755a94632e5f89a7/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-cb93eec-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-ce2fd8f-20261020",
+      "commit": "ce2fd8f69206a2571625bc43917e9173685c77d7",
+      "tree": "5c3bd2103b53735d3a32a4cbd9ca5d339b0a0876",
+      "archive_ref": "refs/archive/20261101-worktrees/1802c550266a9558/head",
+      "tracked_files": 3034,
+      "source_allocated_bytes": 638832640,
+      "ignored_files": 57,
+      "archive_bytes": 749505,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-ce2fd8f-20261020 refs/archive/20261101-worktrees/1802c550266a9558/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/1802c550266a9558/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-ce2fd8f-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v88-control-e9d0c18-20261020",
+      "commit": "e9d0c18fed91a5eb2b649d2e1ca2395e41a09dc4",
+      "tree": "68fc9de1dc90658572b3084b97b49f8229407168",
+      "archive_ref": "refs/archive/20261101-worktrees/24d40fb22f639ac4/head",
+      "tracked_files": 3053,
+      "source_allocated_bytes": 643960832,
+      "ignored_files": 57,
+      "archive_bytes": 750666,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v88-control-e9d0c18-20261020 refs/archive/20261101-worktrees/24d40fb22f639ac4/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/24d40fb22f639ac4/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v88-control-e9d0c18-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v893-full-latest-branch-gpu-20261015",
+      "commit": "2d1d75e3b5a349cf22fe1ee8e00761e1eaea8604",
+      "tree": "d51b17cfa5984ce3407051cf35ae9d3db26a4022",
+      "archive_ref": "refs/archive/20261101-worktrees/e6b28408d2d55d27/head",
+      "tracked_files": 2540,
+      "source_allocated_bytes": 553234432,
+      "ignored_files": 63,
+      "archive_bytes": 789491,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v893-full-latest-branch-gpu-20261015 refs/archive/20261101-worktrees/e6b28408d2d55d27/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/e6b28408d2d55d27/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v893-full-latest-branch-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v90-team-probe-394fd78-20261020",
+      "commit": "394fd78d4afacda9eb7f5184f76dfd5fe5d2a46b",
+      "tree": "cdfe7eb37f9c2557c71d11e3863b880c6215788e",
+      "archive_ref": "refs/archive/20261101-worktrees/c3d2bb546f3ad487/head",
+      "tracked_files": 3105,
+      "source_allocated_bytes": 658608128,
+      "ignored_files": 86,
+      "archive_bytes": 1104809,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v90-team-probe-394fd78-20261020 refs/archive/20261101-worktrees/c3d2bb546f3ad487/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/c3d2bb546f3ad487/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v90-team-probe-394fd78-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v90b-compaction-7e77e28-20261020",
+      "commit": "7e77e280cf2c16f0947e8a8e8f3905f666c2ea17",
+      "tree": "979767209c95b2b31da8e609dd8d6862ef04e5e9",
+      "archive_ref": "refs/archive/20261101-worktrees/108f13736bf20f58/head",
+      "tracked_files": 3108,
+      "source_allocated_bytes": 659812352,
+      "ignored_files": 107,
+      "archive_bytes": 1561212,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v90b-compaction-7e77e28-20261020 refs/archive/20261101-worktrees/108f13736bf20f58/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/108f13736bf20f58/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v90b-compaction-7e77e28-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v91-control-bb68834-20261020",
+      "commit": "bb68834fc2d46078abacf01aa9b25af801387742",
+      "tree": "9337cb27a5fe4e3bb1979308b736c6ace5835cf6",
+      "archive_ref": "refs/archive/20261101-worktrees/7fbc67aa6e9c79f0/head",
+      "tracked_files": 3112,
+      "source_allocated_bytes": 656261120,
+      "ignored_files": 1,
+      "archive_bytes": 138281,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v91-control-bb68834-20261020 refs/archive/20261101-worktrees/7fbc67aa6e9c79f0/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/7fbc67aa6e9c79f0/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v91-control-bb68834-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v910-nonthinking-summary-gpu-20261015",
+      "commit": "b5c7b3887399909b6f726aa46de246fefb83677c",
+      "tree": "6b813e1f8434b4618c8b78c4df572457280a4ca0",
+      "archive_ref": "refs/archive/20261101-worktrees/03241248096194cd/head",
+      "tracked_files": 2540,
+      "source_allocated_bytes": 553119744,
+      "ignored_files": 58,
+      "archive_bytes": 738806,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v910-nonthinking-summary-gpu-20261015 refs/archive/20261101-worktrees/03241248096194cd/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/03241248096194cd/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v910-nonthinking-summary-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v919-tagged-summary-gpu-20261015",
+      "commit": "614069b0f669702e3fb5c0ad46cf0fa593d881f0",
+      "tree": "34b3e0c9f5fbb2ad82700b94efaa535f967511d5",
+      "archive_ref": "refs/archive/20261101-worktrees/ecd30fcedef3b666/head",
+      "tracked_files": 2540,
+      "source_allocated_bytes": 555302912,
+      "ignored_files": 112,
+      "archive_bytes": 1655492,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v919-tagged-summary-gpu-20261015 refs/archive/20261101-worktrees/ecd30fcedef3b666/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/ecd30fcedef3b666/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v919-tagged-summary-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v91b-control-f29717e-20261020",
+      "commit": "f29717ec027a542c758f59d48c7223b1f90056c5",
+      "tree": "9de108a8f4fe816e9444421e3cfd7f6c91af12f5",
+      "archive_ref": "refs/archive/20261101-worktrees/41fae35912484fe8/head",
+      "tracked_files": 3119,
+      "source_allocated_bytes": 660443136,
+      "ignored_files": 115,
+      "archive_bytes": 1724286,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v91b-control-f29717e-20261020 refs/archive/20261101-worktrees/41fae35912484fe8/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/41fae35912484fe8/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v91b-control-f29717e-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v92-headroom-e8010f0-20261020",
+      "commit": "e8010f0c0e56bd20e726c79c9b8692b47435444a",
+      "tree": "d0101190361f232ac5bda1bed029a17ec7adf768",
+      "archive_ref": "refs/archive/20261101-worktrees/e21c21ef04aa5bc8/head",
+      "tracked_files": 3145,
+      "source_allocated_bytes": 662614016,
+      "ignored_files": 115,
+      "archive_bytes": 1725789,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v92-headroom-e8010f0-20261020 refs/archive/20261101-worktrees/e21c21ef04aa5bc8/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/e21c21ef04aa5bc8/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v92-headroom-e8010f0-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020",
+      "commit": "17478feda10838f8890fb885608cbaefb3e2628f",
+      "tree": "599b47361c1a93ecd4e5c9a436af9551ce80edb5",
+      "archive_ref": "refs/archive/20261101-worktrees/996982e01f08697b/head",
+      "tracked_files": 3163,
+      "source_allocated_bytes": 663789568,
+      "ignored_files": 115,
+      "archive_bytes": 1727257,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020 refs/archive/20261101-worktrees/996982e01f08697b/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/996982e01f08697b/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v93-client-handoff-17478fe-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v94-report-planning-3484310-20261020",
+      "commit": "3484310f83522c38b1f601a6d11e02853e713529",
+      "tree": "1fbf00f53546c69be5ec54cace22d2decd2cc307",
+      "archive_ref": "refs/archive/20261101-worktrees/a01f49465881f919/head",
+      "tracked_files": 3166,
+      "source_allocated_bytes": 663838720,
+      "ignored_files": 115,
+      "archive_bytes": 1728108,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v94-report-planning-3484310-20261020 refs/archive/20261101-worktrees/a01f49465881f919/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/a01f49465881f919/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v94-report-planning-3484310-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v948-restore-cost-gpu-20261015",
+      "commit": "2374925f1f9abd6b23485526b8caadf490edfc33",
+      "tree": "bcb6dbba39269723cfc1671f11a2d25ff2a0533e",
+      "archive_ref": "refs/archive/20261101-worktrees/587734465972fcc0/head",
+      "tracked_files": 2543,
+      "source_allocated_bytes": 558448640,
+      "ignored_files": 149,
+      "archive_bytes": 2495319,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v948-restore-cost-gpu-20261015 refs/archive/20261101-worktrees/587734465972fcc0/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/587734465972fcc0/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v948-restore-cost-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v95-private-prepare-8164200-20261020",
+      "commit": "8164200fca51de098bbf8269e5bb403de44eb52a",
+      "tree": "7496e5f4fa0a3d783880d85f4e82312a9840043e",
+      "archive_ref": "refs/archive/20261101-worktrees/2cdd63b777c272a6/head",
+      "tracked_files": 3167,
+      "source_allocated_bytes": 663457792,
+      "ignored_files": 108,
+      "archive_bytes": 1561160,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v95-private-prepare-8164200-20261020 refs/archive/20261101-worktrees/2cdd63b777c272a6/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/2cdd63b777c272a6/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v95-private-prepare-8164200-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v96-root-scoped-36root-63625de-20261020",
+      "commit": "63625dec6cf1bfb5a28f3a2758c9ea6265d731f0",
+      "tree": "acb71ccaaa7f429041375293b3a9d26da63c6ed9",
+      "archive_ref": "refs/archive/20261101-worktrees/93f993e43d79db78/head",
+      "tracked_files": 3168,
+      "source_allocated_bytes": 664137728,
+      "ignored_files": 115,
+      "archive_bytes": 1729998,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v96-root-scoped-36root-63625de-20261020 refs/archive/20261101-worktrees/93f993e43d79db78/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/93f993e43d79db78/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v96-root-scoped-36root-63625de-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v966-aged-warm-gpu-20261015",
+      "commit": "e8dcba7d4b7507808696bd8842655a976a190d56",
+      "tree": "568491a6270cc59b6fb1daa9a04e4c487cb0cae8",
+      "archive_ref": "refs/archive/20261101-worktrees/fbe0f5f285ffa37e/head",
+      "tracked_files": 2543,
+      "source_allocated_bytes": 558747648,
+      "ignored_files": 153,
+      "archive_bytes": 2568195,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v966-aged-warm-gpu-20261015 refs/archive/20261101-worktrees/fbe0f5f285ffa37e/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/fbe0f5f285ffa37e/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v966-aged-warm-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v97-immediate-donation-49fc2a8-20261020",
+      "commit": "49fc2a84cf71d9c6fc30e33dce2a60aeba97364c",
+      "tree": "4315592ae8d23f6af5f3993ff91add6a63a47372",
+      "archive_ref": "refs/archive/20261101-worktrees/e39931671ab9f75a/head",
+      "tracked_files": 3169,
+      "source_allocated_bytes": 663781376,
+      "ignored_files": 108,
+      "archive_bytes": 1562746,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v97-immediate-donation-49fc2a8-20261020 refs/archive/20261101-worktrees/e39931671ab9f75a/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/e39931671ab9f75a/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v97-immediate-donation-49fc2a8-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v98-eos-capacity-34f9362-20261020",
+      "commit": "34f93629daeab9e1a9ed4254ff5d1d9cce0e29df",
+      "tree": "a18912caa7c26f3b51a3d6152bfeaf4d06aeac41",
+      "archive_ref": "refs/archive/20261101-worktrees/da63286c87fdc5ae/head",
+      "tracked_files": 3171,
+      "source_allocated_bytes": 663797760,
+      "ignored_files": 108,
+      "archive_bytes": 1564186,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v98-eos-capacity-34f9362-20261020 refs/archive/20261101-worktrees/da63286c87fdc5ae/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/da63286c87fdc5ae/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v98-eos-capacity-34f9362-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v982-join-body-gpu-20261015",
+      "commit": "68157959a0692e9ffb089d0c1456c00bd4ade164",
+      "tree": "d16e4965421824745ab794bf031d6ccb46d93c92",
+      "archive_ref": "refs/archive/20261101-worktrees/a25e7a50ed2795d4/head",
+      "tracked_files": 2543,
+      "source_allocated_bytes": 555302912,
+      "ignored_files": 95,
+      "archive_bytes": 1383463,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v982-join-body-gpu-20261015 refs/archive/20261101-worktrees/a25e7a50ed2795d4/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/a25e7a50ed2795d4/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v982-join-body-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v99-restored-nested-d2b7139-20261020",
+      "commit": "d2b7139de02789323d0923d92744b0774be1f041",
+      "tree": "e374fa97441dbce051518062fa59496dafd010d5",
+      "archive_ref": "refs/archive/20261101-worktrees/f748708357ce9feb/head",
+      "tracked_files": 3174,
+      "source_allocated_bytes": 664248320,
+      "ignored_files": 116,
+      "archive_bytes": 1740403,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v99-restored-nested-d2b7139-20261020 refs/archive/20261101-worktrees/f748708357ce9feb/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/f748708357ce9feb/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v99-restored-nested-d2b7139-20261020"
+      ],
+      "pinned_reflog_commits": 1
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v995-partial-restore-gpu-20261015",
+      "commit": "e4aa180b1cb4694b51ce2e4386bfbedacb963b71",
+      "tree": "72619d0ba4ace3fe0581de01ea8bebcb2d220cc3",
+      "archive_ref": "refs/archive/20261101-worktrees/40e8757c46d2c87e/head",
+      "tracked_files": 2543,
+      "source_allocated_bytes": 558116864,
+      "ignored_files": 125,
+      "archive_bytes": 2302453,
+      "restore_commands": [
+        "git -C /home/longhao/experiment/BeliefKV worktree add --detach /home/longhao/experiment/.worktrees/beliefkv-v995-partial-restore-gpu-20261015 refs/archive/20261101-worktrees/40e8757c46d2c87e/head",
+        "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_retired_linked_worktrees/40e8757c46d2c87e/ignored_files.tar.zst --directory /home/longhao/experiment/.worktrees/beliefkv-v995-partial-restore-gpu-20261015"
+      ],
+      "pinned_reflog_commits": 2
+    }
+  ],
+  "retired_worktrees": 97,
+  "source_allocated_bytes": 62411063296,
+  "archive_payload_bytes": 116797200,
+  "archive_allocated_bytes_observed": 117276672,
+  "net_reclaimed_bytes": 62293786624,
+  "receipt_net_reclaimed_bytes": 62293786624,
+  "registered_worktrees_after": 293,
+  "all_retired_paths_and_registrations_absent": true,
+  "all_original_commits_and_reflog_commits_pinned": true,
+  "all_original_git_trees_match": true,
+  "all_extra_file_archive_sha256_match": true,
+  "all_archives_compared_before_removal": true,
+  "equivalent_faster_reference_enumeration": {
+    "checked_at": "2026-11-02T00:42:37.338940+08:00",
+    "same_file_set": true,
+    "files": 3809,
+    "sorted_paths_sha256": "aeb61e3f79d770525a6c4ee94a039a43002f606d07b770d21db4ceb5d8353c58"
+  },
+  "original_interruption_evidence_preserved": false,
+  "symbolic_link_targets_untouched": true,
+  "complete_checkout_restoration_rehearsal": {
+    "commit": "01f085d1ce3f018ce5defa2a5b9cd13fbda6f402",
+    "tree": "126bea80ea6f11f2af62a730f7b42626cc07963f",
+    "passed": true
+  },
+  "linked_archive_restoration_rehearsal": {
+    "passed": true,
+    "commit": "5ddb43a64b55cccd862d23c25953ed12485a1bbc",
+    "ignored_files": 115,
+    "symbolic_links": 1,
+    "complete_tar_comparison_after_extraction": true,
+    "temporary_checkout_removed_without_force": true
+  },
+  "skipped_worktrees": 0,
+  "free_bytes_observed": 552739311616,
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/worktree_retirement_20261101/linked_inventory.json": "c9ec300bdc491912bd85bafed328f571234a05f7f9047f6965c76b16d2114d64",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/worktree_retirement_20261101/linked_receipt.json": "2a3e5f89b03f22626272892cd59de40f9fe222e454b62ff01053b523b54ecec5",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/worktree_retirement_20261101/retire_worktrees.py": "167ad874d319030615f0732a46d033d085b691ca88f962238c1c752715029ebe",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/worktree_retirement_20261101/continue_retirement.py": "9ff88a7dabb0c429d3a71db68c513d57e03aab6a371ac714adfcd03cdf76d50b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/worktree_retirement_20261101/parallel_retirement.py": "1fdb349d341ff446d731f55d1711715fca1403ac8103a3905e9457987fe0d76f",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/worktree_retirement_20261101/review_retirement.py": "2550f59ff09dde8db216d0861e94d99d49e0221fb9b6e5ebf2611a6d381745a1"
+  },
+  "scope": "Storage maintenance only; no GPU work or source/experiment policy change.",
+  "allocation_snapshot_difference_bytes": 0
+}

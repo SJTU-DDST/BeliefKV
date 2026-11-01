@@ -4,6 +4,36 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-11-01 Inactive Frozen Worktrees
+
+Retired 342 old, unreferenced, clean detached worktrees: 245 regular checkouts
+and 97 containing preserved symbolic links to separate SGLang engines. Recent,
+referenced, active, mounted, locked, modified, branch-attached and specially
+configured copies remain. Current full checkouts duplicate approximately
+1.01 GB of tracked reports and 98 MB of figures, explaining most of their
+growth beyond the source itself.
+
+Their 201,765,265,408 allocated source bytes became 449,667,072 allocated
+archive bytes, reclaiming approximately 201.32 GB. Original HEAD and reflog
+commits are pinned under `refs/archive/20261101-worktrees/`; only ignored files
+and original Git administration require separate compressed storage. Every
+archive passed complete tar comparison before ordinary non-forced Git
+worktree removal. Independent review verified all retired paths, registrations,
+pinned trees, commits and archive hashes. Complete checkout reconstruction and
+actual ignored-file/symbolic-link restoration rehearsals passed.
+
+The [regular checkout restore index](20261101_retired_worktrees/README.md) and
+[linked checkout restore index](20261101_retired_linked_worktrees/README.md)
+contain exact original paths and recovery commands. The tracked maintenance
+index and independent reviews are in
+`experiments/reports/worktree_retirement_20261101/`; larger local inventories,
+worker receipts and original interrupted checks remain alongside them.
+
+Observed `.worktrees` allocation fell from 461.42 GB to 262.25 GB and available
+disk space increased from approximately 354 GB to 553 GB. Other new worktrees
+and concurrent writes account for differences from the exclusive reclamation
+estimate. This maintenance starts no GPU work and preserves current user edits.
+
 ## 2026-11-01 Home Storage And Git Object Deduplication
 
 The home-directory audit observed approximately 1.08 TB allocated under
