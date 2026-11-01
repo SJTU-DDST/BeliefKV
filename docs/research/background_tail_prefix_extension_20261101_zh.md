@@ -244,6 +244,63 @@ CPU 收尾脚本初次误读 Full 注册中不存在的 `source_registration` �
 `ops/workflow_original73_background_extension_full_measured_completion_20261101_r1.registration.json`。
 它读取完整事件前缀，只在原固定 18 个成员全部完成后停止非测量背景，
 并核对实际回执、drain 和 owned 退出，再生成 JCT、供给和压力审计。
-额外 token 成本后处理没有由已退出的首个 CPU 收尾脚本自动启动，
-将在完整结束后继续核对。
+额外 token 成本后处理没有由已退出的首个 CPU 收尾脚本自动启动。
 当前没有登记 Full 之后的 GPU 后继，workload 和完整性能结论均未验收。
+
+### 补齐成本收尾与独立现场核验
+
+单独登记的 CPU 成本观察器为
+`ops/workflow_original73_background_extension_full_costs_20261101_r1.registration.json`，
+实际 PID **4113543**，nice19、CUDA 隐藏、OMP/OpenBLAS 各一线程。
+`ops/finish_background73_costs_20261101.py` 等待 fixed18 观察器实际退出，
+并要求完整测量回执、两个新鲜 idle snapshot、owned GPU 进程退出全部通过，
+随后生成 `background73_nonranking_full_complete_costs_r1/` 下的
+`token_cost.json`、`interactivity.json` 和 `previous_prefix_prefill.json`。
+它不修改 GPU 配置、不登记后继，也不会把未完成组当作完整结果。
+
+`background73_full_live_r1/execution_verified.json` 于
+2026-11-01 12:34:33 America/Los_Angeles 完成独立现场核验：
+
+- Supervisor/server/driver 均为实际存活的 nice0 进程，
+  唯一 GPU scheduler 为 4106805，归属本次 server。
+- fixed18 与成本观察器均实际存活且 nice19。
+- HTTP 服务配置、共同 engine/graph/MoE 身份和实际 Device/Host 容量相符。
+- 4,785 份已完成 native 回执、579,466 个输出 token 与原始 packet 哈希、
+  实际输出数组和 workflow/invocation/context 归属逐项一致。
+- 实际非排序 Full 开关保持声明值，native writer 未丢记录、未报错。
+
+上述是独立日志前缀及现场配置证据，不是完整 JCT 或性能验收。
+此时 fixed18 已完成 12/18，仍需保留余下测量成员的完整尾部。
+
+### 早期供给与容量前缀
+
+同目录的 `supply.json`、`periodic.json`、`demand.json` 均为隐藏 CUDA、
+nice19 的只读 CPU 分析，输入分别封存，并不构成原子快照：
+
+| 口径 | 早期观测 |
+| --- | --- |
+| 采样供给前缀 | 25 个到达、13 个结束、6/18 测量结束 |
+| 共同窗口状态样本 | 1,167 个，其中 395 个存在 ready-paused |
+| 采样逻辑集合竞争 | 7 个样本；其中 4 个候选剩余工作量比值至少为 2 |
+| 实际 periodic control | 616 次，297 次存在 ready-paused，9 次跨 workflow 逻辑集合竞争 |
+| Periodic grant 后续服务 | 309 次均有对应实际服务，291 次在有界观测窗口内完成有效批次 |
+| 有预算但无 ready-paused | 319 次 periodic control |
+
+采样数不能替换为时间加权比例，采样竞争也不等于实际 Oracle 决策。
+后续服务只能证明授予被消费，不能证明某次选择降低了 JCT。
+
+`demand.json` 的 22 个规则观测点最晚到 1,242.5957 s；
+未来下一次可复用旧前缀的并集峰值为 1,806,873 token，
+占 Device+Host 总池的 0.636289。
+包含 pending/latest 需求的峰值为 1,812,960 token，占 0.638433。
+这是离线利用下一请求信息的诊断量，不是线上保留权限、实际分配可行性，
+也不能排除更晚的容量压力。
+
+非原子 native 状态前缀中，3,107 次旧前缀 probe 未发现同上下文前缀损失；
+Host-block 回访仍记录 5,465 个重算单位，两者不可相加或互相替代。
+Host 已达约 200 GB 高水位，记录 97 次原生 Host 回收、198,517 个回收 token。
+该前缀不能证明全部执行零重算。
+
+新增 17 个 workflow 的首个到达是 3,413.7150 s，
+上述供给和容量前缀均尚未包含它们。
+因此不能将这些早期数值当作背景扩展已改善尾部压力的证据。
