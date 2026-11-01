@@ -87,12 +87,18 @@ SERVER_FIELDS = (
 
 
 def prefill_server_parameters(source, common):
-    """Declare only the two native prefill controls; preserve every other field."""
+    """Declare native prefill controls; keep cadence opt-in and bounded."""
     chunk = common.get("CHUNKED_PREFILL_SIZE", "4096")
     mixed = common.get("ENABLE_MIXED_CHUNK", "0")
     if chunk not in ("1024", "2048", "4096") or mixed not in ("0", "1"):
         raise ValueError("prefill candidates require chunk 1024/2048/4096 and mixed 0/1")
-    return {**source, "chunked_prefill_size": int(chunk), "enable_mixed_chunk": mixed == "1"}
+    result = {**source, "chunked_prefill_size": int(chunk), "enable_mixed_chunk": mixed == "1"}
+    if "PREFILL_DECODE_INTERVAL" in common:
+        interval = common["PREFILL_DECODE_INTERVAL"]
+        if interval not in ("0", "1") or interval == "1" and mixed != "0":
+            raise ValueError("prefill/decode cadence requires explicit 0/1 and mixed disabled")
+        result["prefill_decode_interval"] = int(interval)
+    return result
 
 
 def environment(
@@ -1583,7 +1589,10 @@ def register(args):
     original_prefill = load(args.source_arm / "server/server_info.json")
     if any(qualified_prefill.get(name) != original_prefill.get(name) for name in (
         "chunked_prefill_size", "enable_mixed_chunk",
-    )):
+    )) or (
+        "prefill_decode_interval" in qualified_prefill
+        and qualified_prefill["prefill_decode_interval"] != original_prefill.get("prefill_decode_interval")
+    ):
         native_baseline = None
     experiment_evidence = None
     if experiment_spec is not None:

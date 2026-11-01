@@ -58,6 +58,14 @@ R1没有沿原生`tagged_child_commits`关联备份命令，不能把未匹配�
 
 目前没有足够机会证据启动逐层handoff。ACK与事件路径也应先核对实际服务与批次覆盖，不能直接把记录时间差算作可消除JCT。
 
+补充`handoff_all_tagged_backup_copies_r3/`不要求存在后续同消费者释放，逐一核对全部预测式备份命令：
+
+- original56的119次全部有原生tagged D2H回执，实际子命令共1,467,285,504字节；按包含它们的原生复制去重，stream合计55.672毫秒，submit到ACK合计3.247秒。
+- original69的50次也全部匹配，共584,417,280字节；对应stream合计22.838毫秒。
+- 这些原生复制可能合并了其他子命令，服务量口径保守地包含整次复制。它们不等于GPU暴露等待，也不是JCT上界。
+
+这补齐了R2未能关联后续释放的备份，并未将那部分认定为零复制。当前`prepare_host`已使大量donor成为Host-backed副本，额外的脏尾复制很小；继续暂停逐层handoff，不为放大交接机会而关闭备份或强行制造迁移。
+
 ## Native 对照入口
 
 native 对照显式声明为 singleton `native_matched`，清除 Full 的 agent准入、预测卸载、备份、预取及 Oracle 信息。保留公共数据平面、计时和精确 token 回放，以同一容量、到达、工具时长和测量组比较。
@@ -99,3 +107,18 @@ CPU入口检查R1发现停止入口遗漏显式native声明校验，原有拒绝
 3. **ACK后的释放与准入。**现有PREPARE_HOST ACK已经rearm预测卸载，不存在完全没有唤醒的简单缺口；已确认样本的时间尺度比prefill干扰小，优先级较低。只有发现实际批次可推进却重复等控制周期，才修改链路。
 
 缩短chunk、插入decode或调整组批都可能延迟新请求、增加提交与计算开销。只有通过局部机会审计后才提交一个有界GPU候选；验收仍是完整测量JCT、共同窗口输出吞吐和有用前缀重算，不能用TBT改善替代JCT与吞吐。
+
+### Prefill连续占用的局部模型
+
+`prefill_decode_burst_opportunity_r1/`额外要求关键路径请求在连续prefill前已经decode、在紧接的decode批次仍然存在、token进度没有变化，且未在该prefill段重算；再用紧接批次的固定worker成本估计每个prefill后插入一步decode：
+
+- original56有1,252段多批prefill，其中1,115段能观察到这样的测量关键路径请求；局部模型中80个不同请求有提前返回机会，单次局部提前量P90约31.8秒。
+- original69对应1,014段、67个不同请求。
+- 模型使用未来输出长度只为判断局部机会，实际候选不读取这些长度。重复请求、批次改变与并行JOIN意味着不能累加这些局部提前量作为完整JCT预测。
+- 每次额外decode仍需原生KV增长准入；局部模型不授予物理容量。也没有把decode时间视作免费：模型记录被推迟的prefill服务量。
+
+据此准备一个有界、通用引擎调优候选：原生`prefill_decode_interval=1`，chunk仍2048、mixed仍关闭，agent与KV策略均保持不变。只在显式声明时传递该CLI参数，历史配置保持默认字典与命令行为。CPU用例执行固定native源码中的`get_next_batch_to_run`、间隔判定和重新arm方法，覆盖已有chunk owner、非空/空decode及默认关闭行为；空decode最多跳过一次选批，必须通过实际GPU验证其墙钟影响。
+
+候选准备在`prefill_decode_cadence_original56_prepare_r1/`。先完成最后Oracle与选定native比较，不批量排队新的调参。后续按同任务、工具、到达、容量和测量组验证；cadence比较入口拒绝额外策略或资源变化，暂定3%平均JCT改善、共同窗口输出不低于98%作为进一步复验的信号，不声称单次显著性或agent调度创新。
+
+候选的`prefill_decode_cadence_bound_cpu_r1/`完整绑定通过6,620项测试及23项子测试，保留此前6,580个literal身份与2,393个旧源码输入，新绑定共2,395个源码输入。初轮聚焦检查中3项配置fixture仍写8请求而调用24请求入口，被原容量一致性校验拒绝；保留失败XML，修正fixture的共同running=24后聚焦347项通过，完整检查也通过。没有修改项目测试或放宽容量校验。

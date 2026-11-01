@@ -18,6 +18,7 @@ MAX_RUNNING_REQUESTS="${MAX_RUNNING_REQUESTS:-48}"
 SERVER_RANDOM_SEED="${SERVER_RANDOM_SEED:-21}"
 CONTEXT_LENGTH="${CONTEXT_LENGTH:-131072}"
 CHUNKED_PREFILL_SIZE="${CHUNKED_PREFILL_SIZE:-4096}"
+PREFILL_DECODE_INTERVAL="${PREFILL_DECODE_INTERVAL:-}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
 BELIEFKV_FULL_MAMBA_HOST_SPLIT="${BELIEFKV_FULL_MAMBA_HOST_SPLIT:-80:20}"
 if [[ "$MODEL_CACHE_LAYOUT" == full_only ]]; then
@@ -278,6 +279,13 @@ server_args=(
   --tool-call-parser qwen3_coder
   --enable-metrics
 )
+if [[ -n "${PREFILL_DECODE_INTERVAL}" ]]; then
+  if [[ "${PREFILL_DECODE_INTERVAL}" != 0 && "${PREFILL_DECODE_INTERVAL}" != 1 ]]; then
+    printf 'PREFILL_DECODE_INTERVAL must be 0 or 1 for the bounded cadence experiment\n' >&2
+    exit 2
+  fi
+  server_args+=(--prefill-decode-interval "${PREFILL_DECODE_INTERVAL}")
+fi
 if [[ -n "$REASONING_PARSER" ]]; then
   server_args+=(--reasoning-parser "$REASONING_PARSER")
 fi
