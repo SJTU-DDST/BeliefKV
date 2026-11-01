@@ -218,15 +218,94 @@ def compare(root, accounting, *, candidate_dir=None, candidate_label="exact"):
     }
 
 
+def analyze_prefill(root):
+    plan_path, summary_path = root / "plan.json", root / "sparse/summary.json"
+    plan, summary = (json.loads(path.read_bytes()) for path in (plan_path, summary_path))
+    if plan.get("cold_prefill_only") is not True or plan["modes"] != ["sparse"]:
+        raise ValueError("expected a separately declared native cold prefill probe")
+    directory = root / "sparse"
+    case_path, receipts_path = directory / "prefill_case.json", directory / "receipts.json"
+    case, receipts = (json.loads(path.read_bytes()) for path in (case_path, receipts_path))
+    expected = case["executed_input_tokens_per_request"]
+    drain_path, cleanup_path = directory / "telemetry_drain.json", directory / "owned_process_cleanup.json"
+    drain, cleanup = (json.loads(path.read_bytes()) for path in (drain_path, cleanup_path))
+    status = drain["drained_status"]
+    if (
+        cleanup.get("remaining_processes") != [] or cleanup.get("reason") != "component_complete"
+        or status["snapshot_ts_ms"] <= drain["previous_zero_snapshot_ts_ms"]
+        or status.get("writer_error") is not None
+        or any(status.get(key) != 0 for key in (
+            "pending_batch_count", "pending_request_count", "writer_queue_depth", "failed_records", "dropped_records",
+        ))
+    ):
+        raise ValueError("cold prefill collection lacks completed drain or cleanup")
+    samples = [
+        summary["prefill_by_case"][f"1:prefill_measure{index}"]
+        for index in range(3)
+    ]
+    if (
+        summary["all_output_ordinals_match_native_responses"] is not True
+        or len(receipts) != 4 or len(summary["prefill_by_case"]) != 4
+        or any(
+            row["executed_input_tokens"] != expected or row["output_tokens"] != 1
+            for row in summary["prefill_by_case"].values()
+        )
+        or any(len(row["tokens"]) != 1 or row["cached_tokens"] != 0 for row in receipts.values())
+    ):
+        raise ValueError("cold prefill actual work or completion evidence differs from its declaration")
+    profiles, sources = [], {}
+    for item in summary["profiles"]:
+        path = Path(item["trace"])
+        opener = gzip.open if path.suffix == ".gz" else open
+        with opener(path, "rt") as stream:
+            profile = partition_kernels(json.load(stream)["traceEvents"])
+        profiles.append({"trace": str(path), **profile})
+        sources[str(path.resolve())] = sha256_file(path)
+    if not profiles:
+        raise ValueError("cold prefill probe has no CUDA profile")
+    for path in (plan_path, summary_path, case_path, receipts_path, drain_path, cleanup_path, Path(__file__)):
+        sources[str(path.resolve())] = sha256_file(path)
+    return {
+        "observed_at": datetime.now(timezone.utc).isoformat(),
+        "captured_case": case, "unprofiled_samples": samples,
+        "median_unprofiled_worker_ms_per_input_token": statistics.median(
+            row["worker_ms_per_input_token"] for row in samples
+        ),
+        "all_four_single_token_outputs_equal": len({tuple(row["tokens"]) for row in receipts.values()}) == 1,
+        "prefill_cuda_profiles": profiles, "inputs_sha256": sources,
+        "semantics": [
+            "Three unprofiled cold requests and a separate profiled request use the same exact captured prefix.",
+            "Input execution counts include every native prefill chunk; each request returns one output token.",
+            "Worker intervals include CPU, GPU and dependencies and are not pure CUDA kernel time.",
+            "This one-context cold-prefill screen does not establish the cost of every continuation or workload.",
+            "Kernel duration sums overlap; exclusive intervals and union are reported separately.",
+            "No Full policy, tool timing, official workload or baseline result changes.",
+        ],
+        "GPU_action": False, "performance_accepted": False,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ("root", "accounting", "output"):
+    for name in ("root", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--accounting", type=Path)
     parser.add_argument("--candidate-dir", type=Path)
     parser.add_argument("--candidate-label", choices=("exact", "tuned_moe", "exact_moe"), default="exact")
+    parser.add_argument("--prefill", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("preserve earlier cost evidence")
+    if args.prefill:
+        result = analyze_prefill(args.root)
+        write(args.output, result)
+        print(json.dumps({
+            "median_unprofiled_worker_ms_per_input_token": result["median_unprofiled_worker_ms_per_input_token"],
+            "prefill_cuda_profiles": result["prefill_cuda_profiles"],
+        }))
+        return
+    if args.accounting is None:
+        parser.error("decode comparison requires --accounting")
     result = compare(
         args.root, args.accounting,
         candidate_dir=args.candidate_dir, candidate_label=args.candidate_label,

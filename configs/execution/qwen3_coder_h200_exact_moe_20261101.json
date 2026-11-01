@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "kind": "opt_in_native_execution_configuration",
+  "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+  "GPU": "NVIDIA H200 NVL",
+  "engine_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+  "dtype": "bfloat16",
+  "kv_cache_dtype": "bfloat16",
+  "attention_backend": "fa3",
+  "device_KV_token_capacity": 805198,
+  "cuda_graph_config": {
+    "decode": {
+      "backend": "full",
+      "max_bs": 24,
+      "bs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+    },
+    "prefill": {
+      "backend": "breakable",
+      "max_bs": 2048
+    }
+  },
+  "environment": {
+    "SGLANG_MOE_CONFIG_DIR": "/home/longhao/experiment/BeliefKV/configs/execution/h200_moe_decode"
+  },
+  "kernel_configuration_sha256": "bef8ee25af76b1d7a56ffb27fff2b3b5714096baafa5a473eb602cb764ad94e0",
+  "evidence": "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/combined_comparison_r1.json",
+  "evidence_scope": {
+    "combined_configuration_measured_in_native_serving": true,
+    "unprofiled_requests": 186,
+    "unprofiled_output_tokens": 17856,
+    "same_greedy_output_sequences": true,
+    "same_device_KV_token_capacity": true,
+    "Host_KV_and_Full_policy_exercised_by_component": false,
+    "full_workflow_JCT_qualified": false,
+    "retained_Full_defaults_changed": false,
+    "common_engine_optimization_available_to_baselines": true
+  },
+  "performance_accepted": false
+}
