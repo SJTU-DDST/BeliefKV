@@ -84,6 +84,8 @@ R1没有沿原生`tagged_child_commits`关联备份命令，不能把未匹配�
 
 original82的R4仅是运行中前缀：202次预测备份计数，1,691次`tool_wait`、235次`join_prepare`，对应stream分别722.337和211.816毫秒。虽然随后Full已完成，这份封存前缀仍不能改称最终总量。修正遗漏后，目前仍未建立足够大的逐层handoff机会，保持关闭。
 
+`final82_complete_control_opportunities_r1/backup_routes.json`随后独立验证完整测量、实际退出及全部最终备份回执，得到相同计数与stream总量；这是新的完整记录证明，不改变R4实时前缀的原有口径。202次预测备份由128次专用标记与74次事件替换构成，全部工具备份中另有1,489次主动prepare计数。
+
 ## Native 对照入口
 
 native 对照显式声明为 singleton `native_matched`，清除 Full 的 agent准入、预测卸载、备份、预取及 Oracle 信息。保留公共数据平面、计时和精确 token 回放，以同一容量、到达、工具时长和测量组比较。
@@ -113,6 +115,10 @@ original82非排序Full已完成固定18条测量任务，独立`completion.json
 - supervisor的`stopped_for_investigation`与driver的`-2`源自固定测量组完成后的主动背景中断；应结合独立完成证书解释，不构成重新运行GPU对照的理由。
 
 最后一轮Oracle根据这次完整Full的实际成本校准：`capacity_v6`、全池容量规划、`full_batch` decode成本、最多6/8候选及0.5毫秒搜索软预算。实际构造器验证记录于`final82_completed_control_oracle_r1/entry.json`，成本身份为`f17c17d7cb849fad40a9fb53a4032869498cfe836a5e18fe868c596c6beda69a`。启动资格阶段及正式运行必须分别核对，不能把协调器上一阶段保留的18条完成数视为Oracle进度。
+
+Oracle已通过24请求位置/session/native-stop与1/8/24采样检查并进入正式回放。`final82_completed_control_oracle_r1/live_oracle_r1.json`独立核对379个精确原token回执、唯一实际GPU scheduler、实际进程祖先、nice0服务进程、nice19固定测量组观察器、相同原生容量与160条使用`planned_pool_geometry`的选择记录。JOIN/EOS、预测工具卸载、prepare保持开启，工具预取与逐层handoff保持关闭。
+
+早期`live_choices_r1.json`重放323条组合选择记录：13次实际搜索、2次所选集合变化、0个原规则之外的新选入agent。其余260条是空reference等未进入搜索的元数据回退，50条没有竞争对象。它们不是323次有效竞争，也不是完整测量结论；必须等待完整18条JCT再执行已冻结的方向停止判据。
 
 ## 其他优化的机会审计
 
@@ -169,3 +175,19 @@ original82非排序Full已完成固定18条测量任务，独立`completion.json
 例如原本chunk独占2,048个输入token，若实际可执行续接只需50个输入token，则尝试1,998+50的原生同批装入，而非只插入decode后仍让后继请求等待整个chunk结束。初步实现边界应是最多检查8个已就绪候选、总短续接输入不超过本轮预算的1/8；按真实需求和page对齐预留，不固定浪费256个token。未知驻留、在途H2D、锁、请求行或实际容量不支持时保持原路径，不新增普通预取或lease。
 
 上述仅为设计边界，还没有完整实现或GPU收益。现有历史记录无法始终证明请求在等待期间的完整物理驻留，不能拿“首次服务时前缀已命中”倒推整个等待过程都热。必须先补足可核验机会，再决定是否做模型GPU验证。
+
+### 短续接被连续chunk挡住的定量核对
+
+`short_continuation_chunk_opportunity_r1/`只读核对完整测量关键路径上的同invocation续接：首次原生prefill的输入增量不超过256 token，且该批就能覆盖完整剩余prompt。长chunk段限定为同一请求连续至少两批singleton prefill、累计至少4,096输入token。工具等待与请求提交之前的时间不计入等待重叠。
+
+| 观察 | original56 | original82 |
+| --- | ---: | ---: |
+| 同owner长chunk段 | 275 | 319 |
+| 关键路径短续接与这些chunk重叠 | 92 | 73 |
+| 其中chunk期间有active/ready周期准入记录 | 32 | 29 |
+| 全部短续接的等权workflow平均等待重叠 / 秒 | 41.427 | 34.622 |
+| 限定为存在上述逻辑资格证据的请求 / 秒 | 25.387 | 19.095 |
+
+最后一行保留的是“该请求在chunk内至少有一次逻辑资格证据”对应的整体重叠，不能称为整个等待区间都已ready，更不能称为物理可执行时间。原生首次服务几何不证明等待期间的HBM驻留；多请求prefill的实际成本、长任务推迟、后续decode和工具依赖变化仍未扣除。
+
+该机会比“平均142秒与prefill穿插”更具体，但仍只支持保留有界短续接共批设计，尚不足以登记新的GPU收益实验。后续实现必须在当前原生选批边界证明真实完整前缀、资格、请求行及增长容量，用实际短输入从长chunk中分出预算，并保留长chunk进度和JOIN保护。不能将25.387秒直接从1,052.995秒JCT扣除后宣称优化。
