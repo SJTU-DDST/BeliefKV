@@ -314,3 +314,7 @@ original82的24对均来自桌面开发workflow。摘要没有使整段约24.8�
 `foreground_call_bound_cpu_r1/evidence.json`完整继承检查通过6,645个literal用例及23个子测试，无失败、错误或skip；保留全部6,620个旧用例及2,395个旧源码路径，新绑定共2,396个。检查执行期间源码、原生CPU树和外部输入均未改变。`foreground_call_candidate_prepare_r1/`的真实Full构造器通过，并逐项确认common environment与旧Full完全一致。
 
 后续单次匹配候选的预定推广信号是平均完整JCT至少改善3%、共同窗口输出不低于对照98%，并核对实际CALL释放、消费者后续服务及有用前缀丢失/Host重算。它们是工程筛选门槛，不是统计显著性。在当前native完成、干净快照和新GPU位置/采样资格确认之前不启动候选；负收益保留旧非排序Full，不启动额外工作量排序或负载搜索。
+
+候选已提交`a73fdcb7`并在独立干净worktree中重核2,396个源码输入、全部外部绑定及原生CPU树；与旧Full的runtime AST比较仅`_live_parent_pressure_key`和释放记录来源分类两个方法发生变化。此前711.219秒CALL窗口内，另有104次`critical_parent_headroom`和3次`wait_prefetch_capacity_reclaimed`，覆盖12个CALL窗口，其中13次面向测量workflow。这确认已有真实原生冷回收入口与阻塞窗口相交；仍不能把58条session-referenced拒绝都归给caller或把1,276条unbacked拒绝当作可直接释放。
+
+顺序监控已实际启动，状态为`ops/native_then_foreground_call_20261101_r1.state.json`。它只接管正在运行的native：等待完整18条、结果核验与真实退出后，重新检查预约、资源和绑定，再执行一个CALL候选的24请求位置/session/native-stop与1/8/24采样入口；不因失败自动重试，不追加GPU参数搜索。candidate比较独立核对实际容量、精确测量工作、完整JCT、共同窗口输出、测量组前缀丢失代理及实际CALL释放记录；背景覆盖等原有限制继续保留。
