@@ -141,6 +141,21 @@ Oracle的R3周期审计在共同窗口记录782次控制、248次存在ready-pau
 
 同一组较长前缀的组合审计为1,123条记录、13次实际搜索、2次集合变化、0个原规则之外的新成员。周期审计与组合审计各自封存独立前缀，不是原子全局快照；仍需保留后半程和全部测量长尾。
 
+### 剩余测量长尾的实际进度
+
+`final82_oracle_tail_progress_r1/`在2026-11-01 07:47 UTC独立核对实际存活的watcher、server、driver、固定测量组观察器和顺序协调器，并封存事件、回执及周期准入前缀。事件前缀中14/18完成，余下四条的精确请求完成数为：
+
+| 原项目 | 已完成请求 / 完整请求数 | 距最近完成回执 / 秒 |
+| --- | ---: | ---: |
+| `python_desktop_development_expert_021` | 67 / 369 | 16.499 |
+| `python_fintech_trading_medium_066` | 225 / 403 | 11.222 |
+| `python_mobile_game_medium_096` | 250 / 355 | 3.637 |
+| `python_system_networking_medium_063` | 149 / 229 | 9.970 |
+
+这些是观察时点的请求计数，不能当作工作完成比例或剩余JCT预测。桌面开发root在最近周期中ready且保持active，完整逻辑预算248,335 token；其余观察到的三个JOIN parent均inactive，移动游戏child保持active，网络项目child在该周期从inactive恢复为active。交易项目child在该周期无ready模型请求，不能仅凭此认定停滞。
+
+最近120秒中，桌面/交易各有一次ready-paused且单独逻辑可容纳的观察，也各有一次恢复；网络项目有7次此类观察、6次恢复。它们是重复周期样本和逻辑额度，不证明全部时刻物理可容纳。这个前缀显示四条任务仍有近期进展，未提供JOIN parent占完整active额度阻塞child的证据；最终验收继续等待全部测量任务完成。
+
 ## 其他优化的机会审计
 
 `measured_prefill_opportunity_complete_controls_r1/`按固定18条测量任务重建实际最后完成依赖链，逐项复现完整JCT。保留公共背景批次的干扰，但只对测量workflow做等权均值：
