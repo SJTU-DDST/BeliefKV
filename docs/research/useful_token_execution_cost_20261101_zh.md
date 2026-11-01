@@ -172,7 +172,8 @@ MoE GEMM 累计从 162.242872 降至 148.412857 ms。
 同样仅重加权已测宽度，筛查值为约 23.170481 秒、
 **1.46523% 旧共同窗口总 worker 区间缩短**。
 它与精确图的 1.23115% 有重叠，二者不能直接相加。
-当前没有组合配置或完整 workflow JCT 的 GPU 结果。
+本节初次验证时没有组合配置的 GPU 结果；后续独立组合测量见下文。
+完整 workflow JCT 尚未测量。
 
 ## 减少调优配置的查表开销
 
@@ -203,21 +204,135 @@ CPU 压缩后的实际文件为：
 `configs/execution/h200_moe_decode/` 可显式使用，
 不覆盖原生源码或公共配置。
 
+## 精确图与 MoE 的组合验证
+
+`native_combined_r2/` 使用压缩后的相同 MoE 参数和 `[1..24]` 精确 decode 图。
+模型、BF16 权重与 KV、FA3、TP=1、805,198-token Device 池均保持一致。
+仍使用原来的七组真实 token 前缀，每宽度三次普通 96-token burst；
+不重跑已有稀疏图对照。`combined_comparison_r1.json` 重新核对两臂输入、
+原生引擎状态和全部输出序列。
+
+| 实际宽度 | 原对照 ms/output-token | 组合 ms/output-token | 成本降低 |
+| --- | ---: | ---: | ---: |
+| 3 | 3.582194 | 3.230783 | 9.8099% |
+| 5 | 2.876205 | 2.516535 | 12.5050% |
+| 7 | 2.147761 | 1.930834 | 10.1002% |
+| 8 | 2.237144 | 2.139730 | 4.3544% |
+| 9 | 2.477289 | 2.346904 | 5.2632% |
+| 13 | 1.804835 | 1.726263 | 4.3534% |
+| 17 | 1.805833 | 1.730376 | 4.1785% |
+
+**186 个普通请求、17,856 个输出 token 全部逐序列一致。**
+这是组合本身的独立测量，不是两个旧收益之和。
+宽度 9 的 kernel 区间并集由 525.337539 降至 496.781286 ms，
+MoE GEMM 累计由 162.242872 降至 135.237404 ms；
+attention 累计仍为 303.714564 ms，主要瓶颈没有消失。
+
+仅重加权已测宽度，得到约 40.440708 秒、
+**2.55734% 总 worker 区间改善**的筛查值，覆盖旧总 worker 区间的 35.5001%。
+未测宽度保持不变；不能将它作为完整 JCT 预测、下界或收益保证。
+组合没有可作为全配置不变对照的宽度；不沿用独立候选的宽度 8/17 对照解释。
+普通 burst 来自一次新服务器启动，仍不宣称跨独立实验的显著性。
+
+可复用配置为 `configs/execution/qwen3_coder_h200_exact_moe_20261101.json`。
+没有改 retained Full 默认值或重新解释旧 Full/ThunderAgent/native 的比较。
+这项通用 engine 优化必须同样提供给 baseline。
+
+首次 `native_combined_r1/` 在模型启动前因启动环境缺 `CUDA_HOME` 退出，
+保留原日志和清理记录；不计作完成的性能测量。
+修正工具链环境后才运行新的 r2，没有覆盖失败目录。
+
+## Attention 参数的有界筛查
+
+`benchmark_attention_token_cost.py` 使用原生 `sgl_kernel.flash_attn`，
+对七组实际上下文长度、BF16、32 Q heads / 4 KV heads / head_dim 128、
+page_size=1 比较 `num_splits=0,1,4,8,16,32,64`。
+每层 Q/K/V 和页映射是合成值，只保留捕获的长度形态；
+连续页与打散页分开测量，均执行完整 attention。
+
+每个候选核对数值容差，以 CUDA event 计时五个 graph 内 attention 调用，
+七轮交替候选顺序。调度 metadata 的构建不在计时区间内。
+实际 serving 的整模型 graph 填充没有在这个微测中重建，
+不能直接把形态筛查表转成线上宽度参数。
+
+`attention_screen_r1/result.json` 中所有候选通过数值容差。
+采用既有筛选门槛：两种页布局均无超过 2% 的回退且几何平均改善至少 3%：
+
+| 实际形态宽度 | 保留参数 | 连续页 kernel 改善 | 打散页 kernel 改善 |
+| --- | ---: | ---: | ---: |
+| 3、5、7、8、17 | 原生 auto，0 | 0 | 0 |
+| 9 | 8 splits | 3.5048% | 2.8211% |
+| 13 | 8 splits | 7.6010% | 6.7488% |
+
+五种形态仍保留默认，另外两种仅是合成数据上的局部潜力。
+**当前不更改全局 SplitKV，也不声称真实模型、JCT 或吞吐改善。**
+该结果不支持为这一个参数立即重复完整 workload。
+
+## 冷 Prefill 的原生归因
+
+`native_prefill_profile_r2/` 从已捕获的宽度 5 形态中选用原样的 65,918-token
+上下文向量；与 decode 组件一致，输入为该向量去掉最后一个 token，
+因此每次实际 prefill **65,917 input tokens**。
+它是同一捕获前缀的计算组件，不是另造任务或更改正式源轨迹。
+
+三个普通冷请求各有 33 个真实 prefill forward，每次先清空组件 cache。
+原生回执的 cached token 均为零，实际输入和输出 ordinal 分别核对。
+每次只生成一个 token，另一次独立请求采集 GPU profile：
+
+| 普通重复 | Worker 合计 | ms/input-token |
+| --- | ---: | ---: |
+| 0 | 4,924.178018 ms | 0.0747027 |
+| 1 | 4,920.512697 ms | 0.0746471 |
+| 2 | 4,942.964152 ms | 0.0749877 |
+
+中位数 **0.0747027 ms/input-token**。
+四次单 token 输出一致；普通成本排除了 profiled 请求。
+不能将它比旧 workload 平均 0.102644 更低的差值算成优化，
+因为一个冷前缀和完整 workload 的输入、续接及排队形态不同。
+
+`prefill_cost_r1.json` 保留 kernel 区间归因：
+
+| Kernel 组 | Duration 合计 | 占 duration 合计 | 无其他组重叠的区间 |
+| --- | ---: | ---: | ---: |
+| Attention | 3,283.218921 ms | 66.3634% | 3,278.155776 ms |
+| MoE GEMM | 1,257.069465 ms | 25.4090% | 1,252.389851 ms |
+| Dense GEMM | 214.238027 ms | 4.3304% | 213.717886 ms |
+| Activation | 32.798571 ms | 0.6630% | 28.492275 ms |
+
+全部 kernel duration 合计 4,947.330841 ms、区间并集 4,935.607620 ms。
+不能把 duration 合计当纯独占时间，也不能把一次 profile 等同于全部 prefill。
+当前实测同时支持 decode 与冷 prefill 的下一项重点为 attention；
+prefill MoE 参数仍未调优，不能把 decode 参数表的收益推广到大 M。
+
+初次 r1 的模型工作和 trace 导出已完成，但 native profiler 在请求边界自动停止后，
+采集器又发出 `/stop_profile`，被原生明确拒绝，因而缺少完整排空收尾。
+保留 r1 的 `component_failed` 和原日志。
+`finish_prefill_profile()` 现在先校验本次目录内已导出的真实 CUDA kernel trace；
+只有没有导出时才主动停止，空 trace 不能通过。
+修正后 r2 完成两个新鲜空闲 writer snapshot 与 owned-process 清理。
+分析入口还会拒绝缺失排空、残留进程、丢记录或四个请求工作量不一致的证据。
+
 ## 本轮结论
 
 已确认主要可见执行成本来自 attention 和 MoE。
-精确 decode 图与有界 MoE launch 调优均有真实模型组件级正收益，
-当前仍是两个独立候选；无依据将它们宣传为大的完整 workflow JCT 收益。
-保留原 Full 配置和既有 Full/ThunderAgent/native 对照。
+精确 decode 图、MoE launch 调优及二者组合均有真实模型组件级正收益；
+组合的已测形态重加权筛查约为 2.56% 总 worker 改善，没有完整 workflow JCT 结果。
+Attention SplitKV 的局部筛查没有支持统一修改默认值。
+新的冷 prefill profile 同样以 attention 为主要可见成本。
 
-后续优先核验二者组合及 prefill 执行路径，保持相同 KV 容量和任务，
-再决定是否值得进行完整 workflow 对比。通用执行优化需要同样提供给 baseline。
-本轮没有重开 workload-size Oracle、修改工具时长或启用 handoff。
-48 项针对性 CPU 检查通过，三次 native serving 臂都完成实际输出、
-新鲜 writer drain 和所拥有进程清理；GPU 已释放。
+保留原 Full 配置和既有 Full/ThunderAgent/native 对照；
+下一项优化仍需保持相同 KV 容量和实际任务，以真实执行成本验证。
+通用执行优化同样提供给 baseline。本轮没有重开 workload-size Oracle、
+修改工具时长或启用 handoff。
+此前的 48 项 CPU 报告保留；本次改动后的针对性集合为 **37 项全部通过**，
+见 `cpu_checks_r15.xml`，包含自动 profile 收尾及不完整采集拒绝检查。
+成功的组合和冷 prefill 臂均完成实际输出、新鲜 writer drain 和进程清理；
+失败尝试没有被重标为成功。GPU 已释放。
 
-图表导出在 `useful_token_cost_r1/figures/token_execution_cost_r2.png` 及同名 PDF。
+最新图表在 `useful_token_cost_r1/figures/token_execution_cost_r3.png` 及同名 PDF，
+保留旧 r1/r2 图片。
 颜色固定使用 Okabe-Ito 定性色板：decode 为 `#0072B2`、
-prefill 为 `#E69F00`、精确图为 `#009E73`、MoE 调优为 `#D55E00`。
+prefill 为 `#E69F00`、精确图为 `#009E73`、MoE 调优为 `#D55E00`、
+组合为 `#CC79A7`。
 左图包含共同窗口内的所有背景输出；右图每种宽度有自己的真实上下文组合，
 没有根据单次服务器启动的三个 burst 绘制统计置信区间。
