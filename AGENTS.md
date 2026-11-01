@@ -5812,3 +5812,13 @@
   failedprefix;later sealed9507pairs and finalmeasured receipts pass. Preserve
   failure/scope,do not invent exact race or restart GPU. NewPredictive gain,
   acceptable sustainedworkload and Oracle benefit remain unproven;goalactive.
+- Original69 Full live CPU diagnostics preserve independent prefixes:
+  supply27arrived/19ended/9of18measured,219of1319ready-pausedstates/1competition;
+  periodic692controls/198ready/1competition,248readygrantsallretained/exactserved,
+  238newservice/usefulcompletionsbeforenextcontrolorrecordedintervention.
+  Free102observedgrants/15multi-workflowwindows/0logicalcompetition.
+  Localglobal-oraclereplay736controls/37orderchanges/0setchanges,notall-entry
+  orJCTcounterfactual. Currentobserver33arrived/12of18complete;actualFull/
+  fixed18observer/paircoordinatoralive. Keep12initial/70sforobservedsupply,
+  no8initialrerunorneworacleGPUyet. Waitcompletepairandretaincoverage/
+  recomputationlimits;running9ba/native434unchanged.
