@@ -733,3 +733,89 @@ block 事件未记录释放当时是否还有 Device 副本，因此具体首因
 实验和两个收尾进程、条件对照进程均实际存活，Full 保持冻结配置。
 后续先保留完整结果及负载拒绝，再据完整跨度的容量/供给证据决定修复；
 不因这两次损失改门槛、截短测量尾部或自动扩跑该到达表的 baseline。
+
+## 静态排列 Full 的完整结果
+
+固定18已经完整结束。`original73_static_balanced_full_review_r2/independent_complete.json`
+重新核对原始工作、实际输出 ordinal、完整结束证书、新鲜 drain、
+实际 owned 退出和三个 CPU 观察器退出，并从底层报告重新计算负载判定。
+3,263 个测量请求、424,240 个输出 token 全部一致。
+56 个 workflow 自然结束，17 个非测量成员按协议截断，
+其中5个背景成员尚未到达；没有将它们列入完整 JCT 样本。
+
+| 固定组 / 共同窗口 | 本轮非排序 Full |
+| --- | ---: |
+| 完整平均 JCT | 1,107.123645 s |
+| 完整 P95 JCT | 2,551.951038 s |
+| 最大 JCT | 2,853.668328 s |
+| 共同窗口全部输出吞吐 | 300.671636 token/s |
+| 共同窗口 decode 吞吐 | 298.301214 token/s |
+| Decode worker 成本 | 2.190554 ms/output-token |
+| Prefill worker 成本 | 0.115179 ms/extend-token |
+
+末次测量完成为 4,083.916397 s，末次实际到达为 4,066.249444 s；
+冻结背景计划继续到 4,376.498230 s，因此本次背景覆盖通过。
+完整跨度的采样可复用旧前缀并集最高为 2,606,520 token、91.7884%，
+pending input 或最新状态并集最高为 2,720,588 token、95.8053%。
+这些仍是逻辑采样诊断，不能从小于100%推导物理迁移必然可容纳。
+
+最终负载判定的11项检查有10项通过，唯一失败项仍为
+`zero_previously_served_same_context_prefix_loss_proxy`。
+完整 prefill 审计确认恰为前述两例、159,533 token，全部属于测量组，
+没有新出现未匹配范围；Host-block 回访口径另为328,973 token，不相加。
+
+所有模型、driver、收尾与条件对照进程均已实际退出。
+条件对照明确记录 `Full workload not qualified` 并停止，
+没有创建或启动 ThunderAgent GPU 臂。保留本次完整拒绝，不修改门槛。
+新的测量成员与旧 original56/旧 original73 不同，
+上述 JCT 和吞吐不能直接换算成相对旧 baseline 的方法收益。
+
+## 保留测量组的背景替换候选
+
+为减少大状态同时存活的风险，CPU 筛查复用已有8个未使用的完整原项目。
+只允许替换43个背景槽位，固定前30个预热及测量成员、
+所有到达时刻、原工具时长分布与公共预测先验。
+评分仅使用原任务的初始 prompt、最大 prompt 和固有模型工作量；
+没有使用方法 JCT、完成顺序或对照胜负。
+
+`original73_static_balanced_full_live_r2/background_KV_alternatives.json`
+按事先写明的“最大 prompt 降幅、初始 prompt 降幅、身份”顺序筛查，
+至多替换3项，每项两种 prompt 降幅均需至少65,536 token，
+同时保留已接受的完整人口 P80/P20 最低值2.931418。
+三轮分别有50、35、22个符合条件的候选，选中：
+
+| 原背景项目 | 替换为完整原项目 | 零基到达槽位 | 最大 prompt 降低 |
+| --- | --- | ---: | ---: |
+| `python_data_warehouse_hard_048` | `javascript_web_portfolio_easy_077` | 32 | 137,448 token |
+| `python_ml_training_expert_051` | `javascript_web_portfolio_easy_005` | 43 | 171,876 token |
+| `python_web_ecommerce_expert_000` | `javascript_ml_training_easy_015` | 56 | 197,670 token |
+
+保留73个不同项目、12个预热、18个测量、43个背景。
+模型工作量 P80/P20 仍为 **2.934261**，大于等于3/4的标记仍为false；
+保留6个初始上下文至少131,072 token 的原任务，其中3个至少196,608。
+新人口计划为11,796请求、1,499,356输出，较旧人口增加229请求、15,797输出；
+测量成员及其3,263 / 424,240完整工作保持不变。
+最大 prompt 降幅之和不是并发 KV 节省、实际峰值或可避免 JCT。
+它是降低背景容量需求的候选，尚未证明低重算、供给或性能通过。
+
+`substitute_background_arrivals` 引入显式 schema6：
+完整保存原 Poisson/排列声明，按原随机流重新生成全部时刻，
+只替换固定前景前缀以后的身份；拒绝重复/外来旧身份、替换前景、
+复用已有身份、伪造时刻、摘要或来源。
+原 Poisson、排列、背景追加和同时到达形式保持原规则。
+物化器同时增加完整原任务的背景替换声明，
+逐行核对原 inventory，拒绝改变前景、隐去被替换成员或改变人口规模。
+
+`background_replacement_combined_cpu.xml` 的189项检查全部通过，
+覆盖真实两 workflow 回放、固定测量组与完整尾部协议、
+原始 token/依赖的实际合成，以及旧到达、合成和收尾回归。
+这是针对性 CPU 验证，尚非重新绑定的完整 serving 资格或 GPU 结果。
+
+`original73_background_substitution_prepare_r1/` 已生成
+`population_plan.json`、`arrivals.json`、`analysis_cohort.json` 和输入绑定。
+首次 CPU 准备误用了未实际生成的 `composite/inventories/source_N.json` 路径，
+在创建候选目录前以 `FileNotFoundError` 拒绝；
+改为读取原 composite 已哈希绑定的六个 inventory，
+逐项哈希及 canonical 原行匹配后才生成候选，没有改写原 source 或任务。
+可执行 trace 物化、工具映射、完整源码绑定、GPU 入口与性能校准仍需完成；
+当前没有登记新 GPU 任务。

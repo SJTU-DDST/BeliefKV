@@ -84,8 +84,71 @@ def extend_poisson_arrival_plan(prefix_plan, extra_workflow_ids):
     }
 
 
+def substitute_background_arrivals(
+    original_plan, replacements, *, preserved_prefix_workflows,
+):
+    """Replace complete background identities while retaining every arrival time."""
+    if not isinstance(original_plan, dict) or (
+        original_plan.get("schema_version"), original_plan.get("mode")
+    ) not in ((1, "poisson"), (2, "warm_start_poisson"), (4, "permuted_warm_start_poisson")):
+        raise ValueError("background substitution requires one original Poisson arrival plan")
+    rows = original_plan.get("arrival_schedule", ())
+    identities = [row.get("workflow_id") for row in rows]
+    validate_arrival_plan(original_plan, identities)
+    if (
+        type(preserved_prefix_workflows) is not int
+        or not max(1, original_plan.get("initial_workflows", 0))
+        <= preserved_prefix_workflows < len(identities)
+        or not isinstance(replacements, (list, tuple)) or not replacements
+    ):
+        raise ValueError("declare a fixed foreground prefix and nonempty background replacements")
+    protected = set(identities[:preserved_prefix_workflows])
+    replaced, added = {}, set()
+    for row in replacements:
+        if not isinstance(row, dict) or set(row) != {"old_workflow_id", "new_workflow_id"}:
+            raise ValueError("each substitution needs exactly one old and one new workflow identity")
+        old, new = row["old_workflow_id"], row["new_workflow_id"]
+        if (
+            type(old) is not str or old not in identities or old in protected or old in replaced
+            or type(new) is not str or not new or new in identities or new in added
+        ):
+            raise ValueError("background substitution must preserve foreground and unique new identities")
+        replaced[old] = new
+        added.add(new)
+    substituted = [replaced.get(key, key) for key in identities]
+    continued = poisson_arrival_plan(
+        substituted, rate_per_second=original_plan["rate_per_second"],
+        seed=original_plan["seed"], initial_workflows=original_plan.get("initial_workflows", 0),
+    )
+    if any(before["offset_seconds"] != after["offset_seconds"] for before, after in zip(
+        rows, continued["arrival_schedule"],
+    )) or continued["arrival_schedule"][:preserved_prefix_workflows] != rows[:preserved_prefix_workflows]:
+        raise ValueError("background substitution changed a frozen arrival slot")
+    return {
+        **continued, "schema_version": 6, "mode": "background_substituted_poisson",
+        "original_plan": deepcopy(original_plan),
+        "preserved_prefix_workflows": preserved_prefix_workflows,
+        "replacements": [
+            {"old_workflow_id": old, "new_workflow_id": replaced[old]}
+            for old in identities if old in replaced
+        ],
+    }
+
+
 def validate_arrival_plan(plan, workflow_ids):
     identities = list(workflow_ids)
+    if (plan.get("schema_version"), plan.get("mode")) == (6, "background_substituted_poisson"):
+        expected = substitute_background_arrivals(
+            plan.get("original_plan"), plan.get("replacements"),
+            preserved_prefix_workflows=plan.get("preserved_prefix_workflows"),
+        )
+        if (
+            len(identities) != len(set(identities))
+            or set(identities) != {row["workflow_id"] for row in expected["arrival_schedule"]}
+            or plan != expected
+        ):
+            raise ValueError("substituted arrivals changed their fixed foreground, times or population")
+        return expected
     if (plan.get("schema_version"), plan.get("mode")) == (5, "prefix_extended_poisson"):
         expected = extend_poisson_arrival_plan(
             plan.get("prefix_plan"), plan.get("additional_workflow_ids", ()),

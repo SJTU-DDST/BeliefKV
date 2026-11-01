@@ -34,6 +34,57 @@ def rows():
     ]
 
 
+def substitution(available):
+    selected = deepcopy([available[0], available[1], available[3]])
+    return {
+        **declaration(available),
+        "kind": "original_background_substitution_plan_not_executable_source",
+        "selected_workflows": selected,
+        "additional_workflows": deepcopy(selected[-1:]),
+        "model_work_units": summary([row["model_work_units"] for row in selected]),
+        "base_workflow_ids": [row["workflow_id"] for row in available[:3]],
+        "replaced_workflow_ids": [available[2]["workflow_id"]],
+        "fixed_foreground_workflow_ids": [row["workflow_id"] for row in available[:2]],
+    }
+
+
+def test_background_substitution_retains_exact_foreground_rows_and_original_alternatives():
+    available = rows()
+    plan = substitution(available)
+    selected, excluded = prep.select_declared_projects(available, plan)
+    assert selected == [available[0], available[1], available[3]]
+    assert excluded == [{
+        **available[2], "selection_reason": "outside_predeclared_whole_original_population",
+    }]
+
+
+@pytest.mark.parametrize("bad", (
+    "unknown-base", "duplicate-base", "wrong-removal", "duplicate-removal",
+    "no-fixed-foreground", "removed-foreground", "old-addition", "changed-cardinality",
+))
+def test_background_substitution_cannot_change_foreground_or_hide_removed_projects(bad):
+    available = rows()
+    plan = substitution(available)
+    if bad == "unknown-base":
+        plan["base_workflow_ids"][-1] = "foreign"
+    elif bad == "duplicate-base":
+        plan["base_workflow_ids"][1] = plan["base_workflow_ids"][0]
+    elif bad == "wrong-removal":
+        plan["replaced_workflow_ids"] = [available[1]["workflow_id"]]
+    elif bad == "duplicate-removal":
+        plan["replaced_workflow_ids"] *= 2
+    elif bad == "no-fixed-foreground":
+        plan["fixed_foreground_workflow_ids"] = []
+    elif bad == "removed-foreground":
+        plan["fixed_foreground_workflow_ids"].append(available[2]["workflow_id"])
+    elif bad == "old-addition":
+        plan["additional_workflows"] = [available[0]]
+    else:
+        plan["base_workflow_ids"].append(available[3]["workflow_id"])
+    with pytest.raises(ValueError):
+        prep.select_declared_projects(available, plan)
+
+
 def test_predeclared_population_retains_exact_rows_order_and_all_excluded_originals():
     available = rows()
     plan = declaration(available)
@@ -137,3 +188,31 @@ def test_declared_population_cannot_silently_reselect_by_a_new_ratio(tmp_path, m
             [inventory], tmp_path / "composed",
             population_plan=path, minimum_work_ratio=3.,
         )
+
+
+def test_background_substitution_materializes_the_whole_new_original_only(tmp_path, monkeypatch):
+    inventories = [
+        make_capture(tmp_path, name, index * 10_000_000.)
+        for index, name in enumerate(("warm", "measured", "removed", "replacement"))
+    ]
+    available = [row for inventory in inventories for row in inventory["workflows"]]
+    plan = substitution(available)
+    path = tmp_path / "substitution.json"
+    path.write_text(json.dumps(plan))
+    monkeypatch.setattr(prep, "original_source_proof", lambda inventory: {"fixture": inventory["capture"]})
+    monkeypatch.setattr(prep, "serving_artifacts", lambda *_args: ({}, {}))
+    output = tmp_path / "substituted"
+    result = prep.prepare(inventories, output, population_plan=path)
+    assert result["projects"] == 3 and result["requests"] == 6
+    graph, expected, _ = source_plan(output)
+    assert set(graph.request_usage) == set(expected) == {
+        f"{name}-r{index}" for name in ("warm", "measured", "replacement") for index in range(2)
+    }
+    assert (output / "server/request_tokens.jsonl").read_bytes() == b"".join(
+        (tmp_path / name / "server/request_tokens.jsonl").read_bytes()
+        for name in sorted(("warm", "measured", "replacement"))
+    )
+    combined = json.loads((output / "composite_source.json").read_bytes())
+    declared = combined["declared_population_plan"]
+    assert declared["replaced_workflows"] == ["removed"]
+    assert declared["fixed_foreground_workflows"] == ["warm", "measured"]

@@ -77,7 +77,10 @@ def select_declared_projects(rows, declaration):
     minimum = declaration.get("minimum_model_work_p80_p20")
     canonical = {row["workflow_id"]: row for row in rows}
     if (
-        declaration.get("kind") != "original_background_extension_plan_not_executable_source"
+        declaration.get("kind") not in (
+            "original_background_extension_plan_not_executable_source",
+            "original_background_substitution_plan_not_executable_source",
+        )
         or not isinstance(selected, list) or not selected
         or not isinstance(additional, list) or not 0 < len(additional) < len(selected)
         or len(canonical) != len(rows)
@@ -100,6 +103,26 @@ def select_declared_projects(rows, declaration):
         ):
             raise ValueError("additional original workflow is foreign or repeated")
         extras.add(row["workflow_id"])
+    if declaration["kind"] == "original_background_substitution_plan_not_executable_source":
+        sets = []
+        for name in (
+            "base_workflow_ids", "replaced_workflow_ids", "fixed_foreground_workflow_ids",
+        ):
+            values = declaration.get(name)
+            if (
+                not isinstance(values, list) or not values
+                or any(type(value) is not str or not value for value in values)
+                or len(set(values)) != len(values) or not set(values) <= canonical.keys()
+            ):
+                raise ValueError("background substitution needs unique original source identities")
+            sets.append(set(values))
+        base, removed, foreground = sets
+        if (
+            len(base) != len(identities) or removed != base - identities
+            or extras != identities - base or len(removed) != len(extras)
+            or not foreground <= base & identities
+        ):
+            raise ValueError("background substitution changed fixed foreground or population size")
     work = summary([row["model_work_units"] for row in selected])
     if (
         type(declaration.get("projects")) is not int
@@ -330,6 +353,11 @@ def prepare(
             "path": str(population_plan.resolve()),
             "sha256": originals[str(population_plan.resolve())],
             "additional_workflows": [row["workflow_id"] for row in declaration["additional_workflows"]],
+            **({
+                "kind": declaration["kind"],
+                "replaced_workflows": declaration["replaced_workflow_ids"],
+                "fixed_foreground_workflows": declaration["fixed_foreground_workflow_ids"],
+            } if declaration["kind"] == "original_background_substitution_plan_not_executable_source" else {}),
         }} if declaration is not None else {}),
         "population": population_summary(selected), "plan_summary": graph.summary(),
         "protocols": sorted({row["protocol_sha256"] for row in selected}),
