@@ -1,0 +1,17 @@
+{
+  "scope": "CPU-only additional matching of published bounded logical-capacity choices to actual tool replacement grants",
+  "input_path": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_initial12_mean70_toolaware_control_20261031_r1/full/opportunities/admission_opportunities.jsonl",
+  "complete_prefix_bytes": 492649918,
+  "complete_prefix_sha256": "548d21b1dae3b056089da7f6cd2eb42f0344d06a7b37f7f654d63a4292f5660f",
+  "method": "Streaming jq reduction: retain the last agent_free_capacity_choice indexed by each selected candidate request ID; match agent_predicted_tool_replacement.consumer.request_id only if 0 <= replacement.monotonic_s - choice.grant_monotonic_s <= 0.05.",
+  "published_choice_records": 32,
+  "actual_event_replacements": 144,
+  "replacements_with_matching_published_choice": 18,
+  "matched_ready_unprotected_logical_competitions": 12,
+  "missing_choice_is_proof_of_no_alternative": false,
+  "physical_alternative_fit_established": false,
+  "future_service_or_JCT_counterfactual_established": false,
+  "GPU_action": false,
+  "automatic_GPU_followup": false,
+  "performance_accepted": false
+}

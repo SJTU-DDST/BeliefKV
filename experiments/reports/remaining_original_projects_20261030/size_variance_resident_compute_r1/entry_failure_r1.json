@@ -1,0 +1,10 @@
+{
+  "stage": "CPU-only resident decode partition screen",
+  "GPU_action": false,
+  "analyzer_sha256": "a4011b86e0009960abe9a4323b656d4237c005605775844ecceaeece3af5246b",
+  "error": "ValueError: future output is required only for this offline screen",
+  "origin": "simulate_frontier rejected a sampled frontier containing an already completed member",
+  "resolution": "Retain all observed geometry in descriptive timing samples, count and exclude such frontiers from the closed-population simulation. Keep the positive-work guard and output-conservation checks.",
+  "earlier_test_failure": "screen_checks.xml preserves three incorrect test expectations that a constant-cost smaller batch must accelerate a short request. screen_checks_r2.xml corrects the expectation and adds a positive context-dependent-cost example; all 12 tests pass.",
+  "performance_accepted": false
+}
