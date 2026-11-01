@@ -349,3 +349,7 @@ native完整退出后，CALL候选已完成24请求位置/session/native-stop及
 另有一个评价边界：旧Full首个CALL发生在1,948.978424秒，晚于原始55.692771--1,638.954850秒主吞吐窗口。因此，CALL修复的主窗口吞吐只能约束早期控制开销，不能证明该路径执行时的吞吐。`foreground_call_late_window_r1/declaration.json`在候选尚未出现CALL效果前，独立冻结`[1948.978424, 3259.858610]`秒诊断窗口，规则为“旧Full首个foreground CALL至冻结到达表最后一次到达”；候选任何结果未参与选择。
 
 该窗口统计所有背景及prefill首token输出，作为新路径的额外非劣检查：低于旧Full的98%将否决推广信号；不能用它推广未通过原JCT/主窗口判据的候选。原始cohort与主指标文件不变。候选若在完整诊断窗口之前已按原规则停止，保留诊断不可用，不把缺失输出当零或为绘图重跑GPU。
+
+`foreground_call_matched_result_r1/live_CALL_release_r1.json`封存候选8次CALL前缀：专用`child_wait_pressure_demoted`仍为0，但通用`causal_waiting_full`路径通过真实caller的native session/generation匹配了32个物理victim，累计释放63,531个FULL token。CALL窗口以实际RETURN关闭，开放窗口仅使用已封存事件前沿；不能以专用计数为0认定整个路径未生效。
+
+只读后续批次核对发现其中3个不同受益context的新请求在释放后5秒内开始worker执行，并实际产生输出；观察到的首次正输出距相应释放约295--706毫秒。它们属于预热或背景workflow，不是测量组的独占JCT收益。该关联证明空间释放后有真实服务，不证明相对于另一个调度选择的因果加速；最终仍等待全部18条、原主窗口与冻结CALL窗口。
