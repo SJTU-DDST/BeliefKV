@@ -271,11 +271,71 @@ r2 在更晚的 journal 前缀上得到与 r1 相同的窗口成本值。
 已核对 live 输出 ordinal，但未把它升级成完整回执/退出证明。
 最终完整成本分析仍由固定测量组完成后的既有路径执行。
 
+## Full 完整测量与 ThunderAgent 交接
+
+Full 已完成固定 18 个测量 workflow。
+`workflow_original56_shared_engine_full_20261101_r1/cohort_termination/completion.json`
+核对全部 **2,819 个请求、362,072 个输出 token**，
+具有新鲜 idle drain、完整测量回执和实际 owned 进程退出证明。
+固定测量结果：
+
+| 指标 | 新共同引擎 Full |
+| --- | ---: |
+| 完整平均 JCT | 964.2904 s |
+| P50 JCT | 618.0022 s |
+| P95 JCT | 2478.7245 s |
+| 最大 JCT | 2810.3379 s |
+| 共同窗口全部输出 | 306.9536 token/s |
+| 共同窗口 decode 输出 | 304.5042 token/s |
+
+旧 Full 同测量组平均 JCT 为 1052.9946 s，
+新 Full 的观测平均值低 8.4240%；仍保留前述六个 runtime/policy 文件变化的归因限制。
+这不代表对新共同引擎 ThunderAgent 的收益，后者仍在运行。
+
+Full 的新 workload 审计没有通过：
+
+- 最后测量结束为 4102.1994 s，晚于最后计划到达 842.3408 s。
+- 同 session 已服务输入前缀损失代理为 647,065 token，涉及 9 次 probe。
+- Host 驱逐回访将 1,019,114 个 FULL token 单位归因为重算。
+
+两项损失统计的语义不同，不能相加；均包含背景人口。
+后一个是缓存回访归因计数，尚未逐请求/forward 核对为实际额外计算。
+还需定位发生时间、测量/背景归属、Host 重复备份与真实独占状态。
+共同窗口 1,529 份供给采样中 569 份有 ready-paused，10 份存在集合竞争下界；
+这是采样计数，不是时间加权比例或 Oracle 改变执行的次数。
+不能把已通过的供给检查升级成所有 workload 条件均已通过。
+
+原顺序协调器在完整 Full 收尾后因资源守卫停止：
+`ValueError('fresh GPU, Host, disk, port or socket is unavailable')`。
+现场检查确认 GPU 空闲、所有 Full owned 进程消失、TCP 18963 空闲，
+Unix socket `/tmp/bkv-causal-18963.sock` 仅有文件残留，
+无监听者。旧协调器状态与日志保留，未删除该 socket。
+
+恢复入口使用重新核对为空闲的 **18964**，只改端口；
+实际模型、共同 engine 配置、source、工具时长、到达和固定测量组均相同。
+ThunderAgent 注册为
+`ops/workflow_original56_shared_engine_thunder_decay_20261101_r1.registration.json`，
+代码仍冻结为 `45747eb9`，复用成功 r2 的共同数据面资格，不重复旧默认引擎实验。
+`workflow_original56_shared_engine_pair_recovery_20261101_r1.plan.json`
+保留原失败并绑定新收尾/比较协调器；它不会登记额外 GPU 后继。
+
+独立 `shared_execution_thunder_live_verified_r1.json` 已核对
+191 个完成请求、12,692 个输出 token 和实际 GPU scheduler 4070452。
+实际 paper 快照确认 invocation program、5 秒控制、1 秒 acting-decay half-life、
+`periodic_resume_only` 和未来信息关闭；
+Full 预测卸载、需求恢复流水线、工具预取和逐层 handoff 均关闭。
+固定 18 个测量成员 observer 与 CPU 比较恢复协调器均已实际存活。
+这仍是 ThunderAgent 前缀证据，尚无匹配的完整方法收益。
+
 ## 当前证据边界
 
 已有十二宽度组件比较覆盖旧 decode worker 时间的 86.63%，
 静态重加权筛查约为 3.99% 总 worker 时间改善。
-固定窗口诊断已有上述数值；共同执行配置的完整 workflow JCT、
-匹配 ThunderAgent 吞吐比较和最终 Host KV 影响仍待完整测量组结束。
+Full 的完整测量已结束；匹配 ThunderAgent 的完整 JCT、吞吐比较、
+请求 interactivity 和最终逐请求 Host 损失分析仍待继续。
 保留原 Full/ThunderAgent/native 比较，不把新 Full 与旧默认引擎 baseline
 之间的差值作为相同引擎下的方法收益。
+
+背景人口可扩展性的独立 CPU 准备见
+`docs/research/background_tail_prefix_extension_20261101_zh.md`。
+该准备没有改变本轮 56 项目对照，也尚未证明改善实际压力。
