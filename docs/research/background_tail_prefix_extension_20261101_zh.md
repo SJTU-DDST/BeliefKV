@@ -519,3 +519,46 @@ CPU 收尾进程 **4149743** 实际存活，nice19、CUDA 隐藏，
 并处理 position 初始状态尚未发布的短暂窗口。
 此时没有登记 ThunderAgent 或 Full 之后的 GPU 后继，
 完整 workload、JCT 改善和性能验收继续待实测。
+
+### 资格通过、启动目录竞争与实际 Full R2
+
+上述 position 检查已完成：24 个原始 token/session/stop 请求全部通过，
+24 次均为 native stop，1/8/24 采样检查通过，完成 fresh drain 与实际 owned 清理。
+证据保存在 `workflow_original73_static_balance_position_20261101_balance73r1/`。
+
+自动登记的 Full R1 在模型启动前因 `FileExistsError` 退出，
+server/driver 均未创建，没有正式模型请求。
+原因是新收尾观察器过早创建 `cohort_termination`，
+连带创建运行根目录；launcher 随后使用 `exist_ok=False` 创建同一路径失败。
+实际目录时间为 13:47:31，launcher 失败时间为 13:47:38，源码路径相符。
+保留 R1 registration、失败 state、空 owned cleanup 与观察器错误，
+不将其算作一次完成的性能实验。
+
+新的 CPU 包装器
+`ops/finish_static73_after_running_20261101_r2.py`
+先确认 Full 为 `running_full`、运行目录由 launcher 创建，
+且 watcher/server/driver 均实际存活，再调用既有固定组收尾逻辑。
+它不提前创建运行目录，也未改变 GPU 调度代码或已绑定源码。
+已有 24 项 GPU 证据通过原注册校验复用，没有再跑相同入口检查。
+
+新的 Full 注册为
+`ops/workflow_original73_static_balance_full_20261101_r2.registration.json`，
+端口 **18969**，实际目录为
+`experiments/raw/workflow_original73_static_balance_full_20261101_balance73r2/`。
+代码仍冻结为 `42156309`，native 仍为 `434c35dd`，相同73项、seed148、
+平均70秒、工具时长、公共预测先验、资源和策略不变。
+
+实际 Full watcher **4154437**、server **4154996**、scheduler **4155327**、
+driver **4156344** 均为 nice0。
+CPU 收尾 **4155783**、fixed18 观察器 **4156578** 均实际存活、nice19、CUDA隐藏。
+收尾计划为
+`ops/workflow_original73_static_balance_finish_20261101_r2.plan.json`；
+等待实际服务的门槛及输入 hash 另存于同 stem 的 `.waiting.json` 和 state。
+
+`original73_static_balanced_full_live_r2/execution_verified.json`
+独立核对首批 15 份完成请求的原始 token、实际输出数组与 agent/context 归属，
+同时确认唯一 GPU owner、真实进程关系、共同执行配置及非排序 Full 开关。
+记录中的 `sequential_pair` 是沿用现场验证器的 CPU observer 字段名，
+本次对应收尾进程，不表示已登记一组 GPU 比较。
+此时 measured 为 0/18；这是实际服务前缀，完整 JCT、低重算、
+持续供给和对照收益均待后续完成。
