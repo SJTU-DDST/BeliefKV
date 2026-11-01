@@ -5857,3 +5857,8 @@
   Keep6088metadata/29earlyreturns/3actualdeadlinesseparate. Design
   docs/design/oracle_device_capacity_planning_20261031_zh.md;cleanfreeze/
   matchingnew69costreviewandworkloadrepairstillneededbeforeGPUclaims.
+- Capacityplanningcleanoperator75414c7ehasnowactuallyrevalidatedall2391
+  boundsourcefiles/370externalinputs/nativeand6532cases+23subtests;proof
+  combination_device_planning_bound_cpu_r1/clean_freeze_r1.json. NoGPU
+  successorregistered. New69costreview/ready-supplyandpairtailcoverage
+  remainunresolved;positive8.63%nonrankingFullresultdoesnotcompletethegoal.

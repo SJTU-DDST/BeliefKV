@@ -82,7 +82,9 @@ JOIN/EOS 预取、prepare_host 和预测工具卸载沿既有路径；
 2391 个源码输入、370 个外部输入及原生 CPU checkout 在执行期间均未改变，
 无失败、错误或跳过。XML 有 6532 个 testcase，testsuite 的 tests 合计为
 6555，23 个子项不能再冒充额外独立测试身份。
-这份资格仍需要在干净冻结目录重新核验，不能直接算作 GPU 资格。
+已在干净提交 `75414c7e` 的独立操作目录重新核验全部绑定，
+证据为同目录的 `clean_freeze_r1.json`。
+原生源码与全部外部输入一致；没有登记 GPU 后继，这仍不是 GPU 资格。
 
 只读 `scripts/audit_combination_device_planning.py` 先精确重建旧 6484 次
 控制入口中的实际搜索及截止点，再比较 364 次完整搜索。
