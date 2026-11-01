@@ -98,14 +98,12 @@ def trace_summary(path):
 
 def service_summary(path, receipts):
     conservation, stats = OutputConservation(), defaultdict(Counter)
-    by_width = defaultdict(Counter)
+    by_width, prefills = defaultdict(Counter), defaultdict(Counter)
     reader = SealedRecords()
     for row in reader(path):
         if row.get("event") != "gpu_service_sample":
             continue
         conservation.observe(row)
-        if row["phase"] != "decode":
-            continue
         labels = {
             member["request_id"].split(":")[2] for member in row["request_samples"]
         }
@@ -115,6 +113,15 @@ def service_summary(path, receipts):
         if len(labels) != 1 or len(widths) != 1:
             raise ValueError("sequential component cases unexpectedly interleaved")
         label, width = next(iter(labels)), next(iter(widths))
+        if row["phase"] == "prefill":
+            target = prefills[(width, label)]
+            target["forwards"] += 1
+            target["worker_ms"] += row["service_elapsed_ms"]
+            target["executed_input_tokens"] += sum(member["token_delta"] for member in row["request_samples"])
+            target["output_tokens"] += sum(member["output_token_delta"] for member in row["request_samples"])
+            continue
+        if row["phase"] != "decode":
+            raise ValueError("unknown native component service phase")
         target = stats[(width, label)]
         target["forwards"] += 1
         target["worker_ms"] += row["service_elapsed_ms"]
@@ -127,6 +134,12 @@ def service_summary(path, receipts):
             target["full_width_outputs"] += sum(member["output_token_delta"] for member in row["request_samples"])
     conservation.verify({identity: {"output_tokens": len(row["tokens"])} for identity, row in receipts.items()})
     return {
+        "prefill_by_case": {
+            f"{width}:{label}": {
+                **dict(value), "worker_ms_per_input_token": value["worker_ms"] / value["executed_input_tokens"],
+            }
+            for (width, label), value in prefills.items()
+        },
         "decode_by_case": {
             f"{width}:{label}": {
                 **dict(value),
@@ -144,7 +157,60 @@ def service_summary(path, receipts):
     }
 
 
-def run_mode(document, mode, directory, *, profile):
+def cold_prefill_case(document):
+    case, member = min(
+        ((case, member) for case in document["cases"] for member in case["members"]),
+        key=lambda item: abs(len(item[1]["tokens"]) - 65536),
+    )
+    return {
+        "width": 1, "members": [member],
+        "captured_from_width": case["width"],
+        "context_lengths": [len(member["tokens"])],
+        "scope": "One exact captured context prefix near 64K; no task or source trace is changed.",
+    }
+
+
+def run_cold_prefill(client, document, directory, receipts):
+    case = cold_prefill_case(document)
+    write(directory / "prefill_case.json", {
+        **{key: value for key, value in case.items() if key != "members"},
+        "source_request_id": case["members"][0]["request_id"],
+        "executed_input_tokens_per_request": len(case["members"][0]["tokens"]) - 1,
+    })
+    for label in ("prefill_measure0", "prefill_measure1", "prefill_measure2", "prefill_profile"):
+        fresh.check_hold(document, released=True)
+        response = client.post("/flush_cache")
+        response.raise_for_status()
+        if label == "prefill_profile":
+            response = client.post("/start_profile", json={
+                "output_dir": str(directory / "profile"), "num_steps": 128,
+                "profile_stages": ["prefill"], "profile_by_stage": True,
+                "activities": ["CPU", "GPU"], "with_stack": False, "record_shapes": False,
+            })
+            response.raise_for_status()
+        request = payload(case, label, 1)
+        begin = time.monotonic()
+        response = client.post("/generate", json=request)
+        response.raise_for_status()
+        records = checked_response(response.json(), request, 1)
+        if any(row["cached_tokens"] != 0 for row in records.values()):
+            raise ValueError("cold prefill unexpectedly reused cached input")
+        receipts.update(records)
+        write(directory / f"width1_{label}.json", {
+            "records": records, "wall_seconds": time.monotonic() - begin,
+            "is_profiled": label == "prefill_profile",
+        })
+        if label == "prefill_profile":
+            response = client.post("/stop_profile")
+            response.raise_for_status()
+        print(json.dumps({
+            "stage": label, "actual_output_tokens": 1,
+            "actual_input_tokens": len(request["input_ids"][0]),
+            "wall_seconds": time.monotonic() - begin,
+        }), flush=True)
+
+
+def run_mode(document, mode, directory, *, profile, cold_prefill_only=False):
     fresh.check_hold(document, released=True)
     resources = qualified.resources(18959)
     if not resources["ready"]:
@@ -182,6 +248,11 @@ def run_mode(document, mode, directory, *, profile):
     ]
     write(directory / "startup.json", {
         "resources": resources, "argv": argv, "native_Host_cache_enabled": False,
+        "cold_prefill_only": cold_prefill_only,
+        "execution_environment": {
+            name: environment[name] for name in ("CUDA_HOME", "SGLANG_MOE_CONFIG_DIR")
+            if name in environment
+        },
         "script_sha256": sha256_file(Path(__file__)),
     })
     receipts, owned = {}, []
@@ -221,7 +292,9 @@ def run_mode(document, mode, directory, *, profile):
             }.items()) or info["cuda_graph_config"]["decode"]["bs"] != buckets:
                 raise ValueError("native component configuration changed")
             write(directory / "server/server_info.json", info)
-            for case in document["cases"]:
+            if cold_prefill_only:
+                run_cold_prefill(client, document, directory, receipts)
+            for case in (() if cold_prefill_only else document["cases"]):
                 fresh.check_hold(document, released=True)
                 response = client.post("/flush_cache")
                 response.raise_for_status()
@@ -268,7 +341,9 @@ def run_mode(document, mode, directory, *, profile):
     return summary
 
 
-def run(inputs, output, *, modes, profile):
+def run(inputs, output, *, modes, profile, cold_prefill_only=False):
+    if cold_prefill_only and not profile:
+        raise ValueError("cold prefill probe requires an explicit CUDA profile")
     document = json.loads(inputs.read_bytes())
     for filename, expected in document["source_sha256"].items():
         if sha256_file(Path(filename)) != expected:
@@ -283,10 +358,14 @@ def run(inputs, output, *, modes, profile):
     write(output / "plan.json", {
         "inputs": str(inputs.resolve()), "inputs_sha256": sha256_file(inputs),
         "native": state, "modes": modes, "profile": profile,
+        "cold_prefill_only": cold_prefill_only,
         "script_sha256": sha256_file(Path(__file__)),
         "independent_greedy_component_only": True, "performance_accepted": False,
     })
-    results = {mode: run_mode(document, mode, output / mode, profile=profile) for mode in modes}
+    results = {
+        mode: run_mode(document, mode, output / mode, profile=profile, cold_prefill_only=cold_prefill_only)
+        for mode in modes
+    }
     write(output / "result.json", {
         "observed_at": datetime.now(timezone.utc).isoformat(), "modes": results,
         "GPU_action": True, "workflow_JCT_measured": False, "performance_accepted": False,
@@ -299,10 +378,14 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--modes", nargs="+", choices=("sparse", "exact"), default=["sparse", "exact"])
     parser.add_argument("--profile", action="store_true")
+    parser.add_argument("--cold-prefill-only", action="store_true")
     args = parser.parse_args()
     if len(args.modes) != len(set(args.modes)):
         parser.error("each native mode can run once per evidence directory")
-    run(args.inputs, args.output, modes=args.modes, profile=args.profile)
+    run(
+        args.inputs, args.output, modes=args.modes, profile=args.profile,
+        cold_prefill_only=args.cold_prefill_only,
+    )
 
 
 if __name__ == "__main__":

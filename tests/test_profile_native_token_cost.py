@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from scripts.profile_native_token_cost import checked_response, payload, trace_summary
+from scripts.profile_native_token_cost import checked_response, cold_prefill_case, payload, trace_summary
 
 
 def test_batch_has_separate_observed_identities_and_fixed_numerical_probe():
@@ -30,3 +30,18 @@ def test_real_kernel_events_only_and_union_does_not_double_count(tmp_path):
 def test_missing_outputs_are_rejected():
     with pytest.raises(ValueError, match="one response"):
         checked_response([], {"rid": ["r"]}, 1)
+
+
+def test_cold_prefill_uses_one_unchanged_captured_prefix():
+    small = {"tokens": [1] * 1024, "request_id": "small"}
+    selected = {"tokens": [2] * 66000, "request_id": "selected"}
+    large = {"tokens": [3] * 200000, "request_id": "large"}
+    result = cold_prefill_case({"cases": [
+        {"width": 2, "members": [small, selected]},
+        {"width": 1, "members": [large]},
+    ]})
+    assert result["width"] == 1
+    assert result["captured_from_width"] == 2
+    assert result["members"][0] is selected
+    request = payload(result, "prefill_measure0", 1)
+    assert request["input_ids"] == [selected["tokens"][:-1]]
