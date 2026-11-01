@@ -290,3 +290,27 @@ original82的24对均来自桌面开发workflow。摘要没有使整段约24.8�
 现有adapter已在摘要后的`context_compact`声明`old_kv_disposition=release_ownership`。本次几何证据不足以支持新增提前失效控制路径，尤其不支持整段caller提前丢弃。保持现有运行，不排队这项GPU候选。
 
 初次CPU分析入口把JSON身份列表直接传入要求tuple身份的校验器，被`verify_capture`拒绝。失败代码与错误保存在`compaction_prefix_geometry_cpu_entry_failure_r1/`；修正为调用已有source loader后两组分析通过。原token、已有校验器、项目源码与运行中的GPU实验均未修改。
+
+### 真实foreground CALL的按需冷回收候选
+
+`foreground_call_capacity_complete_controls_r1/`独立验证完整测量、原注册源码、实际退出及完整封存日志。使用实际CALL到对应child RETURN重建阻塞区间，以原生runtime的wall/monotonic样本对齐容量日志；两组wall offset全程变化分别仅0.002441和0.005371毫秒，另外排除边界50毫秒内的记录。
+
+| 观察 | original56 | original82 |
+| --- | ---: | ---: |
+| 已配对foreground CALL | 17 | 24 |
+| 与消费者容量不足相交的CALL | 15 | 17 |
+| 阻塞窗口内容量不足观察 | 123 | 152 |
+| 其中不同测量消费者 | 31 | 16 |
+| 涉及测量workflow | 5 | 4 |
+
+这些观察是重复容量检测，不是123/152次独立调度机会，更不是可消除等待或JCT。caller的前后首次服务命中也不能倒推阻塞期间始终驻留；旧日志缺少完整逐owner的Host备份与物理驻留时间线。因此不从约24.8万token逻辑上下文直接推算可回收HBM或宣称性能收益。
+
+源码覆盖缺口明确存在：`_agent_observed_blocked_budget_key`及普通后台备份已接受`WAIT_CHILD`；`_live_parent_pressure_key`及因其授权的常规冷回收只覆盖真实JOIN和长工具等待。`_queue_spawn_prepare`对`runtime_internal`保持原有跳过，故上下文摘要不会主动新增delegation备份。
+
+候选只扩展真实foreground child阻塞的冷owner判断：当前context/session与epoch必须匹配；阻塞集合非空；每个child必须仍存在、同workflow、确属该parent、为foreground且未终态。复用原生真实容量缺口、全体共享owner、Host副本、页锁、DMA和session检查；child RETURN/CANCEL、parent变为ready、上下文或session变化后立即失效。没有增加定时器、全队列扫描、短任务抢占或工具预取，也不提前丢弃仍会复用的caller前缀。这是阻塞状态覆盖修复，不是新的工作集切换算法。
+
+初次聚焦测试错误地把已有属性`enable_prepare_host`作为构造参数，19项新fixture在构造时失败；同轮未声明native CPU tree造成18项旧用例skip，原XML保留。修正为沿用现有属性设置并显式提供原生CPU环境后，146项聚焦检查通过。随后25项新用例包含真实CPU radix tree/allocator：有备份时释放34个实际token并保持session锚点；无副本、加锁、在途或child已返回时不释放。CPU tensor和复制stand-in不构成GPU或性能证据。
+
+`foreground_call_bound_cpu_r1/evidence.json`完整继承检查通过6,645个literal用例及23个子测试，无失败、错误或skip；保留全部6,620个旧用例及2,395个旧源码路径，新绑定共2,396个。检查执行期间源码、原生CPU树和外部输入均未改变。`foreground_call_candidate_prepare_r1/`的真实Full构造器通过，并逐项确认common environment与旧Full完全一致。
+
+后续单次匹配候选的预定推广信号是平均完整JCT至少改善3%、共同窗口输出不低于对照98%，并核对实际CALL释放、消费者后续服务及有用前缀丢失/Host重算。它们是工程筛选门槛，不是统计显著性。在当前native完成、干净快照和新GPU位置/采样资格确认之前不启动候选；负收益保留旧非排序Full，不启动额外工作量排序或负载搜索。

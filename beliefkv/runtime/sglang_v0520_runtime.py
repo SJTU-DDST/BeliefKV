@@ -23,7 +23,7 @@ from uuid import uuid4
 from beliefkv.control.causal_graph import (
     GraphDelta, InvocationState, RuntimeCausalContextGraph,
 )
-from beliefkv.core.events import RelationType, RuntimeEventKind, is_unobserved_join_event
+from beliefkv.core.events import ExecutionMode, RelationType, RuntimeEventKind, is_unobserved_join_event
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.predictor.composer import observed_boundary_action
 from beliefkv.predictor.completion_lead import (
@@ -7335,6 +7335,20 @@ class NativeAdmissionRuntime:
                     )
                 )
                 and not self._terminal(key)
+                or parent.state is InvocationState.WAIT_CHILD
+                and self._agent_observed_blocked_budget_key(key)
+                and (context := self.graph.contexts.get(key.context_id)) is not None
+                and context.workflow_id == key.root_workflow_id
+                and context.epoch == key.context_epoch
+                and all(
+                    child_id in parent.child_invocation_ids
+                    and (child := self.graph.invocations.get(child_id)) is not None
+                    and child.parent_invocation_id == parent.invocation_id
+                    and child.workflow_id == parent.workflow_id
+                    and child.execution_mode is ExecutionMode.FOREGROUND
+                    and not child.state.terminal
+                    for child_id in parent.blocking_child_ids
+                )
                 # Both long-wait paths validate this tool owner as nonterminal.
                 or parent.state is InvocationState.WAIT_TOOL and self._long_tool_wait(key)
             )
@@ -7614,7 +7628,11 @@ class NativeAdmissionRuntime:
             notify(key, freed, source="native_parent_pressure")
         self.counts["parent_pressure_demoted"] += 1
         invocation = self.graph.invocations.get(key.invocation_id)
-        source = "tool_wait" if invocation and invocation.state is InvocationState.WAIT_TOOL else "join_wait"
+        source = (
+            "tool_wait" if invocation and invocation.state is InvocationState.WAIT_TOOL
+            else "child_wait" if invocation and invocation.state is InvocationState.WAIT_CHILD
+            else "join_wait"
+        )
         self.counts[f"{source}_pressure_demoted"] += 1
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
