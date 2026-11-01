@@ -14,6 +14,7 @@ from tests.test_causal_comparison import reference
 from tests.test_measured_cohort_stop import partial_fixture
 from tests.test_sustained_oracle_review import censored_report
 from beliefkv.experiments.workflow_cohort import summarize_cohort
+from beliefkv.experiments.source_provenance import sha256_file
 
 
 @pytest.mark.parametrize("declared", (None, False, 1, "true", True))
@@ -59,6 +60,36 @@ def test_native_measured_stop_rejects_missing_or_nonboolean_declaration(tmp_path
             "order": ["native_matched"], "run_root": str(tmp_path),
             "comparison_contract": {"native_replay_baseline": declared},
         })
+
+
+@pytest.mark.parametrize("change", (None, "unpinned", "hash", "order", "undeclared", "nonboolean"))
+def test_native_stop_reads_the_immutable_configuration_from_actual_registration_shape(tmp_path, change):
+    path = tmp_path / "configuration.json"
+    spec = {
+        "order": ["native_matched"],
+        "comparison_contract": {"native_replay_baseline": True},
+    }
+    if change == "order":
+        spec["order"] = ["full"]
+    elif change == "undeclared":
+        spec["comparison_contract"] = {}
+    elif change == "nonboolean":
+        spec["comparison_contract"]["native_replay_baseline"] = 1
+    path.write_text(json.dumps(spec))
+    plan = {
+        "order": ["native_matched"], "run_root": str(tmp_path),
+        "experiment_configuration": str(path),
+        "external_inputs": [{"path": str(path), "sha256": sha256_file(path)}],
+    }
+    if change == "unpinned":
+        plan["external_inputs"] = []
+    elif change == "hash":
+        plan["external_inputs"][0]["sha256"] = "changed"
+    if change is None:
+        assert stop.replay_arm(plan) == tmp_path / "native_matched"
+    else:
+        with pytest.raises(ValueError, match="one declared"):
+            stop.replay_arm(plan)
 
 
 def test_native_measured_JCT_keeps_all_fixed_tails_and_censors_only_background():

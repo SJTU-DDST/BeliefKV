@@ -21,11 +21,30 @@ from scripts import run_causal_source_capture as capture
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
+def native_baseline_declared(comparison):
+    if comparison.get("comparison_contract", {}).get("native_replay_baseline") is True:
+        return True
+    configuration = comparison.get("experiment_configuration")
+    if not isinstance(configuration, str) or not configuration:
+        return False
+    path = Path(configuration)
+    pins = [
+        item.get("sha256") for item in comparison.get("external_inputs", ())
+        if item.get("path") == str(path)
+    ]
+    if len(pins) != 1 or not path.is_file() or sha256_file(path) != pins[0]:
+        return False
+    spec = causal.load(path)
+    return (
+        spec.get("order") == ["native_matched"]
+        and spec.get("comparison_contract", {}).get("native_replay_baseline") is True
+    )
+
+
 def replay_arm(comparison):
     order = comparison.get("order")
-    native_declared = comparison.get("comparison_contract", {}).get("native_replay_baseline") is True
     if order not in (["full"], ["thunderagent_acting_decay"], ["native_matched"]) or (
-        order == ["native_matched"] and not native_declared
+        order == ["native_matched"] and not native_baseline_declared(comparison)
     ):
         raise ValueError("measured termination requires one declared Full, ThunderAgent acting-decay or native arm")
     return Path(comparison["run_root"]) / order[0]
