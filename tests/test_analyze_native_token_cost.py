@@ -2,7 +2,8 @@ import json
 
 import pytest
 
-from scripts.analyze_native_token_cost import analyze_prefill, partition_kernels
+from beliefkv.experiments.source_provenance import sha256_file
+from scripts.analyze_native_token_cost import analyze_prefill, compare, partition_kernels
 
 
 def event(name, start, duration):
@@ -80,3 +81,41 @@ def test_prefill_analysis_requires_all_work_and_complete_collection(tmp_path, de
         result = analyze_prefill(tmp_path)
         assert result["median_unprofiled_worker_ms_per_input_token"] == 1.
         assert result["all_four_single_token_outputs_equal"]
+
+
+def test_decode_subset_needs_no_unmeasured_control_widths(tmp_path):
+    def put(path, value):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(value))
+
+    inputs = tmp_path / "inputs.json"
+    put(inputs, {"cases": [{"width": 6, "context_lengths": [4096] * 6}]})
+    plan = {
+        "inputs": str(inputs), "inputs_sha256": sha256_file(inputs),
+        "native": {"state": "same-engine"},
+    }
+    reference, candidate = tmp_path / "reference", tmp_path / "candidate"
+    for root, mode, cost in ((reference, "sparse", 2.), (candidate, "exact", 1.)):
+        put(root / "plan.json", plan)
+        put(root / mode / "summary.json", {
+            "decode_by_case": {
+                f"6:measure{index}": {"worker_ms_per_output": cost} for index in range(3)
+            },
+            "profiles": [],
+        })
+        for index in range(3):
+            put(root / mode / f"width6_measure{index}.json", {
+                "records": {f"r{index}": {"tokens": [1, 2], "logprobs": [-.1, -.2]}},
+            })
+    accounting = tmp_path / "accounting.json"
+    put(accounting, {
+        "scopes": {"common_window": {"worker_ms": 100.}},
+        "common_window_decode_by_width": {"6": {"worker_ms": 50.}},
+    })
+    result = compare(
+        reference, accounting, candidate_dir=candidate / "exact", candidate_label="exact_moe",
+    )
+    assert result["numerical"]["all_output_sequences_equal"]
+    assert result["by_width"]["6"]["candidate_worker_cost_reduction_percent"] == 50.
+    assert result["sample_reweighting"]["estimated_total_worker_reduction_percent"] == 25.
+    assert "control_width8_cost_change_percent" not in result

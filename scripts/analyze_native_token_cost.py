@@ -189,10 +189,13 @@ def compare(root, accounting, *, candidate_dir=None, candidate_label="exact"):
         "decode_cuda_profiles": profiles,
         **({
             "control_width8_cost_change_percent": report["8"]["candidate_worker_cost_reduction_percent"],
-        } if candidate_label == "exact" else {
+        } if candidate_label == "exact" and "8" in report else {}),
+        **({
             "width8_cost_change_percent": report["8"]["candidate_worker_cost_reduction_percent"],
+        } if candidate_label == "tuned_moe" and "8" in report else {}),
+        **({
             "unchanged_config_width17_cost_change_percent": report["17"]["candidate_worker_cost_reduction_percent"],
-        } if candidate_label == "tuned_moe" else {}),
+        } if candidate_label == "tuned_moe" and "17" in report else {}),
         "sample_reweighting": {
             "covered_common_window_worker_fraction": covered / worker,
             "estimated_worker_time_change_seconds": cost / 1000,

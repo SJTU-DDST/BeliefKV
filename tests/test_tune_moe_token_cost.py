@@ -49,7 +49,8 @@ def test_compact_defaults_preserve_nearest_lookup_and_boundary_ties():
     assert compacted["2048"] == BASE_LARGE
 
 
-def test_combined_probe_passes_exact_mode_and_restores_environment_on_failure(tmp_path, monkeypatch):
+@pytest.mark.parametrize("profile", [False, True])
+def test_combined_probe_passes_exact_mode_and_restores_environment_on_failure(tmp_path, monkeypatch, profile):
     config = tmp_path / "launch.json"
     config.write_text("{}")
     (tmp_path / "result.json").write_text(json.dumps({
@@ -66,10 +67,11 @@ def test_combined_probe_passes_exact_mode_and_restores_environment_on_failure(tm
 
     monkeypatch.setattr("scripts.profile_native_token_cost.run", fail)
     with pytest.raises(RuntimeError, match="component failed"):
-        serve(tmp_path / "inputs.json", tmp_path, tmp_path / "probe", graph_mode="exact")
+        serve(tmp_path / "inputs.json", tmp_path, tmp_path / "probe", graph_mode="exact", profile=profile)
     import os
 
-    assert calls == [(["exact"], True, str(tmp_path.resolve()))]
+    assert calls == [(["exact"], profile, str(tmp_path.resolve()))]
     assert os.environ["SGLANG_MOE_CONFIG_DIR"] == "previous"
     record = json.loads((tmp_path / "probe.configuration.json").read_text())
     assert record["graph_mode"] == "exact"
+    assert record["profile"] is profile

@@ -252,7 +252,7 @@ def defaultdict_list(gates):
     return {name: [] for name in gates}
 
 
-def serve(inputs, configuration, output, *, graph_mode="sparse"):
+def serve(inputs, configuration, output, *, graph_mode="sparse", profile=True):
     from scripts.profile_native_token_cost import run
 
     if graph_mode not in ("sparse", "exact"):
@@ -269,10 +269,11 @@ def serve(inputs, configuration, output, *, graph_mode="sparse"):
         "tuner_result_sha256": sha256_file(configuration / "result.json"),
         "wrapper_source_sha256": sha256_file(Path(__file__)),
         "graph_mode": graph_mode,
+        "profile": profile,
         "compares_to": "same_inputs_and_capacity_native_component",
     })
     try:
-        run(inputs, output, modes=[graph_mode], profile=True)
+        run(inputs, output, modes=[graph_mode], profile=profile)
     finally:
         if original is None:
             os.environ.pop("SGLANG_MOE_CONFIG_DIR")
@@ -292,13 +293,17 @@ def main():
             selected.add_argument("--configuration", type=Path, required=True)
         if command == "serve":
             selected.add_argument("--graph-mode", choices=("sparse", "exact"), default="sparse")
+            selected.add_argument("--no-profile", action="store_true")
     args = parser.parse_args()
     if args.command == "tune":
         tune(args.inputs, args.output)
     elif args.command == "compact":
         compact(args.configuration.resolve(), args.output.resolve())
     else:
-        serve(args.inputs, args.configuration, args.output, graph_mode=args.graph_mode)
+        serve(
+            args.inputs, args.configuration, args.output,
+            graph_mode=args.graph_mode, profile=not args.no_profile,
+        )
 
 
 if __name__ == "__main__":

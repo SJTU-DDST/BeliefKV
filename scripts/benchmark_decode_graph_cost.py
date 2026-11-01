@@ -43,7 +43,14 @@ def paired_summary(blocks):
     }
 
 
-def prepare(registration, accounting, output):
+def prepare(registration, accounting, output, *, widths=WIDTHS):
+    if (
+        not widths or len(set(widths)) != len(widths)
+        or any(type(width) is not int or not 1 <= width <= 24 for width in widths)
+    ):
+        raise ValueError("select distinct captured widths in 1..24")
+    if output.exists():
+        raise FileExistsError("preserve prepared component inputs")
     plan, evidence = (json.loads(path.read_bytes()) for path in (registration, accounting))
     source = Path(plan["source_arm"])
     expected = {
@@ -54,7 +61,7 @@ def prepare(registration, accounting, output):
     with CapturedTokenCorpus(source / "server/request_tokens.jsonl", expected) as corpus:
         if corpus.evidence["token_source_sha256"] != plan["token_source_sha256"]:
             raise ValueError("captured token source changed")
-        for width in WIDTHS:
+        for width in widths:
             options = [
                 row for row in evidence["representative_decode_batches"]
                 if row["width"] == width and 20000 <= statistics.mean(row["context_lengths"]) <= 65536
@@ -87,7 +94,7 @@ def prepare(registration, accounting, output):
             for path in (registration, accounting, Path(__file__), source / "expected.json")
         },
         "scope": [
-            "Seven actual decode member/context/token combinations from the completed common window.",
+            f"{len(cases)} actual decode member/context/token combinations from the completed common window.",
             "Prefixes are computed by the real model in 2048-token chunks, without dummy KV or weights.",
             "The same model and fixed KV batch are replayed under two graph bucket lists.",
             "Repeated static forwards measure component execution, not newly emitted serving throughput or workflow JCT.",
@@ -302,13 +309,14 @@ def main():
     pre = commands.add_parser("prepare")
     for name in ("registration", "accounting", "output"):
         pre.add_argument("--" + name, type=Path, required=True)
+    pre.add_argument("--widths", type=int, nargs="+", default=list(WIDTHS))
     gpu = commands.add_parser("run")
     gpu.add_argument("--inputs", type=Path, required=True)
     gpu.add_argument("--output-dir", type=Path, required=True)
     gpu.add_argument("--profile", action="store_true")
     args = parser.parse_args()
     if args.command == "prepare":
-        prepare(args.registration, args.accounting, args.output)
+        prepare(args.registration, args.accounting, args.output, widths=args.widths)
     else:
         with Path("/tmp/beliefkv-lowlevel-probe.lock").open("a+") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
