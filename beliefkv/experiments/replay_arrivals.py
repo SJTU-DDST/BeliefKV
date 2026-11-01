@@ -1,5 +1,6 @@
 """Frozen external workflow arrivals, independent of serving and model seeds."""
 
+from copy import deepcopy
 import json
 import math
 from pathlib import Path
@@ -55,8 +56,47 @@ def permuted_poisson_arrival_plan(
     }
 
 
+def extend_poisson_arrival_plan(prefix_plan, extra_workflow_ids):
+    """Continue the original random stream without reshuffling its frozen prefix."""
+    if not isinstance(prefix_plan, dict) or (
+        prefix_plan.get("schema_version"), prefix_plan.get("mode")
+    ) not in ((1, "poisson"), (2, "warm_start_poisson"), (4, "permuted_warm_start_poisson")):
+        raise ValueError("background extension requires one original Poisson arrival plan")
+    rows, extra = prefix_plan.get("arrival_schedule", ()), list(extra_workflow_ids)
+    identities = [row.get("workflow_id") for row in rows]
+    if (
+        not identities or not extra
+        or any(type(key) is not str or not key for key in (*identities, *extra))
+        or len(set(extra)) != len(extra) or set(identities) & set(extra)
+    ):
+        raise ValueError("background extension requires new unique workflow identities")
+    validate_arrival_plan(prefix_plan, sorted(identities))
+    continued = poisson_arrival_plan(
+        [*identities, *extra], rate_per_second=prefix_plan["rate_per_second"],
+        seed=prefix_plan["seed"], initial_workflows=prefix_plan.get("initial_workflows", 0),
+    )
+    if continued["arrival_schedule"][:len(rows)] != rows:
+        raise ValueError("continued random stream changed an original arrival")
+    return {
+        **continued, "schema_version": 5, "mode": "prefix_extended_poisson",
+        "prefix_plan": deepcopy(prefix_plan), "prefix_workflows": len(identities),
+        "additional_workflow_ids": extra,
+    }
+
+
 def validate_arrival_plan(plan, workflow_ids):
     identities = list(workflow_ids)
+    if (plan.get("schema_version"), plan.get("mode")) == (5, "prefix_extended_poisson"):
+        expected = extend_poisson_arrival_plan(
+            plan.get("prefix_plan"), plan.get("additional_workflow_ids", ()),
+        )
+        if (
+            len(identities) != len(set(identities))
+            or set(identities) != {row["workflow_id"] for row in expected["arrival_schedule"]}
+            or plan != expected
+        ):
+            raise ValueError("extended arrivals changed their original prefix or declared population")
+        return expected
     if (plan.get("schema_version"), plan.get("mode")) == (3, "simultaneous"):
         from beliefkv.experiments.workload_mix import burst_arrivals
 
