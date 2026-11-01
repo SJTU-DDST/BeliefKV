@@ -170,6 +170,23 @@ def cold_prefill_case(document):
     }
 
 
+def finish_prefill_profile(client, directory):
+    traces = list((directory / "profile").glob("*.trace.json*"))
+    if traces:
+        # The native profiler may export automatically at the request boundary.
+        for path in traces:
+            trace_summary(path)
+        return {"automatic_export_already_complete": True}
+    response = client.post("/stop_profile")
+    response.raise_for_status()
+    traces = list((directory / "profile").glob("*.trace.json*"))
+    if not traces:
+        raise ValueError("native prefill stop did not export a trace")
+    for path in traces:
+        trace_summary(path)
+    return {"automatic_export_already_complete": False}
+
+
 def run_cold_prefill(client, document, directory, receipts):
     case = cold_prefill_case(document)
     write(directory / "prefill_case.json", {
@@ -201,8 +218,7 @@ def run_cold_prefill(client, document, directory, receipts):
             "is_profiled": label == "prefill_profile",
         })
         if label == "prefill_profile":
-            response = client.post("/stop_profile")
-            response.raise_for_status()
+            write(directory / "prefill_profile_completion.json", finish_prefill_profile(client, directory))
         print(json.dumps({
             "stage": label, "actual_output_tokens": 1,
             "actual_input_tokens": len(request["input_ids"][0]),

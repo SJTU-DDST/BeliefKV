@@ -2,7 +2,9 @@ import json
 
 import pytest
 
-from scripts.profile_native_token_cost import checked_response, cold_prefill_case, payload, trace_summary
+from scripts.profile_native_token_cost import (
+    checked_response, cold_prefill_case, finish_prefill_profile, payload, trace_summary,
+)
 
 
 def test_batch_has_separate_observed_identities_and_fixed_numerical_probe():
@@ -45,3 +47,25 @@ def test_cold_prefill_uses_one_unchanged_captured_prefix():
     assert result["members"][0] is selected
     request = payload(result, "prefill_measure0", 1)
     assert request["input_ids"] == [selected["tokens"][:-1]]
+
+
+def test_native_automatic_export_is_not_stopped_twice(tmp_path):
+    directory = tmp_path / "profile"
+    directory.mkdir()
+    (directory / "auto.trace.json").write_text(json.dumps({"traceEvents": [
+        {"cat": "kernel", "ph": "X", "name": "a", "ts": 0, "dur": 10},
+    ]}))
+
+    class NoStop:
+        def post(self, path):
+            raise AssertionError("already exported profile must not be stopped twice")
+
+    assert finish_prefill_profile(NoStop(), tmp_path)["automatic_export_already_complete"]
+
+
+def test_empty_export_cannot_qualify_automatic_completion(tmp_path):
+    directory = tmp_path / "profile"
+    directory.mkdir()
+    (directory / "auto.trace.json").write_text('{"traceEvents": []}')
+    with pytest.raises(ValueError, match="no actual CUDA"):
+        finish_prefill_profile(None, tmp_path)
