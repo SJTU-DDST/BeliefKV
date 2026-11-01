@@ -70,6 +70,49 @@ def select_diverse_projects(rows, *, minimum_ratio, minimum_projects):
     return selected, excluded
 
 
+def select_declared_projects(rows, declaration):
+    """Materialize a previously chosen original population without reselection."""
+    selected = declaration.get("selected_workflows")
+    additional = declaration.get("additional_workflows")
+    minimum = declaration.get("minimum_model_work_p80_p20")
+    canonical = {row["workflow_id"]: row for row in rows}
+    if (
+        declaration.get("kind") != "original_background_extension_plan_not_executable_source"
+        or not isinstance(selected, list) or not selected
+        or not isinstance(additional, list) or not 0 < len(additional) < len(selected)
+        or len(canonical) != len(rows)
+        or type(minimum) not in (int, float) or not math.isfinite(minimum) or minimum < 1
+    ):
+        raise ValueError("require a declared whole-original background population")
+    identities, projects, extras = set(), set(), set()
+    for row in selected:
+        if not isinstance(row, dict) or canonical.get(row.get("workflow_id")) != row:
+            raise ValueError("declared original workflow differs from its source inventory")
+        identity, project = row["workflow_id"], row["project"]
+        if identity in identities or project in projects:
+            raise ValueError("declared original population contains duplicate identities or projects")
+        identities.add(identity)
+        projects.add(project)
+    for row in additional:
+        if (
+            not isinstance(row, dict) or row not in selected
+            or row["workflow_id"] in extras
+        ):
+            raise ValueError("additional original workflow is foreign or repeated")
+        extras.add(row["workflow_id"])
+    work = summary([row["model_work_units"] for row in selected])
+    if (
+        type(declaration.get("projects")) is not int
+        or declaration["projects"] != len(selected)
+        or work != declaration.get("model_work_units") or work["p80_p20"] < minimum
+    ):
+        raise ValueError("declared original population size or intrinsic work differs")
+    return deepcopy(selected), [
+        {**row, "selection_reason": "outside_predeclared_whole_original_population"}
+        for row in rows if row["workflow_id"] not in identities
+    ]
+
+
 def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engine_variants=False):
     """Retain common serving resources while disclosing heterogeneous prompts."""
     common, plans, originals = None, [], {}
@@ -144,6 +187,7 @@ def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engi
 def prepare(
     inventories, output, *, inventory_paths=(), seconds_per_model_unit=None, audit_shape=False,
     minimum_work_ratio=None, minimum_projects=36, allow_reviewed_native_engine_variants=False,
+    population_plan=None,
 ):
     if output.exists():
         raise FileExistsError("preserve every composed workload preparation")
@@ -173,7 +217,14 @@ def prepare(
     common_coefficient = next(iter(coefficients)) if len(coefficients) == 1 else None
     candidate_count = len(selected)
     excluded = []
-    if minimum_work_ratio is not None:
+    declaration = None
+    if population_plan is not None:
+        if minimum_work_ratio is not None:
+            raise ValueError("a declared population must not be selected again by work ratio")
+        declaration = json.loads(population_plan.read_bytes())
+        selected, excluded = select_declared_projects(selected, declaration)
+        minimum_work_ratio = declaration["minimum_model_work_p80_p20"]
+    elif minimum_work_ratio is not None:
         selected, excluded = select_diverse_projects(
             selected, minimum_ratio=minimum_work_ratio, minimum_projects=minimum_projects,
         )
@@ -182,6 +233,8 @@ def prepare(
     for row in selected:
         by_source[row["source_capture"]].append(row)
     originals = {str(path.resolve()): sha256_file(path) for path in inventory_paths}
+    if population_plan is not None:
+        originals[str(population_plan.resolve())] = sha256_file(population_plan)
     plans, expected, sources = [], {}, []
     for source, workflows in sorted(by_source.items()):
         arm, sealed = Path(source), SealedRecords()
@@ -268,9 +321,16 @@ def prepare(
         "candidate_projects": candidate_count, "excluded_whole_workflows_retained": excluded,
         "minimum_model_work_p80_p20": minimum_work_ratio,
         "primary_selection_rule": (
-            "first project representatives; remove nearest intrinsic-work median until declared ratio"
+            "exact previously declared whole-original population; no reselection"
+            if declaration is not None
+            else "first project representatives; remove nearest intrinsic-work median until declared ratio"
             if minimum_work_ratio is not None else "all first project representatives"
         ),
+        **({"declared_population_plan": {
+            "path": str(population_plan.resolve()),
+            "sha256": originals[str(population_plan.resolve())],
+            "additional_workflows": [row["workflow_id"] for row in declaration["additional_workflows"]],
+        }} if declaration is not None else {}),
         "population": population_summary(selected), "plan_summary": graph.summary(),
         "protocols": sorted({row["protocol_sha256"] for row in selected}),
         "heterogeneous_capture_protocols_disclosed": True,
@@ -301,6 +361,7 @@ def main():
     parser.add_argument("--minimum-work-ratio", type=float)
     parser.add_argument("--minimum-projects", type=int, default=36)
     parser.add_argument("--allow-reviewed-native-engine-variants", action="store_true")
+    parser.add_argument("--population-plan", type=Path)
     args = parser.parse_args()
     print(prepare(
         [json.loads(path.read_bytes()) for path in args.inventory], args.output_dir.resolve(),
@@ -308,6 +369,7 @@ def main():
         audit_shape=args.audit_shape,
         minimum_work_ratio=args.minimum_work_ratio, minimum_projects=args.minimum_projects,
         allow_reviewed_native_engine_variants=args.allow_reviewed_native_engine_variants,
+        population_plan=args.population_plan,
     ))
 
 

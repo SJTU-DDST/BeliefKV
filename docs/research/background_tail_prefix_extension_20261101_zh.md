@@ -114,3 +114,55 @@
 两个目录均只保存 CPU 准备，没有登记 GPU 后继。
 保留两个候选是为了明确到达覆盖与实际可执行人口的区别，
 不根据尚未完成的新 ThunderAgent 结果选择或宣布负载获胜。
+
+## 候选 B 的实际物化与逐项复核
+
+`prepare_composite_workload.py --population-plan` 现在能直接物化已声明的人口，
+不会再次按工作量分位数筛选。
+它逐行匹配已验证 inventory 中的原项目、workflow、事件和 token 身份，
+拒绝外来条目、重复身份、修改原行、不一致的工作量统计，
+以及同时指定另一轮分位数选择。
+原有不带该参数的选择行为保留。
+
+候选 B 已实际生成：
+
+- `useful_token_cost_r1/composite73_original56_plus17_r1/`：
+  73 个不同原项目，11,567 个请求，1,483,559 个输出 token。
+- `useful_token_cost_r1/composite73_original56_plus17_tool_timing_r1.json`：
+  使用原 TraceLab 数据、seed21、分类采样规则和相同训练/评估划分。
+  不修改当前工具时长分布。
+- `useful_token_cost_r1/background_tail_original56_plus17_materialized_verified_r1.json`：
+  独立 CPU 逐项复核证据，不是 GPU 注册。
+
+复核程序 `scripts/verify_background_tail_materialization.py` 确认：
+
+| 固定内容 | 核对结果 |
+| --- | --- |
+| 原始模型请求 | 9,858 个请求的预期 native 工作量和归属不变 |
+| 原始请求/事件图 | 50,346 个节点的事件、延迟、依赖逐项相同 |
+| 原始工具时间 | 2,150 个采样条目逐项相同 |
+| 新工具时间 | 只为 17 个新增 workflow 增加 184 个采样条目 |
+| 预测先验 | 实际文件 hash 仍为 `949e2b45...`，公开采样池及划分相同 |
+| 到达与测量 | 原 56 个到达不变；12 预热、18 测量及共同窗口不变 |
+| 背景 | 原 26 个背景成员保留，另加 17 个，合计 43 个 |
+
+物化、原图合成、混合引擎、来源、到达回归一组 100 项通过；
+逐项复核和工具映射回归另一组 65 项通过。
+其中 19 项物化测试重叠，合计覆盖 146 个不同测试用例。
+报告为 `declared_background_composition_cpu_r1.xml` 和
+`background_materialization_verifier_cpu_r1.xml`。
+这不是完整当前源码的共享 GPU 入口资格。
+
+形状局限继续保留：307 次 JOIN 中 222 次为单成员，
+68 次双成员、11 次三成员、6 次四成员，共 85 次多成员。
+Child 模型调用数中位数为 20，P90 为 36；
+root 并行 JOIN 轮数中位数为 1。
+该候选补足的是背景尾部人口，不代表已经满足多轮短 sibling 的理想结构。
+原形状检查仍报告 `needs_new_candidates`，未改写为通过。
+P80/P20 为 2.934261，采用此前接受的 2.931418 最低值，
+原 3、4 门槛未达到的事实继续保留。
+
+新增到达从 3413.7150 s 延续到 4376.4982 s。
+实际 ready 供给、Host 独占/重复备份、额外重算和测量尾部覆盖仍需实际运行；
+不能用未来尚未提交的到达证明压力成立。
+目前仅完成 CPU 物化，没有注册 GPU 后继，也不替换正在运行的 56 项对照。
