@@ -3,6 +3,7 @@
   "kind": "opt_in_native_execution_configuration",
   "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
   "GPU": "NVIDIA H200 NVL",
+  "triton_version": "3.7.1",
   "engine_tree": "434c35dd66211d0a230717c88bf1452056769a40",
   "dtype": "bfloat16",
   "kv_cache_dtype": "bfloat16",
@@ -20,7 +21,7 @@
     }
   },
   "environment": {
-    "SGLANG_MOE_CONFIG_DIR": "/home/longhao/experiment/BeliefKV/configs/execution/h200_moe_decode"
+    "SGLANG_MOE_CONFIG_DIR": "configs/execution/h200_moe_decode"
   },
   "kernel_configuration_sha256": "bef8ee25af76b1d7a56ffb27fff2b3b5714096baafa5a473eb602cb764ad94e0",
   "evidence": "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/combined_12width_summary_r1.json",

@@ -30,6 +30,8 @@ def matching_traffic(predictive, thunder):
     for name in TRAFFIC_FIELDS:
         if name not in predictive or predictive[name] != thunder.get(name):
             raise ValueError("baseline changed fixed traffic or serving conditions: " + name)
+    if predictive.get("native_execution_configuration") != thunder.get("native_execution_configuration"):
+        raise ValueError("baseline changed the shared native execution configuration")
     if thunder.get("oracle_information") is not None:
         raise ValueError("paper baseline must not declare oracle information")
 
@@ -68,6 +70,8 @@ def main():
     if executions[0]["work"] != executions[1]["work"]:
         raise ValueError("baseline changed complete measured native work")
     cohorts, decisions, inputs = [], [], [args.predictive, args.thunder, args.cohort]
+    for execution in executions:
+        inputs.extend(Path(path) for path in execution.get("native_execution_evidence", {}).get("inputs_sha256", {}))
     for directory, execution in zip(
         (args.predictive_review_dir, args.thunder_review_dir), executions,
     ):

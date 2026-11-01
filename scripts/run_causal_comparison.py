@@ -41,6 +41,7 @@ from beliefkv.experiments.subagent_retention import (
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from beliefkv.experiments.native_engine_variant import COMMON_TREE, TOKENCAKE_TREE, engine_patch
+from beliefkv.experiments import native_execution
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
@@ -186,6 +187,10 @@ def environment(
             settings["BELIEFKV_" + target] = str(path)
             settings["BELIEFKV_" + digest] = sha256_file(path)
     flags = ["--enable-custom-logit-processor", *paper_server_flags(mode)]
+    execution = native_execution.configuration(reference["arms"]["full"], checkout)
+    if execution is not None:
+        settings.update(execution["environment"])
+        flags.extend(execution["flags"])
     if prefill["enable_mixed_chunk"]:
         flags.append("--enable-mixed-chunk")
     if not full_only:
@@ -1584,6 +1589,12 @@ def register(args):
     qualified_prefill = smoke_server["source_server_parameters"]
     if prefill_server_parameters(qualified_prefill, reference["arms"]["full"]) != qualified_prefill:
         raise ValueError("prefill candidate differs from the freshly GPU-checked serving profile")
+    execution = native_execution.configuration(reference["arms"]["full"], ROOT)
+    native_execution.require_source_binding(execution, sources, ROOT)
+    native_execution.verify_qualified_configuration(execution, smoke_server)
+    native_execution.verify_server_info(execution, qualified_prefill)
+    if execution is not None:
+        native_baseline = None
     from scripts.audit_mixed_position_outputs import verify_mixed_output_evidence
     mixed_outputs = verify_mixed_output_evidence(smoke, qualified_prefill)
     original_prefill = load(args.source_arm / "server/server_info.json")
@@ -1770,6 +1781,10 @@ def register(args):
             "Auxiliary same-work causal controls; retain all tails and source guard qualifications."
         ),
     }
+    if execution is not None:
+        if execution["identity"]["engine_tree"] != engine["tree"]:
+            raise ValueError("shared execution profile requires its qualified native engine")
+        plan["native_execution_configuration"] = execution["identity"]
     if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
         plan["oracle_information"] = {
             "deployable": False, "future_model_token_work_used": True,
@@ -2001,6 +2016,12 @@ def watch(registration):
                 apps = qualified.command(["nvidia-smi", "--query-compute-apps=pid", "--format=csv,noheader,nounits"])
                 if str(scheduler["pid"]) not in apps.splitlines():
                     raise ValueError("native scheduler has no actual GPU context")
+                execution = native_execution.configuration(plan["reference_environment"], ROOT)
+                observation = native_execution.observe(execution, info, scheduler, arm)
+                if observation is not None:
+                    if observation["identity"] != plan.get("native_execution_configuration"):
+                        raise ValueError("actual shared execution configuration differs from registration")
+                    reservation.write_json(arm / "server/native_execution_configuration.json", observation)
                 observed_configuration(plan, label, arm)
                 command = replay_command(plan, arm, event_socket)
                 with (arm / "replay.log").open("x") as output:

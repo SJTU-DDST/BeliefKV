@@ -24,6 +24,7 @@ from beliefkv.experiments.composite_workload import (
     KIND as COMPOSED_SOURCE, composed_quality, registered_source_arm, verify_composed_registration,
 )
 from beliefkv.experiments.native_engine_variant import engine_patch
+from beliefkv.experiments import native_execution
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
@@ -298,6 +299,10 @@ def register(args):
     } <= sources.keys():
         raise ValueError("position calibration operator lacks CPU qualification")
     evidence = capture.engine_evidence(args.engine, args.engine_report, args.engine_sources)
+    execution = native_execution.configuration(reference["arms"]["full"], ROOT)
+    native_execution.require_source_binding(execution, sources, ROOT)
+    if execution is not None and execution["identity"]["engine_tree"] != evidence["tree"]:
+        raise ValueError("shared execution profile requires its qualified native engine")
     engine_compatibility = prepare_ack_engine_compatibility(
         args.engine, source, candidate_tree=evidence["tree"],
     )
@@ -379,6 +384,8 @@ def register(args):
             ) is True else None
         ),
     }
+    if execution is not None:
+        plan["native_execution_configuration"] = execution["identity"]
     comparison.verify_sources(plan)
     reservation.write_json(args.registration, plan)
     with args.registration.with_suffix(".log").open("x") as log:
@@ -559,6 +566,16 @@ def watch(registration):
             parameters = controls.prefill_server_parameters(
                 {name: source_info[name] for name in SERVER_FIELDS}, reference["arms"]["full"],
             )
+            execution = native_execution.configuration(reference["arms"]["full"], ROOT)
+            native_execution.verify_server_info(execution, info)
+            if execution is not None:
+                parameters.update({
+                    name: info[name] for name in (
+                        "model_path", "dtype", "kv_cache_dtype", "attention_backend", "max_total_tokens",
+                        "max_running_requests", "tp_size", "chunked_prefill_size", "enable_mixed_chunk",
+                        "page_size", "cuda_graph_config",
+                    )
+                })
             required = {**parameters, "enable_custom_logit_processor": True, "enable_session_radix_cache": True}
             if any(info.get(name) != value for name, value in required.items()):
                 raise ValueError("actual calibration server differs from the native source")
@@ -579,6 +596,12 @@ def watch(registration):
             )
             if str(scheduler["pid"]) not in gpu_pids.splitlines():
                 raise ValueError("calibration scheduler has no verified GPU context")
+            observation = native_execution.observe(execution, info, scheduler, run)
+            if observation is not None:
+                if observation["identity"] != plan.get("native_execution_configuration"):
+                    raise ValueError("position execution profile differs from registration")
+                plan["native_execution_observation"] = observation
+                reservation.write_json(run / "server/native_execution_configuration.json", observation)
             state["status"] = "checking_position_tokens_sessions_stop"
             smoke = process(
                 [sys.executable, str(ROOT / "scripts/run_causal_token_smoke.py"),
@@ -594,7 +617,7 @@ def watch(registration):
                 plan, load(run / "smoke/summary.json"), run, parameters,
                 reservation.process(server.pid), scheduler,
             )
-            if parameters["enable_mixed_chunk"]:
+            if parameters["enable_mixed_chunk"] or execution is not None:
                 controls.wait_for_telemetry_drain(run, server=server, pulse=pulse)
             controls.cleanup(run, identities, "position_gpu_microcheck_complete")
             identities = []
