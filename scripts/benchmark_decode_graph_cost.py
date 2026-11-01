@@ -173,6 +173,7 @@ def run(document, output_dir, *, profile):
                 fresh.check_hold(document, released=True)
                 wrapper.synchronize()
                 wrapper.clear()
+                print(json.dumps({"stage": "build_prefixes", "width": case["width"]}), flush=True)
                 reqs = []
                 for member in case["members"]:
                     tokens = array("q", member["tokens"][:-1])
@@ -188,7 +189,14 @@ def run(document, output_dir, *, profile):
                         previous = end
                         end = min(len(tokens) - 1, end + 2048)
                         req.set_extend_range(previous, end)
+                        if previous == 0:
+                            print(json.dumps({
+                                "stage": "first_chunk", "request_id": req.rid,
+                                "prefix": previous, "end": end,
+                            }), flush=True)
                         wrapper.extend([req])
+                        # Direct benchmark calls lack the scheduler's stream/lifetime boundary.
+                        wrapper.synchronize()
                         req.prefix_indices = runner.req_to_token_pool.req_to_token[
                             req.kv.req_pool_idx, :end
                         ].clone()
