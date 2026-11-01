@@ -120,6 +120,10 @@ Oracle已通过24请求位置/session/native-stop与1/8/24采样检查并进入�
 
 早期`live_choices_r1.json`重放323条组合选择记录：13次实际搜索、2次所选集合变化、0个原规则之外的新选入agent。其余260条是空reference等未进入搜索的元数据回退，50条没有竞争对象。它们不是323次有效竞争，也不是完整测量结论；必须等待完整18条JCT再执行已冻结的方向停止判据。
 
+更长的`live_choices_r2.json`封存910条选择记录，仍是13次搜索、2次集合变化、0个原规则之外的新选入agent；719条未进入搜索，178条没有竞争对象。两次变化发生在相邻的periodic/free-dispatch边界，分别将3成员reference缩为1成员、2成员reference缩为1成员，不应解释为两次独立的新短任务替换。该前缀记录的metadata与selection线程CPU合计32.658毫秒，中位8.787微秒/条，不包括整个控制路径和日志写入，不能据此解释完整JCT变化。
+
+对照`final82_live_control_r1/periodic.json`完整覆盖共同吞吐窗口：该窗口只有4次跨workflow逻辑容量竞争，整份较长控制前缀有93次，其中89次在共同窗口之后。它们是重复的逻辑容量观察，不是物理可执行组合数。不能仅用Oracle早期没有新成员来断言后半程也没有机会，更不能在测量长尾完成前提前终止本轮。
+
 ## 其他优化的机会审计
 
 `measured_prefill_opportunity_complete_controls_r1/`按固定18条测量任务重建实际最后完成依赖链，逐项复现完整JCT。保留公共背景批次的干扰，但只对测量workflow做等权均值：
@@ -191,3 +195,16 @@ Oracle已通过24请求位置/session/native-stop与1/8/24采样检查并进入�
 最后一行保留的是“该请求在chunk内至少有一次逻辑资格证据”对应的整体重叠，不能称为整个等待区间都已ready，更不能称为物理可执行时间。原生首次服务几何不证明等待期间的HBM驻留；多请求prefill的实际成本、长任务推迟、后续decode和工具依赖变化仍未扣除。
 
 该机会比“平均142秒与prefill穿插”更具体，但仍只支持保留有界短续接共批设计，尚不足以登记新的GPU收益实验。后续实现必须在当前原生选批边界证明真实完整前缀、资格、请求行及增长容量，用实际短输入从长chunk中分出预算，并保留长chunk进度和JOIN保护。不能将25.387秒直接从1,052.995秒JCT扣除后宣称优化。
+
+源码时序核对进一步确认：`V0520NativeTelemetry.on_launch()`在首次GPU服务时才填入`cached_tokens_device`、`cached_tokens_host`和checkpoint等属性，然后将`llm_submit.ts_ms`设置为先前保存的提交时间。该行不是提交时的缓存快照。`native_ingress_timing_ms`保留真实入口时刻，但同一行的缓存字段仍属于首次服务观察；即使时间戳早于长chunk，也不能据此消除物理驻留的不确定性。
+
+### 共批候选与相关工作的边界
+
+2026-11-01核对原始资料：
+
+- Sarathi-Serve，arXiv:2403.02310v3（2024-06-17），第4.2节及Algorithm 3已经采用有token预算的prefill/decode共批，先装入进行中的decode，再推进chunk和新请求。通用chunk切分或插入decode不是我们的新机制。
+- SGLang官方RFC #45416，2026-10-20提出PPD：在PD分离场景下，让保存前一轮prompt和输出前缀的decode worker本地处理短增量prefill。它是提案，不是本地冻结`434c35dd`引擎已经具有此功能的证据，也不能将它的PD传输收益套用到单GPU实验。
+
+本候选应按工程优化验收：是否在既有agent资格、真实物理前缀及增长容量内，避免长chunk延迟短续接；是否通过提前完成使后续工具或JOIN关键路径与其他计算重叠。必须同时支付新增控制、多成员prefill形状以及长chunk推迟的实际成本。仅改善TBT、首次服务或合并批次次数，不足以证明完整workflow JCT和吞吐收益。
+
+本地冻结引擎的实际server-info配置为prefill `breakable`、decode `full`。`PrefillCudaGraphRunner.can_replay_locally()`中的请求槽位上限只对Full prefill后端生效，不能把初始化时的`_capture_req_slots=1`当作当前双请求共批必然失去图回放的证据。多请求形状能否实际回放及其CPU/GPU成本仍需单独验证；当前未修改图后端或启动共批GPU候选。
