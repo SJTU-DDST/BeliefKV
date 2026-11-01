@@ -1,5 +1,6 @@
 """Bounded BF16 MoE launch tuning; validate any candidate with real serving."""
 
+from contextlib import ExitStack
 from datetime import datetime, timezone
 import argparse
 import json
@@ -83,6 +84,10 @@ def tune(inputs, output):
     })
     import torch
     import triton
+    from sglang.srt.distributed.parallel_state import (
+        destroy_distributed_environment, destroy_model_parallel,
+        init_distributed_environment, initialize_model_parallel,
+    )
     from sglang.srt.layers.moe import initialize_moe_config
     from sglang.srt.layers.moe.moe_runner import MoeRunnerConfig
     from sglang.srt.layers.moe.moe_runner.triton_utils import override_config
@@ -90,17 +95,25 @@ def tune(inputs, output):
     from sglang.srt.layers.moe.moe_runner.triton_utils.fused_moe_triton_config import get_config_file_name
     from sglang.srt.layers.moe.topk import TopKConfig, select_experts
     from sglang.srt.runtime_context import publish
-    from sglang.srt.server_args import ServerArgs
+    from sglang.srt.server_args import PortArgs, ServerArgs
 
     signal.alarm(600)
     args = ServerArgs(model_path="/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct", random_seed=21)
     args.resolve_once()
     publish(args, role="scheduler")
     initialize_moe_config()
+    port = PortArgs.init_new(args).nccl_port
+    init_distributed_environment(
+        world_size=1, rank=0, local_rank=0,
+        distributed_init_method=f"tcp://127.0.0.1:{port}",
+    )
+    initialize_model_parallel()
     torch.manual_seed(21)
     torch.set_default_device("cuda")
     records, selected = {}, {}
-    with torch.inference_mode():
+    with ExitStack() as cleanup_stack, torch.inference_mode():
+        cleanup_stack.callback(destroy_distributed_environment)
+        cleanup_stack.callback(destroy_model_parallel)
         w1 = torch.randn(128, 1536, 2048, dtype=torch.bfloat16) / math.sqrt(2048)
         w2 = torch.randn(128, 2048, 768, dtype=torch.bfloat16) / math.sqrt(768)
         for size in SIZES:
