@@ -339,3 +339,48 @@ Full 的完整测量已结束；匹配 ThunderAgent 的完整 JCT、吞吐比较
 背景人口可扩展性的独立 CPU 准备见
 `docs/research/background_tail_prefix_extension_20261101_zh.md`。
 该准备没有改变本轮 56 项目对照，也尚未证明改善实际压力。
+
+## ThunderAgent 的闭合共同窗口成本
+
+2026-11-01 11:16 America/Los_Angeles，固定测量组已完成 15/18，
+ThunderAgent、固定组 observer 和收尾协调器仍实际存活。
+共同吞吐窗口已完整经过，但完整 JCT、最终回执、drain 和退出仍待收尾。
+
+既有 `audit_common_execution_window.py` 未修改，新增独立证据
+`useful_token_cost_r1/shared_execution_thunder_closed_window_r1.json`。
+它重新核对旧已完成 ThunderAgent 的资格，以及新实际执行配置、
+相同 policy/traffic、实际模型和 Device/Host 池；
+封存运行中 worker 日志的完整前缀并检查输出 ordinal。
+取证前缀为 14/18 测量完成，不将后续的 15/18 状态写回该证据。
+
+在相同 `[55.692771, 1638.954850)` 秒窗口内：
+
+| 成本 | 旧 ThunderAgent | 新共同引擎 ThunderAgent | 观测降低 |
+| --- | ---: | ---: | ---: |
+| 全部 worker ms/实际输出 token | 3.407996 | 3.308471 | 2.9203% |
+| Decode worker ms/decode 输出 token | 2.429254 | 2.345639 | 3.4420% |
+| Prefill worker ms/实际 extend 输入 token | 0.105686 | 0.105989 | -0.2869% |
+
+精确 graph 的记录中 padding 为零。新 decode 的 worker 时间加权
+有效宽度为 7.8399，平均上下文为 43,329 token；
+它们是本轮实际批次混合，不是对照到同一组 kernel 输入的微测。
+配置身份相同之外，旧/新执行源码仍存在前述变化，
+不能将这些差值全部归因于 graph 或 MoE。
+
+将此闭合窗口与已封存的新 Full 窗口对齐：
+
+| 相同墙钟窗口指标 | 新 Full | 新 ThunderAgent |
+| --- | ---: | ---: |
+| 全部实际输出 token | 485,988 | 474,288 |
+| 全部输出 token/s | 306.9536 | 299.5638 |
+| Decode 输出 token/s | 304.5042 | 297.1719 |
+| 全部 worker ms/输出 token | 3.233532 | 3.308471 |
+| Decode worker ms/decode token | 2.313357 | 2.345639 |
+| Prefill worker ms/extend token | 0.102394 | 0.105989 |
+
+新 Full 的共同窗口输出吞吐观测高 2.4669%，包含测量及背景输出。
+这是已闭合窗口的结果；不是完整 cohort 的 JCT 对比、
+完整回执验证或统计显著性结论。
+共同执行优化也降低了 baseline 的 decode 成本，
+因此方法收益应继续以相同新引擎下的完整比较为准。
+本次分析没有注册 GPU 后继。
