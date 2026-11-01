@@ -1,0 +1,3751 @@
+{
+  "created_at": "2026-11-01T17:37:57.937690+08:00",
+  "runs": [
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_kvflow_v220g_20261025",
+      "status": "verified_and_archived",
+      "paths": {
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 82197514,
+          "allocated_bytes": 82202624,
+          "inode": 159179431,
+          "device": 66306,
+          "mtime_ns": 1792996506130015730,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server/eviction_attribution.jsonl": {
+          "size_bytes": 46106132,
+          "allocated_bytes": 46112768,
+          "inode": 159179429,
+          "device": 66306,
+          "mtime_ns": 1792996499197340461,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 26598270,
+          "allocated_bytes": 26603520,
+          "inode": 159179428,
+          "device": 66306,
+          "mtime_ns": 1792996502228198320,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server/runtime_audit.jsonl": {
+          "size_bytes": 1369089124,
+          "allocated_bytes": 1369096192,
+          "inode": 159179424,
+          "device": 66306,
+          "mtime_ns": 1792996506766985965,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 16492695,
+          "allocated_bytes": 16498688,
+          "inode": 159179422,
+          "device": 66306,
+          "mtime_ns": 1792996502739174383,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server/transfer_telemetry.jsonl": {
+          "size_bytes": 96494324,
+          "allocated_bytes": 96501760,
+          "inode": 159179425,
+          "device": 66306,
+          "mtime_ns": 1792996482764115932,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server.log": {
+          "size_bytes": 2911847,
+          "allocated_bytes": 2916352,
+          "inode": 159158818,
+          "device": 66306,
+          "mtime_ns": 1792996517657478880,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server/launch_configuration.json": "466265ae1226fde89d918431615653329d7a23f6b45a29a01c94595eb73fae7d",
+        "agentx_kvflow_v220g_20261025/kvflow_observed_graph/server/server_info.json": "90a6d33ca27a90db43a02ad248e0f5b3629b6d39d794c4e15a5009b39551286a",
+        "agentx_kvflow_v220g_20261025/native_prefix_qualification_environment.json": "e54875097791ad4ff02f2793653fe35471efc141d316b65aa31739177beec5e2",
+        "agentx_kvflow_v220g_20261025/registration.json": "18a58b8bbb01c030f67ddbe3336d3cd7cb400db1aae8bd1a454c43e2495eb94d",
+        "agentx_kvflow_v220g_20261025/result.json": "fdd528b5c546784565365b016545ba23a60df4e7013a5840d7db3ef035df267b",
+        "agentx_kvflow_v220g_20261025/state.json": "17a444280f769506825213d5422e227bc5de86e697a958e9012da3e6dc402056",
+        "agentx_kvflow_v220g_20261025/supervisor.json": "64acfcef398363981a8c8caf76579ef4a77d6736dd81fceb876a34acd5ffb231"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "6914556bd05dd8ef4a914835b813c965211784ec9256f45d6fd115e402afde37",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 1639889906,
+      "source_allocated_bytes": 1639931904,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e8333a0e48d6999ca09909b4bb8e159a4038807af372fa7db10aa92515218ce2",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:39:42.388917+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_kvflow_v220g_20261025.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "ece646e9d8c94186bc8b29e79597150073eec571087c298ff3f1c2192a2643e4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 50005658,
+      "archive_sha256": "3bc24513732adf277b0871359783c871a3c9b048ebf30b4a677e7185868d4a20",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_kvflow_v220g_20261025.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:39:48.577685+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_thunderagent_v219b_20261025",
+      "status": "verified_and_archived",
+      "paths": {
+        "agentx_thunderagent_v219b_20261025/thunderagent/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 14680571,
+          "allocated_bytes": 14688256,
+          "inode": 139917644,
+          "device": 66306,
+          "mtime_ns": 1792949044182357344,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_thunderagent_v219b_20261025/thunderagent/server/eviction_attribution.jsonl": {
+          "size_bytes": 2237173,
+          "allocated_bytes": 2244608,
+          "inode": 139917674,
+          "device": 66306,
+          "mtime_ns": 1792949045248287296,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_thunderagent_v219b_20261025/thunderagent/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 2912722,
+          "allocated_bytes": 2920448,
+          "inode": 139917673,
+          "device": 66306,
+          "mtime_ns": 1792949045248287296,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_thunderagent_v219b_20261025/thunderagent/server/runtime_audit.jsonl": {
+          "size_bytes": 393452732,
+          "allocated_bytes": 393457664,
+          "inode": 139917669,
+          "device": 66306,
+          "mtime_ns": 1792949045581265437,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_thunderagent_v219b_20261025/thunderagent/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 4651920,
+          "allocated_bytes": 4657152,
+          "inode": 139914576,
+          "device": 66306,
+          "mtime_ns": 1792949045248287296,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_thunderagent_v219b_20261025/thunderagent/server/transfer_telemetry.jsonl": {
+          "size_bytes": 2265267,
+          "allocated_bytes": 2273280,
+          "inode": 139917670,
+          "device": 66306,
+          "mtime_ns": 1792949045248287296,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "agentx_thunderagent_v219b_20261025/registration.json": "f297c7a33bf1d2979f4b7e8519928a7ac7174e20a7599b8ba6aa2b9c669640ec",
+        "agentx_thunderagent_v219b_20261025/state.json": "3de2847888b99a415f5628929e2489e10e8d61885c339c8add1d606d248ad796",
+        "agentx_thunderagent_v219b_20261025/stop_reason.json": "f0df128800ebfd0b464f9e565c3538bc80a7e11177195209567c849b59b57f9a",
+        "agentx_thunderagent_v219b_20261025/supervisor.json": "0e96813d0815c6ee37ad26497b0a6c3abbb1380a9a075644b32ae69b4c853e44",
+        "agentx_thunderagent_v219b_20261025/thunderagent/server/launch_configuration.json": "466265ae1226fde89d918431615653329d7a23f6b45a29a01c94595eb73fae7d",
+        "agentx_thunderagent_v219b_20261025/thunderagent/server/server_info.json": "84aaed7a7b70e23bede4994e56b5b506511401a74cecbef5eeace41494b13f2a"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "1f93de972845218091993adfee760a593ea951ad45f908d9fa510fc74f90e380",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 420200385,
+      "source_allocated_bytes": 420241408,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "48fca1eae08b31f7c2bd761ec38a15b61e046129b3a01e24988297da72375ad9",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:39:51.012385+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_thunderagent_v219b_20261025.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "d879322d136ef3180e3f0be914c1b7346bca84daadfc7374690f9a889c5d81fe",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 11563193,
+      "archive_sha256": "928f8c8eb4f544615eadbd1b351539e10738484c580e1de0893db6c967e190ae",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_thunderagent_v219b_20261025.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:39:54.180452+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_thunderagent_v219c_20261025",
+      "status": "verified_and_archived",
+      "paths": {
+        "agentx_thunderagent_v219c_20261025/thunderagent/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 73955637,
+          "allocated_bytes": 73961472,
+          "inode": 139917711,
+          "device": 66306,
+          "mtime_ns": 1792962948408848672,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_thunderagent_v219c_20261025/thunderagent/server.log": {
+          "size_bytes": 3892472,
+          "allocated_bytes": 3899392,
+          "inode": 139917697,
+          "device": 66306,
+          "mtime_ns": 1792962955667796518,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "agentx_thunderagent_v219c_20261025/registration.json": "5ebf3fc93a562d872dbb67a4d4858d4a150e3f9a63bcff85569aa4d5f519d8aa",
+        "agentx_thunderagent_v219c_20261025/result.json": "ab52625bf5019310fccec89bcf03dd3e2ea52ee90a281321e719ddb9c922faa9",
+        "agentx_thunderagent_v219c_20261025/state.json": "848c44d2dbe72eedb5c361b9241ed58dbf47ffecd77356fb25f08ff78613a755",
+        "agentx_thunderagent_v219c_20261025/supervisor.json": "8bd2844845de307fd94f3c3e24b4486f2a9da11426016a6d903c2c07725fb521",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/launch_configuration.json": "466265ae1226fde89d918431615653329d7a23f6b45a29a01c94595eb73fae7d",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/server_info.json": "2609252fa0dfa3e9ea5beb96c938839ab341b41a17c3476280890bedf9134f7f",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/eviction_attribution.jsonl": "655ca2a5f5846ced54ca8725a8f013131235470a910f758ebfc0abf16ff3bfa5",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/host_pool_telemetry.jsonl": "247a088390fd588459129734c3bec76f2a016c7b9d64cc1e683708e35c706488",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/runtime_audit.jsonl": "c0fbdc1c7aab4beeef507c47607ee09a64711bd30d49eda56bfaaa1894581bdf",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/runtime_events.sglang.jsonl": "6f1678fb738b851059c96a16af1116ac177990ba97a2b669eef07ef4e5defd06",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/transfer_telemetry.jsonl": "65a925823d4496935f28c7ae75f440efa19329fa7034f04b7ac6c3058eb6cc79"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "0a26226354d3bdb2215822af32135333f6ba7a328a2cce1526c11849bc153a35",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/eviction_attribution.jsonl",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/host_pool_telemetry.jsonl",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/runtime_audit.jsonl",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/runtime_events.sglang.jsonl",
+        "agentx_thunderagent_v219c_20261025/thunderagent/server/transfer_telemetry.jsonl"
+      ],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 77848109,
+      "source_allocated_bytes": 77860864,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "037636bb94d8299902ac2e8dc08b9e55a2f86f9ba6127b90d843980a761c000a",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:39:57.144820+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_thunderagent_v219c_20261025.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "037636bb94d8299902ac2e8dc08b9e55a2f86f9ba6127b90d843980a761c000a",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 1093057,
+      "archive_sha256": "902acaa7af269a3a0a823a9538973e38357f2cb314460f49cb82284d4bae999f",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_thunderagent_v219c_20261025.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:00.376059+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_tokencake_v224b_20261025",
+      "status": "verified_and_archived",
+      "paths": {
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 16755220,
+          "allocated_bytes": 16760832,
+          "inode": 159179608,
+          "device": 66306,
+          "mtime_ns": 1792998980793047973,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/server/eviction_attribution.jsonl": {
+          "size_bytes": 11772694,
+          "allocated_bytes": 11780096,
+          "inode": 159179606,
+          "device": 66306,
+          "mtime_ns": 1792998978351036633,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4600079,
+          "allocated_bytes": 4608000,
+          "inode": 159179605,
+          "device": 66306,
+          "mtime_ns": 1792998982461055569,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/server/runtime_audit.jsonl": {
+          "size_bytes": 200402937,
+          "allocated_bytes": 200409088,
+          "inode": 159179601,
+          "device": 66306,
+          "mtime_ns": 1792998982760056920,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 4657699,
+          "allocated_bytes": 4665344,
+          "inode": 159179599,
+          "device": 66306,
+          "mtime_ns": 1792998971994005921,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/server/transfer_telemetry.jsonl": {
+          "size_bytes": 8515500,
+          "allocated_bytes": 8519680,
+          "inode": 159179602,
+          "device": 66306,
+          "mtime_ns": 1792998982461055569,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "agentx_tokencake_v224b_20261025/native_prefix_qualification_environment.json": "a837de351cbcbc6099ea635d6407bfc32c78ead53ed44e503d29b877bb995737",
+        "agentx_tokencake_v224b_20261025/registration.json": "38b554ad53847e684f0ca43c92adb6fbbbbd1f6810371be69592febaa4a235c9",
+        "agentx_tokencake_v224b_20261025/state.json": "39bbd3aefe68eba82b2f404f1d86d8b9e1815860d793a9af77d1177abb77c915",
+        "agentx_tokencake_v224b_20261025/supervisor.json": "40e4600512b3540329e99eeb64a3c5b9c5e1c3ac054b1c4af4b2e64a9c2c9471",
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/server/launch_configuration.json": "466265ae1226fde89d918431615653329d7a23f6b45a29a01c94595eb73fae7d",
+        "agentx_tokencake_v224b_20261025/tokencake_paper_observed/server/server_info.json": "8d5abcf492b91183c86750fa00a4335dd05c0275da61f0206abf5af8582eb1d3"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "98b8a1c2166c3c2072c350442ba5b380d20ce332a8b3983c35c48d95d33368d6",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 246704129,
+      "source_allocated_bytes": 246743040,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "3550b141e8eea50fae02d4b2e06793004b690a178d6ee72b1a21cad6772da343",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:03.050567+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_tokencake_v224b_20261025.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "3550b141e8eea50fae02d4b2e06793004b690a178d6ee72b1a21cad6772da343",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 6696605,
+      "archive_sha256": "8fdd595e9722105397d0f8fa688a8ec123b999f7b5ac4a16290913574bd50472",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/agentx_tokencake_v224b_20261025.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:06.261771+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "join_blocked_layer_groups_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 131388016,
+          "allocated_bytes": 131395584,
+          "inode": 142613035,
+          "device": 66306,
+          "mtime_ns": 1793187307424216062,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "join_blocked_layer_groups_20261028_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 19249740,
+          "allocated_bytes": 19255296,
+          "inode": 142486015,
+          "device": 66306,
+          "mtime_ns": 1793187295509518729,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "join_blocked_layer_groups_20261028_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4701499,
+          "allocated_bytes": 4706304,
+          "inode": 142486014,
+          "device": 66306,
+          "mtime_ns": 1793187298520442163,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "join_blocked_layer_groups_20261028_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 364503975,
+          "allocated_bytes": 364511232,
+          "inode": 142486010,
+          "device": 66306,
+          "mtime_ns": 1793187307339218218,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "join_blocked_layer_groups_20261028_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11371448,
+          "allocated_bytes": 11378688,
+          "inode": 142486008,
+          "device": 66306,
+          "mtime_ns": 1793187299279422871,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "join_blocked_layer_groups_20261028_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 10705929,
+          "allocated_bytes": 10711040,
+          "inode": 142486011,
+          "device": 66306,
+          "mtime_ns": 1793186953530665585,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "join_blocked_layer_groups_20261028_r1/full/server.log": {
+          "size_bytes": 1537428,
+          "allocated_bytes": 1544192,
+          "inode": 142352941,
+          "device": 66306,
+          "mtime_ns": 1793187312939076253,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "join_blocked_layer_groups_20261028_r1/causal_comparison.json": "c8854cfd83d168ec0f6d1aedc8c787b8dfc945211f6d6155c73945b04820a9ec",
+        "join_blocked_layer_groups_20261028_r1/full/server/launch_configuration.json": "8bc019347923b2006bdb5b946a3b56d86c16ad981aed79f66222703f47c0bf8b",
+        "join_blocked_layer_groups_20261028_r1/full/server/server_info.json": "30a6d5dc57b8d06457a9297e9c6b0953bb346e09d092481d0626a2344810d5f6"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "7a9ce4a83316b15c5e9b676ac8131ae5ad10b89c80157d742950a64da1059001",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 543458035,
+      "source_allocated_bytes": 543502336,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "3550b141e8eea50fae02d4b2e06793004b690a178d6ee72b1a21cad6772da343",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:09.189090+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/join_blocked_layer_groups_20261028_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5222d85060a665102c7944e2f8abb409310de26b951885fdbd2eed8b8139b913",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 31110472,
+      "archive_sha256": "258accd97fe1606326b52c428ead736aea0e7d39431fcd14ea9df646d71a4c15",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/join_blocked_layer_groups_20261028_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:13.692861+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_backed_agent_lending_20261026_v233",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_backed_agent_lending_20261026_v233/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 48084335,
+          "allocated_bytes": 48091136,
+          "inode": 159544196,
+          "device": 66306,
+          "mtime_ns": 1793019653879242266,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_backed_agent_lending_20261026_v233/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 3280594,
+          "allocated_bytes": 3284992,
+          "inode": 159544180,
+          "device": 66306,
+          "mtime_ns": 1793019645158452928,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_backed_agent_lending_20261026_v233/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 1971720,
+          "allocated_bytes": 1978368,
+          "inode": 159544178,
+          "device": 66306,
+          "mtime_ns": 1793019648173776744,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_backed_agent_lending_20261026_v233/full/server/runtime_audit.jsonl": {
+          "size_bytes": 367373899,
+          "allocated_bytes": 367378432,
+          "inode": 159544173,
+          "device": 66306,
+          "mtime_ns": 1793019653788203278,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_backed_agent_lending_20261026_v233/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 9448894,
+          "allocated_bytes": 9453568,
+          "inode": 159544171,
+          "device": 66306,
+          "mtime_ns": 1793019648748027179,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_backed_agent_lending_20261026_v233/full/server.log": {
+          "size_bytes": 1603999,
+          "allocated_bytes": 1609728,
+          "inode": 159542592,
+          "device": 66306,
+          "mtime_ns": 1793019659823757245,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_backed_agent_lending_20261026_v233/causal_comparison.json": "cc609fedc5961cce7072a13fb434a64b1053f04fc1ddce5cf4d096a79c53810f",
+        "locobench_backed_agent_lending_20261026_v233/full/server/launch_configuration.json": "9d0dc3a62c3915b34250016448fdd318348d16c58168a7afc78e33195fd65787",
+        "locobench_backed_agent_lending_20261026_v233/full/server/server_info.json": "b8851df8728a252cf52b3cc0cb5109ec253a28cb4d36269a0f0a7404ddb852b0"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "7188636eaef647f874d857e121dbcd119b35fa441e344a3f25c3bb799e5e4339",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 431763441,
+      "source_allocated_bytes": 431796224,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5222d85060a665102c7944e2f8abb409310de26b951885fdbd2eed8b8139b913",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:16.547698+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_backed_agent_lending_20261026_v233.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "64d49ef641fbddacbb0f0d87cbb4580641ca50fb887a89e86bd84eda27a887a9",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 12200800,
+      "archive_sha256": "f4a9732e9560edc370db4d213eac4d29f5b59ac9eb3c16998e03f98721884dbf",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_backed_agent_lending_20261026_v233.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:20.241342+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 15974352,
+          "allocated_bytes": 15978496,
+          "inode": 142870640,
+          "device": 66306,
+          "mtime_ns": 1793106918121738759,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/eviction_attribution.jsonl": {
+          "size_bytes": 34198700,
+          "allocated_bytes": 34205696,
+          "inode": 142612360,
+          "device": 66306,
+          "mtime_ns": 1793106910525964216,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 7367193,
+          "allocated_bytes": 7372800,
+          "inode": 142612359,
+          "device": 66306,
+          "mtime_ns": 1793106913878864570,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/runtime_audit.jsonl": {
+          "size_bytes": 366436413,
+          "allocated_bytes": 366444544,
+          "inode": 142612355,
+          "device": 66306,
+          "mtime_ns": 1793106919737690925,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 10910865,
+          "allocated_bytes": 10915840,
+          "inode": 142612350,
+          "device": 66306,
+          "mtime_ns": 1793106913733868876,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/transfer_telemetry.jsonl": {
+          "size_bytes": 19201908,
+          "allocated_bytes": 19206144,
+          "inode": 142612356,
+          "device": 66306,
+          "mtime_ns": 1793106909518994181,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server.log": {
+          "size_bytes": 1503435,
+          "allocated_bytes": 1511424,
+          "inode": 142485861,
+          "device": 66306,
+          "mtime_ns": 1793106925349525156,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_categorized_thunder_decay_20261027_v345/causal_comparison.json": "b7ee8dd64b23ff400c203d044f19c5533f28d5b59b93a16c969c29ccf5aaf7cd",
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/launch_configuration.json": "35452570d04fa5262b21e3bf4bc4bf8f9b384ffa3a767d71209c8af3fb4988a3",
+        "locobench_categorized_thunder_decay_20261027_v345/thunderagent_acting_decay/server/server_info.json": "d2fa80cb9272916c97f053d113fecb546840171b14c3aa2e5eacaa66aba50a42"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "ab0e38806cae882da2aee3b2da57743f58c8d4c6a48c02981863f1798a906b63",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 455592866,
+      "source_allocated_bytes": 455634944,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "f72f28fc2d5f609cf914ddfc486d5b49fd09e513c77330a4f55efe4e33d54f10",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:23.349667+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_categorized_thunder_decay_20261027_v345.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "a24115a45259d7ebeb770627a120400b4fc89728e8650b5216348467e18ac887",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 14789451,
+      "archive_sha256": "3c77e3ac37500463eddc7a5cd55d5cb0e5367c930d1e582352840b552ee8578c",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_categorized_thunder_decay_20261027_v345.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:27.245242+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_cold_fit_free_page_20261027_v247",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_cold_fit_free_page_20261027_v247/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 3680337,
+          "allocated_bytes": 3686400,
+          "inode": 159916797,
+          "device": 66306,
+          "mtime_ns": 1793073310960186142,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_cold_fit_free_page_20261027_v247/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 2100050,
+          "allocated_bytes": 2105344,
+          "inode": 159916796,
+          "device": 66306,
+          "mtime_ns": 1793073313984126920,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_cold_fit_free_page_20261027_v247/full/server/runtime_audit.jsonl": {
+          "size_bytes": 353973329,
+          "allocated_bytes": 353980416,
+          "inode": 159916791,
+          "device": 66306,
+          "mtime_ns": 1793073315560096048,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_cold_fit_free_page_20261027_v247/full/server.log": {
+          "size_bytes": 1526542,
+          "allocated_bytes": 1531904,
+          "inode": 159914802,
+          "device": 66306,
+          "mtime_ns": 1793073317017067505,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/eviction_attribution.jsonl": {
+          "size_bytes": 5689171,
+          "allocated_bytes": 5693440,
+          "inode": 159916845,
+          "device": 66306,
+          "mtime_ns": 1793075632090265429,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 3298907,
+          "allocated_bytes": 3305472,
+          "inode": 159916844,
+          "device": 66306,
+          "mtime_ns": 1793075635608199221,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/runtime_audit.jsonl": {
+          "size_bytes": 377498129,
+          "allocated_bytes": 377503744,
+          "inode": 159916840,
+          "device": 66306,
+          "mtime_ns": 1793075640156113615,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server.log": {
+          "size_bytes": 1658069,
+          "allocated_bytes": 1662976,
+          "inode": 159916837,
+          "device": 66306,
+          "mtime_ns": 1793075646356996872,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_cold_fit_free_page_20261027_v247/causal_comparison.json": "e8d5fbbf6bb795579d121ac7d0b5af4d64dedb8fff62a7e95de1fee9c1f1138f",
+        "locobench_cold_fit_free_page_20261027_v247/full/server/launch_configuration.json": "9d0dc3a62c3915b34250016448fdd318348d16c58168a7afc78e33195fd65787",
+        "locobench_cold_fit_free_page_20261027_v247/full/server/server_info.json": "3c1fbf928108e60eddc113c6d44e1e2f6927cd98b3d8ed00c4b1d87ac8f457ca",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/launch_configuration.json": "fb5a36de1eb615d16d3df7f73ef53a91e9a72877684db8bd2f2ab342f4c15d4e",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/server_info.json": "f12b9397a105e76fd1de5cdf230346f7287abb4cccb2fde20fc9afd9388671e9",
+        "locobench_cold_fit_free_page_20261027_v247/full/opportunities/admission_opportunities.jsonl": "43669a64f45a058b6c7e282d6d3eafeb639a706e65576836de2c457df0b2772f",
+        "locobench_cold_fit_free_page_20261027_v247/full/server/runtime_events.sglang.jsonl": "59e2936d6fba7cd0f2cee6b7a9d41a7dc1d684399c541ae9a98b58413717d9a3",
+        "locobench_cold_fit_free_page_20261027_v247/full/server/transfer_telemetry.jsonl": "230b2cd114e2f8ee3bdc0e181bd6220badb586324ac6ec63667c0d53644acb1f",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/opportunities/admission_opportunities.jsonl": "866c4dc1083d728fddf5d4b1fe27c9b7aaf81009c69417694199087ef4ce1dc8",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/runtime_events.sglang.jsonl": "4c5c047262b009324f995d1f67e365891c1ea6ecee975c7aeea078fb62e34dd2",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/transfer_telemetry.jsonl": "f6323dcab1b0acac49ca7d52a8ef0e9efc709b098ebed69f166056af47b6b84e"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "0e45966c20fa4c18c00dad15797a2d41040f4ec687dda9c9afe8f9bb6aefaeb6",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [
+        "locobench_cold_fit_free_page_20261027_v247/full/opportunities/admission_opportunities.jsonl",
+        "locobench_cold_fit_free_page_20261027_v247/full/server/runtime_events.sglang.jsonl",
+        "locobench_cold_fit_free_page_20261027_v247/full/server/transfer_telemetry.jsonl",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/opportunities/admission_opportunities.jsonl",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/runtime_events.sglang.jsonl",
+        "locobench_cold_fit_free_page_20261027_v247/thunderagent/server/transfer_telemetry.jsonl"
+      ],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 749424534,
+      "source_allocated_bytes": 749469696,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "a24115a45259d7ebeb770627a120400b4fc89728e8650b5216348467e18ac887",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:30.711434+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_cold_fit_free_page_20261027_v247.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "a55d498b9e7e557ed3ee071784944814d6829bb76aa9708d4ed3ec1364b03626",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 19767776,
+      "archive_sha256": "43fbc8bda0d4b702b4df38c63af95f41d7a069c941b9c7b0e6578531b9a3368d",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_cold_fit_free_page_20261027_v247.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:35.518918+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_demand_lending_20261027_v330",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_demand_lending_20261027_v330/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 81283947,
+          "allocated_bytes": 81289216,
+          "inode": 142870612,
+          "device": 66306,
+          "mtime_ns": 1793101289063417792,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 21203740,
+          "allocated_bytes": 21209088,
+          "inode": 142612334,
+          "device": 66306,
+          "mtime_ns": 1793101274684573859,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 5084395,
+          "allocated_bytes": 5091328,
+          "inode": 142612333,
+          "device": 66306,
+          "mtime_ns": 1793101277701541115,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/full/server/runtime_audit.jsonl": {
+          "size_bytes": 362327334,
+          "allocated_bytes": 362332160,
+          "inode": 142612329,
+          "device": 66306,
+          "mtime_ns": 1793101288961418899,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11418822,
+          "allocated_bytes": 11423744,
+          "inode": 142612327,
+          "device": 66306,
+          "mtime_ns": 1793101278445533040,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 11917484,
+          "allocated_bytes": 11923456,
+          "inode": 142612330,
+          "device": 66306,
+          "mtime_ns": 1793100945306141172,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/full/server.log": {
+          "size_bytes": 1549608,
+          "allocated_bytes": 1556480,
+          "inode": 142485854,
+          "device": 66306,
+          "mtime_ns": 1793101294958353802,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/thunderagent_acting_decay/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 3020351,
+          "allocated_bytes": 3026944,
+          "inode": 143667119,
+          "device": 66306,
+          "mtime_ns": 1793101988577975772,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/thunderagent_acting_decay/server/runtime_audit.jsonl": {
+          "size_bytes": 56904942,
+          "allocated_bytes": 56909824,
+          "inode": 143526319,
+          "device": 66306,
+          "mtime_ns": 1793101989969911801,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/thunderagent_acting_decay/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 2119733,
+          "allocated_bytes": 2125824,
+          "inode": 143526317,
+          "device": 66306,
+          "mtime_ns": 1793101989728922872,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_demand_lending_20261027_v330/thunderagent_acting_decay/server/transfer_telemetry.jsonl": {
+          "size_bytes": 1347520,
+          "allocated_bytes": 1351680,
+          "inode": 143526320,
+          "device": 66306,
+          "mtime_ns": 1793101985653110519,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_demand_lending_20261027_v330/causal_comparison.json": "9a5d0902da19c5593df876f4662c790220c59a9426e57914d6981f8ad80cb49a",
+        "locobench_demand_lending_20261027_v330/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_demand_lending_20261027_v330/full/server/server_info.json": "3f2a24a4e3297ca547df5aef0c2fd4631f63c5b1c192151648ff6b010162126a",
+        "locobench_demand_lending_20261027_v330/thunderagent_acting_decay/server/launch_configuration.json": "35452570d04fa5262b21e3bf4bc4bf8f9b384ffa3a767d71209c8af3fb4988a3",
+        "locobench_demand_lending_20261027_v330/thunderagent_acting_decay/server/server_info.json": "1c8e32393697ec4a0941406207f30d53eaab80edcf6fd136b7e5ca001724e010"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5eddb613c5885885c627975a575a4e5f1e08f75ee1b66d613c71a99dcccf0a28",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 558177876,
+      "source_allocated_bytes": 558239744,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "a55d498b9e7e557ed3ee071784944814d6829bb76aa9708d4ed3ec1364b03626",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:39.598284+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_demand_lending_20261027_v330.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "55693ac4ed60c61a727acb4b4156e89ff3ba99cd991cd9c5ebd6442118f1a6e5",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 17573847,
+      "archive_sha256": "d20d4b2a580be743bcb52f79687d044a88f554552a2a19729fce6e06fcd05327",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_demand_lending_20261027_v330.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:44.813343+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_fitting_lending_20261027_v378",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_fitting_lending_20261027_v378/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 80199983,
+          "allocated_bytes": 80207872,
+          "inode": 160339114,
+          "device": 66306,
+          "mtime_ns": 1793116629342742469,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_fitting_lending_20261027_v378/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 21329137,
+          "allocated_bytes": 21336064,
+          "inode": 160339096,
+          "device": 66306,
+          "mtime_ns": 1793116622652854424,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_fitting_lending_20261027_v378/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 5014248,
+          "allocated_bytes": 5021696,
+          "inode": 160339095,
+          "device": 66306,
+          "mtime_ns": 1793116624661820811,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_fitting_lending_20261027_v378/full/server/runtime_audit.jsonl": {
+          "size_bytes": 363057957,
+          "allocated_bytes": 363065344,
+          "inode": 160339090,
+          "device": 66306,
+          "mtime_ns": 1793116629241744160,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_fitting_lending_20261027_v378/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11356218,
+          "allocated_bytes": 11362304,
+          "inode": 160339088,
+          "device": 66306,
+          "mtime_ns": 1793116625714803191,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_fitting_lending_20261027_v378/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 11478476,
+          "allocated_bytes": 11485184,
+          "inode": 160339091,
+          "device": 66306,
+          "mtime_ns": 1793116296962207105,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_fitting_lending_20261027_v378/full/server.log": {
+          "size_bytes": 1560477,
+          "allocated_bytes": 1564672,
+          "inode": 160337588,
+          "device": 66306,
+          "mtime_ns": 1793116635952631791,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_fitting_lending_20261027_v378/causal_comparison.json": "59e193005a7ca2d0962b6b30ec5d1ee4349c6c5755d038afe41625b4cd4e18cf",
+        "locobench_fitting_lending_20261027_v378/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_fitting_lending_20261027_v378/full/server/server_info.json": "42a879b78d599aa37c21bdf22915b415ac71fb96ec3f5e40c20a73c72a5a6545"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5eddb613c5885885c627975a575a4e5f1e08f75ee1b66d613c71a99dcccf0a28",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 493996496,
+      "source_allocated_bytes": 494043136,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "55693ac4ed60c61a727acb4b4156e89ff3ba99cd991cd9c5ebd6442118f1a6e5",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:47.933242+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_fitting_lending_20261027_v378.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "793bf4df438d9bb73b8dbb3b09a49a91322b680b45a9749c33a43058c35b63ae",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15992217,
+      "archive_sha256": "361a26f69de2f6c3660589ebd3ee1382235900bcc1388e162fb730ff60a305d9",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_fitting_lending_20261027_v378.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:52.052467+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_host_demand_layer_handoff_20261028_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_host_demand_layer_handoff_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 128040239,
+          "allocated_bytes": 128045056,
+          "inode": 160872752,
+          "device": 66306,
+          "mtime_ns": 1793175740972470476,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 18267144,
+          "allocated_bytes": 18272256,
+          "inode": 160872731,
+          "device": 66306,
+          "mtime_ns": 1793175732604829761,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4659725,
+          "allocated_bytes": 4665344,
+          "inode": 160872730,
+          "device": 66306,
+          "mtime_ns": 1793175734623742932,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 366023823,
+          "allocated_bytes": 366030848,
+          "inode": 160872726,
+          "device": 66306,
+          "mtime_ns": 1793175741292456769,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11465909,
+          "allocated_bytes": 11472896,
+          "inode": 160872724,
+          "device": 66306,
+          "mtime_ns": 1793175735691697038,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 10317870,
+          "allocated_bytes": 10326016,
+          "inode": 160872727,
+          "device": 66306,
+          "mtime_ns": 1793175380334765088,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server.log": {
+          "size_bytes": 1531631,
+          "allocated_bytes": 1536000,
+          "inode": 160871223,
+          "device": 66306,
+          "mtime_ns": 1793175747268201177,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_host_demand_layer_handoff_20261028_r1/causal_comparison.json": "bf41661036a5bd56adb694a90903218ea7eba23d3c039e961130ff0651ed5317",
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_host_demand_layer_handoff_20261028_r1/full/server/server_info.json": "a8ec9b7e885a75e9d31d3ccbbb79b9851a1b0451b2f83e0cb8700815720b5b58"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "7f08c62d5b1d528e2af3404c9fa4d8a315d36480116193be5bf132e5c82f6ba9",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 540306341,
+      "source_allocated_bytes": 540348416,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "31a0b42f9457116d91455bdc00e6d6bfd5b7b7e265402baa0ff9c752b48add2a",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:40:55.014142+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_host_demand_layer_handoff_20261028_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "0ac88a5e08cbd8a753614e0b951c357b2ea48c41b55e8a966c5753a89bfed9a4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 31011634,
+      "archive_sha256": "02c5f4c8ca53178fc9b013de6353c7837e4d79dd6e7825159c767da800163a9c",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_host_demand_layer_handoff_20261028_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:40:59.381046+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 64724435,
+          "allocated_bytes": 64729088,
+          "inode": 160705554,
+          "device": 66306,
+          "mtime_ns": 1793161136355440318,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 19665516,
+          "allocated_bytes": 19673088,
+          "inode": 160705534,
+          "device": 66306,
+          "mtime_ns": 1793161126691236988,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4699692,
+          "allocated_bytes": 4706304,
+          "inode": 160705533,
+          "device": 66306,
+          "mtime_ns": 1793161128715279988,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 364144232,
+          "allocated_bytes": 364150784,
+          "inode": 160705529,
+          "device": 66306,
+          "mtime_ns": 1793161135700426695,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11302798,
+          "allocated_bytes": 11309056,
+          "inode": 160705527,
+          "device": 66306,
+          "mtime_ns": 1793161129799302927,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 10559909,
+          "allocated_bytes": 10567680,
+          "inode": 160705530,
+          "device": 66306,
+          "mtime_ns": 1793160823022703651,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server.log": {
+          "size_bytes": 1522024,
+          "allocated_bytes": 1527808,
+          "inode": 160703848,
+          "device": 66306,
+          "mtime_ns": 1793161142033557474,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_idle_host_mirror_recycle_20261027_r1/causal_comparison.json": "44598fd81984365d397683aaceca14634722647af773095f7fbd9b36e9224fcb",
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_idle_host_mirror_recycle_20261027_r1/full/server/server_info.json": "a8fd292bb3ef747725b125fdea54bcc63a7008aaac7c4882ea72115964d51b15"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "7f08c62d5b1d528e2af3404c9fa4d8a315d36480116193be5bf132e5c82f6ba9",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 476618606,
+      "source_allocated_bytes": 476663808,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "0ac88a5e08cbd8a753614e0b951c357b2ea48c41b55e8a966c5753a89bfed9a4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:02.459939+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_idle_host_mirror_recycle_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e90b9e78e9174922fb7114bcadf3e1bf09cce1d9d937bc04176669bde6327382",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15577473,
+      "archive_sha256": "b11dc9d83830774ed2ff53dcf7b622751775d89b5928e6626d69458c4b9ebe57",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_idle_host_mirror_recycle_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:06.605606+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_join_loan_return_20261026_v235",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_join_loan_return_20261026_v235/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 49152541,
+          "allocated_bytes": 49160192,
+          "inode": 142870521,
+          "device": 66306,
+          "mtime_ns": 1793024327365194596,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_join_loan_return_20261026_v235/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 3653555,
+          "allocated_bytes": 3657728,
+          "inode": 142611989,
+          "device": 66306,
+          "mtime_ns": 1793024322870308877,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_join_loan_return_20261026_v235/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 2068824,
+          "allocated_bytes": 2076672,
+          "inode": 142611988,
+          "device": 66306,
+          "mtime_ns": 1793024325889232296,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_join_loan_return_20261026_v235/full/server/runtime_audit.jsonl": {
+          "size_bytes": 358636078,
+          "allocated_bytes": 358641664,
+          "inode": 142611984,
+          "device": 66306,
+          "mtime_ns": 1793024327448192471,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_join_loan_return_20261026_v235/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 9537067,
+          "allocated_bytes": 9543680,
+          "inode": 142611980,
+          "device": 66306,
+          "mtime_ns": 1793024326440218238,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_join_loan_return_20261026_v235/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 1499635,
+          "allocated_bytes": 1507328,
+          "inode": 142611985,
+          "device": 66306,
+          "mtime_ns": 1793024170678049846,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_join_loan_return_20261026_v235/full/server.log": {
+          "size_bytes": 1555400,
+          "allocated_bytes": 1560576,
+          "inode": 142485746,
+          "device": 66306,
+          "mtime_ns": 1793024334260016334,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_join_loan_return_20261026_v235/causal_comparison.json": "94a0cfccf9dee51a32598287d1d82710f3fc010b15ef9cc0b098aad462366479",
+        "locobench_join_loan_return_20261026_v235/full/server/launch_configuration.json": "9d0dc3a62c3915b34250016448fdd318348d16c58168a7afc78e33195fd65787",
+        "locobench_join_loan_return_20261026_v235/full/server/server_info.json": "bb6560b8da5c829e720fd235b6a738630b0b113693ebc93e7d2d4ef671865969"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "4978c744869d7966a6a1652d419e3d41b05322fd75f31f2673f49bd764a84789",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 426103100,
+      "source_allocated_bytes": 426147840,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e90b9e78e9174922fb7114bcadf3e1bf09cce1d9d937bc04176669bde6327382",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:09.685511+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_join_loan_return_20261026_v235.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e90b9e78e9174922fb7114bcadf3e1bf09cce1d9d937bc04176669bde6327382",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 11739059,
+      "archive_sha256": "c430674f61498d3d365ed8e8f1aba4f8d4f3a261d6aaba07981ae96f555c6078",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_join_loan_return_20261026_v235.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:13.598712+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_projected_pressure_20261027_v364",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_projected_pressure_20261027_v364/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 79434217,
+          "allocated_bytes": 79441920,
+          "inode": 142870647,
+          "device": 66306,
+          "mtime_ns": 1793110840562722460,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_projected_pressure_20261027_v364/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 19790540,
+          "allocated_bytes": 19795968,
+          "inode": 142612373,
+          "device": 66306,
+          "mtime_ns": 1793110829330918194,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_projected_pressure_20261027_v364/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4776613,
+          "allocated_bytes": 4784128,
+          "inode": 142612372,
+          "device": 66306,
+          "mtime_ns": 1793110832394864698,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_projected_pressure_20261027_v364/full/server/runtime_audit.jsonl": {
+          "size_bytes": 361211217,
+          "allocated_bytes": 361218048,
+          "inode": 142612368,
+          "device": 66306,
+          "mtime_ns": 1793110840956715612,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_projected_pressure_20261027_v364/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11396714,
+          "allocated_bytes": 11403264,
+          "inode": 142612366,
+          "device": 66306,
+          "mtime_ns": 1793110832393864716,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_projected_pressure_20261027_v364/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 10764053,
+          "allocated_bytes": 10768384,
+          "inode": 142612369,
+          "device": 66306,
+          "mtime_ns": 1793110595596263293,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_projected_pressure_20261027_v364/full/server.log": {
+          "size_bytes": 1546217,
+          "allocated_bytes": 1552384,
+          "inode": 142485870,
+          "device": 66306,
+          "mtime_ns": 1793110847092609129,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_projected_pressure_20261027_v364/causal_comparison.json": "4e24956ae089ae257370cd40409aaa32b21d55c885b8ac3f4b5ce0cb386f25cc",
+        "locobench_projected_pressure_20261027_v364/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_projected_pressure_20261027_v364/full/server/server_info.json": "5f26433ea02835a1826e9f9bedac3adfd912e41a2ceb0b94bde69789512856ff"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "264b2ff1ea7f7d684afe63afb8c68b909894ee1049df6d143672d81d1bf7b5d9",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 488919571,
+      "source_allocated_bytes": 488964096,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "c0b3393ddde4de320d1f5c0b20c71ae3ecd54f25427b311c2b16fac7e31b8fa8",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:16.660123+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_projected_pressure_20261027_v364.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "46d37250cbe226d665302531986cfd64bffdf965fba8c0e4b006ea7e9fd14176",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15616089,
+      "archive_sha256": "903dd160ac275b50addad128ba3a3748fe8994887423e26deadb4b8ae03d7016",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_projected_pressure_20261027_v364.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:20.721193+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_consumer_fix_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_reference_consumer_fix_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 56085993,
+          "allocated_bytes": 56090624,
+          "inode": 160478236,
+          "device": 66306,
+          "mtime_ns": 1793128552766829485,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_consumer_fix_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 15102848,
+          "allocated_bytes": 15110144,
+          "inode": 160478218,
+          "device": 66306,
+          "mtime_ns": 1793128548482972678,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_consumer_fix_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4078630,
+          "allocated_bytes": 4083712,
+          "inode": 160478217,
+          "device": 66306,
+          "mtime_ns": 1793128550494905366,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_consumer_fix_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 369388564,
+          "allocated_bytes": 369393664,
+          "inode": 160478213,
+          "device": 66306,
+          "mtime_ns": 1793128553065819508,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_consumer_fix_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11107634,
+          "allocated_bytes": 11112448,
+          "inode": 160478211,
+          "device": 66306,
+          "mtime_ns": 1793128551553869980,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_consumer_fix_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 8307049,
+          "allocated_bytes": 8314880,
+          "inode": 160478214,
+          "device": 66306,
+          "mtime_ns": 1793128198104679517,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_consumer_fix_20261027_r1/full/server.log": {
+          "size_bytes": 1519469,
+          "allocated_bytes": 1523712,
+          "inode": 160476711,
+          "device": 66306,
+          "mtime_ns": 1793128559234614219,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_reference_consumer_fix_20261027_r1/causal_comparison.json": "e1178112a6c49e7359de4d1f79f27eadce96565f12ee0ded1689d9bad73e9e75",
+        "locobench_reference_consumer_fix_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_reference_consumer_fix_20261027_r1/full/server/server_info.json": "6242743a5f3564b9c7413f01d3afeb99a222238f37047c15ba10fc02e5ba0a9a"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5102dc165a68ac191f8a96a2ab12f71d6c98b988dcd8b745a6486be2779d09f2",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 465590187,
+      "source_allocated_bytes": 465629184,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "17d7e6ce21658dc2db11aaac16a5efef3f0838a4b7b16cc6c0d76725b3162e5f",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:23.721588+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_consumer_fix_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "6625eae122b878e284a30e3138d5d73905a58948df01799ce4fcb2e0eb7c2832",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15308072,
+      "archive_sha256": "5432153ca595414293bc97127e3b7ec9cb6b1f194ad9b15eacf8761f7f6c12a1",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_consumer_fix_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:27.696143+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_reference_free_continuation_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 59966762,
+          "allocated_bytes": 59973632,
+          "inode": 142871018,
+          "device": 66306,
+          "mtime_ns": 1793146127187101885,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_free_continuation_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 15997483,
+          "allocated_bytes": 16003072,
+          "inode": 142612442,
+          "device": 66306,
+          "mtime_ns": 1793146119632257481,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_free_continuation_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4271029,
+          "allocated_bytes": 4276224,
+          "inode": 142612441,
+          "device": 66306,
+          "mtime_ns": 1793146122654195241,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_free_continuation_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 366128115,
+          "allocated_bytes": 366133248,
+          "inode": 142612436,
+          "device": 66306,
+          "mtime_ns": 1793146126432117434,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_free_continuation_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11101456,
+          "allocated_bytes": 11108352,
+          "inode": 142612434,
+          "device": 66306,
+          "mtime_ns": 1793146123373180433,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_free_continuation_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 8906753,
+          "allocated_bytes": 8912896,
+          "inode": 142612437,
+          "device": 66306,
+          "mtime_ns": 1793145793591994569,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_free_continuation_20261027_r1/full/server.log": {
+          "size_bytes": 1540548,
+          "allocated_bytes": 1548288,
+          "inode": 142485909,
+          "device": 66306,
+          "mtime_ns": 1793146133097980160,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_reference_free_continuation_20261027_r1/causal_comparison.json": "7adbace253174ed06615ba0d655fde0c1101617fb811f120fd2f844a67767f5a",
+        "locobench_reference_free_continuation_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_reference_free_continuation_20261027_r1/full/server/server_info.json": "c8bd16fd4c20ea557545c98bdcc84c4f8923ec87d7e99f4fbc14d3723b653ec9"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5102dc165a68ac191f8a96a2ab12f71d6c98b988dcd8b745a6486be2779d09f2",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 467912146,
+      "source_allocated_bytes": 467955712,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "6625eae122b878e284a30e3138d5d73905a58948df01799ce4fcb2e0eb7c2832",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:30.794208+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_free_continuation_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5360b34b4da617bbfbdfc1f3e1889aac2b32a2aa06afe5c4751f9cf3ebca9c3d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15218050,
+      "archive_sha256": "c57b8163c8e5913e303db210648ec15b411ed0eca70cf29a275377abe88079d7",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_free_continuation_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:34.903027+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_join_free_admission_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_reference_join_free_admission_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 59774476,
+          "allocated_bytes": 59781120,
+          "inode": 142870666,
+          "device": 66306,
+          "mtime_ns": 1793133058757898616,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_free_admission_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 17526218,
+          "allocated_bytes": 17530880,
+          "inode": 142612416,
+          "device": 66306,
+          "mtime_ns": 1793133046253243068,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_free_admission_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4398558,
+          "allocated_bytes": 4403200,
+          "inode": 142612415,
+          "device": 66306,
+          "mtime_ns": 1793133049288159330,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_free_admission_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 367568091,
+          "allocated_bytes": 367575040,
+          "inode": 142612411,
+          "device": 66306,
+          "mtime_ns": 1793133058857895867,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_free_admission_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11158749,
+          "allocated_bytes": 11165696,
+          "inode": 142612409,
+          "device": 66306,
+          "mtime_ns": 1793133049287159358,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_free_admission_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 9474484,
+          "allocated_bytes": 9482240,
+          "inode": 142612412,
+          "device": 66306,
+          "mtime_ns": 1793132737831328678,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_free_admission_20261027_r1/full/server.log": {
+          "size_bytes": 1497927,
+          "allocated_bytes": 1503232,
+          "inode": 142485895,
+          "device": 66306,
+          "mtime_ns": 1793133064510740649,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_reference_join_free_admission_20261027_r1/causal_comparison.json": "8314b5eea586e58542d63fa6f29eed1c2d33a64ffb85bf10ce7e1db9e55ace91",
+        "locobench_reference_join_free_admission_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_reference_join_free_admission_20261027_r1/full/server/server_info.json": "10ee50889a65e8dddaabcf3486fbed164524a71dfb4928abb5e31e759b6c1298"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "0a69d690603d5c2b996d6df3e46677543e07b58e8de6effdcc8c7e259867860d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 471398503,
+      "source_allocated_bytes": 471441408,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5360b34b4da617bbfbdfc1f3e1889aac2b32a2aa06afe5c4751f9cf3ebca9c3d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:37.944113+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_join_free_admission_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5360b34b4da617bbfbdfc1f3e1889aac2b32a2aa06afe5c4751f9cf3ebca9c3d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15446716,
+      "archive_sha256": "a306a6c22ff7c6ef910358578f7c2ee45aca91d2ca8966ee1581641854049ebc",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_join_free_admission_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:41.988706+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_join_siblings_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_reference_join_siblings_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 62714572,
+          "allocated_bytes": 62722048,
+          "inode": 160579142,
+          "device": 66306,
+          "mtime_ns": 1793136680707195173,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_siblings_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 18153742,
+          "allocated_bytes": 18161664,
+          "inode": 160579123,
+          "device": 66306,
+          "mtime_ns": 1793136674857288418,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_siblings_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4572981,
+          "allocated_bytes": 4579328,
+          "inode": 160579122,
+          "device": 66306,
+          "mtime_ns": 1793136677886240152,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_siblings_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 368598669,
+          "allocated_bytes": 368603136,
+          "inode": 160579118,
+          "device": 66306,
+          "mtime_ns": 1793136680645196162,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_siblings_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11140199,
+          "allocated_bytes": 11145216,
+          "inode": 160579116,
+          "device": 66306,
+          "mtime_ns": 1793136678607228658,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_siblings_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 10002941,
+          "allocated_bytes": 10010624,
+          "inode": 160579119,
+          "device": 66306,
+          "mtime_ns": 1793136436982035357,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_join_siblings_20261027_r1/full/server.log": {
+          "size_bytes": 1526728,
+          "allocated_bytes": 1531904,
+          "inode": 160577556,
+          "device": 66306,
+          "mtime_ns": 1793136686247106772,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_reference_join_siblings_20261027_r1/causal_comparison.json": "043b9617448e40a6fa0bddfd9a4b84e31deebe314171091ed2de57002fc78ff0",
+        "locobench_reference_join_siblings_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_reference_join_siblings_20261027_r1/full/server/server_info.json": "3f9cff8529cd15e0d14294407a573ea4d847495241b6e702de8e8a0085546e2c"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "66cbaff9eb9628bf6a262cdf60147723ef69495388749d2b357f3e37d1d0158a",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 476709832,
+      "source_allocated_bytes": 476753920,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "aff855dbb70deb97e8fb266488d25b658edd52115bca159acb47a1b247057a1a",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:45.013733+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_join_siblings_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "c2ffd6ff7f253f9edcea01a6c1d352aceba271ef2331e06710c64ca3ec0936b8",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15674974,
+      "archive_sha256": "3087e44da17b8390b65861eed30991f8d0125b1c46d35fba6ed82ccfafbd21f4",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_join_siblings_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:49.086922+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_reference_thunder_offload_20261027_v400b/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 54800944,
+          "allocated_bytes": 54808576,
+          "inode": 142870660,
+          "device": 66306,
+          "mtime_ns": 1793123651110135686,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_thunder_offload_20261027_v400b/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 19639437,
+          "allocated_bytes": 19644416,
+          "inode": 142612400,
+          "device": 66306,
+          "mtime_ns": 1793123640847430163,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_thunder_offload_20261027_v400b/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4742631,
+          "allocated_bytes": 4747264,
+          "inode": 142612399,
+          "device": 66306,
+          "mtime_ns": 1793123643927341725,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_thunder_offload_20261027_v400b/full/server/runtime_audit.jsonl": {
+          "size_bytes": 370475193,
+          "allocated_bytes": 370483200,
+          "inode": 142612395,
+          "device": 66306,
+          "mtime_ns": 1793123651494124680,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_thunder_offload_20261027_v400b/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11105471,
+          "allocated_bytes": 11112448,
+          "inode": 142612393,
+          "device": 66306,
+          "mtime_ns": 1793123643926341754,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_thunder_offload_20261027_v400b/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 10409131,
+          "allocated_bytes": 10416128,
+          "inode": 142612396,
+          "device": 66306,
+          "mtime_ns": 1793123336016517227,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_thunder_offload_20261027_v400b/full/server.log": {
+          "size_bytes": 1519912,
+          "allocated_bytes": 1527808,
+          "inode": 142485883,
+          "device": 66306,
+          "mtime_ns": 1793123657565950751,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_reference_thunder_offload_20261027_v400b/causal_comparison.json": "2d04ceee4516a8df1d62589f573c50cbe449d395b1ec0ca5e2ab8992fc29fdd8",
+        "locobench_reference_thunder_offload_20261027_v400b/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_reference_thunder_offload_20261027_v400b/full/server/server_info.json": "df259865ba15175aa32fee394ba2f104e237936648154f61c959acca6a6a9b0b"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "476db0ffafd419360b7eca5f48363f946768e93b3c2652757b69d7be26b04248",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 472692719,
+      "source_allocated_bytes": 472739840,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "c2ffd6ff7f253f9edcea01a6c1d352aceba271ef2331e06710c64ca3ec0936b8",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:52.155473+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_thunder_offload_20261027_v400b.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "afb32b9656ce3b07a2b146b982f9a66801d13e7594247a8d048920d81f523d6d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15790763,
+      "archive_sha256": "8447fe84ae6592e7e8762c2eb71940fd6cea79d132cbf7f314e4d51f29c18ae6",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_thunder_offload_20261027_v400b.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:41:56.248717+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_tool_eos_guard_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_reference_tool_eos_guard_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 63468874,
+          "allocated_bytes": 63475712,
+          "inode": 160592469,
+          "device": 66306,
+          "mtime_ns": 1793140023894541127,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 17837197,
+          "allocated_bytes": 17842176,
+          "inode": 160592450,
+          "device": 66306,
+          "mtime_ns": 1793140014078700275,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4515398,
+          "allocated_bytes": 4521984,
+          "inode": 160592449,
+          "device": 66306,
+          "mtime_ns": 1793140016090667659,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 370834985,
+          "allocated_bytes": 370839552,
+          "inode": 160592445,
+          "device": 66306,
+          "mtime_ns": 1793140023151553175,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11187213,
+          "allocated_bytes": 11194368,
+          "inode": 160592443,
+          "device": 66306,
+          "mtime_ns": 1793140017152650442,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 9871492,
+          "allocated_bytes": 9879552,
+          "inode": 160592446,
+          "device": 66306,
+          "mtime_ns": 1793139767510675994,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server.log": {
+          "size_bytes": 1533331,
+          "allocated_bytes": 1540096,
+          "inode": 160590942,
+          "device": 66306,
+          "mtime_ns": 1793140029743446269,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_reference_tool_eos_guard_20261027_r1/causal_comparison.json": "d382157fb8b45d0cbc5a9c93900a1f6d173161bb1badd096e83a511a1730fcd4",
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_reference_tool_eos_guard_20261027_r1/full/server/server_info.json": "c9ce0346ef5924b52fdaacad9bec0f3101c658541fe3a675ba7013b1a56495be"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "9188cf0b602d037a977b32b3f30940646f92e3434a54c4f7e20167bf7052d57a",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 479248490,
+      "source_allocated_bytes": 479293440,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "afb32b9656ce3b07a2b146b982f9a66801d13e7594247a8d048920d81f523d6d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:41:59.235150+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_tool_eos_guard_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "afb32b9656ce3b07a2b146b982f9a66801d13e7594247a8d048920d81f523d6d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15849058,
+      "archive_sha256": "2c5d4506dafb858f4a0a5995a89d94cf02efcc51efaee41fe08afd23f09455ac",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_reference_tool_eos_guard_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:03.303429+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_tool_offload_before_admission_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 63439977,
+          "allocated_bytes": 63447040,
+          "inode": 160619507,
+          "device": 66306,
+          "mtime_ns": 1793152653046064511,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_offload_before_admission_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 17038214,
+          "allocated_bytes": 17043456,
+          "inode": 160619488,
+          "device": 66306,
+          "mtime_ns": 1793152643810834616,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_offload_before_admission_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4440366,
+          "allocated_bytes": 4448256,
+          "inode": 160619487,
+          "device": 66306,
+          "mtime_ns": 1793152645831885311,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_offload_before_admission_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 368261493,
+          "allocated_bytes": 368267264,
+          "inode": 160619483,
+          "device": 66306,
+          "mtime_ns": 1793152652485050668,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_offload_before_admission_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11098443,
+          "allocated_bytes": 11104256,
+          "inode": 160619481,
+          "device": 66306,
+          "mtime_ns": 1793152646909912264,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_offload_before_admission_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 9544945,
+          "allocated_bytes": 9551872,
+          "inode": 160619484,
+          "device": 66306,
+          "mtime_ns": 1793152392392098988,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_offload_before_admission_20261027_r1/full/server.log": {
+          "size_bytes": 1551278,
+          "allocated_bytes": 1556480,
+          "inode": 160617980,
+          "device": 66306,
+          "mtime_ns": 1793152659385219747,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_tool_offload_before_admission_20261027_r1/causal_comparison.json": "b0fc60f19b5e3f11df627cc32b73de7851afd6cccbadbb688d2cc4f7d68058a9",
+        "locobench_tool_offload_before_admission_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_tool_offload_before_admission_20261027_r1/full/server/server_info.json": "6511fd035b19cc24c6c893ca9808ae42cfbb249543882496ed84b7937be9d5ce"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e34fe26665a51576595d2bd2a555483daf668713a35a81e1a474f57e61424a2d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 475374716,
+      "source_allocated_bytes": 475418624,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5dc7915f707d694c639c77b42112cda6abfe45bfce6dcfa69223fa1bd97766be",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:06.382539+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_tool_offload_before_admission_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5dc7915f707d694c639c77b42112cda6abfe45bfce6dcfa69223fa1bd97766be",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15628185,
+      "archive_sha256": "4092e3a221d37e31c532d2767fe0c8da1d410a3ef39bb104a16f5cf9b779dcc5",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_tool_offload_before_admission_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:10.385432+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_tool_online_refresh_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 128137558,
+          "allocated_bytes": 128143360,
+          "inode": 160739204,
+          "device": 66306,
+          "mtime_ns": 1793171702678629670,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_online_refresh_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 17122711,
+          "allocated_bytes": 17129472,
+          "inode": 160739185,
+          "device": 66306,
+          "mtime_ns": 1793171693944388853,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_online_refresh_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4403907,
+          "allocated_bytes": 4411392,
+          "inode": 160739184,
+          "device": 66306,
+          "mtime_ns": 1793171695964444743,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_online_refresh_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 367174084,
+          "allocated_bytes": 367181824,
+          "inode": 160739180,
+          "device": 66306,
+          "mtime_ns": 1793171702547626073,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_online_refresh_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11295608,
+          "allocated_bytes": 11300864,
+          "inode": 160739178,
+          "device": 66306,
+          "mtime_ns": 1793171697004473472,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_online_refresh_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 9484333,
+          "allocated_bytes": 9490432,
+          "inode": 160739181,
+          "device": 66306,
+          "mtime_ns": 1793171392843455510,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_online_refresh_20261027_r1/full/server.log": {
+          "size_bytes": 1535955,
+          "allocated_bytes": 1540096,
+          "inode": 160737678,
+          "device": 66306,
+          "mtime_ns": 1793171708512789330,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_tool_online_refresh_20261027_r1/causal_comparison.json": "2001efaaed1b2a92cba7408ce266f536c2a61fdb8cff0c91e10e315bb87e5c9c",
+        "locobench_tool_online_refresh_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_tool_online_refresh_20261027_r1/full/server/server_info.json": "46d32758cb8d6d47958317122cefd550d5a62a5385f20a14de1fcbaa40e6e833"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e34fe26665a51576595d2bd2a555483daf668713a35a81e1a474f57e61424a2d",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 539154156,
+      "source_allocated_bytes": 539197440,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "5dc7915f707d694c639c77b42112cda6abfe45bfce6dcfa69223fa1bd97766be",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:13.400736+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_tool_online_refresh_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "7ed65bf522737bfb2f740245370e59ddea68ae7f198b92708cb6306f79de3b66",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 31113691,
+      "archive_sha256": "566196759ee84a31b73585269c38d8bcd76d77e40dbfd6b81c4babfd0faf8bf0",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_tool_online_refresh_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:17.847547+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 64882964,
+          "allocated_bytes": 64888832,
+          "inode": 160726632,
+          "device": 66306,
+          "mtime_ns": 1793164811505938214,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 16535490,
+          "allocated_bytes": 16539648,
+          "inode": 160726612,
+          "device": 66306,
+          "mtime_ns": 1793164800572949711,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4344551,
+          "allocated_bytes": 4349952,
+          "inode": 160726611,
+          "device": 66306,
+          "mtime_ns": 1793164803593669174,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 366355920,
+          "allocated_bytes": 366362624,
+          "inode": 160726607,
+          "device": 66306,
+          "mtime_ns": 1793164811452943092,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11272783,
+          "allocated_bytes": 11280384,
+          "inode": 160726605,
+          "device": 66306,
+          "mtime_ns": 1793164804288604749,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 9407380,
+          "allocated_bytes": 9412608,
+          "inode": 160726608,
+          "device": 66306,
+          "mtime_ns": 1793164456455709279,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server.log": {
+          "size_bytes": 1532112,
+          "allocated_bytes": 1540096,
+          "inode": 160725105,
+          "device": 66306,
+          "mtime_ns": 1793164817353401554,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "locobench_tool_prediction_curve_repair_20261027_r1/causal_comparison.json": "b5ff6ef75f179d169442610b55cfa2c29a382df3ebc66f8692c5227b828d8cf0",
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server/launch_configuration.json": "9e80665141a667add7f22e72ff747bb91bee66d1e1071e00847df8a67d3af7b1",
+        "locobench_tool_prediction_curve_repair_20261027_r1/full/server/server_info.json": "0fcba64f1edd8013964d8e7f92ffd8577d188dca1080e8470e2ea31cc0b2b7ee"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "46c6e36c51313ba43e81b9a1985c7f36f51233fe6507c83c408d3c3b96d31c6c",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 474331200,
+      "source_allocated_bytes": 474374144,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "cdf57f67449bd1d2e285520a03583295a410b40273251e588348e92c934c65d2",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:20.837247+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_tool_prediction_curve_repair_20261027_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "124ae0933e1a59d8aa44b064cfd5a91130cff0ba0faecc9b7ff7cc47b233f9b7",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 15456572,
+      "archive_sha256": "1cce778d4ae20a53902f87300f9c9baeffef9a491ef6984ba93c071e8bc236f7",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/locobench_tool_prediction_curve_repair_20261027_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:24.911863+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_matched_scheduler_only_20261024_v205",
+      "status": "verified_and_archived",
+      "paths": {
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 13448798,
+          "allocated_bytes": 13455360,
+          "inode": 142869791,
+          "device": 66306,
+          "mtime_ns": 1792904799276564058,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/eviction_attribution.jsonl": {
+          "size_bytes": 34009735,
+          "allocated_bytes": 34017280,
+          "inode": 142869789,
+          "device": 66306,
+          "mtime_ns": 1792904792924674532,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 6967904,
+          "allocated_bytes": 6975488,
+          "inode": 142869788,
+          "device": 66306,
+          "mtime_ns": 1792904796939604751,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/transfer_telemetry.jsonl": {
+          "size_bytes": 18393433,
+          "allocated_bytes": 18399232,
+          "inode": 142869785,
+          "device": 66306,
+          "mtime_ns": 1792904791917692008,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/causal_comparison.json": "c00a00cae0a5386a2bcaad2549f62f6d4d5f7c5971e1bc7dfd5c089cb9e5eb89",
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/launch_configuration.json": "67a35adb147ec1a625f9f46f2634505f61879213c87f9b4666008dd4fa25577d",
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/server_info.json": "0f9501fa172381c466f5b8c5bf0f5e28dddb2cb27a114a9d8dd56562dd5ea752",
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/runtime_audit.jsonl": "f704fb1370740796820b5c8d58736357a4f7986c1191237956b0a5b0e633a21d",
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/runtime_events.sglang.jsonl": "2f8c3fae1d588927d12e024d4e6bb6d0491f4ccec08dde86b8777b24468eaebd"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "6b0021a837113edcd673b57e7250668749d1258099bebeb488949a76cf5876c0",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/runtime_audit.jsonl",
+        "qwen3_coder_18project_matched_scheduler_only_20261024_v205/scheduler_only/server/runtime_events.sglang.jsonl"
+      ],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 72819870,
+      "source_allocated_bytes": 72847360,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "579654c180470f2d1e1132a34cb2392df85606943796a48f663bed39d8ec938e",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:27.547095+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_matched_scheduler_only_20261024_v205.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "579654c180470f2d1e1132a34cb2392df85606943796a48f663bed39d8ec938e",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 4017542,
+      "archive_sha256": "99c3894aaa1cf1c313f25fd8d13a1fd106ae5ac4b9bad221e379c5817234728f",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_matched_scheduler_only_20261024_v205.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:30.491325+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193",
+      "status": "verified_and_archived",
+      "paths": {
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 36708989,
+          "allocated_bytes": 36716544,
+          "inode": 143396124,
+          "device": 66306,
+          "mtime_ns": 1792878396057670365,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 10200412,
+          "allocated_bytes": 10207232,
+          "inode": 142999794,
+          "device": 66306,
+          "mtime_ns": 1792878396507656197,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 3523422,
+          "allocated_bytes": 3530752,
+          "inode": 142999793,
+          "device": 66306,
+          "mtime_ns": 1792878394059733329,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/server/runtime_audit.jsonl": {
+          "size_bytes": 271763010,
+          "allocated_bytes": 271769600,
+          "inode": 142999788,
+          "device": 66306,
+          "mtime_ns": 1792878396175666650,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 8996192,
+          "allocated_bytes": 9003008,
+          "inode": 142999783,
+          "device": 66306,
+          "mtime_ns": 1792878395101700482,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 6671755,
+          "allocated_bytes": 6676480,
+          "inode": 142999790,
+          "device": 66306,
+          "mtime_ns": 1792878373844375243,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/causal_comparison.json": "b7ded732449454ccd425f3b4dbd93e22303aa4117d44202ac0c32eba89ee89f3",
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/server/launch_configuration.json": "73b56a9d873e3c559921d64f4d3eebf3fa58ca2c7018c1c439cbb3bf82f6c89a",
+        "qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193/full/server/server_info.json": "fa129f95be1fbad83d8dfb8a1ee70009b76e006bfdd7e8625dddc5fb4cfb8c48"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "a69380d5385c3bc9f2ecde24c91484380788b609af885537399e26294544ab0e",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 337863780,
+      "source_allocated_bytes": 337903616,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "579654c180470f2d1e1132a34cb2392df85606943796a48f663bed39d8ec938e",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:33.324143+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "3f36cb0817ea7d8758c0615ca3662fe4c90fa58796e8395edfe5ff4aef7eeec4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 8839266,
+      "archive_sha256": "9ab2a6312a28a92da080d0e2dac10daff227cdafadfba673f5b3977df865fa54",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:36.816095+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_root_phase_frontier_full_20261024_v191",
+      "status": "verified_and_archived",
+      "paths": {
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 35922483,
+          "allocated_bytes": 35930112,
+          "inode": 157840308,
+          "device": 66306,
+          "mtime_ns": 1792876039658665643,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 11673392,
+          "allocated_bytes": 11677696,
+          "inode": 157840292,
+          "device": 66306,
+          "mtime_ns": 1792876038764661945,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 3764074,
+          "allocated_bytes": 3768320,
+          "inode": 157840291,
+          "device": 66306,
+          "mtime_ns": 1792876037811657981,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 9119567,
+          "allocated_bytes": 9125888,
+          "inode": 157840285,
+          "device": 66306,
+          "mtime_ns": 1792876037808657968,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 7447803,
+          "allocated_bytes": 7454720,
+          "inode": 157840288,
+          "device": 66306,
+          "mtime_ns": 1792876022504591250,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/causal_comparison.json": "10117a33cb4120eb3ad564697317739baed9477e19ddb5d1879b6cbf9c394e39",
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/launch_configuration.json": "a347064ace1ce7509450776ad8de0bd237b7f12b689528caefb3ab617f732840",
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/server_info.json": "f006518c36e890c30b7166e2104073ceec62c2435c6ac87fa8f2d5945084a26b",
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/runtime_audit.jsonl": "752b5029bead0c9bb7c9b773b16bbe1bfdc9cce676b91b20d12ab5f3b33f7679"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "a69380d5385c3bc9f2ecde24c91484380788b609af885537399e26294544ab0e",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [
+        "qwen3_coder_18project_root_phase_frontier_full_20261024_v191/full/server/runtime_audit.jsonl"
+      ],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 67927319,
+      "source_allocated_bytes": 67956736,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "3f36cb0817ea7d8758c0615ca3662fe4c90fa58796e8395edfe5ff4aef7eeec4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:39.678971+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_root_phase_frontier_full_20261024_v191.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "3f36cb0817ea7d8758c0615ca3662fe4c90fa58796e8395edfe5ff4aef7eeec4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 3110600,
+      "archive_sha256": "2ec0f46552c540fc36d6bbdf1916d614c6450f31ec52d0b8fa238d83f1f7c5ba",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_root_phase_frontier_full_20261024_v191.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:42.705867+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194",
+      "status": "verified_and_archived",
+      "paths": {
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 40048013,
+          "allocated_bytes": 40054784,
+          "inode": 157996324,
+          "device": 66306,
+          "mtime_ns": 1792883030106547710,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 9170306,
+          "allocated_bytes": 9175040,
+          "inode": 157996309,
+          "device": 66306,
+          "mtime_ns": 1792883029401557276,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 3385942,
+          "allocated_bytes": 3391488,
+          "inode": 157996308,
+          "device": 66306,
+          "mtime_ns": 1792883027433583972,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/physical_action_use.jsonl": {
+          "size_bytes": 1215527,
+          "allocated_bytes": 1220608,
+          "inode": 157996307,
+          "device": 66306,
+          "mtime_ns": 1792882897470324176,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/runtime_audit.jsonl": {
+          "size_bytes": 272525136,
+          "allocated_bytes": 272531456,
+          "inode": 157996304,
+          "device": 66306,
+          "mtime_ns": 1792883029401557276,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 8836976,
+          "allocated_bytes": 8843264,
+          "inode": 157996302,
+          "device": 66306,
+          "mtime_ns": 1792883028459570055,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 6442428,
+          "allocated_bytes": 6447104,
+          "inode": 157996305,
+          "device": 66306,
+          "mtime_ns": 1792883017358720491,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/causal_comparison.json": "4f802c1d84635ba89f4bf2973356852242da64c0b961c0c51fc9498bf5ded3dc",
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/launch_configuration.json": "73b56a9d873e3c559921d64f4d3eebf3fa58ca2c7018c1c439cbb3bf82f6c89a",
+        "qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194/full/server/server_info.json": "9d484d7d5427fe1748fbdd105bd1c5aaa932b30ef43270c2695204d78f9d5798"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "a69380d5385c3bc9f2ecde24c91484380788b609af885537399e26294544ab0e",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 341624328,
+      "source_allocated_bytes": 341663744,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "83c9c1f46a966977738c146bdead6be038b07091d7a63eaee2b3d61d0358b16f",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:45.816681+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e70a04ce5eff66dca116b1c37dad88e4ed2e198c31bba5b9eb460e189b760551",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 8913060,
+      "archive_sha256": "a2b24c847bd0bc64cb242c3dfdea1169d54a881a55647a68cb295804e6b3c363",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:49.724557+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_24project_anchor_recovery_full_20261024_v177",
+      "status": "verified_and_archived",
+      "paths": {
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 46468502,
+          "allocated_bytes": 46473216,
+          "inode": 142999767,
+          "device": 66306,
+          "mtime_ns": 1792852616621119854,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 63711287,
+          "allocated_bytes": 63717376,
+          "inode": 142869665,
+          "device": 66306,
+          "mtime_ns": 1792852616848115900,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 12299424,
+          "allocated_bytes": 12304384,
+          "inode": 142869664,
+          "device": 66306,
+          "mtime_ns": 1792852615820133804,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server/runtime_audit.jsonl": {
+          "size_bytes": 377944211,
+          "allocated_bytes": 377950208,
+          "inode": 142869660,
+          "device": 66306,
+          "mtime_ns": 1792852616847115918,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11706161,
+          "allocated_bytes": 11710464,
+          "inode": 142869658,
+          "device": 66306,
+          "mtime_ns": 1792852615817133856,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 31677554,
+          "allocated_bytes": 31682560,
+          "inode": 142869661,
+          "device": 66306,
+          "mtime_ns": 1792852597510452531,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server.log": {
+          "size_bytes": 1143663,
+          "allocated_bytes": 1150976,
+          "inode": 142610402,
+          "device": 66306,
+          "mtime_ns": 1792852622231022137,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/causal_comparison.json": "40edfe615509b1ff90277e4d1885553e957495fc5e17a5000855fda1a27946f4",
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server/launch_configuration.json": "da48ce7180fb114fecc25854cadd54efbd820f50322e05bf84c4dc79bd91ce9d",
+        "qwen3_coder_24project_anchor_recovery_full_20261024_v177/full/server/server_info.json": "91ae4ccebbf832ab256bd8fb3fa88e967d1f93fffe219b726f4209df4ba77812"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "4be3c8c636270b987f36e907248714812bb483e9e4768073200c3af525bd90b6",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 544950802,
+      "source_allocated_bytes": 544989184,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "e70a04ce5eff66dca116b1c37dad88e4ed2e198c31bba5b9eb460e189b760551",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:52.790002+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_24project_anchor_recovery_full_20261024_v177.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "cd104a2bf9b62558220ce08e8fbae677613c5d2b07eecfb3b0e6dc241e8e0716",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 17772842,
+      "archive_sha256": "2bf2351e4b07e352df6a522d5a314c98bd0abe9ae01c171a13462c5e4eb88af4",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_24project_anchor_recovery_full_20261024_v177.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:42:56.905075+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_24project_full_20261024_v176",
+      "status": "verified_and_archived",
+      "paths": {
+        "qwen3_coder_24project_full_20261024_v176/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 45040479,
+          "allocated_bytes": 45047808,
+          "inode": 154948069,
+          "device": 66306,
+          "mtime_ns": 1792848584636154064,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_full_20261024_v176/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 59791619,
+          "allocated_bytes": 59797504,
+          "inode": 154948055,
+          "device": 66306,
+          "mtime_ns": 1792848579057474912,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_full_20261024_v176/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 11736467,
+          "allocated_bytes": 11743232,
+          "inode": 154948052,
+          "device": 66306,
+          "mtime_ns": 1792848575675670520,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_full_20261024_v176/full/server/runtime_audit.jsonl": {
+          "size_bytes": 379593216,
+          "allocated_bytes": 379600896,
+          "inode": 154948048,
+          "device": 66306,
+          "mtime_ns": 1792848584601156070,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_full_20261024_v176/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11618869,
+          "allocated_bytes": 11624448,
+          "inode": 154948046,
+          "device": 66306,
+          "mtime_ns": 1792848575675670520,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_full_20261024_v176/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 29994499,
+          "allocated_bytes": 29999104,
+          "inode": 154948049,
+          "device": 66306,
+          "mtime_ns": 1792848572655845891,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "qwen3_coder_24project_full_20261024_v176/full/server.log": {
+          "size_bytes": 1144376,
+          "allocated_bytes": 1150976,
+          "inode": 154946515,
+          "device": 66306,
+          "mtime_ns": 1792848586513046620,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "qwen3_coder_24project_full_20261024_v176/causal_comparison.json": "fc10b26f5eb7fe17bba58286336f85e586b8f98499f8d1a656866333be4d8a05",
+        "qwen3_coder_24project_full_20261024_v176/full/server/launch_configuration.json": "da48ce7180fb114fecc25854cadd54efbd820f50322e05bf84c4dc79bd91ce9d",
+        "qwen3_coder_24project_full_20261024_v176/full/server/server_info.json": "2ce9a248b8961e0a58f410c56240856c5a40f893586f442018071f65a37936c5"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "c945b587c2f249445f9992b9e468b368d9639ba78953850a42343bb9b2a9aec0",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 538919525,
+      "source_allocated_bytes": 538963968,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "cd104a2bf9b62558220ce08e8fbae677613c5d2b07eecfb3b0e6dc241e8e0716",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:42:59.940625+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_24project_full_20261024_v176.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "cd104a2bf9b62558220ce08e8fbae677613c5d2b07eecfb3b0e6dc241e8e0716",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 17489443,
+      "archive_sha256": "5c02f58a2b05c291639ca15187d4459a09c1645868b9bb37b0f964d5fb196d71",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/qwen3_coder_24project_full_20261024_v176.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:43:04.093947+08:00"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1",
+      "status": "verified_and_archived",
+      "paths": {
+        "sibling_service_capacity_20261028_r1/full/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 134885805,
+          "allocated_bytes": 134893568,
+          "inode": 142613041,
+          "device": 66306,
+          "mtime_ns": 1793198993953509810,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "sibling_service_capacity_20261028_r1/full/server/eviction_attribution.jsonl": {
+          "size_bytes": 20613699,
+          "allocated_bytes": 20619264,
+          "inode": 142486038,
+          "device": 66306,
+          "mtime_ns": 1793198993523522441,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "sibling_service_capacity_20261028_r1/full/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4931378,
+          "allocated_bytes": 4935680,
+          "inode": 142486037,
+          "device": 66306,
+          "mtime_ns": 1793198993523522441,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "sibling_service_capacity_20261028_r1/full/server/physical_action_use.jsonl": {
+          "size_bytes": 1138759,
+          "allocated_bytes": 1146880,
+          "inode": 142486036,
+          "device": 66306,
+          "mtime_ns": 1793198640545159890,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "sibling_service_capacity_20261028_r1/full/server/runtime_audit.jsonl": {
+          "size_bytes": 364418098,
+          "allocated_bytes": 364425216,
+          "inode": 142486033,
+          "device": 66306,
+          "mtime_ns": 1793198994029507577,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "sibling_service_capacity_20261028_r1/full/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 11457262,
+          "allocated_bytes": 11464704,
+          "inode": 142486031,
+          "device": 66306,
+          "mtime_ns": 1793198993522522471,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "sibling_service_capacity_20261028_r1/full/server/transfer_telemetry.jsonl": {
+          "size_bytes": 11555003,
+          "allocated_bytes": 11563008,
+          "inode": 142486034,
+          "device": 66306,
+          "mtime_ns": 1793198714961863902,
+          "uid": 2603,
+          "nlink": 1
+        },
+        "sibling_service_capacity_20261028_r1/full/server.log": {
+          "size_bytes": 1538874,
+          "allocated_bytes": 1544192,
+          "inode": 142354340,
+          "device": 66306,
+          "mtime_ns": 1793199000671312550,
+          "uid": 2603,
+          "nlink": 1
+        }
+      },
+      "preserved_metadata_sha256": {
+        "sibling_service_capacity_20261028_r1/causal_comparison.json": "78150261f29c5bc19ecc6ce927444fc8f61464568185b8ff561798c70180c5b2",
+        "sibling_service_capacity_20261028_r1/full/server/launch_configuration.json": "8bc019347923b2006bdb5b946a3b56d86c16ad981aed79f66222703f47c0bf8b",
+        "sibling_service_capacity_20261028_r1/full/server/server_info.json": "55bdee50daa20659525d6fe94feac7db3fce3ee6d4e7c420976696de31efb0a4"
+      },
+      "protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "da2b56dfc762094812bc569305fbda6b82d1b518728bcdc48b0c241c71eda856",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "retained_registered_logs": [],
+      "model": "Qwen3-Coder-30B-A3B-Instruct",
+      "source_bytes": 550538878,
+      "source_allocated_bytes": 550592512,
+      "pre_archive_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "6e333e227655ec6697613fd25f285c93b598596e295144d3d7caa35f20e0c9e4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "started_at": "2026-11-01T17:43:07.435715+08:00",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/sibling_service_capacity_20261028_r1.tar.zst",
+      "pre_remove_protection": {
+        "metadata_files": 929,
+        "live_metadata_files": [
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json",
+          "/home/longhao/experiment/ops/workflow_final_selected_original56_nonranking_native_measured_completion_20261031_r1.registration.json"
+        ],
+        "metadata_stat_manifest_sha256": "6e333e227655ec6697613fd25f285c93b598596e295144d3d7caa35f20e0c9e4",
+        "protected_paths": 2407,
+        "preserved_non_config_profiles": {
+          "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+        }
+      },
+      "archive_bytes": 31416559,
+      "archive_sha256": "0abae671a937038e225879a19603a3965ac20f6713a8bf1d738754ad3b8236f1",
+      "full_tar_comparison_passed": true,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_qwen3_unused_logs/sibling_service_capacity_20261028_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "finished_at": "2026-11-01T17:43:12.104557+08:00"
+    }
+  ],
+  "skipped": [
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_kvflow_v220f_20261025",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/control_plan_diagnostics_20261028_r1",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r2",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_agent_cold_tools_20261026_v232",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_empirical_network_thunderagent_20261027_v273",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_thunder_decay_20261027_v295",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_observed_growth_20261027_v260",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_workflow_entry_20261026_v236b",
+      "reason": "no original top-level result/registration metadata"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_agent_working_set_full_20261025_v214",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_concur_observed_join_20261025_v212",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_continuum_public_20261024_v211",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_eos_repair_full_20261024_v185",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_frontier_preload0_full_20261024_v202",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_prepare_target_full_20261024_v201",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_queue_frontier_full_20261024_v186",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_retained_join_only_20261025_v216",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_segmented_checkpoint_full_20261024_v203",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_thunder_agent_migration_20261025_v215",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_thunderagent_20261024_v209",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_unified_restore_full_20261024_v204",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1",
+      "reason": "unreferenced logs below 64 MiB after retaining registered inputs"
+    }
+  ],
+  "source_bytes": 14326059846,
+  "source_allocated_bytes": 14327308288,
+  "operator_sha256": "a0bb74f79438a2b4f0c2d6bc109a4c1fdc829edea248facef5a9f7cf3817f23d",
+  "helper_sha256": "ad46bd6e86e3eb9356bc17dbb747234e7d0f1f91738bfea82158b1a4cba8606f",
+  "protection_policy": {
+    "recent_metadata_since": "2026-10-29T00:00:00+08:00",
+    "all_explicit_file_inputs_protected_regardless_of_age": true,
+    "unreferenced_logs_selected_individually_within_historical_runs": true,
+    "historical_output_directory_is_not_a_live_input": true,
+    "candidate_dates": "2026-10-24 through 2026-10-28",
+    "minimum_selected_log_bytes_per_run": 67108864,
+    "preserved_non_config_profiles": {
+      "/home/longhao/experiment/ops/v552_v58_active_stack_20261014.speedscope.json": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d"
+    }
+  },
+  "preserved": [
+    "Every naturally captured source run, token bundle and workflow event stream.",
+    "Every Oct 29 or newer run and every recent/live registered input.",
+    "All top-level plans/results/registrations/failures and server configuration.",
+    "All workspaces, bind mounts, processes, frozen trees, models and reports.",
+    "Failed and negative results retain their status and recoverable log bytes."
+  ],
+  "started_at": "2026-11-01T17:39:37.100518+08:00",
+  "status": "verified_and_archived",
+  "compression": "zstd -T1 -1",
+  "cpu_nice": 19,
+  "io_priority": "idle",
+  "free_bytes_before": 227257475072,
+  "scope": "CPU/IO archival only; no GPU launch or experiment configuration change.",
+  "finished_at": "2026-11-01T17:43:12.109251+08:00",
+  "archive_bytes": 501782724,
+  "net_reclaimed_bytes": 13825449984,
+  "free_bytes_after": 241023602688
+}

@@ -1,0 +1,248 @@
+{
+  "created_at": "2026-11-01T17:26:18.429362+08:00",
+  "runs": [],
+  "skipped": [
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_kvflow_v220f_20261025",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_kvflow_v220g_20261025",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_thunderagent_v219b_20261025",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_thunderagent_v219c_20261025",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/agentx_tokencake_v224b_20261025",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/control_plan_diagnostics_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_ack_retry_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/demand_prefill_pipeline_20261028_r2",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/full_only_pressure_index_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/join_blocked_layer_groups_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/kvflow_locobench_v230_v311_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_agent_cold_tools_20261026_v232",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_backed_agent_lending_20261026_v233",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_categorized_thunder_decay_20261027_v345",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_cold_fit_free_page_20261027_v247",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_demand_lending_20261027_v330",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_empirical_network_thunderagent_20261027_v273",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_fitting_lending_20261027_v378",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_host_demand_layer_handoff_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_idle_host_mirror_recycle_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_join_loan_return_20261026_v235",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_join_admission_20261027_v286",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_network_thunder_decay_20261027_v295",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_observed_growth_20261027_v260",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_projected_pressure_20261027_v364",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_consumer_fix_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_free_continuation_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_join_free_admission_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_join_siblings_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_thunder_offload_20261027_v400b",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_reference_tool_eos_guard_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_offload_before_admission_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_online_refresh_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_tool_prediction_curve_repair_20261027_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_workflow_entry_20261026_v236b",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_agent_working_set_full_20261025_v214",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_concur_observed_join_20261025_v212",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_continuum_public_20261024_v211",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_eos_repair_full_20261024_v185",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_frontier_preload0_full_20261024_v202",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_matched_scheduler_only_20261024_v205",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_prepare_target_full_20261024_v201",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_queue_frontier_full_20261024_v186",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_retained_join_only_20261025_v216",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_root_phase_cold_frontier_full_20261024_v193",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_root_phase_frontier_full_20261024_v191",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_root_phase_selected_queue_full_20261024_v194",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_segmented_checkpoint_full_20261024_v203",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_thunder_agent_migration_20261025_v215",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_thunderagent_20261024_v209",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_18project_unified_restore_full_20261024_v204",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_24project_anchor_recovery_full_20261024_v177",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen3_coder_24project_full_20261024_v176",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/sibling_service_capacity_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1",
+      "reason": "'utf-8' codec can't decode byte 0xf9 in position 300213: invalid start byte"
+    }
+  ],
+  "source_bytes": 0,
+  "source_allocated_bytes": 0,
+  "operator_sha256": "793ef9f6a30bfac5341e7f999209e7b5317472e8e3a373d3c3a8a987eb61bee4",
+  "helper_sha256": "ad46bd6e86e3eb9356bc17dbb747234e7d0f1f91738bfea82158b1a4cba8606f",
+  "protection_policy": {
+    "recent_metadata_since": "2026-10-29T00:00:00+08:00",
+    "all_explicit_file_inputs_protected_regardless_of_age": true,
+    "historical_output_directory_is_not_a_live_input": true,
+    "candidate_dates": "2026-10-24 through 2026-10-28",
+    "minimum_selected_log_bytes_per_run": 67108864
+  },
+  "preserved": [
+    "Every naturally captured source run, token bundle and workflow event stream.",
+    "Every Oct 29 or newer run and every recent/live registered input.",
+    "All top-level plans/results/registrations/failures and server configuration.",
+    "All workspaces, bind mounts, processes, frozen trees, models and reports.",
+    "Failed and negative results retain their status and recoverable log bytes."
+  ]
+}

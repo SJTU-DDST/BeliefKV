@@ -4,6 +4,32 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-11-01 Historical Qwen3-Coder Logs
+
+Thirty inactive Qwen3-Coder runs from Oct 24-28 contributed 202 large server,
+transfer, opportunity and mirrored logs. This includes early Full comparisons,
+AgentX paper baselines and LoCoBench policy experiments, with model identity
+checked against each original server configuration. The 14,327,308,288 allocated
+source bytes became 501,782,724 compressed bytes, reclaiming approximately
+13.83 GB after complete GNU tar content comparison.
+
+The [Qwen3 restore index](20261101_qwen3_unused_logs/README.md) provides every
+archive SHA256 and extraction command. Inventories, receipts, independent
+verification and the earlier conservative/refused selections are under
+`experiments/reports/qwen3_unused_archive_20261101/`. Every affected run retains
+`OLD_QWEN3_LOGS_ARCHIVED_20261101.md`.
+
+Naturally captured source runs, source/request tokens, client workflow events,
+result metadata, failed/negative outcomes, workspaces and frozen source trees
+remain available. Oct 29 or newer runs and recent/live registered inputs were
+excluded. Explicitly referenced logs were retained individually with their
+original SHA256, while unreferenced logs in the same old directory could be
+archived. Remaining unreferenced selections below 64 MiB were not processed.
+One Oct 14 non-configuration Speedscope profile with invalid UTF-8 was retained
+with a pinned SHA256; the initial refused scan is preserved separately.
+Compression and validation used nice19, idle I/O and one compression worker;
+the receipt records the actual interval.
+
 ## 2026-11-01 Superseded Qwen3.5 Logs
 
 The completed selection covers 239 large server, opportunity and client-mirrored
