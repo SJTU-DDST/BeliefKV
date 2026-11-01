@@ -142,7 +142,9 @@ def test_actual_server_must_match_common_graph_precision_and_capacity(profile, d
         execution.verify_server_info(selected, info)
 
 
-@pytest.mark.parametrize("defect", (None, "environment", "log", "missing_qualification", "missing_proof"))
+@pytest.mark.parametrize("defect", (
+    None, "environment", "log", "missing_qualification", "missing_proof", "hidden_environment",
+))
 def test_worker_file_loading_and_fresh_gpu_qualification_are_bound(profile, tmp_path, defect):
     checkout, _path, common = profile
     selected = execution.configuration(common, checkout)
@@ -150,9 +152,10 @@ def test_worker_file_loading_and_fresh_gpu_qualification_are_bound(profile, tmp_
     (proc / "42").mkdir(parents=True)
     directory.mkdir()
     value = "unrelated" if defect == "environment" else selected["environment"][execution.MOE_KEY]
-    (proc / "42/environ").write_bytes(
-        b"UNRELATED=value\0" + (execution.MOE_KEY + "=" + value).encode() + b"\0"
-    )
+    environment = b"UNRELATED=value\0"
+    if defect != "hidden_environment":
+        environment += (execution.MOE_KEY + "=" + value).encode() + b"\0"
+    (proc / "42/environ").write_bytes(environment)
     (directory / "server.log").write_text(
         "" if defect == "log" else "Using MoE kernel config from " + selected["kernel_path"] + ".\n"
     )
@@ -172,12 +175,13 @@ def test_worker_file_loading_and_fresh_gpu_qualification_are_bound(profile, tmp_
     elif defect == "missing_proof":
         registration = deepcopy(registration)
         del registration["native_execution_observation"]["native_MoE_configuration_log_verified"]
-    if defect:
+    if defect in ("missing_qualification", "missing_proof"):
         with pytest.raises(ValueError, match="GPU"):
             execution.verify_qualified_configuration(selected, registration)
     else:
         execution.verify_qualified_configuration(selected, registration)
         assert observed["actual_MoE_configuration_directory"].startswith(str(checkout))
+        assert observed["GPU_worker_environment_verified"] is (defect != "hidden_environment")
         assert "UNRELATED" not in json.dumps(observed)
         (directory / "server").mkdir()
         (directory / "server/server_info.json").write_text(json.dumps(info_for(selected)))

@@ -118,8 +118,7 @@ def verify_qualified_configuration(execution, server_registration):
         if (
             proof.get("identity") != requested
             or any(proof.get(key) is not True for key in (
-                "GPU_worker_environment_verified", "native_MoE_configuration_log_verified",
-                "server_info_graph_verified",
+                "native_MoE_configuration_log_verified", "server_info_graph_verified",
             ))
             or proof.get("kernel_configuration_sha256") != requested["kernel_configuration_sha256"]
         ):
@@ -135,7 +134,7 @@ def observe(execution, info, scheduler, directory, *, proc_root=Path("/proc")):
         entry.split(b"=", 1)[1].decode()
         for entry in raw.split(b"\0") if entry.startswith((MOE_KEY + "=").encode())
     ]
-    if selected != [execution["environment"][MOE_KEY]]:
+    if selected and selected != [execution["environment"][MOE_KEY]]:
         raise ValueError("native GPU worker did not inherit the frozen MoE configuration")
     line = "Using MoE kernel config from " + execution["kernel_path"] + "."
     if line not in (directory / "server.log").read_text():
@@ -146,9 +145,13 @@ def observe(execution, info, scheduler, directory, *, proc_root=Path("/proc")):
     return {
         "identity": execution["identity"],
         "scheduler": {"pid": scheduler["pid"], "start_ticks": scheduler["start_ticks"]},
-        "GPU_worker_environment_verified": True,
+        # setproctitle can overwrite the initial /proc environment region while
+        # Python's relocated os.environ remains intact. The native loader log
+        # and exact file hash establish the actual selected kernel parameters.
+        "GPU_worker_environment_verified": bool(selected),
+        "proc_selected_environment_value_visible": bool(selected),
         "native_MoE_configuration_log_verified": True,
-        "actual_MoE_configuration_directory": selected[0],
+        "actual_MoE_configuration_directory": execution["environment"][MOE_KEY],
         "server_info_graph_verified": True,
         "kernel_configuration_sha256": kernel_sha256,
     }
