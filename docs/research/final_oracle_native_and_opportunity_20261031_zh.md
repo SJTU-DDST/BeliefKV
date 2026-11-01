@@ -2,7 +2,7 @@
 
 ## 当前结论与执行顺序
 
-Oracle 尚未建立稳定的完整 workflow JCT 收益。原始56的最佳已完成匹配对照仍是关闭工作量排序的 Full；不能把 Full 相对 ThunderAgent 的收益归因于 Oracle，也不能断言已知工作量必然改善非抢占、容量受限的 agent 调度。
+最后一次新负载 Oracle 对比已完成，平均完整 JCT 回退0.157%，未达到事先冻结的5%改善门槛，暂停工作量排序方向。返回原始56、初始12条及平均70秒到达的非排序 Full；该负载已有相对 ThunderAgent acting-decay 的10.430% JCT改善和3.262%共同窗口吞吐提升。不能把 Full 的收益归因于 Oracle，也不能断言已知工作量必然改善非抢占、容量受限的 agent 调度。
 
 按用户最新要求：
 
@@ -38,6 +38,31 @@ original56、初始12条、平均70秒的同负载对比：
 | 共同窗口输出 token/s | 301.892 | 292.355 |
 
 JCT降低10.430%，共同窗口吞吐提高3.262%。18条中17条改善，一条回退约4.393秒。保留该负载的背景覆盖与有用前缀丢失审计限制，不能把单次配对称为正式稳态结论。
+
+## 最后一次Oracle的完整结论
+
+`final82_oracle_and_selected_native_r1/oracle_comparison.json`独立核验两臂均完成固定18条、3,093次精确请求和422,130个输出token；两次新鲜空闲遥测、真实owned进程退出均通过。82条全部到达，各79条自然结束，另外3条非测量任务按固定测量组完成规则停止。
+
+| 指标 | 非排序Full | Oracle v6 |
+| --- | ---: | ---: |
+| 平均完整JCT / 秒 | 998.478450 | 1000.047191 |
+| P50完整JCT / 秒 | 461.012528 | 463.947236 |
+| P95完整JCT / 秒 | 2927.154629 | 3045.212881 |
+| 共同窗口输出token/s | 283.760981 | 283.482442 |
+
+平均JCT变化为回退0.157113%，共同窗口输出下降0.098160%；10条改善、8条回退。吞吐通过98%非劣门槛，但JCT未通过5%改善门槛；两臂背景覆盖等资格限制仍保留，`formal_workload_accepted=false`。
+
+`complete_oracle_choices.json`使用完整封存记录重放6,878条组合记录、418次实际搜索和72次集合改变，识别24次新选入agent episode。22次周期新选入均有真实授予、资格保留及后续精确服务，21次在下一控制或已记录干预前完成有用批次；但仅2次属于测量workflow，其余20次属于非测量任务。两次free-dispatch episode未在该审计中建立服务对应。早期“13次搜索、0个新成员”仅是保留的实时前缀，不能代替最终结论。
+
+因此实现确实改变了一部分准入并传递到服务，完整测量均值仍未改善。此结果不证明所有短任务调度均无收益，也不是全局最优JCT上界；按此次明确停止判据，暂不继续Oracle GPU搜索或训练工作量预测器。配对完整JCT及共同窗口decode/全部输出趋势图已生成并检查，位于`oracle_figures/`。
+
+## 回退负载的native启动与监控修复
+
+原顺序协调器保留在`stopped_preserve_final_comparisons`。native最初在GPU分配之前遇到工作树命名碰撞：位置检查从run-root最后一段`r1`派生目录，与已完成Oracle位置检查重名。原失败入口、stderr和原工作树全部保留；恢复只给native位置检查的scratch run-root增加`_native56`，所有任务、token、到达、资源、native配置与测量成员不变。
+
+恢复入口已重新完成24请求token/session/native-stop检查及1/8/24采样，并启动正式`native_matched`。固定18条观察器已挂载，完整测量任务结束后再停止非测量背景。正式注册是`ops/workflow_final_selected_original56_nonranking_native_20261031_r1.registration.json`；没有重跑Full、Thunder或Oracle。
+
+首个CPU汇总followup在formal状态仍为`waiting_idle_gpu`时，将未填入的进程句柄交给只接受字典的存活检查，报`NoneType`错误。这不在服务进程或测量路径内，native随后正常启动；原失败状态和脚本保留。R2只接管该实际运行，安全处理缺失句柄并避免终态分支覆盖结果处理函数；不启动或重试GPU任务。最终native性能以完整18条结果及实际退出核验为准。
 
 ## 逐层 handoff 的当前机会
 
