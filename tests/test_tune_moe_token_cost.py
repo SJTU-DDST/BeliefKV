@@ -1,6 +1,8 @@
 import pytest
 
-from scripts.tune_moe_token_cost import BASE_LARGE, BASE_SMALL, SIZES, guarded_lookup_table, select_candidate
+from scripts.tune_moe_token_cost import (
+    BASE_LARGE, BASE_SMALL, SIZES, compact_table, guarded_lookup_table, select_candidate,
+)
 
 
 def test_native_nearest_lookup_keeps_every_untuned_prefill_size_unchanged():
@@ -30,3 +32,15 @@ def test_numerical_failure_route_regression_and_weak_improvement_keep_default(ca
 
 def test_improvement_in_both_routing_scenarios_can_be_selected():
     assert select_candidate([row(0, 1, 1), row(1, .8, .9)])["candidate_index"] == 1
+
+
+def test_compact_defaults_preserve_nearest_lookup_and_boundary_ties():
+    original = guarded_lookup_table({
+        size: {**BASE_SMALL, "BLOCK_SIZE_N": 128} for size in SIZES
+    })
+    compacted = compact_table(original)
+    assert len(compacted) == 6
+    assert compacted["25"] == BASE_SMALL
+    assert compacted["128"] == BASE_SMALL
+    assert compacted["129"] == BASE_LARGE
+    assert compacted["2048"] == BASE_LARGE

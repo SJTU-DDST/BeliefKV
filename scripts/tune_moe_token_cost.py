@@ -65,6 +65,48 @@ def guarded_lookup_table(selected):
     return table
 
 
+def compact_table(table):
+    original = {int(key): value for key, value in table.items()}
+    runs, run = [], []
+    for key in sorted(original):
+        if run and original[key] != original[run[-1]]:
+            runs.append(run)
+            run = []
+        run.append(key)
+    runs.append(run)
+    keep = {edge for run in runs for edge in (run[0], run[-1])}
+    # Preserve native insertion order, including nearest-key tie breaking.
+    compacted = {key: value for key, value in original.items() if key in keep}
+    for size in range(1, 2 * max(original) + 1):
+        before = original[min(original, key=lambda key: abs(key - size))]
+        after = compacted[min(compacted, key=lambda key: abs(key - size))]
+        if before != after:
+            raise ValueError("compaction changed native nearest-M parameter selection")
+    return {str(key): value for key, value in compacted.items()}
+
+
+def compact(configuration, output):
+    record = json.loads((configuration / "result.json").read_bytes())
+    path = Path(record["configuration_path"])
+    if sha256_file(path) != record["configuration_sha256"]:
+        raise ValueError("tuned configuration changed")
+    before = json.loads(path.read_bytes())
+    after = compact_table(before)
+    target = output / path.relative_to(configuration.resolve())
+    write(target, after)
+    write(output / "result.json", {
+        **record, "configuration_path": str(target.resolve()),
+        "configuration_sha256": sha256_file(target),
+        "original_tuner_result": str((configuration / "result.json").resolve()),
+        "original_tuner_result_sha256": sha256_file(configuration / "result.json"),
+        "original_configuration_keys": len(before), "compacted_configuration_keys": len(after),
+        "native_nearest_lookup_equivalent_for_M": [1, 2 * max(map(int, before))],
+        "larger_M_always_uses_same_maximum_key": True,
+        "CPU_only_compaction": True, "GPU_action": False,
+        "compaction_source_sha256": sha256_file(Path(__file__)),
+    })
+
+
 def tune(inputs, output):
     document = json.loads(inputs.read_bytes())
     fresh.check_hold(document, released=True)
@@ -238,15 +280,18 @@ def serve(inputs, configuration, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
-    for command in ("tune", "serve"):
+    for command in ("tune", "serve", "compact"):
         selected = subparsers.add_parser(command)
-        selected.add_argument("--inputs", type=Path, required=True)
+        if command != "compact":
+            selected.add_argument("--inputs", type=Path, required=True)
         selected.add_argument("--output", type=Path, required=True)
-        if command == "serve":
+        if command in ("serve", "compact"):
             selected.add_argument("--configuration", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "tune":
         tune(args.inputs, args.output)
+    elif args.command == "compact":
+        compact(args.configuration.resolve(), args.output.resolve())
     else:
         serve(args.inputs, args.configuration, args.output)
 

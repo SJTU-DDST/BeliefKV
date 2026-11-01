@@ -137,3 +137,87 @@ MoE GEMM 累计降至 153.968056 ms，支持填充改善主要影响这部分的
 初次 MoE 微测在执行前因单 rank TP group 未初始化而退出；
 已按原生 API 补齐初始化与清理，保留
 `moe_tuning_r1.log`。它不是一次完成的 kernel 性能测量。
+
+## MoE 参数的真实模型验证
+
+`moe_tuning_r2/` 完成 7 个 M 档位、8 个候选、2 种 routing 的有界微测。
+每个候选以原生 fused MoE 执行，保持 BF16、实际模型矩阵尺寸和 top-8，
+合成 routing 的结果只用于筛选参数。
+2、24 行保留默认；其余选中配置在两个 routing 上均没有超过 2% 的回退，
+综合改善至少 3%，并通过数值容差检查。
+
+随后 `native_moe_candidate_r1/` 在原生 serving 中使用相同真实 token 前缀、
+相同 Device 容量、相同稀疏图档位验证，仍为每组 3 次 96-token 普通 burst：
+
+| 实际宽度 | 默认 MoE ms/output-token | 调优 MoE ms/output-token | 成本降低 |
+| --- | ---: | ---: | ---: |
+| 3 | 3.582194 | 3.506432 | 2.1150% |
+| 5 | 2.876205 | 2.671986 | 7.1003% |
+| 7 | 2.147761 | 2.024055 | 5.7598% |
+| 8 | 2.237144 | 2.143529 | 4.1846% |
+| 9 | 2.477289 | 2.403765 | 2.9679% |
+| 13 | 1.804835 | 1.769903 | 1.9354% |
+| 17，仍填至 24 且保留默认 launch 配置 | 1.805833 | 1.808118 | -0.1266% |
+
+186 个普通请求、17,856 个输出 token 与原始稀疏图对照逐序列一致。
+三次 burst 属于一次服务器启动内的重复，不宣称跨独立完整实验的统计显著性。
+结果保存在 `moe_comparison_r1.json`。
+
+宽度 9 的 profiled attention 累计为 303.071606 ms，基本不变；
+MoE GEMM 累计从 162.242872 降至 148.412857 ms。
+所有 kernel 的区间并集从 525.337539 降至 511.717544 ms，
+约减少 2.5926%，与普通 burst 的小幅改善方向一致。
+这也说明不能将 MoE 与 activation 累计 duration 的减少直接相加。
+
+同样仅重加权已测宽度，筛查值为约 23.170481 秒、
+**1.46523% 旧共同窗口总 worker 区间缩短**。
+它与精确图的 1.23115% 有重叠，二者不能直接相加。
+当前没有组合配置或完整 workflow JCT 的 GPU 结果。
+
+## 减少调优配置的查表开销
+
+第一份有界表为保证 24 以上的参数不变，显式存了 2,031 个 M 键。
+原生选配置会遍历键找最近 M，直接长期保留这种密集表会增加 CPU 工作。
+
+`tune_moe_token_cost.py compact` 保留相同参数区间的两端，
+将它压缩为 **9 个键**，并保留原始插入顺序及最近邻距离相同情况下的选择顺序。
+对每个整数 `M=1..4096`，逐项验证原生最近邻选择的全部配置字段一致；
+更大 M 始终选择同一个最大键。
+`moe_lookup_timing_r1.json` 中的五次 CPU 短测中位数约由 146.86 us
+降为 1.043 us；保留每次结果和两份配置哈希。
+这是单独的查表微测，不是运行中控制线程的完整成本。
+
+`moe_compact_r1/result.json` 保留原表及 tuner 结果的哈希。
+该步骤没有更改 kernel 参数、数值精度或已记录的 GPU 测量，
+没有把旧测量标成压缩表的 GPU 实验。
+CPU 压缩后的实际文件为：
+
+`moe_compact_r1/configs/triton_3_7_1/E=128,N=768,device_name=NVIDIA_H200_NVL.json`
+
+其 SHA256 为
+`bef8ee25af76b1d7a56ffb27fff2b3b5714096baafa5a473eb602cb764ad94e0`。
+相同字节已保存在版本化的
+`configs/execution/h200_moe_decode/configs/triton_3_7_1/` 下，
+使用说明为 `configs/execution/qwen3_coder_h200_tuned_moe_20261101.json`。
+通过设置原生支持的 `SGLANG_MOE_CONFIG_DIR` 指向
+`configs/execution/h200_moe_decode/` 可显式使用，
+不覆盖原生源码或公共配置。
+
+## 本轮结论
+
+已确认主要可见执行成本来自 attention 和 MoE。
+精确 decode 图与有界 MoE launch 调优均有真实模型组件级正收益，
+当前仍是两个独立候选；无依据将它们宣传为大的完整 workflow JCT 收益。
+保留原 Full 配置和既有 Full/ThunderAgent/native 对照。
+
+后续优先核验二者组合及 prefill 执行路径，保持相同 KV 容量和任务，
+再决定是否值得进行完整 workflow 对比。通用执行优化需要同样提供给 baseline。
+本轮没有重开 workload-size Oracle、修改工具时长或启用 handoff。
+48 项针对性 CPU 检查通过，三次 native serving 臂都完成实际输出、
+新鲜 writer drain 和所拥有进程清理；GPU 已释放。
+
+图表导出在 `useful_token_cost_r1/figures/token_execution_cost_r2.png` 及同名 PDF。
+颜色固定使用 Okabe-Ito 定性色板：decode 为 `#0072B2`、
+prefill 为 `#E69F00`、精确图为 `#009E73`、MoE 调优为 `#D55E00`。
+左图包含共同窗口内的所有背景输出；右图每种宽度有自己的真实上下文组合，
+没有根据单次服务器启动的三个 burst 绘制统计置信区间。

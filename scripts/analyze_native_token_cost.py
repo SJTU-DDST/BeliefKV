@@ -77,11 +77,16 @@ def partition_kernels(events):
     }
 
 
-def compare(root, accounting):
+def compare(root, accounting, *, candidate_dir=None, candidate_label="exact"):
     report, sources = {}, {}
+    labels = ("sparse", candidate_label)
+    directories = {
+        "sparse": root / "sparse",
+        candidate_label: candidate_dir if candidate_dir is not None else root / "exact",
+    }
     summaries = {}
-    for mode in ("sparse", "exact"):
-        path = root / mode / "summary.json"
+    for mode in labels:
+        path = directories[mode] / "summary.json"
         summaries[mode] = json.loads(path.read_bytes())
         sources[str(path.resolve())] = sha256_file(path)
     plan_path = root / "plan.json"
@@ -93,7 +98,7 @@ def compare(root, accounting):
     numerical = []
     for case in inputs["cases"]:
         width, measurements = case["width"], {}
-        for mode in ("sparse", "exact"):
+        for mode in labels:
             values = [
                 summaries[mode]["decode_by_case"][f"{width}:measure{index}"]["worker_ms_per_output"]
                 for index in range(3)
@@ -104,14 +109,14 @@ def compare(root, accounting):
             }
         for index in range(3):
             receipts = {}
-            for mode in ("sparse", "exact"):
-                path = root / mode / f"width{width}_measure{index}.json"
+            for mode in labels:
+                path = directories[mode] / f"width{width}_measure{index}.json"
                 receipts[mode] = json.loads(path.read_bytes())["records"]
                 sources[str(path.resolve())] = sha256_file(path)
-            if receipts["sparse"].keys() != receipts["exact"].keys():
+            if receipts["sparse"].keys() != receipts[candidate_label].keys():
                 raise ValueError("component request identities changed")
             for identity, before in receipts["sparse"].items():
-                after = receipts["exact"][identity]
+                after = receipts[candidate_label][identity]
                 prefix = 0
                 for a, b in zip(before["tokens"], after["tokens"], strict=True):
                     if a != b:
@@ -128,15 +133,17 @@ def compare(root, accounting):
                     ),
                 })
         before, after = (
-            measurements[mode]["worker_ms_per_output_median"] for mode in ("sparse", "exact")
+            measurements[mode]["worker_ms_per_output_median"] for mode in labels
         )
         report[str(width)] = {
             "measurements": measurements,
-            "exact_worker_cost_reduction_percent": 100 * (1 - after / before),
+            "candidate_worker_cost_reduction_percent": 100 * (1 - after / before),
             "context_lengths": case["context_lengths"],
         }
+        if candidate_label == "exact":
+            report[str(width)]["exact_worker_cost_reduction_percent"] = 100 * (1 - after / before)
     profiles = {}
-    for mode in ("sparse", "exact"):
+    for mode in labels:
         profiles[mode] = []
         for profile in summaries[mode]["profiles"]:
             path = Path(profile["trace"])
@@ -157,13 +164,14 @@ def compare(root, accounting):
             continue
         observed = geometry["common_window_decode_by_width"][width]["worker_ms"]
         covered += observed
-        cost += observed * row["exact_worker_cost_reduction_percent"] / 100
+        cost += observed * row["candidate_worker_cost_reduction_percent"] / 100
     sources.update({
         str(path.resolve()): sha256_file(path)
         for path in (plan_path, inputs_path, accounting, Path(__file__))
     })
     return {
         "observed_at": datetime.now(timezone.utc).isoformat(), "by_width": report,
+        "candidate_label": candidate_label,
         "numerical": {
             "requests": len(numerical),
             "all_output_sequences_equal": all(row["all_token_ids_equal"] for row in numerical),
@@ -171,7 +179,12 @@ def compare(root, accounting):
             "rows": numerical,
         },
         "decode_cuda_profiles": profiles,
-        "control_width8_cost_change_percent": report["8"]["exact_worker_cost_reduction_percent"],
+        **({
+            "control_width8_cost_change_percent": report["8"]["candidate_worker_cost_reduction_percent"],
+        } if candidate_label == "exact" else {
+            "width8_cost_change_percent": report["8"]["candidate_worker_cost_reduction_percent"],
+            "unchanged_config_width17_cost_change_percent": report["17"]["candidate_worker_cost_reduction_percent"],
+        }),
         "sample_reweighting": {
             "covered_common_window_worker_fraction": covered / worker,
             "estimated_worker_time_change_seconds": cost / 1000,
@@ -182,7 +195,7 @@ def compare(root, accounting):
         "semantics": [
             "Each cost is the median of three unprofiled request bursts, divided by actual observed output tokens.",
             "CUDA profiling requests are excluded from ordinary cost comparison.",
-            "A width8 control uses the same graph size in both modes; it observes cross-start drift without correcting it away.",
+            "The exact-graph candidate leaves width8 unchanged; the tuned MoE candidate leaves its width17/padded24 launch config unchanged.",
             "Static reweighting applies a few captured context examples to historical width totals. It is a screen, not an end-to-end forecast.",
             "Kernel groups overlap, including programmatic dependent launches; sums are not exclusive execution or removable JCT.",
             "Numerical equality here covers the bounded greedy probes, not every future request or full replay.",
@@ -197,10 +210,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("root", "accounting", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--candidate-dir", type=Path)
+    parser.add_argument("--candidate-label", choices=("exact", "tuned_moe"), default="exact")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("preserve earlier cost evidence")
-    result = compare(args.root, args.accounting)
+    result = compare(
+        args.root, args.accounting,
+        candidate_dir=args.candidate_dir, candidate_label=args.candidate_label,
+    )
     write(args.output, result)
     print(json.dumps({
         "by_width": result["by_width"],

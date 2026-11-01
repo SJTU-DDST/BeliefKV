@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "kind": "opt_in_native_execution_configuration",
+  "model_path": "/srv/ai/models/Qwen/Qwen3-Coder-30B-A3B-Instruct",
+  "GPU": "NVIDIA H200 NVL",
+  "triton_version": "3.7.1",
+  "engine_tree": "434c35dd66211d0a230717c88bf1452056769a40",
+  "dtype": "bfloat16",
+  "kv_cache_dtype": "bfloat16",
+  "environment": {
+    "SGLANG_MOE_CONFIG_DIR": "/home/longhao/experiment/BeliefKV/configs/execution/h200_moe_decode"
+  },
+  "kernel_configuration_sha256": "bef8ee25af76b1d7a56ffb27fff2b3b5714096baafa5a473eb602cb764ad94e0",
+  "evidence": "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/moe_comparison_r1.json",
+  "compaction_evidence": "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/moe_compact_r1/result.json",
+  "evidence_scope": {
+    "native_serving_real_model_components": true,
+    "unprofiled_requests_per_mode": 186,
+    "same_greedy_output_sequences": true,
+    "same_device_KV_token_capacity": true,
+    "lookup_compaction_CPU_verified": true,
+    "lookup_compaction_is_a_separate_GPU_run": false,
+    "Host_KV_and_Full_policy_exercised_by_component": false,
+    "full_workflow_JCT_qualified": false,
+    "retained_Full_defaults_changed": false,
+    "common_engine_optimization_available_to_baselines": true
+  },
+  "performance_accepted": false
+}
