@@ -33,7 +33,10 @@ def canonical(decision):
     }, allow_nan=False))
 
 
-def replay_choice(row, costs, cost_identity, *, allow_feasible_resource_alternatives=False):
+def replay_choice(
+    row, costs, cost_identity, *, allow_feasible_resource_alternatives=False,
+    plan_device_capacity=False,
+):
     """Reconstruct the recorded bounded search, including its cutoff mask."""
     if type(allow_feasible_resource_alternatives) is not bool or (
         row.get("resource_fallback_selection_enabled", False) is not allow_feasible_resource_alternatives
@@ -88,6 +91,13 @@ def replay_choice(row, costs, cost_identity, *, allow_feasible_resource_alternat
             raise ValueError("combination candidate and exact request ownership differ")
         candidates.append(candidate)
     resources = CombinationResources(**row["resources"])
+    scope = "planned_pool_geometry" if plan_device_capacity else "current_free_and_safe_cold"
+    if (
+        type(plan_device_capacity) is not bool
+        or (resources.device_capacity_tokens is not None) != plan_device_capacity
+        or row.get("device_fit_scope", "current_free_and_safe_cold") != scope
+    ):
+        raise ValueError("device fit scope differs from the frozen profile")
     reference = observed["reference"]
     required = observed["required_reference_members"]
     expected = canonical(observed)
@@ -134,7 +144,10 @@ def replay_choice(row, costs, cost_identity, *, allow_feasible_resource_alternat
     return summary
 
 
-def inspect(records, batches, costs, cost_identity, *, allow_feasible_resource_alternatives=False):
+def inspect(
+    records, batches, costs, cost_identity, *, allow_feasible_resource_alternatives=False,
+    plan_device_capacity=False,
+):
     """Only a following actual periodic grant can consume a periodic selection."""
     progress = periodic_inspect(records, batches)
     episodes = {}
@@ -149,6 +162,7 @@ def inspect(records, batches, costs, cost_identity, *, allow_feasible_resource_a
             choice = replay_choice(
                 row, costs, cost_identity,
                 allow_feasible_resource_alternatives=allow_feasible_resource_alternatives,
+                plan_device_capacity=plan_device_capacity,
             )
             choice["journal_sequence"] = sequence
             choices.append(choice)
@@ -254,8 +268,10 @@ def main():
         allow_feasible_resource_alternatives=(
             profile["kind"] in (
                 "r5_frozen_batch_cost_proxy_capacity_v4", "r5_frozen_batch_cost_proxy_capacity_v5",
+                "r5_frozen_batch_cost_proxy_capacity_v6",
             )
         ),
+        plan_device_capacity=profile["kind"] == "r5_frozen_batch_cost_proxy_capacity_v6",
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),

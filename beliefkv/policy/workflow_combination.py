@@ -34,6 +34,7 @@ class CombinationResources:
     chunked_input: bool = False
     input_page_tokens: int = 1
     cold_device_tokens: int = 0
+    device_capacity_tokens: int | None = None
 
 
 @dataclass(frozen=True)
@@ -132,10 +133,11 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=
         staged_inputs = min(inputs, resources.input_tokens)
         if staged_inputs < sum(min(row.input_tokens, resources.input_page_tokens) for row in rows):
             return None
-    if (
-        staged_inputs > resources.input_tokens
-        or missing + staged_inputs + resources.growth_tokens
-        > resources.device_tokens + resources.cold_device_tokens
+    required_device = missing + staged_inputs + resources.growth_tokens
+    immediate_device = resources.device_tokens + resources.cold_device_tokens
+    planned_device = resources.device_capacity_tokens
+    if staged_inputs > resources.input_tokens or required_device > (
+        immediate_device if planned_device is None else planned_device
     ):
         return None
     groups, weights = {}, {}
@@ -188,6 +190,12 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=
             decode_cost_basis="full_batch", active_decode_cost_ms=before,
             objective_cost_ms=objective_cost,
         )
+    if planned_device is not None:
+        result.update(
+            device_fit_scope="planned_pool_geometry",
+            required_device_tokens=required_device,
+            current_device_summary_fits=required_device <= immediate_device,
+        )
     return result
 
 
@@ -210,6 +218,13 @@ def choose_combination(
             raise ValueError("resource fallback selection must be explicit")
         if type(resources.cold_device_tokens) is not int or resources.cold_device_tokens < 0:
             raise ValueError("invalid safely reclaimable device capacity")
+        if resources.device_capacity_tokens is not None and (
+            type(resources.device_capacity_tokens) is not int
+            or resources.device_capacity_tokens <= 0
+            or resources.device_capacity_tokens
+            < resources.device_tokens + resources.cold_device_tokens
+        ):
+            raise ValueError("invalid full device pool geometry")
         if len(by_id) != len(candidates) or len(set(reference)) != len(reference):
             raise ValueError("duplicate combination identity")
         if not required <= set(reference):

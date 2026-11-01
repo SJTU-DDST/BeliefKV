@@ -5838,3 +5838,22 @@
   allexactserved/633boundednewservice/632boundedcompletion. Hosthighwater
   200000077824bytes/contextlossproxy0/Hostblockrecompute6149;keepnonzeroand
   do notsumdifferentcountersorextendearlier5tokenprefix. Pairnotcomplete.
+- Original69matchedpairisnowcompleteandindependentlyverified:both2827requests/
+  390934outputs/sameactualcapacity/freshdrain/actualownedexit. Predictivemean
+  813.056404vsThunder889.845843s(8.629522%lower),all18improve;commonoutput
+  283.958674vs278.298208(+2.033957%)/decode281.514985vs275.887363(+2.039826%).
+  ThisisnonrankingFull,notOraclebenefit. Thunder50natural/19censored/all69arrived;
+  Full49natural/20censored/5unarrived. KeepThunder109.106735suncoveredtail/
+  Fullready-paused15.837104%<25%failures;comparisonallacceptanceflagsremain
+  false. Finalprefixloss137159vs0/Hostblockrecompute198062vs24634;donotsum.
+  Pairplotsactuallyviewed;allGPU/observer/coordinatorownersgone,noGPUfollowup.
+- Explicitcapacity_v6CPUcandidateplansagainstobservedFULLpoolgeometrywhile
+  retaininglogical/slots/input/growth/JOINandsamenativeallocation/Host/lock/
+  DMAauthority;currentfree/coldcountsarenotrewritten. Oldprofilesunchanged.
+  230related+6auditpasses;fullbound6532literalcases+23subtests,retain6467/
+  2391sources/370externalinputs/nativeunchangedduringexecution,nofail/skip.
+  Old364completesearchesstrictno-feasible224to0/planningcompetition16to106/
+  74changedsets/263selectedsetsstillneednativecapacitywait;notnew69JCT.
+  Keep6088metadata/29earlyreturns/3actualdeadlinesseparate. Design
+  docs/design/oracle_device_capacity_planning_20261031_zh.md;cleanfreeze/
+  matchingnew69costreviewandworkloadrepairstillneededbeforeGPUclaims.

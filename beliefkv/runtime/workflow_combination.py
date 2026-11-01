@@ -37,15 +37,17 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             "r5_frozen_batch_cost_proxy", "r5_frozen_batch_cost_proxy_capacity_v2",
             "r5_frozen_batch_cost_proxy_capacity_v3", "r5_frozen_batch_cost_proxy_capacity_v4",
             "r5_frozen_batch_cost_proxy_capacity_v5",
+            "r5_frozen_batch_cost_proxy_capacity_v6",
         )
         if not isinstance(profile, dict) or profile.get("kind") not in kinds:
             raise ValueError("R5 requires its frozen, fingerprinted admission cost profile")
         self.include_unreferenced_capacity = profile["kind"] in kinds[1:]
         self.allow_deep_prefix_aggregate = profile["kind"] in kinds[2:]
         self.allow_feasible_resource_alternatives = profile["kind"] in kinds[3:]
+        self.plan_device_capacity = profile["kind"] == kinds[5]
         self.costs = CombinationCosts(**profile["costs"])
-        if (self.costs.decode_cost_basis == "full_batch") != (profile["kind"] == kinds[4]):
-            raise ValueError("full-batch cost requires its explicit v5 admission profile")
+        if (self.costs.decode_cost_basis == "full_batch") != (profile["kind"] in kinds[4:]):
+            raise ValueError("full-batch cost requires its explicit v5/v6 admission profile")
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
         if type(self.oracle_reference_path_s) not in (int, float) or not 0 < self.oracle_reference_path_s < float("inf"):
@@ -69,6 +71,16 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         slots = min(maximum, native_maximum - len(running), rows())
         if slots <= 0:
             return None
+        device_capacity = None
+        if self.plan_device_capacity:
+            device_capacity = getattr(
+                getattr(runtime._native_cache, "token_to_kv_pool_allocator", None),
+                "size_full", None,
+            )
+            if type(device_capacity) is not int or not (
+                0 <= headroom.device_full_free_tokens <= device_capacity
+            ) or device_capacity <= 0:
+                return None
         self.cold_summary = self._cold_capacity()
         return CombinationResources(
             capacity, headroom.device_full_free_tokens, input_limit, slots,
@@ -80,6 +92,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             chunked_input=bool(runtime._native_chunk_input_reserve),
             input_page_tokens=runtime._native_page_size,
             cold_device_tokens=sum(row[2] for row in self.cold_summary),
+            device_capacity_tokens=device_capacity,
         )
 
     def _cold_capacity(self):
@@ -440,6 +453,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         },
                         "cost_identity": self.cost_identity,
                         "resource_fallback_selection_enabled": self.allow_feasible_resource_alternatives,
+                        "device_fit_scope": (
+                            "planned_pool_geometry" if self.plan_device_capacity
+                            else "current_free_and_safe_cold"
+                        ),
                         "unavailable_summaries": unavailable,
                         "prefix_summaries": prefix_summaries,
                         "resources": asdict(resources) if resources is not None else None,

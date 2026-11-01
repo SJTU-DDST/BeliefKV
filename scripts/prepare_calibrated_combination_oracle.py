@@ -61,6 +61,7 @@ def calibrated_artifact(
     context_calibration=None, context_calibration_path=None, context_calibration_sha256=None,
     include_unreferenced_capacity=False, allow_deep_prefix_aggregate=False,
     allow_feasible_resource_alternatives=False, full_batch_cost=False,
+    plan_device_capacity=False,
 ):
     WorkflowWorkOracleArtifact(original)
     if (
@@ -82,6 +83,8 @@ def calibrated_artifact(
     costs = deepcopy(costs)
     if type(full_batch_cost) is not bool:
         raise ValueError("full-batch cost selection must be explicit")
+    if type(plan_device_capacity) is not bool or plan_device_capacity and not full_batch_cost:
+        raise ValueError("device pool planning requires the explicit full-batch capacity contract")
     if full_batch_cost:
         if not allow_feasible_resource_alternatives:
             raise ValueError("full-batch costs require the complete v4 capacity contract")
@@ -131,7 +134,8 @@ def calibrated_artifact(
     if include_unreferenced_capacity:
         profile = artifact["admission_cost_profile"]
         profile["kind"] = (
-            "r5_frozen_batch_cost_proxy_capacity_v5" if full_batch_cost
+            "r5_frozen_batch_cost_proxy_capacity_v6" if plan_device_capacity
+            else "r5_frozen_batch_cost_proxy_capacity_v5" if full_batch_cost
             else "r5_frozen_batch_cost_proxy_capacity_v4" if allow_feasible_resource_alternatives
             else "r5_frozen_batch_cost_proxy_capacity_v3" if allow_deep_prefix_aggregate
             else "r5_frozen_batch_cost_proxy_capacity_v2"
@@ -162,6 +166,15 @@ def calibrated_artifact(
                 "no_feasible_evaluated_subset_retains_reference": True,
                 "unsupported_reference_score_is_not_invented_or_compared": True,
                 "native_allocation_and_DMA_authority_unchanged": True,
+            }
+        if plan_device_capacity:
+            artifact["calibrated_model_time"]["capacity_summary_revision"]["device_capacity_planning"] = {
+                "planning_bound": "observed_FULL_pool_capacity_not_current_free_list",
+                "current_free_and_safe_cold_capacity_still_recorded": True,
+                "logical_budget_slots_input_growth_and_required_JOIN_checks_preserved": True,
+                "missing_prefix_geometry_and_copy_cost_still_required": True,
+                "logical_selection_does_not_prove_immediate_physical_fit": True,
+                "native_allocation_locks_Host_and_DMA_authority_unchanged": True,
             }
     if full_batch_cost:
         artifact["calibrated_model_time"]["combination_objective"] = {
@@ -247,6 +260,7 @@ def main():
     parser.add_argument("--allow-deep-prefix-aggregate", action="store_true")
     parser.add_argument("--allow-feasible-resource-alternatives", action="store_true")
     parser.add_argument("--full-batch-cost", action="store_true")
+    parser.add_argument("--plan-device-capacity", action="store_true")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output_dir.exists():
         raise ValueError("hide CUDA and preserve earlier preparations")
@@ -293,6 +307,7 @@ def main():
         allow_deep_prefix_aggregate=args.allow_deep_prefix_aggregate,
         allow_feasible_resource_alternatives=args.allow_feasible_resource_alternatives,
         full_batch_cost=args.full_batch_cost,
+        plan_device_capacity=args.plan_device_capacity,
     )
     destination = args.output_dir.resolve()
     artifact_path, config_path = destination / "oracle.json", destination / "full.json"
