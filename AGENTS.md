@@ -5735,3 +5735,25 @@
   skip. Needcleancommit/actualrequalification/source-registration/newGPU
   positionandsampling/fullmeasuredreview. NoGPUcomparisonregisteredyet;
   backgroundcoverage/pressure/recomputation/oraclegainremainunproven.
+- Original69 source is now explicitly requalified and registered from clean
+  9ba90576; original failed capture state and raw timing remain unchanged.
+  Choose initial12/mean70 for observed supply and matched controls, not new
+  policy wins. Thunder acting-decay fresh24/session/stop and1/8/24 checks pass;
+  formal original69_thunder_decay runs frozen9ba/native434 on18946. Independent
+  live proof verifies562 exact receipts/sole GPU3426210/nice0 and paper isolation.
+  Fixed18 cohort observer3426894 and sequential-pair coordinator3427176 are
+  actually alive. Coordinator may launch only the requested matching nonranking
+  Full after complete Thunder tails, receipts, drain, actual exit and fresh
+  hold/resources/input checks; then compare and plot both complete cohorts.
+  No new oracle GPU successor is registered; new69 gains/coverage unproven.
+- CPU v5 combination profile explicitly uses full batch decode cost, preserving
+  v4 resource safeguards, JOIN rights, six/eight candidates and .5ms budget.
+  Default historical profiles retain incremental cost; v5/basis mismatches fail.
+  Related191 checks pass. Full sealed history reproduces396 search-function
+  entries:364 complete enumerations/29 early returns/3 actual deadlines.
+  Preserve initial report mislabel of32 and its explicit correction sidecar.
+  Complete searches match prior diagnostic:strict shrinks59to41/new outsiders
+  5to11/25 larger sets; not new service or JCT. CPU0 alternating microbenchmark
+  records similar six-candidate cost and modest eight-candidate cost change,
+  not native/full-control/GPU evidence. Full current-source binding and new69
+  calibration/GPU qualification remain pending; keep running9ba unchanged.

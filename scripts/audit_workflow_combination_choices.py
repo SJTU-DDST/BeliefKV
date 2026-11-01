@@ -252,7 +252,9 @@ def main():
         reader(arm / "server/runtime_audit.jsonl"),
         CombinationCosts(**profile["costs"]), profile["identity"],
         allow_feasible_resource_alternatives=(
-            profile["kind"] == "r5_frozen_batch_cost_proxy_capacity_v4"
+            profile["kind"] in (
+                "r5_frozen_batch_cost_proxy_capacity_v4", "r5_frozen_batch_cost_proxy_capacity_v5",
+            )
         ),
     )
     result.update(

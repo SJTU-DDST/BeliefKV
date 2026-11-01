@@ -60,7 +60,7 @@ def calibrated_artifact(
     original, calibration, *, calibration_path, calibration_sha256,
     context_calibration=None, context_calibration_path=None, context_calibration_sha256=None,
     include_unreferenced_capacity=False, allow_deep_prefix_aggregate=False,
-    allow_feasible_resource_alternatives=False,
+    allow_feasible_resource_alternatives=False, full_batch_cost=False,
 ):
     WorkflowWorkOracleArtifact(original)
     if (
@@ -79,6 +79,13 @@ def calibrated_artifact(
         calibration["completed_control_cost_proxy"] if context_calibration is None
         else context_prefill_costs(context_calibration, calibration)
     )
+    costs = deepcopy(costs)
+    if type(full_batch_cost) is not bool:
+        raise ValueError("full-batch cost selection must be explicit")
+    if full_batch_cost:
+        if not allow_feasible_resource_alternatives:
+            raise ValueError("full-batch costs require the complete v4 capacity contract")
+        costs["decode_cost_basis"] = "full_batch"
     CombinationCosts(**costs)
     decode = calibration["completed_control_weighted_decode_step_ms"]
     if type(decode) not in (int, float) or not math.isfinite(decode) or decode <= 0:
@@ -124,7 +131,8 @@ def calibrated_artifact(
     if include_unreferenced_capacity:
         profile = artifact["admission_cost_profile"]
         profile["kind"] = (
-            "r5_frozen_batch_cost_proxy_capacity_v4" if allow_feasible_resource_alternatives
+            "r5_frozen_batch_cost_proxy_capacity_v5" if full_batch_cost
+            else "r5_frozen_batch_cost_proxy_capacity_v4" if allow_feasible_resource_alternatives
             else "r5_frozen_batch_cost_proxy_capacity_v3" if allow_deep_prefix_aggregate
             else "r5_frozen_batch_cost_proxy_capacity_v2"
         )
@@ -155,11 +163,25 @@ def calibrated_artifact(
                 "unsupported_reference_score_is_not_invented_or_compared": True,
                 "native_allocation_and_DMA_authority_unchanged": True,
             }
+    if full_batch_cost:
+        artifact["calibrated_model_time"]["combination_objective"] = {
+            "decode_cost_basis": "full_batch",
+            "definition": "migration_plus_prefill_plus_max_existing_and_combined_decode_cost",
+            "same_decode_horizon_and_observed_active_batch": True,
+            "no_new_timing_hyperparameter": True,
+            "does_not_force_maximum_cardinality": True,
+            "native_allocation_and_DMA_authority_unchanged": True,
+        }
     WorkflowWorkOracleArtifact(artifact)
     return artifact
 
 
-def configuration(base, *, artifact_path, artifact_sha256, control_path, calibration_path):
+def configuration(
+    base, *, artifact_path, artifact_sha256, control_path, calibration_path,
+    decode_cost_basis="incremental",
+):
+    if decode_cost_basis not in ("incremental", "full_batch"):
+        raise ValueError("unknown combination cost basis")
     candidate = deepcopy(base)
     common = candidate["common_environment"]
     for name, value in {
@@ -195,6 +217,14 @@ def configuration(base, *, artifact_path, artifact_sha256, control_path, calibra
             "stable_reference_on_tie_or_unsupported_summary",
         ],
     })
+    if decode_cost_basis == "full_batch":
+        candidate["comparison_contract"].update(
+            combination_decode_cost_basis="full_batch",
+            workflow_resume_key=[
+                "protected_ready_JOIN", "bounded_joint_utility_per_full_batch_cost",
+                "stable_reference_on_tie_or_unsupported_summary",
+            ],
+        )
     candidate["gpu_execution"]["registered"] = False
     candidate["gpu_execution"]["requires_new_paired_control"] = False
     candidate["gpu_execution"]["existing_complete_control"] = str(control_path)
@@ -216,6 +246,7 @@ def main():
     parser.add_argument("--include-unreferenced-cold-cache", action="store_true")
     parser.add_argument("--allow-deep-prefix-aggregate", action="store_true")
     parser.add_argument("--allow-feasible-resource-alternatives", action="store_true")
+    parser.add_argument("--full-batch-cost", action="store_true")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output_dir.exists():
         raise ValueError("hide CUDA and preserve earlier preparations")
@@ -261,6 +292,7 @@ def main():
         include_unreferenced_capacity=args.include_unreferenced_cold_cache,
         allow_deep_prefix_aggregate=args.allow_deep_prefix_aggregate,
         allow_feasible_resource_alternatives=args.allow_feasible_resource_alternatives,
+        full_batch_cost=args.full_batch_cost,
     )
     destination = args.output_dir.resolve()
     artifact_path, config_path = destination / "oracle.json", destination / "full.json"
@@ -268,6 +300,9 @@ def main():
     candidate = configuration(
         base, artifact_path=artifact_path, artifact_sha256=sha256_file(artifact_path),
         control_path=args.control.resolve(), calibration_path=args.calibration.resolve(),
+        decode_cost_basis=artifact["admission_cost_profile"]["costs"].get(
+            "decode_cost_basis", "incremental",
+        ),
     )
     from scripts.review_matched_work_ranking import verify_calibrated_combination_pair
 

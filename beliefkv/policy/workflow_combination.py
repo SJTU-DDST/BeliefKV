@@ -48,6 +48,7 @@ class CombinationCosts:
     epsilon_ms: float = .1
     relative_tie: float = .01
     prefill_ms_per_token_by_context: tuple = ()
+    decode_cost_basis: str = "incremental"
 
     def __post_init__(self):
         if (
@@ -61,6 +62,7 @@ class CombinationCosts:
             ))
             or type(self.decode_steps) is not int or not 1 <= self.decode_steps <= 128
             or not math.isfinite(self.relative_tie) or not 0 <= self.relative_tie < 1
+            or self.decode_cost_basis not in ("incremental", "full_batch")
         ):
             raise ValueError("invalid frozen combination cost profile")
         previous_bound, previous_rate = 0, 0.
@@ -174,12 +176,19 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=
         missing * costs.h2d_ms_per_token + prefill
         + max(0., after - before)
     )
-    return {
-        "score": benefit / (costs.epsilon_ms + incremental),
+    objective_cost = incremental + (before if costs.decode_cost_basis == "full_batch" else 0.)
+    result = {
+        "score": benefit / (costs.epsilon_ms + objective_cost),
         "benefit": benefit, "incremental_cost_ms": incremental,
         "missing_unique_tokens": missing, "input_tokens": inputs,
         "next_chunk_input_tokens": staged_inputs,
     }
+    if costs.decode_cost_basis == "full_batch":
+        result.update(
+            decode_cost_basis="full_batch", active_decode_cost_ms=before,
+            objective_cost_ms=objective_cost,
+        )
+    return result
 
 
 def choose_combination(

@@ -106,6 +106,101 @@ Full 和 ThunderAgent acting-decay 的实际 CPU runtime 构造均已通过。
 执行中源码、外部输入及原生状态均未改变，无失败、错误或跳过。
 它绑定新注册实现、六来源物化负载、原始采集证据和工具时长映射。
 
-当前仍需从干净提交执行真实重新审计、登记 composed source，
-再完成 serving 资格和完整测量。没有将 CPU 构造或工作量比例当作
-新 JCT 收益；全局目标仍未完成。
+上述记录保留了准备时点的状态。后续实际重新审计与来源注册、
+ThunderAgent 的 GPU 资格和正式启动已完成，更新如下。
+完整测量及新负载验收仍未完成，没有将 CPU 构造或工作量比例当作新 JCT 收益。
+
+## 匹配比较已启动
+
+从干净的 `9ba90576` 操作目录重新核验了 background25 原始执行、
+实际退出、排空、原始 token 和时钟纠正证据，生成独立的
+`background_extension_source25_timing_requalification_r1/source_requalification.json`。
+旧 `capture_failed` 状态、旧失败报告及全部原始事件保持原样。
+随后六个来源共同注册为
+`ops/workflow_sustained_original69_source_20261031_r1.registration.json`。
+
+本次选择 12 初始、平均 70 秒的持续到达，不额外测试 8 初始。
+旧 56 项目记录中，12＋70 的 ready-paused 供给与容量竞争已足以支持
+一次完整 Predictive / ThunderAgent 比较；8＋70 的旧记录使用过不同服务实现，
+不能把其供给差异全归因于到达方式。
+选择 12 的依据是维持在途人口及后半程供给，不使用新 baseline 的输赢选表。
+69 项目增加背景覆盖是否实际达标，仍须用完整测量检查。
+
+ThunderAgent acting-decay 先运行；其间只做 CPU oracle 开发。
+两侧使用相同 69 个完整原任务、token、工具映射、到达表、固定测量组、
+模型、引擎 `434c35dd`、805198 Device token、2034506 Host token、
+200 GB Host、running24、2048 prefill、mixed-off。
+不重跑旧 56 项目控制；69 项目需要自己的匹配 Predictive 控制。
+
+本轮 ThunderAgent 已通过新 24 请求的 token/session/native-stop 检查，
+随后通过 batch 1/8/24 采样检查，正式注册为
+`ops/workflow_original69_initial12_mean70_thunder_decay_20261031_r1.registration.json`。
+独立 `gpu_entry_original69_initial12_mean70_thunder_decay_r1/live_verified_r1.json`
+核验实际 `running_thunderagent_acting_decay`、562 份精确完成收据、
+唯一 GPU scheduler 3426210 和 nice0 服务所有者。
+真实 runtime 保留五秒控制、一秒工具衰减 half-life、invocation program 身份，
+未来信息关闭；Full 的预测卸载、prepare_host、JOIN/EOS、工具预取、
+工作量排序、sibling 扩展和逐层 handoff 均未混入 paper 臂。
+
+固定 18 个测量成员的收尾观察器 3426894 已实际存活、nice19、
+CUDA 隐藏、单线程。所有测量成员自然结束后才停止非测量背景，
+保留完整尾部、精确收据、两份新鲜 idle 快照及实际所有权进程退出。
+这份前缀证明时测量完成数为 0；它不是完整 JCT 或性能结果。
+
+`ops/workflow_original69_initial12_mean70_pair_20261031_r1.plan.json`
+绑定此次两臂顺序比较。协调进程 3427176 等待 ThunderAgent 完整收尾后，
+重新检查 hold、资源、输入和退出，再用相同冻结源码运行 Predictive 非排序控制。
+该控制保留 2 秒普通窗口、即时预测工具卸载、prepare_host、JOIN/EOS、
+驻留连续性与 sibling 策略，工具预取及逐层 handoff 仍关闭。
+它没有登记新 oracle GPU 后继。
+
+双方结束后，已有严格比较器将生成固定成员的完整平均/P50/P95 JCT、
+逐 workflow 差值、共同墙钟窗口输出吞吐及 decode/全部输出时间曲线，
+结果目录为 `predictive_thunder_original69_initial12_mean70_comparison_r1`。
+背景删失和 workload 失败项保留；没有按最先完成者选成员或截掉长尾。
+
+## Oracle 的独立 CPU 改进
+
+旧组合评分只除以新增成本。在已有 active 批次时，
+单个小集合可能有很小的新增 decode 成本，进而压过能共同推进更多 workflow
+的可行集合。新增显式 `r5_frozen_batch_cost_proxy_capacity_v5`：
+
+```text
+C_incremental(S) = H2D(S) + prefill(S) + max(0, decode(A+S) - decode(A))
+C_batch(S)       = C_incremental(S) + decode(A)
+                 = H2D(S) + prefill(S) + max(decode(A), decode(A+S))
+score(S)         = JOIN/workflow utility(S) / (epsilon + C_batch(S))
+```
+
+其中 A 是实际观察的当前批次，decode horizon 沿用原值，没有新增等待时间。
+无已有计算时，新旧成本相同。该评分不强制最大基数，也不抢占 active agent，
+仍保留 required JOIN、共享 extent 去重、逻辑/物理/输入/增长/槽位约束、
+原生准入权限和 0.5 ms 搜索软截止。
+旧 profile 默认行为与历史日志保持可复现，v5 与 `full_batch` 成本声明必须匹配。
+`--full-batch-cost` 需要同时开启已有的完整容量修复契约。
+
+191 项相关 CPU 检查通过。新实现对完整旧日志的 6484 个入口复核，
+其中 396 个进入过搜索函数；364 个为完整实际枚举，29 个是函数早返，
+3 个才是真实截止。完整枚举的集合与先前离线目标逐项一致：
+
+| 同一 364 次完整枚举 | 旧增量成本 | 新完整批次成本 |
+| --- | ---: | ---: |
+| 严格缩小参考集合 | 59 | 41 |
+| 新选参考集合外成员次数 | 5 | 11 |
+| 相对旧执行选择更大的集合 | 0 | 25 |
+
+这些是局部、重复决策统计，不是已获得服务的唯一 agent 数或 JCT 收益。
+`complete_history_differential.json` 初稿把 32 个非完整入口误标为截止；
+独立 `complete_history_differential_counts_correction.json` 明确更正为
+29 早返＋3 截止，原报告和原操作脚本保留，不重复这一错误解释。
+
+同一 CPU0、nice19 的交替顺序微基准中，新目标六候选完整搜索的各轮
+P50 为 407–416 us，旧目标 405–420 us；八候选新目标 951–983 us，
+旧目标 935–962 us。它是相同合成快照的纯搜索检查，
+不覆盖原生摘要、全部控制路径或 GPU 性能；八候选经常触及软截止的局限仍在。
+证据位于 `combination_full_batch_cost_cpu_r1`。
+
+本次 GPU 两臂继续冻结使用 `9ba90576`；CPU 改进不会热修改运行中的服务。
+新 oracle 的完整源码资格、新 workload 成本标定、干净冻结与 GPU 收益均待完成。
+旧 56 项目 Predictive 相对 ThunderAgent 的 10.430% JCT 改善不归因于此新评分，
+也不代替当前 69 项目测量。
