@@ -4,6 +4,8 @@
 
 最后一次新负载 Oracle 对比已完成，平均完整 JCT 回退0.157%，未达到事先冻结的5%改善门槛，暂停工作量排序方向。返回原始56、初始12条及平均70秒到达的非排序 Full；该负载已有相对 ThunderAgent acting-decay 的10.430% JCT改善和3.262%共同窗口吞吐提升。不能把 Full 的收益归因于 Oracle，也不能断言已知工作量必然改善非抢占、容量受限的 agent 调度。
 
+同负载 native SGLang 对照随后完成：Full 的平均完整 JCT 降低13.353%，共同窗口输出吞吐提高1.625%。逐层 handoff 的现有机会证据不足，继续关闭。额外实施并验证的 foreground CALL 冷回收候选平均 JCT 回退0.709%，未推广；主工作区 runtime 已逐字节恢复为上述非排序 Full。所有本轮 GPU 任务均已退出，没有追加 GPU 任务。
+
 按用户最新要求：
 
 1. 只在新采集轨迹组成的 original82 上再做一组非排序 Full 与容量规划 v6 Oracle 对比。
@@ -353,3 +355,25 @@ native完整退出后，CALL候选已完成24请求位置/session/native-stop及
 `foreground_call_matched_result_r1/live_CALL_release_r1.json`封存候选8次CALL前缀：专用`child_wait_pressure_demoted`仍为0，但通用`causal_waiting_full`路径通过真实caller的native session/generation匹配了32个物理victim，累计释放63,531个FULL token。CALL窗口以实际RETURN关闭，开放窗口仅使用已封存事件前沿；不能以专用计数为0认定整个路径未生效。
 
 只读后续批次核对发现其中3个不同受益context的新请求在释放后5秒内开始worker执行，并实际产生输出；观察到的首次正输出距相应释放约295--706毫秒。它们属于预热或背景workflow，不是测量组的独占JCT收益。该关联证明空间释放后有真实服务，不证明相对于另一个调度选择的因果加速；最终仍等待全部18条、原主窗口与冻结CALL窗口。
+
+### CALL候选完整结果与回退
+
+`foreground_call_matched_result_r1/comparison.json`现已完成固定18条测量任务，独立核对两臂均为2,819次请求、362,072个输出 token；完整长尾、新鲜空闲遥测及真实 owned 进程退出均通过。候选没有改变任务、工具时长、到达表、测量组、物理容量或其他调度策略。
+
+| 指标 | 原非排序 Full | CALL冷回收候选 |
+| --- | ---: | ---: |
+| 平均完整 JCT / 秒 | 1052.994585 | 1060.455930 |
+| 主共同窗口输出 token/s | 301.891902 | 301.589993 |
+| CALL诊断窗口输出 token/s | 250.640755 | 250.468352 |
+
+平均 JCT 回退0.708583%，18条中6条改善、12条回退，未达到事前声明的3%改善门槛。主窗口输出下降0.100005%，独立冻结的 CALL 诊断窗口下降0.068785%；两者均通过98%吞吐非劣门槛，但不能据此推广未通过 JCT 门槛的候选。诊断结果保存在 `foreground_call_late_window_r1/analysis.json`，原主窗口和测量成员没有更换。
+
+完整记录包含180条实际 CALL 释放记录：94条为 `child_wait` 来源的直接路径，86条为通用 `critical_parent_headroom` 路径。这些是物理释放记录，不是180次独立工作集切换或独立收益。通用路径共释放174,123个 FULL token，记录中的5个受益 workflow 均不属于测量组；94条直接路径缺少受益者身份，不能断言全部180条只帮助背景。早期8次CALL、32条通用释放及3个后续服务context的前缀审计仍保留其原范围。
+
+测量组有用前缀缺失代理从383,400降至347,703 token；候选没有另外完成与精确 prefill 输入区间的几何审计，不能将347,703称为已证实的重算量。个别任务的 JCT 变化仍然较大，例如 API044增加124.767秒、networking063减少64.010秒、mobile096增加24.152秒。释放空间并改善局部缓存代理没有转化为固定测量组的平均 JCT 收益；现有证据不足以将回退归因于 CPU 控制开销。
+
+按负收益回退要求，主工作区删除仅属于该候选的实验测试，并还原两个 runtime 方法及其枚举 import。runtime SHA256 已独立验证为 `87fc8b8d7c732646ed5f0a75ad0fff7b373e0f4fd478834018fd30ea42e6760f`，与保留 Full 完全一致；回退后40项聚焦检查通过，记录为 `foreground_call_matched_result_r1/rollback_checks.xml`。候选提交 `a73fdcb72f577c76d9fca016c5932d314fc93f9f`、独立冻结 worktree、6,645项CPU检查及完整GPU证据全部保留，不改写失败结果。
+
+最终选择保存于 `final82_oracle_and_selected_native_r1/final_selection.json`：original56、初始12条、平均70秒到达；固定18条按到达序号选择并保留完整 JCT；JOIN/EOS、预测工具卸载、prepare_host 和 agent 连续性保留，工作量排序暂停，工具预取及逐层 handoff 关闭，CALL候选不推广。顺序协调器及独立汇总均已终结，真实 GPU/观察器进程已退出，没有后续 GPU 任务排队。
+
+这一阶段完成了最后一次 Oracle、选定负载的 native 对照以及一个经机会审计后实际实施的优化候选。短续接与长chunk共批仍是有边界的待验证设计，缺少等待期间物理可执行性的证据，暂不登记GPU实验。当前收益来自既有非排序 Full；吞吐提升仍较小，单次配对及背景未完全覆盖测量长尾的限制仍在，不能宣布总体“大幅提升 JCT 与吞吐”的目标已经完成。
