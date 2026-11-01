@@ -23,11 +23,17 @@
     "SGLANG_MOE_CONFIG_DIR": "/home/longhao/experiment/BeliefKV/configs/execution/h200_moe_decode"
   },
   "kernel_configuration_sha256": "bef8ee25af76b1d7a56ffb27fff2b3b5714096baafa5a473eb602cb764ad94e0",
-  "evidence": "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/combined_comparison_r1.json",
+  "evidence": "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/combined_12width_summary_r1.json",
+  "source_comparisons": [
+    "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/combined_comparison_r1.json",
+    "experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/additional_width_comparison_r1.json"
+  ],
   "evidence_scope": {
     "combined_configuration_measured_in_native_serving": true,
-    "unprofiled_requests": 186,
-    "unprofiled_output_tokens": 17856,
+    "unprofiled_requests": 345,
+    "unprofiled_output_tokens": 33120,
+    "distinct_captured_widths": 12,
+    "separate_width_group_comparisons": 2,
     "same_greedy_output_sequences": true,
     "same_device_KV_token_capacity": true,
     "Host_KV_and_Full_policy_exercised_by_component": false,
