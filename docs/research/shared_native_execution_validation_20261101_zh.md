@@ -215,9 +215,67 @@ Full 的旧 prefill 单输入成本更低。
 下一步先看共同引擎在完整运行中的成本变化，
 不据此立即增加工作量排序、改变工具时长或重开 handoff。
 
+## 新 Full 的固定窗口诊断
+
+完整测量组仍在执行时，原先预注册的共同窗口已经结束。
+`e265ff7f perf: audit fixed execution windows while measured workflows finish`
+新增 `scripts/audit_common_execution_window.py`，用于核对这个已经闭合的窗口，
+不提前生成完整 JCT 或完成证书。
+
+窗口仍为原点后的 `[55.692771, 1638.954850)` 秒，
+共 **1,583.262079 秒**，包含所有测量及背景输出。
+两组策略环境只相差共同执行配置的两个字段；
+实际模型、BF16 权重/KV、FA3、TP、prefill 捕获、Device/Host 池容量均逐项相同。
+Worker 成本按 forward 完成归入窗口，覆盖时间按窗口边界精确裁剪。
+
+`useful_token_cost_r1/shared_execution_full_closed_window_r2.json` 记录：
+
+| 固定窗口指标 | 旧 Full | 新共同引擎 Full | 观测变化 |
+| --- | ---: | ---: | ---: |
+| 总 worker ms/输出 token | 3.308463 | 3.233532 | 降低 2.2648% |
+| Decode worker ms/decode 输出 token | 2.381707 | 2.313357 | 降低 2.8698% |
+| Prefill worker ms/实际 extend 输入 token | 0.102644 | 0.102394 | 降低 0.2443% |
+| 实际输出，按 native forward 完成统计 | 477,974 | 485,988 | 增加 1.6767% |
+| 同口径输出 token/s | 301.8919 | 306.9536 | 增加 1.6767% |
+| Decode 图填充行/真实行 | 17.4231% | 0 | 填充消除 |
+| Decode worker 时间加权有效宽度 | 8.7082 | 8.0506 | 实际批次混合不同 |
+
+不能将最后一行的变化直接归因于某个调度分支；
+新旧运行的上下文和实际输出进度也不完全相同。
+Prefill 单输入成本接近，当前观测没有支持 prefill 阶段的大幅加速。
+3.99% 组件重加权筛查与这里的 2.26% 总 worker 成本变化是不同证据，
+不要求二者相等，也不能用其中任何一个替代完整 JCT。
+
+还有一项额外边界：旧 Full 冻结于 `93161529`，新 Full 冻结于 `45747eb9`。
+两份注册共有源码中有 **23 个文件哈希不同**，其中 **6 个 runtime/policy 文件**
+涉及此前 Oracle/组合准入扩展。即使排序和组合功能在本轮均关闭，
+配置相同也不能单独证明实现与控制成本完全相同。
+报告明确列出这些路径，并保持
+`isolated_engine_only_attribution_verified=false`。
+因此本表是配置匹配的观测成本变化，不作为只改变 graph/MoE 的完整 serving 因果实验。
+本轮新 Full 与待执行 ThunderAgent 都冻结于同一 `45747eb9`，
+其匹配比较仍按原顺序继续。
+
+初次分析因旧注册缺少新增加的 server 元数据字段而被严格拒绝，
+未产生 GPU 失败，也没有修改原始测量。
+修正后只允许声明过的四项元数据增加，
+另从两组实际 `server_info.json` 与 `native_capacity_census.json` 核对资源及执行条件。
+缺失/改变 KV 精度、chunk、Host 容量或 prefill 捕获仍拒绝。
+相关 **31 项 CPU 检查全部通过**，保存为
+`common_window_metrics_cpu_r3.xml`；较早 CPU 报告和 r1 诊断仍保留。
+r2 在更晚的 journal 前缀上得到与 r1 相同的窗口成本值。
+
+分析时固定测量成员完成 **12/18**。
+报告显式保留 `candidate_complete_measured_execution_verified=false`、
+`candidate_complete_receipt_reconciliation_performed=false` 和 `JCT_gain=null`；
+已核对 live 输出 ordinal，但未把它升级成完整回执/退出证明。
+最终完整成本分析仍由固定测量组完成后的既有路径执行。
+
 ## 当前证据边界
 
 已有十二宽度组件比较覆盖旧 decode worker 时间的 86.63%，
 静态重加权筛查约为 3.99% 总 worker 时间改善。
-共同执行配置的完整 workflow JCT、吞吐与 Host KV 影响尚未获得新结果。
-保留原 Full/ThunderAgent/native 比较，不把旧默认引擎基线用于宣称新配置收益。
+固定窗口诊断已有上述数值；共同执行配置的完整 workflow JCT、
+匹配 ThunderAgent 吞吐比较和最终 Host KV 影响仍待完整测量组结束。
+保留原 Full/ThunderAgent/native 比较，不把新 Full 与旧默认引擎 baseline
+之间的差值作为相同引擎下的方法收益。
