@@ -5822,3 +5822,11 @@
   fixed18observer/paircoordinatoralive. Keep12initial/70sforobservedsupply,
   no8initialrerunorneworacleGPUyet. Waitcompletepairandretaincoverage/
   recomputationlimits;running9ba/native434unchanged.
+- Newreadonlyaudit_control_oracle_service_orderhas93relatedpasses;exactsame
+  sealedjournal/attempt/session/grantandnewpositiveprogressboundedbynext
+  control/intervention. Actual1085controls/59candidateorderchanges/41same-set
+  selected-orderchanges;37fullyobservedcross-workflowgroups,34alreadyco-serve/
+  35shortestalreadyfirst/2shortestlaterby186.807and872.222ms,4unknown.
+  Thisiswholeliveprefixincludingpost-common,notavoidableJCTororaclebound.
+  Donotaddrequestpreemption/restoreleasesjusttotransmittheseorderchanges.
+  Runningfrozen9ba/soleGPU3455975andfixed18observerremainunchanged.
