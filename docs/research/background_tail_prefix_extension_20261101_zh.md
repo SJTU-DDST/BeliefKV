@@ -488,3 +488,34 @@ pending 输入或最新状态并集在 2,940 s 达到 2,909,268 token，占 **10
 `original73_static_balance_missing_fixtures_cpu.xml`。
 完整 R2 正在重跑，并将原失败证据、fixture 原始字节和全部新到达/配置工件一起绑定。
 完整通过及新的实际 GPU 检查仍未由这四项局部通过代替。
+
+### R2 通过与实际 GPU 入口
+
+`original73_static_balanced_bound_cpu_r2/` 已完整通过：
+6,795 个原用例和 23 个子测试，零失败、错误和 skip。
+全部原用例身份和源码路径保留，2,443 个源码输入、296 个外部输入
+在执行期间均未改变，包含此前 276 个外部绑定及新流量/fixture 证据。
+R1 的失败文件和原始路径问题继续保留，未用局部重跑替代完整报告。
+
+确认旧 Full/两个 CPU 观察器实际退出、预约已释放、
+GPU 无其他 compute owner、18968 端口空闲后，
+登记
+`ops/workflow_original73_static_balance_position_20261101_r1.registration.json`。
+实际冻结代码仍为 `42156309`，native tree 仍为 `434c35dd`，
+共同 graph/MoE 配置不变；只有到达排列和私有测量成员改变。
+
+现场观察到 position watcher **4148693**、server **4149005**、
+唯一 GPU scheduler **4149341** 均实际存活且 nice0。
+模型和 805,198-token Device / 200 GB Host 初始化完成，
+正在执行 24 个 token/session/stop 检查；
+本条记录尚未声称这组检查完成或新 Full 已开始。
+
+CPU 收尾进程 **4149743** 实际存活，nice19、CUDA 隐藏，
+计划为
+`ops/workflow_original73_static_balance_finish_20261101_r1.plan.json`。
+它等待 Full 注册，再创建固定18观察器；成功完整结束后核对
+回执、fresh drain 和 owned 退出，再生成 JCT、供给、容量和 token 成本报告。
+新收尾脚本使用 Full 的实际配置路径/source arm 绑定来源，
+并处理 position 初始状态尚未发布的短暂窗口。
+此时没有登记 ThunderAgent 或 Full 之后的 GPU 后继，
+完整 workload、JCT 改善和性能验收继续待实测。
