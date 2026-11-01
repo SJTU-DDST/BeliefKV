@@ -1,0 +1,179 @@
+{
+  "status": "independently_verified",
+  "observed_at": "2026-11-01T22:30:04.030584+08:00",
+  "groups": [
+    {
+      "day": "20261009",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261009_reports.tar.zst",
+      "archive_sha256": "1aadeb067691aa78b8fd113daeccc41451fba32535bf057a0bacf96d4688e9ff",
+      "archive_bytes": 4815164,
+      "archive_allocated_bytes": 4816896,
+      "source_allocated_bytes": 81821696,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261009_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261010",
+      "files": 5,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261010_reports.tar.zst",
+      "archive_sha256": "a1972bee4cd6c9638abf1e02bc2ef1d8d09b799d5aff796c3b5d76390e356c8a",
+      "archive_bytes": 7073129,
+      "archive_allocated_bytes": 7073792,
+      "source_allocated_bytes": 115433472,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261010_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261011",
+      "files": 1,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261011_reports.tar.zst",
+      "archive_sha256": "d090fbb9377b325a3954918f318ece46b74b34336b77ab93cf7f14ec6010a589",
+      "archive_bytes": 1050122,
+      "archive_allocated_bytes": 1052672,
+      "source_allocated_bytes": 16760832,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261011_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261014",
+      "files": 5,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261014_reports.tar.zst",
+      "archive_sha256": "2775e271a13e7f4196a42780388f97ab4602cd2f9b87af59b4c8c24598b90a41",
+      "archive_bytes": 8567445,
+      "archive_allocated_bytes": 8568832,
+      "source_allocated_bytes": 66236416,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261014_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261015",
+      "files": 146,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261015_reports.tar.zst",
+      "archive_sha256": "150ddca5589f90c5b04fdaa0e6a7e6d79c7f887a955f0f75591ce62927c84a96",
+      "archive_bytes": 71350692,
+      "archive_allocated_bytes": 71356416,
+      "source_allocated_bytes": 242995200,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261015_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261016",
+      "files": 47,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261016_reports.tar.zst",
+      "archive_sha256": "5a8ac21bb892bb759f46434a23aebab213a74179f39acc03ed05214ce2b0a14f",
+      "archive_bytes": 7754243,
+      "archive_allocated_bytes": 7757824,
+      "source_allocated_bytes": 93077504,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261016_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261017",
+      "files": 6,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261017_reports.tar.zst",
+      "archive_sha256": "32068c8e4c175689adbe81b5be62e0c05052db8fb9a76df5e4a24ce54374a475",
+      "archive_bytes": 19999807,
+      "archive_allocated_bytes": 20000768,
+      "source_allocated_bytes": 162582528,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261017_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261018",
+      "files": 29,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261018_reports.tar.zst",
+      "archive_sha256": "7a6dbd515b8d54da6197a368b61c1acfa071b45b6cab9fc6b08ff1f31de65dcf",
+      "archive_bytes": 50699473,
+      "archive_allocated_bytes": 50704384,
+      "source_allocated_bytes": 299094016,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261018_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261019",
+      "files": 16,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261019_reports.tar.zst",
+      "archive_sha256": "e422c99aac103f8433e977f48d0f76529834abc5ce21f948e34411d6f0a19623",
+      "archive_bytes": 10417153,
+      "archive_allocated_bytes": 10420224,
+      "source_allocated_bytes": 33460224,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261019_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261020",
+      "files": 5,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261020_reports.tar.zst",
+      "archive_sha256": "4acb64b9e735b1e6fdd4a1456e58f556d2fc91b38e8c0e0a8ba52057d19dc984",
+      "archive_bytes": 3195949,
+      "archive_allocated_bytes": 3198976,
+      "source_allocated_bytes": 9510912,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261020_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261021",
+      "files": 25,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261021_reports.tar.zst",
+      "archive_sha256": "3ed9717c8fb92886f717dfd51bc665e035ad49b5e7eb24ef2b7d9de9c0a9a755",
+      "archive_bytes": 23165184,
+      "archive_allocated_bytes": 23166976,
+      "source_allocated_bytes": 74964992,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261021_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261022",
+      "files": 30,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261022_reports.tar.zst",
+      "archive_sha256": "e8b81570864778281d5aabc5978d7fe398f1385db2156d4cc82c89480237dca6",
+      "archive_bytes": 26175055,
+      "archive_allocated_bytes": 26177536,
+      "source_allocated_bytes": 250785792,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261022_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    },
+    {
+      "day": "20261023",
+      "files": 31,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261023_reports.tar.zst",
+      "archive_sha256": "246d26f4113f84ad126cd98eecacab7885ca7409ef11655437b39518a3918804",
+      "archive_bytes": 23875090,
+      "archive_allocated_bytes": 23875584,
+      "source_allocated_bytes": 102707200,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261101_old_reports/20261023_reports.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/reports",
+      "every_archived_report_payload_sha256_matches": true
+    }
+  ],
+  "archived_files": 349,
+  "archive_bundles": 13,
+  "retained_referenced_reports": 83,
+  "source_allocated_bytes": 1549430784,
+  "archive_bytes": 258138506,
+  "net_reclaimed_bytes": 1291259904,
+  "receipt_net_reclaimed_bytes": 1291259904,
+  "free_bytes_observed": 237353431040,
+  "all_archive_sha256_match": true,
+  "all_report_payload_sha256_match": true,
+  "all_member_lists_match": true,
+  "all_retained_referenced_reports_present": true,
+  "all_retained_referenced_report_sizes_match": true,
+  "recovery_marker_sha256": "d049af7a846269641a3c9f9e030506636b30e0ab0d871143e33fe56329f51d7d",
+  "all_sources_removed_only_after_complete_tar_comparison": true,
+  "preserved": [
+    "Current and recent reports, models, datasets and source/token packages.",
+    "All Git-tracked reports and all currently referenced historical reports.",
+    "All qualification/CPU proofs, inventories, receipts, provenance and archive evidence.",
+    "All paper PDFs, presentations, workspaces and running processes.",
+    "Archived negative/failed analyses retain their exact original bytes."
+  ],
+  "inputs_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/old_reports_archive_20261101/inventory.json": "d9c6e09efc3603dc712d48fe9ad74ab62dc6df962148d6f0493294ce4d270713",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/old_reports_archive_20261101/receipt.json": "ebf5e55741bb6fad023c8cd8d2d2d4e9cdc0b81bc3cb73d087ce78b66e53d383",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/old_reports_archive_20261101/archive_reports.py": "4bc70744cee1df3922e31ad7579ee3c1a7629d77de84506c5d3f28774f792a9e",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/old_reports_archive_20261101/review_archive.py": "30ae07b07156460cd5b98a3aa1d6710d9a890fd88fcdf6fd4be5ef773545957d"
+  },
+  "scope": "Report archival only; no experimental performance claim.",
+  "allocation_snapshot_difference_bytes": 0
+}

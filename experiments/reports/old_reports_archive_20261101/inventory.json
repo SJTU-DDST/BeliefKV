@@ -1,0 +1,4240 @@
+{
+  "created_at": "2026-11-01T22:25:18.083054+08:00",
+  "operator_sha256": "4bc70744cee1df3922e31ad7579ee3c1a7629d77de84506c5d3f28774f792a9e",
+  "helper_sha256": "ad46bd6e86e3eb9356bc17dbb747234e7d0f1f91738bfea82158b1a4cba8606f",
+  "protection": {
+    "reference_files_scanned": 8744,
+    "reference_stat_manifest_sha256": "9925eabcf39b2e80fabf2c5b41fda687e328fcaec410c5417e511c4dc48051e0"
+  },
+  "candidate_files": 432,
+  "retained_referenced_reports": [
+    {
+      "path": "v10_prepare_full_incrementality_20261009.json",
+      "size_bytes": 27290567,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v10_prepare_restore_attribution_20261009.json",
+      "size_bytes": 25748464,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v1105_short_prefill_existing_layer_restore_space_20261016.json",
+      "size_bytes": 310979,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v1106_v72_tool_reentry_residency_and_native_restore_20261016.json",
+      "size_bytes": 1588154,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v1109_mamba_cow_restore_frontier_20261016.json",
+      "size_bytes": 504499,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v1112_v73_workflow_progress_evidence_20261016.json",
+      "size_bytes": 271528,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/workflow_progress_and_state_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1122_v73_predictive_context_summary_20261016.json",
+      "size_bytes": 44410986,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1135_v73_native_hybrid_reuse_20261016.json",
+      "size_bytes": 728517,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1135_v73_predictive_hybrid_reuse_20261016.json",
+      "size_bytes": 754782,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v13_prefetch_sources_final_20261010.json",
+      "size_bytes": 67601983,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v13_prefetch_sources_partial_20261010_0034.json",
+      "size_bytes": 65250081,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v1451_v81_native_arrival_pressure_placement_20261016.json",
+      "size_bytes": 347304,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/scripts/start_v81_native_arrival_pressure_20261016.py"
+      ]
+    },
+    {
+      "path": "v1459_v79b_compaction_followthrough_20261016.json",
+      "size_bytes": 2327490,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1460_v79b_compaction_chains_20261016.json",
+      "size_bytes": 2331742,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1472_v79b_native_frontend_bursts_20261017.json",
+      "size_bytes": 3739678,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1485_v79b_native_input_reuse_20261017.json",
+      "size_bytes": 788570,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1495_v79b_dynamic_workflow_phases_20261017.json",
+      "size_bytes": 297068,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v14_join_pipeline_final_20261010.json",
+      "size_bytes": 304837,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v14_join_pipeline_first_service_v2_20261010.json",
+      "size_bytes": 340935,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md"
+      ]
+    },
+    {
+      "path": "v14_join_pipeline_partial_20261010_0454.json",
+      "size_bytes": 304837,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v14_join_pipeline_session_close_partial_20261010.json",
+      "size_bytes": 276569,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v14_prefetch_sources_final_20261010.json",
+      "size_bytes": 46322956,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v14_prefetch_sources_partial_20261010_0454.json",
+      "size_bytes": 46315524,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v1500_v79b_join_branch_service_20261017.json",
+      "size_bytes": 39697806,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1502_v79b_join_workspace_overlap_20261017.json",
+      "size_bytes": 754252,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1507_v79b_tool_return_feedback_1000ms_20261017.json",
+      "size_bytes": 34867704,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1512_v79b_empty_result_recovery_20261017.json",
+      "size_bytes": 743755,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1519_v79b_join_branch_coservice_20261017.json",
+      "size_bytes": 1832100,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1521_v79b_join_branch_coservice_pending_20261017.json",
+      "size_bytes": 1874435,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1523_v79b_join_branch_coservice_batch_size_20261017.json",
+      "size_bytes": 2135209,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1526_v79b_native_started_occupancy_20261017.json",
+      "size_bytes": 37603000,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1529_v79b_native_dispatch_occupancy_20261017.json",
+      "size_bytes": 44519580,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1532_v79b_workflow_dispatch_competition_20261017.json",
+      "size_bytes": 416508,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1535_v79b_tool_content_recovery_20261017.json",
+      "size_bytes": 16212957,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1541_v79b_join_wait_multiplicity_20261017.json",
+      "size_bytes": 367808,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1546_tokencake_tree_20261017.json",
+      "size_bytes": 1936265,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1548_v79b_workflow_policy_inputs_20261017.json",
+      "size_bytes": 39824463,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1557_v79b_dependency_execution_profile_20261017.json",
+      "size_bytes": 1055278,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1559_taper_v1_20261017.html",
+      "size_bytes": 366505,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1562_v79b_dependency_execution_profile_20261017.json",
+      "size_bytes": 1176413,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1576_v79b_restore_decode_dispatch_20261017.json",
+      "size_bytes": 459595,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1595_v79b_shared_body_lifetimes_20261017.json",
+      "size_bytes": 826757,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v15_prefetch_sources_partial_20261010_0613.json",
+      "size_bytes": 34552567,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v15_tool_timeout_distribution_final_20261010.json",
+      "size_bytes": 1021027,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v1602_initial_decision_native_contract_20261017.json",
+      "size_bytes": 1284311,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1603_control_sensitive_decode_20261017.json",
+      "size_bytes": 14922107,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1609_v79b_continuation_stage_exposure_20261017.json",
+      "size_bytes": 656309,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1613_v79b_prefix_sharing_shape_20261017.json",
+      "size_bytes": 25223220,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1626_v79b_workflow_path_sensitivity_20261018.json",
+      "size_bytes": 20664507,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1630_v79b_reentry_age_order_20261018.json",
+      "size_bytes": 19787189,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1633_v79b_reentry_physical_prefixes_20261018.json",
+      "size_bytes": 6463554,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1640_public_trace_catalog_shapes_20261018.json",
+      "size_bytes": 1269528,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/non_scheduling_directions_20261016_zh.md"
+      ]
+    },
+    {
+      "path": "v1691_v82_partial_prefetch_lifecycle_20261018.json",
+      "size_bytes": 29645564,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/layer_prefetch_design_zh.md"
+      ]
+    },
+    {
+      "path": "v1711_v82b_prefetch_live_prefix_20261018_summary.json",
+      "size_bytes": 370859,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/layer_prefetch_design_zh.md"
+      ]
+    },
+    {
+      "path": "v1721_v82b_second_wave_prefetch_prefix_20261018_summary.json",
+      "size_bytes": 479281,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/layer_prefetch_design_zh.md"
+      ]
+    },
+    {
+      "path": "v1726_v82b_host_predictor_question_prefix_20261018_summary.json",
+      "size_bytes": 538437,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/layer_prefetch_design_zh.md"
+      ]
+    },
+    {
+      "path": "v1822_v82b_completed_common_eligible_comparison_20261018.json",
+      "size_bytes": 272519,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md"
+      ]
+    },
+    {
+      "path": "v1882_v84_agent_context_eligibility_20261019.json",
+      "size_bytes": 423723,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md"
+      ]
+    },
+    {
+      "path": "v20_capacity_handoff_followup_audit_20261011.json",
+      "size_bytes": 75389945,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v20_tool_history_physical_opportunities_20261010_v3.json",
+      "size_bytes": 8747158,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v20_tool_history_routing_20261010_v2.json",
+      "size_bytes": 7878196,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md"
+      ]
+    },
+    {
+      "path": "v2453b_v104_critical_donor_requests_prefix_20261021.json",
+      "size_bytes": 296495,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v2483_v105_v103_native_trimmed_geometry_20261021.json",
+      "size_bytes": 1658535,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v2485_v105_short_prefill_overlap_20261021.json",
+      "size_bytes": 6602976,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v2488_v105_prefill_turnover_20261021.json",
+      "size_bytes": 5011305,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v2502_v107_complete_wait_prefetch_20261021_summary.json",
+      "size_bytes": 272940,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v2526_v108_v103_native_busy_geometry_20261021.json",
+      "size_bytes": 1076017,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v2528_v108_complete_wait_prefetch_20261021_summary.json",
+      "size_bytes": 279973,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    },
+    {
+      "path": "v2595_v111_join_only_completed_comparison_20261021.json",
+      "size_bytes": 344681,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/related_work_comparison_2026-07-21_zh.md"
+      ]
+    },
+    {
+      "path": "v2610_v111_latest_four_arm_comparison_20261021.json",
+      "size_bytes": 540617,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/research/design_review_osdi_eurosys_20261021_zh.md"
+      ]
+    },
+    {
+      "path": "v2640_tool_reentry_stratified_latest_20261021.json",
+      "size_bytes": 34865482,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/reports/2026-10/tool_reentry_baseline_audit_20261021_zh.md"
+      ]
+    },
+    {
+      "path": "v2641_join_reentry_latest_four_arms_20261021.json",
+      "size_bytes": 284636,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/reports/2026-10/tool_reentry_baseline_audit_20261021_zh.md"
+      ]
+    },
+    {
+      "path": "v2750_v122_tool_requeue_fragmentation_20261022.json",
+      "size_bytes": 398819,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/tool_continuity_and_join_budget_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v2767_v123_complete_workflow_comparison_20261022.json",
+      "size_bytes": 430696,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/configs/migration/v123_reference_policy_20261022.json",
+        "/home/longhao/experiment/BeliefKV/docs/experiments/v108_eos_policy_and_recent_runs_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v2790_subagent_retention_capacity_20261022.json",
+      "size_bytes": 310728,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/reusable_subagent_retention_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v2792_subagent_retention_pressure_20261022.json",
+      "size_bytes": 320337,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/reusable_subagent_retention_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v2794_subagent_retention_replay_20261022.json",
+      "size_bytes": 320560,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/research/reusable_subagent_retention_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v2801_v124b_completed_findings_20261022.json",
+      "size_bytes": 2342409,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/experiments/reusable_subagents_implementation_20261022_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiments/v124b_complete_findings_and_queued_backup_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v2836_v127_latest_prefill_phases_600_1800_20261022.json",
+      "size_bytes": 4937265,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/experiments/v126_history_failure_and_control_findings_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v2860_v128_no_background_complete_lifecycle_20261022.json.gz",
+      "size_bytes": 1322116,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/experiments/v128_tool_offload_compaction_findings_20261022_zh.md"
+      ]
+    },
+    {
+      "path": "v3143_v133b_causal_jct_paths_20261023.json",
+      "size_bytes": 1258229,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/experiments/root_count_batch_capacity_20261023_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/experiments/v133b_causal_jct_and_v134c_cutoff_20261023_zh.md"
+      ]
+    },
+    {
+      "path": "v3152_v133b_tool_continuation_work_final_20261023.json",
+      "size_bytes": 19689131,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/experiments/tool_continuation_work_audit_20261023_zh.md"
+      ]
+    },
+    {
+      "path": "v743_v59_transition_gap_accounting_20261015.json",
+      "size_bytes": 2123778,
+      "references": [
+        "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "day": "20261009",
+      "status": "selected",
+      "paths": {
+        "v13_prefetch_lifecycle_partial_20261009_2305.json": {
+          "size_bytes": 34739169,
+          "allocated_bytes": 34742272,
+          "inode": 140289456,
+          "device": 66306,
+          "mtime_ns": 1791558323476461801,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a60053c876cf92340fd0e2198a75091aeb09fa6d434b88e3dd4384fdd7008806"
+        },
+        "v13_prefetch_lifecycle_partial_20261009_2335.json": {
+          "size_bytes": 46795220,
+          "allocated_bytes": 46796800,
+          "inode": 140289926,
+          "device": 66306,
+          "mtime_ns": 1791560181318406417,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "400350347aeaad22b6c8491604d7238e9bc11257f1637ea88a986cd8a872456b"
+        },
+        "v13_tool_windows_partial_20261009_2308.json": {
+          "size_bytes": 279993,
+          "allocated_bytes": 282624,
+          "inode": 140289458,
+          "device": 66306,
+          "mtime_ns": 1791558470773464514,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7a60e2debacdbbe98eb685fa1438a81dcaae228d2648c9607bdc8ed933beacae"
+        }
+      },
+      "source_bytes": 81814382,
+      "source_allocated_bytes": 81821696
+    },
+    {
+      "day": "20261010",
+      "status": "selected",
+      "paths": {
+        "v13_prefetch_lifecycle_partial_20261010_0025.json": {
+          "size_bytes": 63311893,
+          "allocated_bytes": 63315968,
+          "inode": 140290012,
+          "device": 66306,
+          "mtime_ns": 1791563142495697952,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "94ced374cbaa337896e8e4998ad7264304a29462288bdda6ee0345e0b9c95074"
+        },
+        "v14_prefetch_sources_partial_20261010_0235.json": {
+          "size_bytes": 28548560,
+          "allocated_bytes": 28549120,
+          "inode": 140288960,
+          "device": 66306,
+          "mtime_ns": 1791571053291232889,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "80f93c337c6a6fb0934f452994586b0298aecfe4d734d02687e8123b64175ce5"
+        },
+        "v15_prefetch_sources_partial_20261010_0532.json": {
+          "size_bytes": 2131217,
+          "allocated_bytes": 2134016,
+          "inode": 140291971,
+          "device": 66306,
+          "mtime_ns": 1791581639834837023,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "329e845622d49066740ae3a64983d789b7f8933145652c38d1734a3271e86ebb"
+        },
+        "v15_prefetch_sources_partial_20261010_0540.json": {
+          "size_bytes": 14260987,
+          "allocated_bytes": 14262272,
+          "inode": 140291980,
+          "device": 66306,
+          "mtime_ns": 1791581985352982380,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d436bdeeda43027145b2e9130ffe0e7563b5f885a837ddcc5917d26070e9c9c2"
+        },
+        "v20_tool_history_routing_20261010.json": {
+          "size_bytes": 7168238,
+          "allocated_bytes": 7172096,
+          "inode": 140298835,
+          "device": 66306,
+          "mtime_ns": 1791639364520005125,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e1864b00cff1e93dd6f18d5ec0c11dcd248349f49c9b837520909e9e069b1901"
+        }
+      },
+      "source_bytes": 115420895,
+      "source_allocated_bytes": 115433472
+    },
+    {
+      "day": "20261011",
+      "status": "selected",
+      "paths": {
+        "v21_prefetch_lifecycle_early_20261011.json": {
+          "size_bytes": 16757953,
+          "allocated_bytes": 16760832,
+          "inode": 140289282,
+          "device": 66306,
+          "mtime_ns": 1791653725579779678,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "08f2301821f9ccb683e916ba59a685d1e75db7fafdc1bda9b2b5f7ba4a3ad303"
+        }
+      },
+      "source_bytes": 16757953,
+      "source_allocated_bytes": 16760832
+    },
+    {
+      "day": "20261014",
+      "status": "selected",
+      "paths": {
+        "v345_v54_tool_forecast_windows_20261014.json.gz": {
+          "size_bytes": 4589686,
+          "allocated_bytes": 4591616,
+          "inode": 140306754,
+          "device": 66306,
+          "mtime_ns": 1791919818297628739,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "065d409bd6d2e1822398bc7463588df9a6bdf48112512a35bfad47d1010c4e78"
+        },
+        "v431_v55_wait_coverage_and_tails_20261014.json": {
+          "size_bytes": 26983965,
+          "allocated_bytes": 26984448,
+          "inode": 140285070,
+          "device": 66306,
+          "mtime_ns": 1791939022668095228,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ed68bbfe86d359b4d5ada02469f54c1a29dd17ede95dd938e769332e49f0b0cd"
+        },
+        "v472_v56_prefetch_coverage_and_tails_20261014.json": {
+          "size_bytes": 32267752,
+          "allocated_bytes": 32268288,
+          "inode": 140285520,
+          "device": 66306,
+          "mtime_ns": 1791953088114590862,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "74e879ea06a4d8582807a7edb3dbaef0c501a630e2bcc190ec7d93ca618d19ad"
+        },
+        "v59_v58_native_reference_tz_busy_3600_3900_20261014.json": {
+          "size_bytes": 646777,
+          "allocated_bytes": 647168,
+          "inode": 140308469,
+          "device": 66306,
+          "mtime_ns": 1792015477958807321,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "4ea693fc20285d8f6dfc283531e704e34d05bcce08b2686a85593b2ea5131346"
+        },
+        "v59_v58_native_reference_tz_prefill_phases_3600_3900_20261014.json": {
+          "size_bytes": 1741398,
+          "allocated_bytes": 1744896,
+          "inode": 140308467,
+          "device": 66306,
+          "mtime_ns": 1792015505769340232,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "55ff831d004a45126635356125217e3eb013061d3b021a502a2331d6eeb15500"
+        }
+      },
+      "source_bytes": 66229578,
+      "source_allocated_bytes": 66236416
+    },
+    {
+      "day": "20261015",
+      "status": "selected",
+      "paths": {
+        "v1001_v68_partial_restore_numa_20261015.json": {
+          "size_bytes": 348960,
+          "allocated_bytes": 352256,
+          "inode": 140298487,
+          "device": 66306,
+          "mtime_ns": 1792115714681920587,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "30ffe8895b4b94bd4e23e1f7d116fd89a4237f6bacc407809d90d3a2ed4a2202"
+        },
+        "v1005_v68_first_busy_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 1343806,
+          "allocated_bytes": 1347584,
+          "inode": 140298493,
+          "device": 66306,
+          "mtime_ns": 1792116354193859435,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "fffa230fab6a376427fceca4a4c0001de512cb36f4437967763c84579da1d0f9"
+        },
+        "v1024_v68_firstwave_late_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 3820606,
+          "allocated_bytes": 3821568,
+          "inode": 140298578,
+          "device": 66306,
+          "mtime_ns": 1792118444925047512,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a600ddcc18534aa8963022db7db0099c9dd54773d8f34d65a3fc238b0d494b3e"
+        },
+        "v1024_v68_firstwave_late_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 361123,
+          "allocated_bytes": 364544,
+          "inode": 140298580,
+          "device": 66306,
+          "mtime_ns": 1792118445121044680,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0434e7431423a95bf5db680a4aca1d73005527c720bc21321cd9ee7e1cdbad42"
+        },
+        "v1032_v68_secondwave_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 5267060,
+          "allocated_bytes": 5267456,
+          "inode": 140298590,
+          "device": 66306,
+          "mtime_ns": 1792120514317848987,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0fc1f6f593606db8af908341e5d0730bd8170de3ab92cf0df33da22ac62888c8"
+        },
+        "v1032_v68_secondwave_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 530447,
+          "allocated_bytes": 532480,
+          "inode": 140298592,
+          "device": 66306,
+          "mtime_ns": 1792120514336849042,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "cad47373ea617ad7472710c1c5f56ff40f7ed0a7b41e7aca34ef706067c44a15"
+        },
+        "v1047_v70_terminal_root_numa_20261015.json": {
+          "size_bytes": 328961,
+          "allocated_bytes": 331776,
+          "inode": 140285896,
+          "device": 66306,
+          "mtime_ns": 1792124030977200002,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "681afd84fba6ecf529a65d31f24680788444609456f117c19e73200669c8fc06"
+        },
+        "v1049_v70_firstwave_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 3901780,
+          "allocated_bytes": 3903488,
+          "inode": 140298762,
+          "device": 66306,
+          "mtime_ns": 1792126801334433995,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "31e09cde45455fee5e877642e29e3dbaaac25bfb80a2f29506fec59b1e709157"
+        },
+        "v1049_v70_firstwave_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 358169,
+          "allocated_bytes": 360448,
+          "inode": 140298778,
+          "device": 66306,
+          "mtime_ns": 1792126801535431085,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "bb47551af17738e14ed90e21bc31b4645890db4b9e3bc4a53d500103cdf55e56"
+        },
+        "v1052_v68_complete_wait_offload_20261015.json": {
+          "size_bytes": 5911335,
+          "allocated_bytes": 5914624,
+          "inode": 140298816,
+          "device": 66306,
+          "mtime_ns": 1792127491755516837,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "67bf3e924067714e84a3a1a5338c8bdf1160ad7ca9ad22bd9c6891ce54bddd17"
+        },
+        "v1061_v71_aged_head_numa_20261015.json": {
+          "size_bytes": 349145,
+          "allocated_bytes": 352256,
+          "inode": 140299503,
+          "device": 66306,
+          "mtime_ns": 1792131828253632924,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3d4b7f4b1b98c5f229950012a0a6188098399ceaa2ac703a898dfdacd7acbbcf"
+        },
+        "v1064_tool_timing_route_replay_20261015.json": {
+          "size_bytes": 27118295,
+          "allocated_bytes": 27119616,
+          "inode": 140299502,
+          "device": 66306,
+          "mtime_ns": 1792130966856872196,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ed9c573c62a084f8c05c9c2f5db669441902273509970fc4ad00c43ba7e25945"
+        },
+        "v61_v58_busy_120_300_20261015.json": {
+          "size_bytes": 420545,
+          "allocated_bytes": 421888,
+          "inode": 140285082,
+          "device": 66306,
+          "mtime_ns": 1792064893348054626,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d9cb546194347d41c0a07de4a02b11edd91b19cdec4e47930e80958c532e7878"
+        },
+        "v61_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 309047,
+          "allocated_bytes": 311296,
+          "inode": 140285523,
+          "device": 66306,
+          "mtime_ns": 1792066694644474956,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d9d2216956dd31e167ff8653ac43ebe34f6e8b5e5e3743948f900f3eb7998fec"
+        },
+        "v61_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 606176,
+          "allocated_bytes": 606208,
+          "inode": 140285622,
+          "device": 66306,
+          "mtime_ns": 1792068505967017892,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8cb99445b19f9f8a04453c2cea623169aa9620e7001b489bbf5cf92b8971fcf6"
+        },
+        "v61_v58_busy_600_900_20261015.json": {
+          "size_bytes": 326701,
+          "allocated_bytes": 327680,
+          "inode": 140285234,
+          "device": 66306,
+          "mtime_ns": 1792065487962274252,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "bcb09b1c5aa40d8b4b062e1c0e68ddc7757108118767ebcfd72491699dd67cb0"
+        },
+        "v61_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1246840,
+          "allocated_bytes": 1249280,
+          "inode": 140285083,
+          "device": 66306,
+          "mtime_ns": 1792064895608935510,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8c0719ff4ce22fa091fd915c7b8f85531ba30cec8b47eae675a5f90b07437ec9"
+        },
+        "v61_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1536752,
+          "allocated_bytes": 1540096,
+          "inode": 140285618,
+          "device": 66306,
+          "mtime_ns": 1792066707602483722,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f9d4c47386556009ea68a0160881846e8542749c01e44924044aa984e2313367"
+        },
+        "v61_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1856586,
+          "allocated_bytes": 1859584,
+          "inode": 140285624,
+          "device": 66306,
+          "mtime_ns": 1792068531563316015,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3962428cbb97cb82af043b4589088eb008d754aa8dfbfe69dc43c1f6a2efc8e2"
+        },
+        "v61_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1566949,
+          "allocated_bytes": 1568768,
+          "inode": 140285240,
+          "device": 66306,
+          "mtime_ns": 1792065493373089815,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "cbe0254f58fb402d9e41b5b565218d44216d77a5e7b6bf6a701c5576fd0efa4a"
+        },
+        "v62_v58_busy_120_300_20261015.json": {
+          "size_bytes": 472731,
+          "allocated_bytes": 475136,
+          "inode": 140285933,
+          "device": 66306,
+          "mtime_ns": 1792073347975812395,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2985da3ca82717f5f24ce455d8bb065943c8eeed15f14cc4cdce3852e07158ef"
+        },
+        "v62_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 330780,
+          "allocated_bytes": 331776,
+          "inode": 140287377,
+          "device": 66306,
+          "mtime_ns": 1792075166618724070,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5a3bae5c6a602d96b3836d04a1694a4d7c05c2ee18a0e51c388d7c267166bd85"
+        },
+        "v62_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 632257,
+          "allocated_bytes": 634880,
+          "inode": 140287805,
+          "device": 66306,
+          "mtime_ns": 1792076980105549078,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a5bffec0b1b7701f2f41b497bf27e20ad9cd342b78fe8f9ff9284328ce325f5c"
+        },
+        "v62_v58_busy_4800_5100_20261015.json": {
+          "size_bytes": 611161,
+          "allocated_bytes": 614400,
+          "inode": 140288610,
+          "device": 66306,
+          "mtime_ns": 1792078512260106228,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d207037fc2b6d4fd6a884d5e04313d7c7a399c278020acaec07ace7bce351c82"
+        },
+        "v62_v58_busy_600_900_20261015.json": {
+          "size_bytes": 344765,
+          "allocated_bytes": 348160,
+          "inode": 140287261,
+          "device": 66306,
+          "mtime_ns": 1792073958994188412,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "da9d874bd8a96a64f436f9617d90bb5b39744ea80cacca492f5ecf481f9eb407"
+        },
+        "v62_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1369269,
+          "allocated_bytes": 1372160,
+          "inode": 140287251,
+          "device": 66306,
+          "mtime_ns": 1792073350448765459,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "eba145e70535dde10fc35117d6e9ee29a4cb162912944bc89a9ae7a67cf0c00d"
+        },
+        "v62_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1764762,
+          "allocated_bytes": 1765376,
+          "inode": 140287782,
+          "device": 66306,
+          "mtime_ns": 1792075180350505751,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a8009d7f80c11f65aaf2fa9736cd73f28edc6cf0881eca224f1a1aca0055c8f4"
+        },
+        "v62_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1896706,
+          "allocated_bytes": 1900544,
+          "inode": 140288084,
+          "device": 66306,
+          "mtime_ns": 1792077006795045396,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "40c34c75d552e25d92a2df8634046d5e1e912bc9eba483f34899d1835d59833f"
+        },
+        "v62_v58_prefill_phases_4800_5100_20261015.json": {
+          "size_bytes": 1739415,
+          "allocated_bytes": 1740800,
+          "inode": 140288643,
+          "device": 66306,
+          "mtime_ns": 1792078512261106210,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a3bfced070350ced0525296754ab00cde41b9368c848dc76913514306fcbf2aa"
+        },
+        "v62_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1672118,
+          "allocated_bytes": 1675264,
+          "inode": 140287281,
+          "device": 66306,
+          "mtime_ns": 1792073964856076719,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e17d248664d5d2fd44c6e223ffe0e248fd827c83cba868cc1c4aeeba1a5b11bd"
+        },
+        "v63r1_v58_busy_120_300_20261015.json": {
+          "size_bytes": 556576,
+          "allocated_bytes": 557056,
+          "inode": 140289231,
+          "device": 66306,
+          "mtime_ns": 1792081475151752222,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "473bd5b36ddd629f074b8fecfb82a5678ecc91803793d5904d684151743fd6e8"
+        },
+        "v63r1_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 328577,
+          "allocated_bytes": 331776,
+          "inode": 140289468,
+          "device": 66306,
+          "mtime_ns": 1792083294613637361,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "acc103c75942493881a3466bd40e1e321fc2fe10338ca0659a6d75226fa819ec"
+        },
+        "v63r1_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 615422,
+          "allocated_bytes": 618496,
+          "inode": 140289663,
+          "device": 66306,
+          "mtime_ns": 1792085111904242754,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "70089d603a22f5c7ebf39051cfde7d2010f8ba20e7b4e11e3b0933c0f41b5e35"
+        },
+        "v63r1_v58_busy_4800_5100_20261015.json": {
+          "size_bytes": 589558,
+          "allocated_bytes": 589824,
+          "inode": 140289691,
+          "device": 66306,
+          "mtime_ns": 1792086317503191807,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3dfde89fdc5fe08132be68640e9a57774445ccb7a295fdec650aba7f65e81790"
+        },
+        "v63r1_v58_busy_600_900_20261015.json": {
+          "size_bytes": 356017,
+          "allocated_bytes": 356352,
+          "inode": 140289315,
+          "device": 66306,
+          "mtime_ns": 1792082086179585571,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "31363175008d3ebb9960153453f3e4b189c66012e21e81a5b093219357047709"
+        },
+        "v63r1_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1356539,
+          "allocated_bytes": 1359872,
+          "inode": 140289279,
+          "device": 66306,
+          "mtime_ns": 1792081477615745757,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ea98d670177a5aba7756e68ee11779c96596080eed42fdcf752a8299ffb5a875"
+        },
+        "v63r1_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1729653,
+          "allocated_bytes": 1732608,
+          "inode": 140289365,
+          "device": 66306,
+          "mtime_ns": 1792083309503252600,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3e40bf04f7abb76b7431d027a3b09af9a635d3bec4090db1a2e5b7ceac9f3702"
+        },
+        "v63r1_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1916703,
+          "allocated_bytes": 1916928,
+          "inode": 140289665,
+          "device": 66306,
+          "mtime_ns": 1792085137897697533,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d57e80cc2b71b4c49fe5b1027e5acec07275d8ad363b00031c6cd27657c7ce48"
+        },
+        "v63r1_v58_prefill_phases_4800_5100_20261015.json": {
+          "size_bytes": 1629516,
+          "allocated_bytes": 1630208,
+          "inode": 140289735,
+          "device": 66306,
+          "mtime_ns": 1792086351860198201,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "49897e68c33cd6c1afabde195aabc877953cd54222862446ba7b32622e449b86"
+        },
+        "v63r1_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1687817,
+          "allocated_bytes": 1691648,
+          "inode": 140289454,
+          "device": 66306,
+          "mtime_ns": 1792082092525524118,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7467eebca5c4478a10190c77386ab0050a582bede2619accfff80f26d69b8b41"
+        },
+        "v64latest_v58_busy_120_300_20261015.json": {
+          "size_bytes": 504589,
+          "allocated_bytes": 507904,
+          "inode": 140289938,
+          "device": 66306,
+          "mtime_ns": 1792089970590061073,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0e87ed12a0b241a2cba9b8b1cfca7117dd0cbd544da822a97223e31cad809de9"
+        },
+        "v64latest_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 325397,
+          "allocated_bytes": 327680,
+          "inode": 140291069,
+          "device": 66306,
+          "mtime_ns": 1792091789820270458,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "472720f09686c430b40aa387492a146b9fe9586786cb71bbd90034e611c11187"
+        },
+        "v64latest_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 619583,
+          "allocated_bytes": 622592,
+          "inode": 140291072,
+          "device": 66306,
+          "mtime_ns": 1792093597061208028,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "603075c0990f4168613654f27a2f121a9b53aec2c85dfb059f30d3b12f4c997a"
+        },
+        "v64latest_v58_busy_4800_5100_20261015.json": {
+          "size_bytes": 548063,
+          "allocated_bytes": 548864,
+          "inode": 140291119,
+          "device": 66306,
+          "mtime_ns": 1792094802647896836,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "77ec6630ef855cb1ecfdc84e7938eccb205365e46a2df355ba62ab480d8a252e"
+        },
+        "v64latest_v58_busy_600_900_20261015.json": {
+          "size_bytes": 331200,
+          "allocated_bytes": 331776,
+          "inode": 140290586,
+          "device": 66306,
+          "mtime_ns": 1792090565817732668,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "16095d3765b2ec83ded246d14d598e55bab8a7afb696e8caf1e0b12e20dd72e7"
+        },
+        "v64latest_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1388325,
+          "allocated_bytes": 1388544,
+          "inode": 140290164,
+          "device": 66306,
+          "mtime_ns": 1792089973062021118,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "334aa0ddb012564b7d443dfb179f37a52dfac79537bebb05c8ae20835ca0cdff"
+        },
+        "v64latest_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1711478,
+          "allocated_bytes": 1712128,
+          "inode": 140291070,
+          "device": 66306,
+          "mtime_ns": 1792091804873979021,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "eb13be8553e339838e408e3d56b52582f7c60c754c3ec706a7eb6080e2052326"
+        },
+        "v64latest_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1817752,
+          "allocated_bytes": 1818624,
+          "inode": 140289156,
+          "device": 66306,
+          "mtime_ns": 1792093625061586612,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3b3c17fa21a9a759ddf4deac619505abf364a29eef9cb8d1afa8f1aab5a31e9c"
+        },
+        "v64latest_v58_prefill_phases_4800_5100_20261015.json": {
+          "size_bytes": 1508955,
+          "allocated_bytes": 1511424,
+          "inode": 140291075,
+          "device": 66306,
+          "mtime_ns": 1792094835228232188,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3d5202746715e4a989a2a09d3861366f6b49401e135fd7d92cc3daf64ed14a87"
+        },
+        "v64latest_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1627705,
+          "allocated_bytes": 1630208,
+          "inode": 140291060,
+          "device": 66306,
+          "mtime_ns": 1792090572199616696,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7c310a8866ec5ddcbc49399d76e82c9b41029bae1bae97c196b36fcbf75e786a"
+        },
+        "v65_v58_busy_120_300_20261015.json": {
+          "size_bytes": 503563,
+          "allocated_bytes": 503808,
+          "inode": 140291590,
+          "device": 66306,
+          "mtime_ns": 1792098485288917521,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ab6233d1c3dc0093e924be0ad071124f0bfdf00a067e1e2fa7487358b1d796e5"
+        },
+        "v65_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 378901,
+          "allocated_bytes": 380928,
+          "inode": 140292325,
+          "device": 66306,
+          "mtime_ns": 1792100304432047840,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "1668506aa8697376613980c50eb7ca0cc3ad22bdf569832ed617fbb08b4aa5bd"
+        },
+        "v65_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 590895,
+          "allocated_bytes": 593920,
+          "inode": 140292356,
+          "device": 66306,
+          "mtime_ns": 1792102111350205138,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6112be6bb38d952cdc3688ab1277e96a5b77840268b7eead32ff39066ab14bfc"
+        },
+        "v65_v58_busy_4800_5100_20261015.json": {
+          "size_bytes": 518443,
+          "allocated_bytes": 520192,
+          "inode": 140292381,
+          "device": 66306,
+          "mtime_ns": 1792103326545654017,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d2167118a0fda7e4bac6676c75726456d740602e39bdf260b841c6c3bcbd499c"
+        },
+        "v65_v58_busy_600_900_20261015.json": {
+          "size_bytes": 345267,
+          "allocated_bytes": 348160,
+          "inode": 140291711,
+          "device": 66306,
+          "mtime_ns": 1792099097179694830,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "85f98092a34674e4f4ba03d0ee0546744841166a20d9605c6486b4ef0766b0d0"
+        },
+        "v65_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1366431,
+          "allocated_bytes": 1368064,
+          "inode": 140291707,
+          "device": 66306,
+          "mtime_ns": 1792098487796871791,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8267f5c248f9accbe8d446c6bd0eac55d05011acc8ea6b657e7fdd9bb56efd05"
+        },
+        "v65_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1890909,
+          "allocated_bytes": 1892352,
+          "inode": 140292353,
+          "device": 66306,
+          "mtime_ns": 1792100320847762739,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "506a538df729beb11c32e36810ed96151c7e5d7858f097cfbced906aa3daeae9"
+        },
+        "v65_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1664805,
+          "allocated_bytes": 1667072,
+          "inode": 140292361,
+          "device": 66306,
+          "mtime_ns": 1792102137841611532,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "912d23282ad33ce7176394ceb27632a4d0f65f3ec35977ba20042bc6f20d46ae"
+        },
+        "v65_v58_prefill_phases_4800_5100_20261015.json": {
+          "size_bytes": 1682869,
+          "allocated_bytes": 1683456,
+          "inode": 140292380,
+          "device": 66306,
+          "mtime_ns": 1792103360479270113,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "00a71566114c243f1828c31f6590265d6f17ae78a5507405f065d5655eae8f2e"
+        },
+        "v65_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1664940,
+          "allocated_bytes": 1667072,
+          "inode": 140291713,
+          "device": 66306,
+          "mtime_ns": 1792099103289582322,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "9de497d685ed6c5733a337ed63c30f1845f675da2302be8d839e5b58541b3968"
+        },
+        "v66_v58_busy_120_300_20261015.json": {
+          "size_bytes": 516280,
+          "allocated_bytes": 520192,
+          "inode": 140292495,
+          "device": 66306,
+          "mtime_ns": 1792106343930524014,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7959287876981a8014f375cc837b5d01af29b31f3071779b15192156b355260e"
+        },
+        "v66_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 322967,
+          "allocated_bytes": 323584,
+          "inode": 140295638,
+          "device": 66306,
+          "mtime_ns": 1792108159854319894,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8fdd3638efacb1069ea5ff9c8b8137e9fcccddcd3d1a37554b7d5222cf7ae139"
+        },
+        "v66_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 649533,
+          "allocated_bytes": 651264,
+          "inode": 140296909,
+          "device": 66306,
+          "mtime_ns": 1792109967378736728,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "85dc64f68b65192cde20d80a5424298c64c364381a78ef3412d337628e06e0fb"
+        },
+        "v66_v58_busy_600_900_20261015.json": {
+          "size_bytes": 338971,
+          "allocated_bytes": 339968,
+          "inode": 140293320,
+          "device": 66306,
+          "mtime_ns": 1792106944936114690,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "b5e8fb60163ff279cb3ccc3b0f1fe7c4250a1508a2067afc2d5ce85a88b2f071"
+        },
+        "v66_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1363468,
+          "allocated_bytes": 1363968,
+          "inode": 140293316,
+          "device": 66306,
+          "mtime_ns": 1792106346436476498,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d4bcb7a0c310bbd1e54b9bff9d50ec5752846c81e466c593309adb47288d0527"
+        },
+        "v66_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1708202,
+          "allocated_bytes": 1712128,
+          "inode": 140295639,
+          "device": 66306,
+          "mtime_ns": 1792108176213988115,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "934920cc660854af015a9e17e86e4a94714477c3365bef277a85286eea4a528b"
+        },
+        "v66_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1766115,
+          "allocated_bytes": 1769472,
+          "inode": 140296990,
+          "device": 66306,
+          "mtime_ns": 1792109994047217229,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5d2b23f8e9b6cbb9da6430b4969bd4fcef8ffebf7c8d80e3cea4c93b3bc271ca"
+        },
+        "v66_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1706222,
+          "allocated_bytes": 1708032,
+          "inode": 140293321,
+          "device": 66306,
+          "mtime_ns": 1792106951531989374,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2336cb10d7d0d5c326bed6c743fd1289924ad9ad6853d62b25908ba0c3c72bde"
+        },
+        "v67_v58_busy_120_300_20261015.json": {
+          "size_bytes": 527345,
+          "allocated_bytes": 528384,
+          "inode": 140297185,
+          "device": 66306,
+          "mtime_ns": 1792110528927802860,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "61d9a85a448d9e51bf14d206d1e75b5660cc63a330175e20509f95ee98bd9296"
+        },
+        "v67_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 324983,
+          "allocated_bytes": 327680,
+          "inode": 140298217,
+          "device": 66306,
+          "mtime_ns": 1792112336122075752,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "1dcc9ac76c76df0c6881e20189655f33377fbfa3454e234eff1a5b18476af85f"
+        },
+        "v67_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 591542,
+          "allocated_bytes": 593920,
+          "inode": 140298363,
+          "device": 66306,
+          "mtime_ns": 1792114151615338732,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2635cd4eb816524d0a0eacb09f54e94ec101339bc6ad51dbf315f98e293b3982"
+        },
+        "v67_v58_busy_4800_5100_20261015.json": {
+          "size_bytes": 561384,
+          "allocated_bytes": 565248,
+          "inode": 140298370,
+          "device": 66306,
+          "mtime_ns": 1792115356938452770,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0412ec72d8e5f14132cbc35762c661065163e779024b5ba6bc9a57f15f01c15f"
+        },
+        "v67_v58_busy_600_900_20261015.json": {
+          "size_bytes": 347800,
+          "allocated_bytes": 348160,
+          "inode": 140297487,
+          "device": 66306,
+          "mtime_ns": 1792111129635112584,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ba35af6b15f484fdcd6da65662db66d24eb2a7371d6d02a1d25e35c5774e32e5"
+        },
+        "v67_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1358679,
+          "allocated_bytes": 1359872,
+          "inode": 140297188,
+          "device": 66306,
+          "mtime_ns": 1792110531429754161,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e9623d944352ee8b050b85a388799befa1baa4cdcc4bc5ade643073afe6b863c"
+        },
+        "v67_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1715494,
+          "allocated_bytes": 1716224,
+          "inode": 140297514,
+          "device": 66306,
+          "mtime_ns": 1792112351401803321,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "bbc906be5f7c07f445005d251abba9f99df91df4b8c38dfbf9be617087b35327"
+        },
+        "v67_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1877050,
+          "allocated_bytes": 1880064,
+          "inode": 140298364,
+          "device": 66306,
+          "mtime_ns": 1792114176936888035,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5fa0556ef71a85929b82afe5a3d19dc2a5b1affbd164d90c803d251aaec01492"
+        },
+        "v67_v58_prefill_phases_4800_5100_20261015.json": {
+          "size_bytes": 1422846,
+          "allocated_bytes": 1425408,
+          "inode": 140298480,
+          "device": 66306,
+          "mtime_ns": 1792115390309840901,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "016f7f8fcee4e67c55a6a481569e26f6ff55fe02f200bc77fc9708f2d05d020c"
+        },
+        "v67_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1767200,
+          "allocated_bytes": 1769472,
+          "inode": 140297848,
+          "device": 66306,
+          "mtime_ns": 1792111137140966531,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8a4769cc121aadc9864c2e2334aff275f6858ec541a6f55f274ea4cedcae20f3"
+        },
+        "v68_partial_v58_busy_120_300_20261015.json": {
+          "size_bytes": 496873,
+          "allocated_bytes": 499712,
+          "inode": 140298489,
+          "device": 66306,
+          "mtime_ns": 1792115988093308301,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "29fb285bb954dfc854f7acb1e2c81ae1bd3b6a1c3103ad7f8633fe92646c10bb"
+        },
+        "v68_partial_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 330180,
+          "allocated_bytes": 331776,
+          "inode": 140298507,
+          "device": 66306,
+          "mtime_ns": 1792117802822247611,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "199616f41d4b3c8913e147418ba15857f1107fd2e6aeda04b393b78ef13009d1"
+        },
+        "v68_partial_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 584075,
+          "allocated_bytes": 585728,
+          "inode": 140298581,
+          "device": 66306,
+          "mtime_ns": 1792119618941996531,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e19e5cd4af1408dd2c6df4d83210ff4912dc47bf9836f686fd39dc560ef22637"
+        },
+        "v68_partial_v58_busy_4800_5100_20261015.json": {
+          "size_bytes": 551339,
+          "allocated_bytes": 552960,
+          "inode": 140298587,
+          "device": 66306,
+          "mtime_ns": 1792120825434823740,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "625c864e37ceb869a4227017d6afd3384452f78e933c3a934d6954081ab272c3"
+        },
+        "v68_partial_v58_busy_600_900_20261015.json": {
+          "size_bytes": 343756,
+          "allocated_bytes": 344064,
+          "inode": 140298498,
+          "device": 66306,
+          "mtime_ns": 1792116588771808128,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "09e733d52428654037da0a870c22982e4280e55f7033b9990cdddcde71053a7a"
+        },
+        "v68_partial_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1342927,
+          "allocated_bytes": 1343488,
+          "inode": 140298490,
+          "device": 66306,
+          "mtime_ns": 1792115990586308932,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e1653d274b8a4888ff7b896de079ede44e451d5791bcaf9b9f4ffd246ca032cd"
+        },
+        "v68_partial_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1725123,
+          "allocated_bytes": 1728512,
+          "inode": 140298508,
+          "device": 66306,
+          "mtime_ns": 1792117816701051230,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "75b22e94c7c960d6a1b414ee35cf945ac7604ace977e9f5ef4adb8a50ddd001d"
+        },
+        "v68_partial_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1759671,
+          "allocated_bytes": 1761280,
+          "inode": 140298583,
+          "device": 66306,
+          "mtime_ns": 1792119645096079014,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "236014a16b8a214eac89ad619dc792b52281e574292c9ac99a1b6b2856f53d6c"
+        },
+        "v68_partial_v58_prefill_phases_4800_5100_20261015.json": {
+          "size_bytes": 1425976,
+          "allocated_bytes": 1429504,
+          "inode": 140298599,
+          "device": 66306,
+          "mtime_ns": 1792120859529194125,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "15a1867be3fd8f9006014bab13b9e3dfb4a184d34c70c1d2f6ec4a837647043e"
+        },
+        "v68_partial_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1712288,
+          "allocated_bytes": 1716224,
+          "inode": 140298499,
+          "device": 66306,
+          "mtime_ns": 1792116594738748425,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e73fb8d4a530cd078c3df7fa00d0b1ae8b01137b83a8f6d88a8a93ce9efa654d"
+        },
+        "v70_v58_busy_120_300_20261015.json": {
+          "size_bytes": 503244,
+          "allocated_bytes": 503808,
+          "inode": 140298369,
+          "device": 66306,
+          "mtime_ns": 1792124314441212465,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ce525da56aa0a7d9f8b9121c02d87948ba40575e9bbe9d640e23dd6b0dd50bb7"
+        },
+        "v70_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 331102,
+          "allocated_bytes": 331776,
+          "inode": 140298752,
+          "device": 66306,
+          "mtime_ns": 1792126132256295099,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "df3ec8708ec71e190ce2b9bd8987d629e5a99af1e31f78053e6b7f9d745296d2"
+        },
+        "v70_v58_busy_3600_3900_20261015.json": {
+          "size_bytes": 593907,
+          "allocated_bytes": 593920,
+          "inode": 140298844,
+          "device": 66306,
+          "mtime_ns": 1792127939187635231,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2caccc2153c5005bbe68aaa2e384463dd0d64aaba9a3c189555f1e7dc530acb0"
+        },
+        "v70_v58_busy_4800_5100_20261015.json": {
+          "size_bytes": 577957,
+          "allocated_bytes": 581632,
+          "inode": 140299329,
+          "device": 66306,
+          "mtime_ns": 1792129144666242039,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "81ba14e092564aa6520c937224be7d1065849c38d8b3d86e6b9b265ec9771a10"
+        },
+        "v70_v58_busy_600_900_20261015.json": {
+          "size_bytes": 341069,
+          "allocated_bytes": 344064,
+          "inode": 140298704,
+          "device": 66306,
+          "mtime_ns": 1792124916577115085,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0df3c2e169d99298cf07f8f89ba13260ba5a185de865fccecc02276ed3891966"
+        },
+        "v70_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1433638,
+          "allocated_bytes": 1437696,
+          "inode": 140298700,
+          "device": 66306,
+          "mtime_ns": 1792124316966184396,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "28684c24f1f1532552c0f1cdac079bd339a403473a054a295c8b3644b90649f8"
+        },
+        "v70_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1594009,
+          "allocated_bytes": 1597440,
+          "inode": 140298609,
+          "device": 66306,
+          "mtime_ns": 1792126147980057289,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ba4092003087a97e6186c9d3103282b4072fa36b66817760b2fc65fe35990222"
+        },
+        "v70_v58_prefill_phases_3600_3900_20261015.json": {
+          "size_bytes": 1745844,
+          "allocated_bytes": 1748992,
+          "inode": 140299206,
+          "device": 66306,
+          "mtime_ns": 1792127965371912363,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7a99028c33e21ae58b992caebadb1e152f16000e0b23853f3d772f8734f2b1f2"
+        },
+        "v70_v58_prefill_phases_4800_5100_20261015.json": {
+          "size_bytes": 1493293,
+          "allocated_bytes": 1495040,
+          "inode": 140299340,
+          "device": 66306,
+          "mtime_ns": 1792129177953739229,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ff72c4d995689726a43ec8e568358c71b864711ae737990436a5eec2933db3dc"
+        },
+        "v70_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1711880,
+          "allocated_bytes": 1712128,
+          "inode": 140298718,
+          "device": 66306,
+          "mtime_ns": 1792124923175957347,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "b720ac0df88ea6d478c0336212547a4bc3f1bb55c7ede99890009f1daf459b93"
+        },
+        "v71_v58_busy_120_300_20261015.json": {
+          "size_bytes": 517897,
+          "allocated_bytes": 520192,
+          "inode": 140299508,
+          "device": 66306,
+          "mtime_ns": 1792132091628531718,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "bd97def7e4004a14010b599189d783d4f8487ee65024c565591ffd94b9056b03"
+        },
+        "v71_v58_busy_1800_2100_20261015.json": {
+          "size_bytes": 319378,
+          "allocated_bytes": 319488,
+          "inode": 140299896,
+          "device": 66306,
+          "mtime_ns": 1792133907727467824,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "cbdd66481654fa2bde22b6c0365501f5a8ec25dee6228b822ece3ffd9f5a42f6"
+        },
+        "v71_v58_busy_600_900_20261015.json": {
+          "size_bytes": 347129,
+          "allocated_bytes": 348160,
+          "inode": 140299510,
+          "device": 66306,
+          "mtime_ns": 1792132703285423935,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "94fe86af4fe7f84e92f7560386b8adad381048f24199e8a36540b833742fa19e"
+        },
+        "v71_v58_prefill_phases_120_300_20261015.json": {
+          "size_bytes": 1407244,
+          "allocated_bytes": 1409024,
+          "inode": 140299509,
+          "device": 66306,
+          "mtime_ns": 1792132094155482312,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "01cc6931235826e74653fe541b45ec5788c179ca2ca85f33b2eb03f9770046cc"
+        },
+        "v71_v58_prefill_phases_1800_2100_20261015.json": {
+          "size_bytes": 1724387,
+          "allocated_bytes": 1724416,
+          "inode": 140299917,
+          "device": 66306,
+          "mtime_ns": 1792133922437114769,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f974998621df57082aa0d65887bbddb57c20ac8d708de86688746de95b8ebe2f"
+        },
+        "v71_v58_prefill_phases_600_900_20261015.json": {
+          "size_bytes": 1714170,
+          "allocated_bytes": 1716224,
+          "inode": 140299513,
+          "device": 66306,
+          "mtime_ns": 1792132710229285325,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ed9b1f7a04c672cee7c325998388cacc076824ae031159db8942ee1bd32a0a32"
+        },
+        "v783_v61_latest_numa_placement_20261015.json": {
+          "size_bytes": 349206,
+          "allocated_bytes": 352256,
+          "inode": 140285059,
+          "device": 66306,
+          "mtime_ns": 1792064659392092599,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "786a0bcdb4a796c17ef861ec2457e26e3a639dd83e01de3c8faea984936e837e"
+        },
+        "v790_v62_join_ack_numa_placement_20261015.json": {
+          "size_bytes": 351214,
+          "allocated_bytes": 352256,
+          "inode": 140285897,
+          "device": 66306,
+          "mtime_ns": 1792073179447007685,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2232b7ca3412fff6413b4bfac2bcdaee495ea99952b7c995b29835f819d3b888"
+        },
+        "v792_v62_prefill_neighbors_600_900_20261015.json": {
+          "size_bytes": 1772054,
+          "allocated_bytes": 1773568,
+          "inode": 140286114,
+          "device": 66306,
+          "mtime_ns": 1792076439416602764,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3b5e7beb20df40672f60f5632c8b0c1ba0afc4c9409e4d8e005d2df04e5f4796"
+        },
+        "v793_v62_prefill_transition_600_900_20261015.json": {
+          "size_bytes": 566323,
+          "allocated_bytes": 569344,
+          "inode": 140288067,
+          "device": 66306,
+          "mtime_ns": 1792076439417602747,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "df3360d310453258080f79aa708e5eaa702e9ee06d322e40739787c7fb838b4b"
+        },
+        "v810_v62_wait_capacity_20261015.json": {
+          "size_bytes": 418652,
+          "allocated_bytes": 421888,
+          "inode": 140288147,
+          "device": 66306,
+          "mtime_ns": 1792079336346854498,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "16893c0d147620eab8532c98242ae9cdbb6db622c5bc38a7c112fe53e2d8866f"
+        },
+        "v819_v62_latest_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 7082019,
+          "allocated_bytes": 7086080,
+          "inode": 140289007,
+          "device": 66306,
+          "mtime_ns": 1792080585434224738,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7a65d18ed7b85af03df9e3a373b2e02724f462c08b73c77839f64b9ad8accd5b"
+        },
+        "v819_v62_latest_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 545807,
+          "allocated_bytes": 548864,
+          "inode": 140289017,
+          "device": 66306,
+          "mtime_ns": 1792080585434224738,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2b4d3b7f84b1f4383f420c7fab64c78ca76289eeb60324df8ef64ef0d881f5cc"
+        },
+        "v820_v62_latest_wait_service_phases_20261015.json": {
+          "size_bytes": 380607,
+          "allocated_bytes": 380928,
+          "inode": 140289034,
+          "device": 66306,
+          "mtime_ns": 1792080586441204360,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8778e43e097b94e420841ba74b0b09c490f3e90b517949b9a1608fb7a0289af4"
+        },
+        "v826_v63_latest_capacity_numa_20261015.json": {
+          "size_bytes": 351579,
+          "allocated_bytes": 352256,
+          "inode": 140289238,
+          "device": 66306,
+          "mtime_ns": 1792081411593875674,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8c0ed2725f0a60cfe5350000ad47e3505b424a3dd35a7f9c4d3ccb272ff20e18"
+        },
+        "v834_v63r1_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 4124428,
+          "allocated_bytes": 4124672,
+          "inode": 140289483,
+          "device": 66306,
+          "mtime_ns": 1792083829639802249,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0f0874fae4c5fcfa6a196806e5ca591e25d619111f021521bac70250280b57e0"
+        },
+        "v834_v63r1_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 355799,
+          "allocated_bytes": 356352,
+          "inode": 140289484,
+          "device": 66306,
+          "mtime_ns": 1792083829851798139,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6f4261036bcb3f72e8806c80526b43154cd0bdeef9931f89dceefd7984f9dfad"
+        },
+        "v839_v63_latest_gpu_and_tail_progress_20261015.json": {
+          "size_bytes": 339729,
+          "allocated_bytes": 339968,
+          "inode": 140289493,
+          "device": 66306,
+          "mtime_ns": 1792084262274919034,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "48098e4dd5d4705d8f76c3abb579616e6495ebb41c5aabc8599969ca64849bc8"
+        },
+        "v841_v63r1_wait_capacity_20261015.json": {
+          "size_bytes": 379160,
+          "allocated_bytes": 380928,
+          "inode": 140289494,
+          "device": 66306,
+          "mtime_ns": 1792084513377645056,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "041809a85254e9a1aa17c1ad9bc1aa24f5e4f07bfb85587a9f1834a212f8cbe2"
+        },
+        "v861_v64_latest_read_feedback_numa_20261015.json": {
+          "size_bytes": 329696,
+          "allocated_bytes": 331776,
+          "inode": 140289860,
+          "device": 66306,
+          "mtime_ns": 1792089697257220065,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "37abbf307b35b2a4bf59910cd2dfcafb04beff0b07744794ca88f2d505e26897"
+        },
+        "v872_v64latest_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 1289566,
+          "allocated_bytes": 1290240,
+          "inode": 140290166,
+          "device": 66306,
+          "mtime_ns": 1792090212397010754,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "409a1b9f37ad8ca00f094162e6a0e03ea05215a327ca24a53672c90b8cba47a4"
+        },
+        "v883_v64latest_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 3239145,
+          "allocated_bytes": 3239936,
+          "inode": 140291066,
+          "device": 66306,
+          "mtime_ns": 1792091646693045805,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "168b32de8a9898bc97472a3ab7a3798371c23626d7b0c8cbc0e25dabab20def8"
+        },
+        "v883_v64latest_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 341685,
+          "allocated_bytes": 344064,
+          "inode": 140291068,
+          "device": 66306,
+          "mtime_ns": 1792091646862042523,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a2e0392463ebb5848ff0b6d267bd537dd8be4a2d8ef53cfafe9f0e5cc5e4cf6c"
+        },
+        "v884_v64_join_submission_and_residency_20261015.json": {
+          "size_bytes": 789736,
+          "allocated_bytes": 790528,
+          "inode": 140291071,
+          "device": 66306,
+          "mtime_ns": 1792091931144537341,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "af0e7403b6da795cc1528ad50358d3b275fbba10d7e9eb23314b6be6a7f11506"
+        },
+        "v901_v64_root_child_shape_survival_20261015.json.gz": {
+          "size_bytes": 637554,
+          "allocated_bytes": 638976,
+          "inode": 140291117,
+          "device": 66306,
+          "mtime_ns": 1792094549418078653,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "56da72472b67b3c906636f45675554e7a776e7e0d3f6af8ee10e926fa333daa1"
+        },
+        "v905_v64late_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 6529127,
+          "allocated_bytes": 6533120,
+          "inode": 140291125,
+          "device": 66306,
+          "mtime_ns": 1792095340875705997,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "59b3062fe25a754b1c9e6fb567302ceaa3fb7317add4b1531a206b990d771b0b"
+        },
+        "v905_v64late_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 533127,
+          "allocated_bytes": 536576,
+          "inode": 140291127,
+          "device": 66306,
+          "mtime_ns": 1792095341225701377,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ebb9f5c7eda0c6002198336e3d1d84a515f37d954bda4a19317f541adc64477b"
+        },
+        "v925_v65_tagged_summary_numa_20261015.json": {
+          "size_bytes": 329758,
+          "allocated_bytes": 331776,
+          "inode": 140291382,
+          "device": 66306,
+          "mtime_ns": 1792098201935059472,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a8853c4ba68e5baa59b835bafb2d303b1f34a52dd4848e7464f87cf1963ba074"
+        },
+        "v926_v65_early_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 677194,
+          "allocated_bytes": 679936,
+          "inode": 140291653,
+          "device": 66306,
+          "mtime_ns": 1792098427179976164,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3c839b770ca3d02312a95bfd430f71e78c8415f056f169b6e984e79aeb068d66"
+        },
+        "v929_v65_pressure_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 1190847,
+          "allocated_bytes": 1191936,
+          "inode": 140291709,
+          "device": 66306,
+          "mtime_ns": 1792098770534699318,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "87118b1cbd201e93385c605601224b4eb4b4d524977a6a403d488bf6e45d189a"
+        },
+        "v930_v65_and_v64_observed_start_slack_20261015.json": {
+          "size_bytes": 4575960,
+          "allocated_bytes": 4579328,
+          "inode": 140291706,
+          "device": 66306,
+          "mtime_ns": 1792099029735936341,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a84f61dc6e5232690f08d781d057fb5e868824f1cb6bdb8f038fa74a4218cbe2"
+        },
+        "v932_v65_live_summary_and_client_gaps_20261015.json.gz": {
+          "size_bytes": 974598,
+          "allocated_bytes": 974848,
+          "inode": 140291712,
+          "device": 66306,
+          "mtime_ns": 1792099417175607641,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "39e1d37b17c027b2a3a809f4511d7aa0ab0d2deb6ab4d59abc18093543beec41"
+        },
+        "v935_v65_latest_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 2580347,
+          "allocated_bytes": 2580480,
+          "inode": 140292092,
+          "device": 66306,
+          "mtime_ns": 1792099815963342223,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "90030864de49df006600330945500d93cad43761f513619b1623b002f1139d69"
+        },
+        "v935_v65_latest_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 300212,
+          "allocated_bytes": 303104,
+          "inode": 140292241,
+          "device": 66306,
+          "mtime_ns": 1792099816095340051,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e096207beb066f29a0d05fd32aab0026460d65a654b6430cba45f1e6db5c9550"
+        },
+        "v937_v65_latest_wait_tail_diagnosis_20261015.json": {
+          "size_bytes": 8686822,
+          "allocated_bytes": 8687616,
+          "inode": 140292323,
+          "device": 66306,
+          "mtime_ns": 1792100043677529647,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d132b13699c6b7e16fa1d65f62016a72a0f40ba597b11f080b4be66e37d2f947"
+        },
+        "v943_v65_second_wave_prefill_neighbors_20261015.json": {
+          "size_bytes": 1901091,
+          "allocated_bytes": 1904640,
+          "inode": 140292360,
+          "device": 66306,
+          "mtime_ns": 1792102903227320928,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "9a4c69f45105ba09f091c025813fb569a78fb1ce8d1daac512f7df148844e3a7"
+        },
+        "v944_v65_second_wave_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 5616944,
+          "allocated_bytes": 5619712,
+          "inode": 140292378,
+          "device": 66306,
+          "mtime_ns": 1792103240760401680,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6e2d27b67efbffb5ccf71d7d2684301c8ddf01d0bc415e45196747991c457401"
+        },
+        "v944_v65_second_wave_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 533047,
+          "allocated_bytes": 536576,
+          "inode": 140292379,
+          "device": 66306,
+          "mtime_ns": 1792103240778401313,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "81d0680a88be9dc059cdbd51c0ef3434645b1ba2119e0ab4082e4098fb86c16f"
+        },
+        "v945_v65_second_wave_wait_tail_diagnosis_20261015.json": {
+          "size_bytes": 21779314,
+          "allocated_bytes": 21782528,
+          "inode": 140292376,
+          "device": 66306,
+          "mtime_ns": 1792103316058867482,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "648017540ef39d28e199a7287dc9f0abf69b700bb77eb5d8d25fc5cfac02acb6"
+        },
+        "v959_v66_direct_latest_numa_20261015.json": {
+          "size_bytes": 348065,
+          "allocated_bytes": 348160,
+          "inode": 140292742,
+          "device": 66306,
+          "mtime_ns": 1792106060469893480,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "b7424de75ff2dc7fd602f21418b0c50f471285ae59b403adec1bd2c7005ab7b8"
+        },
+        "v960_v66_firstwave_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 1982683,
+          "allocated_bytes": 1986560,
+          "inode": 140293312,
+          "device": 66306,
+          "mtime_ns": 1792107181107626844,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "35622df58ea6b45f2f07ff3439920bbf96511583d81d2d616ee58752b6fdc7b7"
+        },
+        "v960_v66_firstwave_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 271577,
+          "allocated_bytes": 274432,
+          "inode": 140293967,
+          "device": 66306,
+          "mtime_ns": 1792107181239624336,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2060e7a98da6d60a090bd883713a7359db07a67c6b1ce9dd4ea2ec2d8a99ae11"
+        },
+        "v961_v66_join_member_admission_20261015.json": {
+          "size_bytes": 8801222,
+          "allocated_bytes": 8802304,
+          "inode": 140293876,
+          "device": 66306,
+          "mtime_ns": 1792107084867455823,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "95308b55f07e226e1a51e1bb04eaeba0bfed0b0594066d42955ca602b21be70c"
+        },
+        "v976_v67_direct_latest_numa_20261015.json": {
+          "size_bytes": 348746,
+          "allocated_bytes": 352256,
+          "inode": 140297180,
+          "device": 66306,
+          "mtime_ns": 1792110265554929867,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d5d80432765dfddfe42187db09045fd8148bd0a180cab6224c91bb10c4de7259"
+        },
+        "v977_v67_firstwave_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 1092065,
+          "allocated_bytes": 1093632,
+          "inode": 140297178,
+          "device": 66306,
+          "mtime_ns": 1792110720234079493,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d1473b3439334f3c39752a7664bd451c56486f33fd472ef21f665592027f953f"
+        },
+        "v990_v67_midwave_sealed_wait_prefetch_20261015.json.gz": {
+          "size_bytes": 3755504,
+          "allocated_bytes": 3756032,
+          "inode": 140298264,
+          "device": 66306,
+          "mtime_ns": 1792112865249463757,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6a6c6e10cdc845c55e21a5544b6ab8cba3f2d37f395d0e865d19739321a9f2db"
+        },
+        "v990_v67_midwave_sealed_wait_prefetch_20261015_summary.json": {
+          "size_bytes": 352234,
+          "allocated_bytes": 352256,
+          "inode": 140298362,
+          "device": 66306,
+          "mtime_ns": 1792112865445460148,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "9ef6f6bde82cedddbd25ab20293b10fae1f9c2e310f455bb9b0961f42a0bbc24"
+        },
+        "v991_v67_selected_restore_waits_20261015.json": {
+          "size_bytes": 309386,
+          "allocated_bytes": 311296,
+          "inode": 140298365,
+          "device": 66306,
+          "mtime_ns": 1792114276554108250,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c5d6612be283e474874094d3af324d29c6d548ec0123019199b8688d9c47be57"
+        }
+      },
+      "source_bytes": 242707961,
+      "source_allocated_bytes": 242995200
+    },
+    {
+      "day": "20261016",
+      "status": "selected",
+      "paths": {
+        "v1083_v72_workflow_work_numa_20261016.json": {
+          "size_bytes": 329313,
+          "allocated_bytes": 331776,
+          "inode": 140300381,
+          "device": 66306,
+          "mtime_ns": 1792135838429299806,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "316c04f9a0823e6ccd97edc63222d23084139d5d45cb2030f40f5e7b0b81aa78"
+        },
+        "v1100_v73_online_predictive_h2d_numa_20261016.json": {
+          "size_bytes": 329345,
+          "allocated_bytes": 331776,
+          "inode": 140303041,
+          "device": 66306,
+          "mtime_ns": 1792144539666195336,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "62c783dbd5de2ef878a503791ae4c3269a8a4812337a151521fa4fa692a36eaf"
+        },
+        "v1101_v73_online_native_numa_20261016.json": {
+          "size_bytes": 327143,
+          "allocated_bytes": 327680,
+          "inode": 140299501,
+          "device": 66306,
+          "mtime_ns": 1792153154433167239,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f21d48ecfb9a5ec4bc5a8d64eba48b0f0ddc60fa3955cdf4aad25a3f21e55959"
+        },
+        "v1111_v73_workflow_progress_evidence_20261016.json": {
+          "size_bytes": 271214,
+          "allocated_bytes": 274432,
+          "inode": 140303079,
+          "device": 66306,
+          "mtime_ns": 1792149284274233772,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "be07893ee1c2921a8c6778db4eca8f01b181651331ee8262991bca1bfcee70ef"
+        },
+        "v1144_v75_predictive_h2d_placement_20261016.json": {
+          "size_bytes": 348901,
+          "allocated_bytes": 352256,
+          "inode": 140306735,
+          "device": 66306,
+          "mtime_ns": 1792163926384620254,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "4aad0f09a09545161cc37e12a02fbf73333c0b1266b57adda57f6df3e6de1b8a"
+        },
+        "v1145_v75_native_placement_20261016.json": {
+          "size_bytes": 347308,
+          "allocated_bytes": 348160,
+          "inode": 140307453,
+          "device": 66306,
+          "mtime_ns": 1792172244182509177,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8e47dc76ba9b823e5fee2b0fbac2c4e1268287712942dd97869774fa98c28a03"
+        },
+        "v1150_v75_vs_v73native_600_900_20261016.json": {
+          "size_bytes": 685499,
+          "allocated_bytes": 688128,
+          "inode": 140306756,
+          "device": 66306,
+          "mtime_ns": 1792165061270132087,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "1b3024f76efbcfed3b0c0f4fdebde6ef8dcbce10d53664fea683b928edc83741"
+        },
+        "v1151_v73_pair_600_900_20261016.json": {
+          "size_bytes": 661026,
+          "allocated_bytes": 663552,
+          "inode": 140306761,
+          "device": 66306,
+          "mtime_ns": 1792165061987112210,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "294050222710f842600e9955e55c923618dcfddf9b81091ada62a59e9bfbba85"
+        },
+        "v1152_v75_prefill_600_900_20261016.json": {
+          "size_bytes": 2229336,
+          "allocated_bytes": 2232320,
+          "inode": 140306767,
+          "device": 66306,
+          "mtime_ns": 1792165109500800735,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e9cd457047ee562b42895bb6b92efa8deeb5ee45a28cb824748372b5a51b6f2f"
+        },
+        "v1153_v73_prefill_600_900_20261016.json": {
+          "size_bytes": 2314777,
+          "allocated_bytes": 2318336,
+          "inode": 140306752,
+          "device": 66306,
+          "mtime_ns": 1792165109439802412,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "826e425d83fae20c17b73006c50ec870fa98c92f5eb2b386aa66afbcc16c6bae"
+        },
+        "v1154_v75_vs_v73native_900_1200_20261016.json": {
+          "size_bytes": 474635,
+          "allocated_bytes": 475136,
+          "inode": 140306765,
+          "device": 66306,
+          "mtime_ns": 1792165175193004674,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "520710760bb8ddf42eba64ed205923b3798456624742674cf3f8815107f2291f"
+        },
+        "v1158_v75_prefill_900_1200_20261016.json": {
+          "size_bytes": 2081598,
+          "allocated_bytes": 2084864,
+          "inode": 140306894,
+          "device": 66306,
+          "mtime_ns": 1792165336091676279,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ded124235e371b01bf9155f150cfeb8fa2f51ea3f40d2393bd217e3ba15c0eb2"
+        },
+        "v1163_v75_vs_v73native_2400_2700_20261016.json": {
+          "size_bytes": 380962,
+          "allocated_bytes": 385024,
+          "inode": 140307255,
+          "device": 66306,
+          "mtime_ns": 1792166698516860647,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "740deacc6fc5962c91360fb47d1cdea0e967131ed3c77041419633c2aa7c72b6"
+        },
+        "v1168_v75_prefill_2400_2700_20261016.json": {
+          "size_bytes": 1811778,
+          "allocated_bytes": 1814528,
+          "inode": 140307376,
+          "device": 66306,
+          "mtime_ns": 1792166955578964374,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "39fd0cc0a599a906e7459f5024fc7dfdfe90e08caa05cd8b0e5c032867a815d2"
+        },
+        "v1202_v75_same_batch_busy_control_2100_2400_20261016.json": {
+          "size_bytes": 371604,
+          "allocated_bytes": 372736,
+          "inode": 140307473,
+          "device": 66306,
+          "mtime_ns": 1792174882803315914,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f0453e58627418f970fa4ac693ce0e8824b8dbc11a4d102908f26d6c2566a421"
+        },
+        "v1381_v78b_continuation_service_competition_20261016.json": {
+          "size_bytes": 12037932,
+          "allocated_bytes": 12038144,
+          "inode": 140307652,
+          "device": 66306,
+          "mtime_ns": 1792206114780196284,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "615d22f32f387966495b7b5cbf3417c6951f0c6d5425d995d28a257582c7ade2"
+        },
+        "v1383_v78b_continuation_competition_epoch_cohorts_20261016.json": {
+          "size_bytes": 13247376,
+          "allocated_bytes": 13250560,
+          "inode": 140307646,
+          "device": 66306,
+          "mtime_ns": 1792206254173226115,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "136e20e69170ef9309c653542214055fbb039926a252d0f50ed3e0f6bf582e38"
+        },
+        "v1425_v79b_3000_3600_task_cohort_20261016.json": {
+          "size_bytes": 507209,
+          "allocated_bytes": 507904,
+          "inode": 140307695,
+          "device": 66306,
+          "mtime_ns": 1792211491796057636,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2c2470f9ee2ae1f51cdf7c4b69cf28921595618d7384636aab3628d9c3f2741d"
+        },
+        "v1427_v79b_2400_3000_continuation_competition_20261016.json": {
+          "size_bytes": 8566115,
+          "allocated_bytes": 8568832,
+          "inode": 140307697,
+          "device": 66306,
+          "mtime_ns": 1792211582775325823,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c1a8a2024430ab4d34b36335bc3a4795a1472c07ddaf65fe5e98d166e9fbbaa7"
+        },
+        "v1428_v79b_2400_3000_native_geometry_20261016.json": {
+          "size_bytes": 447511,
+          "allocated_bytes": 450560,
+          "inode": 140307699,
+          "device": 66306,
+          "mtime_ns": 1792211620241609439,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "64e5f153547794ac94e96a115e4b6cc81093ea9d916cb773aba56bd77575650c"
+        },
+        "v1429_v79b_3000_3600_native_geometry_20261016.json": {
+          "size_bytes": 391617,
+          "allocated_bytes": 393216,
+          "inode": 140307700,
+          "device": 66306,
+          "mtime_ns": 1792211624242532838,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "58ce649092473a96cabccff6934a028175d7b8e7d3a863298674c7be378337e1"
+        },
+        "v1431_v79b_2400_3000_native_geometry_final_20261016.json": {
+          "size_bytes": 447827,
+          "allocated_bytes": 450560,
+          "inode": 140307703,
+          "device": 66306,
+          "mtime_ns": 1792211817467813318,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5bcc4583270264067a09ae0f1667444805ed4f286c9d42ebb66341d24cf94b87"
+        },
+        "v1432_v79b_3000_3600_native_geometry_final_20261016.json": {
+          "size_bytes": 391955,
+          "allocated_bytes": 393216,
+          "inode": 140307701,
+          "device": 66306,
+          "mtime_ns": 1792211824172683635,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "dc06fe9c9e5543728e09f9b405ea1573f4cc57efb41ac11f791fc41b00bb3f08"
+        },
+        "v1433_v79b_3000_3600_continuation_competition_20261016.json": {
+          "size_bytes": 8716245,
+          "allocated_bytes": 8716288,
+          "inode": 140307702,
+          "device": 66306,
+          "mtime_ns": 1792211779659543895,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e4593a1ffce9ff05a150ac77cfe0c8eec5345f9ab88d8d0b886c17db289c6d99"
+        },
+        "v1434_v79b_2400_3000_prefill_phases_20261016.json": {
+          "size_bytes": 3015263,
+          "allocated_bytes": 3018752,
+          "inode": 140307705,
+          "device": 66306,
+          "mtime_ns": 1792211955848130076,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "116a6a161bd0c9340a7467fef956e5d61b24d64fea39fb5e371ca159b4788b7c"
+        },
+        "v1435_v79b_3000_3600_prefill_phases_20261016.json": {
+          "size_bytes": 3236350,
+          "allocated_bytes": 3239936,
+          "inode": 140307706,
+          "device": 66306,
+          "mtime_ns": 1792211959666055861,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "bc20234dde35613b8bc291ae206fe9bf7034d599ba3b315c14062b9ba9f16022"
+        },
+        "v1436_v79b_2400_3000_restore_pressure_20261016.json": {
+          "size_bytes": 456440,
+          "allocated_bytes": 458752,
+          "inode": 140307704,
+          "device": 66306,
+          "mtime_ns": 1792212270268993387,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "23acb53ace2247b2cd967e0b0a28a224ddf38b5c0eeed734e3ad59377d4dcd2c"
+        },
+        "v1437_v79b_3000_3600_restore_pressure_20261016.json": {
+          "size_bytes": 397205,
+          "allocated_bytes": 397312,
+          "inode": 140307708,
+          "device": 66306,
+          "mtime_ns": 1792212274174916895,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6140f5f304411a366c579c856ffd00cd882a237b471b9deeff19f9c74af24766"
+        },
+        "v1438_v79b_2400_3000_restore_phases_20261016.json": {
+          "size_bytes": 3358272,
+          "allocated_bytes": 3358720,
+          "inode": 140307707,
+          "device": 66306,
+          "mtime_ns": 1792212335273719738,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ad3107522e45145b5d8bebdb06b18755cfadb2c211a67baca49894bacdf43c3a"
+        },
+        "v1439_v79b_3000_3600_restore_phases_20261016.json": {
+          "size_bytes": 3604575,
+          "allocated_bytes": 3608576,
+          "inode": 140307710,
+          "device": 66306,
+          "mtime_ns": 1792212339562635659,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3d176819878ffa4761c0d3396c9874eb9e4315dc2d5015e5acf58bad179416fe"
+        },
+        "v1440_v79b_2400_3000_selection_transfers_20261016.json": {
+          "size_bytes": 273770,
+          "allocated_bytes": 274432,
+          "inode": 140307709,
+          "device": 66306,
+          "mtime_ns": 1792212407893295421,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8329bc4100d19912b60ee277529eee70c70550f492b2cda3a85c03f8fb2df0de"
+        },
+        "v1441_v79b_3000_3600_selection_transfers_20261016.json": {
+          "size_bytes": 286703,
+          "allocated_bytes": 286720,
+          "inode": 140307712,
+          "device": 66306,
+          "mtime_ns": 1792212407996293400,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6c6c09b8a29036fae3f8bbb2c1e7be8488504d1816cb532449b8bb44a5c46f52"
+        },
+        "v1443_v79b_2400_3000_overlap_neighbors_20261016.json": {
+          "size_bytes": 3175819,
+          "allocated_bytes": 3178496,
+          "inode": 140307714,
+          "device": 66306,
+          "mtime_ns": 1792213295368859518,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "02f7ecdf501553beaf840f41dcc97a93df4c46e3916a7d311e3828041bd16cc6"
+        },
+        "v1444_v79b_3000_3600_overlap_neighbors_20261016.json": {
+          "size_bytes": 3292993,
+          "allocated_bytes": 3293184,
+          "inode": 140307715,
+          "device": 66306,
+          "mtime_ns": 1792213299348878602,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "20fe7c86b870e6edc3709cb27cc74a34e4c55eb1c808bb79940c83d6526017bb"
+        },
+        "v1445_v79b_2400_3600_transition_gaps_20261016.json": {
+          "size_bytes": 2139309,
+          "allocated_bytes": 2142208,
+          "inode": 140307716,
+          "device": 66306,
+          "mtime_ns": 1792213310500928841,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "dd83e7ed5014ec3026ebd416d2f87597ff81986fb774d327549556c4ab53b004"
+        },
+        "v1464_v79b_prompt_identity_screen_20261016.json": {
+          "size_bytes": 710144,
+          "allocated_bytes": 712704,
+          "inode": 140307734,
+          "device": 66306,
+          "mtime_ns": 1792219518130204129,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5ced4b33d0b56e9deeb88f8d5878b5d99ea27b7bf6774344bc77d27f4d2ed98d"
+        },
+        "v1465_v79b_prompt_contract_check_20261016.json": {
+          "size_bytes": 920367,
+          "allocated_bytes": 921600,
+          "inode": 140307733,
+          "device": 66306,
+          "mtime_ns": 1792219740776842098,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "583514be407e2c583d5751c1bcd557dfe61c3fc2dfacd58fd945e11ea63f62e5"
+        },
+        "v72_v58_busy_120_300_20261016.json": {
+          "size_bytes": 483144,
+          "allocated_bytes": 483328,
+          "inode": 140300869,
+          "device": 66306,
+          "mtime_ns": 1792136101702351013,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "193273da41bea86e230cf0c31d2b8be552a5f970edbfe8d6f48f4004dab005da"
+        },
+        "v72_v58_busy_1800_2100_20261016.json": {
+          "size_bytes": 324751,
+          "allocated_bytes": 327680,
+          "inode": 140301317,
+          "device": 66306,
+          "mtime_ns": 1792137918808271026,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "04c7c1e0bfaa79f0b028edcf793f690e1133b187c23140ae13b0dea12e7373a1"
+        },
+        "v72_v58_busy_3600_3900_20261016.json": {
+          "size_bytes": 605569,
+          "allocated_bytes": 606208,
+          "inode": 140301601,
+          "device": 66306,
+          "mtime_ns": 1792139725023298129,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "4560f38b6da37d7fa54ab09c09b5c6875c56767337272a048a08338134e4906b"
+        },
+        "v72_v58_busy_4800_5100_20261016.json": {
+          "size_bytes": 587104,
+          "allocated_bytes": 589824,
+          "inode": 140302287,
+          "device": 66306,
+          "mtime_ns": 1792140936856552084,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5e515bcc10841db8d4b565c7659b3d142bcdc0fdb16f10914fe6a7d4183f65a6"
+        },
+        "v72_v58_busy_600_900_20261016.json": {
+          "size_bytes": 339126,
+          "allocated_bytes": 339968,
+          "inode": 140300871,
+          "device": 66306,
+          "mtime_ns": 1792136703201605354,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c877f9a37cabfd0374e3015e66c3f337257fc3108048117f61ef2504ae75ea83"
+        },
+        "v72_v58_prefill_phases_120_300_20261016.json": {
+          "size_bytes": 1339117,
+          "allocated_bytes": 1339392,
+          "inode": 140300384,
+          "device": 66306,
+          "mtime_ns": 1792136104141353505,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "225e983a3345341d252958d098e848fa66e4dee64e668643c003af0294c314a7"
+        },
+        "v72_v58_prefill_phases_1800_2100_20261016.json": {
+          "size_bytes": 1738792,
+          "allocated_bytes": 1740800,
+          "inode": 140301464,
+          "device": 66306,
+          "mtime_ns": 1792137934984734695,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "84bf2f47ac9b9c2b7816591f79534518a7bf513c3f4b3110999426b3524f79f9"
+        },
+        "v72_v58_prefill_phases_3600_3900_20261016.json": {
+          "size_bytes": 1772830,
+          "allocated_bytes": 1773568,
+          "inode": 140301943,
+          "device": 66306,
+          "mtime_ns": 1792139749680018780,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8aa7cabd9fb7d93c8c610729804e742f132f910355c9a738bd7e9a4bb9fbe0cc"
+        },
+        "v72_v58_prefill_phases_4800_5100_20261016.json": {
+          "size_bytes": 1562366,
+          "allocated_bytes": 1564672,
+          "inode": 140302286,
+          "device": 66306,
+          "mtime_ns": 1792140969119066765,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "9acc4e9da86b1355675a649bdcfc244049082abb5b9df05e88e8f9e412d05d3e"
+        },
+        "v72_v58_prefill_phases_600_900_20261016.json": {
+          "size_bytes": 1650570,
+          "allocated_bytes": 1650688,
+          "inode": 140301302,
+          "device": 66306,
+          "mtime_ns": 1792136709476570231,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "46cfb2375763e523764ea474fdae6e85b4cb807298a16451c61c38a65ae1ad16"
+        }
+      },
+      "source_bytes": 92988805,
+      "source_allocated_bytes": 93077504
+    },
+    {
+      "day": "20261017",
+      "status": "selected",
+      "paths": {
+        "v1498_v79b_join_branch_service_20261017.json": {
+          "size_bytes": 21158717,
+          "allocated_bytes": 21159936,
+          "inode": 140307774,
+          "device": 66306,
+          "mtime_ns": 1792232639888492104,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0a7bc3d7782719c67b60fe8d4f93786f3c96c4d20dfd5c45da488f0383b618bb"
+        },
+        "v1504_atomix_v2_20261017.html": {
+          "size_bytes": 646766,
+          "allocated_bytes": 647168,
+          "inode": 140307775,
+          "device": 66306,
+          "mtime_ns": 1792233543608991117,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "4e47679c8089ddf0e0b73c7547aff87bcc5d066071fe78c0821f5abeeb1bc0fe"
+        },
+        "v1551_v79b_tool_observation_paths_20261017.json": {
+          "size_bytes": 69429391,
+          "allocated_bytes": 69431296,
+          "inode": 140307836,
+          "device": 66306,
+          "mtime_ns": 1792245074481116427,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "03e70c5a73a310a3dd8239ff8e0e8de20eb1716fca7cf2bcccdc5df9787c3f12"
+        },
+        "v1553_v79b_tool_observation_paths_20261017.json": {
+          "size_bytes": 69608569,
+          "allocated_bytes": 69611520,
+          "inode": 140307843,
+          "device": 66306,
+          "mtime_ns": 1792245427470823387,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2e93afddc2daf507a8111d35789af99b828896dbb6c44944be3c1c6f91194c67"
+        },
+        "v1555_v79b_dependency_execution_profile_20261017.json": {
+          "size_bytes": 590936,
+          "allocated_bytes": 593920,
+          "inode": 140307846,
+          "device": 66306,
+          "mtime_ns": 1792246736793161131,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ba82860f5ebc0ebf1df37e4dbcd214cb895c5d48f8a56b28fb5dc6c97bf212fd"
+        },
+        "v1600_initial_decision_consistency_20261017.json": {
+          "size_bytes": 1138234,
+          "allocated_bytes": 1138688,
+          "inode": 140307905,
+          "device": 66306,
+          "mtime_ns": 1792298344202489206,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "4db3195bba9db6bd4931943403e07b764618f1fdc8f569a91642a2e6e65b88d4"
+        }
+      },
+      "source_bytes": 162572613,
+      "source_allocated_bytes": 162582528
+    },
+    {
+      "day": "20261018",
+      "status": "selected",
+      "paths": {
+        "v1623_dlpm_v1_20261018.html": {
+          "size_bytes": 391516,
+          "allocated_bytes": 393216,
+          "inode": 140307954,
+          "device": 66306,
+          "mtime_ns": 1792312679707851736,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "25fd84f154fdf5f410cdf7d8bbc9584516e43411e3cd862b7e3610a89ad7cded"
+        },
+        "v1624_excluded_2602.09833v1_density_estimation_20261018.html": {
+          "size_bytes": 606185,
+          "allocated_bytes": 606208,
+          "inode": 140307962,
+          "device": 66306,
+          "mtime_ns": 1792313396389995610,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6be54eef67c1a1176e8fca4509408e4299c8402538feaadde45ed6cdfdf0e0f3"
+        },
+        "v1624_hear_v1_20261018.html": {
+          "size_bytes": 470354,
+          "allocated_bytes": 471040,
+          "inode": 140307960,
+          "device": 66306,
+          "mtime_ns": 1792313321345271271,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "6ff638bb88f998e3ff9853864dc6d84493865853cd967228069c58bea12bcff7"
+        },
+        "v1624_semantic_parallelism_2503.04398v5_20261018.html": {
+          "size_bytes": 356737,
+          "allocated_bytes": 360448,
+          "inode": 140307968,
+          "device": 66306,
+          "mtime_ns": 1792313479002570084,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d7333c84120fb278cdada150acf78f08792519ef4003263c8cae57ae8c211e0f"
+        },
+        "v1625_v79b_workflow_path_sensitivity_20261018.json": {
+          "size_bytes": 17384771,
+          "allocated_bytes": 17387520,
+          "inode": 140307977,
+          "device": 66306,
+          "mtime_ns": 1792314978554940382,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "b2af716f94b9fc932e04b5192811b22d33855d2cfec1011c22f528158b55b723"
+        },
+        "v1627_tomasullm_2609.38201v1_20261018.html": {
+          "size_bytes": 363334,
+          "allocated_bytes": 364544,
+          "inode": 140307986,
+          "device": 66306,
+          "mtime_ns": 1792316739701473910,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5955a32d93715efd2b4b067afb2dc3eae99eec963c393d1452277c93e436f2e8"
+        },
+        "v1643_scepsy_2604.15186v1_20261018.html": {
+          "size_bytes": 385882,
+          "allocated_bytes": 389120,
+          "inode": 140308021,
+          "device": 66306,
+          "mtime_ns": 1792323203270900021,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "05afe8479e4c6300fd60ebd72727728c60f1b2ed9d5b0c7b169d7d97225c1e37"
+        },
+        "v1694_v82b_prefetch_live_prefix_20261018.json.gz": {
+          "size_bytes": 621724,
+          "allocated_bytes": 622592,
+          "inode": 140316908,
+          "device": 66306,
+          "mtime_ns": 1792339295924270835,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "fc9fd03ea836a54f9e3f6a326b2df727c74c5b96dbeb88517a3c60a0b1af36ff"
+        },
+        "v1701_v82b_prefetch_live_prefix_20261018.json.gz": {
+          "size_bytes": 1824948,
+          "allocated_bytes": 1826816,
+          "inode": 140316957,
+          "device": 66306,
+          "mtime_ns": 1792340279145491348,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5ce4c975cd4c634d303bcdb2c1a47f74a2542c5710b8d7adbe5b2946afc298c8"
+        },
+        "v1711_v82b_prefetch_live_prefix_20261018.json.gz": {
+          "size_bytes": 3402311,
+          "allocated_bytes": 3403776,
+          "inode": 140316991,
+          "device": 66306,
+          "mtime_ns": 1792341625901494794,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "22b41fddad0f3597454b8521c2810dfe3cefa96e8fb62937bf87d34f3f259e31"
+        },
+        "v1721_v82b_second_wave_prefetch_prefix_20261018.json.gz": {
+          "size_bytes": 4468153,
+          "allocated_bytes": 4468736,
+          "inode": 140317005,
+          "device": 66306,
+          "mtime_ns": 1792343228665431645,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3aa9303b4c6846bd5458c8bd88eb4fdfab66aa76e8b8c2b21de70c438a22d8cb"
+        },
+        "v1726_v82b_host_predictor_question_prefix_20261018.json.gz": {
+          "size_bytes": 5017598,
+          "allocated_bytes": 5017600,
+          "inode": 140317067,
+          "device": 66306,
+          "mtime_ns": 1792344020837852813,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "950c88f8f3f73df1455cfbd623d267e79e9ffc2ddcb9bc339916d1d207035c8d"
+        },
+        "v1735_v82b_tool_forecast_sealed_prefix_20261018.json.gz": {
+          "size_bytes": 1329458,
+          "allocated_bytes": 1331200,
+          "inode": 140317083,
+          "device": 66306,
+          "mtime_ns": 1792344851273222313,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "1eaed9108ed6bcc0a6a6fd1520bc0afb2c2fac4770ea1dd007230b086d6f9b96"
+        },
+        "v1754_v82b_late_collecting_prefetch_prefix_20261018.json.gz": {
+          "size_bytes": 6419633,
+          "allocated_bytes": 6422528,
+          "inode": 140317104,
+          "device": 66306,
+          "mtime_ns": 1792347386617267027,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "60037315928645c5c2624ca3ea48a26e5fb4b0377385dcda45debda264c09361"
+        },
+        "v1754_v82b_late_collecting_prefetch_prefix_20261018_summary.json": {
+          "size_bytes": 627417,
+          "allocated_bytes": 630784,
+          "inode": 140317106,
+          "device": 66306,
+          "mtime_ns": 1792347386951260676,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "65899d14863f30c9c0e37c3a1064cd4427ede9e70e8aa99ccbfa540c5de554dd"
+        },
+        "v1755_v82b_wait_safe_prefix_gap_20261018.json": {
+          "size_bytes": 24438179,
+          "allocated_bytes": 24440832,
+          "inode": 140317105,
+          "device": 66306,
+          "mtime_ns": 1792348159652533804,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d84349a1d1c3598d4394615867ea54fbfce89e0d9461763d60e80ddb916b157f"
+        },
+        "v1756_v82b_wait_safe_prefix_gap_final_20261018.json": {
+          "size_bytes": 28486828,
+          "allocated_bytes": 28487680,
+          "inode": 140317107,
+          "device": 66306,
+          "mtime_ns": 1792348241701967735,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3d2881e931a68019bc1e1ba41833b2be2fc7251765f2d4f2edfb38f6638fc1ed"
+        },
+        "v1767_v82b_wait_queue_occupancy_20261018.json": {
+          "size_bytes": 28493901,
+          "allocated_bytes": 28495872,
+          "inode": 140317116,
+          "device": 66306,
+          "mtime_ns": 1792349735637906094,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3d2212d36c38c29d82a9343a6021cb245ee022f475f9fc1f23965afb1e735e26"
+        },
+        "v1769_v82b_wait_queue_coverage_final_20261018.json": {
+          "size_bytes": 28495609,
+          "allocated_bytes": 28495872,
+          "inode": 140317119,
+          "device": 66306,
+          "mtime_ns": 1792349888164404780,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d682225d6f42427c5acab27e2263564356bee963fb4b3fa8509162d86cb2964c"
+        },
+        "v1774_v82b_completed_prefetch_sealed_20261018.json.gz": {
+          "size_bytes": 6489306,
+          "allocated_bytes": 6492160,
+          "inode": 140318219,
+          "device": 66306,
+          "mtime_ns": 1792352612371447454,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "63f3d47f873cb3fff68375462ec9aef03c500a12de0d22c59d3c20ab2638dd6f"
+        },
+        "v1774_v82b_completed_prefetch_sealed_20261018_summary.json": {
+          "size_bytes": 639441,
+          "allocated_bytes": 643072,
+          "inode": 140318227,
+          "device": 66306,
+          "mtime_ns": 1792352612709441007,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3de17eac70b429ea70c536bdb0f74b4f9fb893ff57c183ccdb1a60c4cc1717e0"
+        },
+        "v1776_v82b_completed_wait_handoff_20261018.json": {
+          "size_bytes": 53023660,
+          "allocated_bytes": 53026816,
+          "inode": 140318229,
+          "device": 66306,
+          "mtime_ns": 1792352785206159962,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2252d2253a1b1bfcf155772eae7dc2df1f7e3aac1c7c76626c389a7691decd05"
+        },
+        "v1780_v82b_completed_wait_handoff_final_20261018.json": {
+          "size_bytes": 53023658,
+          "allocated_bytes": 53026816,
+          "inode": 140318239,
+          "device": 66306,
+          "mtime_ns": 1792352938419258439,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3b4950723ae61daafa1c6bf69b366b5c13585a0ea800919074bea54f7301aa2d"
+        },
+        "v1788_v82b_matched_context_600_2400_20261018.json": {
+          "size_bytes": 836751,
+          "allocated_bytes": 839680,
+          "inode": 140318249,
+          "device": 66306,
+          "mtime_ns": 1792354332868182139,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "cb18f1e92a4c02584ec94d83915cba22a10466ff7eb45a82b4fab1eee329f3bb"
+        },
+        "v1791_v82b_short_prefill_600_2400_20261018.json": {
+          "size_bytes": 9249329,
+          "allocated_bytes": 9252864,
+          "inode": 140318256,
+          "device": 66306,
+          "mtime_ns": 1792354462572819381,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "accaed89ebb4a0ada25dcc4473925fb1ccf6d93e37f08f0272493f392b0c4347"
+        },
+        "v1792_v82b_short_prefill_work_bins_600_2400_20261018.json": {
+          "size_bytes": 500791,
+          "allocated_bytes": 503808,
+          "inode": 140318258,
+          "device": 66306,
+          "mtime_ns": 1792354485542400347,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e3824b5639eaa2e1ffc035e1282b2d09d85a5e005f04de8d6ada935fdf98bb4f"
+        },
+        "v1793_v82b_prefill_turnover_600_2400_20261018.json": {
+          "size_bytes": 8439452,
+          "allocated_bytes": 8441856,
+          "inode": 140318260,
+          "device": 66306,
+          "mtime_ns": 1792354548075258752,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3ffef36eb9d474e9be0208376e757869764684708e2f2d30da3f86e463fcc7c1"
+        },
+        "v1794_v82b_prefill_neighbors_600_2400_20261018.json": {
+          "size_bytes": 9984066,
+          "allocated_bytes": 9986048,
+          "inode": 140318262,
+          "device": 66306,
+          "mtime_ns": 1792354777854055613,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c4fecac22c13b1a82950fc53a1263ee507063987e9f67f3ed0de1db1fd52b321"
+        },
+        "v1795_v82b_prefill_transition_gaps_600_2400_20261018.json": {
+          "size_bytes": 3263255,
+          "allocated_bytes": 3264512,
+          "inode": 140318264,
+          "device": 66306,
+          "mtime_ns": 1792354848771756293,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "49f1b732e7e1762ecf7afff320b0721541d32c308fa6bda664c75e1d6c4c0020"
+        }
+      },
+      "source_bytes": 299034247,
+      "source_allocated_bytes": 299094016
+    },
+    {
+      "day": "20261019",
+      "status": "selected",
+      "paths": {
+        "v1840_v83c_busy_context_600_2400_20261019.json": {
+          "size_bytes": 1115124,
+          "allocated_bytes": 1118208,
+          "inode": 140316350,
+          "device": 66306,
+          "mtime_ns": 1792384603874810960,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "246291642b29ee8edd61a4797eca2b02405ff38bbeaa943db1b709b296ae9e7c"
+        },
+        "v1841_v83c_prefill_turnover_600_2400_20261019.json": {
+          "size_bytes": 8649678,
+          "allocated_bytes": 8650752,
+          "inode": 140316352,
+          "device": 66306,
+          "mtime_ns": 1792384676115836502,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "69747ed4eb5a8f03c0b0a59868303f7caa950922821353f6044ff869ab89dc32"
+        },
+        "v1842_v83c_eos_prefetch_live_prefix_20261019.json.gz": {
+          "size_bytes": 4341843,
+          "allocated_bytes": 4345856,
+          "inode": 140316349,
+          "device": 66306,
+          "mtime_ns": 1792384425002229543,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "352fc6d367d74b85d9de7a3ac2bfca4e99b79f3e5f2f63832d79a5afb16939a1"
+        },
+        "v1842_v83c_eos_prefetch_live_prefix_20261019_summary.json": {
+          "size_bytes": 373467,
+          "allocated_bytes": 376832,
+          "inode": 140316351,
+          "device": 66306,
+          "mtime_ns": 1792384425230222074,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "03b6a3a0a6caadcda313ac020d13b9cadc0e59bd162687b6013f2aba660d5ab6"
+        },
+        "v1846_v83c_short_prefill_600_2400_20261019.json": {
+          "size_bytes": 10388907,
+          "allocated_bytes": 10391552,
+          "inode": 140316356,
+          "device": 66306,
+          "mtime_ns": 1792385062342677240,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "aaf714cbe1e29aae5e819078a2f72ae3387b40ccd2d88d07588db0db87893bcb"
+        },
+        "v1847_v83c_short_prefill_work_bins_600_2400_20261019.json": {
+          "size_bytes": 516606,
+          "allocated_bytes": 520192,
+          "inode": 140316354,
+          "device": 66306,
+          "mtime_ns": 1792385238747015863,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d522d4529de6ed4340354be9905b10d3139b27b86bd206588f6210a88795222b"
+        },
+        "v1859_v84_early_prefill_turnover_60_240_20261019.json": {
+          "size_bytes": 549174,
+          "allocated_bytes": 552960,
+          "inode": 140317338,
+          "device": 66306,
+          "mtime_ns": 1792387551430420001,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "b9c62af564426ebcec4db4e84dfc8c9147575057a48a63cb929c034d788b76be"
+        },
+        "v1862_v84_wait_prefetch_live_prefix_20261019.json.gz": {
+          "size_bytes": 813358,
+          "allocated_bytes": 815104,
+          "inode": 140317355,
+          "device": 66306,
+          "mtime_ns": 1792388254018000404,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "cc1bddff098d3fecf6c770a5c539ad519608d2d2b521b02d5ee41d199183bdc4"
+        },
+        "v1868_v84_wait_prefetch_live_prefix_20261019.json.gz": {
+          "size_bytes": 1923471,
+          "allocated_bytes": 1925120,
+          "inode": 140317422,
+          "device": 66306,
+          "mtime_ns": 1792389353379467431,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "076bcf026c4e960f0795520bfb72b93925f5f3c1ce5ade4094a1086a517cebca"
+        },
+        "v1870_v84_context_control_600_1800_20261019.json": {
+          "size_bytes": 270748,
+          "allocated_bytes": 274432,
+          "inode": 140317425,
+          "device": 66306,
+          "mtime_ns": 1792389379837011870,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5762996a817125fec4ccaaf64410b945f35aba294c5f10552285ae7a8ce79f33"
+        },
+        "v1871_v84_prefill_turnover_600_1800_20261019.json": {
+          "size_bytes": 2724486,
+          "allocated_bytes": 2727936,
+          "inode": 140317431,
+          "device": 66306,
+          "mtime_ns": 1792389418916336126,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "bfa5004d1230b77593266c669b1217e49c21ff50d7da7d6fa21293e41df9271f"
+        },
+        "v1880_v84_agent_context_lengths_20261019.json": {
+          "size_bytes": 323191,
+          "allocated_bytes": 323584,
+          "inode": 140317292,
+          "device": 66306,
+          "mtime_ns": 1792395327203426698,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3ccf152f78761d7d351e9cbb62979b858b3a7dcb9980ced4071f8445d09adef2"
+        },
+        "v1916_v85d_wait_prefetch_status_20261019.json.gz": {
+          "size_bytes": 376318,
+          "allocated_bytes": 376832,
+          "inode": 140320016,
+          "device": 66306,
+          "mtime_ns": 1792404140989242618,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "528d2053b5517c7bcb3b4adbb78958c51ad5b2943fbc3c567fbb3d18713d1584"
+        },
+        "v1918_v85d_tool_duration_status_20261019.json": {
+          "size_bytes": 306904,
+          "allocated_bytes": 307200,
+          "inode": 140320018,
+          "device": 66306,
+          "mtime_ns": 1792404168824915310,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ec71a93b3948a35a4008bc963b0fed5128c496fd715377f11780576ba3ce9793"
+        },
+        "v1922_v85d_full_tool_durations_20261019.json": {
+          "size_bytes": 306904,
+          "allocated_bytes": 307200,
+          "inode": 140320024,
+          "device": 66306,
+          "mtime_ns": 1792404969978298988,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "968217020e549c949eb7c750afa821c375f9d538d22e68eff13f7fa4915e7267"
+        },
+        "v1923_v85d_complete_predictive_analysis_20261019.json": {
+          "size_bytes": 443993,
+          "allocated_bytes": 446464,
+          "inode": 140320027,
+          "device": 66306,
+          "mtime_ns": 1792405699083555876,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d0b219ecef2edb697d31c938a3b0c5bf97554711d3728dfb91ab3f1a4ac90272"
+        }
+      },
+      "source_bytes": 33424172,
+      "source_allocated_bytes": 33460224
+    },
+    {
+      "day": "20261020",
+      "status": "selected",
+      "paths": {
+        "v2169_v96_common_window_service_geometry_20261020.json": {
+          "size_bytes": 1074799,
+          "allocated_bytes": 1077248,
+          "inode": 140320719,
+          "device": 66306,
+          "mtime_ns": 1792474801330738517,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7c1ebac4ba500a58ad85b0b1c3a5d70881ac64211b7c4df8c9e7ddfe5ba46026"
+        },
+        "v2170_v96_common_window_short_prefill_20261020.json": {
+          "size_bytes": 3688939,
+          "allocated_bytes": 3690496,
+          "inode": 140320714,
+          "device": 66306,
+          "mtime_ns": 1792474939236969392,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0968255b60513b6e7a9344b531821bc215de8bd8d167afb8c265fc42676e7f94"
+        },
+        "v2172_v96_common_window_prefill_phases_20261020.json": {
+          "size_bytes": 2313361,
+          "allocated_bytes": 2314240,
+          "inode": 140320720,
+          "device": 66306,
+          "mtime_ns": 1792475110723566270,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a8f88032e1dd40a4c23b73d06fd7f1bacda0d665ebd51a8b7e8360d8a32e6c0c"
+        },
+        "v2267_v101_current_prefetch_20261020.json.gz": {
+          "size_bytes": 841243,
+          "allocated_bytes": 843776,
+          "inode": 140321496,
+          "device": 66306,
+          "mtime_ns": 1792491264972437288,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0a332abb5612d231a704f687d6c7891bbf639c41c150075ba6f37b47bbd6dc16"
+        },
+        "v2283_v101_stopped_prefetch_audit_20261020.json.gz": {
+          "size_bytes": 1584949,
+          "allocated_bytes": 1585152,
+          "inode": 140321588,
+          "device": 66306,
+          "mtime_ns": 1792493956876622668,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "420f52d70c7b22f78b67ef3dd75132b67c59b9b485a2751177297e90c5b816e2"
+        }
+      },
+      "source_bytes": 9503291,
+      "source_allocated_bytes": 9510912
+    },
+    {
+      "day": "20261021",
+      "status": "selected",
+      "paths": {
+        "v2423_v103_current_prefetch_20261021.json.gz": {
+          "size_bytes": 340257,
+          "allocated_bytes": 344064,
+          "inode": 140322214,
+          "device": 66306,
+          "mtime_ns": 1792534806866574851,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8b542f8ad49d9efbbe2094acaab27aedfb5dd655910c178e1d1bb6df7dfb3995"
+        },
+        "v2426_v103_vs_v99_native_geometry_600_900_20261021.json": {
+          "size_bytes": 482599,
+          "allocated_bytes": 483328,
+          "inode": 140322218,
+          "device": 66306,
+          "mtime_ns": 1792534937440457804,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7475618164e6d54f71d754c8437bacaf65f5899f3d7951fb31341561538ddec2"
+        },
+        "v2427_v103_vs_v99_prefill_phases_600_900_20261021.json": {
+          "size_bytes": 650093,
+          "allocated_bytes": 651264,
+          "inode": 140322219,
+          "device": 66306,
+          "mtime_ns": 1792535024085479624,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "fbe7f01e57c1f65f0326040e1e45d11fb5fb36b76f13c1b4f0a1d27432962094"
+        },
+        "v2436_v103_complete_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1344633,
+          "allocated_bytes": 1347584,
+          "inode": 140322234,
+          "device": 66306,
+          "mtime_ns": 1792538311057244091,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ed1e41b4aff8a14f8e5b60e7fbfd87f2e31e3cc18d72d5747e7037cab9f887dc"
+        },
+        "v2440_v103_same_round_geometry_600_800_20261021.json": {
+          "size_bytes": 403546,
+          "allocated_bytes": 405504,
+          "inode": 140322236,
+          "device": 66306,
+          "mtime_ns": 1792538548537828393,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c5e500d818f1de31261217dded75e1ebca363a66c0e4335b9c2f261dee300dc0"
+        },
+        "v2453_v104_critical_donor_requests_prefix_20261021.json": {
+          "size_bytes": 296029,
+          "allocated_bytes": 299008,
+          "inode": 140322298,
+          "device": 66306,
+          "mtime_ns": 1792542721502850120,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "338bad7cc95e00f6fbbdbe4fab1e11f9797d216e179b76dba65d337fc56966e3"
+        },
+        "v2455_v104_wait_prefetch_prefix_20261021.json.gz": {
+          "size_bytes": 320462,
+          "allocated_bytes": 323584,
+          "inode": 140322304,
+          "device": 66306,
+          "mtime_ns": 1792542851424958834,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "b912eeb099e19003c6a634555f40f406e280a06a646e9d79de2da922618598ad"
+        },
+        "v2465_v104_debug_stop_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1682798,
+          "allocated_bytes": 1683456,
+          "inode": 140322324,
+          "device": 66306,
+          "mtime_ns": 1792545320974070523,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "fa9e74ee994c47656eac964e6083ff338b1865abb1afdeba49d92240fb33f6c0"
+        },
+        "v2475_v105_mid_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 549995,
+          "allocated_bytes": 552960,
+          "inode": 140322331,
+          "device": 66306,
+          "mtime_ns": 1792546928064531454,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "af55241273984933669c90491b020a3f9e820c3986fac463d09b20bb3fd1e541"
+        },
+        "v2477_v105_v103_native_busy_600_800_20261021.json": {
+          "size_bytes": 395235,
+          "allocated_bytes": 397312,
+          "inode": 140322340,
+          "device": 66306,
+          "mtime_ns": 1792547198414631760,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "877e01e22dfc9dae1ab88022535edfd020c7cddca6e9fa9a5c0f8cda90fa58f9"
+        },
+        "v2478_v105_late_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1005828,
+          "allocated_bytes": 1007616,
+          "inode": 140322348,
+          "device": 66306,
+          "mtime_ns": 1792547754711787163,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "9c281a7f8aafdd1b3a96bb44c46551d109b671e3248d29b43feba3c245c3f168"
+        },
+        "v2481_v105_complete_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1500420,
+          "allocated_bytes": 1503232,
+          "inode": 140322422,
+          "device": 66306,
+          "mtime_ns": 1792549025434497849,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "9c5da81637f62b6a90f4412d2122758de073316fb38fb4efdfe99948de9b2833"
+        },
+        "v2487_v106_current_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 333325,
+          "allocated_bytes": 335872,
+          "inode": 140322428,
+          "device": 66306,
+          "mtime_ns": 1792550023472545600,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f01fdd898e2f4e4420cdaf75413e8b726854ddef8608beb0625f89790dd2b475"
+        },
+        "v2496_v106_late_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1150377,
+          "allocated_bytes": 1150976,
+          "inode": 140322517,
+          "device": 66306,
+          "mtime_ns": 1792551814874569037,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "120d98b83bfc6a0703cbe6330e1181d4adb3b8cb3ec48c135e9327ff761517e5"
+        },
+        "v2497_v106_v103_native_busy_600_2400_20261021.json": {
+          "size_bytes": 1084577,
+          "allocated_bytes": 1085440,
+          "inode": 140322521,
+          "device": 66306,
+          "mtime_ns": 1792551820471472137,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "ebdf0bcbf7731b9970671379c02ef541ffd07990978c477ed507bba10a9ede77"
+        },
+        "v2501_v106_complete_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1375161,
+          "allocated_bytes": 1376256,
+          "inode": 140322523,
+          "device": 66306,
+          "mtime_ns": 1792557268656441902,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "76b733f36c0b1e6cb0957ee35fb40c394c4c619944b89bee96a695639ef305cd"
+        },
+        "v2502_v107_complete_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1792839,
+          "allocated_bytes": 1794048,
+          "inode": 140322526,
+          "device": 66306,
+          "mtime_ns": 1792557270235311045,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "26a3c257dd021a0cdc07c1e3ffba46c8017ed737c514d824f7889aa6069d0388"
+        },
+        "v2517_v108_early_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 301500,
+          "allocated_bytes": 303104,
+          "inode": 140322547,
+          "device": 66306,
+          "mtime_ns": 1792559947473785987,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "bb43f1b49a8bac61c392e257579ba6dfc00afa4b6e906791600f38915fb0c227"
+        },
+        "v2525_v108_late_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1549878,
+          "allocated_bytes": 1552384,
+          "inode": 140322566,
+          "device": 66306,
+          "mtime_ns": 1792562129145637036,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "52ce836d84ac73fe301cbe08695835b078177ddd434c82f63b3a91c5ee561237"
+        },
+        "v2528_v108_complete_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1755034,
+          "allocated_bytes": 1757184,
+          "inode": 140322572,
+          "device": 66306,
+          "mtime_ns": 1792563348601984203,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f083e0b75eb1276308ce2e3561661b7841591c56aa7d05e5e92ef1dc6a77e37f"
+        },
+        "v2555_v109_busy_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 349004,
+          "allocated_bytes": 352256,
+          "inode": 140322610,
+          "device": 66306,
+          "mtime_ns": 1792567324484669206,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c700591fcaa214bdc0e45a035c1319f8b24c254b39bf67467b9e736b1f44bfc1"
+        },
+        "v2556_v109_late_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1114862,
+          "allocated_bytes": 1118208,
+          "inode": 140322619,
+          "device": 66306,
+          "mtime_ns": 1792568984848792509,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "677b2597b1ebf17af27b05f9fcc2c72920ed2ea1ad6d99d3130094f4668a99ba"
+        },
+        "v2562_v109_complete_wait_prefetch_20261021.json.gz": {
+          "size_bytes": 1281374,
+          "allocated_bytes": 1282048,
+          "inode": 140322628,
+          "device": 66306,
+          "mtime_ns": 1792570670258611229,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7d848fc3a25087c7f19a201875efe7ae66258893a6af630c7af1fe46e86177ff"
+        },
+        "v2637_tool_reentry_latest_four_arms_20261021.json": {
+          "size_bytes": 19005571,
+          "allocated_bytes": 19009536,
+          "inode": 140322819,
+          "device": 66306,
+          "mtime_ns": 1792597454226249016,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "36caeb398ef6215beb49a71857d57d2439e0a7e25c6a98bdb9eaaebfd594825e"
+        },
+        "v2638_tool_reentry_latest_four_arms_20261021.json": {
+          "size_bytes": 34848575,
+          "allocated_bytes": 34848768,
+          "inode": 140322820,
+          "device": 66306,
+          "mtime_ns": 1792597639907991435,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0a6af4cafa786967f1a0eb89e3f2a5f4e9e6b6e9086904792e76a497ae4fafeb"
+        }
+      },
+      "source_bytes": 74913972,
+      "source_allocated_bytes": 74964992
+    },
+    {
+      "day": "20261022",
+      "status": "selected",
+      "paths": {
+        "v2677_program_scheduling_signals_latest_20261022.json": {
+          "size_bytes": 40269020,
+          "allocated_bytes": 40271872,
+          "inode": 140322916,
+          "device": 66306,
+          "mtime_ns": 1792605306366363649,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f4392d7c355870315e7ea2a31034c702bf6cafe8b3ea41af8fb0e6ff1a0c096a"
+        },
+        "v2678_program_scheduling_dependency_signals_latest_20261022.json": {
+          "size_bytes": 43648372,
+          "allocated_bytes": 43651072,
+          "inode": 140322917,
+          "device": 66306,
+          "mtime_ns": 1792605522882564752,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "05727152d8f26fccb91e0f0e6e0ecdfdc40ba29ec55fdd436892805da38f402d"
+        },
+        "v2708_restore_wait_breakdown_latest_four_arms_20261022.json": {
+          "size_bytes": 398437,
+          "allocated_bytes": 401408,
+          "inode": 140323023,
+          "device": 66306,
+          "mtime_ns": 1792613431322863557,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "125e0a2724644d67f34b0337bc6536fbdcd129c950e4c682a7e0efc7f2647477"
+        },
+        "v2717_v121_tool_reentry_20261022.json": {
+          "size_bytes": 15282654,
+          "allocated_bytes": 15286272,
+          "inode": 140323062,
+          "device": 66306,
+          "mtime_ns": 1792638810974185907,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "87c0b882835000a0dab601d2f5349be36d6a874052286ceaa31d12b49ddff73b"
+        },
+        "v2719_v121_program_signals_20261022.json": {
+          "size_bytes": 19162231,
+          "allocated_bytes": 19165184,
+          "inode": 140323063,
+          "device": 66306,
+          "mtime_ns": 1792638907132859357,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5bd684d09dbae68457e2163f40dd5affd5b3c8b69364f9a56f9247e56d0ecd3e"
+        },
+        "v2720_v121_sealed_wait_20261022.json.gz": {
+          "size_bytes": 2465054,
+          "allocated_bytes": 2465792,
+          "inode": 140323057,
+          "device": 66306,
+          "mtime_ns": 1792639083368412006,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3724511148a66228e88a6a778099efcea7fa372c9bc4b9564a7dc1478cd143e1"
+        },
+        "v2725_v121_busy_prefill_control_20261022.json": {
+          "size_bytes": 1806378,
+          "allocated_bytes": 1810432,
+          "inode": 140323142,
+          "device": 66306,
+          "mtime_ns": 1792640422256233515,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d3a0ceea695389371290d066f74d28b092cab1b2d751cec331f3451905b578e7"
+        },
+        "v2726_v122_program_signals_20261022.json": {
+          "size_bytes": 15023259,
+          "allocated_bytes": 15024128,
+          "inode": 140323144,
+          "device": 66306,
+          "mtime_ns": 1792643562999220159,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f445d7d5f44dd47cbedf26d656ee9f7979caf56c21b6f3d32ac1ba10ffab1ec2"
+        },
+        "v2739_v122_busy_geometry_20261022.json": {
+          "size_bytes": 1552430,
+          "allocated_bytes": 1556480,
+          "inode": 140323153,
+          "device": 66306,
+          "mtime_ns": 1792648426406246090,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "1887c7e59ca9ef5578bf6294baf07337eff2ede26e59a7e93cf1fde355142589"
+        },
+        "v2740_v122_prefill_turnover_20261022.json": {
+          "size_bytes": 3999551,
+          "allocated_bytes": 4001792,
+          "inode": 140323159,
+          "device": 66306,
+          "mtime_ns": 1792648619477858011,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d9d9b301a5539e3c3c1c471c5dbfc7e8baba05931417463f6df8ba95a618550d"
+        },
+        "v2746_v122_prefill_neighbors_20261022.json": {
+          "size_bytes": 1243062,
+          "allocated_bytes": 1245184,
+          "inode": 140323162,
+          "device": 66306,
+          "mtime_ns": 1792650484181816068,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "60f2992def6cadd73fd72e9585de3554fb159e33493aab578f69a9daa7ff392e"
+        },
+        "v2747_v122_prefill_transition_gaps_20261022.json": {
+          "size_bytes": 1352786,
+          "allocated_bytes": 1355776,
+          "inode": 140323163,
+          "device": 66306,
+          "mtime_ns": 1792650526483149966,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "eb22756e0b1de931c46e4d5fcf3b2b0aa9989f3e01da88bbd5451c351eb8bc81"
+        },
+        "v2749_v122_tool_requeue_fragmentation_20261022.json": {
+          "size_bytes": 398690,
+          "allocated_bytes": 401408,
+          "inode": 140323165,
+          "device": 66306,
+          "mtime_ns": 1792651809445547899,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0e51e73d6c88b4daf68815acd211c25f167230120a9e8917feec7264b900fc22"
+        },
+        "v2753_v108_v122_v123_geometry_20261022.json": {
+          "size_bytes": 1474588,
+          "allocated_bytes": 1478656,
+          "inode": 140323170,
+          "device": 66306,
+          "mtime_ns": 1792652671808188933,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "2f093ea7a72e1b0d7601224d931837bbaddf9968433355d2ac425bf2b6dae895"
+        },
+        "v2755_v108_v122_v123_fine_geometry_20261022.json": {
+          "size_bytes": 3677395,
+          "allocated_bytes": 3678208,
+          "inode": 140323171,
+          "device": 66306,
+          "mtime_ns": 1792653152911714125,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c9246f518fd84aee63f464ff5cda8ca59ce861e9670e270bb8a76c7aafd8ce5b"
+        },
+        "v2762_v108_v122_v123_prefill_phases_20261022.json": {
+          "size_bytes": 2342178,
+          "allocated_bytes": 2342912,
+          "inode": 140323174,
+          "device": 66306,
+          "mtime_ns": 1792653625896998350,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "48ce312b4c591fc6ee1828200d47fa7fe96cb208dc20a9d232f95706f722b3aa"
+        },
+        "v2763_v108_v122_v123_fine_geometry_600_1800_20261022.json": {
+          "size_bytes": 6662728,
+          "allocated_bytes": 6664192,
+          "inode": 140323180,
+          "device": 66306,
+          "mtime_ns": 1792653963842924853,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "02995c43431d1b0e1642c54e1bc28c9b578fed3c549265fa922abccafabb1c65"
+        },
+        "v2795_latest_tool_reentry_600_1800_20261022.json": {
+          "size_bytes": 19034457,
+          "allocated_bytes": 19038208,
+          "inode": 140323212,
+          "device": 66306,
+          "mtime_ns": 1792661283137246891,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "28660e12ad08c0b7adf3705cb563094869856709727e2592bca93d67d4e1cff5"
+        },
+        "v2796_latest_busy_and_prefill_600_1800_20261022.json": {
+          "size_bytes": 24842027,
+          "allocated_bytes": 24842240,
+          "inode": 140323214,
+          "device": 66306,
+          "mtime_ns": 1792661555065259591,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c943eb87be1317f36a635544a2389ee58786be3ee10fc7280b2026e58481e762"
+        },
+        "v2818_paired_workflow_work_audit_20261022.json": {
+          "size_bytes": 302874,
+          "allocated_bytes": 303104,
+          "inode": 140323239,
+          "device": 66306,
+          "mtime_ns": 1792669060392860636,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "4736c80a524539e5ae79624c0f502389bb81f6ce6b4446c28eb89b585c6514df"
+        },
+        "v2823_v126_no_join_live_lifecycle_20261022.json.gz": {
+          "size_bytes": 805388,
+          "allocated_bytes": 806912,
+          "inode": 140322518,
+          "device": 66306,
+          "mtime_ns": 1792673664830956445,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d3525189fcfdec5bb3732d23343b6c324ca7b82dc29637cb0570dc76a4bdf03a"
+        },
+        "v2826_v126_no_join_prefill_control_20261022.json": {
+          "size_bytes": 4688644,
+          "allocated_bytes": 4689920,
+          "inode": 140323222,
+          "device": 66306,
+          "mtime_ns": 1792674157023275682,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5be300b3316a4bab48623ff55540c57b16587d0ac951d72ecc4e66c112448611"
+        },
+        "v2832_v127_latest_prefill_phases_600_780_20261022.json": {
+          "size_bytes": 1032624,
+          "allocated_bytes": 1036288,
+          "inode": 140323248,
+          "device": 66306,
+          "mtime_ns": 1792676123061207823,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7afafbe0dab7cd25432f21776ffedf89182ec2e7c8d7fcba4a116b0e64dcac70"
+        },
+        "v2835_v127_latest_prefill_phases_600_1440_20261022.json": {
+          "size_bytes": 3372331,
+          "allocated_bytes": 3375104,
+          "inode": 140323252,
+          "device": 66306,
+          "mtime_ns": 1792676790713804190,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c8186cdf7e237f0e673525ac795ac3ce69d05e699d1490dec0d0e06c3489640d"
+        },
+        "v2838_paired_request_identity_history_20261022.json": {
+          "size_bytes": 294882,
+          "allocated_bytes": 294912,
+          "inode": 140323257,
+          "device": 66306,
+          "mtime_ns": 1792678508147324604,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7d443efb2a5b540316d1505d4e21fc035e0d9643f16f8c20832efeedcfb9d760"
+        },
+        "v2840_paired_request_identity_history_final_20261022.json": {
+          "size_bytes": 345511,
+          "allocated_bytes": 348160,
+          "inode": 140323259,
+          "device": 66306,
+          "mtime_ns": 1792678637902406072,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "5de2c03ebd1d65d21b9b90c7523cfe756190a758b980bb53edd17741a8586f8b"
+        },
+        "v2842_v127_no_join_live_lifecycle_20261022.json.gz": {
+          "size_bytes": 1129791,
+          "allocated_bytes": 1130496,
+          "inode": 140323261,
+          "device": 66306,
+          "mtime_ns": 1792679048988439015,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "fb8c361868db1a3a8cfeb3ff407a79e4337871779859d6383c8468eecc635e3f"
+        },
+        "v2854_v127_prefetch_witness_interpretation_20261022.json": {
+          "size_bytes": 17414674,
+          "allocated_bytes": 17416192,
+          "inode": 140323273,
+          "device": 66306,
+          "mtime_ns": 1792682054977759878,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "a06902182f942e7e67720b18ea75719b427d1634a82be338f39488a7da05c8ec"
+        },
+        "v2856_v128_no_background_live_lifecycle_20261022.json.gz": {
+          "size_bytes": 428513,
+          "allocated_bytes": 430080,
+          "inode": 140323274,
+          "device": 66306,
+          "mtime_ns": 1792682328702761218,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "621ffeb073d7e22c91857cf74c56e3b5b33f2819758bc88f779b3bf303397023"
+        },
+        "v2859_v128_tool_reentry_live_20261022.json": {
+          "size_bytes": 16271717,
+          "allocated_bytes": 16273408,
+          "inode": 140323280,
+          "device": 66306,
+          "mtime_ns": 1792683969608497580,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "66435338a9b627ce286840163c45742961422fd4502b09b220a4d56e6073a74b"
+        }
+      },
+      "source_bytes": 250722246,
+      "source_allocated_bytes": 250785792
+    },
+    {
+      "day": "20261023",
+      "status": "selected",
+      "paths": {
+        "v2875_v128_no_tool_live_lifecycle_20261023.json.gz": {
+          "size_bytes": 662034,
+          "allocated_bytes": 663552,
+          "inode": 140323297,
+          "device": 66306,
+          "mtime_ns": 1792688249002881864,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7bc12c68ff3f373033a04679e305d16254ad4d3400dd8c1df3c473908c9fcf8f"
+        },
+        "v2875_v128_no_tool_live_lifecycle_20261023_summary.json": {
+          "size_bytes": 267819,
+          "allocated_bytes": 270336,
+          "inode": 140323299,
+          "device": 66306,
+          "mtime_ns": 1792688249045880707,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "3eb104d6a6a759735b7d439a7a7a10b4ffaa57400b841ef473c169702c049789"
+        },
+        "v2878_v128_no_tool_complete_lifecycle_20261023.json.gz": {
+          "size_bytes": 663122,
+          "allocated_bytes": 663552,
+          "inode": 140323300,
+          "device": 66306,
+          "mtime_ns": 1792688464498800777,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "44a9e924396de18973ba2e5fc90e2e4d530f96f9e56c48ff597eb255da278f97"
+        },
+        "v2878_v128_no_tool_complete_lifecycle_20261023_summary.json": {
+          "size_bytes": 271443,
+          "allocated_bytes": 274432,
+          "inode": 140323303,
+          "device": 66306,
+          "mtime_ns": 1792688464543801361,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "f8f34741465238764db839a736efb2824fa09be9997c2363398ef20da353412e"
+        },
+        "v2879_v128_completed_pair_realized_work_20261023.json": {
+          "size_bytes": 351357,
+          "allocated_bytes": 352256,
+          "inode": 140323304,
+          "device": 66306,
+          "mtime_ns": 1792688507843306646,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "63b38b3972d6336eb4585e5344a295c95d5cf7bba4911c0d8f2320cf7d690bbe"
+        },
+        "v2893_v128_no_child_lifecycle_prefix_20261023.json.gz": {
+          "size_bytes": 1598551,
+          "allocated_bytes": 1601536,
+          "inode": 140323315,
+          "device": 66306,
+          "mtime_ns": 1792691797294797842,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e61b75d1e3eeeabc902adfcefdfcb1eac08400282340b087131aaae8a2af6068"
+        },
+        "v2899_v128_no_child_complete_lifecycle_20261023.json.gz": {
+          "size_bytes": 1618053,
+          "allocated_bytes": 1622016,
+          "inode": 140323323,
+          "device": 66306,
+          "mtime_ns": 1792692067378244873,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "75ce3558c2453772907e2c702ad919e3622322fd86d6e2da72422ae552af2fbd"
+        },
+        "v2901_v128_completed_three_arms_work_20261023.json": {
+          "size_bytes": 829858,
+          "allocated_bytes": 831488,
+          "inode": 140323329,
+          "device": 66306,
+          "mtime_ns": 1792692228666062978,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "c5e20a44fa11c973380ca3d983d6f0c3de1ea9838b1cac5a0e2211dc183ab1e6"
+        },
+        "v2914_v128_full_lifecycle_prefix_20261023.json.gz": {
+          "size_bytes": 1058661,
+          "allocated_bytes": 1060864,
+          "inode": 140323349,
+          "device": 66306,
+          "mtime_ns": 1792694304684216767,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "d61d27127eb0b0836de6336c3bc7dbba238e8dec759e35400c9fbe800fa5baef"
+        },
+        "v2915_v128_full_complete_lifecycle_20261023.json.gz": {
+          "size_bytes": 1387736,
+          "allocated_bytes": 1388544,
+          "inode": 140323353,
+          "device": 66306,
+          "mtime_ns": 1792695645463248020,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7bf13bd72b82607d627a97c2e7515a28ffe6a25490df3bf94f7c35020284ec50"
+        },
+        "v2917_v128_full_paired_realized_work_20261023.json": {
+          "size_bytes": 1508370,
+          "allocated_bytes": 1511424,
+          "inode": 140323350,
+          "device": 66306,
+          "mtime_ns": 1792695681024390128,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "243e375bd969f8c3a48f5269f639d437156ef307440d31d3e63fb61d7ed887ab"
+        },
+        "v2927_v128_full_native_busy_prefill_prefix_20261023.json": {
+          "size_bytes": 3673759,
+          "allocated_bytes": 3674112,
+          "inode": 140323362,
+          "device": 66306,
+          "mtime_ns": 1792698623906774003,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "35f16113dc4ec1f36a098bb8068a0aa1a4f86ab10c1a67bf1f26cbfe06156f6e"
+        },
+        "v2985_v131b_full_running_lifecycle_20261023.json.gz": {
+          "size_bytes": 309194,
+          "allocated_bytes": 311296,
+          "inode": 140323567,
+          "device": 66306,
+          "mtime_ns": 1792711996628644256,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7a2841cd747ec056ed1b17b2e90614e5ba91e6466ad494de525b2d2c312aa8f5"
+        },
+        "v2986_v131b_full_running_lifecycle_20261023.json.gz": {
+          "size_bytes": 573111,
+          "allocated_bytes": 573440,
+          "inode": 140323564,
+          "device": 66306,
+          "mtime_ns": 1792712776026158637,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e89940a06ceac852bded3531aaac01ecd9d8b2e7ec95e540a21e2a3ac98edc69"
+        },
+        "v2988_v131b_full_prefill_prefix_20261023.json": {
+          "size_bytes": 948495,
+          "allocated_bytes": 950272,
+          "inode": 140323572,
+          "device": 66306,
+          "mtime_ns": 1792713639941645211,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "44ab47aafff8785494f61ae8aed30d4ba6dfd81faeaac1da39f08b6fa2b4d7d6"
+        },
+        "v2990_v131b_full_prefill_prefix_final_20261023.json": {
+          "size_bytes": 948495,
+          "allocated_bytes": 950272,
+          "inode": 140323569,
+          "device": 66306,
+          "mtime_ns": 1792713822992754574,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "cbe025d00a564f3a50b2bc41050ca624a871d57119855a5a91cdc2750f348394"
+        },
+        "v2993_v131b_full_running_lifecycle_20261023.json.gz": {
+          "size_bytes": 1634393,
+          "allocated_bytes": 1638400,
+          "inode": 140323575,
+          "device": 66306,
+          "mtime_ns": 1792714755927466801,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "7d96bbeadb25186ce1fc54ed17a89e423e240439829061a3b41387eda132ad81"
+        },
+        "v3000_v131b_full_running_lifecycle_20261023.json.gz": {
+          "size_bytes": 1774867,
+          "allocated_bytes": 1777664,
+          "inode": 140323581,
+          "device": 66306,
+          "mtime_ns": 1792715726863710454,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "dec0299fbf7ec100eb0331473599129efc422f769c0c201036308ecc9c5e80de"
+        },
+        "v3004_v131b_full_dispatch_native_timing_20261023.json.gz": {
+          "size_bytes": 1823069,
+          "allocated_bytes": 1826816,
+          "inode": 140323589,
+          "device": 66306,
+          "mtime_ns": 1792716705251323299,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "9e7687f2b371a3d90ac2c38c5f3d96dc1114073e8bae94ebb6c24721fb5bdbdc"
+        },
+        "v3005_v131b_full_complete_lifecycle_20261023.json.gz": {
+          "size_bytes": 1834873,
+          "allocated_bytes": 1835008,
+          "inode": 140323588,
+          "device": 66306,
+          "mtime_ns": 1792716974637974944,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "8c16cdce54afa42eef20237ed960370f36bdcb71f610b1cf373d31cc9b1241ab"
+        },
+        "v3007_v131b_early_matched_geometry_20261023.json": {
+          "size_bytes": 1035920,
+          "allocated_bytes": 1036288,
+          "inode": 140323594,
+          "device": 66306,
+          "mtime_ns": 1792717996013537575,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "49e552824e2fb99da33a65b8aa6e0b18904a8b4ce133ade7e7202d1f4d67990a"
+        },
+        "v3008_v131b_early_prefill_phases_20261023.json": {
+          "size_bytes": 562097,
+          "allocated_bytes": 565248,
+          "inode": 140323593,
+          "device": 66306,
+          "mtime_ns": 1792718047133195673,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "af0f5a4c3a0f9ba2dab58642f91ac37b349212365c59c727a4a4c97dd6554d13"
+        },
+        "v3018_v131b_matched_geometry_300_2700s_20261023.json": {
+          "size_bytes": 4514473,
+          "allocated_bytes": 4517888,
+          "inode": 140323604,
+          "device": 66306,
+          "mtime_ns": 1792720811283141622,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "b6afdaf9e31ac82298781f2202a1aa1d00c03a0cee5811db1c66ce7ea315e0f2"
+        },
+        "v3019_v131b_prefill_phases_300_2700s_20261023.json": {
+          "size_bytes": 3993457,
+          "allocated_bytes": 3993600,
+          "inode": 140323605,
+          "device": 66306,
+          "mtime_ns": 1792720849998329763,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0c9975ddc835f4f8218285b622424d1c9afecc35759cb0d8637835211751f3f6"
+        },
+        "v3020_v131b_prefill_matched_300_2700s_20261023.json": {
+          "size_bytes": 358109,
+          "allocated_bytes": 360448,
+          "inode": 140323607,
+          "device": 66306,
+          "mtime_ns": 1792720922920812190,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "e0db554abcb50aa4c90e7bd369f4332129b2ba8e205ea971c2ec2b3727a399df"
+        },
+        "v3021_v131b_exact_request_prefill_worker_300_2700s_20261023.json": {
+          "size_bytes": 1527162,
+          "allocated_bytes": 1527808,
+          "inode": 140323598,
+          "device": 66306,
+          "mtime_ns": 1792720905274178123,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "1a59132fd712130a222dcdcf5cd3f0d9c159bab74379ffa39c4bf1bb752d06f4"
+        },
+        "v3033_v131b_complete_actual_prefill_work_20261023.json": {
+          "size_bytes": 2231276,
+          "allocated_bytes": 2232320,
+          "inode": 140323617,
+          "device": 66306,
+          "mtime_ns": 1792723069902835633,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "71386f2f98adc60a106035b448a85220d643a8ab8a522e694f892bc7743bce80"
+        },
+        "v3063_join_only_complete_audit_20261023.json": {
+          "size_bytes": 39755032,
+          "allocated_bytes": 39755776,
+          "inode": 140323689,
+          "device": 66306,
+          "mtime_ns": 1792731885172256688,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "41c278a3875fe42aa72e19120672b5a154ea672272a0916fd0dd5a9726a7163b"
+        },
+        "v3096_v133b_full_wait_funnel_20261023.json.gz": {
+          "size_bytes": 613322,
+          "allocated_bytes": 614400,
+          "inode": 140316394,
+          "device": 66306,
+          "mtime_ns": 1792743831180268509,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "43e20260f6b29c94924816b15632bc7aae33a60d70894de04fbf993e105d1e90"
+        },
+        "v3102_v133b_long_prefill_phases_20261023.json": {
+          "size_bytes": 4633071,
+          "allocated_bytes": 4636672,
+          "inode": 140316402,
+          "device": 66306,
+          "mtime_ns": 1792746376440735969,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "0361b73592a95a2d88a02c865f9c2108205adfe4453a3d5023072dcd3192ad29"
+        },
+        "v3151_v133b_tool_continuation_work_20261023.json": {
+          "size_bytes": 19689092,
+          "allocated_bytes": 19689472,
+          "inode": 140316445,
+          "device": 66306,
+          "mtime_ns": 1792761743058120245,
+          "uid": 2603,
+          "nlink": 1,
+          "sha256": "75d05223a234dca676ca7932c3d9cb17d6d92d150bdd770fbc65f926bdce146b"
+        }
+      },
+      "source_bytes": 102650271,
+      "source_allocated_bytes": 102707200
+    }
+  ],
+  "selected_files": 349,
+  "source_bytes": 1548740386,
+  "source_allocated_bytes": 1549430784,
+  "policy": {
+    "scope": "Untracked flat versioned derived reports, Oct 1-23, at least 256 KiB.",
+    "reference_guard": "Code/docs/tests/configs, recent ops/metadata and live arguments.",
+    "tracked_files_changed_or_removed": false,
+    "recent_report_directories_changed": false
+  },
+  "preserved": [
+    "Current and recent reports, models, datasets and source/token packages.",
+    "All Git-tracked reports and all currently referenced historical reports.",
+    "All qualification/CPU proofs, inventories, receipts, provenance and archive evidence.",
+    "All paper PDFs, presentations, workspaces and running processes.",
+    "Archived negative/failed analyses retain their exact original bytes."
+  ]
+}

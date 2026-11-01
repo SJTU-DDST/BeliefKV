@@ -4,6 +4,30 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-11-01 Historical Derived Reports
+
+The completed cleanup archives 349 untracked, flat versioned analysis reports dated
+Oct 9-23, each at least 256 KiB. They are grouped into 13 dated archives under
+`experiments/archive/20261101_old_reports/`, with 1,549,430,784 allocated source
+bytes. They became 258,138,506 compressed bytes, reclaiming approximately
+1.29 GB. Complete GNU tar comparison and fresh reference/process checks
+preceded removal; the independent review hashes every report payload from
+its archive.
+
+The [report restore index](20261101_old_reports/README.md) maps every original
+filename to its dated bundle, SHA256 and extraction command. Selection, receipt
+and independent review are under
+`experiments/reports/old_reports_archive_20261101/`. The report root retains
+`OLD_REPORTS_ARCHIVED_20261101.md`.
+
+Eighty-three referenced candidate reports remain directly readable. All
+Git-tracked reports, recent experiment inputs, current source/calibration
+datasets, qualification and CPU proofs, archive receipts, paper PDFs and
+presentations are preserved. Reference checks cover repository code, tests,
+docs/configs, recent operational metadata and live process arguments; no GPU
+work or process cleanup is part of this maintenance. Negative and failed
+analyses retain their complete original bytes in the archives.
+
 ## 2026-11-01 Historical Qwen3-Coder Logs
 
 Thirty inactive Qwen3-Coder runs from Oct 24-28 contributed 202 large server,
