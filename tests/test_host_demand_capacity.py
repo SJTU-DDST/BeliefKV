@@ -9,6 +9,7 @@ import pytest
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.paper_baselines import environment as paper_environment
 from beliefkv.runtime.host_demand_capacity import HostDemandCapacity
+from beliefkv.runtime.idle_host_mirror_recycle import IdleHostMirrorRecycle
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_idle_host_mirror_recycle import mirror_runtime
@@ -27,6 +28,104 @@ def test_real_native_host_demand_reclaims_a_pinned_duplicate_without_freeing_dev
     assert hot.component_data[0].host_value is None
     assert hot.id in cache._beliefkv_unbacked_full
     assert not writes
+
+
+def test_bounded_host_demand_scan_advances_past_an_unpinned_duplicate(mirror_runtime):
+    runtime, cache, allocator, cold, hot, writes, slots = mirror_runtime
+    tree = cache.tree_core
+    hot_host = hot.component_data[0].host_value
+    hot.component_data[0].host_value = None
+    tree._update_duplicate_tracking(hot)
+    cold.component_data[0].host_value = cold.component_data[0].value.clone()
+    tree._update_duplicate_tracking(cold)
+    hot.component_data[0].host_value = hot_host
+    tree._update_duplicate_tracking(hot)
+    manager = HostDemandCapacity(runtime, 128)
+    manager.max_candidates = 1
+    device, cold_device = hot.component_data[0].value, cold.component_data[0].value
+    cold_host = cold.component_data[0].host_value
+    before = allocator.available_size()
+
+    assert not manager.ensure(4)
+    assert runtime.counts["host_demand_mirror_checks"] == 1
+    assert slots["free"] == 0
+    assert hot.component_data[0].host_value is hot_host
+    assert manager.ensure(4)
+    assert runtime.counts["host_demand_mirror_checks"] == 2
+    assert slots["free"] == 8
+    assert hot.component_data[0].host_value is None
+    assert cold.component_data[0].host_value is cold_host
+    assert hot.component_data[0].value is device
+    assert cold.component_data[0].value is cold_device
+    assert allocator.available_size() == before
+    assert not writes
+
+
+def test_insufficient_safe_window_keeps_all_mirrors_and_advances(mirror_runtime):
+    runtime, cache, allocator, cold, hot, writes, slots = mirror_runtime
+    cold.component_data[0].host_value = cold.component_data[0].value.clone()
+    cache.tree_core._update_duplicate_tracking(cold)
+    manager = HostDemandCapacity(runtime, 128)
+    manager.max_candidates = 1
+    hot_host = hot.component_data[0].host_value
+    cold_host = cold.component_data[0].host_value
+    before = allocator.available_size()
+
+    assert not manager.ensure(9)
+    assert runtime.counts["host_demand_mirror_checks"] == 1
+    assert hot.component_data[0].host_value is hot_host
+    assert slots["free"] == 0
+    assert not manager.ensure(9)
+    assert runtime.counts["host_demand_mirror_checks"] == 2
+    assert hot.component_data[0].host_value is hot_host
+    assert cold.component_data[0].host_value is cold_host
+    assert slots["free"] == 0
+    assert manager.ensure(4)
+    assert runtime.counts["host_demand_mirror_checks"] == 3
+    assert hot.component_data[0].host_value is None
+    assert cold.component_data[0].host_value is cold_host
+    assert slots["free"] == 8 and allocator.available_size() == before
+    assert not writes
+
+
+def test_new_dma_at_demand_revalidation_releases_no_checkpoint(mirror_runtime, monkeypatch):
+    runtime, cache, allocator, cold, hot, writes, slots = mirror_runtime
+    manager = HostDemandCapacity(runtime, 128)
+    original = IdleHostMirrorRecycle._live_mirror
+    checks = []
+    hot_host, hot_device = hot.component_data[0].host_value, hot.component_data[0].value
+
+    def check(cache, node, created):
+        checks.append(node.id)
+        if len(checks) == 2:
+            hot.load_back_pending_id = hot.id
+        return original(cache, node, created)
+
+    monkeypatch.setattr(IdleHostMirrorRecycle, "_live_mirror", staticmethod(check))
+    assert not manager.ensure(4, protected=(cold.id,))
+    assert checks == [hot.id, hot.id]
+    assert hot.component_data[0].host_value is hot_host
+    assert hot.component_data[0].value is hot_device
+    assert slots["free"] == allocator.available_size() == 0
+    cache.host_pool_group.free.assert_not_called()
+    assert not writes
+
+
+def test_demand_reclaim_keeps_a_prefetch_service_checkpoint(mirror_runtime):
+    runtime, cache, allocator, cold, hot, writes, slots = mirror_runtime
+    manager = HostDemandCapacity(runtime, 128)
+    hot_host = hot.component_data[0].host_value
+    runtime._prefetch_service_leases["host-demand-test"] = Mock(node_id=hot.id)
+    try:
+        assert not manager.ensure(4, protected=(cold.id,))
+        assert hot.component_data[0].host_value is hot_host
+        assert slots["free"] == allocator.available_size() == 0
+        assert not writes
+    finally:
+        runtime._prefetch_service_leases.pop("host-demand-test")
+    assert manager.ensure(4, protected=(cold.id,))
+    assert hot.component_data[0].host_value is None
+    assert slots["free"] == 8 and allocator.available_size() == 0
 
 
 @pytest.mark.parametrize("reason", ("host_only", "host_lock", "d2h", "h2d", "unpinned", "partial", "protected"))

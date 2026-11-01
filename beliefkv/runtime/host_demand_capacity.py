@@ -57,8 +57,12 @@ class HostDemandCapacity:
         }
         duplicates = getattr(tree, "full_host_duplicates", {})
         selected, total = [], 0
-        for node in tuple(islice(duplicates.values(), self.max_candidates)):
+        for node_id, node in tuple(islice(duplicates.items(), self.max_candidates)):
             runtime.counts["host_demand_mirror_checks"] += 1
+            # Advance even on a failed window so protected entries cannot hide
+            # safe mirrors indefinitely. Only the bounded snapshot is visited.
+            duplicates.pop(node_id)
+            duplicates[node_id] = node
             try:
                 if (
                     node.id not in protected
