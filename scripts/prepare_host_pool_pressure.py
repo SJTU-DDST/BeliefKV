@@ -3,6 +3,7 @@
 import argparse
 from copy import deepcopy
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -19,7 +20,7 @@ from scripts.qualify_interleaved_host_pool import configuration
 from scripts.train_workflow_work import write
 
 
-def pressure_protocol(arrivals, *, initial=20, measured=18):
+def pressure_protocol(arrivals, *, initial=20, measured=18, mean_interval_s=None):
     identities = [row["workflow_id"] for row in arrivals["arrival_schedule"]]
     validate_arrival_plan(arrivals, identities)
     if type(initial) is not int or type(measured) is not int or (
@@ -29,9 +30,15 @@ def pressure_protocol(arrivals, *, initial=20, measured=18):
     original = arrivals.get("original_plan", arrivals)
     if original["mode"] != "permuted_warm_start_poisson":
         raise ValueError("retain the independent permutation and seeded Poisson draw prefix")
+    if mean_interval_s is not None and (
+        type(mean_interval_s) not in (int, float) or not math.isfinite(mean_interval_s)
+        or mean_interval_s <= 0
+    ):
+        raise ValueError("declare a finite positive mean workflow arrival interval")
+    rate = arrivals["rate_per_second"] if mean_interval_s is None else 1. / mean_interval_s
     following = permuted_poisson_arrival_plan(
         [row["workflow_id"] for row in original["arrival_schedule"]],
-        rate_per_second=arrivals["rate_per_second"], seed=arrivals["seed"],
+        rate_per_second=rate, seed=arrivals["seed"],
         permutation_seed=original["permutation_seed"], initial_workflows=initial,
     )
     if arrivals["mode"] == "background_substituted_poisson":
@@ -96,6 +103,7 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--initial", type=int, default=20)
     parser.add_argument("--measured", type=int, default=18)
+    parser.add_argument("--mean-interval-s", type=float)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve every prepared capacity/arrival experiment")
@@ -110,7 +118,9 @@ def main():
     if sha256_file(arrival_path) != bases["full"]["workflow_arrivals"]["sha256"]:
         raise ValueError("the previous arrival declaration changed")
     old = json.loads(arrival_path.read_bytes())
-    arrivals, cohort = pressure_protocol(old, initial=args.initial, measured=args.measured)
+    arrivals, cohort = pressure_protocol(
+        old, initial=args.initial, measured=args.measured, mean_interval_s=args.mean_interval_s,
+    )
     args.output_dir.mkdir(parents=True)
     new_arrival, new_cohort = args.output_dir / "arrivals.json", args.output_dir / "analysis_cohort.json"
     write(new_arrival, arrivals)
@@ -122,7 +132,9 @@ def main():
         "workflows": len(arrivals["arrival_schedule"]), "initial": args.initial,
         "measured": args.measured, "background": len(cohort["background_workflow_ids"]),
         "previous_initial": old["initial_workflows"],
+        "previous_mean_interval_s": 1. / old["rate_per_second"],
         "mean_interval_s": 1. / arrivals["rate_per_second"],
+        "arrival_interval_changed": arrivals["rate_per_second"] != old["rate_per_second"],
         "same_workflow_population_order_tokens_tools_dependencies": True,
         "same_original_arrival_seed": arrivals["seed"] == old["seed"],
         "cohort_redeclared_by_arrival_index_before_execution": True,
