@@ -16,7 +16,7 @@ from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
-def verify_ranking_only_pair(control, oracle):
+def verify_ranking_only_pair(control, oracle, *, allow_legacy_control_declaration=False):
     fields = {
         prefix + name
         for prefix in ("", "BELIEFKV_")
@@ -38,6 +38,10 @@ def verify_ranking_only_pair(control, oracle):
         common, contract = (
             configuration["common_environment"], configuration["comparison_contract"],
         )
+        declared = contract.get("matched_pair_changes_only_remaining_work_ranking") is True or (
+            allow_legacy_control_declaration and not ranking
+            and contract.get("matched_pair_changes_only_remaining_work_ranking") is False
+        )
         if (
             common.get("WORKFLOW_SIZE_RESUME") != "1"
             or common.get("WORKFLOW_WORK_SOURCE") != "oracle"
@@ -45,7 +49,7 @@ def verify_ranking_only_pair(control, oracle):
             or common.get("AGENT_PRESSURE_PAUSE_POLICY") != "workflow_tool_aware"
             or common.get("AGENT_CONTROL_INTERVAL_MS") != "2000"
             or common.get("AGENT_FREE_DISPATCH_INTERVAL_MS") != "500"
-            or contract.get("matched_pair_changes_only_remaining_work_ranking") is not True
+            or not declared
             or contract.get("workflow_work_ranking") is not ranking
             or contract.get("coalescing_and_oracle_ranking_are_joint_change") is not False
             or any(common.get(name) != common.get("BELIEFKV_" + name) for name in (
@@ -80,6 +84,23 @@ def verify_ranking_only_pair(control, oracle):
     ):
         raise ValueError("matched comparison changed its performance thresholds")
     return paths
+
+
+def evaluate_pair_cohorts(control, oracle, contract, *, minimum_jct_gain=None):
+    configured = contract["minimum_promising_measured_mean_JCT_reduction"]
+    effective = configured if minimum_jct_gain is None else minimum_jct_gain
+    throughput = contract["common_window_output_throughput_noninferiority_fraction"]
+    result = compare_cohorts(
+        control, oracle, minimum_jct_gain=effective, minimum_throughput_fraction=throughput,
+    )
+    result["performance_goal"] = {
+        "minimum_measured_mean_JCT_gain": effective,
+        "configuration_minimum_measured_mean_JCT_gain": configured,
+        "explicit_goal_override": minimum_jct_gain is not None,
+        "minimum_common_window_output_throughput_fraction": throughput,
+        "registered_configurations_modified": False,
+    }
+    return result
 
 
 def verify_calibrated_combination_pair(control, oracle):
@@ -154,6 +175,8 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--pair-kind", choices=("ranking", "calibrated_combination"), default="ranking")
+    parser.add_argument("--allow-legacy-control-declaration", action="store_true")
+    parser.add_argument("--minimum-jct-gain", type=float)
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output.exists():
         raise ValueError("hide CUDA and preserve earlier comparison evidence")
@@ -164,9 +187,13 @@ def main():
             raise ValueError("comparison uses another frozen arrival table")
     configurations = [causal.load(Path(row["experiment_configuration"])) for row in plans]
     ranking_only = args.pair_kind == "ranking"
+    if args.allow_legacy_control_declaration and not ranking_only:
+        raise ValueError("legacy control declarations apply only to ranking-only comparisons")
     artifacts = (
-        verify_ranking_only_pair if ranking_only else verify_calibrated_combination_pair
-    )(*configurations)
+        verify_ranking_only_pair(
+            *configurations, allow_legacy_control_declaration=args.allow_legacy_control_declaration,
+        ) if ranking_only else verify_calibrated_combination_pair(*configurations)
+    )
     completion = [verify_execution(path, args.cohort) for path in (args.control, args.oracle)]
     if completion[0]["work"] != completion[1]["work"]:
         raise ValueError("matched executions changed complete measured native work")
@@ -204,10 +231,8 @@ def main():
         cohorts.append(cohort)
         paths.extend((review_path, cohort_path, decision_path))
     contract = configurations[1]["comparison_contract"]
-    result = compare_cohorts(
-        *cohorts,
-        minimum_jct_gain=contract["minimum_promising_measured_mean_JCT_reduction"],
-        minimum_throughput_fraction=contract["common_window_output_throughput_noninferiority_fraction"],
+    result = evaluate_pair_cohorts(
+        *cohorts, contract, minimum_jct_gain=args.minimum_jct_gain,
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
@@ -215,6 +240,7 @@ def main():
         only_remaining_work_ranking_changed=ranking_only,
         calibrated_oracle_cost_and_set_selection_joint_change=not ranking_only,
         pair_kind=args.pair_kind,
+        legacy_unpaired_control_declaration_explicitly_allowed=args.allow_legacy_control_declaration,
         complete_measured_work_fresh_drain_and_actual_exit=True,
         workload_decisions=decisions,
         original_workload_rejections_preserved=True,

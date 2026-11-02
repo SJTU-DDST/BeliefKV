@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
-from scripts.review_matched_work_ranking import verify_ranking_only_pair
+from scripts.review_matched_work_ranking import evaluate_pair_cohorts, verify_ranking_only_pair
 from scripts.review_sustained_oracle import compare_cohorts
 from tests.test_sustained_oracle_review import censored_report
 
@@ -98,3 +98,59 @@ def test_numeric_gain_does_not_erase_background_coverage_failure():
     assert result["checks"]["fixed_measured_mean_JCT_gain"]
     assert not result["checks"]["background_covers_both_measured_tails"]
     assert not result["fixed_cohort_performance_target_met"]
+
+
+def test_legacy_control_declaration_requires_explicit_review_without_rewriting_it(tmp_path):
+    control, oracle = pair(tmp_path)
+    control["comparison_contract"]["matched_pair_changes_only_remaining_work_ranking"] = False
+    before = json.dumps([control, oracle], sort_keys=True)
+    with pytest.raises(ValueError, match="declarations"):
+        verify_ranking_only_pair(control, oracle)
+    assert len(verify_ranking_only_pair(
+        control, oracle, allow_legacy_control_declaration=True,
+    )) == 2
+    assert json.dumps([control, oracle], sort_keys=True) == before
+    oracle["common_environment"]["HOST_GB"] = "400"
+    with pytest.raises(ValueError, match="serving conditions"):
+        verify_ranking_only_pair(control, oracle, allow_legacy_control_declaration=True)
+
+
+@pytest.mark.parametrize("missing_or_unpaired", (None, False))
+def test_legacy_control_opt_in_cannot_accept_an_undeclared_oracle(tmp_path, missing_or_unpaired):
+    control, oracle = pair(tmp_path)
+    control["comparison_contract"]["matched_pair_changes_only_remaining_work_ranking"] = False
+    oracle["comparison_contract"]["matched_pair_changes_only_remaining_work_ranking"] = missing_or_unpaired
+    with pytest.raises(ValueError, match="declarations"):
+        verify_ranking_only_pair(control, oracle, allow_legacy_control_declaration=True)
+
+
+def test_explicit_one_percent_goal_preserves_full_JCT_and_throughput_requirements():
+    control = censored_report()
+    values = tuple(control["measured_workflow_JCT_ms"].values())
+    oracle = censored_report(measured=tuple(value * .985 for value in values))
+    contract = {
+        "minimum_promising_measured_mean_JCT_reduction": .05,
+        "common_window_output_throughput_noninferiority_fraction": .98,
+    }
+    original = json.dumps(contract, sort_keys=True)
+    assert not evaluate_pair_cohorts(
+        control, oracle, contract,
+    )["checks"]["fixed_measured_mean_JCT_gain"]
+    result = evaluate_pair_cohorts(control, oracle, contract, minimum_jct_gain=.01)
+    assert result["checks"]["fixed_measured_mean_JCT_gain"]
+    assert result["performance_goal"]["minimum_measured_mean_JCT_gain"] == .01
+    assert result["performance_goal"]["configuration_minimum_measured_mean_JCT_gain"] == .05
+    assert json.dumps(contract, sort_keys=True) == original
+    oracle["common_window_output_tokens_per_second"] = control["common_window_output_tokens_per_second"] * .95
+    result = evaluate_pair_cohorts(control, oracle, contract, minimum_jct_gain=.01)
+    assert not result["fixed_cohort_performance_target_met"]
+
+
+@pytest.mark.parametrize("gain", (0, 1, float("nan"), float("inf")))
+def test_invalid_goal_cannot_produce_a_passing_comparison(gain):
+    contract = {
+        "minimum_promising_measured_mean_JCT_reduction": .05,
+        "common_window_output_throughput_noninferiority_fraction": .98,
+    }
+    with pytest.raises(ValueError):
+        evaluate_pair_cohorts(censored_report(), censored_report(), contract, minimum_jct_gain=gain)
