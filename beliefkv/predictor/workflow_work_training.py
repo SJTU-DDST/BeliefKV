@@ -10,6 +10,60 @@ PHASE_PAIRS = "phase_matched"
 READY_MIXED_PAIRS = "ready_mixed_progress"
 
 
+def continuous_work_targets(rows, weights):
+    """Normalize complete-work labels for an offline auxiliary training head."""
+    import numpy as np
+
+    values = np.asarray([
+        (row["total_work"], row["attained_work"], row["remaining_work"]) for row in rows
+    ], dtype=float)
+    weights = np.asarray(weights, dtype=float)
+    if (
+        not rows or values.shape != (len(rows), 3)
+        or weights.shape != (len(rows),) or not np.isfinite(values).all()
+        or not np.isfinite(weights).all() or (weights < 0).any() or weights.sum() <= 0
+        or (values[:, 0] <= 0).any() or (values[:, 1:] < 0).any()
+        or not np.allclose(values[:, 0], values[:, 1] + values[:, 2], atol=1e-6, rtol=0.)
+    ):
+        raise ValueError("continuous supervision requires finite conserved complete-work labels")
+    target = np.log1p(values[:, 2])
+    mean = float(np.average(target, weights=weights))
+    scale = max(.25, float(np.sqrt(np.average((target - mean) ** 2, weights=weights))))
+    return (target - mean) / scale, {"log_mean": mean, "log_scale": scale}
+
+
+DECISION_OBSERVATION = "sealed_live_admission_competition_v1"
+
+
+def decision_observation_weights(rows, base, mass):
+    """Give bounded training mass to distinct observed admission states."""
+    import numpy as np
+
+    weights = np.asarray(base, dtype=float).copy()
+    if (
+        type(mass) not in (int, float) or not math.isfinite(mass) or not 0 < mass <= .75
+        or weights.shape != (len(rows),) or not np.isfinite(weights).all()
+        or (weights <= 0).any()
+    ):
+        raise ValueError("invalid observed-decision training mass or base weights")
+    groups = defaultdict(lambda: [[], []])
+    for index, row in enumerate(rows):
+        groups[row["workflow"]][row.get("training_observation_kind") == DECISION_OBSERVATION].append(index)
+    observed_workflows = 0
+    for ordinary, observed in groups.values():
+        if not observed:
+            continue
+        if not ordinary:
+            raise ValueError("observed-decision training requires its complete original workflow")
+        observed_workflows += 1
+        total = weights[ordinary].sum() + weights[observed].sum()
+        weights[ordinary] *= total * (1. - mass) / weights[ordinary].sum()
+        weights[observed] = total * mass / len(observed)
+    if not observed_workflows:
+        raise ValueError("observed-decision training has no supported training workflow")
+    return weights
+
+
 def phase_weights(rows):
     """Future totals determine offline sampling weights, never online features."""
     import numpy as np

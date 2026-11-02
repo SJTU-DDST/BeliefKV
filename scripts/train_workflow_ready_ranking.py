@@ -96,7 +96,10 @@ def main():
     for name in ("dataset", "cohort", "extra-training-data", "baseline-model",
                  "baseline-evaluation", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
-    parser.add_argument("--family", choices=("ready-pairs", "observed-ratios"), default="ready-pairs")
+    parser.add_argument(
+        "--family", choices=("ready-pairs", "observed-ratios", "continuous-work"),
+        default="ready-pairs",
+    )
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve the completed and rejected ready-ranking studies")
@@ -145,6 +148,18 @@ def main():
                 "numeric_feature_transform": OBSERVED_RATIOS,
             }),
         ]
+    elif args.family == "continuous-work":
+        candidates = [
+            ("retained_phase_rank", None),
+            ("continuous_work0.1", {
+                "ranking_loss_weight": .1, "ranking_pair_mode": "phase_matched",
+                "remaining_work_loss_weight": .1,
+            }),
+            ("continuous_work0.3", {
+                "ranking_loss_weight": .1, "ranking_pair_mode": "phase_matched",
+                "remaining_work_loss_weight": .3,
+            }),
+        ]
     write(args.output_dir / "plan.json", {
         "candidates": [(name, None if settings is None else {**shared, **settings})
                        for name, settings in candidates],
@@ -156,6 +171,10 @@ def main():
         "runtime_model_hidden_width_unchanged": True,
         "raw_observation_events_task_scope_and_workload_unchanged": True,
         "derived_numeric_features_added": args.family == "observed-ratios",
+        "continuous_work_auxiliary_head_training_only": args.family == "continuous-work",
+        "established_initial_head_preserved": (
+            args.family == "continuous-work" and "initial_state_head" in baseline
+        ),
         "inputs_sha256": inputs, "GPU_action": False,
     })
     models, summaries = {}, {}
@@ -178,6 +197,8 @@ def main():
             )
             for key in ("admission_cost_profile", "free_dispatch_coalescing_window_ms"):
                 raw[key] = deepcopy(baseline[key])
+            if args.family == "continuous-work" and "initial_state_head" in baseline:
+                raw["initial_state_head"] = deepcopy(baseline["initial_state_head"])
         values = metrics(WorkflowWorkModel(raw), calibration)
         reasons = calibration_rejections(values, raw)
         raw["metadata"].update(

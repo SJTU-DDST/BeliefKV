@@ -268,7 +268,7 @@ def fit(
     feature_schema=SCHEMA, task_encoder=None, training_weighting=None, text_encoding=None,
     observed_delegations=False, work_thresholds=None, ranking_loss_weight=0.,
     task_only_before_work=False, ranking_pair_mode="phase_matched", ordinal_loss_weight=0.,
-    numeric_feature_transform=None,
+    numeric_feature_transform=None, remaining_work_loss_weight=0., decision_observation_mass=0.,
 ):
     import numpy as np
     import torch
@@ -305,6 +305,12 @@ def fit(
         or ordinal_loss_weight and feature_schema != R5_SCHEMA
         or numeric_feature_transform not in (None, OBSERVED_RATIOS)
         or numeric_feature_transform is not None and feature_schema != R5_SCHEMA
+        or type(remaining_work_loss_weight) not in (int, float)
+        or not math.isfinite(remaining_work_loss_weight) or not 0 <= remaining_work_loss_weight <= 2.
+        or remaining_work_loss_weight and feature_schema != R5_SCHEMA
+        or type(decision_observation_mass) not in (int, float)
+        or not math.isfinite(decision_observation_mass) or not 0 <= decision_observation_mass <= .75
+        or decision_observation_mass and feature_schema != R5_SCHEMA
     ):
         raise ValueError("invalid workflow model regularization settings")
     if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
@@ -416,6 +422,10 @@ def fit(
             balanced = ready_weights(rows, balanced)
         else:
             raise ValueError("unknown workflow training weighting")
+    if decision_observation_mass:
+        from beliefkv.predictor.workflow_work_training import decision_observation_weights
+
+        balanced = decision_observation_weights(rows, balanced, decision_observation_mass)
     weight = torch.tensor(balanced, dtype=torch.float32)
     static_layer = torch.nn.Linear(task.shape[1], hidden_width, bias=False)
     dynamic_layer = torch.nn.Linear(numeric.shape[1], hidden_width)
@@ -423,6 +433,17 @@ def fit(
     output_layer = torch.nn.Linear(max(4, hidden_width // 2), 3)
     parameters = list(static_layer.parameters()) + list(dynamic_layer.parameters())
     parameters += list(hidden_layer.parameters()) + list(output_layer.parameters())
+    work_head, work_target, work_normalization = None, None, None
+    if remaining_work_loss_weight:
+        from beliefkv.predictor.workflow_work_training import continuous_work_targets
+
+        work_values, work_normalization = continuous_work_targets(rows, balanced)
+        work_target = torch.tensor(work_values, dtype=torch.float32)
+        # Preserve primary initialization and dropout RNG when adding supervision.
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(seed + 1)
+            work_head = torch.nn.Linear(max(4, hidden_width // 2), 1)
+        parameters += list(work_head.parameters())
     optimizer = torch.optim.AdamW(parameters, lr=.003, weight_decay=weight_decay)
     ranking = None
     if ranking_loss_weight:
@@ -440,8 +461,15 @@ def fit(
         static = static_layer(task)
         hidden = torch.relu((static if task_indices is None else static[task_indices]) + dynamic_layer(dynamic))
         hidden = torch.nn.functional.dropout(hidden, p=dropout, training=True)
-        logits = output_layer(torch.relu(hidden_layer(hidden)))
+        representation = torch.relu(hidden_layer(hidden))
+        logits = output_layer(representation)
         loss = (torch.nn.functional.cross_entropy(logits, target, reduction="none") * weight).sum()
+        if work_head is not None:
+            loss = loss + remaining_work_loss_weight * (
+                torch.nn.functional.smooth_l1_loss(
+                    work_head(representation).squeeze(1), work_target, reduction="none",
+                ) * weight
+            ).sum()
         if ordinal_loss_weight:
             cumulative = logits.softmax(1).cumsum(1)[:, :2]
             truth = (target[:, None] <= torch.arange(2)[None, :]).float()
@@ -532,6 +560,26 @@ def fit(
         raw["metadata"]["training_parameters"]["ordinal_loss_weight"] = ordinal_loss_weight
         raw["metadata"]["ordinal_training"] = {
             "kind": "ranked_probability_score", "offline_labels_only": True,
+            "new_online_features": False,
+        }
+    if work_head is not None:
+        raw["metadata"]["training_parameters"]["remaining_work_loss_weight"] = remaining_work_loss_weight
+        raw["metadata"]["continuous_work_supervision"] = {
+            "kind": "standardized_log_remaining_work_smooth_l1",
+            "training_normalization": work_normalization,
+            "offline_labels_only": True, "auxiliary_head_exported": False,
+            "online_model_dimensions_unchanged": True,
+        }
+    if decision_observation_mass:
+        from beliefkv.predictor.workflow_work_training import DECISION_OBSERVATION
+
+        raw["metadata"]["training_parameters"]["decision_observation_mass"] = decision_observation_mass
+        raw["metadata"]["decision_observation_training"] = {
+            "kind": DECISION_OBSERVATION,
+            "complete_workflow_mass_preserved": True,
+            "observed_states": sum(
+                row.get("training_observation_kind") == DECISION_OBSERVATION for row in rows
+            ),
             "new_online_features": False,
         }
     if feature_schema == R5_SCHEMA:

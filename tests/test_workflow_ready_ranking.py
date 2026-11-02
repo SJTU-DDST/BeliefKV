@@ -5,7 +5,9 @@ import pytest
 from beliefkv.predictor.workflow_work import (
     OBSERVED_RATIOS, RATIO_FEATURES, R5_FEATURES, R5_SCHEMA, WorkflowWorkModel, work_numeric_features,
 )
-from beliefkv.predictor.workflow_work_training import READY_MIXED_PAIRS, work_ranking_pairs
+from beliefkv.predictor.workflow_work_training import (
+    READY_MIXED_PAIRS, continuous_work_targets, work_ranking_pairs,
+)
 from scripts.train_workflow_ready_ranking import pair_quality
 from scripts.train_workflow_work import fit
 from scripts.rescore_workflow_predictions import rescore
@@ -106,6 +108,59 @@ def test_new_training_objectives_export_the_same_small_probability_model():
     assert raw["metadata"]["ranking_training"]["pair_mode"] == READY_MIXED_PAIRS
     assert raw["metadata"]["ordinal_training"]["new_online_features"] is False
     assert sum(model.predict(model.task_projection("ab"), [0.] * len(R5_FEATURES))) == pytest.approx(1.)
+
+
+def test_continuous_targets_conserve_labels_preserve_inputs_and_handle_finished_work():
+    import numpy as np
+
+    rows = samples()
+    original = deepcopy(rows)
+    weights = np.full(len(rows), 1. / len(rows))
+    target, normalization = continuous_work_targets(rows, weights)
+    assert rows == original
+    assert np.average(target, weights=weights) == pytest.approx(0., abs=1e-12)
+    assert np.exp(
+        target * normalization["log_scale"] + normalization["log_mean"]
+    ) - 1. == pytest.approx([item["remaining_work"] for item in rows])
+    finished = [{**rows[0], "attained_work": 100., "remaining_work": 0.}]
+    assert np.isfinite(continuous_work_targets(finished, [1.])[0]).all()
+    for invalid in (
+        [{**rows[0], "remaining_work": float("nan")}],
+        [{**rows[0], "remaining_work": -1.}],
+        [{**rows[0], "remaining_work": 99.}],
+    ):
+        with pytest.raises(ValueError, match="conserved"):
+            continuous_work_targets(invalid, [1.])
+
+
+def test_continuous_supervision_leaves_runtime_shapes_and_legacy_zero_weight_unchanged():
+    import numpy as np
+    from scripts.train_workflow_work import probabilities
+
+    training = samples()
+    calibration = [{
+        **value, **{name: item for name, item in row("cal-" + value["workflow"]).items()
+                    if name in ("workflow", "logical_workflow_id", "project", "task_template",
+                                "source_capture", "source_workflow_sha256")},
+    } for value in samples()]
+    options = {
+        "epochs": 3, "split_mode": "workflow", "hidden_width": 4,
+        "vocabulary_size": 4, "feature_schema": R5_SCHEMA, "work_thresholds": (200., 400.),
+    }
+    original = fit(training, calibration, **options)
+    zero = fit(training, calibration, **options, remaining_work_loss_weight=0.)
+    assert original == zero
+    augmented = fit(training, calibration, **options, remaining_work_loss_weight=.3)
+    supervision = augmented["metadata"]["continuous_work_supervision"]
+    assert supervision["offline_labels_only"] and not supervision["auxiliary_head_exported"]
+    assert supervision["online_model_dimensions_unchanged"]
+    first, second = WorkflowWorkModel(original), WorkflowWorkModel(augmented)
+    assert {key: value.shape for key, value in first.arrays.items()} == {
+        key: value.shape for key, value in second.arrays.items()
+    }
+    actual = probabilities(second, calibration)
+    assert np.isfinite(actual).all() and np.allclose(actual.sum(1), 1.)
+    assert not np.array_equal(probabilities(first, calibration), actual)
 
 
 def test_ratio_features_use_observed_counters_and_preserve_original_input_and_legacy_transform():
@@ -218,6 +273,8 @@ def test_initial_head_rejects_recursive_or_incompatible_prediction_artifacts(cha
 @pytest.mark.parametrize("settings", (
     {"ordinal_loss_weight": -1.}, {"ordinal_loss_weight": float("nan")},
     {"ranking_pair_mode": "unknown"}, {"ranking_pair_mode": READY_MIXED_PAIRS},
+    {"remaining_work_loss_weight": -1.}, {"remaining_work_loss_weight": float("nan")},
+    {"remaining_work_loss_weight": True}, {"remaining_work_loss_weight": 3.},
 ))
 def test_invalid_training_objectives_fail_before_training(settings):
     with pytest.raises(ValueError, match="regularization"):
