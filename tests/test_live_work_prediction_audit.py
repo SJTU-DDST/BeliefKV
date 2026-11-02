@@ -152,3 +152,22 @@ def test_missing_selector_metadata_is_unknown_rather_than_a_prediction_error():
     result = rank_summary(values, "model", measured={"a", "b"})
     assert result["counts"]["missing_exact_selector_metadata_pairs"] == 1
     assert result["metrics"]["model"]["boundary_equal_weight_accuracy"] is None
+
+
+def test_rescoring_reuses_only_sealed_features_and_initial_task_text():
+    from scripts.rescore_live_work_prediction import rescore
+
+    _events, _requests, _native, decisions = fixture()
+    for decision in decisions:
+        for candidate in decision["candidates"]:
+            candidate["features"] = [0.] * len(R5_FEATURES)
+            candidate["observed_remaining_model_work"] = 12345.
+    model = WorkflowWorkModel(distribution_raw())
+    values = rescore(decisions, {"a": "ab", "b": "ab"}, {"new": model})
+    first = values[0]["candidates"][0]
+    changed = deepcopy(decisions)
+    changed[0]["candidates"][0]["observed_remaining_model_work"] = 999999.
+    other = rescore(changed, {"a": "ab", "b": "ab"}, {"new": model})
+    assert other[0]["candidates"][0]["predictions"] == first["predictions"]
+    assert "predictions" not in decisions[0]["candidates"][0]
+    assert first["features"] == decisions[0]["candidates"][0]["features"]

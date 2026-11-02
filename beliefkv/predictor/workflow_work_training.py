@@ -51,3 +51,39 @@ def ready_weights(rows, base):
         weights[indices] *= .25
         weights[ready] += .75 * mass * chosen / chosen.sum()
     return weights
+
+
+def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512):
+    """Offline labels define pair targets and strata, never additional features."""
+    import numpy as np
+
+    if type(pairs_per_phase) is not int or not 1 <= pairs_per_phase <= 4096:
+        raise ValueError("invalid bounded workflow ranking pair count")
+    groups = defaultdict(lambda: defaultdict(list))
+    for index, row in enumerate(rows):
+        total, attained, remaining = row["total_work"], row["attained_work"], row["remaining_work"]
+        if (
+            any(not math.isfinite(value) for value in (total, attained, remaining))
+            or total <= 0 or not 0 <= attained <= total + 1e-6 or remaining < 0
+            or not math.isclose(total, attained + remaining, abs_tol=1e-6)
+        ):
+            raise ValueError("ranking labels require complete conserved workflow work")
+        phase = -1 if row["snapshot"] == 0 else min(2, int(3 * attained / total))
+        groups[phase][row["workflow"]].append(index)
+    rng, pairs = np.random.default_rng(seed), []
+    for phase, workflows in sorted(groups.items()):
+        identities = sorted(workflows)
+        if len(identities) < 2:
+            continue
+        # Uniform workflows prevent a long trace from generating more pair mass.
+        for _attempt in range(pairs_per_phase):
+            first, second = rng.choice(len(identities), size=2, replace=False)
+            left = int(rng.choice(workflows[identities[first]]))
+            right = int(rng.choice(workflows[identities[second]]))
+            difference = math.log1p(rows[right]["remaining_work"]) - math.log1p(rows[left]["remaining_work"])
+            if abs(difference) < .1:
+                continue
+            pairs.append((left, right, 1. if difference > 0 else -1., min(1., abs(difference))))
+    if not pairs:
+        raise ValueError("workflow ranking requires distinct remaining-work labels")
+    return pairs

@@ -51,6 +51,23 @@ def feature_names(schema):
     raise ValueError("incompatible workflow work feature schema")
 
 
+def work_prediction_features(values, *, task_only_before_work=False):
+    """Keep a root's estimate stable until coarse observed work provides progress."""
+    import numpy as np
+
+    values = np.asarray(values, dtype=float)
+    if task_only_before_work and (
+        values.shape != (len(R5_FEATURES),) or not np.isfinite(values).all() or (values < 0).any()
+    ):
+        raise ValueError("initial task-only prediction requires finite R5 observations")
+    if (
+        task_only_before_work and values[0] == 0 and values[1] == 0
+        and values[R5_FEATURES.index("children")] == 0
+    ):
+        return np.zeros_like(values)
+    return values
+
+
 def execution_controls(values):
     """Only declared instructions are accepted, never measured future work."""
     from beliefkv.experiments.delegation_policy import SUBAGENT_FANOUT_PROFILES
@@ -281,6 +298,11 @@ class WorkflowWorkModel:
         import numpy as np
 
         self.schema = raw.get("schema")
+        self.task_only_before_work = raw.get("task_only_before_observed_work", False)
+        if type(self.task_only_before_work) is not bool or (
+            self.task_only_before_work and self.schema != R5_SCHEMA
+        ):
+            raise ValueError("initial task-only prediction requires its R5 observation contract")
         self.observed_delegations = raw.get("observed_delegation_inputs", False)
         if type(self.observed_delegations) is not bool or self.observed_delegations and (
             self.schema != R5_SCHEMA or raw.get("task_encoder") is not None
@@ -437,6 +459,8 @@ class WorkflowWorkModel:
             or not np.isfinite(features).all() or (features < 0).any()
         ):
             raise ValueError("invalid observed workflow features")
+        if self.task_only_before_work:
+            features = work_prediction_features(features, task_only_before_work=True)
         numeric = (np.log1p(features) - a["center"]) / a["scale"]
         hidden = np.maximum(0., projection + np.einsum(
             "i,ij->j", numeric, a["dynamic_weight"], optimize=False,

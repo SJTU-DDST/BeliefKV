@@ -71,6 +71,56 @@ def test_ready_training_focus_uses_observed_readiness_and_keeps_equal_workflow_m
     assert weighted[:2].sum() == weighted[2:].sum() == .5
 
 
+def test_ranking_pairs_never_compare_a_workflow_to_itself_and_use_complete_work_labels_only():
+    from beliefkv.predictor.workflow_work_training import work_ranking_pairs
+
+    rows = []
+    for workflow, total in (("a", 100.), ("b", 300.), ("c", 600.)):
+        for snapshot, fraction in enumerate((0., .2, .5, .9)):
+            rows.append({
+                "workflow": workflow, "snapshot": snapshot, "total_work": total,
+                "attained_work": fraction * total, "remaining_work": (1. - fraction) * total,
+            })
+    pairs = work_ranking_pairs(rows, pairs_per_phase=16)
+    assert pairs == work_ranking_pairs(rows, pairs_per_phase=16)
+    for left, right, direction, weight in pairs:
+        assert rows[left]["workflow"] != rows[right]["workflow"]
+        assert direction * (rows[right]["remaining_work"] - rows[left]["remaining_work"]) > 0
+        assert 0 < weight <= 1
+    with pytest.raises(ValueError, match="conserved"):
+        work_ranking_pairs([{**row, "remaining_work": -1.} for row in rows])
+    # Original floating-point input/output sums can differ by a few ulps.
+    tail = [
+        {**row, "snapshot": 99, "attained_work": row["total_work"] + 1e-10,
+         "remaining_work": 0.}
+        for row in (rows[0], rows[4])
+    ]
+    assert work_ranking_pairs(rows + tail, pairs_per_phase=16)
+
+
+def test_initial_prediction_does_not_change_on_prompt_registration_without_observed_work():
+    import numpy as np
+    from beliefkv.predictor.workflow_work import R5_FEATURES, work_prediction_features
+
+    raw = distribution_raw()
+    raw["task_only_before_observed_work"] = True
+    raw["dynamic_weight"][R5_FEATURES.index("initial_prompt_tokens")][0] = 1.
+    raw["output_weight"][0] = [1., 0., 0.]
+    model = WorkflowWorkModel(raw)
+    initial, registered = np.zeros(len(R5_FEATURES)), np.zeros(len(R5_FEATURES))
+    registered[R5_FEATURES.index("initial_prompt_tokens")] = 200000.
+    registered[R5_FEATURES.index("active_prompt_tokens")] = 200000.
+    registered[R5_FEATURES.index("ready")] = 1.
+    projection = model.task_projection("ab")
+    assert model.predict(projection, initial) == model.predict(projection, registered)
+    assert work_prediction_features(registered).tolist() == registered.tolist()
+    registered[R5_FEATURES.index("output_tokens")] = 128.
+    assert work_prediction_features(registered, task_only_before_work=True).tolist() == registered.tolist()
+    registered[R5_FEATURES.index("output_tokens")] = 0.
+    registered[R5_FEATURES.index("children")] = 1.
+    assert work_prediction_features(registered, task_only_before_work=True).tolist() == registered.tolist()
+
+
 def test_word_encoding_retains_task_intent_and_structure_with_unchanged_legacy_encoding():
     text = "Implement a feature\n1. Add src/core.py and test it."
     assert task_terms(text) == ngrams(text)

@@ -163,6 +163,49 @@ def test_small_real_training_emits_a_separate_r5_contract_and_fixed_training_thr
     assert raw["metadata"]["calibration_class_workflows"] == [2, 2, 2]
 
 
+def test_added_training_projects_do_not_move_explicit_reference_work_bins():
+    training = [
+        {**row(str(index)), "total_work": 1000. * (index + 1), "remaining_work": 5. * (index + 1)}
+        for index in range(6)
+    ]
+    calibration = [row("cal-" + str(index), remaining=10. * (index + 1)) for index in range(6)]
+    raw = fit(
+        training, calibration, epochs=1, split_mode="workflow", hidden_width=4,
+        vocabulary_size=4, feature_schema=R5_SCHEMA, work_thresholds=(20., 40.),
+    )
+    assert raw["work_thresholds"] == [20., 40.]
+    assert raw["metadata"]["work_threshold_source"] == "explicit_frozen_reference_thresholds"
+
+
+@pytest.mark.parametrize("thresholds", ([1.], [2., 1.], [0., 10.], [float("nan"), 10.]))
+def test_invalid_reference_work_bins_are_rejected(thresholds):
+    training = [row("train")]
+    calibration = [row("calibration")]
+    with pytest.raises(ValueError, match="thresholds|distinct"):
+        fit(
+            training, calibration, epochs=1, split_mode="workflow", hidden_width=4,
+            vocabulary_size=4, feature_schema=R5_SCHEMA, work_thresholds=thresholds,
+        )
+
+
+def test_pair_ranking_training_keeps_the_deployment_probability_interface():
+    training = [
+        {**row(str(index)), "total_work": 100. * (index + 1),
+         "attained_work": 0., "remaining_work": 100. * (index + 1)}
+        for index in range(6)
+    ]
+    calibration = [row("cal-" + str(index), remaining=100. * (index + 1)) for index in range(6)]
+    raw = fit(
+        training, calibration, epochs=2, split_mode="workflow", hidden_width=4,
+        vocabulary_size=4, feature_schema=R5_SCHEMA,
+        work_thresholds=(200., 400.), ranking_loss_weight=.1,
+    )
+    model = WorkflowWorkModel(raw)
+    assert raw["metadata"]["ranking_training"]["new_online_features"] is False
+    assert raw["metadata"]["ranking_training"]["pairs"] > 0
+    assert sum(model.predict(model.task_projection("ab"), [0.] * len(R5_FEATURES))) == pytest.approx(1.)
+
+
 def test_label_provenance_rechecks_the_exact_token_and_overlay_bytes_before_export(tmp_path):
     import json
 

@@ -135,7 +135,21 @@ def snapshots(events, requests, *, progress=(), observed_delegations=False):
     return result
 
 
-def export(artifact_path, *, observed_delegations=False):
+def select_export_workflows(selected, workflow_ids):
+    if workflow_ids is None:
+        return selected
+    if (
+        not isinstance(workflow_ids, (list, tuple, set, frozenset)) or not workflow_ids
+        or any(type(value) is not str or not value for value in workflow_ids)
+        or len(set(workflow_ids)) != len(workflow_ids)
+    ):
+        raise ValueError("export requires distinct nonempty complete workflow identities")
+    if not set(workflow_ids) <= {row["workflow_id"] for row in selected}:
+        raise ValueError("a selected complete workflow is absent from the source")
+    return [row for row in selected if row["workflow_id"] in workflow_ids]
+
+
+def export(artifact_path, *, observed_delegations=False, workflow_ids=None):
     artifact_bytes = artifact_path.read_bytes()
     raw = json.loads(artifact_bytes)
     artifact = WorkflowWorkOracleArtifact(raw)
@@ -147,6 +161,7 @@ def export(artifact_path, *, observed_delegations=False):
     selected = declaration["selected_workflows"]
     if {row["workflow_id"] for row in selected} != artifact.workflows.keys():
         raise ValueError("source population and complete-work labels differ")
+    selected = select_export_workflows(selected, workflow_ids)
     by_capture = defaultdict(list)
     evidence = {str(artifact_path.resolve()): hashlib.sha256(artifact_bytes).hexdigest(),
                 str(composition.resolve()): sha256_file(composition)}
@@ -198,8 +213,9 @@ def export(artifact_path, *, observed_delegations=False):
         "future_source_graph_used_for_labels_only": True,
         "future_tool_waits_excluded_from_model_work_target": True,
         "full_prompt_and_tool_outputs_excluded_from_features": True,
-        "complete_original_workflows": len(artifact.workflows),
+        "complete_original_workflows": len(selected),
         "observed_delegation_inputs": observed_delegations,
+        **({"selected_complete_workflow_ids": sorted(workflow_ids)} if workflow_ids is not None else {}),
     }
 
 

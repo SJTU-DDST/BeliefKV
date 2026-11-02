@@ -18,7 +18,7 @@ from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import (
     CONTEXT_SCHEMA, R5_SCHEMA, SCHEMA, WorkflowProgress, WorkflowWorkModel, feature_names, ngrams,
-    task_requirements,
+    task_requirements, work_prediction_features,
 )
 from beliefkv.runtime.replay_token_capture import decode_tokens
 
@@ -266,7 +266,8 @@ def fit(
     rows, calibration, *, epochs=300, seed=21, split_mode="project",
     hidden_width=64, vocabulary_size=4096, dropout=0., weight_decay=.03,
     feature_schema=SCHEMA, task_encoder=None, training_weighting=None, text_encoding=None,
-    observed_delegations=False,
+    observed_delegations=False, work_thresholds=None, ranking_loss_weight=0.,
+    task_only_before_work=False,
 ):
     import numpy as np
     import torch
@@ -288,6 +289,10 @@ def fit(
         or type(vocabulary_size) is not int or not 1 <= vocabulary_size <= 16384
         or not math.isfinite(dropout) or not 0 <= dropout < 1
         or not math.isfinite(weight_decay) or weight_decay < 0
+        or type(ranking_loss_weight) not in (int, float)
+        or not math.isfinite(ranking_loss_weight) or not 0 <= ranking_loss_weight <= 2.
+        or type(task_only_before_work) is not bool
+        or task_only_before_work and feature_schema != R5_SCHEMA
     ):
         raise ValueError("invalid workflow model regularization settings")
     if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
@@ -344,10 +349,18 @@ def fit(
         return np.asarray([encoded[text_key(row)] for row in values])
 
     totals = {row["workflow"]: row["total_work"] for row in rows}
-    thresholds = np.quantile(list(totals.values()), (1 / 3, 2 / 3))
+    thresholds = (
+        np.quantile(list(totals.values()), (1 / 3, 2 / 3))
+        if work_thresholds is None else np.asarray(work_thresholds, dtype=float)
+    )
+    if thresholds.shape != (2,) or not np.isfinite(thresholds).all():
+        raise ValueError("fixed work thresholds require two finite boundaries")
     if not 0 < thresholds[0] < thresholds[1]:
         raise ValueError("training population cannot define three distinct work classes")
-    numeric = np.log1p(np.asarray([row["features"] for row in rows]))
+    numeric = np.log1p(np.asarray([
+        work_prediction_features(row["features"], task_only_before_work=task_only_before_work)
+        for row in rows
+    ]))
     workflow_counts = Counter(row["workflow"] for row in rows)
     weights = np.asarray([1. / workflow_counts[row["workflow"]] for row in rows])
     weights /= weights.sum()
@@ -396,6 +409,17 @@ def fit(
     parameters = list(static_layer.parameters()) + list(dynamic_layer.parameters())
     parameters += list(hidden_layer.parameters()) + list(output_layer.parameters())
     optimizer = torch.optim.AdamW(parameters, lr=.003, weight_decay=weight_decay)
+    ranking = None
+    if ranking_loss_weight:
+        from beliefkv.predictor.workflow_work_training import work_ranking_pairs
+
+        pairs = np.asarray(work_ranking_pairs(rows, seed=seed))
+        ranking = (
+            torch.tensor(pairs[:, 0], dtype=torch.long),
+            torch.tensor(pairs[:, 1], dtype=torch.long),
+            torch.tensor(pairs[:, 2], dtype=torch.float32),
+            torch.tensor(pairs[:, 3] / pairs[:, 3].sum(), dtype=torch.float32),
+        )
     for _epoch in range(epochs):
         optimizer.zero_grad()
         static = static_layer(task)
@@ -403,6 +427,13 @@ def fit(
         hidden = torch.nn.functional.dropout(hidden, p=dropout, training=True)
         logits = output_layer(torch.relu(hidden_layer(hidden)))
         loss = (torch.nn.functional.cross_entropy(logits, target, reduction="none") * weight).sum()
+        if ranking is not None:
+            left, right, direction, pair_weight = ranking
+            utility = logits.softmax(1) @ torch.tensor((1., .5, .25))
+            margin = 8. * direction * (utility[left] - utility[right])
+            loss = loss + ranking_loss_weight * (
+                torch.nn.functional.softplus(-margin) * pair_weight
+            ).sum()
         loss.backward()
         optimizer.step()
 
@@ -448,6 +479,20 @@ def fit(
         raw["task_text_encoding"] = text_encoding
     if training_weighting is not None:
         raw["metadata"]["loss_weighting"] = training_weighting
+    if work_thresholds is not None:
+        raw["metadata"]["work_threshold_source"] = "explicit_frozen_reference_thresholds"
+    if task_only_before_work:
+        raw["task_only_before_observed_work"] = True
+        raw["metadata"]["initial_feature_contract"] = (
+            "task_only_until_positive_coarse_observed_work_or_observed_child"
+        )
+    if ranking is not None:
+        raw["metadata"]["training_parameters"]["ranking_loss_weight"] = ranking_loss_weight
+        raw["metadata"]["ranking_training"] = {
+            "kind": "phase_matched_cross_workflow_probability_utility_pairs",
+            "pairs": len(pairs), "offline_labels_only": True,
+            "runtime_rank_weight": [1., .5, .25], "new_online_features": False,
+        }
     if feature_schema == R5_SCHEMA:
         from beliefkv.predictor.workflow_work_distribution import training_contract
 
