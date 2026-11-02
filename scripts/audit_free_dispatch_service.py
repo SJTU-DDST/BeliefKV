@@ -36,34 +36,39 @@ def identity(row, *, grant=False):
     return key
 
 
+def validate_grant(grant):
+    members = grant.get("programs")
+    before, after, required = (
+        grant.get("remaining_before_tokens"), grant.get("remaining_after_tokens"),
+        grant.get("required_tokens"),
+    )
+    if (
+        type(members) is not list or not 1 <= len(members) <= 4
+        or grant.get("native_capacity_authority_preserved") is not True
+        or not finite_number(grant.get("ts_ms"))
+        or not finite_number(grant.get("monotonic_s"))
+        or any(type(value) is not int or value < 0 for value in (before, after, required))
+        or before - after != required
+    ):
+        raise ValueError("invalid free-budget grant authority, clock or complete capacity")
+    expanded, total = [], 0
+    for member in members:
+        key = identity(member["key"], grant=True)
+        observed, budget = member.get("observed_context_tokens"), member.get("complete_budget_tokens")
+        if type(observed) is not int or observed <= 0 or budget != observed + 100:
+            raise ValueError("grant lacks the complete observed context and declared buffer")
+        total += budget
+        expanded.append((key, grant, observed, budget))
+    if total != required:
+        raise ValueError("grant member budgets do not reconcile")
+    return expanded
+
+
 def associate(grants, submissions, batches, receipts, *, complete=False):
     expanded, services, offsets, domains = [], defaultdict(list), [], set()
     counts = Counter()
     for grant in grants:
-        members = grant.get("programs")
-        before, after, required = (
-            grant.get("remaining_before_tokens"), grant.get("remaining_after_tokens"),
-            grant.get("required_tokens"),
-        )
-        if (
-            type(members) is not list or not 1 <= len(members) <= 4
-            or grant.get("native_capacity_authority_preserved") is not True
-            or not finite_number(grant.get("ts_ms"))
-            or not finite_number(grant.get("monotonic_s"))
-            or any(type(value) is not int or value < 0 for value in (before, after, required))
-            or before - after != required
-        ):
-            raise ValueError("invalid free-budget grant authority, clock or complete capacity")
-        total = 0
-        for member in members:
-            key = identity(member["key"], grant=True)
-            observed, budget = member.get("observed_context_tokens"), member.get("complete_budget_tokens")
-            if type(observed) is not int or observed <= 0 or budget != observed + 100:
-                raise ValueError("grant lacks the complete observed context and declared buffer")
-            total += budget
-            expanded.append((key, grant, observed, budget))
-        if total != required:
-            raise ValueError("grant member budgets do not reconcile")
+        expanded.extend(validate_grant(grant))
     target_ids = {key[0] for key, *_ in expanded}
     for batch in batches:
         if batch.get("event") != "gpu_service_sample":

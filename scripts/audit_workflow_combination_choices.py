@@ -5,6 +5,7 @@ from collections import Counter
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,7 +66,7 @@ def replay_choice(
         "source": row["source"], "monotonic_s": row["monotonic_s"],
         "selected": list(selected), "reason": observed["reason"],
         "search_replayed": False, "selected_set_changed": None,
-        "newly_selected_invocations": [], "periodic_service": [],
+        "newly_selected_invocations": [], "periodic_service": [], "free_service": [],
         "metadata_and_selection_cpu_ns": row["metadata_and_selection_cpu_ns"],
         "metadata_and_selection_wall_ns": row["metadata_and_selection_wall_ns"],
     }
@@ -148,17 +149,18 @@ def inspect(
     records, batches, costs, cost_identity, *, allow_feasible_resource_alternatives=False,
     plan_device_capacity=False,
 ):
-    """Only a following actual periodic grant can consume a periodic selection."""
-    progress = periodic_inspect(records, batches)
+    """Associate choices only with exact grants in their actual dispatch boundaries."""
+    progress = periodic_inspect(records, batches, include_free_grants=True)
     episodes = {}
     for episode in progress["ready_grant_episodes"]:
         key = tuple(episode["key"]), episode["journal_sequence"]
         if key in episodes:
             raise ValueError("duplicate actual periodic service episode")
         episodes[key] = episode
-    choices, pending = [], None
+    choices, pending, free_pending, last_free_associations = [], None, None, {}
     for sequence, row in enumerate(records):
         if row.get("event") == EVENT:
+            last_free_associations = {}
             choice = replay_choice(
                 row, costs, cost_identity,
                 allow_feasible_resource_alternatives=allow_feasible_resource_alternatives,
@@ -168,7 +170,55 @@ def inspect(
             choices.append(choice)
             if row["source"] == "periodic_decay_resume":
                 pending = choice, row
-        elif row.get("event") == "agent_periodic_admission_decision" and pending is not None:
+                free_pending = None
+            else:
+                free_pending = (choice, row) if choice["search_replayed"] else None
+                choice["free_service"] = [{
+                    "invocation_id": owner, "key": identity(row["keys"][owner], grant=True),
+                    "actual_grant_verified": False, "separate_tool_replacement": False, "episode": None,
+                } for owner in choice["newly_selected_invocations"]]
+        elif row.get("event") == "workflow_oracle_coalesced_dispatch":
+            free_pending = None
+            last_free_associations = {}
+        elif row.get("event") == "agent_dispatch_free_capacity_admitted":
+            last_free_associations = {}
+            if free_pending is None:
+                continue
+            choice, selection = free_pending
+            for member in row["programs"]:
+                key = identity(member["key"], grant=True)
+                owner = key[2]
+                if owner not in choice["selected"]:
+                    free_pending = None
+                    break
+                if identity(selection["keys"][owner], grant=True) != key:
+                    raise ValueError("free grant changed the selected request attempt")
+                candidate = next(item for item in selection["candidates"] if item["identity"] == owner)
+                if (
+                    member["complete_budget_tokens"] != candidate["logical_tokens"]
+                    or member["observed_context_tokens"] != candidate["context_tokens"]
+                ):
+                    raise ValueError("free grant changed the selected complete context budget")
+                for service in choice["free_service"]:
+                    if service["invocation_id"] != owner:
+                        continue
+                    if service["actual_grant_verified"]:
+                        raise ValueError("duplicate free grant within the same combination dispatch")
+                    service.update(
+                        actual_grant_verified=True, journal_sequence=sequence,
+                        episode=episodes.get((key, sequence)),
+                    )
+                    last_free_associations[key] = service
+        elif row.get("event") == "agent_predicted_tool_replacement":
+            key = identity(row["consumer"], grant=True)
+            if key in last_free_associations:
+                last_free_associations[key]["separate_tool_replacement"] = True
+            free_pending, last_free_associations = None, {}
+        elif row.get("event") == "agent_periodic_admission_decision":
+            free_pending = None
+            last_free_associations = {}
+            if pending is None:
+                continue
             choice, selection = pending
             pending = None
             if set(row["resumed_program_ids"]) != set(choice["selected"]):
@@ -184,7 +234,17 @@ def inspect(
                     "episode": episodes.get((selected_key, sequence)),
                 })
             choice["following_periodic_grant_verified"] = True
-    counts, reasons, sources = Counter(), Counter(), Counter()
+    counts, reasons, sources = Counter({
+        name: 0 for name in (
+            "newly_selected_free_episodes", "newly_selected_free_actual_grant_verified",
+            "newly_selected_free_without_grant_evidence",
+            "newly_selected_free_grant_without_progress_episode",
+            "newly_selected_free_followed_by_exact_service",
+            "newly_selected_free_with_bounded_useful_completion",
+            "newly_selected_free_direct_dispatch_grant_verified",
+            "newly_selected_free_granted_by_separate_tool_replacement",
+        )
+    }), Counter(), Counter()
     for choice in choices:
         counts["combination_passes"] += 1
         sources[choice["source"]] += 1
@@ -207,6 +267,25 @@ def inspect(
                 counts["newly_selected_periodic_with_bounded_useful_completion"] += (
                     episode["new_completion_before_next_control_or_intervention"] is True
                 )
+        for service in choice["free_service"]:
+            episode = service["episode"]
+            counts["newly_selected_free_episodes"] += 1
+            counts["newly_selected_free_actual_grant_verified"] += service["actual_grant_verified"]
+            counts["newly_selected_free_direct_dispatch_grant_verified"] += (
+                service["actual_grant_verified"] and not service["separate_tool_replacement"]
+            )
+            counts["newly_selected_free_granted_by_separate_tool_replacement"] += service["separate_tool_replacement"]
+            counts["newly_selected_free_without_grant_evidence"] += not service["actual_grant_verified"]
+            counts["newly_selected_free_grant_without_progress_episode"] += (
+                service["actual_grant_verified"] and episode is None
+            )
+            if episode is not None and not service["separate_tool_replacement"]:
+                counts["newly_selected_free_followed_by_exact_service"] += (
+                    episode["following_native_service_ms"] is not None
+                )
+                counts["newly_selected_free_with_bounded_useful_completion"] += (
+                    episode["new_completion_before_next_control_or_intervention"] is True
+                )
     return {
         "counts": dict(counts), "reasons": dict(reasons), "sources": dict(sources),
         "metadata_and_selection_cpu_us": distribution([
@@ -221,7 +300,14 @@ def inspect(
             "reference_is_local_S0_not_a_counterfactual_whole_run": True,
             "periodic_progress_uses_exact_attempt_and_post_pressure_eligibility": True,
             "periodic_progress_bounded_by_next_control_or_observed_intervention": True,
-            "free_dispatch_selection_replayed_but_service_not_associated": True,
+            "free_dispatch_selection_replayed_but_service_not_associated": not any(
+                service["actual_grant_verified"] and not service["separate_tool_replacement"]
+                for choice in choices for service in choice["free_service"]
+            ),
+            "free_dispatch_exact_grant_association_enabled": True,
+            "free_dispatch_boundary_closes_at_next_selection_or_coalesced_dispatch_record": True,
+            "free_grant_observed_active_at_publication_not_assumed_after_pressure": True,
+            "separate_tool_replacement_grants_excluded_from_free_selection_service_counts": True,
             "A_to_B_is_separate_single_donor_order_not_combination_search": True,
             "missing_grant_or_service_evidence_is_unknown": True,
             "exclusive_causal_JCT_or_throughput_gain_proven": False,
@@ -281,6 +367,9 @@ def main():
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
+        analysis_commit=subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+        ).strip(),
         registration=str(args.registration), complete_measured_execution_verified=args.complete,
         policy_kind=args.policy_kind,
         input_jsonl_prefixes=reader.prefixes,
@@ -288,6 +377,7 @@ def main():
             args.registration, args.control, args.cohort, candidate_path, control_path,
             artifact_path, Path(__file__), ROOT / "beliefkv/policy/workflow_combination.py",
             ROOT / "scripts/audit_periodic_admission_decisions.py",
+            ROOT / "scripts/audit_free_dispatch_service.py",
         )},
         formal_workload_accepted=False, GPU_action=False, performance_accepted=False,
     )

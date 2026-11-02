@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workflow_cohort import validate_cohort
 from experiments.reports.workflow_mix_20261029.review_burst import complete_work
-from scripts.audit_free_dispatch_service import identity
+from scripts.audit_free_dispatch_service import identity, validate_grant
 from scripts.audit_native_system_costs import distribution, finite_number
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.train_workflow_work import write
@@ -70,13 +70,25 @@ def useful_work(member, phase):
     return output > 0 or phase == "prefill" and tokens > 0
 
 
-def inspect(records, batches):
+def inspect(records, batches, *, include_free_grants=False):
+    if type(include_free_grants) is not bool:
+        raise ValueError("free-grant progress must be explicitly enabled")
     counts, decisions, grants = Counter(), [], []
     observations = []
     controls, interventions = [], defaultdict(list)
     previous = -1.
     for sequence, record in enumerate(records):
         intervention(record, sequence, interventions)
+        if include_free_grants and record.get("event") == "agent_dispatch_free_capacity_admitted":
+            for key, grant, _observed, _budget in validate_grant(record):
+                # This event follows the logical grant commit. Later pressure
+                # or regrant events still bound the usable observation window.
+                grants.append({
+                    "key": key, "selection_ms": grant["monotonic_s"] * 1000.,
+                    "journal_sequence": sequence, "selection_retained": True,
+                    "grant_kind": "free_budget",
+                })
+                counts["free_budget_grant_episodes_in_progress_audit"] += 1
         if record.get("event") != EVENT:
             continue
         now, capacity = record.get("monotonic_s"), record.get("resume_capacity_tokens")
@@ -220,6 +232,7 @@ def inspect(records, batches):
             "unlogged_interventions_and_exclusive_causal_benefit_not_proven": True,
             "other_admission_entries_require_their_separate_audits": True,
             "independently_sealed_prefixes_not_atomic": True,
+            "published_free_budget_grants_included": include_free_grants,
         },
     }
 
