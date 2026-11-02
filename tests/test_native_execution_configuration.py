@@ -71,6 +71,59 @@ def test_same_profile_reaches_every_actual_arm_and_rebases_inside_its_checkout(p
     assert settings["DEVICE_FULL_TOKENS"] == "805198"
 
 
+@pytest.mark.parametrize("arm", ("full", "native_matched", "thunderagent_acting_decay"))
+def test_prefill_candidate_uses_the_same_parameters_for_all_methods(profile, reference, arm):
+    checkout, _, common = profile
+    relative = Path("configs/execution/qwen3_coder_h200_exact_prefill_moe_20261101.json")
+    path = checkout / relative
+    shutil.copyfile(ROOT / relative, path)
+    document = json.loads(path.read_bytes())
+    moe = document["environment"][execution.MOE_KEY]
+    shutil.copytree(ROOT / moe, checkout / moe)
+    common.update({
+        execution.CONFIG_KEY: str(relative), execution.HASH_KEY: sha256_file(path),
+    })
+    reference["arms"]["full"].update(common, HOST_SPLIT="auto")
+    settings, flags, _ = comparison.environment(
+        reference, arm, checkout, checkout / "engine", checkout / arm,
+        18998, checkout / "plugin", max_running_requests=24,
+    )
+    assert settings[execution.MOE_KEY] == str(checkout / moe)
+    assert json.loads(flags[flags.index("--cuda-graph-config") + 1]) == execution.GRAPH
+    assert settings["MAX_RUNNING_REQUESTS"] == "24"
+    assert settings["HICACHE_SIZE_GB"] == "200"
+    assert settings["DEVICE_FULL_TOKENS"] == "805198"
+    selected = execution.configuration(common, checkout)
+    bound = {
+        name: sha256_file(ROOT / name) for name in (
+            "beliefkv/experiments/native_execution.py", "tests/test_native_execution_configuration.py",
+            str(relative), str(Path(moe) / execution.KERNEL_FILE),
+        )
+    }
+    for name in ("beliefkv/experiments/native_execution.py", "tests/test_native_execution_configuration.py"):
+        target = checkout / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / name, target)
+    execution.require_source_binding(selected, bound, checkout)
+    execution.verify_server_info(selected, info_for(selected))
+
+
+def test_packaged_prefill_table_preserves_every_untuned_native_lookup():
+    original = {
+        int(key): value for key, value in json.loads(
+            (ROOT / "configs/execution/h200_moe_decode" / execution.KERNEL_FILE).read_bytes()
+        ).items()
+    }
+    candidate = ROOT / "configs/execution/h200_moe_prefill_decode" / execution.KERNEL_FILE
+    assert sha256_file(candidate) == "9425a7d46575f32d4b92570d6346034c7559a9c2af749f6d44820fca7cde09b2"
+    tuned = {int(key): value for key, value in json.loads(candidate.read_bytes()).items()}
+    for size in (*range(1, 8193), 16384, 65536, 262144):
+        if not 256 <= size <= 2048:
+            assert tuned[min(tuned, key=lambda key: abs(key - size))] == original[
+                min(original, key=lambda key: abs(key - size))
+            ]
+
+
 @pytest.mark.parametrize("field,value", [
     ("MAX_RUNNING_REQUESTS", "12"), ("CHUNKED_PREFILL_SIZE", "4096"),
     ("ENABLE_MIXED_CHUNK", "1"), ("DEVICE_FULL_TOKENS", "805199"),

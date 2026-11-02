@@ -17,7 +17,10 @@ from scripts.train_workflow_work import write
 ORDER = ("full", "thunderagent_acting_decay")
 
 
-def prepare(full_path, thunder_path, profile_path, cohort_path, *, checkout=ROOT):
+def prepare(
+    full_path, thunder_path, profile_path, cohort_path, *, checkout=ROOT,
+    replace_existing=False,
+):
     paths = dict(zip(ORDER, (full_path, thunder_path), strict=True))
     bases = {name: json.loads(path.read_bytes()) for name, path in paths.items()}
     full, thunder = (bases[name] for name in ORDER)
@@ -31,6 +34,19 @@ def prepare(full_path, thunder_path, profile_path, cohort_path, *, checkout=ROOT
             raise ValueError("common execution comparison serving parameters differ: " + key)
     relative = profile_path.resolve().relative_to(checkout.resolve())
     digest, result = sha256_file(profile_path), {}
+    previous = {
+        name: native_execution.configuration(base["common_environment"], checkout)
+        for name, base in bases.items()
+    }
+    if any(previous.values()):
+        if not replace_existing:
+            raise ValueError("base already declares a native execution experiment")
+        if not all(previous.values()) or (
+            previous[ORDER[0]]["identity"] != previous[ORDER[1]]["identity"]
+        ):
+            raise ValueError("replacing execution requires the same qualified previous profile")
+    elif replace_existing:
+        raise ValueError("no existing execution profile to replace")
     for name in ORDER:
         base = bases[name]
         if base["order"] != [name] or any(
@@ -43,8 +59,6 @@ def prepare(full_path, thunder_path, profile_path, cohort_path, *, checkout=ROOT
             raise ValueError("retain the declared method and disabled tool prefetch/handoff")
         candidate = deepcopy(base)
         common = candidate["common_environment"]
-        if any(common.get(key) for key in (native_execution.CONFIG_KEY, native_execution.HASH_KEY)):
-            raise ValueError("base already declares a native execution experiment")
         common.update({
             native_execution.CONFIG_KEY: str(relative),
             native_execution.HASH_KEY: digest,
@@ -56,6 +70,9 @@ def prepare(full_path, thunder_path, profile_path, cohort_path, *, checkout=ROOT
             serving_profile_experiment={
                 "previous_configuration": str(paths[name].resolve()),
                 "previous_configuration_sha256": sha256_file(paths[name]),
+                "previous_native_execution_configuration": (
+                    previous[name]["identity"] if previous[name] else None
+                ),
                 "only_changed_common_environment_fields": [
                     native_execution.CONFIG_KEY, native_execution.HASH_KEY,
                 ],
@@ -86,8 +103,12 @@ def main():
     parser.add_argument("--execution-profile", type=Path, required=True)
     parser.add_argument("--cohort", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--replace-existing-execution", action="store_true")
     args = parser.parse_args()
-    candidates = prepare(args.full_base, args.thunder_base, args.execution_profile, args.cohort)
+    candidates = prepare(
+        args.full_base, args.thunder_base, args.execution_profile, args.cohort,
+        replace_existing=args.replace_existing_execution,
+    )
     args.output_dir.mkdir(parents=True, exist_ok=False)
     for name, candidate in candidates.items():
         write(args.output_dir / (name + ".json"), candidate)
