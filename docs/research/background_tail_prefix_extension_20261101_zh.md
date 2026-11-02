@@ -819,3 +819,91 @@ pending input 或最新状态并集最高为 2,720,588 token、95.8053%。
 逐项哈希及 canonical 原行匹配后才生成候选，没有改写原 source 或任务。
 可执行 trace 物化、工具映射、完整源码绑定、GPU 入口与性能校准仍需完成；
 当前没有登记新 GPU 任务。
+
+### 背景替换的实际物化与例外边界
+
+上述候选已经物化为
+`useful_token_cost_r1/composite73_background_substitution_r1/`，
+独立复核保存于
+`original73_background_substitution_prepare_r1/materialized_verified.json`。
+70个保留 workflow 的原事件字段、内部依赖与内部工具延迟均相同，
+11,242个保留模型请求的工作身份保持不变；
+全人口23,592份实际 prompt/output packet 字节分别与保留源或新增原任务相符。
+保留2,300个工具采样，移除34个旧背景采样，新增58个采样，
+仍使用同一公开采样池、分类、seed21和训练划分。
+公共预测先验完整 hash 继续为
+`949e2b45b7f6c31c39ac4ff497a2a8bd9bcc6c1fdd055a3a94cc847bbc0835da`。
+
+不能将全部57,467个保留因果节点写成逐字节相同。
+首次严格核对拒绝了3个无依赖 `WORKFLOW_START.delay_ms` 差异：
+
+| 原项目 | 旧 source-start delay | 新 source-start delay |
+| --- | ---: | ---: |
+| `python_api_graphql_expert_007` | 115.931294 ms | 30.959760 ms |
+| `python_desktop_development_expert_021` | 115.689469 ms | 30.717935 ms |
+| `python_web_cms_expert_002` | 84.971535 ms | 0 ms |
+
+这是移除原采集内最早 root 后的源起点归一化；
+这3项的原始 event 和其余节点字段仍完全相同，其余57,464个节点包含
+source delay 也完全相同。实际回放的 `execute_causal_replay`
+使用冻结外部到达表覆盖这些起点，独立核对确认全部到达时刻和前30个成员不变。
+CPU执行证明另将fixture源起点改为60,000 ms，外部指定0/5 ms，
+在3秒超时内完成4个stand-in请求，实际workflow起点相隔精确5 ms。
+这是外部起点覆盖的CPU证据，不是GPU执行或性能结果；
+该例外仅在这份已逐项验证的外部到达表下成立。
+
+固定18个测量成员仍为3,263个请求、424,240个输出token。
+没有更改任务原题、源码、测试或内部执行依赖。
+
+### 完整 CPU 资格与首次入口拒绝
+
+`original73_background_substitution_bound_cpu_r1/` 已通过
+**6,834项测试和23项子测试**，零失败、错误和skip。
+保留此前6,795个literal用例、全部2,444个源码输入与原296个外部绑定；
+本次外部输入共339项。源码、原生引擎和外部输入在执行期间均未改变。
+干净operator为
+`.worktrees/beliefkv-background-substitution-operator-2fe1b74c`。
+四个历史CPU fixture路径按原五份文件hash绑定，
+没有改动断言或把旧AST fixture当作实际serving engine。
+
+首次入口
+`original73_background_substitution_gpu_entry_r1/source_registration_entry.json`
+在来源注册阶段拒绝旧background25重新分析证明：
+该证明绑定旧版 `replay_arrivals.py`，与新schema6源码不同。
+它尚未创建来源/position注册或启动GPU，不能计作失败的性能实验。
+原拒绝及stderr保持原样。
+
+随后用相同原始background25采集、相同corrected causal audit
+和本次完整CPU资格生成
+`original73_background_substitution_bound_cpu_r1/source_requalification_r1.json`。
+原始 `capture_failed` 状态、实际工具时长及唯一publication-clock冲突继续保留。
+R2入口只更换该证明绑定，没有改动应用或原生源码。
+
+### 资格通过与 Full 启动
+
+R2实际来源登记为
+`ops/workflow_original73_background_substitution_source_20261101_r1.registration.json`。
+position注册为
+`ops/workflow_original73_background_substitution_position_20261101_r1.registration.json`，
+端口18972。
+24个token/session/stop请求全部通过，1/8/24采样检查通过，
+完成清理后自动登记仅Full的比较臂：
+`ops/workflow_original73_background_substitution_full_20261101_r1.registration.json`。
+
+应用冻结为 `2fe1b74c665e3a69f7f416238f48e82724ec5839`，
+实际native tree仍为 `434c35dd66211d0a230717c88bf1452056769a40`。
+Qwen3-Coder、BF16、FA3、TP1、Device805,198 token、Host200 GB、
+running24、chunk2048、mixed关闭、精确1..24 decode graph和共同MoE配置不变。
+Full继续保留JOIN/EOS预取、预测工具卸载、prepare_host、agent连续性与sibling支持；
+工作量排序、组合准入、工具预取和逐层handoff均关闭。
+
+2026-11-01 16:00 America/Los_Angeles，Full处于 `starting_full`，
+watcher7296与server7804实际存活，driver尚未创建。
+这不是正式回放已开始的证明，也没有新的完整JCT或方法收益。
+CPU包装器5485实际存活，nice19、CUDA隐藏，
+仅在实际 `running_full`、运行目录已存在和owner存活后创建固定18观察器，
+避免此前过早创建运行目录的竞争。
+包装器为 `ops/finish_background_substitution_full_20261101.py`，
+等待状态为同名experiment的 `.waiting.state.json`。
+此时没有登记ThunderAgent GPU后继；先保留完整测量尾部、
+真实旧前缀prefill与供给审计，再决定匹配对照。
