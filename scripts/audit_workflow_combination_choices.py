@@ -234,6 +234,7 @@ def main():
     for name in ("registration", "control", "cohort", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--complete", action="store_true")
+    parser.add_argument("--policy-kind", choices=("oracle", "learned"), default="oracle")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve earlier combination observations")
@@ -242,7 +243,12 @@ def main():
         causal.comparison.verify_sources(item)
     candidate_path, control_path = (Path(item["experiment_configuration"]) for item in (plan, control))
     candidate = causal.load(candidate_path)
-    verify_calibrated_combination_pair(causal.load(control_path), candidate)
+    if args.policy_kind == "learned":
+        from scripts.review_learned_work_ranking import verify_learned_combination_pair
+
+        verify_learned_combination_pair(causal.load(control_path), candidate)
+    else:
+        verify_calibrated_combination_pair(causal.load(control_path), candidate)
     for name in ("beliefkv/policy/workflow_combination.py",):
         if sha256_file(ROOT / name) != plan["source_sha256"].get(name):
             raise ValueError("analysis search differs from executed combination policy")
@@ -276,6 +282,7 @@ def main():
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
         registration=str(args.registration), complete_measured_execution_verified=args.complete,
+        policy_kind=args.policy_kind,
         input_jsonl_prefixes=reader.prefixes,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             args.registration, args.control, args.cohort, candidate_path, control_path,
