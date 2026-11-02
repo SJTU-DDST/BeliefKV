@@ -1350,11 +1350,20 @@ def owned_processes(identities):
 
 def cleanup(arm, identities, reason):
     known = owned_processes(identities)
+    host_bytes = None
+    try:
+        value = load(arm / "server/native_capacity_census.json")["capacity"]["host_total_bytes"]
+        if type(value) is int and value > 0:
+            host_bytes = value
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    kill_grace = 180. if host_bytes is not None and host_bytes > host_numa.LEGACY_HOST_FULL_BYTES else 60.
     record = {
         "reason": reason, "started_at": reservation.now().isoformat(),
-        "identities": known, "signals": [],
+        "identities": known, "signals": [], "observed_Host_pool_bytes": host_bytes,
+        "post_SIGKILL_grace_seconds": kill_grace,
     }
-    for sig, grace in ((signal.SIGTERM, 12.), (signal.SIGKILL, 60.)):
+    for sig, grace in ((signal.SIGTERM, 12.), (signal.SIGKILL, kill_grace)):
         for row in known:
             if reservation.alive(row):
                 try:
