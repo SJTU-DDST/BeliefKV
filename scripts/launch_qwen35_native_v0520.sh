@@ -38,6 +38,7 @@ if [[ "${BELIEFKV_FULL_MAMBA_HOST_SPLIT}" == auto ]]; then
 fi
 HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-bind}"
+HOST_NUMA_RECLAIM_POLICY="${HOST_NUMA_RECLAIM_POLICY:-conservative}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 ENABLE_SESSION_RADIX_CACHE="${ENABLE_SESSION_RADIX_CACHE:-0}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
@@ -161,13 +162,23 @@ if (( HICACHE_SIZE_GB > 0 )) || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; th
     printf 'HOST_NUMA_MEMORY_POLICY must be bind or preferred\n' >&2
     exit 2
   fi
+  if [[ "$HOST_NUMA_RECLAIM_POLICY" != conservative && "$HOST_NUMA_RECLAIM_POLICY" != clean_file ]] \
+      || [[ "$HOST_NUMA_RECLAIM_POLICY" == clean_file && "$HOST_NUMA_MEMORY_POLICY" != bind ]]; then
+    printf 'clean_file Host reclaim estimate requires strict bind allocation\n' >&2
+    exit 2
+  fi
   if ! command -v numactl >/dev/null; then
     printf 'numactl is required for NUMA-local HiCache\n' >&2
     exit 2
   fi
   if (( HICACHE_SIZE_GB > 0 )); then
+    reclaim_args=()
+    if [[ "$HOST_NUMA_RECLAIM_POLICY" != conservative ]]; then
+      reclaim_args=(--reclaim-policy "$HOST_NUMA_RECLAIM_POLICY")
+    fi
     "${PYTHON}" "${BELIEFKV_ROOT}/scripts/preflight_qwen35_host_pool.py" \
       --memory-policy "$HOST_NUMA_MEMORY_POLICY" \
+      "${reclaim_args[@]}" \
       --node "${HOST_NUMA_NODE}" --size-gb "${HICACHE_SIZE_GB}"
   fi
   # SGLang's automatic worker binding otherwise replaces this policy with membind.

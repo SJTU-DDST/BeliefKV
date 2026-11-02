@@ -1,0 +1,208 @@
+"""Declare Host allocation placement and verify the actual complete FULL pool."""
+
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+
+from beliefkv.experiments.source_provenance import sha256_file
+
+
+def configuration(common):
+    node = common.get("HOST_NUMA_NODE", "1")
+    policy = common.get("HOST_NUMA_MEMORY_POLICY", "preferred")
+    reclaim = common.get("HOST_NUMA_RECLAIM_POLICY", "conservative")
+    if (
+        type(node) is not str or not node.isascii() or not node.isdigit()
+        or str(int(node)) != node or policy not in ("bind", "preferred")
+        or reclaim not in ("conservative", "clean_file")
+        or reclaim == "clean_file" and policy != "bind"
+    ):
+        raise ValueError("invalid explicit Host NUMA allocation configuration")
+    return {
+        "node": int(node), "memory_policy": policy, "reclaim_policy": reclaim,
+        "require_fully_local_pool": policy == "bind",
+    }
+
+
+def environment(common):
+    selected = configuration(common)
+    return {
+        "HOST_NUMA_NODE": str(selected["node"]),
+        "HOST_NUMA_MEMORY_POLICY": selected["memory_policy"],
+        "HOST_NUMA_RECLAIM_POLICY": selected["reclaim_policy"],
+    }
+
+
+def preflight_arguments(common):
+    selected = configuration(common)
+    return [
+        "--memory-policy", selected["memory_policy"],
+        "--reclaim-policy", selected["reclaim_policy"],
+        "--node", str(selected["node"]), "--size-gb", "200",
+    ]
+
+
+def exact_mapping(maps, size):
+    matches = []
+    for line in maps.splitlines():
+        fields = line.split(maxsplit=5)
+        left, right = (int(value, 16) for value in fields[0].split("-"))
+        if right - left == size and "s" in fields[1] and len(fields) == 6 and any(
+            name in fields[5] for name in ("/dev/zero", "/dev/shm", "memfd:")
+        ):
+            matches.append({
+                "start_address": fields[0].split("-")[0],
+                "mapping_bytes": size, "raw_maps_line": line,
+            })
+    if len(matches) != 1:
+        raise ValueError("Host NUMA proof requires one exact complete shared FULL mapping")
+    return matches[0]
+
+
+def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes):
+    if (
+        type(expected_bytes) is not int or expected_bytes <= 0
+        or type(node) is not int or node < 0
+        or type(page_bytes) is not int or page_bytes <= 0
+    ):
+        raise ValueError("Host NUMA proof requires known positive pool/page geometry")
+    rounded = (expected_bytes + page_bytes - 1) // page_bytes * page_bytes
+    mapping = exact_mapping(maps, rounded)
+    lines = [
+        line for line in numa_maps.splitlines()
+        if line.split() and line.split()[0] == mapping["start_address"]
+    ]
+    if len(lines) != 1:
+        raise ValueError("Host NUMA proof lacks an exact native mapping policy")
+    fields = lines[0].split()
+    values = dict(field.split("=", 1) for field in fields if "=" in field)
+    if len(fields) < 2 or fields[1] != f"bind:{node}" or (
+        int(values.get("kernelpagesize_kB", "0")) * 1024 != page_bytes
+    ):
+        raise ValueError("Host NUMA mapping is not strictly bound at the known page size")
+    pages = {
+        int(name[1:]): int(value) for name, value in values.items()
+        if re.fullmatch(r"N\d+", name)
+    }
+    if not pages or any(count < 0 for count in pages.values()):
+        raise ValueError("Host NUMA mapping lacks physical page residency")
+    resident = {str(owner): count * page_bytes for owner, count in pages.items()}
+    remote = sum(count for owner, count in resident.items() if int(owner) != node)
+    if sum(resident.values()) != rounded or remote:
+        raise ValueError("the complete Host pool must be resident on the selected NUMA node")
+    return {
+        "mapping": mapping, "mapping_policy": fields[1],
+        "raw_numa_maps_line": lines[0], "kernel_page_bytes": page_bytes,
+        "pool_resident_bytes_by_node": resident, "remote_pool_bytes": 0,
+        "remote_pool_fraction": 0., "fully_local_pool_verified": True,
+    }
+
+
+def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=None):
+    selected = configuration(common)
+    if not selected["require_fully_local_pool"]:
+        return None
+    capacity_path = Path(directory) / "server/native_capacity_census.json"
+    capacity = json.loads(capacity_path.read_bytes())["capacity"]
+    if (
+        capacity.get("host_mamba_bytes") != 0
+        or capacity.get("host_total_bytes") != capacity.get("host_full_bytes")
+        or common.get("MODEL_CACHE_LAYOUT") != "full_only"
+    ):
+        raise ValueError("strict Host NUMA proof currently requires a static FULL-only pool")
+    proc = Path(proc_root) / str(scheduler["pid"])
+    def check_identity():
+        fields = (proc / "stat").read_text().rsplit(")", 1)[1].split()
+        if len(fields) < 20 or fields[19] != scheduler["start_ticks"]:
+            raise ValueError("Host NUMA worker identity changed")
+    check_identity()
+    maps, numa = (proc / "maps").read_bytes(), (proc / "numa_maps").read_bytes()
+    result = inspect_mapping(
+        maps.decode(), numa.decode(), expected_bytes=capacity["host_full_bytes"],
+        node=selected["node"], page_bytes=os.sysconf("SC_PAGE_SIZE"),
+    )
+    if topology is None:
+        topology = subprocess.check_output(["nvidia-smi", "topo", "-m"], text=True, timeout=15.)
+    plain = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", topology)
+    devices = [line.split() for line in plain.splitlines() if line.startswith("GPU0")]
+    if len(devices) != 1 or len(devices[0]) < 4 or (
+        not devices[0][-2].isdigit() or int(devices[0][-2]) != selected["node"]
+    ):
+        raise ValueError("the strict Host pool node differs from the actual GPU0 affinity")
+    if exact_mapping((proc / "maps").read_text(), result["mapping"]["mapping_bytes"]) != result["mapping"]:
+        raise ValueError("the Host pool mapping changed while reading placement")
+    check_identity()
+    return {
+        **result, "configuration": selected,
+        "scheduler": {"pid": scheduler["pid"], "start_ticks": scheduler["start_ticks"]},
+        "host_full_capacity_bytes": capacity["host_full_bytes"],
+        "GPU_local_NUMA_node": selected["node"], "GPU_topology": plain,
+        "raw_proc_read_sha256": {
+            "maps": hashlib.sha256(maps).hexdigest(), "numa_maps": hashlib.sha256(numa).hexdigest(),
+        },
+        "inputs_sha256": {str(capacity_path.resolve()): sha256_file(capacity_path)},
+        "scope": "Initial complete static pinned Host allocation, checked before measured request submission.",
+    }
+
+
+def require_source_binding(common, sources, checkout):
+    if not configuration(common)["require_fully_local_pool"]:
+        return
+    required = {
+        "beliefkv/experiments/host_numa.py", "tests/test_host_numa.py",
+        "scripts/preflight_qwen35_host_pool.py", "tests/test_qwen35_host_pool.py",
+    }
+    if not required <= sources.keys() or any(
+        sha256_file(Path(checkout) / name) != sources[name] for name in required
+    ):
+        raise ValueError("strict Host NUMA configuration lacks current CPU-bound sources")
+
+
+def verify_qualified_configuration(common, registration):
+    selected = configuration(common)
+    if not selected["require_fully_local_pool"]:
+        return
+    proof = registration.get("host_numa_observation", {})
+    if registration.get("host_numa_configuration") != selected or (
+        proof.get("configuration") != selected
+        or proof.get("fully_local_pool_verified") is not True
+        or proof.get("remote_pool_bytes") != 0
+        or proof.get("host_full_capacity_bytes") != 200000077824
+    ):
+        raise ValueError("fresh GPU qualification lacks the exact strictly local Host pool")
+
+
+def verify_completed_configuration(plan, arm=None):
+    common = plan.get("reference_environment", {})
+    selected = configuration(common)
+    if not selected["require_fully_local_pool"]:
+        return None
+    if arm is None:
+        if len(plan.get("order", ())) != 1:
+            raise ValueError("strict Host NUMA proof requires one complete declared arm")
+        arm = Path(plan["run_root"]) / plan["order"][0]
+    path = Path(arm) / "server/host_numa_placement.json"
+    proof = json.loads(path.read_bytes())
+    verify_qualified_configuration(common, {
+        "host_numa_configuration": plan.get("host_numa_configuration"),
+        "host_numa_observation": proof,
+    })
+    capacity_path = Path(arm) / "server/native_capacity_census.json"
+    ready_path = Path(arm) / "server/native_telemetry_ready.json"
+    ready = json.loads(ready_path.read_bytes())
+    if (
+        proof.get("GPU_local_NUMA_node") != selected["node"]
+        or proof.get("pool_resident_bytes_by_node") != {
+            str(selected["node"]): proof["host_full_capacity_bytes"],
+        }
+        or proof.get("inputs_sha256", {}).get(str(capacity_path.resolve())) != sha256_file(capacity_path)
+        or proof.get("scheduler", {}).get("pid") != ready.get("scheduler_pid")
+    ):
+        raise ValueError("completed Host placement differs from the complete declared pool")
+    return {
+        "configuration": selected,
+        "inputs_sha256": {str(item.resolve()): sha256_file(item) for item in (path, capacity_path, ready_path)},
+    }

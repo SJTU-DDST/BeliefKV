@@ -12,7 +12,9 @@ MAX_POOL_GB = 200
 RESERVE_GIB = 8
 
 
-def _node_capacity(node: int, node_root: Path) -> tuple[int, int]:
+def _node_capacity(
+    node: int, node_root: Path, *, reclaim_policy: str = "conservative",
+) -> tuple[int, int]:
     path = node_root / f"node{node}" / "meminfo"
     try:
         lines = path.read_text().splitlines()
@@ -31,7 +33,8 @@ def _node_capacity(node: int, node_root: Path) -> tuple[int, int]:
         raise ValueError(f"NUMA node {node} has incomplete meminfo")
     free = metrics["MemFree:"]
     # Avoid double-counting file pages: clean inactive file cache is the
-    # primary reclaim source; active cache and slab receive conservative credit.
+    # primary reclaim source. Explicit clean_file also prices clean active pages;
+    # strict allocation and actual residency verification remain required.
     clean_file = max(
         0,
         metrics.get("FilePages:", 0)
@@ -45,7 +48,7 @@ def _node_capacity(node: int, node_root: Path) -> tuple[int, int]:
     )
     available_estimate = (
         free + inactive_file
-        + active_file // 4
+        + (active_file if reclaim_policy == "clean_file" else active_file // 4)
         + metrics.get("SReclaimable:", 0) // 2
     )
     return metrics["MemTotal:"], available_estimate
@@ -55,6 +58,7 @@ def check_host_pool(
     node: int, size_gb: int, *,
     node_root: Path = Path("/sys/devices/system/node"),
     memory_policy: str = "bind",
+    reclaim_policy: str = "conservative",
 ) -> tuple[int, int]:
     if type(node) is not int or node < 0:
         raise ValueError("HOST_NUMA_NODE must be a nonnegative integer")
@@ -62,7 +66,11 @@ def check_host_pool(
         raise ValueError("HICACHE_SIZE_GB must be between 1 and 200 in total")
     if memory_policy not in ("bind", "preferred"):
         raise ValueError("HOST_NUMA_MEMORY_POLICY must be bind or preferred")
-    total, available_estimate = _node_capacity(node, node_root)
+    if reclaim_policy not in ("conservative", "clean_file") or (
+        reclaim_policy == "clean_file" and memory_policy != "bind"
+    ):
+        raise ValueError("clean_file reclaim estimate requires strict bind allocation")
+    total, available_estimate = _node_capacity(node, node_root, reclaim_policy=reclaim_policy)
     required = size_gb * GB + RESERVE_GIB * GIB
     if memory_policy == "preferred":
         for directory in node_root.glob("node[0-9]*"):
@@ -76,7 +84,7 @@ def check_host_pool(
             f"NUMA node {node} needs at least {required / GIB:.2f} GiB available "
             f"for {size_gb} GB total Host pools plus {RESERVE_GIB} GiB reserve; "
             f"currently {available_estimate / GIB:.2f} GiB estimated reclaimable "
-            f"with memory policy {memory_policy}"
+            f"with memory policy {memory_policy} and reclaim estimate {reclaim_policy}"
         )
     return size_gb * GB, available_estimate
 
@@ -86,10 +94,12 @@ def main() -> None:
     parser.add_argument("--node", type=int, required=True)
     parser.add_argument("--size-gb", type=int, required=True)
     parser.add_argument("--memory-policy", choices=("bind", "preferred"), default="bind")
+    parser.add_argument("--reclaim-policy", choices=("conservative", "clean_file"), default="conservative")
     args = parser.parse_args()
     try:
         pool_bytes, available = check_host_pool(
             args.node, args.size_gb, memory_policy=args.memory_policy,
+            reclaim_policy=args.reclaim_policy,
         )
     except ValueError as exc:
         parser.error(str(exc))

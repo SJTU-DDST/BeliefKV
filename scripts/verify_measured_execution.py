@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.experiments import native_execution
+from beliefkv.experiments import host_numa, native_execution
 from beliefkv.experiments.workflow_cohort import validate_cohort
 from scripts import run_causal_comparison as causal
 from scripts import stop_after_measured_cohort as stop
@@ -145,10 +145,13 @@ def review_matches_measured_execution(review, evidence):
 def verify_execution(registration, cohort_path=None):
     if cohort_path is not None and causal.load(Path(cohort_path)).get("schema_version") == 2:
         result = verify_measured_execution(registration, cohort_path)
-        execution = native_execution.verify_completed_configuration(causal.load(Path(registration)))
+        plan = causal.load(Path(registration))
+        execution = native_execution.verify_completed_configuration(plan)
+        placement = host_numa.verify_completed_configuration(plan)
         return {
             **result, "work": result["measured_work"],
             **({"native_execution_evidence": execution} if execution is not None else {}),
+            **({"host_numa_evidence": placement} if placement is not None else {}),
         }
     from experiments.reports.workflow_mix_20261029.review_burst import complete_work
 
@@ -157,12 +160,14 @@ def verify_execution(registration, cohort_path=None):
         raise ValueError("wait for complete control work, fresh drain and actual owned exit")
     plan = causal.load(Path(registration))
     execution = native_execution.verify_completed_configuration(plan)
+    placement = host_numa.verify_completed_configuration(plan)
     return {
         "protocol": "all_workflows_completed", "work": work,
         "all_workflows_completed": True,
         "completed_receipt_requests": sorted(work),
         "completed_workflow_ids": sorted(plan["workflow_ids"]),
         **({"native_execution_evidence": execution} if execution is not None else {}),
+        **({"host_numa_evidence": placement} if placement is not None else {}),
     }
 
 

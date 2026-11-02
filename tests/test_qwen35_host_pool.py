@@ -133,6 +133,26 @@ def test_unknown_numa_policy_is_rejected(tmp_path: Path) -> None:
         check_host_pool(1, 200, node_root=tmp_path, memory_policy="interleave")
 
 
+def test_explicit_clean_file_estimate_can_reclaim_active_cache_without_counting_shmem(tmp_path):
+    root = _node(
+        tmp_path, total_kb=250 * GIB // 1024, free_kb=130 * GIB // 1024,
+        inactive_file_kb=10 * GIB // 1024, active_file_kb=60 * GIB // 1024,
+    )
+    with pytest.raises(ValueError, match="NUMA node 1 needs"):
+        check_host_pool(1, 200, node_root=root)
+    _, available = check_host_pool(1, 200, node_root=root, reclaim_policy="clean_file")
+    assert available == 200 * GIB
+    with (root / "node1/meminfo").open("a") as stream:
+        stream.write(f"Node 1 Shmem: {40 * GIB // 1024} kB\n")
+    with pytest.raises(ValueError, match="NUMA node 1 needs"):
+        check_host_pool(1, 200, node_root=root, reclaim_policy="clean_file")
+
+
+def test_clean_file_estimate_cannot_weaken_a_preferred_allocation(tmp_path):
+    with pytest.raises(ValueError, match="strict bind"):
+        check_host_pool(1, 200, node_root=tmp_path, memory_policy="preferred", reclaim_policy="clean_file")
+
+
 def _stub(tmp_path: Path) -> dict[str, str]:
     model = tmp_path / "model"
     model.mkdir()
@@ -221,6 +241,27 @@ def test_launch_binds_one_node_and_passes_telemetry_dir(tmp_path: Path) -> None:
     ]
     assert (tmp_path / "telemetry").read_text() == str(telemetry)
     assert (tmp_path / "auto-numa").read_text() == "0"
+
+
+def test_launch_passes_explicit_clean_file_estimate_to_the_strict_preflight(tmp_path):
+    env = {**_stub(tmp_path), "HOST_NUMA_RECLAIM_POLICY": "clean_file"}
+    result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    preflight = (tmp_path / "preflight-args").read_text().splitlines()
+    assert preflight[preflight.index("--reclaim-policy") + 1] == "clean_file"
+    assert (tmp_path / "numactl-args").read_text().splitlines()[:2] == [
+        "--cpunodebind=1", "--membind=1",
+    ]
+
+
+def test_launch_rejects_active_cache_credit_with_nonlocal_fallback(tmp_path):
+    env = {
+        **_stub(tmp_path), "HOST_NUMA_RECLAIM_POLICY": "clean_file",
+        "HOST_NUMA_MEMORY_POLICY": "preferred",
+    }
+    result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True, text=True)
+    assert result.returncode == 2
+    assert not (tmp_path / "numactl-args").exists()
 
 
 def test_launch_accepts_selective_write_through(tmp_path: Path) -> None:

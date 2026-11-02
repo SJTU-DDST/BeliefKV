@@ -12,7 +12,7 @@ from scripts.prepare_native_execution_comparison import ORDER, prepare
 from tests.test_native_execution_configuration import profile
 
 
-@pytest.mark.parametrize("change", (None, "arrivals", "tools", "capacity", "prefetch", "handoff"))
+@pytest.mark.parametrize("change", (None, "arrivals", "tools", "capacity", "prefetch", "handoff", "numa"))
 def test_preparation_preserves_method_policies_and_all_traffic(profile, tmp_path, change):
     checkout, profile_path, common = profile
     common = {**{key: "same" for key in SHARED_KEYS}, **common}
@@ -30,6 +30,8 @@ def test_preparation_preserves_method_policies_and_all_traffic(profile, tmp_path
         bases[ORDER[1]]["tool_timing_overlay"] = {"changed": True}
     elif change == "capacity":
         bases[ORDER[1]]["common_environment"]["HICACHE_SIZE_GB"] = "256"
+    elif change == "numa":
+        bases[ORDER[1]]["common_environment"]["HOST_NUMA_MEMORY_POLICY"] = "bind"
     elif change in ("prefetch", "handoff"):
         key = "TOOL_PREFETCH" if change == "prefetch" else "LAYER_HANDOFF"
         bases[ORDER[0]]["common_environment"][key] = "1"

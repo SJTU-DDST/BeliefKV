@@ -41,7 +41,7 @@ from beliefkv.experiments.subagent_retention import (
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from beliefkv.experiments.native_engine_variant import COMMON_TREE, TOKENCAKE_TREE, engine_patch
-from beliefkv.experiments import native_execution
+from beliefkv.experiments import host_numa, native_execution
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
@@ -160,7 +160,7 @@ def environment(
         SGLANG_SOURCE_CHECKOUT=str(engine), RUN_ROOT=str(arm), PORT=str(port),
         MEM_FRACTION_STATIC="0.94", CONTEXT_LENGTH="262144",
         CHUNKED_PREFILL_SIZE=str(prefill["chunked_prefill_size"]), ENABLE_SESSION_RADIX_CACHE="1",
-        HOST_NUMA_NODE="1", HOST_NUMA_MEMORY_POLICY="preferred",
+        **host_numa.environment(reference["arms"]["full"]),
         HICACHE_WRITE_POLICY="write_back", BELIEFKV_FULL_MAMBA_HOST_SPLIT="80:20",
         BELIEFKV_CAUSAL_REPLAY_BRIDGE="1", SGLANG_PLUGINS="beliefkv_causal_replay",
         SGLANG_ENABLE_DELAY_SAMPLE="0" if sampling_mode == "position" else "1",
@@ -1593,6 +1593,8 @@ def register(args):
     native_execution.require_source_binding(execution, sources, ROOT)
     native_execution.verify_qualified_configuration(execution, smoke_server)
     native_execution.verify_server_info(execution, qualified_prefill)
+    host_numa.require_source_binding(reference["arms"]["full"], sources, ROOT)
+    host_numa.verify_qualified_configuration(reference["arms"]["full"], smoke_server)
     if execution is not None:
         native_baseline = None
     from scripts.audit_mixed_position_outputs import verify_mixed_output_evidence
@@ -1785,6 +1787,8 @@ def register(args):
         if execution["identity"]["engine_tree"] != engine["tree"]:
             raise ValueError("shared execution profile requires its qualified native engine")
         plan["native_execution_configuration"] = execution["identity"]
+    if host_numa.configuration(reference["arms"]["full"])["require_fully_local_pool"]:
+        plan["host_numa_configuration"] = host_numa.configuration(reference["arms"]["full"])
     if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
         plan["oracle_information"] = {
             "deployable": False, "future_model_token_work_used": True,
@@ -2022,6 +2026,11 @@ def watch(registration):
                     if observation["identity"] != plan.get("native_execution_configuration"):
                         raise ValueError("actual shared execution configuration differs from registration")
                     reservation.write_json(arm / "server/native_execution_configuration.json", observation)
+                placement = host_numa.observe(plan["reference_environment"], scheduler, arm)
+                if placement is not None:
+                    if placement["configuration"] != plan.get("host_numa_configuration"):
+                        raise ValueError("actual Host NUMA policy differs from registration")
+                    reservation.write_json(arm / "server/host_numa_placement.json", placement)
                 observed_configuration(plan, label, arm)
                 command = replay_command(plan, arm, event_socket)
                 with (arm / "replay.log").open("x") as output:

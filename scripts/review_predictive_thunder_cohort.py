@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments import host_numa
 from scripts import run_causal_comparison as causal
 from scripts.review_sustained_oracle import compare_cohorts
 from scripts.train_workflow_work import write
@@ -32,6 +33,10 @@ def matching_traffic(predictive, thunder):
             raise ValueError("baseline changed fixed traffic or serving conditions: " + name)
     if predictive.get("native_execution_configuration") != thunder.get("native_execution_configuration"):
         raise ValueError("baseline changed the shared native execution configuration")
+    if host_numa.configuration(predictive.get("reference_environment", {})) != (
+        host_numa.configuration(thunder.get("reference_environment", {}))
+    ):
+        raise ValueError("baseline changed the Host NUMA allocation configuration")
     if thunder.get("oracle_information") is not None:
         raise ValueError("paper baseline must not declare oracle information")
 
@@ -72,6 +77,7 @@ def main():
     cohorts, decisions, inputs = [], [], [args.predictive, args.thunder, args.cohort]
     for execution in executions:
         inputs.extend(Path(path) for path in execution.get("native_execution_evidence", {}).get("inputs_sha256", {}))
+        inputs.extend(Path(path) for path in execution.get("host_numa_evidence", {}).get("inputs_sha256", {}))
     for directory, execution in zip(
         (args.predictive_review_dir, args.thunder_review_dir), executions,
     ):

@@ -9,7 +9,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from beliefkv.experiments import native_execution
+from beliefkv.experiments import host_numa, native_execution
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts.prepare_mixed_chunk_comparison import SHARED_KEYS
 from scripts.train_workflow_work import write
@@ -32,6 +32,10 @@ def prepare(
             full["common_environment"][key] != thunder["common_environment"].get(key)
         ):
             raise ValueError("common execution comparison serving parameters differ: " + key)
+    if host_numa.configuration(full["common_environment"]) != host_numa.configuration(
+        thunder["common_environment"],
+    ):
+        raise ValueError("common execution comparison Host NUMA configurations differ")
     relative = profile_path.resolve().relative_to(checkout.resolve())
     digest, result = sha256_file(profile_path), {}
     previous = {
