@@ -281,3 +281,39 @@ r2 明确清理负控制错误再验证修复，不将首个结果算作通过�
 吞吐回退仍拒绝、非法目标拒绝，以及旧声明兼容不能放宽资源匹配。
 这只是分析路径资格，不代表已运行 oracle 或得到任何完整性能收益；
 正在启动的服务与冻结代码不变。
+
+### 修复后的实际大池运行前缀
+
+位置 token/session/stop、采样及实际清理通过后，Full 冻结于
+`cd56c385` 开始回放，实际 scheduler PID 361249、监督进程 PID 360581、
+client PID 362669；固定测量观察器 PID 362672 实际运行，使用同一冻结
+版本中已修复的大池退出等待。
+
+21:36:21（Asia/Shanghai，对应服务端 America/Los_Angeles 日志 05:36:21），
+实际大池出现边界拆分日志。随后封存的 `boundary_use_and_progress.json`
+包含 3228 个新正进展服务 batch，Host 高水位 217532694528 字节，Host
+驱逐及已归因的 Host block 重算为零，既有前缀损失 proxy 为零，telemetry
+无丢弃/错误。它证明大池已实际使用修复并继续工作，不代表后续完整
+运行已通过，也不把两个重算口径相加。
+
+`host400_registered_copy_pressure_r1/live_verification_after_crossing.json`
+独立核对 770 个精确 receipt、原始 token/hash/sampler、实际容量、所有
+存活 owner 和观察器。`control_opportunities_after_crossing.json` 封存
+198 次控制，其中 29 次跨 workflow 逻辑集合竞争，16 次本地 oracle
+集合变化；25 次竞争的剩余工作比至少为 2。另一个独立前缀
+`periodic_service_after_crossing.json` 封存 197 次控制、110 次实际准入，
+资格均保留，107 次精确后续服务；86 次在下一控制或已记录同 agent
+干预前获得新服务，84 次在该边界前完成有效 batch。前缀间并非原子快照，
+未知后续服务不算失败。CPU 只读审计使用 nice19、CPU0、单线程、隐藏 CUDA。
+
+匹配 oracle 在 `host400_registered_copy_direct_oracle_prepare_r1/` 重新
+完成源图和实际构造核对，保留 global 排序、2 秒窗口、JOIN 绕过窗口、
+active 连续性及共同传输修复，组合准入仍关闭。`goal_pair_contract.json`
+直接验证原始配置，只有四个工作量路径/哈希字段变化，不修改旧控制的
+配对声明；新 artifact 仅切换排序。没有登记自动 oracle GPU 后继。
+
+对旧失败前缀还保留了 `packing_failed_prefix.json`：12 次反事实集合
+变化中 7 次成员数不变、5 次减少，均不存在还能直接放入的未选单体，
+3 次涉及测量成员。这是需要在 oracle 比较后核对的并行度与短路径
+取舍，不是漏装对象、最优组合或 JCT 收益的证明。当前负载早期已具备
+足够供给来继续完整对比，不改到达表或在途中调整策略。
