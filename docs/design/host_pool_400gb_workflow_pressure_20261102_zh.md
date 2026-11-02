@@ -153,3 +153,13 @@ P90/P10=5.287308。20 个初始 root 的输入合计 1609748 token，
 及 `actual_arm_constructors.json`。独立 64MiB 原生 mmap CPU 检查观察到
 `interleave:0-1`、两个节点各 32MiB，且 CUDA 未初始化；它不证明完整
 400GB 分配、CUDA 注册或模型性能。
+
+## 等待 GPU 时完成的 R5 工作
+
+R5 的条件剩余工作分布、后台更新、校准与组合准入接入已在 CPU 上实现，
+实际训练与留出风险见
+`r5_conditional_distribution_implementation_20261102_zh.md`。
+这不改变本文件已冻结的非排序 Full/Thunder 配置。
+到达准备入口增加可选 `--mean-interval-s`；默认保持已有平均 70 秒。
+只有实际高并发诊断仍缺少 ready 竞争时才选择更短间隔，并为双方冻结
+相同新表，不能混用旧表的性能结果。
