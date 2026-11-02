@@ -257,3 +257,12 @@ r2 明确清理负控制错误再验证修复，不将首个结果算作通过�
 400GB 分配/注册证据，仅补受影响的实际复制检查与相关 CPU 检查，不再
 重跑均匀 NUMA 资格或全量 7000 余项回归。只有该轮完整测量结束后，才能
 形成匹配控制并继续 oracle 的性能验证。
+
+修复提交 `cd56c385`，新的受影响路径资格共 650 项通过，源码与 native
+在执行期间不变。修复后的登记为
+`ops/workflow_original73_host400_registered_copy_position_20261102_r1.registration.json`，
+实际 watcher PID 357755 启动；其后继仅为匹配的非排序 Full，不是 oracle。
+旧失败服务遗留的 Unix socket 已在确认所有 owner 退出、无 listener 且
+连接被拒后保留改名，不覆盖失败日志。新配置与旧配置的唯一环境变化为
+共同数据面的 `BELIEFKV_HOST_REGISTERED_COPY_SPLIT=1`，任务、token、依赖、
+工具 overlay、到达表、测量成员及 400GB/805198 token 容量保持不变。
