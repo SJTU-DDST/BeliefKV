@@ -1016,3 +1016,54 @@ Pair模式还重新计算完整测量JCT/吞吐比较，核对实际容量和共
 
 Pair模式的实际新比较仍需等两个方法都结束后执行；
 以上CPU入口检查不是新GPU性能结果。
+
+### 闭合共同窗口的成本与供给
+
+共同窗口 `[55.692771, 1638.954850)` s 已完整经过，
+时长1,583.262079 s。
+只读入口 `ops/audit_background_substitution_closed_window_20261101.py`
+以nice19、CUDA隐藏运行，核对实际Full owner、冻结配置、
+worker输出ordinal、完整日志前缀hash及writer健康，
+没有改变GPU运行或提早结束测量尾部。
+结果为 `original73_background_substitution_full_live_r1/closed_common_window.json`。
+
+| 相同墙钟窗口内的本轮 Full | 观测值 |
+| --- | ---: |
+| 全部实际输出，含背景 | 474,962 token |
+| 全部输出吞吐 | 299.989500 token/s |
+| Decode 输出吞吐 | 297.619078 token/s |
+| 总 worker 成本 | 3.330786 ms/output-token |
+| Decode worker 成本 | 2.204736 ms/decode-output-token |
+| Prefill worker 成本 | 0.114232 ms/extend-input-token |
+| 实际 extend 输入 | 4,754,388 token |
+| Prefill 占总 worker 区间 | 34.3304% |
+| Decode worker 时间加权有效宽度 | 7.7291 |
+| Decode 图填充行 / 实际行 | 0 |
+
+Worker区间覆盖1,581.467647 s，窗口其余1.794432 s。
+该区间包含GPU、依赖等待与CPU提交，不能当作GPU利用率、
+纯kernel成本或可消除主机开销。
+Prefill输入包括实际执行的extend，不将它全部称为新语义输入或重算。
+成本事件前缀时测量成员完成8/18；随后observer为9/18，
+两者是独立前缀，不将后者写回成本证据。
+完整测量回执、drain和退出仍待收尾，
+报告保留 `complete_measured_execution_verified=false` 和 `JCT_gain=null`。
+当前没有同负载ThunderAgent结果，不能给出新的方法收益。
+
+独立 `closed_window_supply.json` 有1,504个共同窗口状态样本，
+429个存在ready-paused，比例 **28.5239%**，超过原25%采样检查线。
+采样集合竞争仍为5个；不是时间加权占比或真实Oracle选择次数。
+`closed_window_periodic.json` 则封存854次全前缀真实控制，
+其中388次有ready-paused、7次跨workflow逻辑集合竞争。
+464次ready授予全部有对应实际服务，
+425次在有界窗口内完成有效批次，1次观察窗口尚开放。
+其全前缀已包括共同窗口之后，不能把854次全部写成窗口内控制。
+当前7次竞争尚未达到原10次检查线；不修改该线或提前宣称负载通过。
+
+`closed_window_demand.json` 的31个规则/末事件观测点中，
+共同窗口内可复用旧前缀并集最高为1,864,347 token、总池的65.6529%。
+独立native snapshot的4,020次probe中，旧前缀损失代理为0，
+Host-block回访归因重算也为0。
+Host已发生真实驱逐和回访，不能由上述逻辑并集小于总池推导
+物理迁移必然可行，也不将两个零值外推到尚未结束的尾部。
+三项背景替换全部晚于共同窗口，当前窗口数字不归因于这些替换。
