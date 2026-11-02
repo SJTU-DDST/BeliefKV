@@ -34,14 +34,15 @@ def configuration(size_gb, node, memory_nodes):
 
 
 def copy_offsets(pool_bytes, address, ranges):
-    offsets = {0, pool_bytes - 128}
+    offsets = set()
     if not ranges or ranges[0][0] != address:
         raise ValueError("native registration does not start at the actual Host buffer")
     cursor = address
     for pointer, length in ranges:
-        if pointer != cursor or length <= 0:
-            raise ValueError("native registration has a hole, overlap or empty range")
-        offsets.add(max(0, pointer - address - 64))
+        if pointer != cursor or length < 128:
+            raise ValueError("native registration has a hole, overlap or range smaller than the copy probe")
+        # A single CUDA copy must stay within one independently registered range.
+        offsets.update((pointer - address, pointer - address + length - 128))
         cursor += length
     if cursor != address + pool_bytes:
         raise ValueError("native registration does not cover the complete Host buffer")

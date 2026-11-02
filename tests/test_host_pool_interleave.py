@@ -273,10 +273,31 @@ def test_component_configuration_and_every_actual_registration_boundary():
     assert configuration(400, 1, "0,1") == {
         key: value for key, value in INTERLEAVE.items() if key != "HOST_NUMA_REGISTRATION_POLICY"
     }
-    assert copy_offsets(1024, 10000, [(10000, 512), (10512, 512)]) == [0, 448, 896]
+    assert copy_offsets(1024, 10000, [(10000, 512), (10512, 512)]) == [0, 384, 512, 896]
     for ranges in ([], [(10001, 1024)], [(10000, 500)], [(10000, 500), (10512, 512)], [(10000, 0)]):
         with pytest.raises(ValueError):
             copy_offsets(1024, 10000, ranges)
+
+
+@pytest.mark.parametrize("lengths", ((128,), (128, 128), (512, 256, 128), (49152, 49152, 8192)))
+def test_every_boundary_probe_fits_one_native_registration(lengths):
+    address = 0x100000
+    ranges = []
+    cursor = address
+    for length in lengths:
+        ranges.append((cursor, length))
+        cursor += length
+    offsets = copy_offsets(sum(lengths), address, ranges)
+    for pointer, length in ranges:
+        assert pointer - address in offsets
+        assert pointer - address + length - 128 in offsets
+    assert all(
+        any(pointer <= address + offset and address + offset + 128 <= pointer + length
+            for pointer, length in ranges)
+        for offset in offsets
+    )
+    with pytest.raises(ValueError, match="smaller than the copy probe"):
+        copy_offsets(256, address, [(address, 64), (address + 64, 192)])
 
 
 @pytest.mark.parametrize("substitute", (False, True))
