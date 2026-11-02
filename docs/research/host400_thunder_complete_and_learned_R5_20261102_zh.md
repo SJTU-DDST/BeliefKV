@@ -2,7 +2,9 @@
 
 2026-11-02。本记录复用已有非排序 Full 与 Direct Global Oracle，不启动
 被用户取消的重复实验。补齐相同配置的 ThunderAgent acting-decay 对照，
-并将改进的工作量预测器用于完整 R5 组合准入。Learned R5 的性能尚未完成。
+并将改进的工作量预测器用于完整 R5 组合准入。两轮 learned 测量均已完成，
+相对非排序 Full 均没有取得目标 JCT 改善；后续只改变成本视界的候选
+已单独注册。本文件保留各阶段记录，完整结果和新候选边界见末尾。
 
 ## 完成的三组结果
 
@@ -315,3 +317,154 @@ GPU 的前提下重新审计封闭 Full 日志。普通有效配对由旧误算�
 结果不受影响。这是同一开发组的探索评价，没有新增盲测或 JCT 证据。
 完整人群、工具路径和输入边界见 `workflow_predictor_accuracy_20261102_zh.md`
 及 `live_prediction_quality_r1/corrected_global_JOIN_rank.json`。
+
+## 修正版完整结果与原因诊断
+
+修正版的 18 条测量 workflow 已全部自然结束，保持 2991 条请求、
+362157 个输出 token、原始任务与工具时间。独立核验完成证书、两次
+新鲜 idle 快照和所有实际 owner 退出通过。400 GB Host 的结束阶段
+scheduler 子进程晚于主 server 退出，原清理协议完成后才审计，没有
+重启实验或改写 supervisor 的 `stopped_for_investigation`/driver `-2`。
+
+| 方法 | 完整平均 JCT（秒） | 共同窗口输出（token/s） |
+| --- | ---: | ---: |
+| 非排序 Full | 1081.530918 | 338.931253 |
+| 首轮 learned R5，旧缓存协议 | 1097.311075 | 339.857821 |
+| 修正版 R5，缓存修复＋起始分支 | 1097.776414 | 337.908049 |
+
+修正版相对 Full 的平均 JCT 回退 1.502083%，吞吐下降 0.301891%；
+9 条改善、9 条回退。最后测量完成为回放后 4044.046844 秒，背景最后
+到达为 3966.635036 秒，存在 77.411808 秒未覆盖尾部。完整 JCT 保留
+该尾部；吞吐仍为原共同窗口，不用最终完成时间作分母。目标 JCT 和
+背景覆盖项未通过，吞吐 98% 非劣门槛通过，不能将本轮提升预测可用性
+当作性能验收通过。
+
+封闭前缀 `fixed18_JCT_lower_bound_prefix.json` 在尚有一个成员未结束
+时，按所有 18 个固定成员、已完成 JCT 加未完成者已流逝时间计算，
+已经证明平均 JCT 至少回退 0.448306%。该文件只用于确定本轮不可能
+达到 1%，没有用它提前停止或替代最终结果。
+
+完整组合服务审计记录 7140 次入口、638 次可重放搜索、128 次集合
+变化和 56 个新增选择 episode。其中周期 23 个、直接 free 33 个，
+全部有精确授予及后续原生服务；分别有 22 和 23 个在下一控制或干预
+之前完成有效批次。独立 A→B 工具替换不计入 free 归因。选择元数据
+和搜索累计线程 CPU 3.435 秒，不等于整个控制增量或可消除 JCT。
+
+新的 `audit_learned_combination_prediction.py` 对同一封闭选择历史
+分别代入实际缓存权重、由当时可见输入重算的模型权重、真实剩余模型
+工作量的三档权重和连续权重。固定容量、成本和 required JOIN；只比较
+590 次完整搜索，48 次未完整搜索另列，6502 次缺少可重放搜索元数据
+的入口不猜测。连续权重为 `1/(1+remaining/short_threshold)`，
+不等于包含工具关键路径的原 Direct Global Oracle。
+
+| 相同完整搜索中的权重替换 | 改变实际选择集合次数 | 严格缩小参考集合次数 |
+| --- | ---: | ---: |
+| 实际缓存权重 | 0 | 50 |
+| 可见输入同步重算 | 5 | 51 |
+| 真实剩余工作量三档权重 | 31 | 55 |
+| 真实剩余工作量连续权重 | 19 | 43 |
+
+其中 155 次有普通跨 workflow 的规划容量竞争。实际缓存与同步模型在
+开发组竞争中的边界等权排序均为 80.8333%，来自 38 次配对、20 个边界、
+18 个不同对；不同对等权均为 69.4444%。该人群不同于 Full 对照上
+89 次配对的准确率审计，不能直接用两个百分比解释模型回退。
+
+这些结果说明，修复缓存之后仅消除观察滞后对本地集合的作用有限，
+纯模型工作量排序完美也仍受当前组合目标限制。但 5/19/31 次变化
+可能包含重要决策，不能据其次数推出整轮 JCT 上界，更不能证明成本
+评分是唯一根因。未来标签只用于 CPU 诊断，不进入线上模型或调度器。
+初次新增检查的两项失败来自 fixture 的 workflow 名与共享字典别名，
+修正 fixture 后 39 项相关检查通过，没有放宽实际身份或 JOIN 检查。
+
+完整证据位于 `r5_host400_valid_predictions_r1/`：
+
+```text
+complete_comparison.json
+complete_combination_service_scoped.json
+prediction_model_objective_diagnostic_r1.json
+fixed18_JCT_lower_bound_prefix.json
+review/{review,cohort,supply,periodic_decisions,demand,workload_decision}.json
+```
+
+`completed_figures/complete_JCT_and_decode.{png,pdf}` 已加入修正版 R5，
+同时保留相同 Full、Global Oracle、ThunderAgent 和旧缓存 R5。图中
+JCT 使用全部固定 18 成员，decode 趋势使用同一墙钟窗口，分布按各箱
+实际时长加权；另保存 CSV 与输入哈希，PNG 已实际渲染检查。旧、新
+R5 使用同一蓝色的虚线和实线，其他方法继续使用已有 Okabe-Ito 配色。
+每个配置只有一次执行，没有推断统计置信区间，没有将占满 KV 池画成
+有用 HBM 利用率。
+
+资源压力和供给仍存在：共同窗口 ready-paused 样本比例约 72.35%，
+27 个常规需求样本的最大可复用状态并集占组合容量约 60.88%。最终
+同上下文已服务前缀丢失代理为零，但 Host-block 归因的额外重算为
+16746 FULL 单位，不能把两类计数相加，也不能声称完全零重算。
+当前没有 GPU 后继，目标保持 active。
+
+## 按已完成调用校准成本视界
+
+进一步发现一个需要实验验证的建模不对称：现有组合评分一次计入完整
+恢复与 prefill 成本，却只计 16 步 decode。已完成相同 Full 对照的
+10405 个完整调用，输出 P25/P50/P75 为 47/59/78 token，均超过
+16 token，均值为 126.201153。选择 64 步作为中位数向上取整后的
+候选，128 步仅做 CPU 敏感性检查。该选择在重放前声明，不根据候选
+的 JCT 或最佳重放效果选择参数，也不读取线上当前请求的未来输出长度。
+
+在相同 590 次完整搜索上，仅改变 `CombinationCosts.decode_steps`，
+保持实际缓存概率、候选、容量、输入预算、锁与 JOIN 权利不变：
+
+| 成本视界 | 改变实际集合 | 比实际集合更大 | 严格缩小参考集合 | 缩小且仍有可行扩展 |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 0 | 0 | 50 | 49 |
+| 64 | 44 | 39 | 19 | 18 |
+| 128，敏感性 | 59 | 50 | 9 | 8 |
+
+64 步有 9 次新选择涉及 3 条测量 workflow；其余变化也保留，没有按
+是否有利于测量组筛选。各表计数包含重复决策，不等于新增独立 agent、
+实际服务次数或 JCT 改善。输入与缺失前缀计数同样是重复规划量，不能
+把其差值当作新增真实 H2D 或重算。该修正没有增加最大化集合大小约束，
+仍使用原组合目标，并保留 prefill 对 active 计算的成本。
+
+新模型只修改成本 profile 的 `decode_steps: 16→64` 和派生 profile
+identity；概率权重、初始分支、工作量门槛、支持范围、worker、controller
+及全部原生代码相同。64 只进入规划成本，控制周期仍为 2 秒、事件兜底
+为 500ms，原生 running/decode24 和 prefill2048 保持不变。
+
+实际 CPU runtime 构造接受新 profile，模型加载确认原起始分支权重仍为
+1。复用原冻结提交 `d94fe0de` 的 1051 项 source-bound CPU 报告及
+position、采样、400 GB 组件证据，没有重跑这些未变化资格；不把复用
+计成新执行的 1051 项检查。新 artifact 的完整参数、源树、原报告及
+原实验完成证书均重新核对，证据为 `r5_host400_horizon64_r1/qualification.json`。
+
+已注册一次新候选：
+
+```text
+ops/workflow_original73_host400_R5_horizon64_20261102_r1.registration.json
+port: 18994
+execution: .worktrees/beliefkv-causal-d94fe0de2fd5-78794b07ee43
+supervisor: 532037 / start_ticks 783013704
+server: 532577
+sole GPU scheduler: 532662
+CPU observer bootstrap: 532038
+```
+
+这些 owner 已实际核对存活，服务 owner 均为 nice0，bootstrap 为 nice19。
+启动观察器处理比较状态文件尚未发布的阶段，不复用上一轮失败启动的
+观察器。GPU 仅由本候选占用，尚未完成测量。复用相同 Full、Oracle、
+ThunderAgent 和已完成 R5 对照，不重复这些 GPU 实验。保留原 73 个
+项目、400 GB Host、20 初始＋mean70 到达、固定 18 个完整 JCT 成员，
+仍在全部 18 个自然完成后停止背景；不截尾，不修改工具时间或任务。
+
+此候选是否改善 JCT、decode 效率、迁移和重算仍未证明。没有登记
+128 步或其他 GPU 后继，目标保持 active。
+
+随后已实际进入 `running_full`。driver 534124 和固定测量组 observer
+534157 均已核对存活，服务 owner 为 nice0，observer 为 nice19。
+独立 `live_prefix.json` 核对 84 条精确原生回执、4104 个输出 token、
+唯一 GPU owner 532662、实际完整容量、server 环境、position sampler
+与输出 self-hash。实际 worker 无错误，出现 130 次无新推断有效性核对。
+
+`live_horizon_protocol.json` 进一步核对实际执行源码、worker artifact
+和组合成本指纹，确认加载的规划视界为 64，实际 profile identity 为
+`b714ad0765df989d1c3acd4c5823ef278381b3f379a1250a536d055a3a9deceb`。
+该封闭前缀有 92 次入口、31 次正常支持预测观测、3 次集合变化；
+不同长度的前缀不能直接与上一轮比较，更不能作为完整 JCT 收益。
