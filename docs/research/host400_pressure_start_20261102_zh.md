@@ -227,3 +227,33 @@ PID 348856 均保持原服务冻结版本。独立存活、祖先关系、实际
 这些证据说明新压力配置早期已形成候选供给及改变集合的机会；尚未证明
 完整背景覆盖、稳态、全程重算、oracle 物理替代可行性或完整 JCT 改善。
 继续本轮固定测量，不因早期数字再改到达表或重启服务。
+
+### 首次诊断压力运行提前失败
+
+20:57:23（Asia/Shanghai），原生 scheduler 在
+`staged_write_back.cuh:96` 的 `cudaMemcpyAsync` 报 `invalid argument`：
+相邻 Host 页被合并为一次 D2H，跨越独立的 CUDA Host 注册区间。随后
+runtime socket 关闭，client 的 `ConnectionRefusedError` 是后续错误，
+不是原始根因。监督进程最终 `stopped_for_investigation`，观察器同步
+保留失败；23 个 workflow 已到达，固定测量成员尚未完成。所有实际
+owner 均已退出。该轮只有早期机制证据，不是完整 JCT/吞吐对照。
+
+新 `BELIEFKV_HOST_REGISTERED_COPY_SPLIT=1` 是共同数据面修复，不是
+调度创新：从真实 Host buffer 的注册元数据缓存 K/V 联合 token 边界，
+只在跨边界时分组调用原生 staged backup。区间内继续合并；原生 stream、
+staging、复制顺序、controller ACK 和页锁不变，不改 native 引擎。该开关
+必须同样应用于 Full、oracle 和 ThunderAgent，原任务、工具、到达与容量
+不变。
+
+`registered_copy_gpu_r2.json` 用 3000041472 字节的实际 Native MHA Host
+小池、三个注册区间复现错误并验证修复：48 层 K/V、16 token 双向检查
+各 1572864 字节，实际 hook 将一笔跨界备份分为 3 个原生提交，完整注销，
+native 和输入均未变化。68 项相关 CPU 检查通过。首个 GPU 负控制曾遗留
+线程 CUDA last error，导致其后的校验失败，保留为 `registered_copy_gpu_r1`；
+r2 明确清理负控制错误再验证修复，不将首个结果算作通过。
+
+修复后的新压力证据归属
+`useful_token_cost_r1/host400_registered_copy_pressure_r1/`，复用原始完整
+400GB 分配/注册证据，仅补受影响的实际复制检查与相关 CPU 检查，不再
+重跑均匀 NUMA 资格或全量 7000 余项回归。只有该轮完整测量结束后，才能
+形成匹配控制并继续 oracle 的性能验证。
