@@ -13,9 +13,9 @@ from scripts import qualify_interleaved_host_pool as component
 
 @pytest.mark.parametrize("allocation_failure", (False, True))
 def test_actual_component_publishes_all_phases_and_preserves_allocation_failures(
-    monkeypatch, tmp_path, allocation_failure,
+    monkeypatch, tmp_path, allocation_failure, *, gpu_mode=False,
 ):
-    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0" if gpu_mode else "99999")
     monkeypatch.delenv("SGLANG_HUGEPAGE_SIZE", raising=False)
     monkeypatch.delenv("BELIEFKV_HOST_REGISTER_NUMA_FALLBACK_NODE", raising=False)
     native_state = {"dirty": False, "canonical_patch": {"actual_tree": component.FREE_EXTENT_TREE}}
@@ -52,9 +52,21 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
             raise RuntimeError("explicit allocation failure")
         return Pool()
 
+    materialized = []
+
+    def materialize(size, *, dtype, device):
+        assert size == 1 and dtype == "standin_uint8" and device == "cuda"
+        materialized.append(True)
+        return object()
+
     monkeypatch.setitem(sys.modules, "torch", NS(
-        uint8="standin_uint8", cuda=NS(is_initialized=lambda: False),
+        uint8="standin_uint8", empty=materialize,
+        cuda=NS(is_initialized=lambda: bool(materialized), init=lambda: None, synchronize=lambda: None),
     ))
+    if gpu_mode:
+        monkeypatch.setattr(component.subprocess, "check_output", lambda *_args, **_kwargs: (
+            str(component.os.getpid()) if materialized else ""
+        ))
     monkeypatch.setitem(sys.modules, "sglang.srt.mem_cache.pool_host", NS(common=NS()))
     monkeypatch.setitem(sys.modules, "sglang.srt.mem_cache.storage.mmap", NS(alloc_mmap=allocate))
     engine = tmp_path / "engine"
@@ -79,7 +91,7 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
     capacity.write_text('{"capacity": {}}')
     args = NS(
         size_gb=400, node=1, memory_nodes="0,1", output_dir=tmp_path / "component",
-        cpu_only=True, engine=engine, cpu_evidence=cpu, port=18980,
+        cpu_only=not gpu_mode, engine=engine, cpu_evidence=cpu, port=18980,
         capacity_source=capacity, registration_chunk_gb=16,
     )
     published = []
@@ -99,7 +111,8 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
     assert allocator_calls == [(16384,)]
     assert published[:2] == ["initializing", "allocating_complete_interleaved_native_Host_pool"]
     assert state["inputs_unchanged_during_execution"]
-    assert state["GPU_action"] is False
+    assert state["GPU_action"] is gpu_mode
+    assert bool(materialized) is gpu_mode
     if allocation_failure:
         assert state["status"] == "failed_preserve_interleaved_Host_component"
         assert "explicit allocation failure" in state["error"]
@@ -110,3 +123,9 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
     with pytest.raises(ValueError, match="preserve attempts"):
         component.run(args)
     assert (args.output_dir / "entry.json").read_bytes() == saved
+
+
+def test_visible_GPU_context_is_materialized_before_the_sole_owner_guard_and_Host_allocation(monkeypatch, tmp_path):
+    test_actual_component_publishes_all_phases_and_preserves_allocation_failures(
+        monkeypatch, tmp_path, True, gpu_mode=True,
+    )

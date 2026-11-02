@@ -142,9 +142,14 @@ def run(args):
     try:
         if not args.cpu_only:
             torch.cuda.init()
+            # Driver initialization alone may leave no NVML-visible context.
+            context_warmup = torch.empty(1, dtype=torch.uint8, device="cuda")
+            torch.cuda.synchronize()
             owners = subprocess.check_output([
                 "nvidia-smi", "--query-compute-apps=pid", "--format=csv,noheader,nounits",
             ], text=True).split()
+            state["actual_GPU_owner_pids"] = owners
+            state["expected_GPU_owner_pid"] = os.getpid()
             if owners != [str(os.getpid())]:
                 raise ValueError("the component is not the sole actual GPU owner")
         elif torch.cuda.is_initialized():
