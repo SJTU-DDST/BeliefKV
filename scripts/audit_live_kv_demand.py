@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
+from beliefkv.experiments.source_provenance import sha256_file
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.train_workflow_work import write
@@ -65,6 +66,27 @@ def next_context_requests(graph):
     return following
 
 
+def replay_capacity(registration, arm):
+    path = arm / "server/native_capacity_census.json"
+    digest = sha256_file(path)
+    capacity = json.loads(path.read_bytes())["capacity"]
+    if capacity != registration.get("expected_replay_capacity"):
+        raise ValueError("observed replay capacity differs from its registered capacity")
+    device, host = (capacity.get(name) for name in ("device_full_tokens", "host_full_tokens"))
+    if type(device) is not int or device <= 0 or type(host) is not int or host < 0:
+        raise ValueError("observed replay FULL capacities require valid token counts")
+    if sha256_file(path) != digest:
+        raise ValueError("observed replay capacity changed while reading its census")
+    return device + host, {
+        "source": "observed_replay_native_census",
+        "path": str(path.resolve()),
+        "sha256": digest,
+        "capacity": capacity,
+        "matches_registered_expected_capacity": True,
+        "source_capture_capacity_not_used": True,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--registration", type=Path, required=True)
@@ -97,8 +119,7 @@ def main():
         for index in range(int((events[-1]["ts_ms"] - origin) // interval) + 1)
     )
     points.append((events[-1]["ts_ms"], None, "latest_event"))
-    capacity = json.loads((source / "server/native_capacity_census.json").read_bytes())["capacity"]
-    ceiling = capacity["device_full_tokens"] + capacity["host_full_tokens"]
+    ceiling, capacity_evidence = replay_capacity(registration, arm)
     live, ended, served, pending = {}, set(), {}, {}
     cursor, observations = 0, []
     with CapturedTokenCorpus(source / "server/request_tokens.jsonl", expected) as corpus:
@@ -170,8 +191,11 @@ def main():
             # Only a small set of checkpoints is needed at each observation.
             if len(encoded) > 1024:
                 encoded.clear()
+    if sha256_file(Path(capacity_evidence["path"])) != capacity_evidence["sha256"]:
+        raise ValueError("observed replay capacity changed during demand analysis")
     write(args.output, {
         "combined_FULL_capacity_tokens": ceiling, "observations": observations,
+        "capacity_evidence": capacity_evidence,
         "regular_sample_interval_s": args.sample_interval_s,
         "source_evidence": evidence, "input_jsonl_prefixes": reader.prefixes,
         "scope": {
