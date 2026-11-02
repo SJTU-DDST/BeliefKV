@@ -907,3 +907,41 @@ CPU包装器5485实际存活，nice19、CUDA隐藏，
 等待状态为同名experiment的 `.waiting.state.json`。
 此时没有登记ThunderAgent GPU后继；先保留完整测量尾部、
 真实旧前缀prefill与供给审计，再决定匹配对照。
+
+### 实际回放、NUMA 与条件匹配对照
+
+16:02后的现场核对确认Full已进入 `running_full`。
+`original73_background_substitution_full_live_r1/execution_verified.json`
+逐项验证首批12个完成请求、474个输出token及实际归属，
+共同engine身份、实际Device/Host池和非排序Full开关均相同。
+实际watcher7296、server7804、唯一GPU scheduler7927、driver8744均为nice0。
+CPU收尾5485和fixed18观察器8968均实际存活、nice19、CUDA隐藏。
+首批回执不是完整性能结论；16:07:56时已到达15个workflow、
+测量成员完成0/18，继续按原固定成员保留完整尾部。
+
+同目录 `host_numa.json` 只读核对唯一200,000,077,824-byte共享映射：
+策略为 `prefer:1`，GPU位于NUMA1，
+其中node1为152,791,285,760 bytes、node0为47,208,792,064 bytes，
+远端页面比例 **23.6044%**。
+这与上次约23.7740%的分配接近，但不是实际有用KV或每次传输的远端比例，
+也没有测得这部分页面的因果JCT成本。没有迁页、扩池或改变NUMA策略。
+
+条件对照准备为
+`ops/workflow_original73_background_substitution_pair_20261101_r1.plan.json`。
+新包装器 `ops/finish_background_substitution_pair_20261101.py`
+复用此前完整匹配对照的收尾逻辑，但重新绑定本次干净operator、
+当前6,834项CPU资格、相同来源/工具/到达/测量成员和实际ThunderAgent构造器。
+准备阶段没有创建未来GPU运行目录。
+首次shell后台启动没有形成可观察进程或state，空日志保留；
+独立进程组启动后，实际协调器11133的start ticks为774832047，
+状态为 `waiting_qualified_complete_static73_Full`。
+该旧状态名称仅来自复用的协调器，不指向旧到达表或旧Full。
+
+协调器只有在Full固定18完整完成、全部已声明负载条件通过、
+fresh drain及实际owned退出均通过后，才重新检查预约、资源、输入hash，
+在空闲端口18973登记同一workload的ThunderAgent acting-decay。
+它复用本次共同数据面已通过的24项position/native-stop及1/8/24资格，
+不重复旧对照、不新增Oracle、不更改工具时长；
+Full被拒绝时保留拒绝并停止接续。
+完成匹配比较后没有额外GPU后继。
+截至该现场观察，ThunderAgent仍未登记或启动，workload与方法收益未验收。
