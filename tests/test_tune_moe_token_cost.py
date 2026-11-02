@@ -3,7 +3,8 @@ import json
 import pytest
 
 from scripts.tune_moe_token_cost import (
-    BASE_LARGE, BASE_SMALL, SIZES, compact_table, guarded_lookup_table, select_candidate, serve,
+    BASE_LARGE, BASE_SMALL, PREFILL_SIZES, SIZES, compact_table, guarded_lookup_table,
+    guarded_prefill_lookup_table, prefill_candidate_configs, select_candidate, serve, tune,
 )
 from beliefkv.experiments.source_provenance import sha256_file
 
@@ -47,6 +48,72 @@ def test_compact_defaults_preserve_nearest_lookup_and_boundary_ties():
     assert compacted["128"] == BASE_SMALL
     assert compacted["129"] == BASE_LARGE
     assert compacted["2048"] == BASE_LARGE
+
+
+def test_prefill_candidates_start_with_the_actual_large_M_default():
+    assert prefill_candidate_configs()[0] == BASE_LARGE
+    assert len(prefill_candidate_configs()) == 8
+
+
+def test_prefill_table_preserves_existing_decode_and_all_untuned_sizes():
+    baseline = compact_table(guarded_lookup_table({
+        size: {**BASE_SMALL, "BLOCK_SIZE_N": 128, "num_warps": 4} for size in SIZES
+    }))
+    selected = {size: {**BASE_LARGE, "BLOCK_SIZE_M": size} for size in PREFILL_SIZES}
+    tuned = guarded_prefill_lookup_table(selected, baseline)
+    original = {int(key): value for key, value in baseline.items()}
+    actual = {int(key): value for key, value in tuned.items()}
+    for size in range(1, 8193):
+        found = actual[min(actual, key=lambda key: abs(key - size))]
+        expected = (
+            selected[min(selected, key=lambda key: abs(key - size))]
+            if 256 <= size <= 2048
+            else original[min(original, key=lambda key: abs(key - size))]
+        )
+        assert found == expected
+    assert len(tuned) < 20
+
+
+def test_prefill_table_keeps_the_original_when_every_candidate_is_rejected():
+    baseline = compact_table(guarded_lookup_table({size: BASE_SMALL for size in SIZES}))
+    assert guarded_prefill_lookup_table(
+        {size: BASE_LARGE for size in PREFILL_SIZES}, baseline,
+    ) == baseline
+
+
+def test_incomplete_prefill_measurements_cannot_create_a_configuration():
+    with pytest.raises(ValueError, match="all bounded prefill sizes"):
+        guarded_prefill_lookup_table({256: BASE_LARGE}, {"1": BASE_SMALL})
+
+
+@pytest.mark.parametrize("profile,baseline", [("prefill", None), ("decode", "base.json"), ("other", None)])
+def test_invalid_tuning_scope_is_rejected_before_GPU_resource_access(tmp_path, profile, baseline):
+    with pytest.raises(ValueError, match="profile|configuration"):
+        tune(
+            tmp_path / "absent.json", tmp_path / "output",
+            tuning_profile=profile, base_configuration=baseline,
+        )
+    assert not (tmp_path / "output").exists()
+
+
+def test_prefill_source_changes_are_rejected_before_GPU_access(tmp_path, monkeypatch):
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(json.dumps({"1": BASE_SMALL, "129": BASE_LARGE}))
+    source = tmp_path / "source.json"
+    source.write_text("{}")
+    inputs = tmp_path / "inputs.json"
+    inputs.write_text(json.dumps({"source_sha256": {str(source): "changed"}}))
+
+    def unexpected_GPU_check(*_args, **_kwargs):
+        raise AssertionError("GPU guard reached before source validation")
+
+    monkeypatch.setattr("scripts.tune_moe_token_cost.fresh.check_hold", unexpected_GPU_check)
+    with pytest.raises(ValueError, match="prepared component source changed"):
+        tune(
+            inputs, tmp_path / "output", tuning_profile="prefill",
+            base_configuration=baseline,
+        )
+    assert not (tmp_path / "output").exists()
 
 
 @pytest.mark.parametrize("profile", [False, True])

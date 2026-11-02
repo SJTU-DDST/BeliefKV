@@ -1488,3 +1488,66 @@ Full有8,622次probe，ThunderAgent有9,149次probe；
 最终独立核对、JOIN与成本分析的CPU进程均正常结束，
 原GPU运行及观察器均已实际退出，GPU当前无计算进程。
 没有登记本轮匹配对照之后的GPU实验。
+
+## 长Prefill期间的实际decode供给
+
+完整对照结束后，进一步复用已有的
+`scripts/audit_prefill_decode_gaps.py`，核对零输出区间的前后decode。
+入口为 `ops/audit_background73_prefill_decode_supply_20261101.py`，
+证据为匹配目录的 `full_prefill_decode_supply_r1.json`。
+40项既有decode间隔与几何检查全部通过；
+本次没有更改原始token、到达、事件或GPU策略。
+
+| 观察 | 第一个零输出区间 | 第二个零输出区间 |
+| --- | ---: | ---: |
+| 开始时client已提交未返回 | 7 | 14 |
+| 其中开始时快照显示active | 7 | 14 |
+| 两侧有实际decode且中间无服务的请求 | 4 | 10 |
+| 包含该档位的完整prefill间隔 | 41.745193 s | 50.788443 s |
+
+这14次请求观察的输出ordinal在间隔两侧完全相接，
+均有尚未生成的输出；第二个间隔中有请求只剩6、7、30个输出token。
+它们是可继续生成工作的证据，不只是客户端积压。
+但decode样本没有`attempt_id`、`session_id`和`session_generation`字段，
+所以报告中的`same_known_attempt_and_session_bookends=false`
+表示未能证实这些物理身份，不表示检测到身份改变。
+开始时active快照也不证明整个间隔都具有连续资格或可用增长容量，
+不据此直接授予线上执行或迁移权限。
+
+### 后继阻塞仍会抵消单独插入decode
+
+`ops/audit_background73_prefill_critical_path_20261101.py`
+对固定18的全部3,263个请求重新建立实际关键路径，
+复用旧的局部decode穿插与后继chunk前沿筛查。
+结果保存在匹配目录的 `prefill_critical_path_screen_r1/`，
+原分析代码没有修改，未来输出长度仅用于CPU机会诊断。
+
+完整平均JCT仍精确还原为1,030.140522秒。
+关键路径上从首次decode以后与prefill重叠的等权workflow均值为156.264581秒，
+这是暴露量，不是可消除JCT。
+1,048个多批prefill段观察到继续生成的测量关键路径请求；
+76个不同请求存在局部早返回机会，相关提前代理合计222.666066秒。
+其中72次同invocation串行后继考虑了chunk前沿推迟后，
+仅保留21.126301秒的局部后继提前代理；
+一次末模型请求对应约0.063843秒，另外三次跨invocation/JOIN保持未知。
+这些相关局部量既不能累加成可实现收益，也不能作为严格全局上界。
+本轮仍不足以支持单独重新运行全局mixed或cadence完整实验。
+
+### 有界Prefill MoE候选
+
+已有冷prefill profile的MoE GEMM约占可见kernel累计时长25.4%，
+当前共享配置只调过小M decode。
+这提供了一个尚未验证的底层候选，但单个冷前缀的kernel占比
+不能直接当作当前整个workload的可优化份额。
+
+`scripts/tune_moe_token_cost.py`新增显式prefill调优模式：
+对256、512、1024、2048四个M档位各筛查八个tile/warp/stage配置，
+使用原生大M默认作为参考、相同BF16与128 experts/top-8，
+分别核对均匀和偏斜的合成routing及数值容差。
+只有两种routing均无超过2%回退、综合改善至少3%的配置才可保留。
+输出表严格保留现有decode及[256,2048]以外的最近邻参数选择；
+所有候选被拒绝时原配置表保持不变。
+相关35项CPU检查通过，包含1..8192的范围及边界核对，
+以及准备来源发生变化时在接触GPU前拒绝执行。
+当前这只是组件筛查入口，不是已完成GPU测量、真实模型或JCT改善；
+正式共享执行配置仍为原来的精确图及decode MoE配置。

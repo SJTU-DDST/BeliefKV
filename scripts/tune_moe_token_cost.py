@@ -22,6 +22,7 @@ from scripts.train_workflow_work import write
 BASE_SMALL = {"BLOCK_SIZE_M": 16, "BLOCK_SIZE_N": 32, "BLOCK_SIZE_K": 64, "GROUP_SIZE_M": 1}
 BASE_LARGE = {"BLOCK_SIZE_M": 64, "BLOCK_SIZE_N": 64, "BLOCK_SIZE_K": 32, "GROUP_SIZE_M": 8}
 SIZES = (1, 2, 4, 8, 12, 16, 24)
+PREFILL_SIZES = (256, 512, 1024, 2048)
 
 
 def candidate_configs():
@@ -34,6 +35,21 @@ def candidate_configs():
         {**BASE_SMALL, "BLOCK_SIZE_N": 128, "num_warps": 4, "num_stages": 3},
         {**BASE_SMALL, "BLOCK_SIZE_N": 64, "BLOCK_SIZE_K": 128, "num_warps": 4, "num_stages": 2},
         {**BASE_SMALL, "BLOCK_SIZE_K": 128, "num_warps": 4, "num_stages": 2},
+    ]
+
+
+def prefill_candidate_configs():
+    return [
+        BASE_LARGE,
+        {**BASE_LARGE, "BLOCK_SIZE_K": 64, "num_warps": 4, "num_stages": 3},
+        {**BASE_LARGE, "BLOCK_SIZE_N": 128, "BLOCK_SIZE_K": 64, "num_warps": 8, "num_stages": 3},
+        {**BASE_LARGE, "BLOCK_SIZE_M": 128, "num_warps": 4, "num_stages": 3},
+        {**BASE_LARGE, "BLOCK_SIZE_M": 128, "BLOCK_SIZE_N": 128,
+         "BLOCK_SIZE_K": 64, "num_warps": 8, "num_stages": 3},
+        {**BASE_LARGE, "BLOCK_SIZE_M": 32, "BLOCK_SIZE_K": 64, "num_warps": 4, "num_stages": 3},
+        {**BASE_LARGE, "BLOCK_SIZE_N": 128, "num_warps": 4, "num_stages": 3},
+        {**BASE_LARGE, "BLOCK_SIZE_M": 32, "BLOCK_SIZE_N": 128,
+         "BLOCK_SIZE_K": 64, "num_warps": 4, "num_stages": 3},
     ]
 
 
@@ -63,6 +79,26 @@ def guarded_lookup_table(selected):
     table.update({str(size): BASE_SMALL for size in range(25, 129)})
     table.update({str(size): BASE_LARGE for size in range(129, 2049)})
     return table
+
+
+def guarded_prefill_lookup_table(selected, baseline):
+    if set(selected) != set(PREFILL_SIZES):
+        raise ValueError("all bounded prefill sizes must be measured")
+    original = {int(key): value for key, value in baseline.items()}
+    if not original or len(original) != len(baseline) or min(original) < 1:
+        raise ValueError("baseline needs unique positive native lookup keys")
+    maximum = max(4096, max(original))
+    # Bound overrides after expanding native nearest-key lookup semantics.
+    table = {
+        str(size): original[min(original, key=lambda key: abs(key - size))]
+        for size in range(1, maximum + 1)
+    }
+    changed = False
+    for size in range(min(PREFILL_SIZES), max(PREFILL_SIZES) + 1):
+        configuration = selected[min(selected, key=lambda key: abs(key - size))]
+        changed = changed or table[str(size)] != configuration
+        table[str(size)] = configuration
+    return compact_table(table) if changed else dict(baseline)
 
 
 def compact_table(table):
@@ -107,8 +143,28 @@ def compact(configuration, output):
     })
 
 
-def tune(inputs, output):
+def tune(inputs, output, *, tuning_profile="decode", base_configuration=None):
+    if tuning_profile not in ("decode", "prefill"):
+        raise ValueError("unsupported MoE tuning profile")
+    if (tuning_profile == "prefill") != (base_configuration is not None):
+        raise ValueError("only prefill tuning requires the existing baseline configuration")
+    base_table, base_sha256 = None, None
+    if base_configuration is not None:
+        base_table = json.loads(base_configuration.read_bytes())
+        base_sha256 = sha256_file(base_configuration)
+        if not isinstance(base_table, dict) or not base_table:
+            raise ValueError("prefill baseline must contain native lookup configurations")
+        keys = {int(key): value for key, value in base_table.items()}
+        for size in PREFILL_SIZES:
+            if keys[min(keys, key=lambda key: abs(key - size))] != BASE_LARGE:
+                raise ValueError("prefill baseline differs from the measured native default")
+    sizes = PREFILL_SIZES if tuning_profile == "prefill" else SIZES
+    configurations = prefill_candidate_configs() if tuning_profile == "prefill" else candidate_configs()
     document = json.loads(inputs.read_bytes())
+    if tuning_profile == "prefill":
+        for filename, digest in document["source_sha256"].items():
+            if sha256_file(Path(filename)) != digest:
+                raise ValueError("prepared component source changed: " + filename)
     fresh.check_hold(document, released=True)
     resources = qualified.resources(18959)
     if not resources["ready"]:
@@ -123,6 +179,9 @@ def tune(inputs, output):
     write(output / "startup.json", {
         "resources": resources, "native": state, "inputs_sha256": sha256_file(inputs),
         "script_sha256": sha256_file(Path(__file__)),
+        "tuning_profile": tuning_profile, "sizes": sizes,
+        "base_configuration": str(base_configuration.resolve()) if base_configuration else None,
+        "base_configuration_sha256": base_sha256,
     })
     import torch
     import triton
@@ -158,7 +217,7 @@ def tune(inputs, output):
         cleanup_stack.callback(destroy_model_parallel)
         w1 = torch.randn(128, 1536, 2048, dtype=torch.bfloat16) / math.sqrt(2048)
         w2 = torch.randn(128, 2048, 768, dtype=torch.bfloat16) / math.sqrt(768)
-        for size in SIZES:
+        for size in sizes:
             fresh.check_hold(document, released=True)
             x = torch.randn(size, 2048, dtype=torch.bfloat16)
             gating = torch.randn(size, 128, dtype=torch.float32)
@@ -168,7 +227,7 @@ def tune(inputs, output):
             }
             routed = {name: select_experts(x, gate, TopKConfig(top_k=8, renormalize=True)) for name, gate in gates.items()}
             references, graphs, rows = {}, {}, []
-            for index, config in enumerate(candidate_configs()):
+            for index, config in enumerate(configurations):
                 captures, close, deltas = {}, True, {}
                 for scenario, topk in routed.items():
                     def forward():
@@ -231,7 +290,12 @@ def tune(inputs, output):
                 for graph in captures.values():
                     graph.reset()
             del graphs
-        table = guarded_lookup_table(selected)
+        if base_configuration is not None and sha256_file(base_configuration) != base_sha256:
+            raise ValueError("baseline configuration changed during prefill tuning")
+        table = (
+            guarded_prefill_lookup_table(selected, base_table)
+            if tuning_profile == "prefill" else guarded_lookup_table(selected)
+        )
         config = output / "configs" / ("triton_" + triton.__version__.replace(".", "_")) / get_config_file_name(128, 768, None)
         write(config, table)
         write(output / "result.json", {
@@ -240,7 +304,16 @@ def tune(inputs, output):
             "records": records, "configuration_path": str(config.resolve()),
             "configuration_sha256": sha256_file(config), "script_sha256": sha256_file(Path(__file__)),
             "numerical_dtype": "bfloat16", "top_k": 8, "experts": 128,
-            "default_for_every_M_above_24_preserved": True,
+            **(
+                {"default_for_every_M_above_24_preserved": True}
+                if tuning_profile == "decode" else {
+                    "existing_configuration_outside_prefill_range_preserved": True,
+                    "tuned_prefill_range": [min(PREFILL_SIZES), max(PREFILL_SIZES)],
+                    "base_configuration": str(base_configuration.resolve()),
+                    "base_configuration_sha256": base_sha256,
+                }
+            ),
+            "tuning_profile": tuning_profile,
             "routing_is_synthetic_not_captured_model_routing": True,
             "real_model_serving_validation_required": True,
             "GPU_action": True, "performance_accepted": False,
@@ -291,12 +364,18 @@ def main():
         selected.add_argument("--output", type=Path, required=True)
         if command in ("serve", "compact"):
             selected.add_argument("--configuration", type=Path, required=True)
+        if command == "tune":
+            selected.add_argument("--tuning-profile", choices=("decode", "prefill"), default="decode")
+            selected.add_argument("--base-configuration", type=Path)
         if command == "serve":
             selected.add_argument("--graph-mode", choices=("sparse", "exact"), default="sparse")
             selected.add_argument("--no-profile", action="store_true")
     args = parser.parse_args()
     if args.command == "tune":
-        tune(args.inputs, args.output)
+        tune(
+            args.inputs, args.output, tuning_profile=args.tuning_profile,
+            base_configuration=args.base_configuration,
+        )
     elif args.command == "compact":
         compact(args.configuration.resolve(), args.output.resolve())
     else:
