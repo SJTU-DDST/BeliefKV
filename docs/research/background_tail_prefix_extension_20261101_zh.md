@@ -1121,3 +1121,120 @@ Fintech请求提交约0.643 s，已有36条实际服务样本，
 `running_llm`本身包含本地或原生等待，不等于GPU正在计算；
 本核对也不估计未完成JCT、不计算已完成子集的替代均值，
 不能据单次正常进度证明整个历史等待均合理。
+
+## 背景替换 Full 的完整结果与匹配接续
+
+固定18已经全部完成。
+`original73_background_substitution_full_review_r1/independent_complete.json`
+使用独立入口重新核对原始expected、实际原生回执和输出ordinal、
+两个新鲜idle snapshot、实际owned退出与观察器退出，
+并从完整底层报告重新计算负载判定。
+**3,263个请求、424,240个输出token全部一致。**
+54个workflow自然结束；19个非测量成员按冻结协议截断，
+其中14个尚未到达，不作为完整JCT样本。
+原supervisor停止标签和非测量截断事实均保持原样。
+
+| 固定测量组 / 共同窗口指标 | 本轮非排序 Full |
+| --- | ---: |
+| 完整平均 JCT | 1,030.140522 s |
+| 完整 P50 JCT | 645.259807 s |
+| 完整 P95 JCT | 2,287.840368 s |
+| 最大 JCT | 2,435.410412 s |
+| 共同窗口全部输出吞吐 | 299.989500 token/s |
+| 共同窗口 decode 吞吐 | 297.619078 token/s |
+| 完整请求 E2E normalized interactivity，pooled | 17.845545 token/s |
+| 各workflow同定义interactivity等权平均 | 21.118996 token/s |
+| Workflow TTFT P90，18/18真实首输出覆盖 | 70.791937 s |
+
+完整请求interactivity仍取请求秒数/输出token的P90再取倒数，包含TTFT，
+不是50 token/s的SLO或只统计decode的速率。
+当前没有新负载的完整ThunderAgent结果，上表不计算方法收益；
+也不将相对旧静态Full的变化归因为单一策略。
+
+### 完整负载判定
+
+11项已声明检查全部通过，没有降低任何检查线：
+
+- 人口模型工作量P80/P20仍为2.934261，采用用户已接受的2.931418最低值；
+  原大于等于3/4的标记继续为false。
+- 共同窗口ready-paused为429/1,504个状态样本、28.5239%。
+- 完整跨度1,805次真实周期控制中有27次跨workflow集合竞争，
+  超过原10次检查线；1,302次ready授予均有对应实际服务，
+  未记录被压力撤销。
+- 末次测量完成为3,665.658481 s，冻结背景持续至4,376.498230 s，
+  实际末次到达为3,615.542768 s，背景覆盖通过。
+- 完整旧前缀审计有8,622次同上下文probe、0次正损失，
+  两条旧损失请求均有前述完整实际重放证据。
+
+原生Host-block回访口径仍记录 **29,122个重算单位**，与上述输入前缀口径不同，
+不相加，也不把本轮写成所有口径均零重算。
+共同窗口内可复用旧前缀并集的采样峰值为总池65.6529%，
+仍不证明任意时刻的原生页分配或迁移暂存都可行。
+多轮短child的原形状局限没有被11项诊断检查自动豁免。
+
+### 实际多成员 JOIN 服务
+
+`observed_join_service.json` 使用与16/18尾部状态相同的封存事件/worker前缀，
+复用对两种方法都适用的观察型核对，不依赖Full专有sibling日志。
+该前缀有54个显式阻塞多成员ALL-JOIN，
+均出现至少两个已提交模型请求的重叠及实际同批decode。
+其中测量组18个JOIN分布在 **16个不同workflow**，
+不能写成18个workflow；该前缀也不代表完整源人口。
+它证明负载中存在实际共同服务，不证明共同准入的独立JCT收益。
+入口为 `ops/audit_background_substitution_join_service_20261101.py`，
+原分析算法及其current-source重新绑定均记录在frame的hash链中。
+
+### ThunderAgent 的匹配启动
+
+Full全部owned与CPU收尾实际退出后，协调器重新核对释放后的预约、
+空闲GPU、Host/磁盘、TCP18973和Unix socket，再登记
+`ops/workflow_original73_background_substitution_thunder_decay_20261101_r1.registration.json`。
+复用本次通过的24项position/native-stop与1/8/24共同数据面资格，
+没有再次运行旧默认引擎对照。
+
+应用仍为 `2fe1b74c665e3a69f7f416238f48e82724ec5839`，
+native仍为 `434c35dd66211d0a230717c88bf1452056769a40`。
+73个原项目、所有token/依赖、工具样本/公开先验、
+到达表、固定18、共同引擎与实际资源声明均相同。
+ThunderAgent仍是独立invocation program、5 s control、
+1 s acting-decay half-life和原periodic-resume策略，不加入Full扩展。
+17:07的状态为 `starting_thunderagent_acting_decay`：
+watcher29210、server29715已实际启动，正式driver尚未创建。
+这是启动阶段，不是已完成对照或新的方法收益；匹配比较结束后没有额外GPU后继。
+
+### ThunderAgent 正式回放与独立现场核对
+
+随后状态进入 `running_thunderagent_acting_decay`。
+实际watcher29210、server29715、唯一GPU scheduler29902、
+driver30513均存活且nice0；
+fixed18观察器30515实际存活、nice19、CUDA隐藏。
+协调器11133继续等待完整固定组，未登记比较之后的GPU任务。
+
+`original73_background_substitution_thunder_live_r1/execution_verified.json`
+重新核对84个实际完成请求、4,309个输出token，
+prompt/output哈希、实际输出数组与workflow/invocation/context身份全部相符。
+实际共同graph/MoE、BF16/FA3/TP1、
+Device805,198 token、Host2,034,506 token与Full相同，
+writer健康。取证时测量组尚未完成，不作为最终JCT或性能结果。
+
+### 实测 NUMA 放置差异
+
+两臂相同分配策略与容量没有保证相同物理页面位置：
+
+| 实际200,000,077,824-byte Host映射 | Full | ThunderAgent |
+| --- | ---: | ---: |
+| GPU本地node1页面 | 152,791,285,760 bytes | 195,563,122,688 bytes |
+| 远端node0页面 | 47,208,792,064 bytes | 4,436,955,136 bytes |
+| 远端页面比例 | 23.6044% | 2.2185% |
+| 映射策略 | `prefer:1` | `prefer:1` |
+| CPU允许列表 | `32-63,96-127` | `32-63,96-127` |
+
+这两份只读证据在各臂实际启动后采集，均匹配唯一完整Host共享映射；
+没有迁页、修改内存策略或热改运行。
+它们是分配页面驻留，不是有效KV占用或按实际传输字节加权的远端比例。
+没有测得该差异的带宽代价、方向或可避免JCT，
+也没有确定导致分配位置不同的外部原因。
+因此最终比较应保留此实测环境差异，
+不能将相同容量/配置写成完全相同物理放置，
+也不能将两臂完整性能差异全部归因于调度。
+当前先完成这次冻结的匹配比较，不将NUMA页面比例加入性能收益主图。
