@@ -167,3 +167,31 @@ JCT 或排序收益。实际 parent server 中已确认共同注册区间修复�
 `capacity_review_correction_r1/oracle_retry2_monitor.state.json`。
 只接续本轮 oracle，不自动启动另一 GPU 轮次；即使单对达到 1% 目标，
 goal 仍需重复验证，暂不推进 R5 或宣布完成。
+
+### Oracle 实际准入与服务证据
+
+新增只读 `scripts/audit_ranked_oracle_service.py`，使用同一已记录候选、
+类别、完整预算、JOIN 保护和 sibling 分组重放关闭排序的 Full，明确
+不是直接用 paper ThunderAgent 作为局部参考。先复现实际 oracle 选择，
+再与同时间戳的真实周期授予及完整 request/attempt/session 身份关联；
+新有效服务的观察窗口截止于下一控制或已记录同 agent 干预。缺失和未
+关闭窗口保留未知，普通事件准入与反事实压力处理另列，不推算 JCT。
+
+86 项相关检查通过，运行证据在
+`capacity_review_correction_r1/oracle_service_audit/`。首份封存前缀的
+489 次选择有 45 次集合改变，新选入 51 个不同 request attempt，全部
+实际授予、保留资格并获得精确后续服务，47 个在上述窗口内完成有效
+计算 batch。共同吞吐窗口只观察了前一部分，对应 455 次选择、44 次
+集合改变及 50 个新对象，不能当成整个共同窗口结论。
+
+这 51 个对象中，14 个来自固定测量组的 4 个 workflow，13 个取得有界
+有效服务与完成；另 37 个来自初始组的 14 个 workflow，34 个取得有界
+有效服务与完成。集合改变中，33 次选择数量相同、9 次更少、3 次更多；
+这只是局部准入组合，不能据此断定 decode 效率或 JCT 已改善。
+
+另一个独立封存前缀确认实际 D2H 首次拆分日志为 2026-11-02 07:10:12
+America/Los_Angeles；排除该粗粒度日志所在整秒后，仍有 16311 个正进展
+native batch。证据为 `registered_copy_first_boundary_use.json`。它补充
+了早期 live 核对尚未观察到的实际使用，不是完整稳定性或性能结论。
+测量观察推进到 3/18，服务及两个 CPU 观察器均实际存活，继续保留完整
+测量尾部，尚无平均 JCT 或吞吐收益结论。
