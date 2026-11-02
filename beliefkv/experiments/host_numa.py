@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
 
 from beliefkv.experiments.source_provenance import sha256_file
 
@@ -261,13 +262,40 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
         fields = (proc / "stat").read_text().rsplit(")", 1)[1].split()
         if len(fields) < 20 or fields[19] != scheduler["start_ticks"]:
             raise ValueError("Host NUMA worker identity changed")
-    check_identity()
-    maps, numa = (proc / "maps").read_bytes(), (proc / "numa_maps").read_bytes()
-    result = inspect_mapping(
-        maps.decode(), numa.decode(), expected_bytes=capacity["host_full_bytes"],
-        node=selected["node"], page_bytes=os.sysconf("SC_PAGE_SIZE"),
-        memory_nodes=selected.get("memory_nodes"),
-    )
+    observation = Path(directory) / "server" / f"host_numa_observation_{os.getpid()}_{time.monotonic_ns()}"
+    observation.mkdir()
+    attempts = []
+    for attempt in range(1, 4):
+        check_identity()
+        maps, numa = (proc / "maps").read_bytes(), (proc / "numa_maps").read_bytes()
+        snapshots = {
+            "maps": observation / f"attempt_{attempt}.maps.txt",
+            "numa_maps": observation / f"attempt_{attempt}.numa_maps.txt",
+        }
+        for name, data in (("maps", maps), ("numa_maps", numa)):
+            snapshots[name].write_bytes(data)
+        record = {
+            "attempt": attempt,
+            "snapshots": {name: {"path": str(path), "sha256": sha256_file(path)}
+                          for name, path in snapshots.items()},
+        }
+        attempts.append(record)
+        try:
+            result = inspect_mapping(
+                maps.decode(), numa.decode(), expected_bytes=capacity["host_full_bytes"],
+                node=selected["node"], page_bytes=os.sysconf("SC_PAGE_SIZE"),
+                memory_nodes=selected.get("memory_nodes"),
+            )
+        except ValueError as error:
+            record["error"] = str(error)
+            (observation / f"attempt_{attempt}.json").write_text(json.dumps(record) + "\n")
+            if str(error) != "the complete Host pool must be resident" or attempt == 3:
+                raise
+            time.sleep(.1)
+        else:
+            record["complete_residency_verified"] = True
+            (observation / f"attempt_{attempt}.json").write_text(json.dumps(record) + "\n")
+            break
     if capacity["host_full_bytes"] != expected_full_bytes(common):
         raise ValueError("actual Host pool differs from its explicitly declared capacity")
     if topology is None:
@@ -289,6 +317,7 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
         "raw_proc_read_sha256": {
             "maps": hashlib.sha256(maps).hexdigest(), "numa_maps": hashlib.sha256(numa).hexdigest(),
         },
+        "placement_observation_attempts": attempts,
         "inputs_sha256": {str(capacity_path.resolve()): sha256_file(capacity_path)},
         "scope": "Initial complete static pinned Host allocation, checked before measured request submission.",
     }
