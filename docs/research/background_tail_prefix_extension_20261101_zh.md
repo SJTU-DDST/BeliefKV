@@ -1099,3 +1099,25 @@ workflow/invocation/context/epoch、前一个已服务request及输入公共前�
 Native writer健康，独立状态的旧前缀损失代理仍为0；
 剩余测量尾部及是否出现新的损失仍待完整结果，
 ThunderAgent条件接续继续等待原负载检查和实际退出。
+
+### 剩余测量尾部的进展核对
+
+16:54的只读 `measured_tail_state.json` 使用原生产因果图，
+只回放当前已观察到的runtime事件，不读取未来工具时长或剩余工作标签。
+入口为 `ops/audit_measured_tail_state_20261101.py`，
+以nice19、CUDA隐藏执行，没有改变模型、准入或结束条件。
+固定测量成员此时完成16/18，剩余两个原项目为
+`python_desktop_development_expert_021` 与 `python_fintech_trading_medium_066`。
+
+两个workflow均只剩未结束root，在该事件前缀中均为 `running_llm`，
+没有活动工具或阻塞child；独立准入snapshot均显示active、
+未标记暂停，也不是paused-pending。
+Desktop请求恰在事件前缀末尾提交，不能把尚无native样本视为未获服务。
+Fintech请求提交约0.643 s，已有36条实际服务样本，
+最后为decode、序列位置124,960且输出增量为1。
+该次观察支持继续保留正常尾部，而不是据15/18的暂时平台期判定死锁。
+
+因果事件与准入snapshot分别封存，并非原子状态。
+`running_llm`本身包含本地或原生等待，不等于GPU正在计算；
+本核对也不估计未完成JCT、不计算已完成子集的替代均值，
+不能据单次正常进度证明整个历史等待均合理。
