@@ -201,3 +201,29 @@ Host census 超过旧 200GB 的池，将测量组完成后的监督退出等待�
 验证不变。46 项测量组停止/完整 JCT 检查通过。先前等待正式 Full 的
 bootstrap 已在尚未登记观察器时安全停止，将以修复版本启动新的 CPU
 观察器；不修改正在运行的服务源码或测量 JCT。
+
+修复提交为 `8cc0633c`；新的固定 18 成员 CPU 观察器 PID 349507 已实际
+运行，正式 Full 的 scheduler PID 347393、监督进程 PID 346708、client
+PID 348856 均保持原服务冻结版本。独立存活、祖先关系、实际配置、池容量、
+原始 token/hash 与 native sampler 核对通过，前缀共 114 个 receipt/
+5661 个输出 token。见 `host400_diagnostic_pressure_r1/live_verification_early.json`。
+
+早期只读观察分别封存，时间范围并不相同，不能混成一个原子快照：
+
+- `supply_early.json`：观察至 150.76 秒，21 到达、零完成；共同窗口内
+  87 个状态均存在 ready-paused，平均 8.47 个，5 个采样状态有跨 workflow
+  逻辑竞争；没有 Host block 驱逐或已归因的 Host block 重算。
+- `control_opportunities_early.json`：70 次实际控制中 47 次非空，4 次跨
+  workflow 逻辑集合竞争，3 次 oracle 集合改变；共同窗口部分对应
+  35/3/2 次控制/竞争/集合改变。44 次排序改变不能当成 44 次有效优化。
+- `periodic_service_early.json`：稍晚 103 次控制，10 次逻辑竞争；37 次
+  实际授予均保留并获得精确后续服务，其中 22 次在下一控制或已记录
+  同 agent 干预前新服务，20 次在该边界前完成有效 batch。4 个观察窗口
+  尚未关闭，不作为失败；其余边界外服务不能算作边界内进展。
+- `idle_supply_early/report.json`：共同窗口已观察 55.69–197.79 秒，GPU
+  时间加权利用率 98.99%、零值样本时间为 0；fresh 状态覆盖完整，持续有
+  ready-paused，时间加权均值 8.19。池物理驻留仍只是诊断，不等于有效 KV。
+
+这些证据说明新压力配置早期已形成候选供给及改变集合的机会；尚未证明
+完整背景覆盖、稳态、全程重算、oracle 物理替代可行性或完整 JCT 改善。
+继续本轮固定测量，不因早期数字再改到达表或重启服务。
