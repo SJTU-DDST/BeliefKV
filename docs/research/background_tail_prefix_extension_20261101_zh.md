@@ -1238,3 +1238,82 @@ writer健康。取证时测量组尚未完成，不作为最终JCT或性能结�
 不能将相同容量/配置写成完全相同物理放置，
 也不能将两臂完整性能差异全部归因于调度。
 当前先完成这次冻结的匹配比较，不将NUMA页面比例加入性能收益主图。
+
+## 完整 JOIN 服务与闭合窗口对照
+
+### 完整测量组的实际并发
+
+`original73_background_substitution_full_review_r1/complete_join_service.json`
+现以全部固定18完成、原生回执、fresh drain及actual exit为前提，
+将观察型JOIN核对扩展到最后测量完成时点。
+入口为 `ops/audit_completed_cohort_join_service_20261101.py`，
+使用已完成成本报告的完整事件/worker前缀生成新frame，
+保留此前16/18前缀报告，没有覆盖旧证据。
+
+完整测量组有 **20个显式阻塞多成员ALL-JOIN，分布在全部18个不同workflow**。
+20个组均出现至少两个已提交模型请求的重叠，
+且均有实际同批decode。全观察人口在该cut之前有61个这样的组；
+不将它称为73项完整源人口的总数。
+累计22,956是测量JOIN组与decode批次的对应次数，
+不是去重后的GPU批次数，也不是20次独立性能实验。
+该核对不依赖Full专有sibling日志，之后可对ThunderAgent使用同一算法。
+它证明测量负载确实包含可服务的并行JOIN，
+不单独证明Full共同准入的独有JCT收益；child长度/多轮结构的其他局限继续保留。
+
+### 相同共同窗口的实际吞吐
+
+新的只读CPU观察器
+`ops/audit_matched_thunder_closed_window_20261101.py`
+以实际PID35224、nice19、CUDA隐藏启动，
+等待ThunderAgent日志完整越过相同窗口后自动完成。
+其state为
+`ops/workflow_original73_background_substitution_thunder_closed_window_20261101_r1.analysis.state.json`，
+最终actual process已退出，未改变GPU回放、采样或结束条件。
+
+结果为 `original73_background_substitution_thunder_live_r1/closed_common_window.json`。
+它重新核对匹配source/工具/到达/cohort、已完成Full证书、
+实际共同执行配置及Device/Host容量，
+逐项检查当前worker输出ordinal和完整封存日志前缀hash。
+共同墙钟窗口仍为 `[55.692771, 1638.954850)` s、1,583.262079 s：
+
+| 同一窗口，含背景输出 | Full | ThunderAgent acting-decay |
+| --- | ---: | ---: |
+| 实际输出token | 474,962 | 450,733 |
+| 输出吞吐 | 299.989500 token/s | 284.686285 token/s |
+| 总worker成本 | 3.330786 ms/output-token | 3.487696 ms/output-token |
+| Decode worker成本 | 2.204736 ms/output-token | 2.277466 ms/output-token |
+| Prefill worker成本 | 0.114232 ms/extend-input-token | 0.117885 ms/extend-input-token |
+| Decode worker时间加权有效宽度 | 7.7291 | 7.2494 |
+| Decode平均上下文 | 37,737.91 token | 37,631.68 token |
+
+Full共同窗口输出吞吐观测高 **5.3755%**。
+实际批次与上下文混合不同，worker还包含依赖和CPU提交，
+不能将上述成本差全部解释成kernel改善。
+相同NUMA策略下的实测页面放置差异仍保留在报告中，不宣称物理放置完全相同。
+
+本次成本事件前缀时ThunderAgent测量成员完成7/18；
+稍后observer为9/18，不能把后者写回成本前缀。
+候选报告明确保留完整测量/完整回执未验证、`JCT_gain=null`。
+闭合窗口吞吐已经可比较，完整JCT、最终回执和两臂最终结果仍需完整收尾。
+
+### 当前 Full 的 GPU 空闲核对
+
+`original73_background_substitution_full_review_r1/gpu_idle_supply/report.json`
+复用已有200 ms外部采样进程2671555，没有启动新GPU采样或修改模型。
+实际输出文件仍为
+`experiments/shadow/p6_control_plane_semantic_delta/20260831T155240Z/workloads/gpu_samples.csv`，
+按实际CSV的Asia/Shanghai时钟与native wall/monotonic对齐，
+时钟差展开为0.006836 ms，保存读取suffix的byte范围和hash。
+文件位置属于旧监控目录，不表示本次实验使用该目录的旧workload。
+
+共同窗口的采样覆盖完整，时间加权GPU读数为 **98.8844%**，
+零读数累计1.401 s，其中约1.001 s观察时没有client模型请求pending，
+约0.400 s有ready且active请求；NVML平均窗口存在滞后，不能把这些时间直接视为可消除等待。
+观察跨度截至3,665.522622 s，GPU读数时间加权为98.3231%，
+采样覆盖99.9986%；末个GPU样本比最后测量完成略早，未补造缺失区间。
+时间加权ready-paused存在比例为28.7030%，与原状态样本比例28.5239%分列。
+
+当前数据不再支持沿用旧负载约68%的利用率来估计本轮空闲空间。
+但NVML利用率不是token效率、SM算术效率、实际HBM带宽或性能上界。
+后续优化应继续核对每个有效token的实际成本及可持续batch形状，
+不由98.88%推导系统已达到上限，也不将物理KV池驻留率当作有用active-KV利用率。
