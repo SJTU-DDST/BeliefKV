@@ -53,6 +53,7 @@ class WorkflowWorkWorker:
         self._closed_workflows = set()
         self._progress = {}
         self._projections = {}
+        self._projection_texts = {}
         self._task_coverage = {}
         self._next_inference = {}
         self._structural_submitted = Counter()
@@ -119,6 +120,7 @@ class WorkflowWorkWorker:
             if action == "event" and args[0].kind is Kind.WORKFLOW_END:
                 self._progress.pop(workflow, None)
                 self._projections.pop(workflow, None)
+                self._projection_texts.pop(workflow, None)
                 self._task_coverage.pop(workflow, None)
                 self._next_inference.pop(workflow, None)
                 self._structural_submitted.pop(workflow, None)
@@ -194,17 +196,24 @@ class WorkflowWorkWorker:
             if workflow in self._closed_workflows:
                 continue
             progress = self._progress[workflow]
-            if workflow not in self._projections:
+            text = (
+                progress.prediction_text(observed_delegations=self.model.observed_delegations)
+                if self._r5 else progress.text
+            )
+            if workflow not in self._projections or (
+                self.model.observed_delegations and self._projection_texts.get(workflow) != text
+            ):
                 if not progress.text:
                     self.counts["task_unavailable"] += 1
                     continue
                 encoding_wall, encoding_cpu = time.perf_counter(), time.thread_time()
                 if self._r5:
-                    projection, coverage = self.model.task_encoding(self.task_prefix + progress.text)
+                    projection, coverage = self.model.task_encoding(self.task_prefix + text)
                     self._projections[workflow] = projection
                     self._task_coverage[workflow] = coverage
                 else:
-                    self._projections[workflow] = self.model.task_projection(self.task_prefix + progress.text)
+                    self._projections[workflow] = self.model.task_projection(self.task_prefix + text)
+                self._projection_texts[workflow] = text
                 self.counts["task_encodings"] += 1
                 self.counts["task_encoding_thread_cpu_us"] += (time.thread_time() - encoding_cpu) * 1e6
                 self.counts["task_encoding_wall_us"] += (time.perf_counter() - encoding_wall) * 1e6
@@ -233,13 +242,14 @@ class WorkflowWorkWorker:
             if self._r5:
                 support = support_status(self.model, features, self._task_coverage[workflow])
                 supported = support == "calibrated_distribution"
+                published = time.monotonic()
                 prediction = DistributionWorkPrediction(
                     probabilities, best if supported else 1, self._revisions[workflow],
-                    now, "model" if supported else "unsupported_distribution",
-                    support, now + self.model.distribution_contract["maximum_cache_age_s"],
+                    published, "model" if supported else "unsupported_distribution",
+                    support, published + self.model.distribution_contract["maximum_cache_age_s"],
                     self._structural_consumed[workflow],
                 )
-                self._next_inference[workflow] = now + self.model.distribution_contract["minimum_refresh_s"]
+                self._next_inference[workflow] = published + self.model.distribution_contract["minimum_refresh_s"]
                 self.counts["distribution_" + support] += 1
             self.counts["inferences"] += 1
             self.counts["model_rank" if supported else "uncertain_medium"] += 1
@@ -256,6 +266,16 @@ class WorkflowWorkWorker:
                         self._pending_since.pop(workflow, None)
 
     def _run(self):
+        try:
+            wall, cpu = time.perf_counter(), time.thread_time()
+            if self.model.warm_task_encoder():
+                self.counts["task_encoder_startup_thread_cpu_us"] += (time.thread_time() - cpu) * 1e6
+                self.counts["task_encoder_startup_wall_us"] += (time.perf_counter() - wall) * 1e6
+                self.counts["task_encoder_startups"] += 1
+        except Exception as error:
+            self.error = type(error).__name__ + ": " + str(error)[:300]
+            self._predictions.clear()
+            return
         next_update = 0.
         while True:
             with self._condition:

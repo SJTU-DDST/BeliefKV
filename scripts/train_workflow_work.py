@@ -265,7 +265,8 @@ def export_capture(capture, *, prefill_weight, native_progress=False, feature_sc
 def fit(
     rows, calibration, *, epochs=300, seed=21, split_mode="project",
     hidden_width=64, vocabulary_size=4096, dropout=0., weight_decay=.03,
-    feature_schema=SCHEMA,
+    feature_schema=SCHEMA, task_encoder=None, training_weighting=None, text_encoding=None,
+    observed_delegations=False,
 ):
     import numpy as np
     import torch
@@ -297,27 +298,50 @@ def fit(
         raise ValueError("training/calibration workflows overlap")
     if split_mode in ("capture", "workflow"):
         capture_split(rows, calibration, (), require_capture_disjoint=split_mode == "capture")
-    texts = {row["workflow"]: row["text"] for row in rows}
+    text_key = lambda row: (row["workflow"], row["text"])
+    texts = {text_key(row): row["text"] for row in rows}
+    from beliefkv.predictor.workflow_work import task_terms
+
+    semantic = None
+    if task_encoder is not None:
+        from beliefkv.predictor.workflow_task_encoder import WorkflowTaskEncoder
+
+        if feature_schema != R5_SCHEMA:
+            raise ValueError("semantic text training requires the R5 schema")
+        semantic = WorkflowTaskEncoder(task_encoder)
     df = Counter()
-    for text in texts.values():
-        df.update(ngrams(text).keys())
+    if semantic is None:
+        if observed_delegations:
+            terms_by_workflow = defaultdict(set)
+            for (workflow, _text), text in texts.items():
+                terms_by_workflow[workflow].update(task_terms(text, text_encoding).keys())
+            for terms in terms_by_workflow.values():
+                df.update(terms)
+        else:
+            for text in texts.values():
+                df.update(task_terms(text, text_encoding).keys())
     vocabulary = sorted(df, key=lambda word: (-df[word], word))[:vocabulary_size]
     index = {word: i for i, word in enumerate(vocabulary)}
-    idf = np.asarray([math.log((1 + len(texts)) / (1 + df[word])) + 1 for word in vocabulary])
+    documents = len({row["workflow"] for row in rows}) if observed_delegations else len(texts)
+    idf = np.asarray([math.log((1 + documents) / (1 + df[word])) + 1 for word in vocabulary])
 
     def matrix(values):
         encoded = {}
         for row in values:
-            if row["workflow"] in encoded:
+            key = text_key(row)
+            if key in encoded:
                 continue
-            counts = ngrams(row["text"])
+            if semantic is not None:
+                encoded[key] = semantic.encode(row["text"])[0]
+                continue
+            counts = task_terms(row["text"], text_encoding)
             vector = np.zeros(len(vocabulary), np.float32)
             for word, count in counts.items():
                 if word in index:
                     vector[index[word]] = (1 + math.log(count)) * idf[index[word]]
             vector /= max(float(np.linalg.norm(vector)), 1e-12)
-            encoded[row["workflow"]] = vector
-        return np.asarray([encoded[row["workflow"]] for row in values])
+            encoded[key] = vector
+        return np.asarray([encoded[text_key(row)] for row in values])
 
     totals = {row["workflow"]: row["total_work"] for row in rows}
     thresholds = np.quantile(list(totals.values()), (1 / 3, 2 / 3))
@@ -331,11 +355,11 @@ def fit(
     scale = np.maximum(.25, np.sqrt(np.average((numeric - center) ** 2, axis=0, weights=weights)))
     task_indices = None
     if feature_schema == R5_SCHEMA:
-        unique = {row["workflow"]: row for row in rows}
+        unique = {text_key(row): row for row in rows}
         ordered = list(unique)
         positions = {workflow: index for index, workflow in enumerate(ordered)}
         task = torch.tensor(matrix(list(unique.values())), dtype=torch.float32)
-        task_indices = torch.tensor([positions[row["workflow"]] for row in rows])
+        task_indices = torch.tensor([positions[text_key(row)] for row in rows])
     else:
         task = torch.tensor(matrix(rows), dtype=torch.float32)
     dynamic = torch.tensor((numeric - center) / scale, dtype=torch.float32)
@@ -353,8 +377,19 @@ def fit(
         value / totals_by_workflow[row["workflow"]] / len(workflow_counts)
         for row, value in zip(rows, balanced)
     ])
+    if training_weighting is not None:
+        from beliefkv.predictor.workflow_work_training import (
+            PHASE_BALANCED, READY_BALANCED, phase_weights, ready_weights,
+        )
+
+        if training_weighting == PHASE_BALANCED:
+            balanced = phase_weights(rows)
+        elif training_weighting == READY_BALANCED and feature_schema == R5_SCHEMA:
+            balanced = ready_weights(rows, balanced)
+        else:
+            raise ValueError("unknown workflow training weighting")
     weight = torch.tensor(balanced, dtype=torch.float32)
-    static_layer = torch.nn.Linear(len(vocabulary), hidden_width, bias=False)
+    static_layer = torch.nn.Linear(task.shape[1], hidden_width, bias=False)
     dynamic_layer = torch.nn.Linear(len(names), hidden_width)
     hidden_layer = torch.nn.Linear(hidden_width, max(4, hidden_width // 2))
     output_layer = torch.nn.Linear(max(4, hidden_width // 2), 3)
@@ -404,12 +439,27 @@ def fit(
             "online_inputs": "task_instructions_and_observed_progress_only",
         },
     }
+    if task_encoder is not None:
+        raw["task_encoder"] = task_encoder
+        raw["metadata"]["task_training_encoding"] = "frozen_cpu_semantics_explicit_instructions_only"
+    if observed_delegations:
+        raw["observed_delegation_inputs"] = True
+    if text_encoding is not None:
+        raw["task_text_encoding"] = text_encoding
+    if training_weighting is not None:
+        raw["metadata"]["loss_weighting"] = training_weighting
     if feature_schema == R5_SCHEMA:
         from beliefkv.predictor.workflow_work_distribution import training_contract
 
         raw["distribution_contract"] = training_contract(rows)
         raw["metadata"]["online_inputs"] = "explicit_task_delegation_metadata_and_observed_progress_only"
-        raw["metadata"]["task_training_encoding"] = "one_static_projection_per_workflow_per_epoch"
+        raw["metadata"]["task_training_encoding"] = (
+            (
+                "one_static_projection_per_workflow_per_epoch"
+                if len(texts) == len(workflow_counts) else "one_projection_per_observed_text_version_per_epoch"
+            ) if semantic is None
+            else "frozen_cpu_semantics_one_static_projection_per_workflow_per_epoch"
+        )
     model = WorkflowWorkModel(raw)
     # A single held-out temperature, with workflows equally weighted.
     predictions = probabilities(model, calibration)
@@ -418,6 +468,14 @@ def fit(
     counts = Counter(row["workflow"] for row in calibration)
     weights = np.asarray([1 / counts[row["workflow"]] for row in calibration])
     weights /= weights.sum()
+    from beliefkv.predictor.workflow_work_training import (
+        PHASE_BALANCED, READY_BALANCED, phase_weights, ready_weights,
+    )
+
+    if training_weighting == PHASE_BALANCED:
+        weights = phase_weights(calibration)
+    elif training_weighting == READY_BALANCED:
+        weights = ready_weights(calibration, weights)
     from scipy.optimize import minimize_scalar
 
     def nll(log_temperature):
@@ -441,15 +499,21 @@ def fit(
     return raw
 
 
+def model_text(model, row):
+    return row["text"] if model.observed_delegations else row.get("task_text", row["text"])
+
+
 def probabilities(model, rows):
     import numpy as np
 
     projections = {}
     results = []
     for row in rows:
-        if row["workflow"] not in projections:
-            projections[row["workflow"]] = model.task_projection(row["text"])
-        projection = projections[row["workflow"]]
+        text = model_text(model, row)
+        key = row["workflow"], text
+        if key not in projections:
+            projections[key] = model.task_projection(text)
+        projection = projections[key]
         results.append(
             model.predict(projection, row["features"]) if projection is not None else (1 / 3,) * 3,
         )

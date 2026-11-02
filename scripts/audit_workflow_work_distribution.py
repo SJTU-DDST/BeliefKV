@@ -13,7 +13,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import WorkflowWorkModel
 from beliefkv.predictor.workflow_work_distribution import support_status
-from scripts.train_workflow_work import write
+from scripts.train_workflow_work import model_text, write
 from scripts.train_workflow_work_distribution import distribution_metrics
 
 
@@ -44,15 +44,17 @@ def audit(dataset, model, evaluation):
     }
     times, projections = defaultdict(list), {}
     for row in rows:
-        if row["workflow"] not in projections:
+        text = model_text(model, row)
+        key = row["workflow"], text
+        if key not in projections:
             wall, cpu = time.perf_counter(), time.thread_time()
-            projections[row["workflow"]] = model.task_encoding(row["text"])
+            projections[key] = model.task_encoding(text)
             times["task_encoding_wall"].append((time.perf_counter() - wall) * 1000)
             times["task_encoding_thread_cpu"].append((time.thread_time() - cpu) * 1000)
     # Fixed stride over all original snapshots; no selection by predicted quality.
     stride = max(1, len(rows) // 4096)
     for row in rows[::stride]:
-        projection, coverage = projections[row["workflow"]]
+        projection, coverage = projections[(row["workflow"], model_text(model, row))]
         wall, cpu = time.perf_counter(), time.thread_time()
         if projection is not None:
             model.predict(projection, row["features"])
@@ -62,7 +64,7 @@ def audit(dataset, model, evaluation):
     return {
         "held_out": {name: distribution_metrics(model, values) for name, values in slices.items()},
         "CPU_component_microbenchmark": {name: describe(values) for name, values in times.items()},
-        "cost_scope": "task_encoding_once; cached_model_and_support; not_whole_worker_native_or_GPU_control",
+        "cost_scope": "task_encoding_once_per_observed_text_version; cached_model_and_support; not_whole_worker_native_or_GPU_control",
         "progress_slices_are_posthoc_diagnostics_not_model_selection": True,
         "actual_ready_paused_competition_quality": "requires_matched_live_selection_observations",
         "model_parameters_thresholds_and_calibration_unchanged": True,

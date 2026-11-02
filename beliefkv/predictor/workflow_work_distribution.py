@@ -39,6 +39,7 @@ class DistributionProgress(WorkflowProgress):
     charged_inputs: dict = field(default_factory=dict)
     summary_inputs: dict = field(default_factory=dict)
     blocked_joins: dict = field(default_factory=dict)
+    delegations: dict = field(default_factory=dict)
 
     def _blocked_state(self, invocation):
         if self.blocked_joins.get(invocation):
@@ -80,6 +81,22 @@ class DistributionProgress(WorkflowProgress):
             self.counts["role_" + self.roles[event.invocation_id]] += 1
             if metadata is not None:
                 self.counts["delegation_chars"] += len(metadata.delegation_instructions)
+                self.delegations[event.invocation_id] = (
+                    metadata.agent_role, metadata.delegation_instructions,
+                )
+
+    def prediction_text(self, *, observed_delegations=False):
+        if not observed_delegations:
+            return self.text
+        active = []
+        for identity, (role, assignment) in self.delegations.items():
+            if self.invocations[identity][0] != "done":
+                active.append("Role: " + role + "\nAssignment: " + assignment)
+                if len(active) == 8:
+                    break
+        return self.text + (
+            "\n\nObserved unfinished child assignments:\n" + "\n\n".join(active) if active else ""
+        )
 
     def generated(self, request, count):
         call = self.active_calls.get(request)

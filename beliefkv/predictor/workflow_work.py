@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import re
 
 from beliefkv.core.events import (
     EventConfidence, RelationType, RuntimeEventKind as Kind, is_unobserved_join_event,
@@ -249,6 +250,30 @@ def ngrams(text):
     return Counter(text[i:i + width] for width in (2, 3, 4) for i in range(len(text) - width + 1))
 
 
+WORD_ENCODING = "task_words_title_and_structure_v1"
+
+
+def task_terms(text, encoding=None):
+    if encoding is None:
+        return ngrams(text)
+    if encoding != WORD_ENCODING:
+        raise ValueError("unknown workflow task text encoding")
+    from beliefkv.predictor.workflow_task_encoder import TASK_FEATURES, task_features
+
+    text = text[:4096]
+    words = re.findall(r"[a-z]+", text.lower())
+    title = re.findall(r"[a-z]+", text.split("\n", 1)[0].lower())
+    stop = {"a", "an", "and", "as", "at", "be", "by", "for", "from", "in", "is",
+            "it", "of", "on", "or", "that", "the", "this", "to", "with", "you", "your"}
+    counts = Counter("word:" + word for word in words if word not in stop)
+    counts.update("pair:" + left + " " + right for left, right in zip(words, words[1:]))
+    counts.update(("word:" + word) for word in title for _ in range(2) if word not in stop)
+    for name, value in zip(TASK_FEATURES, task_features(text)):
+        if value:
+            counts["structure:" + name] = math.expm1(8. * value)
+    return counts
+
+
 class WorkflowWorkModel:
     """JSON weights avoid pickle execution and runtime training dependencies."""
 
@@ -256,6 +281,15 @@ class WorkflowWorkModel:
         import numpy as np
 
         self.schema = raw.get("schema")
+        self.observed_delegations = raw.get("observed_delegation_inputs", False)
+        if type(self.observed_delegations) is not bool or self.observed_delegations and (
+            self.schema != R5_SCHEMA or raw.get("task_encoder") is not None
+            or raw.get("total_work_prior") is not None
+        ):
+            raise ValueError("observed delegation text requires its R5 progress-input contract")
+        self.text_encoding = raw.get("task_text_encoding")
+        if self.text_encoding not in (None, WORD_ENCODING):
+            raise ValueError("unknown workflow task text encoding")
         self.feature_names = feature_names(self.schema)
         if raw.get("features") != list(self.feature_names):
             raise ValueError("incompatible workflow work model")
@@ -275,18 +309,35 @@ class WorkflowWorkModel:
         self.thresholds = tuple(raw["work_thresholds"])
         if len(self.thresholds) != 2 or not 0 < self.thresholds[0] < self.thresholds[1]:
             raise ValueError("workflow work classes require two fixed positive thresholds")
+        self.task_encoder = None
+        self.work_prior = None
+        if raw.get("total_work_prior") is not None:
+            from beliefkv.predictor.workflow_work_prior import TotalWorkPrior
+
+            if self.schema != R5_SCHEMA or raw.get("task_encoder") is not None:
+                raise ValueError("total-work priors require the legacy R5 progress model")
+            self.work_prior = TotalWorkPrior(raw["total_work_prior"])
+        if raw.get("task_encoder") is not None:
+            from beliefkv.predictor.workflow_task_encoder import WorkflowTaskEncoder
+
+            if self.schema != R5_SCHEMA or raw["vocabulary"] or raw["idf"]:
+                raise ValueError("semantic task encoders require a separate R5 text contract")
+            self.task_encoder = WorkflowTaskEncoder(raw["task_encoder"])
         self.vocabulary = {word: i for i, word in enumerate(raw["vocabulary"])}
-        if len(self.vocabulary) != len(raw["vocabulary"]) or not self.vocabulary:
+        if len(self.vocabulary) != len(raw["vocabulary"]) or (
+            not self.vocabulary and self.task_encoder is None
+        ):
             raise ValueError("invalid task vocabulary")
         self.arrays = {name: np.asarray(raw[name], dtype=np.float32) for name in (
             "idf", "center", "scale", "static_weight", "dynamic_weight", "bias",
             "hidden_weight", "hidden_bias", "output_weight", "output_bias",
         )}
         v, f = len(self.vocabulary), len(self.feature_names)
+        text_dimension = v if self.task_encoder is None else self.task_encoder.dimension
         h, k = self.arrays["bias"].size, self.arrays["hidden_bias"].size
         shapes = {
             "idf": (v,), "center": (f,), "scale": (f,),
-            "static_weight": (v, h), "dynamic_weight": (f, h), "bias": (h,),
+            "static_weight": (text_dimension, h), "dynamic_weight": (f, h), "bias": (h,),
             "hidden_weight": (h, k), "hidden_bias": (k,),
             "output_weight": (k, 3), "output_bias": (3,),
         }
@@ -308,6 +359,8 @@ class WorkflowWorkModel:
             ):
                 raise ValueError("learned R5 artifacts cannot contain future workflow graphs or labels")
             self.task_input_kind = "workflow_task_and_delegation_metadata_v1"
+            if self.observed_delegations:
+                self.task_input_kind = "workflow_task_and_observed_unfinished_delegations_v2"
 
     @classmethod
     def load(cls, path, digest):
@@ -319,10 +372,36 @@ class WorkflowWorkModel:
     def task_projection(self, text):
         return self.task_encoding(text)[0]
 
+    def warm_task_encoder(self):
+        encoder = self.task_encoder or (
+            self.work_prior.encoder if self.work_prior is not None else None
+        )
+        if encoder is None:
+            return False
+        if encoder._model is None:
+            encoder._load()
+        return True
+
     def task_encoding(self, text):
+        projection, coverage = self._task_encoding(text)
+        if self.work_prior is not None and projection is not None:
+            from beliefkv.predictor.workflow_work_prior import PriorProjection
+
+            mean, prior_coverage = self.work_prior.task_mean(text)
+            return PriorProjection(projection, mean), min(coverage, prior_coverage)
+        return projection, coverage
+
+    def _task_encoding(self, text):
         import numpy as np
 
-        counts = ngrams(text)
+        if self.task_encoder is not None:
+            vector, coverage = self.task_encoder.encode(text)
+            if vector is None:
+                return None, coverage
+            return np.einsum(
+                "i,ij->j", vector, self.arrays["static_weight"], optimize=False,
+            ), coverage
+        counts = task_terms(text, self.text_encoding)
         indices = [self.vocabulary[word] for word in counts if word in self.vocabulary]
         if not indices:
             return None, 0.
@@ -344,6 +423,13 @@ class WorkflowWorkModel:
     def predict(self, projection, features):
         import numpy as np
 
+        mean = None
+        if self.work_prior is not None:
+            from beliefkv.predictor.workflow_work_prior import PriorProjection
+
+            if not isinstance(projection, PriorProjection):
+                raise ValueError("total-work prediction requires its cached task prior")
+            mean, projection = projection.log_total_mean, projection.progress_projection
         a = self.arrays
         features = np.asarray(features)
         if (
@@ -363,4 +449,8 @@ class WorkflowWorkModel:
         ) + a["output_bias"]) / self.temperature
         probabilities = np.exp(logits - logits.max())
         probabilities /= probabilities.sum()
-        return tuple(float(value) for value in probabilities)
+        probabilities = tuple(float(value) for value in probabilities)
+        return (
+            probabilities if self.work_prior is None
+            else self.work_prior.combine(probabilities, mean, features, self.thresholds)
+        )

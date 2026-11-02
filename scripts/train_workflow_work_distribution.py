@@ -34,7 +34,37 @@ def label_sources(binding):
     return evidence
 
 
-def snapshots(events, requests, *, progress=()):
+def bind_parent_dataset(values, parent_path, *, additional_sources=None):
+    parent = json.loads(parent_path.read_bytes())
+
+    def without_text(row):
+        return {
+            key: list(value) if key == "features" else value
+            for key, value in row.items() if key not in ("text", "task_text")
+        }
+
+    old_sources, new_sources = parent["sources_sha256"], values["sources_sha256"]
+    additional_sources = additional_sources or {}
+    if (
+        any(new_sources.get(path) != digest for path, digest in old_sources.items())
+        or any(new_sources[path] != additional_sources.get(path)
+               for path in new_sources.keys() - old_sources.keys())
+        or len(parent["rows"]) != len(values["rows"])
+        or any(without_text(left) != without_text(right)
+               for left, right in zip(parent["rows"], values["rows"]))
+        or any(left["text"] != right["task_text"]
+               for left, right in zip(parent["rows"], values["rows"]))
+    ):
+        raise ValueError("delegation export changed source work, features, or snapshot boundaries")
+    values["parent_dataset"] = {
+        "path": str(parent_path.resolve()), "sha256": sha256_file(parent_path),
+        "original_fields_except_text_equal": True,
+        "additional_label_source_hashes": sorted(new_sources.keys() - old_sources.keys()),
+    }
+    return values
+
+
+def snapshots(events, requests, *, progress=(), observed_delegations=False):
     """Future request totals are labels; observations expose them only after actual service."""
     if len({event.workflow_id for event in events}) != 1:
         raise ValueError("export one complete original workflow at a time")
@@ -93,6 +123,8 @@ def snapshots(events, requests, *, progress=()):
         result.append({
             "snapshot": len(result), "features": state.features(), "event": name,
             "attained_work": attained, "remaining_work": max(0., total - attained), "total_work": total,
+            "text": state.prediction_text(observed_delegations=observed_delegations),
+            **({"task_text": state.text} if observed_delegations else {}),
         })
     if submitted != expected.keys() or completed != expected.keys() or not state.text:
         raise ValueError("require complete original work and explicit initial task metadata")
@@ -100,10 +132,10 @@ def snapshots(events, requests, *, progress=()):
         raise ValueError("observed work does not conserve the complete workflow label")
     if sum(event.kind is Kind.WORKFLOW_END for event in events) != 1:
         raise ValueError("require a complete source workflow")
-    return [{**row, "text": state.text} for row in result]
+    return result
 
 
-def export(artifact_path):
+def export(artifact_path, *, observed_delegations=False):
     artifact_bytes = artifact_path.read_bytes()
     raw = json.loads(artifact_bytes)
     artifact = WorkflowWorkOracleArtifact(raw)
@@ -147,13 +179,16 @@ def export(artifact_path):
             observations[row["workflow_id"]].append(row)
         for item, events in workflows:
             workflow = item["workflow_id"]
-            values = snapshots(events, artifact.requests, progress=observations[workflow])
+            values = snapshots(
+                events, artifact.requests, progress=observations[workflow],
+                observed_delegations=observed_delegations,
+            )
             for row in values:
                 rows.append({
                     **row, "workflow": str(capture.resolve()) + ":" + workflow,
                     "logical_workflow_id": workflow, "source_capture": str(capture.resolve()),
                     "source_workflow_sha256": item["event_sha256"], "project": item["project"],
-                    "task_template": hashlib.sha256(row["text"].encode()).hexdigest(),
+                    "task_template": hashlib.sha256(values[0]["text"].encode()).hexdigest(),
                 })
     if any(sha256_file(Path(path)) != digest for path, digest in evidence.items()):
         raise ValueError("a source changed during conditional-work export")
@@ -164,6 +199,7 @@ def export(artifact_path):
         "future_tool_waits_excluded_from_model_work_target": True,
         "full_prompt_and_tool_outputs_excluded_from_features": True,
         "complete_original_workflows": len(artifact.workflows),
+        "observed_delegation_inputs": observed_delegations,
     }
 
 
@@ -216,11 +252,14 @@ def distribution_metrics(model, rows):
         if mass:
             ece += abs(float(np.sum(weights[mask] * ((predicted[mask] == targets[mask]) - confidence[mask]))))
     coverage = {}
+    from scripts.train_workflow_work import model_text
+
     for row in rows:
-        if row["workflow"] not in coverage:
-            coverage[row["workflow"]] = model.task_encoding(row["text"])[1]
+        key = row["workflow"], model_text(model, row)
+        if key not in coverage:
+            coverage[key] = model.task_encoding(key[1])[1]
     reasons = [
-        support_status(model, row["features"], coverage[row["workflow"]])
+        support_status(model, row["features"], coverage[(row["workflow"], model_text(model, row))])
         for row in rows
     ]
     supported = np.asarray([reason == "calibrated_distribution" for reason in reasons])
@@ -263,6 +302,8 @@ def main():
     exporting = sub.add_parser("export")
     exporting.add_argument("--labels", type=Path, required=True)
     exporting.add_argument("--output", type=Path, required=True)
+    exporting.add_argument("--observed-delegations", action="store_true")
+    exporting.add_argument("--parent-dataset", type=Path)
     training = sub.add_parser("fit")
     training.add_argument("--dataset", type=Path, required=True)
     training.add_argument("--cohort", type=Path, required=True)
@@ -273,7 +314,18 @@ def main():
     if args.mode == "export":
         if args.output.exists():
             raise FileExistsError("preserve conditional-work exports")
-        write(args.output, export(args.labels))
+        values = export(args.labels, observed_delegations=args.observed_delegations)
+        if args.parent_dataset is not None:
+            binding = json.loads(args.labels.read_bytes())["source_binding"]
+            try:
+                bind_parent_dataset(values, args.parent_dataset, additional_sources={
+                    binding["token_path"]: binding["token_sha256"],
+                    binding["tool_overlay_path"]: binding["tool_overlay_sha256"],
+                })
+            except ValueError:
+                write(args.output.with_suffix(".unverified.json"), values)
+                raise
+        write(args.output, values)
         print(json.dumps({"dataset": str(args.output), "GPU_action": False}), flush=True)
         return
     if args.output_dir.exists():
