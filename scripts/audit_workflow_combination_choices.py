@@ -147,9 +147,11 @@ def replay_choice(
 
 def inspect(
     records, batches, costs, cost_identity, *, allow_feasible_resource_alternatives=False,
-    plan_device_capacity=False,
+    plan_device_capacity=False, include_all_selected_service=False,
 ):
     """Associate choices only with exact grants in their actual dispatch boundaries."""
+    if type(include_all_selected_service) is not bool:
+        raise ValueError("selected-service coverage must be explicitly enabled")
     progress = periodic_inspect(records, batches, include_free_grants=True)
     episodes = {}
     for episode in progress["ready_grant_episodes"]:
@@ -167,16 +169,37 @@ def inspect(
                 plan_device_capacity=plan_device_capacity,
             )
             choice["journal_sequence"] = sequence
+            if include_all_selected_service:
+                known = set(row.get("keys") or {}) & {
+                    item["identity"] for item in row.get("candidates") or ()
+                }
+                choice.update(
+                    all_periodic_service=[], all_free_service=[],
+                    all_selected_metadata_complete=(
+                        choice["search_replayed"] and set(choice["selected"]) <= known
+                    ),
+                )
             choices.append(choice)
             if row["source"] == "periodic_decay_resume":
                 pending = choice, row
                 free_pending = None
             else:
                 free_pending = (choice, row) if choice["search_replayed"] else None
-                choice["free_service"] = [{
+                targets = (
+                    choice["selected"] if include_all_selected_service
+                    and choice["all_selected_metadata_complete"]
+                    else choice["newly_selected_invocations"]
+                )
+                service_rows = [{
                     "invocation_id": owner, "key": identity(row["keys"][owner], grant=True),
                     "actual_grant_verified": False, "separate_tool_replacement": False, "episode": None,
-                } for owner in choice["newly_selected_invocations"]]
+                } for owner in targets]
+                choice["free_service"] = [
+                    service for service in service_rows
+                    if service["invocation_id"] in choice["newly_selected_invocations"]
+                ]
+                if include_all_selected_service:
+                    choice["all_free_service"] = service_rows
         elif row.get("event") == "workflow_oracle_coalesced_dispatch":
             free_pending = None
             last_free_associations = {}
@@ -199,7 +222,9 @@ def inspect(
                     or member["observed_context_tokens"] != candidate["context_tokens"]
                 ):
                     raise ValueError("free grant changed the selected complete context budget")
-                for service in choice["free_service"]:
+                for service in choice[
+                    "all_free_service" if include_all_selected_service else "free_service"
+                ]:
                     if service["invocation_id"] != owner:
                         continue
                     if service["actual_grant_verified"]:
@@ -224,15 +249,24 @@ def inspect(
             if set(row["resumed_program_ids"]) != set(choice["selected"]):
                 raise ValueError("combination and following actual periodic grant disagree")
             members = {item["invocation_id"]: item for item in row["programs"]}
-            for owner in choice["newly_selected_invocations"]:
+            targets = (
+                choice["selected"] if include_all_selected_service
+                and choice["all_selected_metadata_complete"]
+                else choice["newly_selected_invocations"]
+            )
+            for owner in targets:
                 member = members[owner]
                 selected_key = identity(selection["keys"][owner], grant=True)
                 if identity(member["key"], grant=True) != selected_key:
                     raise ValueError("periodic grant changed the selected request attempt")
-                choice["periodic_service"].append({
+                service = {
                     "invocation_id": owner, "key": selected_key,
                     "episode": episodes.get((selected_key, sequence)),
-                })
+                }
+                if owner in choice["newly_selected_invocations"]:
+                    choice["periodic_service"].append(service)
+                if include_all_selected_service:
+                    choice["all_periodic_service"].append(service)
             choice["following_periodic_grant_verified"] = True
     counts, reasons, sources = Counter({
         name: 0 for name in (
@@ -302,7 +336,9 @@ def inspect(
             "periodic_progress_bounded_by_next_control_or_observed_intervention": True,
             "free_dispatch_selection_replayed_but_service_not_associated": not any(
                 service["actual_grant_verified"] and not service["separate_tool_replacement"]
-                for choice in choices for service in choice["free_service"]
+                for choice in choices for service in choice[
+                    "all_free_service" if include_all_selected_service else "free_service"
+                ]
             ),
             "free_dispatch_exact_grant_association_enabled": True,
             "free_dispatch_boundary_closes_at_next_selection_or_coalesced_dispatch_record": True,
@@ -311,6 +347,11 @@ def inspect(
             "A_to_B_is_separate_single_donor_order_not_combination_search": True,
             "missing_grant_or_service_evidence_is_unknown": True,
             "exclusive_causal_JCT_or_throughput_gain_proven": False,
+            **({
+                "all_selected_service_includes_retained_reference_members": True,
+                "reference_outsider_counts_keep_their_original_population": True,
+            }
+               if include_all_selected_service else {}),
         },
     }
 
