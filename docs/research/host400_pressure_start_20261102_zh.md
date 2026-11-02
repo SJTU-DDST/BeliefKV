@@ -15,6 +15,13 @@
 未据此重复 Full、独立 400GB 组件或位置/采样检查。实际服务仍冻结于
 `cd56c385`，修正分析独立冻结于 `1123a006`。
 
+首对完整共同窗口已另行封存：Full/Oracle 全部输出为
+338.931253/337.051589 token/s（Oracle 低 0.554585%），decode 单位
+worker 区间成本为 1.859606/1.860411 ms/token。窗口含全部背景及
+prefill 首输出，控制计数与完整 cohort 审计一致；完整测量 JCT 仍待
+结束。趋势及时间加权分布图已实际查看，见
+`capacity_review_correction_r1/closed_common_window_figures_r1/`。
+
 2026-11-02 后续用户明确取消均匀 NUMA 分布要求。本文件中的严格驻留和
 均匀性启动检查保留为历史证据，不继续作为新实验前置目标。新的主线见
 `../design/current_gpu_oracle_goal_20261102_zh.md`。

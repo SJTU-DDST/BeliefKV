@@ -195,3 +195,35 @@ native batch。证据为 `registered_copy_first_boundary_use.json`。它补充
 了早期 live 核对尚未观察到的实际使用，不是完整稳定性或性能结论。
 测量观察推进到 3/18，服务及两个 CPU 观察器均实际存活，继续保留完整
 测量尾部，尚无平均 JCT 或吞吐收益结论。
+
+### 首对完整共同窗口
+
+`capacity_review_correction_r1/closed_common_window_pair_r1.json` 已封存两臂
+相同的 55.692771–1638.954850 秒窗口，包含初始、测量和背景全部输出及
+首个 prefill 输出，按 native batch 完成时刻归窗。实际 400GB census、
+原始工作量、到达与仅排序开关差异已核对；控制计数与其完整 cohort
+审计逐项一致，没有估计未完成成员的 JCT。
+
+| 指标 | 非排序 Full | Oracle |
+| --- | ---: | ---: |
+| 全部模型输出 token/s | 338.931253 | 337.051589 |
+| Decode 输出 token/s | 336.160391 | 334.267464 |
+| Decode worker ms / 输出 token | 1.859606 | 1.860411 |
+| 全部 worker ms / 输出 token | 2.951182 | 2.967298 |
+| Worker 时间加权有效 decode 宽度 | 14.057610 | 13.861563 |
+| 窗口实际输出 token | 536617 | 533641 |
+
+Oracle 本轮全部输出吞吐低 0.554585%，decode 低 0.563102%；decode
+单位 worker 成本高 0.043323%。Worker 区间包含执行、依赖等待和 CPU
+提交，不是纯 GPU kernel 时间；这也没有消除不同 batch/context 混合
+的影响。不能将局部选择的数量变化直接视为这项差异的原因。
+
+趋势图、按实际区间时长加权的 CDF、PDF 和原始 CSV 位于
+`capacity_review_correction_r1/closed_common_window_figures_r1/`，图像已
+实际查看。每方案只有一次运行，不提供据此推算的置信区间。图中固定
+60 秒分箱，最后一箱保留实际不足一分钟的时长。测量观察推进到 10/18，
+完整平均 JCT 仍未知，因此不判定本对通过或失败。
+
+若完整首对达到当前目标，重复验证优先反转两臂执行顺序，避免始终由
+控制先运行；同一 source、到达、测量成员和资源继续固定。此处只声明
+重复验证原则，尚未登记新的 GPU 后继；先完成当前 18 个自然尾部与收尾。
