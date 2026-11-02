@@ -1654,3 +1654,114 @@ MoE GEMM明显减少，attention仍为主要可见执行成本。
 本节7%的组件改善没有写入已完成的9.83% JCT或5.38%吞吐结果。
 两个成功组件均有新鲜idle drain、输出守恒与实际owned清理。
 本轮GPU组件已全部退出，没有登记后续完整GPU比较。
+
+## 多上下文和长生成的进一步资格化
+
+`native_prefill_moe_multicontext_r1`继续复用原先七个实际batch的
+62个原始上下文向量，宽度为3、5、7、8、9、13、17。
+最长原始向量238,950 token；没有改变任务、工具时间或到达方式。
+每个宽度执行一次单token warm和三次96-token普通生成，
+宽度9另有一次独立profile。完整257个请求、18,782个输出token均守恒，
+186个普通请求提供17,856个输出token。
+所有实际输出token和对应logprob与原参考完全相同。
+
+`prefill_moe_multicontext_comparison_r1.json`重新读取两臂完整native journal，
+核对输出ordinal、实际响应、参数、引擎tree、新鲜drain和实际进程退出。
+旧参考缺少后来新增的`prefill_by_case`字段，只从其原始完整journal重新派生；
+其余原统计逐项保持一致，旧摘要和journal没有改写。
+参考profiler的SHA为`27247aa7...`，候选为`cde4265f...`；
+旧参考还未记录`CUDA_HOME`环境字段，因此不能声明整个应用版本、
+全部历史环境元数据均相同。
+
+七组首次冷prefill的实际执行输入量、forward数和输出量逐组一致：
+
+| 原始batch宽度 | 参考prefill worker | 候选prefill worker | 观察到的减少 |
+| --- | ---: | ---: | ---: |
+| 3 | 14.324495 s | 13.484728 s | 5.8625% |
+| 5 | 18.737694 s | 17.442676 s | 6.9113% |
+| 7 | 17.739261 s | 16.574013 s | 6.5688% |
+| 8 | 23.177871 s | 21.410551 s | 7.6250% |
+| 9 | 41.486709 s | 39.227803 s | 5.4449% |
+| 13 | 40.695178 s | 38.218838 s | 6.0851% |
+| 17 | 78.567453 s | 74.974086 s | 4.5736% |
+
+这些冷warm观察的worker时间合计减少**5.7070%**。
+每个冷上下文组合只有一次观察，不将七个不同形状当成独立重复试验。
+普通decode中位成本变化为约-0.1141%至+0.2555%
+（正数代表减少），没有观察到明显decode收益或明显回退。
+
+### 同版本的512-token生成
+
+`ab8de0d3 feat: support bounded long-generation token cost probes`
+增加显式`--measurement-tokens`，默认96，合法范围为整数1..4096。
+无效值、布尔/浮点值和cold-prefill模式下冲突的长decode设置，
+均在读输入或访问GPU前拒绝。
+新干净worktree重新通过42项相关CPU检查。
+
+从原宽度17的最后一个成员选择最长向量，
+保留其完整token数组、request ID和原prompt/output hash；
+原生输入仍按既有组件规则使用前238,949 token。
+这只是组件形状选择，不是新派生任务，也不是修改正式workload。
+输入及来源证明分别为`prefill_moe_long_generation_inputs_r1.json`、
+`prefill_moe_long_generation_preparation_r1.json`。
+
+参考和候选顺序运行，使用同一个干净profiler、同一CUDA_HOME、
+BF16/FA3、805,198-token Device池、精确decode图1..24和2048-token chunk。
+每臂一次单token warm加三次512-token普通生成，
+完整4个请求、1,537个输出token全部守恒，
+token序列和logprob逐项完全一致。
+比较为`prefill_moe_long_generation_comparison_r1.json`。
+
+| 最长前缀组件 | 参考 | 候选 |
+| --- | ---: | ---: |
+| 首次冷prefill worker | 48.653524 s | 47.617484 s |
+| 首次冷prefill ms/input-token | 0.2036147 | 0.1992789 |
+| 普通decode中位ms/output-token | 9.562930 | 9.586355 |
+
+这次冷prefill观察减少**2.1294%**，
+普通decode中位成本增加**0.2450%**。
+首个输出由prefill产生，普通每次其余511个实际输出归入decode，
+没有用512去重复计算decode输出。
+该形状的冷prefill收益小于64K前缀的约7%；
+现有profile显示attention仍为主要成本，但没有在238K形状单独profile，
+因此不把收益差异完全归因为某个kernel。
+
+### 共享候选及后续边界
+
+完整组件汇总为`prefill_moe_complete_component_qualification_r1.json`。
+七宽度和长生成合计每臂261个请求、20,319个实际输出，
+其中189个普通decode请求、19,392个普通输出；
+它们不是261个不同任务或独立重复试验。
+原始GPU进程均已退出，新鲜idle drain及实际owned清理均通过。
+
+独立共享候选为
+`configs/execution/qwen3_coder_h200_exact_prefill_moe_20261101.json`，
+表保存在`configs/execution/h200_moe_prefill_decode/`，
+字节SHA与GPU实际测量表相同。
+配置、准备入口和检查已提交为
+`5b6da640 perf: package qualified prefill MoE execution candidate`。
+256..2048之外的原生最近邻参数选择，包括全部decode参数，保持原值。
+该配置同时可用于Full、ThunderAgent及native，未替换旧默认配置。
+
+准备入口只有显式`--replace-existing-execution`才允许替换已有执行配置，
+并要求两个原方法具有相同且通过原hash/资源检查的旧配置。
+新检查覆盖实际三种方法的环境传递、相同KV容量、范围外查表保留、
+未显式替换、单臂缺失、旧配置不一致及hash变动。
+连同组件及分析检查，一次运行通过**91项CPU检查**。
+`prefill_moe_shared_controls_prepare_r1/`保留Full与ThunderAgent准备配置：
+策略环境仅改变共同执行配置路径和hash，任务、工具、到达及固定18测量组不变。
+`constructor_review.json`进一步验证两个实际runtime构造成功，
+Full保留预测卸载、agent连续性及原JOIN/EOS触发，
+ThunderAgent没有继承Full的agent控制和预测卸载，
+两者的执行配置identity完全相同。
+这不是新完整GPU或策略资格化；正式运行前仍需冻结、相应来源绑定、
+实际token/session/stop和sampler检查。
+
+当前完成的73项目Full在共同墙钟窗口内，
+prefill/decode worker区间累计约543.105/1,038.891秒，
+prefill约占两者和的34.33%。它们包含运行时及依赖等待，
+不是独占kernel或可消除JCT；不能把组件的5.71%直接当成workflow收益。
+已有Full比ThunderAgent的9.83%平均JCT和5.38%共同窗口吞吐优势
+仍属于旧共享配置上的完整对照，未追加本节组件收益。
+新共享候选尚未测量完整workflow的JCT和吞吐，
+也没有消除已有对照中Host页NUMA分布不一致的限制。
