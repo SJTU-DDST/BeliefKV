@@ -128,3 +128,42 @@ replay census 与登记容量一致，并记录其路径和 SHA256，不回退�
 修正分析在 `host400_registered_copy_pressure_r1/capacity_review_correction_r1/`。
 仅分析代码改变，服务 `cd56c385` 与原生引擎保持冻结；接续 oracle 复用
 本轮原 token/session/stop 和采样资格，不重复 Full 或 400GB 组件。
+
+### 匹配 Oracle 已进入实际服务
+
+完整控制的选择回放包含 1887 次实际控制、191 次逻辑集合竞争、109 次
+oracle 集合改变；共同窗口内对应 771/93/56 次，窗口完整。这些是同一
+控制轨迹的反事实回放，仍不等于独立竞争事件数、物理替代可行性或收益。
+
+接续时保留了两个启动问题：首先公共登记接口因 canonical patch 所在
+冻结副本路径不同而拒绝。核对 actual tree、补丁字节和其余全部 source
+字段一致后，只重绑定路径及派生 state hash，复用原 103 项 native CPU
+证据；原生源码没有改变。随后 oracle r1 在模型/GPU 分配前因前一控制
+遗留的 Unix socket 退出，没有测量请求，原始失败保留。
+
+oracle r2 改用端口 18982，登记为
+`ops/workflow_original73_host400_oracle_20261102_r2.registration.json`。
+实际服务仍为 `cd56c385`、原生 `434c35dd`，固定 73 项目、20 初始、
+平均 70 秒、400GB 和原始工具 overlay 均不变。新分析冻结于
+`beliefkv-host400-capacity-review-1123a006`，用于正确容量口径的收尾观察，
+不替换服务代码或重做位置/采样资格。
+
+独立 live 核对已验证 290 个精确原始回执、19235 个输出 token，实际
+805198/4069011 Device/Host token、nice0 GPU owner、nice19 CPU observer、
+全局 oracle 排序开启、组合准入关闭、2 秒窗口、JOIN 绕过和 active
+连续性。GPU scheduler 为 390232，固定测量观察器为 390557，结果
+观察器为 390521；写入与丢失计数均正常。这是有界运行前缀，不是完整
+JCT 或排序收益。实际 parent server 中已确认共同注册区间修复配置，
+当前前缀尚无首个物理边界拆分日志，需在后续传输中继续观察。
+
+初次 live 核对错误地从重写进程标题后的 scheduler `/proc/environ`
+判断修复配置缺失。独立 CPU probe 证明 `setproctitle` 后该字段不可见，
+但 Python 环境仍为 1；实际 parent server 的环境也为 1。只读观察器
+已改正，原检查源码与失败说明保存在同一证据目录，没有修改 GPU 服务。
+
+新结果观察器在完整 18 成员自然结束、停止背景、fresh drain 和实际退出
+之后比较当前控制。输出为
+`capacity_review_correction_r1/comparison_retry2.json`，状态入口为
+`capacity_review_correction_r1/oracle_retry2_monitor.state.json`。
+只接续本轮 oracle，不自动启动另一 GPU 轮次；即使单对达到 1% 目标，
+goal 仍需重复验证，暂不推进 R5 或宣布完成。
