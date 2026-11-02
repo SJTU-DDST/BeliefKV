@@ -2,6 +2,7 @@
 
 import argparse
 from collections import defaultdict
+from dataclasses import replace
 import json
 from pathlib import Path
 import sys
@@ -26,6 +27,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("model", "evaluation", "dataset", "cohort", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--check-unchanged-validity", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve earlier actual-worker observations")
@@ -41,6 +43,7 @@ def main():
     model = WorkflowWorkModel.load(args.model, inputs[str(args.model.resolve())])
     worker = WorkflowWorkWorker("", "", model=model)
     observed = {}
+    validity_cost, revalidated = [], 0
     try:
         for row in initial:
             workflow, invocation = row["logical_workflow_id"], row["logical_workflow_id"] + "-root"
@@ -70,6 +73,29 @@ def main():
             expected = model.predict(projection, row["features"])
             if not np.allclose(expected, observed[row["logical_workflow_id"]].probabilities, atol=1e-12, rtol=0):
                 raise ValueError("actual worker and offline initial probabilities differ")
+        if args.check_unchanged_validity:
+            before = worker.counts["inferences"]
+            identities = list(observed)
+            for index in range(1024):
+                workflow = identities[index % len(identities)]
+                previous = worker.prediction(workflow)
+                if previous is None:
+                    raise ValueError("the unchanged real-worker input unexpectedly became unavailable")
+                worker._predictions[workflow] = replace(previous, expires_at=0.)
+                started = time.thread_time_ns()
+                current = worker.prediction(workflow)
+                validity_cost.append((time.thread_time_ns() - started) / 1000.)
+                if current is None:
+                    continue
+                if (
+                    current.probabilities != previous.probabilities
+                    or current.updated_at != previous.updated_at or current.revision != previous.revision
+                    or current.expires_at <= time.monotonic()
+                ):
+                    raise ValueError("validity revalidation changed inference semantics")
+                revalidated += 1
+            if worker.counts["inferences"] != before:
+                raise ValueError("unchanged-input validation introduced extra inference")
         worker_counts = dict(worker.counts)
     finally:
         worker.close()
@@ -92,6 +118,13 @@ def main():
         "initial_workflows_published": len(observed),
         "initial_probabilities_match_offline": True,
         "actual_background_thread_joined": True,
+        "unchanged_input_validity": {
+            "checked": args.check_unchanged_validity,
+            "sampled_expiries": len(validity_cost), "revalidated_without_new_inference": revalidated,
+            "inference_timestamp_and_probabilities_preserved": bool(revalidated),
+            "thread_CPU_us_p50": float(np.quantile(validity_cost, .5)) if validity_cost else None,
+            "thread_CPU_us_p99": float(np.quantile(validity_cost, .99)) if validity_cost else None,
+        },
         "worker_counts": worker_counts,
         "component_cost": {key: {
             "count": len(values), "p50": float(np.quantile(values, .5)),

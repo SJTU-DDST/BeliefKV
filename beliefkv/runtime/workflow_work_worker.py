@@ -1,7 +1,7 @@
 """Coalesced CPU predictions; scheduling never waits for the worker."""
 
 from collections import Counter, deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import math
 import threading
@@ -108,8 +108,35 @@ class WorkflowWorkWorker:
             return None
         prediction = self._predictions.get(workflow)
         if self._r5 and prediction is not None and now > prediction.expires_at:
-            return None
+            return self._revalidate_unchanged(workflow, prediction, now)
         return prediction
+
+    def _revalidate_unchanged(self, workflow, prediction, now):
+        # R5's inputs contain no elapsed time: without new observations, an
+        # equivalent inference would produce the same remaining-work distribution.
+        if not self._condition.acquire(blocking=False):
+            return None
+        try:
+            if (
+                self._stopped or self.error or self._thread is None or not self._thread.is_alive()
+                or workflow in self._closed_workflows
+                or self._predictions.get(workflow) is not prediction
+                or prediction.evidence != "model" or prediction.support != "calibrated_distribution"
+                or workflow in self._dirty or workflow in self._pending_since
+                or prediction.revision != self._revisions[workflow]
+                or prediction.revision != self._submitted_revisions[workflow]
+                or prediction.structural_revision != self._structural_consumed[workflow]
+                or prediction.structural_revision != self._structural_submitted[workflow]
+            ):
+                return None
+            current = replace(
+                prediction, expires_at=now + self.model.distribution_contract["maximum_cache_age_s"],
+            )
+            self._predictions[workflow] = current
+            self.counts["unchanged_input_validity_revalidations"] += 1
+            return current
+        finally:
+            self._condition.release()
 
     def bucket(self, workflow, now):
         prediction = self.prediction(workflow)
@@ -323,6 +350,8 @@ class WorkflowWorkWorker:
                 "support_uses_maximum_softmax_threshold": False,
                 "structural_events_revoke_stale_predictions": True,
                 "maximum_cache_age_s": self.model.distribution_contract["maximum_cache_age_s"],
+                "unchanged_input_cache_validation": "nonblocking_revision_and_live_producer",
+                "inference_timestamp_preserved_on_validity_refresh": True,
             } if self._r5 else {}),
         }
 
