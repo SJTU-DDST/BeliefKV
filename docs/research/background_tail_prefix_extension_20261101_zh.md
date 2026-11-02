@@ -1551,3 +1551,106 @@ Full有8,622次probe，ThunderAgent有9,149次probe；
 以及准备来源发生变化时在接触GPU前拒绝执行。
 当前这只是组件筛查入口，不是已完成GPU测量、真实模型或JCT改善；
 正式共享执行配置仍为原来的精确图及decode MoE配置。
+
+## Prefill MoE的GPU与真实模型结果
+
+`ab8f7257 feat: add bounded prefill MoE launch screening`已提交，
+在干净操作目录 `.worktrees/beliefkv-prefill-moe-operator-ab8f7257`
+重新运行相同35项CPU检查并全部通过。
+这仅资格化了有界组件入口，不重标为新的完整策略CPU/GPU资格。
+
+### 来源拒绝与恢复
+
+首次调用在GPU之前拒绝了旧组件输入中的源码hash：
+`benchmark_decode_graph_cost.py`后来增加了缺失宽度的准备入口，
+而旧输入仍绑定原字节。旧输入与拒绝事实保留；
+从`00d188dd`创建只读历史worktree，确认该文件的SHA与原声明完全一致，
+再仅替换其来源路径，其余字段和所有原token向量逐项相同。
+证明为 `prefill_moe_component_input_rebinding_r1.json`，
+新的显式输入为 `prefill_moe_component_inputs_r1.json`。
+没有重新收集或改写任何源任务。
+
+### 合成Routing组件筛查
+
+`prefill_moe_tuning_r1/result.json`保留四个M档位、
+每档八个候选、两种routing、七轮交替时序和数值容差结果。
+所有实际选中的配置通过数值及既定回退门槛：
+
+| M | 均匀routing改善 | 偏斜routing改善 | 几何平均改善 |
+| --- | ---: | ---: | ---: |
+| 256 | 31.1200% | 29.2833% | 30.2077% |
+| 512 | 32.8355% | 28.8321% | 30.8628% |
+| 1024 | 28.0975% | 29.5055% | 28.8050% |
+| 2048 | 29.6347% | 28.5823% | 29.1104% |
+
+这是随机输入和合成routing的原生fused MoE测量，
+不将其约28%--33%的局部改善当作模型或workflow收益。
+`prefill_moe_model_validation_plan_r1.json`
+独立重算选择门槛，核对实际导出表：
+除调优区间外的6,402个整数大小，包括较大的边界，
+均与原共享表选择完全相同的参数，保留所有decode档位。
+新配置SHA为
+`9425a7d46575f32d4b92570d6346034c7559a9c2af749f6d44820fca7cde09b2`。
+
+### 真实模型组件的失败与成功
+
+`native_prefill_moe_candidate_r1`在模型就绪前失败。
+组件调用错误地选择了与原参考不一致的`CUDA_HOME`；
+fused RoPE等JIT链接缺少`lib64/libcudart.so`。
+该次没有进入普通模型测量，原失败日志和`component_failed`清理证据保留，
+不计为性能结果。
+
+恢复入口从原参考的实际`startup.json`读取正确工具链
+`/home/longhao/experiment/toolchains/cuda130_sampling_20261024/nvidia/cu13`，
+确认库和编译器存在，只在新目录`native_prefill_moe_candidate_r2`重试。
+`prefill_moe_model_retry_toolchain_r1.json`绑定原失败、修正路径与实际命令。
+未修改模型、原生引擎、数据、KV精度或任务。
+
+成功组件继续使用原生BF16/FA3、TP1、805,198-token Device池、
+running24、chunk2048、相同稀疏decode图与breakable prefill图；
+未启用Host KV或Full控制。
+完全复用已完成的`native_prefill_profile_r2`参考，
+输入仍为同一捕获的 **65,917 token**，每次先清空cache。
+三次普通请求与另一次独立profile均正常结束，
+各有33个prefill forward和一个实际输出token：
+
+| 普通冷Prefill | 原参考worker时间 | 新参数worker时间 |
+| --- | ---: | ---: |
+| 0 | 4,924.178018 ms | 4,578.461278 ms |
+| 1 | 4,920.512697 ms | 4,579.641960 ms |
+| 2 | 4,942.964152 ms | 4,591.308977 ms |
+| 中位数 | 4,924.178018 ms | 4,579.641960 ms |
+| 中位ms/input-token | 0.0747027 | 0.0694759 |
+
+中位worker成本观测降低 **6.996824%**。
+两种方法的四条实际输出序列逐项相同，所有请求cached token为0。
+独立入口 `ops/compare_native_prefill_moe_20261101.py`
+重新读取完整native journal核对输出ordinal、实际输入量和worker统计，
+并确认模型参数、完整原token向量、原生tree、组件实现和CUDA_HOME一致。
+结果为 `prefill_moe_native_comparison_r1.json`。
+旧摘要中的整数宽度键按JSON对象语义规范为字符串，
+相对journal路径按其原执行根解析；原摘要及journal字节没有修改。
+
+### Kernel证据及未完成范围
+
+`prefill_moe_model_cost_r1.json`使用原成本分析器核对独立profile：
+
+| Profile组 | 原参考累计duration | 新参数累计duration |
+| --- | ---: | ---: |
+| MoE GEMM | 1,257.069465 ms | 918.425210 ms |
+| Attention | 3,283.218921 ms | 3,237.577143 ms |
+| 全部kernel区间并集 | 4,935.607620 ms | 4,549.435938 ms |
+
+MoE GEMM明显减少，attention仍为主要可见执行成本。
+累计duration之间存在重叠，不能直接相加为可消除时间，
+也不能将单个profile中其他组的变化全部归因于MoE参数。
+普通三次测量不包含profile请求的采集与导出开销。
+每种方法只有一次服务器启动，仍不声明跨独立运行的统计显著性。
+
+该结果仅证明同一原始长前缀的冷prefill组件收益。
+四条单token输出尚不足以资格化所有上下文和长生成的数值行为，
+还需多上下文及长输出检查，再决定是否更新正式共享执行配置。
+通用MoE参数应同样提供给所有baseline；
+本节7%的组件改善没有写入已完成的9.83% JCT或5.38%吞吐结果。
+两个成功组件均有新鲜idle drain、输出守恒与实际owned清理。
+本轮GPU组件已全部退出，没有登记后续完整GPU比较。
