@@ -112,7 +112,8 @@ def test_incremental_boundary_reader_does_not_consume_partial_json(tmp_path):
 
 
 @pytest.mark.parametrize("broken_receipts", (False, True))
-def test_supervision_is_resumed_even_if_receipt_validation_fails(tmp_path, broken_receipts):
+@pytest.mark.parametrize("host_bytes", (None, 200000077824, 400000057344))
+def test_supervision_is_resumed_even_if_receipt_validation_fails(tmp_path, broken_receipts, host_bytes):
     state = {
         "watcher": {"pid": 11}, "driver": {"pid": 12}, "server": {"pid": 13},
     }
@@ -124,14 +125,18 @@ def test_supervision_is_resumed_even_if_receipt_validation_fails(tmp_path, broke
         patch.object(stop.capture.reservation, "alive", return_value=True),
         patch.object(stop.capture.reservation, "process", return_value={"state": "T"}),
         patch.object(stop.os, "kill", side_effect=lambda pid, sig: signals.append((pid, sig))),
-        patch.object(stop, "wait_exit"),
+        patch.object(stop, "wait_exit") as wait,
         patch.object(stop, "idle_snapshots", return_value={}),
         patch.object(stop, "receipt_proof", **(
             {"side_effect": ValueError("incomplete measured receipt")}
             if broken_receipts else {"return_value": {"source_token_sha256": "source"}}
         )),
         patch.object(stop.capture.reservation, "write_json"),
-        patch.object(stop.causal, "load", return_value={"remaining_processes": [], "identities": []}),
+        patch.object(stop.causal, "load", side_effect=lambda path: (
+            {"capacity": {"host_total_bytes": host_bytes}}
+            if path.name == "native_capacity_census.json"
+            else {"remaining_processes": [], "identities": []}
+        )),
     ):
         if broken_receipts:
             with pytest.raises(ValueError, match="incomplete"):
@@ -141,6 +146,13 @@ def test_supervision_is_resumed_even_if_receipt_validation_fails(tmp_path, broke
     assert signals[:2] == [(11, signal.SIGSTOP), (12, signal.SIGINT)]
     assert signals[-1] == (11, signal.SIGCONT)
     assert ((11, signal.SIGTERM) in signals) is not broken_receipts
+    assert wait.call_args_list[0].args == (state["driver"],)
+    assert wait.call_args_list[0].kwargs == {"timeout": 60.}
+    if not broken_receipts:
+        assert wait.call_args_list[1].args == (state["watcher"],)
+        assert wait.call_args_list[1].kwargs == {
+            "timeout": 340. if host_bytes == 400000057344 else 100.,
+        }
 
 
 def test_unverified_or_reused_process_identity_is_never_signalled():

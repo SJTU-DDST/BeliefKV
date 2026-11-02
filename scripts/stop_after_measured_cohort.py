@@ -97,6 +97,17 @@ def wait_exit(identity, *, timeout):
         time.sleep(.1)
 
 
+def supervisor_exit_timeout(arm):
+    try:
+        size = causal.load(arm / "server/native_capacity_census.json")["capacity"]["host_total_bytes"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return 100.
+    if type(size) is int and size > causal.host_numa.LEGACY_HOST_FULL_BYTES:
+        # Cover native cleanup's 12s TERM and 300s KILL waits plus final bookkeeping.
+        return 340.
+    return 100.
+
+
 def idle_snapshots(arm, server, *, timeout=45.):
     deadline, previous = time.monotonic() + timeout, None
     path = arm / "server/native_telemetry_status.json"
@@ -215,7 +226,7 @@ def stop_owned(comparison, cohort, output, *, state):
     finally:
         if paused and capture.reservation.alive(supervisor):
             os.kill(supervisor["pid"], signal.SIGCONT)
-    wait_exit(supervisor, timeout=100.)
+    wait_exit(supervisor, timeout=supervisor_exit_timeout(arm))
     cleanup = causal.load(arm / "owned_process_cleanup.json")
     if cleanup["remaining_processes"] or any(
         capture.reservation.alive(row) for row in cleanup["identities"]
