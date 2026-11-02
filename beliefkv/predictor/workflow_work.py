@@ -26,6 +26,13 @@ CONTEXT_SCHEMA = "workflow_remaining_model_work_context_v2"
 CONTEXT_FEATURES = FEATURES + (
     "initial_prompt_tokens", "active_prompt_tokens", "max_prompt_tokens",
 )
+R5_SCHEMA = "workflow_conditional_remaining_work_distribution_v3"
+R5_FEATURES = CONTEXT_FEATURES + (
+    "root_completed_calls", "child_completed_calls", "root_input_tokens", "child_input_tokens",
+    "root_output_tokens", "child_output_tokens", "unfinished_children", "ready_children",
+    "tool_blocked_children", "join_blocked_children", "delegation_chars",
+    "role_explore", "role_implement", "role_verify", "role_review", "role_other",
+)
 EXECUTION_INPUT_KIND = "task_plus_declared_execution_instructions_v1"
 EXECUTION_CONTROL_FIELDS = frozenset((
     "profile", "minimum_parallel_join", "child_soft_target",
@@ -38,6 +45,8 @@ def feature_names(schema):
         return FEATURES
     if schema == CONTEXT_SCHEMA:
         return CONTEXT_FEATURES
+    if schema == R5_SCHEMA:
+        return R5_FEATURES
     raise ValueError("incompatible workflow work feature schema")
 
 
@@ -223,7 +232,7 @@ class WorkflowProgress:
     def features(self, *, feature_schema=SCHEMA):
         names = feature_names(feature_schema)
         values = dict(self.counts)
-        if feature_schema == CONTEXT_SCHEMA:
+        if feature_schema in (CONTEXT_SCHEMA, R5_SCHEMA):
             # Logical observed prompt lengths, never physical KV occupancy.
             values["active_prompt_tokens"] = sum(len(call[2]) for call in self.active_calls.values())
         for state, _depth in self.invocations.values():
@@ -287,6 +296,18 @@ class WorkflowWorkModel:
         self.temperature = float(raw.get("temperature", 1.))
         if not math.isfinite(self.temperature) or self.temperature <= 0:
             raise ValueError("workflow model temperature must be positive")
+        self.distribution_contract = None
+        if self.schema == R5_SCHEMA:
+            from beliefkv.predictor.workflow_work_distribution import validate_contract
+
+            if contract is not None:
+                raise ValueError("R5 cannot apply one global execution profile to heterogeneous workflows")
+            self.distribution_contract = validate_contract(raw.get("distribution_contract"))
+            if raw.get("future_information_used") is True or any(
+                field in raw for field in ("workflow_graphs", "requests", "workflows")
+            ):
+                raise ValueError("learned R5 artifacts cannot contain future workflow graphs or labels")
+            self.task_input_kind = "workflow_task_and_delegation_metadata_v1"
 
     @classmethod
     def load(cls, path, digest):
@@ -296,16 +317,21 @@ class WorkflowWorkModel:
         return cls(json.loads(content))
 
     def task_projection(self, text):
+        return self.task_encoding(text)[0]
+
+    def task_encoding(self, text):
         import numpy as np
 
         counts = ngrams(text)
         indices = [self.vocabulary[word] for word in counts if word in self.vocabulary]
         if not indices:
-            return None
+            return None, 0.
         values = np.asarray([1. + math.log(counts[word]) for word in counts if word in self.vocabulary])
         values *= self.arrays["idf"][indices]
         values /= max(float(np.linalg.norm(values)), 1e-12)
-        return np.einsum("i,ij->j", values, self.arrays["static_weight"][indices], optimize=False)
+        projection = np.einsum("i,ij->j", values, self.arrays["static_weight"][indices], optimize=False)
+        coverage = sum(counts[word] for word in counts if word in self.vocabulary) / max(1, counts.total())
+        return projection, coverage
 
     def task_input_prefix(self, environment=None):
         if self.deployment_controls is None:

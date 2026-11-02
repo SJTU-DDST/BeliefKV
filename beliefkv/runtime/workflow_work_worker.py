@@ -3,12 +3,16 @@
 from collections import Counter, deque
 from dataclasses import dataclass
 import hashlib
+import math
 import threading
 import time
 
-from beliefkv.core.events import RuntimeEventKind as Kind
+from beliefkv.core.events import EventConfidence, RuntimeEventKind as Kind, is_unobserved_join_event
 from beliefkv.predictor.workflow_work import (
-    WorkflowProgress, WorkflowWorkModel, task_from_prompt_tail, task_requirements,
+    R5_SCHEMA, WorkflowProgress, WorkflowWorkModel, task_from_prompt_tail, task_requirements,
+)
+from beliefkv.predictor.workflow_work_distribution import (
+    DistributionProgress, STRUCTURAL_EVENTS, support_status,
 )
 
 
@@ -21,6 +25,13 @@ class WorkPrediction:
     evidence: str
 
 
+@dataclass(frozen=True)
+class DistributionWorkPrediction(WorkPrediction):
+    support: str
+    expires_at: float
+    structural_revision: int
+
+
 class WorkflowWorkWorker:
     interval_s = .2
     queue_limit = 4096
@@ -31,6 +42,7 @@ class WorkflowWorkWorker:
         execution_environment=None,
     ):
         self.model = model if model is not None else WorkflowWorkModel.load(path, digest)
+        self._r5 = self.model.schema == R5_SCHEMA
         self.task_prefix = self.model.task_input_prefix(execution_environment)
         self.digest = digest
         self.tokenizer_path = tokenizer_path
@@ -41,6 +53,10 @@ class WorkflowWorkWorker:
         self._closed_workflows = set()
         self._progress = {}
         self._projections = {}
+        self._task_coverage = {}
+        self._next_inference = {}
+        self._structural_submitted = Counter()
+        self._structural_consumed = Counter()
         self._dirty = set()
         self._revisions = Counter()
         self._submitted_revisions = Counter()
@@ -57,6 +73,17 @@ class WorkflowWorkWorker:
         with self._condition:
             if self._stopped or self.error or workflow in self._closed_workflows:
                 return
+            if self._r5 and action == "task":
+                self.counts["full_prompt_fallback_disabled"] += 1
+                return
+            if self._r5 and action == "event" and (
+                args[0].confidence is EventConfidence.INFERRED or is_unobserved_join_event(args[0])
+            ):
+                self.counts["unobserved_event_ignored"] += 1
+                return
+            if self._r5 and action == "event" and args[0].kind in STRUCTURAL_EVENTS:
+                self._structural_submitted[workflow] += 1
+                self._predictions.pop(workflow, None)
             if action == "event" and args[0].kind is Kind.WORKFLOW_END:
                 self._closed_workflows.add(workflow)
                 self._predictions.pop(workflow, None)
@@ -74,9 +101,14 @@ class WorkflowWorkWorker:
     def prediction(self, workflow):
         if self.error or workflow in self._closed_workflows:
             return None
-        if (since := self._pending_since.get(workflow)) is not None and time.monotonic() - since > 2.:
+        now = time.monotonic()
+        lag = self.model.distribution_contract["maximum_observation_lag_s"] if self._r5 else 2.
+        if (since := self._pending_since.get(workflow)) is not None and now - since > lag:
             return None
-        return self._predictions.get(workflow)
+        prediction = self._predictions.get(workflow)
+        if self._r5 and prediction is not None and now > prediction.expires_at:
+            return None
+        return prediction
 
     def bucket(self, workflow, now):
         prediction = self.prediction(workflow)
@@ -87,7 +119,12 @@ class WorkflowWorkWorker:
             if action == "event" and args[0].kind is Kind.WORKFLOW_END:
                 self._progress.pop(workflow, None)
                 self._projections.pop(workflow, None)
+                self._task_coverage.pop(workflow, None)
+                self._next_inference.pop(workflow, None)
+                self._structural_submitted.pop(workflow, None)
+                self._structural_consumed.pop(workflow, None)
                 self._revisions.pop(workflow, None)
+                self._submitted_revisions.pop(workflow, None)
                 self._pending_since.pop(workflow, None)
                 self._dirty.discard(workflow)
                 continue
@@ -96,10 +133,14 @@ class WorkflowWorkWorker:
             if workflow not in self._progress and len(self._progress) >= self.workflow_limit:
                 self.counts["workflow_limit_abstentions"] += 1
                 continue
-            progress = self._progress.setdefault(workflow, WorkflowProgress())
+            if workflow not in self._progress:
+                self._progress[workflow] = DistributionProgress() if self._r5 else WorkflowProgress()
+            progress = self._progress[workflow]
             if action == "event":
                 progress.event(args[0])
-                if args[0].kind is Kind.WORKFLOW_START:
+                if self._r5 and args[0].kind in STRUCTURAL_EVENTS:
+                    self._structural_consumed[workflow] += 1
+                if args[0].kind is Kind.WORKFLOW_START and not self._r5:
                     text = args[0].attributes.get("workflow_task_instructions", "")
                     if isinstance(text, str):
                         progress.text = task_requirements(text)
@@ -145,6 +186,10 @@ class WorkflowWorkWorker:
         for workflow in tuple(self._dirty):
             if self._stopped:
                 return
+            now = time.monotonic()
+            if self._r5 and now < self._next_inference.get(workflow, 0.):
+                self.counts["per_workflow_refresh_coalesced"] += 1
+                continue
             self._dirty.discard(workflow)
             if workflow in self._closed_workflows:
                 continue
@@ -153,18 +198,25 @@ class WorkflowWorkWorker:
                 if not progress.text:
                     self.counts["task_unavailable"] += 1
                     continue
-                self._projections[workflow] = self.model.task_projection(self.task_prefix + progress.text)
+                encoding_wall, encoding_cpu = time.perf_counter(), time.thread_time()
+                if self._r5:
+                    projection, coverage = self.model.task_encoding(self.task_prefix + progress.text)
+                    self._projections[workflow] = projection
+                    self._task_coverage[workflow] = coverage
+                else:
+                    self._projections[workflow] = self.model.task_projection(self.task_prefix + progress.text)
                 self.counts["task_encodings"] += 1
+                self.counts["task_encoding_thread_cpu_us"] += (time.thread_time() - encoding_cpu) * 1e6
+                self.counts["task_encoding_wall_us"] += (time.perf_counter() - encoding_wall) * 1e6
             projection = self._projections[workflow]
             if projection is None:
                 self.counts["unsupported_task"] += 1
                 continue
             wall, cpu = time.perf_counter(), time.thread_time()
-            probabilities = self.model.predict(
-                projection, progress.features(feature_schema=self.model.schema),
-            )
+            features = progress.features(feature_schema=self.model.schema)
+            probabilities = self.model.predict(projection, features)
             best = max(range(3), key=lambda index: probabilities[index])
-            supported = (
+            supported = not self._r5 and (
                 max(probabilities) >= .6
                 and self.model.metadata.get("calibration_status") in (
                     "project_heldout_temperature", "capture_heldout_temperature",
@@ -178,6 +230,17 @@ class WorkflowWorkWorker:
                 probabilities, best if supported else 1, self._revisions[workflow],
                 time.monotonic(), "model" if supported else "uncertain_medium",
             )
+            if self._r5:
+                support = support_status(self.model, features, self._task_coverage[workflow])
+                supported = support == "calibrated_distribution"
+                prediction = DistributionWorkPrediction(
+                    probabilities, best if supported else 1, self._revisions[workflow],
+                    now, "model" if supported else "unsupported_distribution",
+                    support, now + self.model.distribution_contract["maximum_cache_age_s"],
+                    self._structural_consumed[workflow],
+                )
+                self._next_inference[workflow] = now + self.model.distribution_contract["minimum_refresh_s"]
+                self.counts["distribution_" + support] += 1
             self.counts["inferences"] += 1
             self.counts["model_rank" if supported else "uncertain_medium"] += 1
             self.counts["inference_thread_cpu_us"] += (time.thread_time() - cpu) * 1e6
@@ -185,7 +248,9 @@ class WorkflowWorkWorker:
             # Publication is one immutable object assignment. A terminal event
             # already published on the scheduler thread always wins.
             with self._condition:
-                if not self._stopped and workflow not in self._closed_workflows:
+                if not self._stopped and workflow not in self._closed_workflows and (
+                    not self._r5 or self._structural_consumed[workflow] == self._structural_submitted[workflow]
+                ):
                     self._predictions[workflow] = prediction
                     if self._revisions[workflow] == self._submitted_revisions[workflow]:
                         self._pending_since.pop(workflow, None)
@@ -195,9 +260,18 @@ class WorkflowWorkWorker:
         while True:
             with self._condition:
                 while not self._stopped and not self.error and (
-                    not self._queue or time.monotonic() < next_update
+                    (not self._queue and not (self._r5 and self._dirty))
+                    or time.monotonic() < next_update
+                    or self._r5 and not self._queue and all(
+                        time.monotonic() < self._next_inference.get(workflow, 0.)
+                        for workflow in self._dirty
+                    )
                 ):
-                    timeout = max(.001, next_update - time.monotonic()) if self._queue else None
+                    deadline = next_update if self._queue else (
+                        max(next_update, min(self._next_inference.get(workflow, 0.) for workflow in self._dirty))
+                        if self._r5 and self._dirty else math.inf
+                    )
+                    timeout = max(.001, deadline - time.monotonic()) if math.isfinite(deadline) else None
                     self._condition.wait(timeout=timeout)
                 if self._stopped or self.error:
                     return
@@ -219,9 +293,17 @@ class WorkflowWorkWorker:
             "feature_schema": self.model.schema,
             "execution_controls": self.model.deployment_controls,
             "task_prefix_sha256": hashlib.sha256(self.task_prefix.encode()).hexdigest(),
-            "refresh_interval_ms": 200, "counts": dict(self.counts),
+            "refresh_interval_ms": (
+                self.model.distribution_contract["minimum_refresh_s"] * 1000 if self._r5 else 200
+            ), "counts": dict(self.counts),
             "cached_workflows": len(self._predictions), "queue_depth": len(self._queue),
             "future_trace_used_online": False, "scheduler_waits_for_inference": False,
+            **({
+                "conditional_distribution": True, "full_prompt_fallback_enabled": False,
+                "support_uses_maximum_softmax_threshold": False,
+                "structural_events_revoke_stale_predictions": True,
+                "maximum_cache_age_s": self.model.distribution_contract["maximum_cache_age_s"],
+            } if self._r5 else {}),
         }
 
     def close(self):

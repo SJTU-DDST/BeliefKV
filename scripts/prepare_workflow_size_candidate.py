@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.predictor.workflow_work import WorkflowWorkModel
+from beliefkv.predictor.workflow_work import R5_SCHEMA, WorkflowWorkModel
 
 
 def prepare(base, model, evaluation, *, free_dispatch_interval_ms=None):
@@ -64,7 +64,15 @@ def prepare(base, model, evaluation, *, free_dispatch_interval_ms=None):
         "BELIEFKV_WORKFLOW_WORK_MODEL": str(model.resolve()),
         "WORKFLOW_WORK_MODEL_SHA256": digest,
         "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256": digest,
+        "WORKFLOW_WORK_SOURCE": "learned", "BELIEFKV_WORKFLOW_WORK_SOURCE": "learned",
     })
+    conditional = predictor.schema == R5_SCHEMA
+    if conditional:
+        if not isinstance(predictor.raw.get("admission_cost_profile"), dict):
+            raise ValueError("R5 requires its inherited frozen batch-cost profile")
+        env.update({
+            "WORKFLOW_COMBINATION_ADMISSION": "1", "BELIEFKV_WORKFLOW_COMBINATION_ADMISSION": "1",
+        })
     if free_dispatch_interval_ms is not None:
         if type(free_dispatch_interval_ms) is not int:
             raise ValueError("workflow free dispatch period must be an integer")
@@ -74,6 +82,8 @@ def prepare(base, model, evaluation, *, free_dispatch_interval_ms=None):
         })
     effective = arm_environment(env, "full")
     dispatch = int(effective["BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS"])
+    if conditional and not dispatch:
+        raise ValueError("R5 requires bounded shared free dispatch")
     declaration.update({
         "status": (
             "cpu_candidate_waiting_for_gpu_qualification" if predictor.metadata.get("decision_eligible")
@@ -94,6 +104,7 @@ def prepare(base, model, evaluation, *, free_dispatch_interval_ms=None):
             "split_contract": split,
             "task_input_kind": predictor.task_input_kind,
             "execution_controls": predictor.deployment_controls,
+            "feature_schema": predictor.schema,
         },
         "candidate_provenance": {
             "base": str(base.resolve()), "base_sha256": sha256_file(base),
@@ -129,6 +140,35 @@ def prepare(base, model, evaluation, *, free_dispatch_interval_ms=None):
         "workflow_free_dispatch_max_grants": 4,
         "workflow_free_dispatch_unknown_model_fallback": "original_rotating_window_order",
     })
+    if conditional:
+        declaration["comparison_contract"].update({
+            "future_information_used": False,
+            "deployable": predictor.metadata.get("decision_eligible", False),
+            "workflow_work_ranking": True,
+            "workflow_resume_key": ["protected_ready_JOIN", "conditional_probability_combination", "reference_tie"],
+            "workflow_work_prediction": "background_conditional_distribution_1s_per_workflow",
+            "workflow_work_uncertainty_fallback": "neutral_0_5_all_invalid_reference_subset",
+            "workflow_ready_join_sibling_preference": "observed_blocked_ALL_JOIN_nonlinear_combination",
+            "workflow_combination_admission": True,
+            "workflow_combination_scope": "periodic_first_continuation_sibling",
+            "workflow_combination_max_candidates": 8,
+            "workflow_combination_default_candidates": 6,
+            "workflow_combination_search_budget_ns": 500000,
+            "workflow_work_argmax_used_for_admission": False,
+            "workflow_work_maximum_softmax_gate_used": False,
+            "workflow_distribution_changes_pressure_victims": False,
+            "workflow_distribution_changes_tool_replacement_order": False,
+            "workflow_pressure_victim_selection": "blocked_tool_retention_then_original_context_order",
+            "free_dispatch_coalescing_window_ms": predictor.raw.get("free_dispatch_coalescing_window_ms", 0),
+            "reference_tool_retention_and_pressure_unchanged": True,
+            "control_retains_oracle_progress_bookkeeping": False,
+            "oracle_is_not_an_optimal_JCT_bound": False,
+            "matched_pair_changes_only_remaining_work_ranking": False,
+        })
+        declaration["candidate_provenance"].update({
+            "new_policy_scope": "conditional_distribution_and_shared_combination_admission",
+            "matched_nonranking_and_oracle_same_selector_controls_required": True,
+        })
     return declaration
 
 

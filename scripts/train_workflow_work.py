@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import (
-    CONTEXT_SCHEMA, SCHEMA, WorkflowProgress, WorkflowWorkModel, feature_names, ngrams,
+    CONTEXT_SCHEMA, R5_SCHEMA, SCHEMA, WorkflowProgress, WorkflowWorkModel, feature_names, ngrams,
     task_requirements,
 )
 from beliefkv.runtime.replay_token_capture import decode_tokens
@@ -329,7 +329,15 @@ def fit(
     weights /= weights.sum()
     center = np.average(numeric, axis=0, weights=weights)
     scale = np.maximum(.25, np.sqrt(np.average((numeric - center) ** 2, axis=0, weights=weights)))
-    task = torch.tensor(matrix(rows), dtype=torch.float32)
+    task_indices = None
+    if feature_schema == R5_SCHEMA:
+        unique = {row["workflow"]: row for row in rows}
+        ordered = list(unique)
+        positions = {workflow: index for index, workflow in enumerate(ordered)}
+        task = torch.tensor(matrix(list(unique.values())), dtype=torch.float32)
+        task_indices = torch.tensor([positions[row["workflow"]] for row in rows])
+    else:
+        task = torch.tensor(matrix(rows), dtype=torch.float32)
     dynamic = torch.tensor((numeric - center) / scale, dtype=torch.float32)
     target = torch.tensor(np.searchsorted(thresholds, [row["remaining_work"] for row in rows], side="right"))
     # Balance work classes inside each workflow, then restore equal workflow
@@ -355,7 +363,8 @@ def fit(
     optimizer = torch.optim.AdamW(parameters, lr=.003, weight_decay=weight_decay)
     for _epoch in range(epochs):
         optimizer.zero_grad()
-        hidden = torch.relu(static_layer(task) + dynamic_layer(dynamic))
+        static = static_layer(task)
+        hidden = torch.relu((static if task_indices is None else static[task_indices]) + dynamic_layer(dynamic))
         hidden = torch.nn.functional.dropout(hidden, p=dropout, training=True)
         logits = output_layer(torch.relu(hidden_layer(hidden)))
         loss = (torch.nn.functional.cross_entropy(logits, target, reduction="none") * weight).sum()
@@ -395,6 +404,12 @@ def fit(
             "online_inputs": "task_instructions_and_observed_progress_only",
         },
     }
+    if feature_schema == R5_SCHEMA:
+        from beliefkv.predictor.workflow_work_distribution import training_contract
+
+        raw["distribution_contract"] = training_contract(rows)
+        raw["metadata"]["online_inputs"] = "explicit_task_delegation_metadata_and_observed_progress_only"
+        raw["metadata"]["task_training_encoding"] = "one_static_projection_per_workflow_per_epoch"
     model = WorkflowWorkModel(raw)
     # A single held-out temperature, with workflows equally weighted.
     predictions = probabilities(model, calibration)

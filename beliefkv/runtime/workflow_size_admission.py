@@ -6,6 +6,7 @@ import time
 
 from beliefkv.core.events import RelationType
 from beliefkv.policy.workflow_size_resume import WorkflowSizeWorkingSet, resume_category
+from beliefkv.predictor.workflow_work import R5_SCHEMA
 from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 from beliefkv.runtime.workflow_work_worker import WorkflowWorkWorker
 
@@ -21,6 +22,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def __init__(self, runtime):
         self._combination = None
         self._deferred_dispatch = None
+        self._conditional_distribution = False
         combination = getattr(runtime, "workflow_combination_admission", False)
         self._task_seen = set()
         self._output_observed = {}
@@ -39,6 +41,9 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         )
         super().__init__(runtime)
         self._work = self._create_work(runtime)
+        self._conditional_distribution = getattr(getattr(self._work, "model", None), "schema", None) == R5_SCHEMA
+        if self._conditional_distribution:
+            self.rank_kind = "conditional_work_distribution_combination_only"
         self.pressure_pause_policy = getattr(runtime, "agent_pressure_pause_policy", "reference")
         self.workflow_pressure_pause = (
             self.pressure_pause_policy in ("workflow_remaining", "workflow_tool_aware")
@@ -70,13 +75,19 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         return super()._coadmit_join(join_id)
 
     def _create_work(self, runtime):
-        return WorkflowWorkWorker(
+        work = WorkflowWorkWorker(
             runtime.workflow_work_model, runtime.workflow_work_model_sha256,
             tokenizer_path=getattr(runtime, "workflow_work_tokenizer_path", None),
             execution_environment=os.environ,
         )
+        if work.model.schema == R5_SCHEMA and not getattr(runtime, "workflow_combination_admission", False):
+            work.close()
+            raise ValueError("R5 conditional distributions require shared combination admission")
+        return work
 
     def _priority(self, prediction):
+        if self._conditional_distribution:
+            return 1
         return 1 if prediction is None else prediction.bucket
 
     def _supported(self, prediction):
@@ -95,6 +106,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         return self._priority(self._prediction(invocation))
 
     def _pressure_preference(self, item, now):
+        if self._conditional_distribution:
+            return None
         prediction = self._prediction(item.identity)
         if not self._supported(prediction):
             return None
@@ -132,6 +145,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def order_tool_replacement(self, keys):
         # A donor pair must not be filtered by the pre-release free budget or
         # delayed by the ordinary admission window.
+        if self._conditional_distribution:
+            return keys
         return self._order_work_keys(keys, self.runtime._join_priority_pending)
 
     def _order_work_keys(self, keys, joins):
@@ -207,10 +222,11 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             invocation is not None and invocation.relation_type is RelationType.ROOT
         ):
             self._task_seen.add(key.root_workflow_id)
-            self._work.submit(
-                key.root_workflow_id, "task", tuple(req.origin_input_ids[-8192:]),
-                getattr(req, "tokenizer", None),
-            )
+            if getattr(getattr(self._work, "model", None), "schema", None) != R5_SCHEMA:
+                self._work.submit(
+                    key.root_workflow_id, "task", tuple(req.origin_input_ids[-8192:]),
+                    getattr(req, "tokenizer", None),
+                )
         # Input IDs are immutable after submission; retain the source sequence
         # until the background worker computes logical prefix increments.
         self._work.submit(
@@ -364,10 +380,18 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             ),
             "workflow_work_predictor": self._work.status(),
             "workflow_size_other_admission_paths": (
+                "protected_join_unchanged;first_continuation_sibling_use_probability_combination"
+                if self._conditional_distribution else
                 "join_unchanged;bounded_free_dispatch_uses_cached_workflow_classes"
                 if dispatch else "unchanged_join_and_free_continuation"
             ),
             "workflow_size_new_preemption": False,
+            **({
+                "workflow_conditional_distribution_scope": "shared_combination_admission_only",
+                "workflow_distribution_changes_pressure_victims": False,
+                "workflow_distribution_changes_tool_replacement_order": False,
+                "workflow_distribution_argmax_used_for_admission": False,
+            } if self._conditional_distribution else {}),
             **({
                 **self._tool_pressure.status(),
                 "decay_scope": "tool_weighted_resume_and_pressure_with_undiscounted_enforcement",
