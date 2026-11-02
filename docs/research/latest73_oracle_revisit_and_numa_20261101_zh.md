@@ -1,6 +1,7 @@
 # 最新73项目的短Workflow Oracle机会与NUMA控制
 
-本次仅执行CPU审计，未启动GPU、修改在线调度或移动物理页面。
+本次执行CPU审计、NUMA入口修复和真实Host分配验证，未启动GPU实验、
+修改在线调度策略或迁移既有物理页面。
 使用已完成的background-substitution Full及原固定18测量组，
 不更改73个原项目、到达表、工具样本、token、JOIN或截断协议。
 
@@ -52,7 +53,7 @@ ready JOIN保护和已观察的sibling邻接。
 不能仅用单体剩余路径较短证明平均JCT降低。
 上述例子的三个workflow都不属于测量组。
 
-全部新增对象去重后为8个agent/8个workflow，
+全部新增对象去重后为9个agent/8个workflow，
 其中仅2个属于固定18测量组。
 按原始request/context/attempt/session等八元身份进一步核对，
 新增对象涉及11个不同原生请求，其中测量组3个请求。
@@ -103,7 +104,7 @@ ready JOIN保护和已观察的sibling邻接。
 尚未测量它对本次JCT的因果成本，不能直接对已有收益作数值修正，
 也不能保证修正后收益只会增大。
 
-具体实现缺口：
+原运行的具体实现缺口（已在`1c8fd2fc`修复）：
 
 - `scripts/run_causal_comparison.py`的环境构造直接写入
   `HOST_NUMA_MEMORY_POLICY=preferred`。
@@ -134,6 +135,51 @@ Active(file)与Inactive(file)合计约61 GiB，
 它不是一次真实分配失败，也不能由此推断必须扩充内存或跨NUMA。
 内核可能回收更多活跃文件缓存，但是否足够仍需实际严格分配核验。
 Linux VM说明：`https://docs.kernel.org/admin-guide/sysctl/vm.html`。
+
+## 修复与真实本地分配核验
+
+提交`1c8fd2fc`让回放、position校验和两臂比较显式传递并核验
+`HOST_NUMA_NODE=1`、`HOST_NUMA_MEMORY_POLICY=bind`。
+新增的`clean_file`容量估计仅允许与严格bind配合：
+在剔除Shmem、Dirty、Writeback后，计入clean active file缓存；
+这只是容量预检，不代替真实分配与物理页位置核验。
+历史preferred配置和保守预检仍保留。
+
+新入口在测量请求提交前，对实际GPU worker的完整静态Host共享映射检查：
+200,000,077,824 bytes全部驻留、策略为`bind:1`、远端字节为零、
+GPU0本地节点为1，以及worker PID和启动身份不变。
+本地容量不够或页位置不符即拒绝开始测量，不回退到远端分配。
+两臂NUMA配置不同或缺少本次实际放置证明，也不能通过完成验证。
+
+CPU针对性检查`strict_numa_focused_cpu_r3.xml`记录467项通过。
+另在干净的`1c8fd2fc`工作树上，以
+`numactl --cpunodebind=1 --membind=1`调用未修改的原生`alloc_mmap`，
+真实分配并预触碰相同字节数的uint8缓冲区：
+
+| 实际分配核验 | 结果 |
+| --- | --- |
+| 完整映射大小 | 200,000,077,824 bytes |
+| NUMA1物理页面 | 48,828,144个4 KiB页，覆盖全部映射 |
+| NUMA0及其他节点 | 0 bytes |
+| tensor地址与映射首地址 | 一致 |
+| 原生分配用时 | 67.045秒 |
+| 稀疏读写canary及映射释放 | 通过 |
+| CUDA初始化、Host注册、DMA | 未执行 |
+
+证据为同父目录下`strict_numa_native_full_host_allocation_r1.json`。
+本次没有调用全局`drop_caches`，也没有迁移其他进程页面；
+实际成功说明当时无需跨NUMA即可容纳原有200GB池。
+分配用时属于这次组件准备，不能当成请求JCT或稳定传输成本。
+该验证只证明原生CPU分配和本地驻留，尚未证明CUDA Host注册、
+实际传输或完整模型启动成功；后续模型启动仍需当场核验。
+
+同父目录下`strict_numa_prefill_shared_controls_prepare_r1/preparation.json`
+已绑定该物理证明，并验证Full和ThunderAgent acting-decay的实际CPU构造入口。
+两臂保留相同任务、token、工具、到达表、固定测量组和容量；
+共同采用此前已完成组件检查的prefill MoE配置。
+这些只是待校验配置，未登记GPU后继，也不构成NUMA或MoE的独立消融。
+若未来做纯oracle排序诊断，需以该共同执行条件下完成的非排序Full为对照，
+不能把旧preferred结果与新bind结果直接相减来归因。
 
 ## 后续比较要求
 
