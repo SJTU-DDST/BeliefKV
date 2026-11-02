@@ -124,7 +124,7 @@ def run(args):
 
     def publish():
         state["observed_at"] = datetime.now(timezone.utc).isoformat()
-        write(args.output_dir / "state.json", state)
+        reservation.write_json(args.output_dir / "state.json", state)
 
     def placement():
         proc = Path("/proc/self")
