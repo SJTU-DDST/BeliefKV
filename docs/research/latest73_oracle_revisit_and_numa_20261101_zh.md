@@ -181,6 +181,11 @@ CPU针对性检查`strict_numa_focused_cpu_r3.xml`记录467项通过。
 若未来做纯oracle排序诊断，需以该共同执行条件下完成的非排序Full为对照，
 不能把旧preferred结果与新bind结果直接相减来归因。
 
+后续真实模型启动已暴露CUDA注册阶段的驱动OOM：
+CPU完整分配证明仍有效，但不代表模型启动成功。
+失败证据、注册期间内存策略修复及新的验证边界见
+[严格本地Host注册修复](strict_numa_host_registration_20261101_zh.md)。
+
 ## 后续比较要求
 
 若再进行一次oracle诊断，应先有相同严格本地放置条件下的Full对照，

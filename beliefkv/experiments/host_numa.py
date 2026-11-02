@@ -14,17 +14,23 @@ def configuration(common):
     node = common.get("HOST_NUMA_NODE", "1")
     policy = common.get("HOST_NUMA_MEMORY_POLICY", "preferred")
     reclaim = common.get("HOST_NUMA_RECLAIM_POLICY", "conservative")
+    registration = common.get("HOST_NUMA_REGISTRATION_POLICY", "strict")
     if (
         type(node) is not str or not node.isascii() or not node.isdigit()
         or str(int(node)) != node or policy not in ("bind", "preferred")
         or reclaim not in ("conservative", "clean_file")
         or reclaim == "clean_file" and policy != "bind"
+        or registration not in ("strict", "preferred")
+        or registration == "preferred" and policy != "bind"
     ):
         raise ValueError("invalid explicit Host NUMA allocation configuration")
-    return {
+    result = {
         "node": int(node), "memory_policy": policy, "reclaim_policy": reclaim,
         "require_fully_local_pool": policy == "bind",
     }
+    if registration == "preferred":
+        result["registration_policy"] = registration
+    return result
 
 
 def environment(common):
@@ -33,6 +39,9 @@ def environment(common):
         "HOST_NUMA_NODE": str(selected["node"]),
         "HOST_NUMA_MEMORY_POLICY": selected["memory_policy"],
         "HOST_NUMA_RECLAIM_POLICY": selected["reclaim_policy"],
+        "BELIEFKV_HOST_REGISTER_NUMA_FALLBACK_NODE": (
+            str(selected["node"]) if selected.get("registration_policy") == "preferred" else ""
+        ),
     }
 
 
@@ -101,6 +110,36 @@ def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes):
     }
 
 
+def registration_evidence(path, scheduler, mapping, node):
+    from beliefkv.runtime.host_registration_numa import implementation_sha256
+
+    records = [json.loads(line) for line in path.read_text().splitlines() if line]
+    matched = [row for row in records if (
+        row.get("buffer_bytes") == mapping["mapping_bytes"]
+        and row.get("buffer_address") == int(mapping["start_address"], 16)
+    )]
+    if len(matched) != 1:
+        raise ValueError("Host NUMA registration proof lacks the exact complete native buffer")
+    record = matched[0]
+    if (
+        record.get("pid") != scheduler["pid"]
+        or record.get("worker_start_ticks") != scheduler["start_ticks"]
+        or record.get("status") != "completed"
+        or record.get("node") != node
+        or record.get("implementation_sha256") != implementation_sha256()
+        or record.get("before_policy") != {"mode": 2, "nodes": [node]}
+        or record.get("during_policy") != {"mode": 1, "nodes": [node]}
+        or record.get("after_policy") != {"mode": 2, "nodes": [node]}
+    ):
+        raise ValueError("Host registration policy or exact worker proof is incomplete")
+    return {
+        "complete_native_registration_and_original_bind_restoration_verified": True,
+        "native_buffer_address": record["buffer_address"],
+        "native_buffer_bytes": record["buffer_bytes"],
+        "inputs_sha256": {str(path.resolve()): sha256_file(path)},
+    }
+
+
 def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=None):
     selected = configuration(common)
     if not selected["require_fully_local_pool"]:
@@ -135,7 +174,7 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
     if exact_mapping((proc / "maps").read_text(), result["mapping"]["mapping_bytes"]) != result["mapping"]:
         raise ValueError("the Host pool mapping changed while reading placement")
     check_identity()
-    return {
+    proof = {
         **result, "configuration": selected,
         "scheduler": {"pid": scheduler["pid"], "start_ticks": scheduler["start_ticks"]},
         "host_full_capacity_bytes": capacity["host_full_bytes"],
@@ -146,6 +185,12 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
         "inputs_sha256": {str(capacity_path.resolve()): sha256_file(capacity_path)},
         "scope": "Initial complete static pinned Host allocation, checked before measured request submission.",
     }
+    if selected.get("registration_policy") == "preferred":
+        proof["registration_observation"] = registration_evidence(
+            Path(directory) / "server/host_registration_numa.jsonl",
+            scheduler, result["mapping"], selected["node"],
+        )
+    return proof
 
 
 def require_source_binding(common, sources, checkout):
@@ -155,6 +200,12 @@ def require_source_binding(common, sources, checkout):
         "beliefkv/experiments/host_numa.py", "tests/test_host_numa.py",
         "scripts/preflight_qwen35_host_pool.py", "tests/test_qwen35_host_pool.py",
     }
+    if configuration(common).get("registration_policy") == "preferred":
+        required.update({
+            "beliefkv/runtime/host_registration_numa.py",
+            "beliefkv/experiments/causal_replay_native.py",
+            "tests/test_host_registration_numa.py",
+        })
     if not required <= sources.keys() or any(
         sha256_file(Path(checkout) / name) != sources[name] for name in required
     ):
@@ -173,6 +224,10 @@ def verify_qualified_configuration(common, registration):
         or proof.get("host_full_capacity_bytes") != 200000077824
     ):
         raise ValueError("fresh GPU qualification lacks the exact strictly local Host pool")
+    if selected.get("registration_policy") == "preferred" and proof.get(
+        "registration_observation", {},
+    ).get("complete_native_registration_and_original_bind_restoration_verified") is not True:
+        raise ValueError("fresh GPU qualification lacks actual native Host registration")
 
 
 def verify_completed_configuration(plan, arm=None):
@@ -202,7 +257,18 @@ def verify_completed_configuration(plan, arm=None):
         or proof.get("scheduler", {}).get("pid") != ready.get("scheduler_pid")
     ):
         raise ValueError("completed Host placement differs from the complete declared pool")
+    inputs = {
+        str(item.resolve()): sha256_file(item) for item in (path, capacity_path, ready_path)
+    }
+    if selected.get("registration_policy") == "preferred":
+        expected = registration_evidence(
+            Path(arm) / "server/host_registration_numa.jsonl",
+            proof["scheduler"], proof["mapping"], selected["node"],
+        )
+        if expected != proof["registration_observation"]:
+            raise ValueError("the completed Host registration evidence changed")
+        inputs.update(expected["inputs_sha256"])
     return {
         "configuration": selected,
-        "inputs_sha256": {str(item.resolve()): sha256_file(item) for item in (path, capacity_path, ready_path)},
+        "inputs_sha256": inputs,
     }
