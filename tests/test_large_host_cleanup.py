@@ -7,7 +7,7 @@ import pytest
 from scripts import run_causal_comparison as comparison
 
 
-@pytest.mark.parametrize("release_after_kill", (110., None))
+@pytest.mark.parametrize("release_after_kill", (110., None, 240.))
 def test_large_pool_waits_for_actual_exit_and_still_rejects_a_survivor(
     tmp_path, monkeypatch, release_after_kill,
 ):
@@ -46,8 +46,8 @@ def test_large_pool_waits_for_actual_exit_and_still_rejects_a_survivor(
     else:
         comparison.cleanup(tmp_path, [identity], "larger_pool_exit")
     record = json.loads((tmp_path / "owned_process_cleanup.json").read_bytes())
-    assert record["post_SIGKILL_grace_seconds"] == 180.
+    assert record["post_SIGKILL_grace_seconds"] == 300.
     assert record["observed_Host_pool_bytes"] == 400000057344
     assert bool(record["remaining_processes"]) is (release_after_kill is None)
     assert signals == [comparison.signal.SIGTERM, comparison.signal.SIGKILL]
-    assert clock[0] < 193.
+    assert clock[0] < 313.

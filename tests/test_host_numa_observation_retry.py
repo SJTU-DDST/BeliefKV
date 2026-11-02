@@ -36,7 +36,7 @@ def test_only_a_complete_read_can_finish_bounded_residency_rechecks(
             numa.observe(COMMON, scheduler, directory, proc_root=proc, topology=topology)
     observation, = (directory / "server").glob("host_numa_observation_*")
     records = sorted(observation.glob("attempt_*.json"))
-    assert len(records) == len(reads) == (2 if eventually_complete else 3)
+    assert len(records) == len(reads) == (2 if eventually_complete else 16)
     assert len(sleeps) == len(reads) - 1
     assert (observation / "attempt_1.maps.txt").read_text() == maps
     assert (observation / "attempt_1.numa_maps.txt").read_text() == partial
@@ -74,3 +74,16 @@ def test_residency_retry_cannot_accept_a_reused_worker_identity(observed, monkey
     monkeypatch.setattr(numa.time, "sleep", replace_worker)
     with pytest.raises(ValueError, match="worker identity changed"):
         numa.observe(COMMON, scheduler, directory, proc_root=proc, topology=topology)
+
+
+def test_residency_rechecks_stop_at_the_startup_time_budget(observed, monkeypatch):
+    directory, proc, scheduler, topology = observed
+    path = proc / "42/numa_maps"
+    path.write_text(path.read_text().replace(f"N1={SIZE // PAGE}", f"N1={SIZE // PAGE - 1}"))
+    clock = [0.]
+    monkeypatch.setattr(numa.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(numa.time, "sleep", lambda _delay: clock.__setitem__(0, clock[0] + 15.))
+    with pytest.raises(ValueError, match="complete Host pool must be resident"):
+        numa.observe(COMMON, scheduler, directory, proc_root=proc, topology=topology)
+    observation, = (directory / "server").glob("host_numa_observation_*")
+    assert len(list(observation.glob("attempt_*.json"))) == 3

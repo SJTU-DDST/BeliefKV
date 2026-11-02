@@ -265,7 +265,8 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
     observation = Path(directory) / "server" / f"host_numa_observation_{os.getpid()}_{time.monotonic_ns()}"
     observation.mkdir()
     attempts = []
-    for attempt in range(1, 4):
+    deadline = time.monotonic() + 30.
+    for attempt in range(1, 17):
         check_identity()
         maps, numa = (proc / "maps").read_bytes(), (proc / "numa_maps").read_bytes()
         snapshots = {
@@ -289,7 +290,10 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
         except ValueError as error:
             record["error"] = str(error)
             (observation / f"attempt_{attempt}.json").write_text(json.dumps(record) + "\n")
-            if str(error) != "the complete Host pool must be resident" or attempt == 3:
+            if (
+                str(error) != "the complete Host pool must be resident"
+                or attempt == 16 or time.monotonic() >= deadline
+            ):
                 raise
             time.sleep(.1)
         else:

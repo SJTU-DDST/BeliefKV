@@ -1357,7 +1357,7 @@ def cleanup(arm, identities, reason):
             host_bytes = value
     except (OSError, ValueError, KeyError, TypeError):
         pass
-    kill_grace = 180. if host_bytes is not None and host_bytes > host_numa.LEGACY_HOST_FULL_BYTES else 60.
+    kill_grace = 300. if host_bytes is not None and host_bytes > host_numa.LEGACY_HOST_FULL_BYTES else 60.
     record = {
         "reason": reason, "started_at": reservation.now().isoformat(),
         "identities": known, "signals": [], "observed_Host_pool_bytes": host_bytes,
