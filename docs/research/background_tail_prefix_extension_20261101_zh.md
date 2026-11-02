@@ -1317,3 +1317,45 @@ Full共同窗口输出吞吐观测高 **5.3755%**。
 但NVML利用率不是token效率、SM算术效率、实际HBM带宽或性能上界。
 后续优化应继续核对每个有效token的实际成本及可持续batch形状，
 不由98.88%推导系统已达到上限，也不将物理KV池驻留率当作有用active-KV利用率。
+
+## 相同批次档位的成本核算
+
+新增只读入口 `scripts/audit_decode_cost_mixture.py`，
+按实际decode宽度与既有平均上下文档位联合分组。
+它要求固定测量组完成证明，重新核对注册、cohort、完整日志前缀hash、
+实际输出数和worker时间，使用与原成本报告相同的批次完成时间窗口。
+没有额外采样、GPU操作或调度修改。
+
+原始成本差分为共同档位内的成本变化、档位构成变化、
+以及缺失/稀有档位的剩余项，三者必须精确还原全部decode成本差。
+共同档位默认要求两臂各有至少30次forward；
+使用相同的合并输出权重计算标准化成本。
+未满足条件的档位与零输出批次仍计入原始成本，不能从统计中丢弃。
+平均上下文档位仍然较粗，没有控制实际长度向量、NUMA页面、
+传输和其他批次成本，因此这只是描述性核算，不是kernel因果归因或JCT预测。
+
+新增23项与已有48项相关检查合计 **71项全部通过**，
+见 `useful_token_cost_r1/decode_cost_mixture_cpu_r1.xml`。
+代码已提交为 `de368e9d feat: audit decode token costs by batch composition`。
+此外已在旧的共同引擎完整56项对照上实际运行，
+结果为 `shared_execution_matched_pair_r1/decode_cost_mixture_r1.json`；
+该历史日志读取核对成功，不将它当作本次73项对照的分析结果。
+完整CPU源码绑定或新GPU资格没有因此被重标为完成。
+
+本轮已完成Full的共同窗口中，decode占总worker时间 **65.6696%**。
+实际extend输入不超过64 token的prefill合计13.5286秒，
+占总worker时间约 **0.8552%**；
+不超过1024 token的prefill合计79.3140秒，占约 **5.0135%**。
+这些是时间份额，不是可消除JCT，也不证明小prefill没有服务延迟影响。
+它们支持继续优先核对decode的有效组批与执行成本，
+而不是仅凭短续接调用很多便推断其控制路径是主要瓶颈。
+
+18:03附近的ThunderAgent尾部只读观察为16/18完成，
+两个未完成workflow均有child获得实际decode服务。
+证据在 `original73_background_substitution_thunder_live_r1/measured_tail_state_r1.json`；
+文件封存的事件前缀较早，仍为15/18，其中第三个workflow当时处于工具调用。
+该入口读取的是Full专用 `agent_admission` 字段，
+ThunderAgent的该字段为空、资格策略位于 `paper_baseline`。
+因此该文件中的 `sampled_agent_* = false` 不能解释为baseline对应agent未获资格；
+仅使用其已观察因果事件和实际native服务作为尾部进度证据，
+不从缺失的资格字段推导暂停、饥饿或调度错误。
