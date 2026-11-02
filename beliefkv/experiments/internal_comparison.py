@@ -255,6 +255,29 @@ def arm_environment(
         raise ValueError("workflow size resume requires a fingerprinted trained model")
     if workflow_size == "0":
         workflow_model, workflow_sha = "", ""
+    compute_path = common.get(
+        "BELIEFKV_WORKFLOW_COMPUTE_SERVICE_CONFIG", common.get("WORKFLOW_COMPUTE_SERVICE_CONFIG", ""),
+    )
+    compute_sha = common.get(
+        "BELIEFKV_WORKFLOW_COMPUTE_SERVICE_CONFIG_SHA256",
+        common.get("WORKFLOW_COMPUTE_SERVICE_CONFIG_SHA256", ""),
+    )
+    if mode != "full":
+        compute_path, compute_sha = "", ""
+    if compute_path or compute_sha:
+        from beliefkv.runtime.workflow_compute_service import configuration as compute_configuration
+
+        compute = compute_configuration({
+            "BELIEFKV_WORKFLOW_COMPUTE_SERVICE_CONFIG": compute_path,
+            "BELIEFKV_WORKFLOW_COMPUTE_SERVICE_CONFIG_SHA256": compute_sha,
+        })
+        if (
+            agent_admission != "thunderagent_reference"
+            or common.get("MODEL_CACHE_LAYOUT") != "full_only"
+            or common.get("ENABLE_MIXED_CHUNK", "0") != "0"
+            or compute["selection"] == "oracle_model_work" and workflow_source != "oracle"
+        ):
+            raise ValueError("compute service requires FULL-only reference agents and its declared oracle")
     if early_tool_offload == "1" and (
         agent_admission != "thunderagent_reference" or tool_offload != "1"
         or common.get("BELIEFKV_TOOL_OFFLOAD_POLICY", "fixed") != "demand_cost"
@@ -365,6 +388,10 @@ def arm_environment(
     settings = {
         **common,
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
+        "WORKFLOW_COMPUTE_SERVICE_CONFIG": compute_path,
+        "BELIEFKV_WORKFLOW_COMPUTE_SERVICE_CONFIG": compute_path,
+        "WORKFLOW_COMPUTE_SERVICE_CONFIG_SHA256": compute_sha,
+        "BELIEFKV_WORKFLOW_COMPUTE_SERVICE_CONFIG_SHA256": compute_sha,
         "PREDICTED_TOOL_OFFLOAD": tool_offload,
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
         "TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,

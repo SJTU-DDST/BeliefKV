@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "kind": "warm_workflow_compute_service_v1",
+  "selection": "reference",
+  "maximum_checks": 8,
+  "soft_budget_ms": 0.5,
+  "minimum_work_ratio": 2.0,
+  "burst_decode_steps": 8,
+  "burst_wall_ms": 200,
+  "total_decode_steps": 64,
+  "focus_wall_ms": 2000
+}

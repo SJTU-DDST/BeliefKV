@@ -107,8 +107,10 @@ def _streamer_hook(result, *_args, **_kwargs):
 
 def register() -> None:
     from beliefkv.runtime.host_registration_numa import register as register_host_numa
+    from beliefkv.runtime.workflow_compute_service import register as register_compute_service
 
     register_host_numa()
+    register_compute_service()
     setting = os.environ.get(BRIDGE_ENV, "0")
     if setting not in ("0", "1"):
         raise ValueError(f"{BRIDGE_ENV} must be 0 or 1")

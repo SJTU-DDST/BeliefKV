@@ -461,6 +461,10 @@ class WorkflowWorkOracle:
             self.counts["completed_requests"] += 1
         self._publish(workflow)
 
+    def cached_model_work(self, workflow):
+        prediction = self._predictions.get(workflow) if not self.error else None
+        return prediction.remaining_work if prediction is not None else None
+
     def prediction(self, workflow):
         prediction = self._predictions.get(workflow) if not self.error else None
         if prediction is None:

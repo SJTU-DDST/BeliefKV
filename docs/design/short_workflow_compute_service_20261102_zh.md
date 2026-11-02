@@ -127,3 +127,70 @@ preferred 对照与新严格本地结果的差异归因于排序。1% 是用户�
 
 这是 CPU 分析资格，不替代共享服务源码绑定、实际 CUDA/模型验证或完整
 workflow 性能结果。已有 6,975 项 CPU 服务资格对应的冻结操作目录保持原样。
+
+## 默认关闭的实现
+
+后续已实现 `beliefkv/runtime/workflow_compute_service.py`，通过原生插件
+`AROUND` hook 接入真实选批、chunk 准入和 prefill/decode 选择，不修改冻结
+native 引擎的原文件。只有显式配置路径和对应 SHA 同时存在时注册 hook。
+普通 Full、paper、native、工具预取和逐层 handoff 的历史配置不启用它。
+比较环境会清空所有非 Full 臂的四个配置字段，避免从 common 环境泄漏。
+
+`configs/scheduling/short_workflow_compute_{reference,oracle}_20261102.json`
+声明两个独立模式：
+
+- `reference`：在相同真实物理候选中采用原队列次序，保护现有 ready JOIN。
+- `oracle_model_work`：从已有 oracle 的不可变模型剩余工作缓存读取分数，
+  在跨 workflow、相对当前 chunk owner 至少短两倍时选择更短者。
+  不在选批中运行模型或扫描整个未来 DAG。工具状态仍由原阻塞、卸载与
+  retention 管理；该分数明确不包含未来工具时间，不称为工具综合最优排序。
+
+两种模式都沿用正常 agent 资格和即时 FULL 前缀检查，仅使用实际空闲页，
+不获得额外 eviction credit。先让短输入经过原生 `add_one_req()`，
+成功后再调用原生 `add_chunked_req()`。这避免先保留预算但短输入失败时
+留下空白；长 owner 至少保留原 chunk 的七分之八。实际提交的短请求立即
+移出本轮 native waiting queue，并只发出一次原准入回调。
+
+prefill 完成后仍使用完整 running decode batch，不裁掉长 workflow。
+每个间隙最多八次 prefill deferral 或 200 ms；实际 prefill 推进后重新
+arm 这一小段预算。一次 focus 总计最多 64 次 deferral、最多两秒，终态、
+身份变化、资格撤销、无对应 running 成员或空 decode 时不强制推进。
+这些是尚待模型实验验证的有界诊断参数，不是已确定的最优配置。
+deferral 是调度决策，实际 CUDA 服务需关联既有 native batch 回执。
+
+runtime 状态单列 `workflow_compute_service` 的配置、模式、focus 和计数。
+oracle adapter 分开报告恢复是否使用未来信息，以及整个系统是否还在计算
+服务入口使用未来信息；不能在恢复排序关闭时把本候选标成无未来信息。
+
+### 实际 native CPU 验证
+
+`workflow_compute_service_cpu_r1/native_related_r4.xml` 通过 531 项检查。
+其中新模块 46 项，涵盖真实 FULL tree/allocator/`PrefillAdder` 的跨 workflow
+共批、真实 hook 注册、固定 native `get_next_batch_to_run()` 方法中的整批
+decode 选择与回到 prefill、预算与终态退出、JOIN 保护和 baseline 隔离。
+copy/forward 仍为 CPU stand-in；不是 GPU、graph 形状或性能资格。
+
+保留首轮、补充轮和修复后的所有报告。补充测试曾发现真实接入问题：
+私有预算副本调用 `add_chunked_req()` 时也被新 hook 截获，导致候选全部
+拒绝；现在只有当前真实 cache/owner 的调用进入 cofill，预算副本保留原生
+只读试算。另两项测试 fixture 缺失 stash stand-in/重复 workflow 参数，以及
+新测试额外插入前缀耗尽真实小池的问题也保留在原失败 XML；没有降低生产
+容量检查。后者通过原生退役替换不用的 fixture 成员，恢复相同池容量。
+
+完整共享回归使用 `workflow_compute_service_shared_bound_cpu_r1/`，
+已通过 7,047 项及 23 个子项，保留上次全部 6,975 个 literal 身份、
+source 路径和 381 个 external 输入；当前共 2,462 个 source 输入、387 个
+external 输入，源码/外部输入/原生树在执行期间均未变化，无失败或跳过。
+不能把 23 个子项重复算成另外 23 个独立 testcase。
+此模块尚未登记 GPU 后继。需再冻结干净代码、绑定显式配置并完成真实
+原生模型、token/session/stop 与采样验证，才能进入完整 JCT 对比。
+
+实验归因还需保留原 Full 对照：oracle 相对原 Full 的变化包含共批与服务
+节奏；相对 `reference` 才能进一步检验 workflow 大小驱动选择的边际作用。
+两者均不能由本次 CPU 局部提前量替代。
+
+原先两份只读分析使用的 oracle 源码已保存在干净的
+`beliefkv-short-prefill-analysis-99838db9` 操作目录。
+`short_workflow_prefill_screen_r1/original_analysis_source_archive.json`
+逐字节验证原报告、全部原始完整行前缀和输入；其中一份源码路径显式重定位
+到原提交，不改写旧报告或将新实现误记为当时分析源码。

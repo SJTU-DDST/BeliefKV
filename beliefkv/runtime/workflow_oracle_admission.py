@@ -128,12 +128,16 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
 
     def status(self):
         deferred = self._deferred_dispatch
+        compute = getattr(self.runtime, "_workflow_compute_service", None)
         return {
             **super().status(),
             "future_information_used": True, "deployable": False,
             "workflow_work_source": "oracle",
             "workflow_oracle_remaining_work_ranking_enabled": self.remaining_work_ranking_enabled,
-            "workflow_oracle_future_work_used_for_decisions": self.remaining_work_ranking_enabled,
+            "workflow_oracle_future_work_used_for_decisions": (
+                self.remaining_work_ranking_enabled or compute is not None and compute.ranked
+            ),
+            "workflow_oracle_future_work_used_for_recovery": self.remaining_work_ranking_enabled,
             "workflow_oracle_admission_order": (
                 "global_ready_remaining_path" if self.rank_before_category else
                 "within_reference_category"

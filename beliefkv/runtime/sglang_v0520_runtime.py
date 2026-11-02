@@ -2931,6 +2931,11 @@ class NativeAdmissionRuntime:
                 "agent_residency_pause": self.agent_residency_pause,
                 "workflow_size_resume": self.workflow_size_resume,
                 "workflow_combination_admission": self.workflow_combination_admission,
+                "workflow_compute_service": (
+                    service.status()
+                    if (service := getattr(self, "_workflow_compute_service", None)) is not None
+                    else None
+                ),
                 "workflow_work_source": self.workflow_work_source,
                 "workflow_work_model_sha256": (
                     self.workflow_work_model_sha256 if self.workflow_size_resume else None
