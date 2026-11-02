@@ -233,3 +233,37 @@ review/{review,cohort,workload_decision}.json
 资格与完整 Full/Oracle/ThunderAgent 对照，不重跑这些对照。该候选
 尚需 source-bound CPU 和实际 runtime 构造检查，不能从本节推断
 其已运行或取得改善。目标继续保持 active。
+
+## 修正版的独立注册
+
+修正版随后在干净冻结提交 `d94fe0de` 上完成了 1051 项 source-bound
+CPU 检查，保留原来的全部 650 项数据平面 case；实际 runtime 构造和
+真实 worker 的 18 条发布、1024 次无新推断有效性核对通过。只改变
+预测器及 worker，原生 hook、准入与组合策略、回放采样均未改变，
+capacity-v6/full-batch 成本逐项复用上一轮。
+
+新注册为
+`ops/workflow_original73_host400_R5_valid_predictions_20261102_r1.registration.json`，
+端口 18992，实际执行目录为
+`beliefkv-causal-d94fe0de2fd5-4d8549103075`。证据父目录为
+`r5_host400_valid_predictions_r1/`，包括 `qualification.json`、
+`frozen_cpu.xml`、`frozen_sources.json`、`frozen_worker_and_cost.json`、
+`serving_ready/{model,evaluation,full}.json`。
+
+首次注册在 GPU 前因 canonical patch 路径的派生 state hash 不同退出。
+`native_path_rebinding.json` 证明仅路径与派生哈希改变，native tree、
+patch 字节及其余字段全部相同；原 `registration_result.json` 保留失败，
+有效注册见 `registration_retry_result.json`。后台启动观察器先于比较
+状态文件发布，产生一次 CPU `FileNotFoundError`，原状态已另存
+`observer_bootstrap_first_failure.json`，只重新挂接观察器，没有重启 GPU。
+
+当前已核对 supervisor 502046、server 502543、scheduler 502624 均实际
+存活并为 nice0；CPU bootstrap 502949 为 nice19，等待正式回放后启动
+原固定 18 条结束协议。此时仍在 400 GB Host 分配/注册阶段，不能称作
+已经完成 workload 回放或修复获得 JCT 改善。NUMA 均衡不作为启动门槛，
+未注册其他 GPU 后继。
+
+上一轮 Full 与 learned 的完整 JCT、共同窗口 decode 趋势及时间加权
+分布图已生成并目视检查，位于
+`r5_host400_learned_combination_r1/completed_figures/complete_JCT_and_decode.{png,pdf}`；
+同目录保留 CSV 与来源哈希。新候选未加入该图。
