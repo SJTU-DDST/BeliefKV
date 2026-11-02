@@ -6,6 +6,7 @@ from itertools import combinations
 import json
 import math
 from pathlib import Path
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,7 +62,18 @@ def competitions(records):
             continue
         choice = selections[row["monotonic_s"]]
         candidates = {item["key"]["invocation_id"]: item for item in choice["candidates"]}
-        category = {item[0]: item[1] for item in choice["ordered"]}
+        if choice.get("rank_before_category") is not True or choice.get("rank_kind") not in (
+            "reference_category_context_with_matched_oracle_bookkeeping",
+            "oracle_remaining_model_tool_critical_path_seconds",
+        ):
+            raise ValueError("protected JOIN identification requires the recorded global rank contract")
+        if any(
+            len(item) < 3 or type(item[2]) not in (int, float)
+            or not math.isfinite(item[2]) or item[2] != 0. and item[2] < 1.
+            for item in choice["ordered"]
+        ):
+            raise ValueError("global rank must distinguish zero JOIN protection from ordinary work")
+        ranks = {item[0]: item[2] for item in choice["ordered"]}
         unique = {}
         for member in fit:
             key = member["key"]
@@ -81,7 +93,7 @@ def competitions(records):
             }
             if reason is None:
                 value.update({
-                "key": key, "protected_JOIN": category[key["invocation_id"]] == 0,
+                "key": key, "protected_JOIN": ranks[key["invocation_id"]] == 0.,
                 "recorded_remaining_path_s": prediction["remaining_path_s"],
                 "recorded_remaining_model_work": prediction["remaining_work"],
                 })
@@ -311,6 +323,9 @@ def main():
     if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
         raise ValueError("a closed prediction-audit input changed")
     write(args.output, {
+        "analysis_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
+        ).strip(),
         "controls": controls, "competition_boundaries": len(result), "models": summary,
         "decisions": result, "inputs_sha256": pins, "GPU_action": False,
         "scope": {
@@ -323,6 +338,7 @@ def main():
             "ideal_synchronous_predictor_not_online_worker_cache_or_lag_coverage": True,
             "repeated_boundary_pairs_and_unique_pairs_reported_separately": True,
             "protected_JOIN_pairs_excluded_from_predictor_rank_quality": True,
+            "protected_JOIN_identification": "zero_global_rank_not_reference_category_v2",
             "logical_fit_not_native_physical_feasibility": True,
             "missing_or_changed_selector_identity_is_explicitly_unknown": True,
             "counterfactual_service_or_JCT_proven": False,

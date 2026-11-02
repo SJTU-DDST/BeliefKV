@@ -98,7 +98,9 @@ def test_logical_competition_requires_actual_ready_window_and_exact_selection_id
     }
     choice = {
         "event": "workflow_size_resume_selection", "monotonic_s": 3.,
-        "ordered": [[owner + "-root", 1] for owner in ("a", "b")],
+        "rank_before_category": True,
+        "rank_kind": "reference_category_context_with_matched_oracle_bookkeeping",
+        "ordered": [[owner + "-root", 1, 1.] for owner in ("a", "b")],
         "candidates": [{
             "key": metadata(owner), "prediction": {
                 "evidence": "oracle", "remaining_path_s": 100., "remaining_work": 200.,
@@ -115,6 +117,60 @@ def test_logical_competition_requires_actual_ready_window_and_exact_selection_id
     changed = competitions([control, bad])[0]
     assert changed[0]["candidates"][0]["unavailable_reason"] == "request_identity_changed_within_boundary"
     assert not changed[0]["candidates"][0]["selector_metadata_valid"]
+
+
+def test_reasoning_category_zero_is_not_protected_join_rank_zero():
+    programs = [{
+        "key": metadata(owner), "invocation_id": owner + "-root", "application_ready": True,
+        "pending_before": True, "active_before": False, "marked_before": False,
+        "resume_window_eligible": True, "complete_budget_tokens": 60,
+    } for owner in ("a", "b")]
+    control = {
+        "event": "agent_periodic_admission_decision", "monotonic_s": 3.,
+        "resume_capacity_tokens": 100, "programs": programs,
+    }
+    choice = {
+        "event": "workflow_size_resume_selection", "monotonic_s": 3.,
+        "rank_before_category": True,
+        "rank_kind": "reference_category_context_with_matched_oracle_bookkeeping",
+        "ordered": [["a-root", 0, 1.], ["b-root", 1, 0.]],
+        "candidates": [{
+            "key": metadata(owner), "prediction": {
+                "evidence": "oracle", "remaining_path_s": 100., "remaining_work": 200.,
+            },
+        } for owner in ("a", "b")],
+    }
+    values, _ = competitions([control, choice])
+    assert not values[0]["candidates"][0]["protected_JOIN"]
+    assert values[0]["candidates"][1]["protected_JOIN"]
+    choice["rank_before_category"] = False
+    with pytest.raises(ValueError, match="global rank"):
+        competitions([control, choice])
+
+
+def test_rescoring_refuses_the_legacy_protected_join_population(tmp_path, monkeypatch):
+    import json
+    import sys
+    from beliefkv.experiments.source_provenance import sha256_file
+    from scripts.rescore_workflow_predictions import main
+
+    dataset, cohort, model, old = (tmp_path / (name + ".json")
+                                   for name in ("dataset", "cohort", "model", "old"))
+    for path in (dataset, cohort, model):
+        path.write_text("{}")
+    old.write_text(json.dumps({
+        "inputs_sha256": {str(path): sha256_file(path) for path in (dataset, cohort)},
+        "scope": {
+            "protected_JOIN_pairs_excluded_from_predictor_rank_quality": True,
+            "client_published_events_and_observed_native_progress_only_for_features": True,
+        },
+    }))
+    monkeypatch.setattr(sys, "argv", [
+        "rescore", "--frozen-audit", str(old), "--dataset", str(dataset),
+        "--cohort", str(cohort), "--model", str(model), "--output", str(tmp_path / "out.json"),
+    ])
+    with pytest.raises(ValueError, match="source-bound sealed causal inputs"):
+        main()
 
 
 def test_rank_metrics_exclude_protected_join_and_keep_held_out_pairs_separate():

@@ -63,6 +63,8 @@ def main():
         audit["inputs_sha256"].get(str(args.dataset.resolve())) != pins[str(args.dataset.resolve())]
         or audit["inputs_sha256"].get(str(args.cohort.resolve())) != pins[str(args.cohort.resolve())]
         or not audit["scope"]["protected_JOIN_pairs_excluded_from_predictor_rank_quality"]
+        or audit["scope"].get("protected_JOIN_identification")
+        != "zero_global_rank_not_reference_category_v2"
         or not audit["scope"]["client_published_events_and_observed_native_progress_only_for_features"]
     ):
         raise ValueError("require source-bound sealed causal inputs and the same evaluation population")
