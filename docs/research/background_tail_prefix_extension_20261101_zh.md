@@ -1,8 +1,11 @@
 # 保留测量组的背景前缀扩展
 
-2026-11-01。本文是已有完整原任务 trace 的 CPU 准备，
-不是新的 GPU 运行或 workload 验收。当前共同引擎 Full/ThunderAgent
-对比的冻结代码、original56 到达表和测量组继续保持原样。
+2026-11-01。本文记录已有完整原任务trace的背景扩展准备及后续匹配GPU验证。
+最新73项目对照的固定18测量成员已经全部完成并通过独立核对：
+Full平均JCT观测降低 **9.8289%**，共同窗口输出吞吐提高 **5.3755%**。
+背景覆盖和数值门槛通过；NUMA放置差异、单次运行及child形状局限仍保留，
+不将其写成已完成正式统计验收。各CPU候选和旧运行的历史边界按节保留，
+最终完整结果及每个有效token的成本分析见文末。
 
 ## 已确认的缺口
 
@@ -1359,3 +1362,129 @@ ThunderAgent的该字段为空、资格策略位于 `paper_baseline`。
 因此该文件中的 `sampled_agent_* = false` 不能解释为baseline对应agent未获资格；
 仅使用其已观察因果事件和实际native服务作为尾部进度证据，
 不从缺失的资格字段推导暂停、饥饿或调度错误。
+
+## 匹配对照的完整收尾
+
+18:17 America/Los_Angeles，ThunderAgent固定18全部正常完成，
+收尾协调器、GPU服务、回放和测量观察器均已实际退出。
+`original73_background_substitution_matched_pair_r1/independent_complete.json`
+重新验证两臂原始工作、实际回执及输出ordinal、两个新鲜idle snapshot、
+完整cohort和实际owned退出。两臂均为 **3,263个请求、424,240个输出token**。
+旧supervisor停止标签与按冻结协议截断背景的事实保留，没有重标为73项全部完成。
+
+下列JCT均使用事前固定的18个到达序号成员及其完整正常尾部。
+吞吐仍在同一个1,583.262079秒墙钟窗口内统计全部输出，包含背景工作：
+
+| 指标 | Predictive Full | ThunderAgent acting-decay |
+| --- | ---: | ---: |
+| 完整平均JCT | 1,030.140522 s | 1,142.428622 s |
+| 完整P50 JCT | 645.259807 s | 720.850464 s |
+| 完整P95 JCT | 2,287.840368 s | 2,619.231213 s |
+| 最大JCT | 2,435.410412 s | 2,786.698677 s |
+| 共同窗口全部输出吞吐 | 299.989500 token/s | 284.686285 token/s |
+| 共同窗口decode吞吐 | 297.619078 token/s | 282.385971 token/s |
+| 完整请求E2E normalized interactivity，pooled | 17.845545 token/s | 10.810615 token/s |
+| 各workflow同定义interactivity等权平均 | 21.118996 token/s | 12.012524 token/s |
+| Workflow TTFT P90，均为18/18流式覆盖 | 70.791937 s | 71.576792 s |
+
+平均JCT降低 **9.828894%**，P95降低 **12.652218%**。
+17个测量workflow改善；一个mobile utility项目回退约3.4865秒。
+共同窗口输出吞吐提高 **5.375466%**，
+原闭合窗口观察与最终完整回执核对一致。
+TTFT的P90接近，Full的均值和最大值稍高，
+不能把interactivity改善扩展为所有首服务指标均改善。
+
+三项原定比较检查全部通过：
+平均JCT改善至少5%、共同窗口吞吐不低于参考的98%、背景覆盖两臂测量尾部。
+`fixed_cohort_performance_target_met=true`。
+Full的11项工作负载诊断也全部通过，仍使用用户接受的2.931418最低值；
+3/4异构程度标记未改为true。
+论文臂的Full专有压力诊断原本不适用，
+其 `full_policy_workload_diagnostics_not_evaluated_for_paper_arm` 标记
+不是ThunderAgent执行失败，也不补造其Full资格字段。
+`formal_workload_accepted`、`performance_accepted` 和统计显著性声明继续为false，
+保留child长度/轮数局限、实际NUMA放置差异及单次运行边界。
+本轮没有开启工作量排序或组合准入，收益不归因于工作量Oracle。
+
+### 背景、完整性与JOIN
+
+| 收尾范围 | Full | ThunderAgent |
+| --- | ---: | ---: |
+| 自然完成workflow | 54 | 56 |
+| 非测量截断workflow | 19 | 17 |
+| 其中尚未到达 | 14 | 7 |
+| 最后测量完成 | 3,665.658481 s | 4,016.946746 s |
+| 最后实际到达 | 3,615.542768 s | 3,987.687611 s |
+| 同一冻结到达表末次提交 | 4,376.498230 s | 4,376.498230 s |
+
+两臂均按固定测量组完成后停止，背景截断成员不作为完整JCT样本。
+这使执行前缀的背景完成数不同，不能将其条件JCT或不同前缀总输出
+作为相同完整73项人口的吞吐估计。
+三次完整背景替换均晚于共同吞吐窗口，不能用它们解释窗口内的方法差值。
+
+同一观察型JOIN审计已分别覆盖两臂完整固定组：
+20个显式阻塞多成员ALL-JOIN、分布于18个不同workflow，
+全部有至少两个已提交请求重叠及实际同批decode。
+ThunderAgent证据为
+`original73_background_substitution_thunder_review_r1/complete_join_service.json`。
+因此这组实际并发不是Full独有现象，不能仅凭这些计数归因sibling策略的独立收益。
+
+两臂同上下文旧输入前缀损失审计均为0：
+Full有8,622次probe，ThunderAgent有9,149次probe；
+没有正损失案例，也没有测量成员的已观察旧前缀重复输入。
+另一种原生Host-block回访口径分别报告29,122与187,492个重算单位。
+两种口径不相加，且后者包含两臂不同的背景执行前缀，
+不能据此声称所有重算为零或把差值直接换算成JCT收益。
+
+### Decode成本优势的组成
+
+`original73_background_substitution_matched_pair_r1/decode_cost_mixture_r1.json`
+重新读取两臂完整封存日志，核对所有共同窗口的decode输出和worker时间。
+共同档位覆盖ThunderAgent输出的99.3301%、Full输出的99.6324%：
+
+| Decode核算 | Full | ThunderAgent |
+| --- | ---: | ---: |
+| 实际worker成本 | 2.204736 ms/output-token | 2.277466 ms/output-token |
+| Worker时间加权有效宽度 | 7.729054 | 7.249413 |
+| 平均上下文 | 37,737.91 token | 37,631.68 token |
+| 相同合并输出权重下的共同档位成本 | 2.243609 ms/output-token | 2.234157 ms/output-token |
+
+实际成本低3.1935%，但对齐联合档位后Full成本高约0.4231%。
+候选减参考的总差为 **-0.07273036 ms/token**；
+共同档位内成本项为 **+0.00963101**，
+构成项为 **-0.05796239**，
+未共同覆盖或稀有档位剩余项为 **-0.02439898**，三项精确还原总差。
+本轮优势主要体现在实际服务批次的构成与更大的有效宽度，
+没有证据表明相同粗档位下的模型执行更快。
+这些档位没有控制精确长度向量、NUMA、传输依赖或其余批次工作，
+不能把算术分解当作严格因果归因。
+两臂均已使用相同精确decode图和MoE配置，通用引擎优化没有只提供给Full。
+
+### 趋势图中的零输出区间
+
+最终PNG/PDF图均已实际查看：
+`original73_background_substitution_matched_pair_r1/figures/` 中的
+`common_window_throughput` 和 `paired_complete_JCT`。
+没有对单次完整运行绘制统计置信区间。
+
+图中Full有两个完整30秒的零输出档位。
+`ops/audit_zero_output_prefill_bins_20261101.py`
+使用相同完成时间归档规则和封存日志逐项核对，结果为
+`original73_background_substitution_matched_pair_r1/full_zero_output_prefill_bins_r1.json`：
+
+| 相对回放原点区间 | Prefill forward | Decode forward | 实际输入 | 归档worker时间 |
+| --- | ---: | ---: | ---: | ---: |
+| [1105.692771, 1135.692771) s | 68 | 0 | 139,264 token | 29.948979 s |
+| [1255.692771, 1285.692771) s | 59 | 0 | 120,832 token | 29.955097 s |
+
+各区间均仅服务一个请求，实际输出为0。
+这是长prefill期间无decode输出，不是GPU空闲或绘图漏计。
+这里的worker区间按批次完成归档，没有在档位边界裁剪，
+也不等于纯CUDA kernel时间。
+下一步需先核对这些区间是否存在可以推进的decode，
+再评价prefill/decode交错和attention执行优化的潜力；
+目前不能从两段现象直接估算可避免JCT。
+
+最终独立核对、JOIN与成本分析的CPU进程均正常结束，
+原GPU运行及观察器均已实际退出，GPU当前无计算进程。
+没有登记本轮匹配对照之后的GPU实验。
