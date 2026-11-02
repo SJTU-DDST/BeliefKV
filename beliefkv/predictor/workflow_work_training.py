@@ -6,6 +6,8 @@ import math
 
 PHASE_BALANCED = "initial_and_three_work_phases_equal_workflow_v1"
 READY_BALANCED = "ready_observations_three_quarters_equal_workflow_v1"
+PHASE_PAIRS = "phase_matched"
+READY_MIXED_PAIRS = "ready_mixed_progress"
 
 
 def phase_weights(rows):
@@ -53,12 +55,14 @@ def ready_weights(rows, base):
     return weights
 
 
-def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512):
+def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512, mode=PHASE_PAIRS):
     """Offline labels define pair targets and strata, never additional features."""
     import numpy as np
 
     if type(pairs_per_phase) is not int or not 1 <= pairs_per_phase <= 4096:
         raise ValueError("invalid bounded workflow ranking pair count")
+    if mode not in (PHASE_PAIRS, READY_MIXED_PAIRS):
+        raise ValueError("unknown workflow ranking pair mode")
     groups = defaultdict(lambda: defaultdict(list))
     for index, row in enumerate(rows):
         total, attained, remaining = row["total_work"], row["attained_work"], row["remaining_work"]
@@ -70,11 +74,25 @@ def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512):
             raise ValueError("ranking labels require complete conserved workflow work")
         phase = -1 if row["snapshot"] == 0 else min(2, int(3 * attained / total))
         groups[phase][row["workflow"]].append(index)
+    if mode == READY_MIXED_PAIRS:
+        from beliefkv.predictor.workflow_work import R5_FEATURES
+
+        ready = R5_FEATURES.index("ready")
+        completed = R5_FEATURES.index("completed_calls")
+        for index, row in enumerate(rows):
+            values = row["features"]
+            if len(values) != len(R5_FEATURES):
+                raise ValueError("ready ranking pairs require R5 observed features")
+            if values[ready] > 0:
+                groups[3][row["workflow"]].append(index)
+            if row["event"] == "llm_submit" and values[completed] == 0:
+                groups[4][row["workflow"]].append(index)
     rng, pairs = np.random.default_rng(seed), []
     for phase, workflows in sorted(groups.items()):
         identities = sorted(workflows)
         if len(identities) < 2:
             continue
+        stratum = []
         # Uniform workflows prevent a long trace from generating more pair mass.
         for _attempt in range(pairs_per_phase):
             first, second = rng.choice(len(identities), size=2, replace=False)
@@ -83,7 +101,11 @@ def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512):
             difference = math.log1p(rows[right]["remaining_work"]) - math.log1p(rows[left]["remaining_work"])
             if abs(difference) < .1:
                 continue
-            pairs.append((left, right, 1. if difference > 0 else -1., min(1., abs(difference))))
+            stratum.append((left, right, 1. if difference > 0 else -1., min(1., abs(difference))))
+        if mode == READY_MIXED_PAIRS and stratum:
+            mass = sum(pair[3] for pair in stratum)
+            stratum = [(*pair[:3], pair[3] / mass) for pair in stratum]
+        pairs.extend(stratum)
     if not pairs:
         raise ValueError("workflow ranking requires distinct remaining-work labels")
     return pairs

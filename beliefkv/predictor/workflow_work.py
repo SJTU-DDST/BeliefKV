@@ -39,6 +39,14 @@ EXECUTION_CONTROL_FIELDS = frozenset((
     "profile", "minimum_parallel_join", "child_soft_target",
     "root_phase_target", "maximum_spawn_depth",
 ))
+OBSERVED_RATIOS = "observed_work_and_completion_ratios_v1"
+RATIO_FEATURES = (
+    "attained_model_work", "output_per_call", "input_per_call",
+    "root_output_per_call", "child_output_per_call",
+    "completed_join_fraction", "returned_child_fraction", "completed_tool_fraction",
+    "unfinished_child_fraction", "child_model_work_fraction",
+    "root_calls_per_join_phase", "delegation_chars_per_child",
+)
 
 
 def feature_names(schema):
@@ -66,6 +74,54 @@ def work_prediction_features(values, *, task_only_before_work=False):
     ):
         return np.zeros_like(values)
     return values
+
+
+def work_numeric_features(values, transform=None):
+    import numpy as np
+
+    values = np.asarray(values)
+    if transform is None:
+        return values
+    if transform != OBSERVED_RATIOS:
+        raise ValueError("unknown workflow numeric feature transform")
+    if (
+        values.shape != (len(R5_FEATURES),)
+        or not np.isfinite(values).all() or (values < 0).any()
+    ):
+        raise ValueError("observed ratios require finite nonnegative R5 features")
+    counts = dict(zip(R5_FEATURES, values))
+    attained = .01 * counts["input_tokens"] + counts["output_tokens"]
+    child_work = .01 * counts["child_input_tokens"] + counts["child_output_tokens"]
+    ratios = (
+        attained,
+        counts["output_tokens"] / max(1., counts["completed_calls"]),
+        counts["input_tokens"] / max(1., counts["completed_calls"]),
+        counts["root_output_tokens"] / max(1., counts["root_completed_calls"]),
+        counts["child_output_tokens"] / max(1., counts["child_completed_calls"]),
+        counts["completed_joins"] / max(1., counts["joins"]),
+        counts["returned_children"] / max(1., counts["children"]),
+        counts["completed_tools"] / max(1., counts["tool_calls"]),
+        counts["unfinished_children"] / max(1., counts["children"]),
+        child_work / max(1., attained),
+        counts["root_completed_calls"] / max(1., counts["completed_joins"] + 1.),
+        counts["delegation_chars"] / max(1., counts["children"]),
+    )
+    return np.concatenate((values, ratios))
+
+
+def before_observed_work(features):
+    return (
+        features[R5_FEATURES.index("input_tokens")] == 0
+        and features[R5_FEATURES.index("output_tokens")] == 0
+        and features[R5_FEATURES.index("children")] == 0
+    )
+
+
+@dataclass(frozen=True)
+class InitialWorkProjection:
+    progress_projection: object
+    initial_projection: object
+    initial_coverage: float
 
 
 def execution_controls(values):
@@ -298,6 +354,11 @@ class WorkflowWorkModel:
         import numpy as np
 
         self.schema = raw.get("schema")
+        self.numeric_transform = raw.get("numeric_feature_transform")
+        if self.numeric_transform not in (None, OBSERVED_RATIOS) or (
+            self.numeric_transform is not None and self.schema != R5_SCHEMA
+        ):
+            raise ValueError("unsupported workflow numeric feature transform")
         self.task_only_before_work = raw.get("task_only_before_observed_work", False)
         if type(self.task_only_before_work) is not bool or (
             self.task_only_before_work and self.schema != R5_SCHEMA
@@ -333,6 +394,33 @@ class WorkflowWorkModel:
             raise ValueError("workflow work classes require two fixed positive thresholds")
         self.task_encoder = None
         self.work_prior = None
+        self.initial_head = None
+        self.initial_blend = 0.
+        initial = raw.get("initial_state_head")
+        if initial is not None:
+            if (
+                self.schema != R5_SCHEMA or self.observed_delegations
+                or raw.get("task_encoder") is not None or raw.get("total_work_prior") is not None
+                or not isinstance(initial, dict)
+                or initial.keys() != {"kind", "blend", "model"}
+                or initial["kind"] != "before_observed_work_and_children_v1"
+                or type(initial["blend"]) not in (int, float)
+                or not math.isfinite(initial["blend"]) or not 0 < initial["blend"] <= 1
+                or not isinstance(initial["model"], dict)
+                or any(initial["model"].get(name) is not None for name in (
+                    "initial_state_head", "total_work_prior", "task_encoder",
+                ))
+            ):
+                raise ValueError("invalid initial-state workflow head")
+            head = WorkflowWorkModel(initial["model"])
+            if (
+                head.schema != R5_SCHEMA or head.observed_delegations
+                or head.thresholds != self.thresholds
+                or head.feature_names != self.feature_names
+                or head.metadata.get("decision_eligible") is not True
+            ):
+                raise ValueError("initial-state workflow head differs from the observed-work contract")
+            self.initial_head, self.initial_blend = head, initial["blend"]
         if raw.get("total_work_prior") is not None:
             from beliefkv.predictor.workflow_work_prior import TotalWorkPrior
 
@@ -354,7 +442,8 @@ class WorkflowWorkModel:
             "idf", "center", "scale", "static_weight", "dynamic_weight", "bias",
             "hidden_weight", "hidden_bias", "output_weight", "output_bias",
         )}
-        v, f = len(self.vocabulary), len(self.feature_names)
+        v = len(self.vocabulary)
+        f = len(self.feature_names) + (len(RATIO_FEATURES) if self.numeric_transform else 0)
         text_dimension = v if self.task_encoder is None else self.task_encoder.dimension
         h, k = self.arrays["bias"].size, self.arrays["hidden_bias"].size
         shapes = {
@@ -411,6 +500,9 @@ class WorkflowWorkModel:
 
             mean, prior_coverage = self.work_prior.task_mean(text)
             return PriorProjection(projection, mean), min(coverage, prior_coverage)
+        if self.initial_head is not None and projection is not None:
+            initial, initial_coverage = self.initial_head.task_encoding(text)
+            projection = InitialWorkProjection(projection, initial, initial_coverage)
         return projection, coverage
 
     def _task_encoding(self, text):
@@ -446,6 +538,11 @@ class WorkflowWorkModel:
         import numpy as np
 
         mean = None
+        initial_projection = None
+        if self.initial_head is not None:
+            if not isinstance(projection, InitialWorkProjection):
+                raise ValueError("initial-state workflow prediction requires its cached projection")
+            initial_projection, projection = projection, projection.progress_projection
         if self.work_prior is not None:
             from beliefkv.predictor.workflow_work_prior import PriorProjection
 
@@ -459,9 +556,25 @@ class WorkflowWorkModel:
             or not np.isfinite(features).all() or (features < 0).any()
         ):
             raise ValueError("invalid observed workflow features")
+        initial_probabilities = None
+        if initial_projection is not None and before_observed_work(features):
+            from beliefkv.predictor.workflow_work_distribution import support_status
+
+            if (
+                initial_projection.initial_projection is not None
+                and support_status(self.initial_head, features, initial_projection.initial_coverage)
+                == "calibrated_distribution"
+            ):
+                initial_probabilities = self.initial_head.predict(
+                    initial_projection.initial_projection, features,
+                )
+                if self.initial_blend == 1.:
+                    return initial_probabilities
         if self.task_only_before_work:
             features = work_prediction_features(features, task_only_before_work=True)
-        numeric = (np.log1p(features) - a["center"]) / a["scale"]
+        numeric = (
+            np.log1p(work_numeric_features(features, self.numeric_transform)) - a["center"]
+        ) / a["scale"]
         hidden = np.maximum(0., projection + np.einsum(
             "i,ij->j", numeric, a["dynamic_weight"], optimize=False,
         ) + a["bias"])
@@ -474,6 +587,11 @@ class WorkflowWorkModel:
         probabilities = np.exp(logits - logits.max())
         probabilities /= probabilities.sum()
         probabilities = tuple(float(value) for value in probabilities)
+        if initial_probabilities is not None:
+            probabilities = tuple(
+                (1. - self.initial_blend) * base + self.initial_blend * initial
+                for base, initial in zip(probabilities, initial_probabilities)
+            )
         return (
             probabilities if self.work_prior is None
             else self.work_prior.combine(probabilities, mean, features, self.thresholds)

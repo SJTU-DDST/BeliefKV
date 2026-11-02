@@ -267,7 +267,8 @@ def fit(
     hidden_width=64, vocabulary_size=4096, dropout=0., weight_decay=.03,
     feature_schema=SCHEMA, task_encoder=None, training_weighting=None, text_encoding=None,
     observed_delegations=False, work_thresholds=None, ranking_loss_weight=0.,
-    task_only_before_work=False,
+    task_only_before_work=False, ranking_pair_mode="phase_matched", ordinal_loss_weight=0.,
+    numeric_feature_transform=None,
 ):
     import numpy as np
     import torch
@@ -280,6 +281,8 @@ def fit(
     if not rows or not calibration:
         raise ValueError("training and calibration workflows are required")
     names = feature_names(feature_schema)
+    from beliefkv.predictor.workflow_work import OBSERVED_RATIOS, work_numeric_features
+
     if any(len(row["features"]) != len(names) for row in (*rows, *calibration)):
         raise ValueError("workflow training features differ from the declared schema")
     if split_mode not in ("project", "capture", "workflow"):
@@ -293,6 +296,15 @@ def fit(
         or not math.isfinite(ranking_loss_weight) or not 0 <= ranking_loss_weight <= 2.
         or type(task_only_before_work) is not bool
         or task_only_before_work and feature_schema != R5_SCHEMA
+        or ranking_pair_mode not in ("phase_matched", "ready_mixed_progress")
+        or ranking_pair_mode != "phase_matched" and (
+            feature_schema != R5_SCHEMA or not ranking_loss_weight
+        )
+        or type(ordinal_loss_weight) not in (int, float)
+        or not math.isfinite(ordinal_loss_weight) or not 0 <= ordinal_loss_weight <= 2.
+        or ordinal_loss_weight and feature_schema != R5_SCHEMA
+        or numeric_feature_transform not in (None, OBSERVED_RATIOS)
+        or numeric_feature_transform is not None and feature_schema != R5_SCHEMA
     ):
         raise ValueError("invalid workflow model regularization settings")
     if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
@@ -358,7 +370,10 @@ def fit(
     if not 0 < thresholds[0] < thresholds[1]:
         raise ValueError("training population cannot define three distinct work classes")
     numeric = np.log1p(np.asarray([
-        work_prediction_features(row["features"], task_only_before_work=task_only_before_work)
+        work_numeric_features(
+            work_prediction_features(row["features"], task_only_before_work=task_only_before_work),
+            numeric_feature_transform,
+        )
         for row in rows
     ]))
     workflow_counts = Counter(row["workflow"] for row in rows)
@@ -403,7 +418,7 @@ def fit(
             raise ValueError("unknown workflow training weighting")
     weight = torch.tensor(balanced, dtype=torch.float32)
     static_layer = torch.nn.Linear(task.shape[1], hidden_width, bias=False)
-    dynamic_layer = torch.nn.Linear(len(names), hidden_width)
+    dynamic_layer = torch.nn.Linear(numeric.shape[1], hidden_width)
     hidden_layer = torch.nn.Linear(hidden_width, max(4, hidden_width // 2))
     output_layer = torch.nn.Linear(max(4, hidden_width // 2), 3)
     parameters = list(static_layer.parameters()) + list(dynamic_layer.parameters())
@@ -413,7 +428,7 @@ def fit(
     if ranking_loss_weight:
         from beliefkv.predictor.workflow_work_training import work_ranking_pairs
 
-        pairs = np.asarray(work_ranking_pairs(rows, seed=seed))
+        pairs = np.asarray(work_ranking_pairs(rows, seed=seed, mode=ranking_pair_mode))
         ranking = (
             torch.tensor(pairs[:, 0], dtype=torch.long),
             torch.tensor(pairs[:, 1], dtype=torch.long),
@@ -427,6 +442,12 @@ def fit(
         hidden = torch.nn.functional.dropout(hidden, p=dropout, training=True)
         logits = output_layer(torch.relu(hidden_layer(hidden)))
         loss = (torch.nn.functional.cross_entropy(logits, target, reduction="none") * weight).sum()
+        if ordinal_loss_weight:
+            cumulative = logits.softmax(1).cumsum(1)[:, :2]
+            truth = (target[:, None] <= torch.arange(2)[None, :]).float()
+            loss = loss + ordinal_loss_weight * (
+                (cumulative - truth).square().mean(1) * weight
+            ).sum()
         if ranking is not None:
             left, right, direction, pair_weight = ranking
             utility = logits.softmax(1) @ torch.tensor((1., .5, .25))
@@ -486,12 +507,32 @@ def fit(
         raw["metadata"]["initial_feature_contract"] = (
             "task_only_until_positive_coarse_observed_work_or_observed_child"
         )
+    if numeric_feature_transform is not None:
+        from beliefkv.predictor.workflow_work import RATIO_FEATURES
+
+        raw["numeric_feature_transform"] = numeric_feature_transform
+        raw["metadata"]["derived_numeric_features"] = {
+            "names": list(RATIO_FEATURES), "observed_R5_counters_only": True,
+            "new_events_or_prompt_inputs": False,
+        }
     if ranking is not None:
         raw["metadata"]["training_parameters"]["ranking_loss_weight"] = ranking_loss_weight
         raw["metadata"]["ranking_training"] = {
             "kind": "phase_matched_cross_workflow_probability_utility_pairs",
             "pairs": len(pairs), "offline_labels_only": True,
             "runtime_rank_weight": [1., .5, .25], "new_online_features": False,
+        }
+        if ranking_pair_mode != "phase_matched":
+            raw["metadata"]["ranking_training"]["kind"] = (
+                "phase_first_request_and_cross_progress_ready_probability_utility_pairs"
+            )
+            raw["metadata"]["ranking_training"]["pair_mode"] = ranking_pair_mode
+            raw["metadata"]["ranking_training"]["equal_stratum_mass"] = True
+    if ordinal_loss_weight:
+        raw["metadata"]["training_parameters"]["ordinal_loss_weight"] = ordinal_loss_weight
+        raw["metadata"]["ordinal_training"] = {
+            "kind": "ranked_probability_score", "offline_labels_only": True,
+            "new_online_features": False,
         }
     if feature_schema == R5_SCHEMA:
         from beliefkv.predictor.workflow_work_distribution import training_contract
