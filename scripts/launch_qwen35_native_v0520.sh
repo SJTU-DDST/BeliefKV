@@ -38,6 +38,7 @@ if [[ "${BELIEFKV_FULL_MAMBA_HOST_SPLIT}" == auto ]]; then
 fi
 HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-bind}"
+HOST_NUMA_MEMORY_NODES="${HOST_NUMA_MEMORY_NODES:-}"
 HOST_NUMA_RECLAIM_POLICY="${HOST_NUMA_RECLAIM_POLICY:-conservative}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 ENABLE_SESSION_RADIX_CACHE="${ENABLE_SESSION_RADIX_CACHE:-0}"
@@ -133,9 +134,22 @@ if [[ ! -x "${PYTHON}" || ! -f "${MODEL_PATH}/config.json" ]]; then
   printf 'Missing Python or model config: %s %s\n' "${PYTHON}" "${MODEL_PATH}" >&2
   exit 2
 fi
+host_pool_limit=200
+if [[ "$HOST_NUMA_MEMORY_POLICY" == interleave ]]; then
+  if [[ ! "$HOST_NUMA_MEMORY_NODES" =~ ^(0|[1-9][0-9]*)(,(0|[1-9][0-9]*))+$ ]] \
+      || [[ "$MODEL_CACHE_LAYOUT" != full_only ]] \
+      || [[ -n "${BELIEFKV_HOST_REGISTER_NUMA_FALLBACK_NODE:-}" ]]; then
+    printf 'interleave requires explicit HOST_NUMA_MEMORY_NODES and FULL-only layout\n' >&2
+    exit 2
+  fi
+  host_pool_limit=400
+elif [[ -n "$HOST_NUMA_MEMORY_NODES" ]]; then
+  printf 'HOST_NUMA_MEMORY_NODES requires interleave\n' >&2
+  exit 2
+fi
 if ! [[ "${HICACHE_SIZE_GB}" =~ ^(0|[1-9][0-9]{0,2})$ ]] \
-    || (( HICACHE_SIZE_GB > 200 )); then
-  printf 'HICACHE_SIZE_GB must be an integer from 0 to 200 (total FULL+MAMBA)\n' >&2
+    || (( HICACHE_SIZE_GB > host_pool_limit )); then
+  printf 'HICACHE_SIZE_GB must be an integer from 0 to %s (total FULL+MAMBA)\n' "$host_pool_limit" >&2
   exit 2
 fi
 if [[ "${HICACHE_WRITE_POLICY}" != "write_back" && "${HICACHE_WRITE_POLICY}" != "write_through" && "${HICACHE_WRITE_POLICY}" != "write_through_selective" ]] \
@@ -158,12 +172,12 @@ for arg in "$@"; do
   esac
 done
 if (( HICACHE_SIZE_GB > 0 )) || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
-  if [[ "$HOST_NUMA_MEMORY_POLICY" != bind && "$HOST_NUMA_MEMORY_POLICY" != preferred ]]; then
-    printf 'HOST_NUMA_MEMORY_POLICY must be bind or preferred\n' >&2
+  if [[ "$HOST_NUMA_MEMORY_POLICY" != bind && "$HOST_NUMA_MEMORY_POLICY" != preferred && "$HOST_NUMA_MEMORY_POLICY" != interleave ]]; then
+    printf 'HOST_NUMA_MEMORY_POLICY must be bind, preferred or explicit interleave\n' >&2
     exit 2
   fi
   if [[ "$HOST_NUMA_RECLAIM_POLICY" != conservative && "$HOST_NUMA_RECLAIM_POLICY" != clean_file ]] \
-      || [[ "$HOST_NUMA_RECLAIM_POLICY" == clean_file && "$HOST_NUMA_MEMORY_POLICY" != bind ]]; then
+      || [[ "$HOST_NUMA_RECLAIM_POLICY" == clean_file && "$HOST_NUMA_MEMORY_POLICY" != bind && "$HOST_NUMA_MEMORY_POLICY" != interleave ]]; then
     printf 'clean_file Host reclaim estimate requires strict bind allocation\n' >&2
     exit 2
   fi
@@ -175,6 +189,9 @@ if (( HICACHE_SIZE_GB > 0 )) || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; th
     reclaim_args=()
     if [[ "$HOST_NUMA_RECLAIM_POLICY" != conservative ]]; then
       reclaim_args=(--reclaim-policy "$HOST_NUMA_RECLAIM_POLICY")
+    fi
+    if [[ "$HOST_NUMA_MEMORY_POLICY" == interleave ]]; then
+      reclaim_args+=(--memory-nodes "$HOST_NUMA_MEMORY_NODES")
     fi
     "${PYTHON}" "${BELIEFKV_ROOT}/scripts/preflight_qwen35_host_pool.py" \
       --memory-policy "$HOST_NUMA_MEMORY_POLICY" \
@@ -316,6 +333,8 @@ if (( HICACHE_SIZE_GB > 0 )) || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; th
   memory_args=("--membind=${HOST_NUMA_NODE}")
   if [[ "$HOST_NUMA_MEMORY_POLICY" == preferred ]]; then
     memory_args=("--preferred=${HOST_NUMA_NODE}")
+  elif [[ "$HOST_NUMA_MEMORY_POLICY" == interleave ]]; then
+    memory_args=("--interleave=${HOST_NUMA_MEMORY_NODES}")
   fi
   exec numactl --cpunodebind="${HOST_NUMA_NODE}" "${memory_args[@]}" \
     "${PYTHON}" -m sglang.launch_server "${server_args[@]}" "$@"

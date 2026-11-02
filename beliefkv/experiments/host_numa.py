@@ -10,18 +10,24 @@ import subprocess
 from beliefkv.experiments.source_provenance import sha256_file
 
 
+FULL_BYTES_PER_TOKEN = 98304
+LEGACY_HOST_FULL_BYTES = 200000077824
+
+
 def configuration(common):
     node = common.get("HOST_NUMA_NODE", "1")
     policy = common.get("HOST_NUMA_MEMORY_POLICY", "preferred")
     reclaim = common.get("HOST_NUMA_RECLAIM_POLICY", "conservative")
     registration = common.get("HOST_NUMA_REGISTRATION_POLICY", "strict")
+    memory_nodes = common.get("HOST_NUMA_MEMORY_NODES", "")
     if (
         type(node) is not str or not node.isascii() or not node.isdigit()
-        or str(int(node)) != node or policy not in ("bind", "preferred")
+        or str(int(node)) != node or policy not in ("bind", "preferred", "interleave")
         or reclaim not in ("conservative", "clean_file")
-        or reclaim == "clean_file" and policy != "bind"
+        or reclaim == "clean_file" and policy not in ("bind", "interleave")
         or registration not in ("strict", "preferred")
         or registration == "preferred" and policy != "bind"
+        or policy != "interleave" and memory_nodes != ""
     ):
         raise ValueError("invalid explicit Host NUMA allocation configuration")
     result = {
@@ -30,28 +36,87 @@ def configuration(common):
     }
     if registration == "preferred":
         result["registration_policy"] = registration
+    if policy == "interleave":
+        from scripts.preflight_qwen35_host_pool import interleave_nodes
+
+        size = common.get("HICACHE_SIZE_GB", "")
+        if (
+            size not in ("200", "400") or common.get("MODEL_CACHE_LAYOUT") != "full_only"
+            or common.get("BELIEFKV_HOST_REGISTER_NUMA_FALLBACK_NODE", "") != ""
+        ):
+            raise ValueError("interleaved Host NUMA experiment requires explicit 200/400 GB FULL-only pools")
+        result.update(
+            memory_nodes=list(interleave_nodes(memory_nodes, int(node))),
+            pool_size_gb=int(size), require_balanced_pool=True,
+        )
+    return result
+
+
+def requires_placement(common):
+    selected = configuration(common)
+    return selected["require_fully_local_pool"] or selected.get("require_balanced_pool", False)
+
+
+def expected_full_bytes(common):
+    selected = configuration(common)
+    if selected.get("require_balanced_pool"):
+        return (selected["pool_size_gb"] * 1_000_000_000 // FULL_BYTES_PER_TOKEN + 1) * FULL_BYTES_PER_TOKEN
+    return LEGACY_HOST_FULL_BYTES
+
+
+def replay_capacity(common, captured):
+    """Declare a Host-only capacity change while preserving the captured HBM."""
+    selected = configuration(common)
+    result = dict(captured)
+    if not selected.get("require_balanced_pool"):
+        return result
+    if (
+        captured.get("pool_layout") != "static_full_only"
+        or captured.get("host_full_bytes") != LEGACY_HOST_FULL_BYTES
+        or captured.get("host_total_bytes") != LEGACY_HOST_FULL_BYTES
+        or captured.get("host_full_tokens") != LEGACY_HOST_FULL_BYTES // FULL_BYTES_PER_TOKEN
+        or captured.get("host_mamba_bytes") != 0 or captured.get("host_mamba_slots") != 0
+    ):
+        raise ValueError("interleaved replay requires the captured 200 GB FULL-only geometry")
+    size = expected_full_bytes(common)
+    result.update(host_full_bytes=size, host_total_bytes=size, host_full_tokens=size // FULL_BYTES_PER_TOKEN)
     return result
 
 
 def environment(common):
     selected = configuration(common)
-    return {
+    result = {
         "HOST_NUMA_NODE": str(selected["node"]),
         "HOST_NUMA_MEMORY_POLICY": selected["memory_policy"],
+        "HOST_NUMA_MEMORY_NODES": "",
         "HOST_NUMA_RECLAIM_POLICY": selected["reclaim_policy"],
         "BELIEFKV_HOST_REGISTER_NUMA_FALLBACK_NODE": (
             str(selected["node"]) if selected.get("registration_policy") == "preferred" else ""
         ),
     }
+    if selected.get("require_balanced_pool"):
+        result["HOST_NUMA_MEMORY_NODES"] = ",".join(map(str, selected["memory_nodes"]))
+    return result
 
 
 def preflight_arguments(common):
     selected = configuration(common)
-    return [
+    result = [
         "--memory-policy", selected["memory_policy"],
         "--reclaim-policy", selected["reclaim_policy"],
-        "--node", str(selected["node"]), "--size-gb", "200",
+        "--node", str(selected["node"]), "--size-gb", str(selected.get("pool_size_gb", 200)),
     ]
+    if selected.get("require_balanced_pool"):
+        result.extend(["--memory-nodes", ",".join(map(str, selected["memory_nodes"]))])
+    return result
+
+
+def server_parameters(common, captured):
+    selected = configuration(common)
+    result = dict(captured)
+    if selected.get("require_balanced_pool"):
+        result["hicache_size"] = selected["pool_size_gb"]
+    return result
 
 
 def exact_mapping(maps, size):
@@ -71,7 +136,7 @@ def exact_mapping(maps, size):
     return matches[0]
 
 
-def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes):
+def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes, memory_nodes=None):
     if (
         type(expected_bytes) is not int or expected_bytes <= 0
         or type(node) is not int or node < 0
@@ -88,7 +153,29 @@ def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes):
         raise ValueError("Host NUMA proof lacks an exact native mapping policy")
     fields = lines[0].split()
     values = dict(field.split("=", 1) for field in fields if "=" in field)
-    if len(fields) < 2 or fields[1] != f"bind:{node}" or (
+    interleaved = memory_nodes is not None
+    if interleaved:
+        from scripts.preflight_qwen35_host_pool import interleave_nodes
+
+        nodes = interleave_nodes(",".join(map(str, memory_nodes)), node)
+        policy_match = re.fullmatch(r"interleave:([0-9,-]+)", fields[1]) if len(fields) >= 2 else None
+        actual_nodes = set()
+        if policy_match:
+            for part in policy_match[1].split(","):
+                ends = part.split("-")
+                if len(ends) == 1 and ends[0].isdigit():
+                    actual_nodes.add(int(ends[0]))
+                elif (
+                    len(ends) == 2 and all(end.isdigit() for end in ends)
+                    and int(ends[0]) <= int(ends[1]) <= max(nodes)
+                ):
+                    actual_nodes.update(range(int(ends[0]), int(ends[1]) + 1))
+                else:
+                    raise ValueError("invalid native interleave NUMA mask")
+        policy_matches = actual_nodes == set(nodes)
+    else:
+        policy_matches = len(fields) >= 2 and fields[1] == f"bind:{node}"
+    if not policy_matches or (
         int(values.get("kernelpagesize_kB", "0")) * 1024 != page_bytes
     ):
         raise ValueError("Host NUMA mapping is not strictly bound at the known page size")
@@ -100,14 +187,22 @@ def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes):
         raise ValueError("Host NUMA mapping lacks physical page residency")
     resident = {str(owner): count * page_bytes for owner, count in pages.items()}
     remote = sum(count for owner, count in resident.items() if int(owner) != node)
-    if sum(resident.values()) != rounded or remote:
+    if sum(resident.values()) != rounded:
+        raise ValueError("the complete Host pool must be resident")
+    if interleaved:
+        if set(pages) != set(nodes) or max(pages.values()) - min(pages.values()) > 1:
+            raise ValueError("the complete Host pool must be evenly interleaved over the declared nodes")
+    elif remote:
         raise ValueError("the complete Host pool must be resident on the selected NUMA node")
-    return {
+    result = {
         "mapping": mapping, "mapping_policy": fields[1],
         "raw_numa_maps_line": lines[0], "kernel_page_bytes": page_bytes,
-        "pool_resident_bytes_by_node": resident, "remote_pool_bytes": 0,
-        "remote_pool_fraction": 0., "fully_local_pool_verified": True,
+        "pool_resident_bytes_by_node": resident, "remote_pool_bytes": remote,
+        "remote_pool_fraction": remote / rounded, "fully_local_pool_verified": not interleaved,
     }
+    if interleaved:
+        result.update(fully_interleaved_pool_verified=True, declared_memory_nodes=list(nodes))
+    return result
 
 
 def registration_evidence(path, scheduler, mapping, node):
@@ -142,7 +237,7 @@ def registration_evidence(path, scheduler, mapping, node):
 
 def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=None):
     selected = configuration(common)
-    if not selected["require_fully_local_pool"]:
+    if not requires_placement(common):
         return None
     capacity_path = Path(directory) / "server/native_capacity_census.json"
     capacity = json.loads(capacity_path.read_bytes())["capacity"]
@@ -162,7 +257,10 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
     result = inspect_mapping(
         maps.decode(), numa.decode(), expected_bytes=capacity["host_full_bytes"],
         node=selected["node"], page_bytes=os.sysconf("SC_PAGE_SIZE"),
+        memory_nodes=selected.get("memory_nodes"),
     )
+    if capacity["host_full_bytes"] != expected_full_bytes(common):
+        raise ValueError("actual Host pool differs from its explicitly declared capacity")
     if topology is None:
         topology = subprocess.check_output(["nvidia-smi", "topo", "-m"], text=True, timeout=15.)
     plain = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", topology)
@@ -194,12 +292,18 @@ def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=N
 
 
 def require_source_binding(common, sources, checkout):
-    if not configuration(common)["require_fully_local_pool"]:
+    if not requires_placement(common):
         return
     required = {
         "beliefkv/experiments/host_numa.py", "tests/test_host_numa.py",
         "scripts/preflight_qwen35_host_pool.py", "tests/test_qwen35_host_pool.py",
     }
+    if configuration(common).get("require_balanced_pool"):
+        required.update({
+            "scripts/launch_qwen35_native_v0520.sh",
+            "scripts/run_causal_comparison.py", "scripts/run_position_replay_calibration.py",
+            "scripts/review_predictive_thunder_cohort.py", "tests/test_host_pool_interleave.py",
+        })
     if configuration(common).get("registration_policy") == "preferred":
         required.update({
             "beliefkv/runtime/host_registration_numa.py",
@@ -214,15 +318,28 @@ def require_source_binding(common, sources, checkout):
 
 def verify_qualified_configuration(common, registration):
     selected = configuration(common)
-    if not selected["require_fully_local_pool"]:
+    if not requires_placement(common):
         return
     proof = registration.get("host_numa_observation", {})
     if registration.get("host_numa_configuration") != selected or (
         proof.get("configuration") != selected
-        or proof.get("fully_local_pool_verified") is not True
-        or proof.get("remote_pool_bytes") != 0
-        or proof.get("host_full_capacity_bytes") != 200000077824
+        or proof.get("host_full_capacity_bytes") != expected_full_bytes(common)
     ):
+        raise ValueError("fresh GPU qualification lacks the exact strictly local Host pool")
+    if selected.get("require_balanced_pool"):
+        try:
+            checked = inspect_mapping(
+                proof["mapping"]["raw_maps_line"], proof["raw_numa_maps_line"],
+                expected_bytes=expected_full_bytes(common), node=selected["node"],
+                page_bytes=os.sysconf("SC_PAGE_SIZE"), memory_nodes=selected["memory_nodes"],
+            )
+        except (KeyError, TypeError, AttributeError) as error:
+            raise ValueError("fresh GPU qualification lacks complete balanced Host placement") from error
+        if proof.get("fully_interleaved_pool_verified") is not True or any(
+            proof.get(key) != value for key, value in checked.items()
+        ):
+            raise ValueError("fresh GPU qualification lacks complete balanced Host placement")
+    elif proof.get("fully_local_pool_verified") is not True or proof.get("remote_pool_bytes") != 0:
         raise ValueError("fresh GPU qualification lacks the exact strictly local Host pool")
     if selected.get("registration_policy") == "preferred" and proof.get(
         "registration_observation", {},
@@ -233,7 +350,7 @@ def verify_qualified_configuration(common, registration):
 def verify_completed_configuration(plan, arm=None):
     common = plan.get("reference_environment", {})
     selected = configuration(common)
-    if not selected["require_fully_local_pool"]:
+    if not requires_placement(common):
         return None
     if arm is None:
         if len(plan.get("order", ())) != 1:
@@ -250,7 +367,7 @@ def verify_completed_configuration(plan, arm=None):
     ready = json.loads(ready_path.read_bytes())
     if (
         proof.get("GPU_local_NUMA_node") != selected["node"]
-        or proof.get("pool_resident_bytes_by_node") != {
+        or selected["require_fully_local_pool"] and proof.get("pool_resident_bytes_by_node") != {
             str(selected["node"]): proof["host_full_capacity_bytes"],
         }
         or proof.get("inputs_sha256", {}).get(str(capacity_path.resolve())) != sha256_file(capacity_path)

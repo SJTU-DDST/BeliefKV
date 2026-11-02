@@ -33,6 +33,9 @@ def matching_traffic(predictive, thunder):
             raise ValueError("baseline changed fixed traffic or serving conditions: " + name)
     if predictive.get("native_execution_configuration") != thunder.get("native_execution_configuration"):
         raise ValueError("baseline changed the shared native execution configuration")
+    for name in ("expected_replay_capacity", "host_capacity_experiment"):
+        if predictive.get(name) != thunder.get(name):
+            raise ValueError("baseline changed the explicit Host capacity experiment")
     if host_numa.configuration(predictive.get("reference_environment", {})) != (
         host_numa.configuration(thunder.get("reference_environment", {}))
     ):

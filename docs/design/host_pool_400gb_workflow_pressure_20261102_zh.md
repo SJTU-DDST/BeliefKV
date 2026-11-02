@@ -1,7 +1,8 @@
 # 400GB Host KV 与增加 workflow 并发的可行性
 
-状态：CPU 评估及候选实验设计；未修改启动器、分配 400GB、执行 CUDA
-注册或启动新的 GPU 实验。保留现有 73 项目、200GB 配对结果。
+状态：已实现显式 400GB 跨节点配置及 20 初始 workflow 的诊断准备，
+完整 CPU 回归通过；尚未分配完整 400GB、执行其 CUDA 注册或启动新的
+模型实验。保留现有 73 项目、200GB 配对结果。
 
 用户允许本方向跨 NUMA 节点使用 Host 内存。评估目标是增加可保留的在途
 workflow，让 HBM 容量释放时存在多个真实 ready 候选，检查短 workflow
@@ -58,13 +59,14 @@ H2D/D2H 和释放。仅分配成功不等于注册成功。接受跨节点后，
 显式内存策略并记录实际分布，避免旧 preferred1 结果中的页面比例差异。
 现有单节点 `bind:1` 不适用于 400GB；双节点 placement 需要单独声明。
 
-源码中仍有两个 200GB 上限：
+最初源码中存在两个 200GB 上限：
 
 - `scripts/launch_qwen35_native_v0520.sh` 拒绝 `HICACHE_SIZE_GB > 200`。
 - `scripts/preflight_qwen35_host_pool.py` 的 `MAX_POOL_GB = 200`。
 
 `beliefkv/experiments/host_numa.py` 的严格本地资格还绑定了 200GB 和单节点
 完整驻留。新的跨节点容量不能沿用这份资格或通过直接清除检查宣称通过。
+后续实现为新的显式 interleave 配置单独扩展上述入口，详见末节。
 
 ## 并发和到达方式
 
@@ -117,3 +119,37 @@ ThunderAgent acting-decay 对照。单次正收益不证明稳定改善。
 本方向可以创造原先缺少的选择机会，但不保证短任务排序必然获益。
 若更多状态主要用于保存工具等待，或 oracle 仍只改变资格而不改变后续服务，
 继续扩大 Host 池不能解决相应瓶颈。
+
+## 已实现的 CPU 资格
+
+启动器在 FULL-only、显式 `HOST_NUMA_MEMORY_POLICY=interleave` 和
+`HOST_NUMA_MEMORY_NODES=0,1` 下支持至 400GB。原 bind/preferred 路径的
+200GB 上限保留。CPU 仍绑定节点 1；新路径清除原单节点注册 fallback。
+预检逐节点核算各自池份额及总计 8GiB 预留；实际池必须完整驻留，
+两个节点的页面计数相差至多一个基础页，才通过新 placement 资格。
+
+回放分别记录原采集容量与预期执行容量，仅改变 Host 三个计数；
+HBM、原 token 和模型采样不变。原生位置验证、实际 serving 参数检查、
+比较启动及完成审查均验证新容量与 placement，拒绝旧 200GB 资格。
+`scripts/qualify_interleaved_host_pool.py` 提供完整原生分配、注册边界
+H2D/D2H 和释放检查，当前没有执行该完整组件。
+
+`host400_initial20_mean70_prepare_r1/` 已生成 Full/Thunder acting-decay
+两份配置、到达表和私有 cohort。73 个 workflow 的原始顺序保持不变，
+预热由 12 增为 20，测量固定为随后的 18 个，余下 35 个为背景；
+因此不宣称与旧轮保持同一测量成员。平均间隔 70 秒、arrival seed35，
+共同吞吐窗口为 55.693--1638.955 秒，最后计划到达 3966.635 秒。
+是否覆盖新的完整测量尾部、是否稳定以及实际候选数量仍待实验。
+
+按旧完整来源清单核对，新固定测量组为 2991 请求、362157 输出 token、
+19 次真实多成员 root JOIN；模型工作 P80/P20=3.402964、
+P90/P10=5.287308。20 个初始 root 的输入合计 1609748 token，
+其中首次输入不能直接解释为可恢复的旧 KV 或真实迁移竞争。
+
+已通过 Full/Thunder 两个实际 CPU runtime 构造检查；完整回归为
+7088 项及 23 个 subtest，保留全部 7047 个原身份，2465 份源码输入，
+无失败、错误或跳过，源码、外部输入和 native 状态在执行中保持不变。
+证据为同一报告根目录的 `host400_shared_bound_cpu_r1/evidence.json`
+及 `actual_arm_constructors.json`。独立 64MiB 原生 mmap CPU 检查观察到
+`interleave:0-1`、两个节点各 32MiB，且 CUDA 未初始化；它不证明完整
+400GB 分配、CUDA 注册或模型性能。

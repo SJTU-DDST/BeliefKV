@@ -387,7 +387,7 @@ def register(args):
     }
     if execution is not None:
         plan["native_execution_configuration"] = execution["identity"]
-    if host_numa.configuration(reference["arms"]["full"])["require_fully_local_pool"]:
+    if host_numa.requires_placement(reference["arms"]["full"]):
         plan["host_numa_configuration"] = host_numa.configuration(reference["arms"]["full"])
     comparison.verify_sources(plan)
     reservation.write_json(args.registration, plan)
@@ -530,6 +530,14 @@ def watch(registration):
                 )
             source_capacity = load(arm / "server/native_capacity_census.json")["capacity"]
             reference = controls.source_reference(reference, roots, running, source_capacity)
+            expected_capacity = host_numa.replay_capacity(reference["arms"]["full"], source_capacity)
+            if expected_capacity != source_capacity:
+                plan["expected_replay_capacity"] = expected_capacity
+                plan["host_capacity_experiment"] = {
+                    "source_capture_capacity": source_capacity,
+                    "expected_replay_capacity": expected_capacity,
+                    "device_capacity_unchanged": True,
+                }
             settings, flags, _socket = controls.environment(
                 reference, "native_matched", ROOT, Path(plan["engine_checkout"]),
                 run, plan["port"], run / "plugin", sampling_mode="position",
@@ -572,6 +580,7 @@ def watch(registration):
             parameters = controls.prefill_server_parameters(
                 {name: source_info[name] for name in SERVER_FIELDS}, reference["arms"]["full"],
             )
+            parameters = host_numa.server_parameters(reference["arms"]["full"], parameters)
             execution = native_execution.configuration(reference["arms"]["full"], ROOT)
             native_execution.verify_server_info(execution, info)
             if execution is not None:
@@ -585,9 +594,7 @@ def watch(registration):
             required = {**parameters, "enable_custom_logit_processor": True, "enable_session_radix_cache": True}
             if any(info.get(name) != value for name, value in required.items()):
                 raise ValueError("actual calibration server differs from the native source")
-            if load(run / "server/native_capacity_census.json")["capacity"] != load(
-                arm / "server/native_capacity_census.json",
-            )["capacity"]:
+            if load(run / "server/native_capacity_census.json")["capacity"] != expected_capacity:
                 raise ValueError("actual calibration pools differ from the native source")
             reservation.write_json(run / "server/server_info.json", info)
             scheduler = reservation.process(load(ready)["scheduler_pid"])

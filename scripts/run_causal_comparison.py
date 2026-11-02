@@ -138,6 +138,9 @@ def environment(
         "TOOL_RESTORE_MODE": tool_restore_mode, "RESTORE_TIERS": "complete",
         "EXECUTION_FRONTIER_RESTORE": str(int(execution_frontier_restore)),
     }
+    placement = host_numa.configuration(reference["arms"]["full"])
+    if placement.get("require_balanced_pool"):
+        required["HICACHE_SIZE_GB"] = str(placement["pool_size_gb"])
     full_only = reference["arms"]["full"].get("MODEL_CACHE_LAYOUT") == "full_only"
     if full_only:
         required["HOST_SPLIT"] = "auto"
@@ -1243,7 +1246,7 @@ def observed_configuration(plan, label, arm, *, final=False):
             if state.get("tool_continuity_grace_ms", 0.) != grace:
                 raise ValueError("effective short-tool residency grace differs")
     census = arm / "server/native_capacity_census.json"
-    if census.exists() and load(census)["capacity"] != plan["source_capacity"]:
+    if census.exists() and load(census)["capacity"] != plan.get("expected_replay_capacity", plan["source_capacity"]):
         raise ValueError("actual FULL/Mamba/Host pool capacity changed")
 
 
@@ -1787,8 +1790,17 @@ def register(args):
         if execution["identity"]["engine_tree"] != engine["tree"]:
             raise ValueError("shared execution profile requires its qualified native engine")
         plan["native_execution_configuration"] = execution["identity"]
-    if host_numa.configuration(reference["arms"]["full"])["require_fully_local_pool"]:
+    if host_numa.requires_placement(reference["arms"]["full"]):
         plan["host_numa_configuration"] = host_numa.configuration(reference["arms"]["full"])
+    replay_capacity = host_numa.replay_capacity(reference["arms"]["full"], source_capacity)
+    if replay_capacity != source_capacity:
+        plan["expected_replay_capacity"] = replay_capacity
+        plan["host_capacity_experiment"] = {
+            "source_capture_capacity": source_capacity,
+            "expected_replay_capacity": replay_capacity,
+            "device_capacity_unchanged": True,
+            "same_actual_capacity_required_across_arms": True,
+        }
     if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
         plan["oracle_information"] = {
             "deployable": False, "future_model_token_work_used": True,
