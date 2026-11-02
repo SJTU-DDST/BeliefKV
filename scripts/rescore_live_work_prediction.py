@@ -59,7 +59,11 @@ def main():
     sealed, dataset, cohort = (
         json.loads(path.read_bytes()) for path in (args.sealed_audit, args.dataset, args.cohort)
     )
-    if not sealed["scope"]["client_published_events_and_observed_native_progress_only_for_features"]:
+    if (
+        not sealed["scope"]["client_published_events_and_observed_native_progress_only_for_features"]
+        or sealed["scope"].get("protected_JOIN_identification")
+        != "zero_global_rank_not_reference_category_v2"
+    ):
         raise ValueError("require an explicitly causal source audit")
     texts = {
         row["logical_workflow_id"]: row.get("task_text", row["text"])

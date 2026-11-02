@@ -148,11 +148,14 @@ def test_reasoning_category_zero_is_not_protected_join_rank_zero():
         competitions([control, choice])
 
 
-def test_rescoring_refuses_the_legacy_protected_join_population(tmp_path, monkeypatch):
+@pytest.mark.parametrize("entry", ("rescore_workflow_predictions", "rescore_live_work_prediction"))
+def test_rescoring_refuses_the_legacy_protected_join_population(tmp_path, monkeypatch, entry):
+    import importlib
     import json
     import sys
     from beliefkv.experiments.source_provenance import sha256_file
-    from scripts.rescore_workflow_predictions import main
+
+    main = importlib.import_module("scripts." + entry).main
 
     dataset, cohort, model, old = (tmp_path / (name + ".json")
                                    for name in ("dataset", "cohort", "model", "old"))
@@ -166,10 +169,11 @@ def test_rescoring_refuses_the_legacy_protected_join_population(tmp_path, monkey
         },
     }))
     monkeypatch.setattr(sys, "argv", [
-        "rescore", "--frozen-audit", str(old), "--dataset", str(dataset),
+        "rescore", "--frozen-audit" if entry == "rescore_workflow_predictions" else "--sealed-audit",
+        str(old), "--dataset", str(dataset),
         "--cohort", str(cohort), "--model", str(model), "--output", str(tmp_path / "out.json"),
     ])
-    with pytest.raises(ValueError, match="source-bound sealed causal inputs"):
+    with pytest.raises(ValueError, match="causal"):
         main()
 
 
