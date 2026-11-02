@@ -986,3 +986,33 @@ Attempt编号仍来自journal自身，没有独立来源验证，不称为独立
 不能归因为这三项尚未提交的背景替换。
 替换是否减少后段容量冲突与实际旧前缀prefill，
 仍以完整固定测量尾部和匹配ThunderAgent结果为准。
+
+### 最终独立复核入口
+
+新增只读操作入口
+`ops/verify_background_substitution_complete_20261101.py`。
+默认核对本次完整Full，`--pair`再核对匹配ThunderAgent。
+输出路径必须尚不存在；它不等待或启动GPU，也不预建未来review/cost目录。
+
+复核从原始source expected、固定cohort和实际完成证书重建测量请求集合，
+核对新鲜drain、owned退出、观察器实际退出、输出ordinal、
+共同窗口输出守恒、全部已保存报告的输入及完整journal前缀hash。
+随后从原供给、periodic、demand和population重新计算负载判定，
+保留已接受的2.931418最低值与原3/4标记，不放宽任何其他条件。
+Pair模式还重新计算完整测量JCT/吞吐比较，核对实际容量和共同执行身份。
+未匹配的旧前缀几何会单独保留，不能写成零重算；
+脚本本身不会将 `performance_accepted` 改为true。
+
+已完成两项真实CPU入口检查，均为nice19、CUDA隐藏：
+
+- 本次尚在运行的Full以“observer未完成/实际未退出”拒绝，
+  `precompletion_must_not_exist.json`确实未创建，
+  没有将部分结果伪装成完成证书。
+- 在独立进程内将输入绑定到上次已完成静态Full，重新核对
+  3,263请求、424,240输出及各完整成本报告，
+  仍得到唯一拒绝项 `zero_previously_served_same_context_prefix_loss_proxy`，
+  实际旧前缀输入仍为159,533 token。
+  这检查的是复核器的完整路径，没有重跑模型或重标旧结果。
+
+Pair模式的实际新比较仍需等两个方法都结束后执行；
+以上CPU入口检查不是新GPU性能结果。
