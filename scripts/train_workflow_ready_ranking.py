@@ -97,9 +97,11 @@ def main():
                  "baseline-evaluation", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument(
-        "--family", choices=("ready-pairs", "observed-ratios", "continuous-work"),
+        "--family", choices=("ready-pairs", "observed-ratios", "continuous-work", "semantic"),
         default="ready-pairs",
     )
+    parser.add_argument("--encoder", type=Path)
+    parser.add_argument("--encoder-revision")
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve the completed and rejected ready-ranking studies")
@@ -160,6 +162,23 @@ def main():
                 "remaining_work_loss_weight": .3,
             }),
         ]
+    elif args.family == "semantic":
+        from beliefkv.predictor.workflow_task_encoder import encoder_contract
+
+        if args.encoder is None or not args.encoder_revision:
+            raise ValueError("semantic study requires a local encoder and exact revision")
+        encoder = encoder_contract(args.encoder, revision=args.encoder_revision)
+        candidates = [
+            ("retained_phase_rank", None),
+            ("semantic128_phase_rank", {
+                "task_encoder": encoder, "ranking_loss_weight": .1,
+                "ranking_pair_mode": "phase_matched",
+            }),
+            ("semantic64_phase_rank", {
+                "task_encoder": encoder, "ranking_loss_weight": .1,
+                "ranking_pair_mode": "phase_matched", "hidden_width": 64,
+            }),
+        ]
     write(args.output_dir / "plan.json", {
         "candidates": [(name, None if settings is None else {**shared, **settings})
                        for name, settings in candidates],
@@ -175,6 +194,7 @@ def main():
         "established_initial_head_preserved": (
             args.family == "continuous-work" and "initial_state_head" in baseline
         ),
+        "frozen_local_semantic_encoder": args.family == "semantic",
         "inputs_sha256": inputs, "GPU_action": False,
     })
     models, summaries = {}, {}
