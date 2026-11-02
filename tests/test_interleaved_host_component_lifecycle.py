@@ -14,6 +14,7 @@ from scripts import qualify_interleaved_host_pool as component
 @pytest.mark.parametrize("allocation_failure", (False, True))
 def test_actual_component_publishes_all_phases_and_preserves_allocation_failures(
     monkeypatch, tmp_path, allocation_failure, *, gpu_mode=False,
+    initial_unresident=False, final_unresident=False,
 ):
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "0" if gpu_mode else "99999")
     monkeypatch.delenv("SGLANG_HUGEPAGE_SIZE", raising=False)
@@ -32,7 +33,15 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
         "mapping": {"start_address": "1234000"}, "pool_resident_bytes_by_node": {"0": 8192, "1": 8192},
         "remote_pool_bytes": 8192, "mapping_policy": "interleave:0-1",
     }
-    monkeypatch.setattr(component.host_numa, "inspect_mapping", lambda *_args, **_kwargs: placement)
+    placement_reads = []
+
+    def inspect(*_args, **_kwargs):
+        placement_reads.append(True)
+        if initial_unresident and len(placement_reads) == 1 or final_unresident and len(placement_reads) > 1:
+            raise ValueError("the complete Host pool must be resident")
+        return placement
+
+    monkeypatch.setattr(component.host_numa, "inspect_mapping", inspect)
     pool = {}
     allocator_calls = []
 
@@ -41,6 +50,15 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
             return 0x1234000
 
         def __getitem__(self, key):
+            if isinstance(key, slice):
+                class Window:
+                    def copy_(self, value, *, non_blocking):
+                        pool[key.start] = value
+
+                    def to(self, *, device, non_blocking):
+                        return pool[key.start]
+
+                return Window()
             return pool[key]
 
         def __setitem__(self, key, value):
@@ -61,13 +79,21 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
 
     monkeypatch.setitem(sys.modules, "torch", NS(
         uint8="standin_uint8", empty=materialize,
+        arange=lambda count, **_kwargs: tuple(range(count)), equal=lambda left, right: left == right,
         cuda=NS(is_initialized=lambda: bool(materialized), init=lambda: None, synchronize=lambda: None),
     ))
     if gpu_mode:
         monkeypatch.setattr(component.subprocess, "check_output", lambda *_args, **_kwargs: (
             str(component.os.getpid()) if materialized else ""
         ))
-    monkeypatch.setitem(sys.modules, "sglang.srt.mem_cache.pool_host", NS(common=NS()))
+    def register(pool, *, registration_granularity_bytes):
+        pool.registered_ranges = [(pool.data_ptr(), 16384)]
+
+    monkeypatch.setitem(sys.modules, "sglang.srt.mem_cache.pool_host", NS(common=NS(
+        _cuda_host_register=register,
+        _cuda_host_unregister=lambda pool: setattr(pool, "registered_ranges", []),
+        _CUDA_HOST_REGISTERED_RANGES_ATTR="registered_ranges",
+    )))
     monkeypatch.setitem(sys.modules, "sglang.srt.mem_cache.storage.mmap", NS(alloc_mmap=allocate))
     engine = tmp_path / "engine"
     for name in ("storage/mmap/mmap_allocator.py", "pool_host/common.py"):
@@ -102,7 +128,10 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
         actual_write(path, value)
 
     monkeypatch.setattr(component.reservation, "write_json", publish)
-    if allocation_failure:
+    if final_unresident:
+        with pytest.raises(ValueError, match="complete Host pool must be resident"):
+            component.run(args)
+    elif allocation_failure:
         with pytest.raises(RuntimeError, match="explicit allocation failure"):
             component.run(args)
     else:
@@ -113,12 +142,19 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
     assert state["inputs_unchanged_during_execution"]
     assert state["GPU_action"] is gpu_mode
     assert bool(materialized) is gpu_mode
-    if allocation_failure:
+    if final_unresident:
+        assert state["status"] == "failed_preserve_interleaved_Host_component"
+        assert "complete_CUDA_registration_and_bounded_copies_verified" not in state
+        assert state["native_Host_unregister_complete"]
+    elif allocation_failure:
         assert state["status"] == "failed_preserve_interleaved_Host_component"
         assert "explicit allocation failure" in state["error"]
     else:
         assert state["status"] == "complete_native_interleaved_Host_component"
-        assert not state["complete_CUDA_registration_and_bounded_copies_verified"]
+        assert state["complete_CUDA_registration_and_bounded_copies_verified"] is gpu_mode
+        if initial_unresident:
+            assert state["before_registration_residency_observation_error"] == "the complete Host pool must be resident"
+            assert len(state["raw_placement_snapshots"]) == 2
     saved = (args.output_dir / "entry.json").read_bytes()
     with pytest.raises(ValueError, match="preserve attempts"):
         component.run(args)
@@ -128,4 +164,16 @@ def test_actual_component_publishes_all_phases_and_preserves_allocation_failures
 def test_visible_GPU_context_is_materialized_before_the_sole_owner_guard_and_Host_allocation(monkeypatch, tmp_path):
     test_actual_component_publishes_all_phases_and_preserves_allocation_failures(
         monkeypatch, tmp_path, True, gpu_mode=True,
+    )
+
+
+def test_unpinned_accounting_does_not_replace_the_complete_registered_residency_proof(monkeypatch, tmp_path):
+    test_actual_component_publishes_all_phases_and_preserves_allocation_failures(
+        monkeypatch, tmp_path, False, gpu_mode=True, initial_unresident=True,
+    )
+
+
+def test_missing_registered_pages_still_fail_and_unregister_the_entire_buffer(monkeypatch, tmp_path):
+    test_actual_component_publishes_all_phases_and_preserves_allocation_failures(
+        monkeypatch, tmp_path, False, gpu_mode=True, initial_unresident=True, final_unresident=True,
     )

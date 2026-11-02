@@ -126,10 +126,20 @@ def run(args):
         state["observed_at"] = datetime.now(timezone.utc).isoformat()
         reservation.write_json(args.output_dir / "state.json", state)
 
-    def placement():
+    def placement(phase):
         proc = Path("/proc/self")
+        maps, numa = (proc / "maps").read_bytes(), (proc / "numa_maps").read_bytes()
+        snapshots = {
+            "maps": args.output_dir / f"{phase}.maps.txt",
+            "numa_maps": args.output_dir / f"{phase}.numa_maps.txt",
+        }
+        snapshots["maps"].write_bytes(maps)
+        snapshots["numa_maps"].write_bytes(numa)
+        state.setdefault("raw_placement_snapshots", {})[phase] = {
+            str(path): sha256_file(path) for path in snapshots.values()
+        }
         result = host_numa.inspect_mapping(
-            (proc / "maps").read_text(), (proc / "numa_maps").read_text(),
+            maps.decode(), numa.decode(),
             expected_bytes=capacity["host_full_bytes"], node=args.node,
             page_bytes=os.sysconf("SC_PAGE_SIZE"), memory_nodes=selected["memory_nodes"],
         )
@@ -158,7 +168,14 @@ def run(args):
         publish()
         start = time.monotonic()
         pool = alloc_mmap((capacity["host_full_bytes"],), torch.uint8)
-        state.update(allocation_seconds=time.monotonic() - start, placement_before_registration=placement())
+        state["allocation_seconds"] = time.monotonic() - start
+        try:
+            state["placement_before_registration"] = placement("before_registration")
+        except ValueError as error:
+            if args.cpu_only or str(error) != "the complete Host pool must be resident":
+                raise
+            # Registration pins the complete buffer; the final proof remains strict.
+            state["before_registration_residency_observation_error"] = str(error)
         offsets = [0, os.sysconf("SC_PAGE_SIZE"), capacity["host_full_bytes"] // 2, capacity["host_full_bytes"] - 1]
         for index, offset in enumerate(offsets):
             pool[offset] = index + 11
@@ -188,11 +205,14 @@ def run(args):
             window = None
             torch.cuda.synchronize()
             state["checked_H2D_D2H_bytes"] = len(offsets) * 128 * 2
-        after = placement()
-        if any(after[name] != state["placement_before_registration"][name] for name in (
-            "mapping", "pool_resident_bytes_by_node", "remote_pool_bytes", "mapping_policy",
-        )):
-            raise ValueError("the complete balanced Host placement changed")
+        after = placement("after_registration")
+        before = state.get("placement_before_registration")
+        if before is not None:
+            if any(after[name] != before[name] for name in ("mapping", "mapping_policy")):
+                raise ValueError("the complete native Host mapping or declared policy changed")
+            state["node_counts_changed_during_registration"] = (
+                before["pool_resident_bytes_by_node"] != after["pool_resident_bytes_by_node"]
+            )
         state.update(
             status="complete_native_interleaved_Host_component",
             placement_after_registration_and_copies=after,

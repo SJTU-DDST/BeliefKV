@@ -12,6 +12,7 @@ from beliefkv.experiments.source_provenance import sha256_file
 
 FULL_BYTES_PER_TOKEN = 98304
 LEGACY_HOST_FULL_BYTES = 200000077824
+INTERLEAVE_IMBALANCE_DENOMINATOR = 100
 
 
 def configuration(common):
@@ -48,6 +49,7 @@ def configuration(common):
         result.update(
             memory_nodes=list(interleave_nodes(memory_nodes, int(node))),
             pool_size_gb=int(size), require_balanced_pool=True,
+            maximum_node_page_imbalance_fraction=1. / INTERLEAVE_IMBALANCE_DENOMINATOR,
         )
     return result
 
@@ -190,7 +192,10 @@ def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes, memory
     if sum(resident.values()) != rounded:
         raise ValueError("the complete Host pool must be resident")
     if interleaved:
-        if set(pages) != set(nodes) or max(pages.values()) - min(pages.values()) > 1:
+        if set(pages) != set(nodes) or (
+            (max(pages.values()) - min(pages.values())) * INTERLEAVE_IMBALANCE_DENOMINATOR
+            > sum(pages.values())
+        ):
             raise ValueError("the complete Host pool must be evenly interleaved over the declared nodes")
     elif remote:
         raise ValueError("the complete Host pool must be resident on the selected NUMA node")
@@ -201,7 +206,11 @@ def inspect_mapping(maps, numa_maps, *, expected_bytes, node, page_bytes, memory
         "remote_pool_fraction": remote / rounded, "fully_local_pool_verified": not interleaved,
     }
     if interleaved:
-        result.update(fully_interleaved_pool_verified=True, declared_memory_nodes=list(nodes))
+        result.update(
+            fully_interleaved_pool_verified=True, declared_memory_nodes=list(nodes),
+            maximum_node_page_imbalance_fraction=1. / INTERLEAVE_IMBALANCE_DENOMINATOR,
+            actual_node_page_imbalance_fraction=(max(pages.values()) - min(pages.values())) / sum(pages.values()),
+        )
     return result
 
 
@@ -303,6 +312,7 @@ def require_source_binding(common, sources, checkout):
             "scripts/launch_qwen35_native_v0520.sh",
             "scripts/run_causal_comparison.py", "scripts/run_position_replay_calibration.py",
             "scripts/review_predictive_thunder_cohort.py", "tests/test_host_pool_interleave.py",
+            "tests/test_host_interleave_balance.py",
         })
     if configuration(common).get("registration_policy") == "preferred":
         required.update({

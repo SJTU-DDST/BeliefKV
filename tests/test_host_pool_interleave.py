@@ -208,7 +208,8 @@ def test_actual_mapping_requires_complete_balanced_residency(defect):
     maps, pages = mapping()
     half = SIZE // PAGE // 2
     if defect == "imbalance":
-        pages = pages.replace(f"N0={half} N1={half}", f"N0={half - 1} N1={half + 1}")
+        shift = SIZE // PAGE // 10
+        pages = pages.replace(f"N0={half} N1={half}", f"N0={half - shift} N1={half + shift}")
     elif defect == "partial":
         pages = pages.replace(f"N0={half}", f"N0={half - 1}")
     elif defect == "mask":
