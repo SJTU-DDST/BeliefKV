@@ -27,6 +27,11 @@ from scripts.run_causal_comparison import cleanup, fresh, qualified, reservation
 from scripts.train_workflow_work import write
 
 
+def check_measurement_tokens(tokens):
+    if type(tokens) is not int or not 1 <= tokens <= 4096:
+        raise ValueError("component measurement tokens must be an integer in 1..4096")
+
+
 def payload(case, label, tokens):
     ids = [f"cost:w{case['width']}:{label}:{index}" for index in range(case["width"])]
     return {
@@ -226,7 +231,13 @@ def run_cold_prefill(client, document, directory, receipts):
         }), flush=True)
 
 
-def run_mode(document, mode, directory, *, profile, cold_prefill_only=False):
+def run_mode(
+    document, mode, directory, *, profile, cold_prefill_only=False,
+    measurement_tokens=96,
+):
+    check_measurement_tokens(measurement_tokens)
+    if cold_prefill_only and measurement_tokens != 96:
+        raise ValueError("cold prefill does not accept a decode-length override")
     fresh.check_hold(document, released=True)
     resources = qualified.resources(18959)
     if not resources["ready"]:
@@ -265,6 +276,7 @@ def run_mode(document, mode, directory, *, profile, cold_prefill_only=False):
     write(directory / "startup.json", {
         "resources": resources, "argv": argv, "native_Host_cache_enabled": False,
         "cold_prefill_only": cold_prefill_only,
+        "measurement_tokens": 1 if cold_prefill_only else measurement_tokens,
         "execution_environment": {
             name: environment[name] for name in ("CUDA_HOME", "SGLANG_MOE_CONFIG_DIR")
             if name in environment
@@ -318,7 +330,7 @@ def run_mode(document, mode, directory, *, profile, cold_prefill_only=False):
                 if profile and case["width"] == 9:
                     stages.append("profile")
                 for label in stages:
-                    count = 1 if label == "warm" else 96
+                    count = 1 if label == "warm" else measurement_tokens
                     request = payload(case, label, count)
                     if label == "profile":
                         response = client.post("/start_profile", json={
@@ -357,7 +369,13 @@ def run_mode(document, mode, directory, *, profile, cold_prefill_only=False):
     return summary
 
 
-def run(inputs, output, *, modes, profile, cold_prefill_only=False):
+def run(
+    inputs, output, *, modes, profile, cold_prefill_only=False,
+    measurement_tokens=96,
+):
+    check_measurement_tokens(measurement_tokens)
+    if cold_prefill_only and measurement_tokens != 96:
+        raise ValueError("cold prefill does not accept a decode-length override")
     if cold_prefill_only and not profile:
         raise ValueError("cold prefill probe requires an explicit CUDA profile")
     document = json.loads(inputs.read_bytes())
@@ -375,11 +393,15 @@ def run(inputs, output, *, modes, profile, cold_prefill_only=False):
         "inputs": str(inputs.resolve()), "inputs_sha256": sha256_file(inputs),
         "native": state, "modes": modes, "profile": profile,
         "cold_prefill_only": cold_prefill_only,
+        "measurement_tokens": 1 if cold_prefill_only else measurement_tokens,
         "script_sha256": sha256_file(Path(__file__)),
         "independent_greedy_component_only": True, "performance_accepted": False,
     })
     results = {
-        mode: run_mode(document, mode, output / mode, profile=profile, cold_prefill_only=cold_prefill_only)
+        mode: run_mode(
+            document, mode, output / mode, profile=profile,
+            cold_prefill_only=cold_prefill_only, measurement_tokens=measurement_tokens,
+        )
         for mode in modes
     }
     write(output / "result.json", {
@@ -395,12 +417,13 @@ def main():
     parser.add_argument("--modes", nargs="+", choices=("sparse", "exact"), default=["sparse", "exact"])
     parser.add_argument("--profile", action="store_true")
     parser.add_argument("--cold-prefill-only", action="store_true")
+    parser.add_argument("--measurement-tokens", type=int, default=96)
     args = parser.parse_args()
     if len(args.modes) != len(set(args.modes)):
         parser.error("each native mode can run once per evidence directory")
     run(
         args.inputs, args.output, modes=args.modes, profile=args.profile,
-        cold_prefill_only=args.cold_prefill_only,
+        cold_prefill_only=args.cold_prefill_only, measurement_tokens=args.measurement_tokens,
     )
 
 
