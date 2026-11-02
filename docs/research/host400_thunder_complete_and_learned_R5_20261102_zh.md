@@ -257,9 +257,9 @@ patch 字节及其余字段全部相同；原 `registration_result.json` 保留�
 状态文件发布，产生一次 CPU `FileNotFoundError`，原状态已另存
 `observer_bootstrap_first_failure.json`，只重新挂接观察器，没有重启 GPU。
 
-当前已核对 supervisor 502046、server 502543、scheduler 502624 均实际
+启动阶段已核对 supervisor 502046、server 502543、scheduler 502624 均实际
 存活并为 nice0；CPU bootstrap 502949 为 nice19，等待正式回放后启动
-原固定 18 条结束协议。此时仍在 400 GB Host 分配/注册阶段，不能称作
+原固定 18 条结束协议。该次观察仍在 400 GB Host 分配/注册阶段，不能称作
 已经完成 workload 回放或修复获得 JCT 改善。NUMA 均衡不作为启动门槛，
 未注册其他 GPU 后继。
 
@@ -267,3 +267,17 @@ patch 字节及其余字段全部相同；原 `registration_result.json` 保留�
 分布图已生成并目视检查，位于
 `r5_host400_learned_combination_r1/completed_figures/complete_JCT_and_decode.{png,pdf}`；
 同目录保留 CSV 与来源哈希。新候选未加入该图。
+
+随后已独立核对正式 `running_full`：driver 504077 实际运行，固定 18 条
+结束观察器 504095 已启动且为 nice19；GPU 仍仅由 scheduler 502624
+占用，所有服务 owner 为 nice0。`live_prefix.json` 核对 63 条精确请求、
+2705 个输出 token、实际容量、真实 server 环境、原生 sampler、position
+及输出 self-hash，worker 无错误。
+
+`live_predictor_protocol.json` 进一步核对真实执行源码与注册哈希一致，
+实际 worker 已使用新模型指纹和起始分支权重 1，线上出现 119 次
+`unchanged_input_validity_revalidations`。这是实际回放中的修复生效证据，
+不是纯 CPU 模拟；仍不能归因 JCT。该前缀有 87 次组合入口、18 次正常
+支持的预测观测、1 次集合变化，不与旧实验不同长度前缀直接比较。
+完整测量 JCT、共同时间窗口及后续服务审计继续待完成，没有登记 GPU
+后继，目标保持 active。
