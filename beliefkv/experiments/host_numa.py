@@ -22,6 +22,7 @@ def configuration(common):
     reclaim = common.get("HOST_NUMA_RECLAIM_POLICY", "conservative")
     registration = common.get("HOST_NUMA_REGISTRATION_POLICY", "strict")
     memory_nodes = common.get("HOST_NUMA_MEMORY_NODES", "")
+    placement_check = common.get("HOST_NUMA_PLACEMENT_CHECK", "strict")
     if (
         type(node) is not str or not node.isascii() or not node.isdigit()
         or str(int(node)) != node or policy not in ("bind", "preferred", "interleave")
@@ -30,6 +31,8 @@ def configuration(common):
         or registration not in ("strict", "preferred")
         or registration == "preferred" and policy != "bind"
         or policy != "interleave" and memory_nodes != ""
+        or placement_check not in ("strict", "diagnostic")
+        or placement_check == "diagnostic" and policy != "interleave"
     ):
         raise ValueError("invalid explicit Host NUMA allocation configuration")
     result = {
@@ -49,9 +52,12 @@ def configuration(common):
             raise ValueError("interleaved Host NUMA experiment requires explicit 200/400 GB FULL-only pools")
         result.update(
             memory_nodes=list(interleave_nodes(memory_nodes, int(node))),
-            pool_size_gb=int(size), require_balanced_pool=True,
+            pool_size_gb=int(size), require_balanced_pool=placement_check == "strict",
             maximum_node_page_imbalance_fraction=1. / INTERLEAVE_IMBALANCE_DENOMINATOR,
         )
+        if placement_check == "diagnostic":
+            result["placement_check"] = placement_check
+            result.pop("maximum_node_page_imbalance_fraction")
     return result
 
 
@@ -62,7 +68,7 @@ def requires_placement(common):
 
 def expected_full_bytes(common):
     selected = configuration(common)
-    if selected.get("require_balanced_pool"):
+    if selected["memory_policy"] == "interleave":
         return (selected["pool_size_gb"] * 1_000_000_000 // FULL_BYTES_PER_TOKEN + 1) * FULL_BYTES_PER_TOKEN
     return LEGACY_HOST_FULL_BYTES
 
@@ -71,7 +77,7 @@ def replay_capacity(common, captured):
     """Declare a Host-only capacity change while preserving the captured HBM."""
     selected = configuration(common)
     result = dict(captured)
-    if not selected.get("require_balanced_pool"):
+    if selected["memory_policy"] != "interleave":
         return result
     if (
         captured.get("pool_layout") != "static_full_only"
@@ -97,8 +103,10 @@ def environment(common):
             str(selected["node"]) if selected.get("registration_policy") == "preferred" else ""
         ),
     }
-    if selected.get("require_balanced_pool"):
+    if selected["memory_policy"] == "interleave":
         result["HOST_NUMA_MEMORY_NODES"] = ",".join(map(str, selected["memory_nodes"]))
+    if selected.get("placement_check") == "diagnostic":
+        result["HOST_NUMA_PLACEMENT_CHECK"] = "diagnostic"
     return result
 
 
@@ -109,15 +117,17 @@ def preflight_arguments(common):
         "--reclaim-policy", selected["reclaim_policy"],
         "--node", str(selected["node"]), "--size-gb", str(selected.get("pool_size_gb", 200)),
     ]
-    if selected.get("require_balanced_pool"):
+    if selected["memory_policy"] == "interleave":
         result.extend(["--memory-nodes", ",".join(map(str, selected["memory_nodes"]))])
+    if selected.get("placement_check") == "diagnostic":
+        result.extend(["--placement-check", "diagnostic"])
     return result
 
 
 def server_parameters(common, captured):
     selected = configuration(common)
     result = dict(captured)
-    if selected.get("require_balanced_pool"):
+    if selected["memory_policy"] == "interleave":
         result["hicache_size"] = selected["pool_size_gb"]
     return result
 
@@ -245,9 +255,58 @@ def registration_evidence(path, scheduler, mapping, node):
     }
 
 
+def observe_diagnostic(selected, scheduler, directory, proc_root):
+    record = {
+        "configuration": selected, "scheduler": scheduler,
+        "placement_is_an_acceptance_gate": False,
+        "scope": "One best-effort NUMA observation; capacity and CUDA transfer checks are independent.",
+    }
+    target = Path(directory) / "server"
+    try:
+        capacity = json.loads((target / "native_capacity_census.json").read_bytes())["capacity"]
+        size = capacity["host_full_bytes"]
+        record["host_full_capacity_bytes"] = size
+        proc = Path(proc_root) / str(scheduler["pid"])
+        fields = (proc / "stat").read_text().rsplit(")", 1)[1].split()
+        if fields[19] != scheduler["start_ticks"]:
+            raise ValueError("NUMA diagnostic worker identity changed")
+        maps, numa = (proc / "maps").read_text(), (proc / "numa_maps").read_text()
+        page = os.sysconf("SC_PAGE_SIZE")
+        mapping = exact_mapping(maps, (size + page - 1) // page * page)
+        line, = (line for line in numa.splitlines() if line.split()[0] == mapping["start_address"])
+        values = dict(field.split("=", 1) for field in line.split() if "=" in field)
+        page_bytes = int(values.get("kernelpagesize_kB", "0")) * 1024
+        resident = {
+            name[1:]: int(value) * page_bytes
+            for name, value in values.items() if re.fullmatch(r"N\d+", name)
+        }
+        total = sum(resident.values())
+        record.update(
+            mapping=mapping, raw_numa_maps_line=line, kernel_page_bytes=page_bytes,
+            reported_resident_bytes_by_node=resident, reported_resident_bytes=total,
+            reported_resident_counter_gap_bytes=size - total,
+            reported_remote_fraction=(
+                sum(value for owner, value in resident.items() if int(owner) != selected["node"]) / total
+                if total else None
+            ),
+        )
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
+        record["observation_error"] = repr(error)
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        path = target / f"host_numa_diagnostic_{os.getpid()}_{time.monotonic_ns()}.json"
+        with path.open("x") as stream:
+            json.dump(record, stream)
+            stream.write("\n")
+    except OSError:
+        pass
+
+
 def observe(common, scheduler, directory, *, proc_root=Path("/proc"), topology=None):
     selected = configuration(common)
     if not requires_placement(common):
+        if selected.get("placement_check") == "diagnostic":
+            observe_diagnostic(selected, scheduler, directory, proc_root)
         return None
     capacity_path = Path(directory) / "server/native_capacity_census.json"
     capacity = json.loads(capacity_path.read_bytes())["capacity"]

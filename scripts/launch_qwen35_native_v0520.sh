@@ -40,6 +40,7 @@ HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-bind}"
 HOST_NUMA_MEMORY_NODES="${HOST_NUMA_MEMORY_NODES:-}"
 HOST_NUMA_RECLAIM_POLICY="${HOST_NUMA_RECLAIM_POLICY:-conservative}"
+HOST_NUMA_PLACEMENT_CHECK="${HOST_NUMA_PLACEMENT_CHECK:-strict}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 ENABLE_SESSION_RADIX_CACHE="${ENABLE_SESSION_RADIX_CACHE:-0}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
@@ -192,6 +193,9 @@ if (( HICACHE_SIZE_GB > 0 )) || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; th
     fi
     if [[ "$HOST_NUMA_MEMORY_POLICY" == interleave ]]; then
       reclaim_args+=(--memory-nodes "$HOST_NUMA_MEMORY_NODES")
+    fi
+    if [[ "$HOST_NUMA_PLACEMENT_CHECK" != strict ]]; then
+      reclaim_args+=(--placement-check "$HOST_NUMA_PLACEMENT_CHECK")
     fi
     "${PYTHON}" "${BELIEFKV_ROOT}/scripts/preflight_qwen35_host_pool.py" \
       --memory-policy "$HOST_NUMA_MEMORY_POLICY" \

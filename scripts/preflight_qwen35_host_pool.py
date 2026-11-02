@@ -73,6 +73,7 @@ def check_host_pool(
     memory_policy: str = "bind",
     reclaim_policy: str = "conservative",
     memory_nodes: str = "",
+    placement_check: str = "strict",
 ) -> tuple[int, int]:
     if type(node) is not int or node < 0:
         raise ValueError("HOST_NUMA_NODE must be a nonnegative integer")
@@ -83,6 +84,10 @@ def check_host_pool(
         raise ValueError("HICACHE_SIZE_GB must be between 1 and 200 in total")
     if memory_policy not in ("bind", "preferred", "interleave"):
         raise ValueError("HOST_NUMA_MEMORY_POLICY must be bind or preferred, or explicit interleave")
+    if placement_check not in ("strict", "diagnostic") or (
+        placement_check == "diagnostic" and memory_policy != "interleave"
+    ):
+        raise ValueError("diagnostic placement requires explicit interleave")
     if memory_policy == "interleave":
         nodes = interleave_nodes(memory_nodes, node)
     elif memory_nodes:
@@ -97,12 +102,14 @@ def check_host_pool(
         available = 0
         for owner in nodes:
             total, estimate = _node_capacity(owner, node_root, reclaim_policy=reclaim_policy)
-            if min(total, estimate) < required_per_node:
+            if placement_check == "strict" and min(total, estimate) < required_per_node:
                 raise ValueError(
                     f"interleave NUMA node {owner} needs {required_per_node / GIB:.2f} GiB; "
                     f"only {estimate / GIB:.2f} GiB estimated reclaimable"
                 )
-            available += estimate
+            available += min(total, estimate)
+        if available < required:
+            raise ValueError("the selected NUMA nodes lack the total Host pool budget and reserve")
         return size_gb * GB, available
     total, available_estimate = _node_capacity(node, node_root, reclaim_policy=reclaim_policy)
     if memory_policy == "preferred":
@@ -129,11 +136,13 @@ def main() -> None:
     parser.add_argument("--memory-policy", choices=("bind", "preferred", "interleave"), default="bind")
     parser.add_argument("--memory-nodes", default="")
     parser.add_argument("--reclaim-policy", choices=("conservative", "clean_file"), default="conservative")
+    parser.add_argument("--placement-check", choices=("strict", "diagnostic"), default="strict")
     args = parser.parse_args()
     try:
         pool_bytes, available = check_host_pool(
             args.node, args.size_gb, memory_policy=args.memory_policy,
             reclaim_policy=args.reclaim_policy, memory_nodes=args.memory_nodes,
+            placement_check=args.placement_check,
         )
     except ValueError as exc:
         parser.error(str(exc))

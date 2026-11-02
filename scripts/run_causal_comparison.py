@@ -139,7 +139,7 @@ def environment(
         "EXECUTION_FRONTIER_RESTORE": str(int(execution_frontier_restore)),
     }
     placement = host_numa.configuration(reference["arms"]["full"])
-    if placement.get("require_balanced_pool"):
+    if placement["memory_policy"] == "interleave":
         required["HICACHE_SIZE_GB"] = str(placement["pool_size_gb"])
     full_only = reference["arms"]["full"].get("MODEL_CACHE_LAYOUT") == "full_only"
     if full_only:
