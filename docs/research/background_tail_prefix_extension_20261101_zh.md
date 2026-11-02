@@ -1067,3 +1067,35 @@ Host-block回访归因重算也为0。
 Host已发生真实驱逐和回访，不能由上述逻辑并集小于总池推导
 物理迁移必然可行，也不将两个零值外推到尚未结束的尾部。
 三项背景替换全部晚于共同窗口，当前窗口数字不归因于这些替换。
+
+### 两条旧损失请求的实际重放
+
+为区分“尚未执行到旧损失位置”与“该请求已经保住前缀”，
+`ops/audit_repeated_prefix_loss_cases_20261101.py`
+只读跟踪上次静态Full中两个有完整prefill几何支持的测量请求。
+结果保存在同一live目录的
+`repeated_loss_cases_after_two_replacements.json`。
+它逐项核对两次运行的完整prompt/output哈希、实际输出数组、
+workflow/invocation/context/epoch、前一个已服务request及输入公共前缀，
+再核对当前实际prefill的唯一attempt/session及输入区间。
+未执行或未完成的请求会单独保留pending状态，不以缺失记录计为零重算。
+
+两个请求在本次封存前缀中均已完成：
+
+| 测量请求 | 相同旧输入公共前缀 | 上次cached | 本次cached | 上次实际旧前缀prefill | 本次实际旧前缀prefill |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `python_system_security_medium_028`，root epoch17 | 58,280 | 547 | 58,552 | 57,733 | 0 |
+| `python_data_lake_medium_050`，root epoch34 | 120,660 | 18,860 | 120,825 | 101,800 | 0 |
+
+每个本次请求均有一条实际prefill样本，
+其输入区间没有重新进入旧公共前缀；完整回执及原始工作相同，
+状态均为 `completed_exact_request_old_prefix_preserved`。
+因此旧两例合计159,533个重复输入在这两个已完成请求中未再次出现，
+不只是全局计数仍为零或请求尚未到达。
+该比较只证明这两个请求的观测差异，
+没有隔离背景替换与运行时序变化的因果，也不换算成节省的JCT。
+
+16:45的独立observer为47个实际到达、固定测量成员完成15/18。
+Native writer健康，独立状态的旧前缀损失代理仍为0；
+剩余测量尾部及是否出现新的损失仍待完整结果，
+ThunderAgent条件接续继续等待原负载检查和实际退出。
