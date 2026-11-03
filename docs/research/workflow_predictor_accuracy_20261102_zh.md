@@ -955,14 +955,32 @@ r5_remaining_calls_cpu_r1/
 
 | 微秒/次 | 保留模型 | 条件树 |
 | --- | ---: | ---: |
-| P50 | 52.742 | 135.012 |
-| P99 | 99.07789 | 192.72039 |
+| P50 | 52.742 | 134.5955 |
+| P99 | 99.07789 | 204.82523 |
 
-中位增量约 82.27 微秒，刷新频率没有提高。它是组件成本观测，不是
+中位增量约 81.85 微秒，刷新频率没有提高。它是组件成本观测，不是
 完整控制平面开销或 GPU 干扰结果。最终相关 CPU 检查 157 项通过；
 包含新增测量组绑定拒绝、数值投影缓存键与旧模型回归。新增格式仅供
 显式指定的预测模型使用，没有改写正式 workload、调度参数或默认模型，
 本轮没有启动 GPU 试验。完整 workflow JCT 稳定改善目标仍为 active。
+
+最终可选模型与证据：
+
+```text
+r5_remaining_calls_cpu_r1/conditional_trees_r1/
+  qualified_export/model.json
+  qualified_export/evaluation.json
+  qualified_export/actual_worker_and_cost.json
+  serving_export_bound_r2/selected_competition.json
+  retained_actual_worker_and_cost.json
+```
+
+最终模型 SHA256 为
+`15d3c1290590ce0cad69c03721cd23c329c9b78d5a42cddc6799d2210c14f1ec`；
+与已经审计的绑定版仅校准摘要不同，预测参数、资格/支持判定字段逐项
+相等。最终模型再次通过全部 53890 快照的部署概率核对和真实后台线程
+18 条任务发布，成本表使用最终模型的实际采样。固定开发人群已多次
+用于探索，结果不能作为新独立盲测或已经改善完整 JCT 的证据。
 
 ## 成本视界确认未复现收益
 
