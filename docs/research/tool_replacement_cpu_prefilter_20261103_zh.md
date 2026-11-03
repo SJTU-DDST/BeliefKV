@@ -60,6 +60,26 @@ CPU stand-in，不能写成新的 GPU 资格或数值等价证据。
 原生身份查找、无重复查找以及原工作量上界；不要求已经使用索引的
 实现仍遍历全部无关节点。测试名称与参数身份保留，未删除失败用例。
 
+### 独立冻结验证
+
+主工作区实现提交为 `0f457f8e`。从原无分母服务版本 `225db65e` 创建
+独立目录，仅 cherry-pick 本次提交，冻结版本为
+`6f1c648b88b12402208b6bf59c881da54876b0c4`：
+
+```text
+/home/longhao/experiment/.worktrees/beliefkv-tool-checks-host400-20261103
+```
+
+该干净目录实际通过 1346 项 CPU 检查，零失败、错误或跳过，来源绑定
+工具验证完整保留原来的 1179 项身份，增加五项新检查及原生传输策略
+相关检查。相比原服务版本，`beliefkv` 中只有
+`runtime/reference_tool_replacement.py`、
+`runtime/predicted_tool_offload.py` 两个模块改变。
+
+原排队版本的全部资格输入 SHA256 仍匹配。这里没有重新分配 Host 池、
+运行 GPU 模型或增加 GPU 后继，也没有把新的 CPU 资格覆盖到正在等待
+的原服务目录。
+
 ## 局部成本比较
 
 基线类直接读取已冻结服务目录中的 `ReferenceToolReplacement` 原代码。
@@ -94,6 +114,9 @@ helper 的旧 20 次中包含缓存读取，不能全部称为原生完整 token
 本次 CPU 优化作为单独准备的后续改动，不注册额外 GPU 实验，也不修改
 任务、token、依赖、工具时长、400GB Host、到达表或测量成员。
 
+若后续要隔离短 workflow 排序收益，排序与非排序 Full 应采用同一版
+控制优化；否则必须声明为联合改变，不能把控制成本下降归因于排序。
+
 完整平均 JCT 可重复改善约 1% 的目标仍未达到；CPU 微基准不是该目标
 的替代验收。后续服务候选只为实际改变的控制代码补必要资格，原模型、
 Host 组件和迁移路径的已有证据继续复用。
@@ -110,6 +133,11 @@ experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/
     replacement_prefilter_cpu_r4.xml
     replacement_control_benchmark_r1.json
     replacement_control_benchmark_r2.json
+    replacement_prefilter_frozen_r1/
+      cpu.xml
+      sources.json
+      binding_result.json
+      qualification.json
 ```
 
 实现为 `beliefkv/runtime/reference_tool_replacement.py`、
