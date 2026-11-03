@@ -359,6 +359,8 @@ class WorkflowWorkModel:
     def __init__(self, raw):
         import numpy as np
 
+        if "frozen_work_readout_experimental" in raw:
+            raise ValueError("offline frozen workflow readouts require their experimental adapter")
         self.schema = raw.get("schema")
         self.numeric_transform = raw.get("numeric_feature_transform")
         if self.numeric_transform not in (None, OBSERVED_RATIOS, SERVICE_PROGRESS) or (
