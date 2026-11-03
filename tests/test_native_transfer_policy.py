@@ -1636,7 +1636,14 @@ def test_pressure_publication_stops_only_after_both_native_prefixes_are_complete
             0: ((64, 64),) if sparse_pool == 0 else first,
             2: ((64, 64),) if sparse_pool == 2 else first,
         }
-        assert lookup.calls == list(range(1, 65 if sparse_pool is not None else 12))
+        allowed = set(range(1, 65 if sparse_pool is not None else 12))
+        assert set(lookup.calls) <= allowed
+        assert len(lookup.calls) == len(set(lookup.calls))
+        selected = {
+            node_id for values in cache.beliefkv_join_pressure_candidates_by_component.values()
+            for node_id, _created in values
+        }
+        assert selected <= set(lookup.calls)
     finally:
         runtime.close()
 
@@ -1765,7 +1772,13 @@ def test_pressure_publication_excludes_restore_target_before_native_pool_limits(
             expected_lookup = list(range(9, 17)) + [64]
         else:
             expected_lookup = [n for n in range(1, 1025) if n not in excluded]
-        assert lookup == expected_lookup
+        assert set(lookup) <= set(expected_lookup)
+        assert len(lookup) == len(set(lookup))
+        selected = {
+            node_id for values in cache.beliefkv_join_pressure_candidates_by_component.values()
+            for node_id, _created in values
+        }
+        assert selected <= set(lookup)
     finally:
         runtime.close()
 

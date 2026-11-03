@@ -380,7 +380,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
         headroom = observe_static_full_mamba_headroom(runtime._native_cache)
         if not headroom.observable:
             return None
-        budget = runtime._current_residency_budget()
+        budget = runtime._current_residency_budget(headroom=headroom)
         actual = consumer_input_reserve(
             runtime, budget, cost[1], adder=self._admission_adder,
         )

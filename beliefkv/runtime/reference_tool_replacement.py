@@ -65,7 +65,7 @@ class ReferenceToolReplacement:
         headroom = observe_static_full_mamba_headroom(runtime._native_cache)
         if not headroom.observable or observed.get("missing_mamba_slots") != 0:
             return None
-        budget = runtime._current_residency_budget()
+        budget = runtime._current_residency_budget(headroom=headroom)
         if budget.request_slots <= 0:
             return None
         reserve = consumer_input_reserve(
@@ -254,6 +254,9 @@ class ReferenceToolReplacement:
             request = agents._live_requests.get(key.request_id)
             if request is None:
                 continue
+            if not self._logical_window_can_fit(key, donors):
+                agents.counts["tool_event_replacement_logical_window_skips"] += 1
+                continue
             self.consumer = controller.consumer = (request, key)
             demand = self.demand(*self.consumer, refresh=True)
             if demand is None or demand[0] <= 0 and demand[1] <= 0:
@@ -306,4 +309,23 @@ class ReferenceToolReplacement:
                     return False
         agents.counts["tool_event_replacement_no_complete_pair"] += 1
         controller.cursor += controller.max_contexts
+        return False
+
+    def _logical_window_can_fit(self, key, donors):
+        agents = self.offload.runtime._agent_admission
+        target = agents.policy.programs.get(key.invocation_id)
+        if target is None:
+            return False
+        required = target.tokens + agents.policy.buffer_tokens - agents.policy.remaining_capacity()
+        if required <= 0:
+            return True
+        # Only reject an impossible single-donor replacement. Eligibility,
+        # physical capacity and the actual release are still checked later.
+        for offset in range(min(len(donors), self.offload.max_contexts)):
+            donor = donors[(self.offload.cursor + offset) % len(donors)]
+            owner = agents.policy.programs.get(donor.invocation_id)
+            if owner is not None and owner.active and (
+                owner.tokens + agents.policy.buffer_tokens >= required
+            ):
+                return True
         return False
