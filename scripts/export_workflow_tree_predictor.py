@@ -54,24 +54,29 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("candidate-model", "candidate-evaluation", "competition", "baseline-model",
-                 "dataset", "output-dir"):
+                 "dataset", "cohort", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve previous serving exports")
     paths = (
         args.candidate_model, args.candidate_evaluation, args.competition,
-        args.baseline_model, args.dataset,
+        args.baseline_model, args.dataset, args.cohort,
     )
     pins = {str(path.resolve()): sha256_file(path) for path in paths}
-    package, evaluation, competition, baseline, data = (json.loads(path.read_bytes()) for path in paths)
+    package, evaluation, competition, baseline, data, _cohort = (
+        json.loads(path.read_bytes()) for path in paths
+    )
     if (
         evaluation["model_sha256"] != pins[str(args.candidate_model.resolve())]
         or evaluation["inputs_sha256"].get(str(args.dataset.resolve())) != pins[str(args.dataset.resolve())]
+        or evaluation["inputs_sha256"].get(str(args.cohort.resolve())) != pins[str(args.cohort.resolve())]
         or competition.get("offline_tree_readout_adapter_used") is not True
         or competition.get("offline_tree_serving_eligibility_granted") is not False
         or any(competition["inputs_sha256"].get(str(path.resolve())) != pins[str(path.resolve())]
-               for path in (args.candidate_model, args.candidate_evaluation, args.baseline_model, args.dataset))
+               for path in (
+                   args.candidate_model, args.candidate_evaluation, args.baseline_model, args.dataset, args.cohort,
+               ))
     ):
         raise ValueError("require the exact selected package and its already completed paired audit")
     review_improvement(evaluation, competition)
@@ -96,6 +101,9 @@ def main():
     raw["conditional_progress_tree_head"] = portable_head(candidate)
     raw["metadata"].update(
         split_contract=evaluation["expanded_split"],
+        calibration_distribution_metrics=deepcopy(
+            evaluation["calibration_summary"][evaluation["selected"]]["calibration"]["all"],
+        ),
         conditional_progress_readout={
             "training_executions": evaluation["expanded_training_executions"],
             "training_projects": evaluation["training_projects"],

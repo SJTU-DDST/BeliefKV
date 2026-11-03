@@ -40,8 +40,11 @@ class CachedCandidate:
 
 def projection_key(projection):
     import numpy as np
+    from beliefkv.predictor.workflow_progress_tree import TreeProjection
     from beliefkv.predictor.workflow_work import InitialWorkProjection
 
+    if isinstance(projection, TreeProjection):
+        return ("conditional_progress_tree", projection_key(projection.progress_projection), projection.task_structure)
     if isinstance(projection, InitialWorkProjection):
         return (
             projection_key(projection.progress_projection),

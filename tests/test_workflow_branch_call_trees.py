@@ -203,6 +203,20 @@ def test_portable_serving_export_matches_native_tree_scores_and_preserves_initia
     assert "export_only_change" not in candidate.head["features"]
 
 
+def test_portable_projection_cache_keys_preserve_equal_values_and_distinct_task_structure(candidate_data):
+    from beliefkv.predictor.workflow_progress_tree import TreeProjection
+    from scripts.train_workflow_reference_distribution import CachedCandidate, projection_key
+
+    serving, _candidate, _raw = serving_model(candidate_data)
+    first, second = serving.task_projection("ab"), serving.task_projection("ab")
+    assert first is not second and projection_key(first) == projection_key(second)
+    changed = TreeProjection(first.progress_projection, tuple(value + 1. for value in first.task_structure))
+    assert projection_key(first) != projection_key(changed)
+    cached = CachedCandidate(serving)
+    assert cached.predict(first, row(0)["features"]) == cached.predict(second, row(0)["features"])
+    assert len(cached.cache) == 1
+
+
 @pytest.mark.parametrize("change", ("trunk", "source", "features", "trees", "cycle", "depth", "sigma"))
 def test_serving_tree_rejects_changed_trunk_and_malformed_portable_nodes(candidate_data, change):
     _serving, _candidate, raw = serving_model(candidate_data)
@@ -277,3 +291,39 @@ def test_actual_worker_event_progress_uses_the_portable_conditional_branch(candi
         assert not worker.error
     finally:
         worker.close()
+
+
+@pytest.mark.parametrize("changed", ("calibration_evaluation", "competition"))
+def test_export_rejects_a_changed_fixed_measurement_cohort(tmp_path, monkeypatch, changed):
+    import json
+    import sys
+    from beliefkv.experiments.source_provenance import sha256_file
+    from scripts.export_workflow_tree_predictor import main
+
+    names = ("candidate-model", "candidate-evaluation", "competition", "baseline-model", "dataset", "cohort")
+    paths = {name: tmp_path / (name + ".json") for name in names}
+    for path in paths.values():
+        path.write_text("{}")
+    identity = {str(path): sha256_file(path) for path in paths.values()}
+    evaluation = {
+        "model_sha256": identity[str(paths["candidate-model"])],
+        "inputs_sha256": {str(paths[name]): identity[str(paths[name])] for name in ("dataset", "cohort")},
+    }
+    if changed == "calibration_evaluation":
+        evaluation["inputs_sha256"][str(paths["cohort"])] = "f" * 64
+    paths["candidate-evaluation"].write_text(json.dumps(evaluation))
+    identity[str(paths["candidate-evaluation"])] = sha256_file(paths["candidate-evaluation"])
+    competition = {
+        "offline_tree_readout_adapter_used": True, "offline_tree_serving_eligibility_granted": False,
+        "inputs_sha256": identity,
+    }
+    if changed == "competition":
+        competition["inputs_sha256"][str(paths["cohort"])] = "f" * 64
+    paths["competition"].write_text(json.dumps(competition))
+    monkeypatch.setattr(sys, "argv", [
+        "export", *(value for name, path in paths.items() for value in ("--" + name, str(path))),
+        "--output-dir", str(tmp_path / "export"),
+    ])
+    with pytest.raises(ValueError, match="already completed paired audit"):
+        main()
+    assert not (tmp_path / "export").exists()
