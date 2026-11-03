@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import asdict
 from itertools import chain, repeat
+import json
 import math
 
 import pytest
@@ -15,7 +16,10 @@ from beliefkv.predictor.workflow_continuous_work import (
 from beliefkv.predictor.workflow_progress_tree import FEATURES
 from beliefkv.predictor.workflow_work import R5_FEATURES, WorkflowWorkModel
 from beliefkv.predictor.workflow_work_readout import representation_fingerprint
-from scripts.audit_continuous_work_combinations import inspect
+from beliefkv.experiments.source_provenance import sha256_file
+from scripts.audit_continuous_work_combinations import (
+    SEMANTIC_VARIANT, inspect, load_semantic_initial_study,
+)
 from tests.test_workflow_work_distribution import distribution_raw
 
 
@@ -226,3 +230,137 @@ def test_incomplete_actual_search_is_reproduced_but_not_used_for_counterfactual(
     )
     assert result["counts"]["incomplete_searches_excluded"] == 1
     assert result["decisions"] == []
+
+
+@pytest.mark.parametrize("protected", (False, True))
+def test_semantic_initial_weight_uses_exact_task_and_keeps_join_rights(protected):
+    row, observation, costs, serving = choice_fixture(protected=protected)
+    texts = {
+        candidate["workflow"]: "ab" if candidate["identity"] == "short" else "abab"
+        for candidate in row["candidates"]
+    }
+    for entry in observation["candidates"]:
+        entry["features"] = observed(0.)
+        probabilities = serving.predict(
+            serving.task_projection(texts[entry["key"]["root_workflow_id"]]), entry["features"],
+        )
+        entry["predictions"]["tree"].update(
+            probabilities=probabilities, effective_weight=probability_weight(probabilities),
+        )
+    calls = []
+
+    def semantic(text, probabilities):
+        calls.append((text, probabilities))
+        return {"distribution_effective_weight": .8 if text == "ab" else .2}
+
+    result = inspect(
+        [row], [observation], costs, {"identity": "test-cost"}, serving, contract(),
+        texts, {"short-workflow", "long-workflow"}, semantic_initial=semantic,
+    )
+    decision = result["decisions"][0]
+    assert "short" in decision["selections"][SEMANTIC_VARIANT]["selected"]
+    assert "long" not in decision["selections"][SEMANTIC_VARIANT]["selected"]
+    assert [value[0] for value in calls] == [texts[entry["key"]["root_workflow_id"]]
+                                            for entry in observation["candidates"]]
+    assert result["counts"]["semantic_initial_candidate_observations"] == len(calls)
+    if protected:
+        assert "protected" in decision["selections"][SEMANTIC_VARIANT]["selected"]
+
+
+@pytest.mark.parametrize("initial", (False, True))
+def test_semantic_variant_cannot_replace_progress_or_unsupported_forecasts(initial):
+    row, observation, costs, serving = choice_fixture()
+    if initial:
+        for entry in observation["candidates"]:
+            entry["features"] = observed(0.)
+            probabilities = serving.predict(serving.task_projection("ab"), entry["features"])
+            entry["predictions"]["tree"].update(
+                probabilities=probabilities, effective_weight=.5, support="outside_training_support",
+            )
+
+    def forbidden(*_args):
+        raise AssertionError("semantic initial head must not replace progress or unsupported forecasts")
+
+    result = inspect(
+        [row], [observation], costs, {"identity": "test-cost"}, serving, contract(),
+        {"long-workflow": "ab", "short-workflow": "ab"}, set(), semantic_initial=forbidden,
+    )
+    decision = result["decisions"][0]
+    assert decision["selections"][SEMANTIC_VARIANT] == decision["selections"]["tree_continuous_distribution"]
+    assert all(value["semantic_initial_forecast"] is None for value in decision["candidate_details"].values())
+
+
+def semantic_study(tmp_path):
+    from tests.test_workflow_qwen_initial_work import contract as qwen_contract
+
+    encoder = qwen_contract()
+    dimension = encoder["embedding_dimension"] + len(encoder["task_features"])
+    expert = {
+        "center": [0.] * dimension, "scale": [1.] * dimension,
+        "coefficient": [math.log1p(230000.) - math.log1p(24000.)] + [0.] * (dimension - 1),
+        "bias": math.log1p(24000.), "log_total_sigma": 0.,
+    }
+    prior = {"kind": "semantic_class_conditional_log_work_v1",
+             "class_conditional_priors": [expert] * 3}
+    raw = {
+        "kind": "offline_qwen_semantic_initial_work_v1", "family": "class_conditional",
+        "prior": prior, "encoder": encoder, "reference": contract(),
+        "metadata": {"decision_eligible": False},
+    }
+    inputs = {"/retained/model.json": "a" * 64}
+    values = {
+        "model.json": raw,
+        "task_embeddings.json": {
+            "encoder": encoder, "explicit_task_text_only": True, "future_work_labels_in_embeddings": False,
+            "vectors": {"short": [0.] * dimension, "long": [1.] + [0.] * (dimension - 1)},
+        },
+        "previous59/prior.json": prior,
+    }
+    for name, value in values.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(value))
+    evaluation = {
+        "family": "class_conditional", "selected": "previous59",
+        "candidate_selection_used_test_labels": False,
+        "model_sha256": sha256_file(tmp_path / "model.json"),
+        "task_embeddings_sha256": sha256_file(tmp_path / "task_embeddings.json"),
+        "inputs_sha256": inputs,
+        "calibration": {
+            "retained": {"pair_ranking_accuracy": .6, "mean_squared_continuous_utility_error": .1},
+            "previous59": {"pair_ranking_accuracy": .8, "mean_squared_continuous_utility_error": .05},
+        },
+    }
+    (tmp_path / "evaluation.json").write_text(json.dumps(evaluation))
+    return inputs, evaluation
+
+
+def test_semantic_study_loader_binds_calibration_selected_model_and_exact_task_cache(tmp_path):
+    inputs, _evaluation = semantic_study(tmp_path)
+    forecast, pins = load_semantic_initial_study(tmp_path, contract(), inputs)
+    short, long = (forecast(text, (0., 0., 1.)) for text in ("short", "long"))
+    assert short["distribution_effective_weight"] > long["distribution_effective_weight"]
+    assert math.expm1(short["log1p_remaining_work"]) == pytest.approx(24000.)
+    assert math.expm1(long["log1p_remaining_work"]) == pytest.approx(230000.)
+    assert pins[str(tmp_path / "model.json")] == sha256_file(tmp_path / "model.json")
+    with pytest.raises(ValueError, match="exact observed task"):
+        forecast("unknown", (0., 0., 1.))
+    with pytest.raises(ValueError, match="matched inputs"):
+        load_semantic_initial_study(tmp_path, contract(), {"/retained/model.json": "b" * 64})
+
+
+@pytest.mark.parametrize("changed", ("model", "cache", "selection", "reference", "prior"))
+def test_semantic_study_loader_rejects_changed_calibration_artifact_or_reference(tmp_path, changed):
+    inputs, evaluation = semantic_study(tmp_path)
+    reference = contract()
+    if changed in ("model", "cache", "prior"):
+        name = {"model": "model.json", "cache": "task_embeddings.json",
+                "prior": "previous59/prior.json"}[changed]
+        (tmp_path / name).write_text("{}")
+    elif changed == "selection":
+        evaluation["selected"] = "expanded77"
+        (tmp_path / "evaluation.json").write_text(json.dumps(evaluation))
+    else:
+        reference["reference_work"] *= 2
+    with pytest.raises(ValueError):
+        load_semantic_initial_study(tmp_path, reference, inputs)

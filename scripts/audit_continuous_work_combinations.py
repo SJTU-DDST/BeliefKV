@@ -21,7 +21,7 @@ from beliefkv.policy.workflow_combination import (
 from beliefkv.predictor.workflow_continuous_work import (
     ContinuousWorkReadout, fit_training_reference, remaining_work_weight,
 )
-from beliefkv.predictor.workflow_work import WorkflowWorkModel
+from beliefkv.predictor.workflow_work import WorkflowWorkModel, before_observed_work
 from beliefkv.predictor.workflow_rank_input import WorkflowRankInput
 from scripts import run_causal_comparison as causal
 from scripts.audit_learned_combination_prediction import combination_candidates, pair_quality
@@ -38,13 +38,74 @@ VARIANTS = (
     "actual_cached", "tree_binned", "tree_continuous", "tree_continuous_distribution",
     "oracle_binned", "oracle_continuous",
 )
+SEMANTIC_VARIANT = "tree_semantic_continuous_distribution"
 
 
-def inspect(rows, observations, costs, profile, model, contract, texts, measured):
+def load_semantic_initial_study(directory, reference, retained_inputs):
+    import numpy as np
+
+    from beliefkv.predictor.workflow_qwen_encoder import DIMENSION, validate_contract
+    from scripts.train_workflow_qwen_initial_work import calibration_choice, prior_predictions
+
+    paths = {
+        name: directory / name for name in ("model.json", "evaluation.json", "task_embeddings.json")
+    }
+    raw, evaluation, cached = (causal.load(paths[name]) for name in paths)
+    pins = {str(path.resolve()): sha256_file(path) for path in paths.values()}
+    if (
+        raw.get("kind") != "offline_qwen_semantic_initial_work_v1"
+        or raw.get("family") != "class_conditional"
+        or raw.get("prior", {}).get("kind") != "semantic_class_conditional_log_work_v1"
+        or raw.get("metadata", {}).get("decision_eligible") is not False
+        or raw.get("reference") != reference
+        or evaluation.get("family") != raw["family"]
+        or evaluation.get("selected") not in ("previous59", "expanded77")
+        or evaluation["selected"] != calibration_choice(evaluation["calibration"])
+        or evaluation.get("candidate_selection_used_test_labels") is not False
+        or evaluation.get("model_sha256") != pins[str(paths["model.json"].resolve())]
+        or evaluation.get("task_embeddings_sha256") != pins[str(paths["task_embeddings.json"].resolve())]
+        or any(evaluation["inputs_sha256"].get(path) != digest for path, digest in retained_inputs.items())
+        or cached.get("encoder") != raw.get("encoder")
+        or cached.get("explicit_task_text_only") is not True
+        or cached.get("future_work_labels_in_embeddings") is not False
+    ):
+        raise ValueError("semantic choice audit requires its calibration-selected initial model and matched inputs")
+    encoder = validate_contract(raw["encoder"])
+    selected_prior = directory / evaluation["selected"] / "prior.json"
+    pins[str(selected_prior.resolve())] = sha256_file(selected_prior)
+    if causal.load(selected_prior) != raw["prior"]:
+        raise ValueError("semantic initial artifact differs from the calibration-selected prior")
+    vectors = {text: np.asarray(values, dtype=float) for text, values in cached["vectors"].items()}
+    if any(
+        vector.shape != (DIMENSION + len(encoder["task_features"]),) or not np.isfinite(vector).all()
+        for vector in vectors.values()
+    ):
+        raise ValueError("semantic initial cache has invalid task vectors")
+
+    def forecast(text, probabilities):
+        if text not in vectors:
+            raise ValueError("semantic initial choice lacks the exact observed task text")
+        logs, utility = prior_predictions(
+            raw["prior"], [{"text": text}], vectors, reference["reference_work"],
+            probabilities=[probabilities], thresholds=reference["work_thresholds"],
+        )
+        if not math.isfinite(logs[0]) or not 0 <= utility[0] <= 1:
+            raise ValueError("semantic initial prediction is outside finite work support")
+        return {
+            "log1p_remaining_work": float(logs[0]),
+            "distribution_effective_weight": float(utility[0]),
+            "source": "calibration_selected_qwen_class_conditional_initial_work",
+        }
+
+    return forecast, pins
+
+
+def inspect(rows, observations, costs, profile, model, contract, texts, measured, *, semantic_initial=None):
     if len(rows) != len(observations):
         raise ValueError("continuous comparison needs each exact observed decision boundary")
     readout, projections = ContinuousWorkReadout(model, contract), {}
     counts, stats, decisions = Counter(), defaultdict(Counter), []
+    variants = VARIANTS + ((SEMANTIC_VARIANT,) if semantic_initial is not None else ())
     for row, observation in zip(rows, observations):
         replayed = replay_choice(
             row, costs, profile["identity"], allow_feasible_resource_alternatives=True,
@@ -102,11 +163,23 @@ def inspect(rows, observations, costs, profile, model, contract, texts, measured
                 "oracle_binned": (1., .5, .25)[bisect_right(model.thresholds, max(0., remaining))],
                 "oracle_continuous": remaining_work_weight(max(0., remaining), contract["reference_work"]),
             }
+            semantic_forecast = None
+            if semantic_initial is not None:
+                values[SEMANTIC_VARIANT] = point["distribution_effective_weight"]
+                if (
+                    before_observed_work(entry["features"])
+                    and prediction["support"] == "calibrated_distribution"
+                ):
+                    semantic_forecast = semantic_initial(texts[workflow], prediction["probabilities"])
+                    values[SEMANTIC_VARIANT] = semantic_forecast["distribution_effective_weight"]
+                    counts["semantic_initial_candidate_observations"] += 1
             details[candidate.identity] = {
                 "workflow": workflow, "key": entry["key"], "features": entry["features"],
                 "remaining_model_work": remaining, "continuous_forecast": point,
                 "probabilities": prediction["probabilities"], "weights": values,
             }
+            if semantic_initial is not None:
+                details[candidate.identity]["semantic_initial_forecast"] = semantic_forecast
             weights[candidate.identity] = values
         counts["complete_searches_with_observed_inputs"] += 1
         selections, truth_rows = {}, [
@@ -114,7 +187,7 @@ def inspect(rows, observations, costs, profile, model, contract, texts, measured
             for candidate in candidates
         ]
         truth_by_id = {candidate.identity: candidate for candidate in truth_rows}
-        for name in VARIANTS:
+        for name in variants:
             alternatives = [replace(candidate, weight=weights[candidate.identity][name]) for candidate in candidates]
             result = choose_combination(
                 alternatives, reference, resources, costs, required=required,
@@ -194,7 +267,7 @@ def inspect(rows, observations, costs, profile, model, contract, texts, measured
         "ranking": {name: {
             "all_planning_competitions": pair_quality(competing, name),
             "both_development_workflows": pair_quality(competing, name, measured),
-        } for name in VARIANTS}, "decisions": decisions,
+        } for name in variants}, "decisions": decisions,
     }
 
 
@@ -203,6 +276,7 @@ def main():
     for name in ("registration", "control", "cohort", "dataset", "previous-training-data",
                  "additional-training-data", "model", "model-evaluation", "training-evaluation", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--semantic-initial-study", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve previous continuous work diagnostics")
@@ -242,6 +316,24 @@ def main():
         raise ValueError("continuous reference population differs from the selected readout training")
     model = WorkflowWorkModel.load(args.model, pins[str(args.model.resolve())])
     contract = fit_training_reference(training, model.thresholds)
+    semantic_initial = None
+    if args.semantic_initial_study is not None:
+        retained_inputs = {
+            str(path.resolve()): pins[str(path.resolve())] for path in (
+                args.dataset, args.cohort, args.previous_training_data, args.additional_training_data,
+                args.model, args.model_evaluation, args.training_evaluation,
+            )
+        }
+        semantic_initial, semantic_pins = load_semantic_initial_study(
+            args.semantic_initial_study, contract, retained_inputs,
+        )
+        pins.update(semantic_pins)
+        for path in (
+            ROOT / "scripts/train_workflow_qwen_initial_work.py",
+            ROOT / "beliefkv/predictor/workflow_qwen_encoder.py",
+            ROOT / "scripts/train_workflow_semantic_initial_prior.py",
+        ):
+            pins[str(path.resolve())] = sha256_file(path)
     executed_model_path = Path(specs[1]["common_environment"]["WORKFLOW_WORK_MODEL"])
     executed_model = causal.load(executed_model_path)
     profile = executed_model["admission_cost_profile"]
@@ -296,7 +388,7 @@ def main():
     print(json.dumps({"stage": "observed_inputs_reconstructed", "entries": len(rows)}), flush=True)
     result = inspect(
         rows, observations, CombinationCosts(**profile["costs"]), profile, model, contract, texts,
-        set(cohort["measured_workflow_ids"]),
+        set(cohort["measured_workflow_ids"]), semantic_initial=semantic_initial,
     )
     if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
         raise ValueError("a frozen continuous work diagnostic input changed")
@@ -309,7 +401,9 @@ def main():
             "actual_complete_search_reproduced_before_counterfactual": True,
             "learned_and_oracle_continuous_weights_use_same_model_work_units_and_training_reference": True,
             "distribution_variant_uses_existing_calibration_sigma_fixed_12_node_quadrature_and_training_class_utility": True,
-            "initial_states_use_explicit_training_only_class_prior_not_new_semantic_resolution": True,
+            "base_continuous_variants_use_training_only_class_prior_for_initial_states": True,
+            "optional_semantic_variant_uses_calibration_selected_within_class_initial_work": semantic_initial is not None,
+            "semantic_progress_and_unsupported_weights_unchanged": True,
             "complete_future_work_is_offline_oracle_label_only": True,
             "new_tree_predictions_are_synchronous_not_actual_cached_worker_predictions": True,
             "full_pool_planning_fit_is_not_immediate_native_capacity": True,
