@@ -45,12 +45,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("dataset", "cohort", "previous-training-data", "labels", "audit", "baseline-model", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--candidate-model", type=Path)
+    parser.add_argument("--candidate-evaluation", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve previous decomposition diagnostics")
-    paths = (args.dataset, args.cohort, args.previous_training_data, args.labels, args.audit, args.baseline_model)
+    if (args.candidate_model is None) != (args.candidate_evaluation is None):
+        raise ValueError("a selected candidate needs both its model and prior calibration evaluation")
+    original_paths = (
+        args.dataset, args.cohort, args.previous_training_data, args.labels, args.audit, args.baseline_model,
+    )
+    paths = original_paths + (
+        (args.candidate_model, args.candidate_evaluation) if args.candidate_model is not None else ()
+    )
     pins = {str(path.resolve()): sha256_file(path) for path in paths}
-    data, cohort, extra, labels, audit, baseline = (json.loads(path.read_bytes()) for path in paths)
+    data, cohort, extra, labels, audit, baseline = (json.loads(path.read_bytes()) for path in original_paths)
     if (
         data["sources_sha256"].get(str(args.labels.resolve())) != pins[str(args.labels.resolve())]
         or audit["inputs_sha256"].get(str(args.labels.resolve())) != pins[str(args.labels.resolve())]
@@ -63,6 +72,24 @@ def main():
         raise ValueError("require common complete labels, the fixed holdout and corrected causal competition")
     training, calibration, development, _split = split_rows(data["rows"], cohort["measured_workflow_ids"])
     training = disjoint_training_rows(training, extra["rows"], calibration, development)
+    models = {"retained": WorkflowWorkModel(baseline)}
+    if args.candidate_model is not None:
+        candidate = json.loads(args.candidate_model.read_bytes())
+        evaluation = json.loads(args.candidate_evaluation.read_bytes())
+        if (
+            evaluation.get("selected") in (None, "retained")
+            or evaluation.get("candidate_selection_used_test_labels") is not False
+            or evaluation["model_sha256"] != pins[str(args.candidate_model.resolve())]
+            or evaluation["inputs_sha256"].get(str(args.dataset.resolve()))
+            != pins[str(args.dataset.resolve())]
+            or evaluation["inputs_sha256"].get(str(args.cohort.resolve()))
+            != pins[str(args.cohort.resolve())]
+            or evaluation["original_split"] != _split
+            or candidate["metadata"].get("decision_eligible") is not True
+            or candidate["work_thresholds"] != baseline["work_thresholds"]
+        ):
+            raise ValueError("require a calibration-selected eligible model with exact source and holdouts")
+        models["selected_candidate"] = WorkflowWorkModel(candidate)
     prior = per_call_costs(training)
     _remaining, finals = remaining_call_counts(data["rows"])
     logical, texts = {}, {}
@@ -75,7 +102,7 @@ def main():
     declared = Counter(row["workflow_id"] for row in labels["requests"].values())
     if declared != {identity: value["total"] for identity, value in logical.items()}:
         raise ValueError("snapshot call totals differ from the exact complete source requests")
-    decisions = rescore(audit["decisions"], {"retained": WorkflowWorkModel(baseline)}, texts)
+    decisions = rescore(audit["decisions"], models, texts)
     diagnostics = Counter()
     names = (
         "future_call_count_only", "future_calls_observed_mean_cost",
@@ -112,7 +139,7 @@ def main():
     summaries = {name: {
         "all_workflows": rank_summary(decisions, name, measured=measured),
         "both_held_out_measured": rank_summary(decisions, name, measured=measured, held_out_only=True),
-    } for name in ("retained", *names)}
+    } for name in (*models, *names)}
     for path in (Path(__file__), ROOT / "beliefkv/predictor/workflow_work_training.py"):
         pins[str(path.resolve())] = sha256_file(path)
     if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
