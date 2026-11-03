@@ -618,6 +618,49 @@ ready 排序及 long→short 分开报告；通过校准不自动证明 JCT 改�
 将有 77 次训练执行、59 个训练项目；独立项目数不会增加为 77 或 107。
 当前采集仍在进行，尚无新增合格标签或训练后准确率。
 
+### 自然采集完成与导出检查
+
+上述为训练入口落地时的状态。此后采集于 2026-11-02 19:20:36
+America/Los_Angeles 正常结束，18/18 条原始任务自然完成，3035 次
+模型请求，93 个 JOIN、3 个 nested JOIN。每个 root 都通过真实至少
+两个已服务 child 的完成 JOIN 检查；最终事件含 29 个多成员 JOIN，
+不能把全部 93 个都称为并行 JOIN。8 次最终返回委派提醒单独保留。
+原始 token、因果图、自然尾部与原生遥测排空通过，原注册状态没有改写。
+
+增加 `scripts/export_native_workflow_training.py`，从已结束采集的
+精确 token、因果事件和原生 128-token 进度直接导出同一 R5 标签；
+不必为训练标签额外准备一次 oracle 或 GPU 回放。原始图只提供离线
+监督，线上特征仍使用当时可见的任务说明、角色与计数。只有通过原注册
+完整性、actual owned exit 和 fresh drain 的来源才可导出，缺失任务、
+强制完成、重复项目或身份不一致均拒绝。
+
+使用先前完成的原始五任务采集做独立 CPU 检查：新导出包含全部 5 条、
+3584 个快照，其中旧预测数据集保留了 4 条、3136 个快照。对这 3136 个
+快照，因果特征、事件、任务文本、项目和执行身份逐值相同；工作量标签
+按已有 `1e-6` 绝对容差相同。第 5 条的 448 个快照没有旧参考，明确不
+计为相同。最初将五条都视为有参考的检查失败保留，更正的是比较覆盖
+假设，没有修改新旧数据或放宽标签计算。
+
+`scripts/finish_workflow_task_training.py` 可在独立、干净的冻结源码中，
+等待原生采集完成后，只用 CPU 依次导出、训练和按校准选择候选。结果
+停在 `training_complete_requires_review`，不部署模型或自动启动 GPU。
+原对照模型继续保留；旧 Full/oracle/ThunderAgent 均不因这项精度工作
+重新执行。
+
+相关 CPU 检查最终 73 项全部通过，包含两份真实小模型训练及条件头加载、
+完整源拒绝、自然任务身份、分支概率守恒和先校准选择后开发评价。首次
+组合检查中的 3 个失败分别暴露了新 observer 使用 exclusive artifact
+writer 更新状态的问题，以及测试缺少已退出进程身份的 fixture 问题；
+状态改用原有原子更新接口，fixture 补足真实检查所要求的身份。失败
+报告与修正后报告均保留：
+
+```text
+r5_original_task_diversity18_cpu_r1/
+  existing5_native_export_parity_r1/
+  natural_task_pipeline_final_cpu.xml
+  natural_task_pipeline_corrected_cpu.xml
+```
+
 ## 成本视界确认未复现收益
 
 64 步确认运行已完成同一固定组的 2991 个请求、362157 个输出，fresh
