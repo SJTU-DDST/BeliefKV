@@ -94,6 +94,35 @@ def initial_probabilities(raw, vectors, thresholds):
     return np.column_stack((cumulative[:, 0], cumulative[:, 1] - cumulative[:, 0], 1. - cumulative[:, 1]))
 
 
+class SemanticInitialCandidate:
+    """Offline candidate only; never load this adapter from a serving model artifact."""
+
+    def __init__(self, base, encoder, prior, blend):
+        self.base, self.encoder, self.prior, self.blend = base, encoder, prior, blend
+
+    def __getattr__(self, name):
+        return getattr(self.base, name)
+
+    def task_encoding(self, text):
+        projection, coverage = self.base.task_encoding(text)
+        if projection is None:
+            return None, coverage
+        vector, semantic_coverage = self.encoder.encode(text)
+        return (projection, vector), min(coverage, semantic_coverage)
+
+    def task_projection(self, text):
+        return self.task_encoding(text)[0]
+
+    def predict(self, projection, observed):
+        base_projection, vector = projection
+        result = self.base.predict(base_projection, observed)
+        if before_observed_work(observed):
+            semantic = initial_probabilities(self.prior, [vector], self.thresholds)[0]
+            return tuple(float((1. - self.blend) * value + self.blend * extra)
+                         for value, extra in zip(result, semantic))
+        return result
+
+
 def main():
     import numpy as np
 

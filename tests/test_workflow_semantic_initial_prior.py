@@ -2,8 +2,10 @@ import numpy as np
 import pytest
 
 from scripts.train_workflow_semantic_initial_prior import (
-    fit_semantic_prior, initial_probabilities, ridge_fit, ridge_predict,
+    SemanticInitialCandidate, fit_semantic_prior, initial_probabilities, ridge_fit, ridge_predict,
 )
+from beliefkv.predictor.workflow_work import R5_FEATURES, WorkflowWorkModel
+from tests.test_workflow_work_distribution import distribution_raw
 
 
 def test_weighted_prior_recovers_a_simple_held_out_linear_relationship():
@@ -48,3 +50,25 @@ def test_prior_regularization_holds_out_complete_projects_including_second_tasks
     assert prior["log_total_sigma"] >= .2
     assert np.isfinite(ridge_predict(prior, np.asarray(list(vectors.values())))).all()
     assert receipt["external_calibration_or_development_used_for_ridge_selection"] is False
+
+
+def test_offline_semantic_adapter_preserves_progress_and_matches_the_calibrated_probability_rule():
+    class Encoder:
+        def encode(self, text):
+            assert text == "ab"
+            return np.asarray((1.,)), 1.
+
+    base = WorkflowWorkModel(distribution_raw())
+    prior = {"center": [0.], "scale": [1.], "coefficient": [1.], "bias": 0., "log_total_sigma": .5}
+    model = SemanticInitialCandidate(base, Encoder(), prior, .25)
+    projection = model.task_projection("ab")
+    initial = [0.] * len(R5_FEATURES)
+    expected = .75 * np.asarray(base.predict(base.task_projection("ab"), initial)) + .25 * (
+        initial_probabilities(prior, [[1.]], base.thresholds)[0]
+    )
+    assert model.predict(projection, initial) == pytest.approx(expected)
+    assert all(type(value) is float for value in model.predict(projection, initial))
+    for name in ("input_tokens", "output_tokens", "children"):
+        observed = initial.copy()
+        observed[R5_FEATURES.index(name)] = 1.
+        assert model.predict(projection, observed) == base.predict(base.task_projection("ab"), observed)
