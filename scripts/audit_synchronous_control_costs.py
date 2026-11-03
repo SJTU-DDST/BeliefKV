@@ -168,7 +168,8 @@ def inspect_opportunities(records, window):
         name: counts.get(name) for name in (
             "tool_event_replacement_choices", "tool_event_replacement_no_complete_pair",
             "tool_event_replacement_grants", "tool_event_replacement_backup_attempts",
-            "tool_event_replacement_cpu_ns", "streaming_progress_checks",
+            "tool_event_replacement_cpu_ns", "tool_event_replacement_logical_window_skips",
+            "streaming_progress_checks",
             "streaming_progress_updates",
         )
     }

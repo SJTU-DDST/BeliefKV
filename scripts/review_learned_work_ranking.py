@@ -20,6 +20,38 @@ from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
+def control_optimization_scope(spec):
+    contract = spec["comparison_contract"]
+    scope = contract.get("synchronous_control_optimization")
+    if scope is None:
+        return None
+    gpu = spec["gpu_execution"]
+    path = Path(gpu["control_optimization_qualification"])
+    qualification = causal.load(path)
+    if (
+        scope != "tool_replacement_feasibility_prefilter_and_same_check_headroom"
+        or contract.get("admission_objective_and_control_optimization_are_joint_change") is not True
+        or contract.get("only_combination_selection_objective_changed") is not False
+        or contract.get("ranking_gain_isolated") is not False
+        or gpu.get("control_optimization_qualification_sha256") != sha256_file(path)
+        or gpu.get("serving_commit") != qualification["source"]["commit"]
+        or qualification["source"].get("dirty") is not False
+        or qualification.get("complete_prior_1179_cases_retained") is not True
+        or set(qualification.get("changed_runtime_modules", ())) != {
+            "beliefkv/runtime/predicted_tool_offload.py",
+            "beliefkv/runtime/reference_tool_replacement.py",
+        }
+    ):
+        raise ValueError("control optimization lacks its exact qualified joint-change contract")
+    for name, digest in qualification["inputs_sha256"].items():
+        if sha256_file(Path(name)) != digest:
+            raise ValueError("a control-optimization qualification input changed")
+    return {
+        "scope": scope, "qualification": str(path), "serving_commit": gpu["serving_commit"],
+        "only_objective_changed": False, "ranking_gain_isolated": False,
+    }
+
+
 def verify_learned_combination_pair(control, learned):
     allowed = {
         prefix + name for prefix in ("", "BELIEFKV_") for name in (
@@ -176,6 +208,11 @@ def main():
         )},
         GPU_action=False, automatic_GPU_followup=False, performance_accepted=False,
     )
+    optimization = control_optimization_scope(specs[1])
+    if optimization is not None:
+        result["synchronous_control_optimization"] = optimization
+        result["prediction_combination_and_control_optimization_are_joint_change"] = True
+        result["ranking_gain_isolated"] = False
     write(args.output, result)
     print({
         "measured_mean_JCT_reduction_percent": result["groups"]["measured"]["mean_JCT_reduction_percent"],

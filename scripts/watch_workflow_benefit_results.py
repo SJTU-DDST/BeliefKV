@@ -1,4 +1,4 @@
-"""Collect complete benefit-only results without launching or modifying GPU work."""
+"""Collect complete benefit admission results, with an optional qualified CPU optimization."""
 
 import argparse
 from datetime import datetime, timezone
@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from scripts import run_causal_comparison as causal
 from scripts import start_workflow_benefit_only_candidate as candidate
-from scripts.review_learned_work_ranking import verify_learned_combination_pair
+from scripts.review_learned_work_ranking import control_optimization_scope, verify_learned_combination_pair
 from scripts.review_workflow_objective_pair import verify_objective_pair
 from scripts.train_workflow_work import write
 
@@ -25,14 +25,23 @@ PLAN = OUTPUT / "plan.json"
 STATE = OUTPUT / "watcher.state.json"
 
 
+def select_control_optimized_candidate():
+    global candidate, OUTPUT, PLAN, STATE
+    from scripts import start_workflow_control_optimized_candidate
+
+    candidate = start_workflow_control_optimized_candidate
+    OUTPUT = candidate.HERE / "final_results_r1"
+    PLAN, STATE = OUTPUT / "plan.json", OUTPUT / "watcher.state.json"
+
+
 def prepare():
     if PLAN.exists() or git_source_state(ROOT)["dirty"]:
         raise ValueError("preserve earlier analysis plans and freeze the analysis source")
     waiter_path = candidate.HERE / "resource_waiter_process.json"
     waiter = causal.load(waiter_path)
-    serving = Path(waiter["argv"][1]).resolve().parents[1]
     qualification_path = candidate.HERE / "qualification.json"
     qualification = causal.load(qualification_path)
+    serving = Path(qualification.get("serving_checkout", Path(waiter["argv"][1]).resolve().parents[1]))
     if git_source_state(serving) != qualification["source"]:
         raise ValueError("the queued qualified serving source changed")
     spec_path = candidate.HERE / "serving_ready/qualified_full.json"
@@ -66,6 +75,7 @@ def prepare():
     verify_learned_combination_pair(configs["full"], spec)
     for name in ("ratio_first", "ratio_confirmation"):
         verify_objective_pair(configs[name], spec)
+    optimization = control_optimization_scope(spec)
     commands = []
     common = [
         "--cohort", str(candidate.COHORT),
@@ -98,6 +108,15 @@ def prepare():
         *common, "--complete", "--policy-kind", "learned",
         "--output", str(OUTPUT / "actual_admission_service.json"),
     ]))
+    if optimization is not None:
+        commands.append(("synchronous_control_costs", [
+            str(ROOT / "scripts/audit_synchronous_control_costs.py"),
+            "--registration", str(candidate.REG),
+            "--registration", str(references["ratio_first"][0]),
+            "--registration", str(references["ratio_confirmation"][0]),
+            "--cohort", str(candidate.COHORT),
+            "--output", str(OUTPUT / "synchronous_control_costs.json"),
+        ]))
     for _name, command in commands:
         pins[command[0]] = sha256_file(Path(command[0]))
     if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
@@ -109,6 +128,9 @@ def prepare():
         "commands": commands, "inputs_sha256": pins,
         "fixed18_complete_JCT_and_common_window_only": True,
         "both_ratio_runs_retained_without_reference_cherry_picking": True,
+        "synchronous_control_optimization": optimization,
+        "only_objective_changed": optimization is None,
+        "ranking_gain_isolated": False,
         "GPU_action": False, "GPU_followup_registered": False,
     })
     print(json.dumps({"prepared": str(PLAN), "CPU_only_steps": len(commands)}), flush=True)
@@ -204,8 +226,12 @@ def queue():
     if STATE.exists() or git_source_state(ROOT) != causal.load(PLAN)["analysis_source"]:
         raise ValueError("preserve prior observer execution and its frozen source")
     with (OUTPUT / "watcher.log").open("x") as log:
+        options = (
+            ["--control-optimized"]
+            if candidate.__name__.endswith("start_workflow_control_optimized_candidate") else []
+        )
         child = subprocess.Popen(
-            ["taskset", "-c", "0", sys.executable, str(Path(__file__)), "--watch"], cwd=ROOT,
+            ["taskset", "-c", "0", sys.executable, str(Path(__file__)), "--watch", *options], cwd=ROOT,
             stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
         )
     process = causal.reservation.process(child.pid)
@@ -218,7 +244,10 @@ if __name__ == "__main__":
     modes = parser.add_mutually_exclusive_group(required=True)
     for name in ("prepare", "queue", "watch"):
         modes.add_argument("--" + name, action="store_true")
+    parser.add_argument("--control-optimized", action="store_true")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or os.getpriority(os.PRIO_PROCESS, 0) != 19:
         raise ValueError("complete-results preparation and observation require hidden CUDA and nice19")
+    if args.control_optimized:
+        select_control_optimized_candidate()
     prepare() if args.prepare else queue() if args.queue else watch()

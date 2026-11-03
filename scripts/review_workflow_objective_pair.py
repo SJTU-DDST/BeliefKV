@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.workflow_combination import CombinationCosts
 from scripts import run_causal_comparison as causal
-from scripts.review_learned_work_ranking import verify_learned_traffic
+from scripts.review_learned_work_ranking import control_optimization_scope, verify_learned_traffic
 from scripts.review_matched_work_ranking import evaluate_pair_cohorts
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
@@ -69,9 +69,10 @@ def verify_objective_pair(reference, candidate):
         if profile["identity"] != identity:
             raise ValueError("objective profile fingerprint changed")
     contract = candidate["comparison_contract"]
+    optimization = control_optimization_scope(candidate)
     if (
         contract.get("combination_selection_objective") != "benefit"
-        or contract.get("only_combination_selection_objective_changed") is not True
+        or contract.get("only_combination_selection_objective_changed") is not (optimization is None)
         or contract.get("cost_tie_break_added") is not False
         or contract.get("prediction_parameters_and_support_unchanged") is not True
         or any(contract.get(name) != reference["comparison_contract"].get(name) for name in (
@@ -138,7 +139,7 @@ def main():
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),
         reference_objective="benefit_per_cost", candidate_objective="benefit",
-        only_combination_selection_objective_changed=True,
+        only_combination_selection_objective_changed=control_optimization_scope(specs[1]) is None,
         complete_measured_work_fresh_drain_and_actual_exit=True,
         original_workload_decisions_preserved=decisions,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
@@ -147,6 +148,11 @@ def main():
         )},
         GPU_action=False, performance_accepted=False, single_run_statistical_significance_claimed=False,
     )
+    optimization = control_optimization_scope(specs[1])
+    if optimization is not None:
+        result["synchronous_control_optimization"] = optimization
+        result["admission_objective_and_control_optimization_are_joint_change"] = True
+        result["ranking_gain_isolated"] = False
     write(args.output, result)
     print(json.dumps({
         "mean_JCT_gain_percent": result["groups"]["measured"]["mean_JCT_reduction_percent"],
