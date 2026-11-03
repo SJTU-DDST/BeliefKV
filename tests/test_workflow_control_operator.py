@@ -175,6 +175,9 @@ def test_launch_uses_qualified_serving_sources_and_unchanged_arrivals(monkeypatc
     actual = operator.launch_command()
     assert actual[1] == str(operator.SERVING / "scripts/run_causal_comparison.py")
     assert actual[actual.index("--cpu-report") + 1] == str(operator.FROZEN / "cpu.xml")
+    assert actual[actual.index("--engine-sources") + 1] == str(
+        operator.HERE / "native_sources_for_registration.json",
+    )
     assert actual[actual.index("--workflow-arrivals") + 1] == "preserve-arrivals"
     assert command[1] == "old.py"
 
@@ -229,3 +232,30 @@ def test_explicit_serving_checkout_does_not_require_post_exec_waiter_arguments(t
 def test_historical_result_observers_keep_the_waiter_checkout_fallback(tmp_path):
     entrypoint = tmp_path / "historical-serving/scripts/operator.py"
     assert results.qualified_serving_checkout({"argv": ["python", str(entrypoint)]}, {}) == entrypoint.parents[1]
+
+
+@pytest.mark.parametrize("live,registered,reason", (
+    (False, False, "engine source tree or CPU evidence changed"),
+    (True, False, "engine source tree or CPU evidence changed"),
+    (False, True, "engine source tree or CPU evidence changed"),
+    (False, False, "another registration failure"),
+))
+def test_registration_retry_requires_matching_failure_and_actual_owned_exit(
+    monkeypatch, tmp_path, live, registered, reason,
+):
+    failed = tmp_path / "failed"
+    (failed / "final_results_r1").mkdir(parents=True)
+    for path in (failed / "resource_waiter.state.json", failed / "final_results_r1/watcher.state.json"):
+        path.write_text(json.dumps({"status": "stopped_preserve_failure", "process": {"pid": 123}}))
+    (failed / "registration_result.json").write_text(json.dumps({"returncode": 1, "stderr": reason}))
+    old_registration = tmp_path / "workflow_original73_host400_control_optimized_20261103_r1.registration.json"
+    if registered:
+        old_registration.write_text("{}")
+    monkeypatch.setattr(operator, "FAILED_ATTEMPT", failed)
+    monkeypatch.setattr(operator, "OPS", tmp_path)
+    monkeypatch.setattr(operator.causal.reservation, "alive", lambda _handle: live)
+    if live or registered or reason != "engine source tree or CPU evidence changed":
+        with pytest.raises(ValueError):
+            operator.verify_failed_attempt()
+    else:
+        operator.verify_failed_attempt()

@@ -97,3 +97,24 @@ CPU 分析会同时保留旧 Full、两轮 ratio 和 Thunder 结果，检查完�
 2991 请求/362157 输出 token、自然完成、尾部覆盖与原生排空，再报告
 共同窗口吞吐、实际准入到服务及同步控制开销。目标尚未达到，
 排队和 CPU 资格不代表已经获得性能收益。
+
+## 18:05 注册拒绝与独立重试
+
+原 r1 在 2026-11-03 18:05 Asia/Shanghai 观察到 GPU 空闲，但正式注册
+被 `engine_evidence` 拒绝，未产生 GPU 注册和模型实验。原等待器及结果
+观察器均已退出。保留原状态、日志和 `registration_result.json`，
+不将该启动失败写成性能退化或完整实验。
+
+根因是原 native manifest 的 `canonical_patch.path` 仍指向旧
+benefit-only checkout，正式 registrar 在新服务目录计算的 state hash
+包含不同的绝对补丁路径。原 operator 只比较了去除路径后的引擎内容，
+没有把路径重绑定后的完整 manifest 交给 registrar。
+
+修复复用已有 `validate_native_rebinding`：先要求补丁字节、实际 tree、
+原生修改元数据完全相同，再为服务目录保存独立 manifest；CPU 资格阶段
+直接调用实际服务 checkout 中的 `engine_evidence`，提前执行相同检查。
+不放宽引擎匹配规则，不修改旧 proof 或重新运行未变的 GPU 组件。
+
+重试证据位于原实验目录的 `registration_retry_r2`，使用独立 `_r2`
+注册和 raw 路径。服务仍为 `6f1c648b`，工作量、模型、到达表、资源和
+统计协议保持原配置。原 r1 未成功运行，其结果观察器不再作为有效队列。

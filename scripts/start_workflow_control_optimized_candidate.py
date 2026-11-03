@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
+from experiments.reports.prefill2048_mean120_20261029.queue_pair import validate_native_rebinding
 from scripts import run_causal_comparison as causal
 from scripts import start_workflow_benefit_only_candidate as previous
 from scripts.qualify_free_page_h2d_fence import check_reservation
@@ -27,13 +28,17 @@ MAIN, OPS, BASE = previous.MAIN, previous.OPS, previous.BASE
 OLD, CONTROL, PREDECESSOR, COHORT, NATIVE = (
     previous.OLD, previous.CONTROL, previous.PREDECESSOR, previous.COHORT, previous.NATIVE,
 )
-HERE = BASE / "r5_host400_control_optimized_r1"
+FAILED_ATTEMPT = BASE / "r5_host400_control_optimized_r1"
+HERE = FAILED_ATTEMPT / "registration_retry_r2"
 SERVING = MAIN.parent / ".worktrees/beliefkv-tool-checks-host400-20261103"
 FROZEN = BASE / "synchronous_control_audit_20261103_r1/replacement_prefilter_frozen_r1"
-OPERATOR_CPU = BASE / "synchronous_control_audit_20261103_r1/control_optimized_operator_r1/cpu.xml"
-REG = OPS / "workflow_original73_host400_control_optimized_20261103_r1.registration.json"
-OBSERVER = OPS / "workflow_original73_host400_control_optimized_cohort_20261103_r1.registration.json"
-RUN = MAIN / "experiments/raw/workflow_original73_host400_control_optimized_20261103_r1"
+OPERATOR_CPU = BASE / (
+    "synchronous_control_audit_20261103_r1/control_optimized_operator_r1/"
+    "registration_retry_cpu_r2.xml"
+)
+REG = OPS / "workflow_original73_host400_control_optimized_20261103_r2.registration.json"
+OBSERVER = OPS / "workflow_original73_host400_control_optimized_cohort_20261103_r2.registration.json"
+RUN = MAIN / "experiments/raw/workflow_original73_host400_control_optimized_20261103_r2"
 PORT = 19000
 CONTROL_SCOPE = "tool_replacement_feasibility_prefilter_and_same_check_headroom"
 CHANGED_MODULES = frozenset((
@@ -64,6 +69,23 @@ def verify_retired_waiters():
         raise ValueError("the old GPU candidate registered; preserve its actual execution")
 
 
+def verify_failed_attempt():
+    for path in (
+        FAILED_ATTEMPT / "resource_waiter.state.json",
+        FAILED_ATTEMPT / "final_results_r1/watcher.state.json",
+    ):
+        state = causal.load(path)
+        if not state["status"].startswith("stopped_") or causal.reservation.alive(state["process"]):
+            raise ValueError("the failed registration still owns a live process")
+    failure = causal.load(FAILED_ATTEMPT / "registration_result.json")
+    original = OPS / "workflow_original73_host400_control_optimized_20261103_r1.registration.json"
+    if (
+        failure["returncode"] == 0 or original.exists()
+        or "engine source tree or CPU evidence changed" not in failure["stderr"]
+    ):
+        raise ValueError("preserve the original registration; this retry only repairs native proof binding")
+
+
 def checked_qualification():
     qualification = causal.load(HERE / "qualification.json")
     if (
@@ -73,6 +95,7 @@ def checked_qualification():
         raise ValueError("the qualified operator or serving checkout changed")
     verify_pins(qualification["inputs_sha256"])
     verify_retired_waiters()
+    verify_failed_attempt()
     if (HERE / "STOP").exists():
         raise RuntimeError("control-optimized candidate explicitly stopped")
     return qualification
@@ -102,6 +125,7 @@ def qualify():
     if HERE.exists() or git_source_state(ROOT)["dirty"]:
         raise ValueError("preserve previous evidence and freeze the operator first")
     verify_retired_waiters()
+    verify_failed_attempt()
     frozen_path = FROZEN / "qualification.json"
     frozen = causal.load(frozen_path)
     verify_pins(frozen["inputs_sha256"])
@@ -137,11 +161,11 @@ def qualify():
     actual = git_source_state(
         NATIVE, canonical_patch=SERVING / "patches/sglang-layer-free-extent-runtime-20261029.patch",
     )
-    for value in (native, actual):
-        value.pop("state_sha256")
-        value["canonical_patch"].pop("path")
-    if native != actual or not actual["canonical_patch"]["matches_worktree"]:
+    validate_native_rebinding(actual, native)
+    if not actual["canonical_patch"]["matches_worktree"]:
         raise ValueError("the qualified data plane changed")
+    native_path = HERE / "native_sources_for_registration.json"
+    write(native_path, actual)
     compatibility = HERE / "source_compatibility.json"
     write(compatibility, {
         "source": frozen["source"], "previous_source": baseline["source"],
@@ -159,7 +183,9 @@ def qualify():
         causal.load(Path(causal.load(CONTROL)["experiment_configuration"])), config,
     )
     verify_objective_pair(causal.load(OLD / "serving_ready/full.json"), config)
-    # Construct with the serving checkout's imports, not the operator's newer training code.
+    command = causal.load(OLD / "launch.json")["command"]
+    engine_report = Path(command[command.index("--engine-report") + 1])
+    # Exercise the exact registrar's proof check before waiting for GPU resources.
     code = (
         "import json,sys; from pathlib import Path; "
         "from scripts import run_causal_comparison as c; "
@@ -168,10 +194,13 @@ def qualify():
         "root,Path(sys.argv[2]),Path(sys.argv[3]),int(sys.argv[4]),root,"
         "sampling_mode='position',max_running_requests=24,"
         "tool_restore_mode=env['TOOL_RESTORE_MODE']); "
-        "print(json.dumps(c.preflight_runtime(settings,env['MODEL_PATH'])))"
+        "engine=c.engine_evidence(Path(sys.argv[2]),Path(sys.argv[5]),Path(sys.argv[6])); "
+        "print(json.dumps({'runtime':c.preflight_runtime(settings,env['MODEL_PATH']),"
+        "'native_evidence':engine}))"
     )
     result = subprocess.run([
         sys.executable, "-c", code, str(spec), str(NATIVE), str(HERE / "not_a_GPU_server"), str(PORT),
+        str(engine_report), str(native_path),
     ], cwd=SERVING, capture_output=True, text=True)
     write(HERE / "constructor_result.json", {
         "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr,
@@ -182,6 +211,9 @@ def qualify():
     paths = (
         frozen_path, report, sources, spec, compatibility, previous.HERE / "qualification.json",
         previous.HERE / "native_sources.json", previous.HERE / "serving_ready/qualified_full.json",
+        native_path, engine_report, FAILED_ATTEMPT / "registration_result.json",
+        FAILED_ATTEMPT / "resource_waiter.state.json",
+        FAILED_ATTEMPT / "final_results_r1/watcher.state.json",
         previous.HERE / "resource_waiter.state.json",
         previous.HERE / "final_results_r1/watcher.state.json",
         OLD / "launch.json", OLD / "serving_ready/full.json", COHORT, Path(__file__),
@@ -189,6 +221,7 @@ def qualify():
         ROOT / "scripts/review_learned_work_ranking.py",
         ROOT / "scripts/review_workflow_objective_pair.py",
         ROOT / "scripts/watch_workflow_benefit_results.py",
+        ROOT / "experiments/reports/prefill2048_mean120_20261029/queue_pair.py",
     )
     pins = {str(path): sha256_file(path) for path in paths}
     pins.update(baseline["inputs_sha256"])
@@ -197,7 +230,8 @@ def qualify():
     write(HERE / "qualification.json", {
         "source": frozen["source"], "operator_source": operator_source,
         "serving_checkout": str(SERVING), "passing_CPU_cases": len(cases),
-        "actual_constructor": json.loads(result.stdout),
+        "actual_constructor": json.loads(result.stdout)["runtime"],
+        "actual_registrar_native_evidence": json.loads(result.stdout)["native_evidence"],
         "passing_operator_CPU_cases": len(operator_cases),
         "selection_objective": "benefit", "synchronous_control_optimization": CONTROL_SCOPE,
         "old_candidate_superseded_before_registration": True,
@@ -230,7 +264,7 @@ def launch_command():
         "--registration": REG, "--run-root": RUN, "--port": PORT,
         "--experiment-config": HERE / "serving_ready/qualified_full.json",
         "--cpu-report": FROZEN / "cpu.xml", "--cpu-sources": FROZEN / "sources.json",
-        "--engine-sources": previous.HERE / "native_sources.json",
+        "--engine-sources": HERE / "native_sources_for_registration.json",
     }.items():
         command[command.index(flag) + 1] = str(value)
     return command
