@@ -11,7 +11,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.predictor.workflow_work import OBSERVED_RATIOS, R5_SCHEMA, WorkflowWorkModel
+from beliefkv.predictor.workflow_work import (
+    OBSERVED_RATIOS, R5_SCHEMA, WorkflowWorkModel, before_observed_work,
+)
 from beliefkv.predictor.workflow_work_training import READY_BALANCED
 from scripts.extend_workflow_prediction_training import (
     disjoint_training_rows, diverse_task_training_rows,
@@ -82,11 +84,117 @@ def candidate_model(name, baseline, progress=None, initial=None):
     return raw
 
 
-def choose_candidate(summaries):
-    eligible = [name for name in CANDIDATES if summaries[name]["decision_eligible"]]
+def choose_candidate(summaries, order=CANDIDATES):
+    eligible = [name for name in order if summaries[name]["decision_eligible"]]
     if not eligible:
         raise ValueError("no candidate passes the unchanged calibration support gates")
     return max(eligible, key=lambda name: summaries[name]["selection_score"])
+
+
+def initial_training_rows(rows):
+    selected = [row for row in rows if before_observed_work(row["features"])]
+    if (
+        {row["workflow"] for row in selected} != {row["workflow"] for row in rows}
+        or any(row["attained_work"] != 0. for row in selected)
+    ):
+        raise ValueError("conditional initial training requires an unserved state of every complete task")
+    return selected
+
+
+def conditional_initial_study(training, calibration, development, baseline, population, pins, output):
+    previous_ids = set(population["previous_expanded_split"]["training_execution_sha256"])
+    existing = [row for row in training if row["source_workflow_sha256"] in previous_ids]
+    initial_previous = initial_training_rows(existing)
+    initial_expanded = initial_training_rows(training)
+    initial_calibration = initial_training_rows(calibration)
+    settings = {
+        "epochs": 200, "feature_schema": R5_SCHEMA, "split_mode": "workflow",
+        "vocabulary_size": 8192, "dropout": .3, "weight_decay": .1,
+        "training_weighting": READY_BALANCED, "ranking_loss_weight": .1,
+        "ranking_pair_mode": "phase_matched", "balance_training_projects": True,
+        "numeric_feature_transform": OBSERVED_RATIOS,
+        "work_thresholds": baseline["work_thresholds"],
+    }
+    candidates = {
+        "retained": None,
+        "initial_previous32": (initial_previous, 32),
+        "initial_expanded32": (initial_expanded, 32),
+        "initial_expanded64": (initial_expanded, 64),
+    }
+    write(output / "plan.json", {
+        "candidates": {
+            name: None if specification is None else {
+                "training_workflows": len({row["workflow"] for row in specification[0]}),
+                "initial_training_states": len(specification[0]), "hidden_width": specification[1],
+            } for name, specification in candidates.items()
+        },
+        "training_settings": settings, **population,
+        "condition_uses_only_observed_features": True,
+        "initial_condition": "zero_observed_input_output_and_no_observed_child",
+        "progress_probabilities_after_condition_are_original_exactly": True,
+        "calibration_states": len(initial_calibration),
+        "selection": "unchanged_calibration_support_gates_then_existing_ready_ranking_score",
+        "development_labels_used_for_selection": False, "inputs_sha256": pins, "GPU_action": False,
+    })
+    models, summaries = {}, {}
+    for name, specification in candidates.items():
+        if specification is None:
+            raw = deepcopy(baseline)
+        else:
+            rows, width = specification
+            print("fitting_conditional_initial: " + name, flush=True)
+            head = fit(rows, initial_calibration, hidden_width=width, **settings)
+            head["metadata"].update(
+                prefill_token_weight=.01, decision_eligible=True,
+                online_features_use_observed_prefix_only=True,
+                progress_observation_contract=baseline["metadata"]["progress_observation_contract"],
+                training_dataset_sha256=baseline["metadata"]["training_dataset_sha256"],
+                candidate_selection_uses_calibration_only=True,
+                conditional_initial_training_states=len(rows),
+                conditional_initial_training_workflows=len({row["workflow"] for row in rows}),
+                initial_condition="zero_observed_input_output_and_no_observed_child",
+            )
+            raw = candidate_model("new_initial", baseline, initial=head)
+            write(output / name / "component.json", head)
+        values = metrics(WorkflowWorkModel(raw), calibration)
+        reasons = calibration_rejections(values, raw)
+        if specification is not None:
+            raw["metadata"].update(
+                decision_eligible=not reasons, decision_rejection_reasons=reasons,
+                calibration_distribution_metrics=values["all"],
+                initial_head_selection_uses_calibration_only=True,
+                initial_head_training_on_actual_activation_condition_only=True,
+            )
+        models[name] = raw
+        summaries[name] = {
+            "calibration": values, "selection_score": score(values),
+            "decision_eligible": not reasons, "decision_rejection_reasons": reasons,
+        }
+        write(output / name / "model.json", raw)
+        write(output / name / "calibration.json", summaries[name])
+        print(json.dumps({"candidate": name, "score": score(values), "rejections": reasons}), flush=True)
+    selected = choose_candidate(summaries, candidates)
+    write(output / "selection.json", {"selected": selected, "calibration_summary": summaries})
+    print("selected_before_development: " + selected, flush=True)
+    held_out = {name: metrics(WorkflowWorkModel(models[name]), development)
+                for name in dict.fromkeys(("retained", selected))}
+    if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
+        raise ValueError("a frozen conditional initial training input changed")
+    write(output / "model.json", models[selected])
+    write(output / "evaluation.json", {
+        "selected": selected, "held_out": held_out, "calibration_summary": summaries,
+        **population, "inputs_sha256": pins, "model_sha256": sha256_file(output / "model.json"),
+        "candidate_selection_used_test_labels": False,
+        "validation_scope": "reused_fixed_development_holdout_not_confirmatory",
+        "GPU_action": False, "JCT_gain_proven": False,
+    })
+    print(json.dumps({name: {
+        "initial_ranking": values["initial_pair_ranking"]["accuracy"],
+        "first_request_ranking": values["first_request_pairs"]["accuracy"],
+        "ready_ranking": values["ready_cross_progress_pairs"]["accuracy"],
+        "classification": values["all"]["workflow_equal_weight_accuracy"],
+        "long_to_short": values["all"]["long_to_short_rate"],
+    } for name, values in held_out.items()}), flush=True)
 
 
 def main():
@@ -94,6 +202,7 @@ def main():
     for name in ("dataset", "cohort", "previous-training-data", "additional-training-data",
                  "baseline-model", "baseline-evaluation", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--family", choices=("whole_task", "conditional_initial"), default="whole_task")
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve previous task-diversity training and selection outcomes")
@@ -102,6 +211,12 @@ def main():
         args.baseline_model, args.baseline_evaluation,
     )
     pins = {str(path.resolve()): sha256_file(path) for path in paths}
+    pins.update({str(path.resolve()): sha256_file(path) for path in (
+        Path(__file__), ROOT / "scripts/train_workflow_work.py",
+        ROOT / "beliefkv/predictor/workflow_work_training.py",
+        ROOT / "beliefkv/predictor/workflow_work.py",
+        ROOT / "beliefkv/predictor/workflow_work_distribution.py",
+    )})
     dataset, cohort, previous, additional, baseline, evaluation = (
         json.loads(path.read_bytes()) for path in paths
     )
@@ -123,6 +238,11 @@ def main():
     training, calibration, development, population = training_population(
         dataset, cohort, previous, additional, evaluation, dataset_hash,
     )
+    if args.family == "conditional_initial":
+        conditional_initial_study(
+            training, calibration, development, baseline, population, pins, args.output_dir,
+        )
+        return
     settings = {
         "epochs": 200, "feature_schema": R5_SCHEMA, "split_mode": "workflow",
         "hidden_width": 128, "vocabulary_size": 8192, "dropout": .1, "weight_decay": .05,

@@ -8,7 +8,7 @@ from beliefkv.predictor.workflow_work import R5_FEATURES, R5_SCHEMA, WorkflowWor
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import train_workflow_task_diversity as study
 from scripts.train_workflow_task_diversity import (
-    CANDIDATES, candidate_model, choose_candidate, training_population,
+    CANDIDATES, candidate_model, choose_candidate, initial_training_rows, training_population,
 )
 from scripts.train_workflow_work import capture_split
 from scripts.train_workflow_work_distribution import split_rows
@@ -81,6 +81,10 @@ def component(logits):
         free_dispatch_coalescing_window_ms=2000,
         output_bias=logits,
     )
+    value["metadata"].update(
+        progress_observation_contract="observed_native_decode_progress_128_v1",
+        training_dataset_sha256="f" * 64,
+    )
     return value
 
 
@@ -135,7 +139,21 @@ def test_untrained_or_nested_components_are_rejected():
         candidate_model("new_initial", baseline, initial=nested)
 
 
-def test_actual_training_components_are_loadable_and_selection_precedes_development(tmp_path, monkeypatch):
+def test_conditional_initial_training_uses_observed_activation_state_and_requires_all_tasks():
+    initial = {**row("a"), "attained_work": 0.}
+    served = {**row("a", snapshot=1), "attained_work": 1.}
+    served["features"][R5_FEATURES.index("output_tokens")] = 1.
+    child = {**row("a", snapshot=2), "attained_work": 0.}
+    child["features"][R5_FEATURES.index("children")] = 1.
+    assert initial_training_rows([initial, served, child]) == [initial]
+    with pytest.raises(ValueError, match="every complete task"):
+        initial_training_rows([initial, {**served, "workflow": "unseen-initial"}])
+    with pytest.raises(ValueError, match="unserved"):
+        initial_training_rows([{**initial, "attained_work": 1.}])
+
+
+@pytest.mark.parametrize("family", ("whole_task", "conditional_initial"))
+def test_actual_training_components_are_loadable_and_selection_precedes_development(tmp_path, monkeypatch, family):
     dataset, cohort, previous, additional, evaluation = populations()
     sources = tmp_path / "source_fixture.json"
     sources.write_text("{}")
@@ -203,7 +221,7 @@ def test_actual_training_components_are_loadable_and_selection_precedes_developm
     monkeypatch.setattr(sys, "argv", [
         "train_workflow_task_diversity.py",
         *(item for key, value in paths.items() for item in ("--" + key, str(value))),
-        "--output-dir", str(output),
+        "--output-dir", str(output), "--family", family,
     ])
     study.main()
     result = json.loads((output / "evaluation.json").read_text())
