@@ -41,17 +41,46 @@ def per_call_costs(rows):
     return {name: float(np.median(values)) for name, values in costs.items()}
 
 
+def selected_candidate_model(raw, evaluation, baseline, *, offline_tree=False):
+    selected = evaluation.get("selected")
+    if selected in (None, "retained") or evaluation.get("candidate_selection_used_test_labels") is not False:
+        raise ValueError("require a candidate chosen before development evaluation")
+    if offline_tree:
+        from scripts.train_workflow_branch_call_trees import KIND, ConditionalTreeCandidate
+
+        calibration = evaluation.get("calibration_summary", {}).get(selected, {})
+        if (
+            raw.get("kind") != KIND or raw.get("base_model") != baseline
+            or raw.get("metadata", {}).get("decision_eligible") is not False
+            or evaluation.get("deployment_adapter_implemented") is not False
+            or calibration.get("decision_eligible") is not True
+            or calibration.get("decision_rejection_reasons") != []
+            or raw.get("blend") != calibration.get("blend")
+        ):
+            raise ValueError("require the exact offline tree package and its successful prior calibration")
+        return ConditionalTreeCandidate(WorkflowWorkModel(baseline), raw["head"], raw["blend"])
+    if (
+        raw["metadata"].get("decision_eligible") is not True
+        or raw["work_thresholds"] != baseline["work_thresholds"]
+    ):
+        raise ValueError("require an eligible serving model or an explicit offline audit adapter")
+    return WorkflowWorkModel(raw)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("dataset", "cohort", "previous-training-data", "labels", "audit", "baseline-model", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--candidate-model", type=Path)
     parser.add_argument("--candidate-evaluation", type=Path)
+    parser.add_argument("--offline-tree-readout", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve previous decomposition diagnostics")
     if (args.candidate_model is None) != (args.candidate_evaluation is None):
         raise ValueError("a selected candidate needs both its model and prior calibration evaluation")
+    if args.offline_tree_readout and args.candidate_model is None:
+        raise ValueError("an offline tree audit requires its selected candidate package")
     original_paths = (
         args.dataset, args.cohort, args.previous_training_data, args.labels, args.audit, args.baseline_model,
     )
@@ -77,19 +106,17 @@ def main():
         candidate = json.loads(args.candidate_model.read_bytes())
         evaluation = json.loads(args.candidate_evaluation.read_bytes())
         if (
-            evaluation.get("selected") in (None, "retained")
-            or evaluation.get("candidate_selection_used_test_labels") is not False
-            or evaluation["model_sha256"] != pins[str(args.candidate_model.resolve())]
+            evaluation["model_sha256"] != pins[str(args.candidate_model.resolve())]
             or evaluation["inputs_sha256"].get(str(args.dataset.resolve()))
             != pins[str(args.dataset.resolve())]
             or evaluation["inputs_sha256"].get(str(args.cohort.resolve()))
             != pins[str(args.cohort.resolve())]
             or evaluation["original_split"] != _split
-            or candidate["metadata"].get("decision_eligible") is not True
-            or candidate["work_thresholds"] != baseline["work_thresholds"]
         ):
             raise ValueError("require a calibration-selected eligible model with exact source and holdouts")
-        models["selected_candidate"] = WorkflowWorkModel(candidate)
+        models["selected_candidate"] = selected_candidate_model(
+            candidate, evaluation, baseline, offline_tree=args.offline_tree_readout,
+        )
     prior = per_call_costs(training)
     _remaining, finals = remaining_call_counts(data["rows"])
     logical, texts = {}, {}
@@ -142,6 +169,9 @@ def main():
     } for name in (*models, *names)}
     for path in (Path(__file__), ROOT / "beliefkv/predictor/workflow_work_training.py"):
         pins[str(path.resolve())] = sha256_file(path)
+    if args.offline_tree_readout:
+        path = ROOT / "scripts/train_workflow_branch_call_trees.py"
+        pins[str(path)] = sha256_file(path)
     if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
         raise ValueError("a frozen decomposition diagnostic input changed")
     write(args.output, {
@@ -150,6 +180,8 @@ def main():
         "diagnostics": dict(diagnostics), "decisions": decisions,
         "inputs_sha256": pins, "source_scope": audit["scope"],
         "future_call_counts_are_labels_never_online_features": True,
+        "offline_tree_readout_adapter_used": args.offline_tree_readout,
+        "offline_tree_serving_eligibility_granted": False,
         "observed_cost_includes_inflight_work_and_is_not_an_ideal_cost_oracle": True,
         "JCT_upper_bound_or_service_or_GPU_evidence": False,
     })

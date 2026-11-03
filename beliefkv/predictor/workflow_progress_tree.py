@@ -54,19 +54,20 @@ def features(progress, task):
 
 
 class ProgressTreeHead:
-    def __init__(self, raw):
+    def __init__(self, raw, *, feature_names=FEATURES):
         import numpy as np
 
         if not isinstance(raw, dict) or raw.keys() != {
             "kind", "features", "objective", "trees", "maximum_depth",
             "blend", "temperature", "regression_offset", "regression_scale",
         } or (
-            raw["kind"] != KIND or raw["features"] != list(FEATURES)
+            raw["kind"] != KIND or raw["features"] != list(feature_names)
             or raw["objective"] not in ("multiclass", "log_remaining_work")
             or type(raw["maximum_depth"]) is not int or not 1 <= raw["maximum_depth"] <= 6
             or not isinstance(raw["trees"], list) or not 1 <= len(raw["trees"]) <= 384
         ):
             raise ValueError("invalid causal progress tree contract")
+        self.feature_count = len(feature_names)
         for name in ("blend", "temperature", "regression_offset", "regression_scale"):
             if type(raw[name]) not in (int, float) or not math.isfinite(raw[name]):
                 raise ValueError("nonfinite progress tree calibration")
@@ -104,7 +105,7 @@ class ProgressTreeHead:
                     raise ValueError("invalid progress tree node")
                 feature, threshold, left, right, value = row
                 if (
-                    type(feature) is not int or not -1 <= feature < len(FEATURES)
+                    type(feature) is not int or not -1 <= feature < self.feature_count
                     or any(type(item) is not int for item in (left, right))
                     or any(type(item) not in (int, float) or not math.isfinite(item)
                            for item in (threshold, value))
@@ -127,7 +128,7 @@ class ProgressTreeHead:
         import numpy as np
 
         values = np.asarray(values, dtype=float)
-        if values.shape != (len(FEATURES),) or not np.isfinite(values).all():
+        if values.shape != (self.feature_count,) or not np.isfinite(values).all():
             raise ValueError("invalid progress tree input")
         nodes = np.zeros(len(self.tree_index), dtype=np.int64)
         for _step in range(self.depth):

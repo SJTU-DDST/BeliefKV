@@ -412,6 +412,7 @@ class WorkflowWorkModel:
         self.task_encoder = None
         self.work_prior = None
         self.initial_head = None
+        self.conditional_tree = None
         self.initial_blend = 0.
         initial = raw.get("initial_state_head")
         if initial is not None:
@@ -425,7 +426,7 @@ class WorkflowWorkModel:
                 or not math.isfinite(initial["blend"]) or not 0 < initial["blend"] <= 1
                 or not isinstance(initial["model"], dict)
                 or any(initial["model"].get(name) is not None for name in (
-                    "initial_state_head", "total_work_prior", "task_encoder",
+                    "initial_state_head", "total_work_prior", "task_encoder", "conditional_progress_tree_head",
                 ))
             ):
                 raise ValueError("invalid initial-state workflow head")
@@ -492,6 +493,10 @@ class WorkflowWorkModel:
             self.task_input_kind = "workflow_task_and_delegation_metadata_v1"
             if self.observed_delegations:
                 self.task_input_kind = "workflow_task_and_observed_unfinished_delegations_v2"
+        if raw.get("conditional_progress_tree_head") is not None:
+            from beliefkv.predictor.workflow_conditional_tree import ConditionalProgressTreeHead
+
+            self.conditional_tree = ConditionalProgressTreeHead(raw["conditional_progress_tree_head"], self)
 
     @classmethod
     def load(cls, path, digest):
@@ -523,6 +528,10 @@ class WorkflowWorkModel:
         if self.initial_head is not None and projection is not None:
             initial, initial_coverage = self.initial_head.task_encoding(text)
             projection = InitialWorkProjection(projection, initial, initial_coverage)
+        if self.conditional_tree is not None and projection is not None:
+            from beliefkv.predictor.workflow_progress_tree import project
+
+            projection = project(projection, text)
         return projection, coverage
 
     def _task_encoding(self, text):
@@ -557,6 +566,13 @@ class WorkflowWorkModel:
     def predict(self, projection, features):
         import numpy as np
 
+        tree_projection = None
+        if self.conditional_tree is not None:
+            from beliefkv.predictor.workflow_progress_tree import TreeProjection
+
+            if not isinstance(projection, TreeProjection):
+                raise ValueError("conditional workflow trees require their cached task structure")
+            tree_projection, projection = projection, projection.progress_projection
         mean = None
         initial_projection = None
         if self.initial_head is not None:
@@ -619,7 +635,12 @@ class WorkflowWorkModel:
                 (1. - self.initial_blend) * base + self.initial_blend * initial
                 for base, initial in zip(probabilities, initial_probabilities)
             )
-        return (
+        probabilities = (
             probabilities if self.work_prior is None
             else self.work_prior.combine(probabilities, mean, features, self.thresholds)
         )
+        if tree_projection is not None:
+            probabilities = self.conditional_tree.combine(
+                probabilities, features, tree_projection.task_structure, hidden, self.thresholds,
+            )
+        return probabilities

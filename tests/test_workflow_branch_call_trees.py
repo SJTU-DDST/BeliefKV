@@ -11,6 +11,7 @@ from beliefkv.predictor.workflow_work_readout import representation_fingerprint
 from scripts.train_workflow_branch_call_trees import (
     KIND, ConditionalTreeCandidate, fit_trees, log_work, matrix, tree_inputs, work_probabilities,
 )
+from scripts.export_workflow_tree_predictor import portable_head
 from tests.test_workflow_work_distribution import distribution_raw
 
 
@@ -126,3 +127,153 @@ def test_offline_tree_package_cannot_silently_load_as_a_serving_model(candidate_
     base, head = candidate_data
     with pytest.raises(ValueError):
         WorkflowWorkModel({"kind": KIND, "base_model": base.raw, "head": head, "blend": .5})
+
+
+def selected_artifact(candidate_data):
+    base, head = candidate_data
+    raw = {
+        "kind": KIND, "base_model": deepcopy(base.raw), "head": deepcopy(head), "blend": .5,
+        "metadata": {"decision_eligible": False},
+    }
+    evaluation = {
+        "selected": "chosen", "candidate_selection_used_test_labels": False,
+        "deployment_adapter_implemented": False,
+        "calibration_summary": {"chosen": {
+            "decision_eligible": True, "decision_rejection_reasons": [], "blend": .5,
+        }},
+    }
+    return raw, evaluation, base.raw
+
+
+def test_selected_offline_audit_needs_explicit_adapter_and_keeps_serving_model_disabled(candidate_data):
+    from scripts.audit_workflow_call_decomposition import selected_candidate_model
+
+    raw, evaluation, baseline = selected_artifact(candidate_data)
+    before = deepcopy((raw, evaluation, baseline))
+    with pytest.raises((ValueError, KeyError)):
+        selected_candidate_model(raw, evaluation, baseline)
+    candidate = selected_candidate_model(raw, evaluation, baseline, offline_tree=True)
+    assert candidate.predict(candidate.task_projection("ab"), row(0)["features"])
+    assert (raw, evaluation, baseline) == before
+    assert raw["metadata"]["decision_eligible"] is False
+
+
+@pytest.mark.parametrize("change", ("selection", "labels", "gate", "base", "serving", "blend"))
+def test_selected_offline_audit_rejects_changed_selection_or_failed_calibration(candidate_data, change):
+    from scripts.audit_workflow_call_decomposition import selected_candidate_model
+
+    raw, evaluation, baseline = selected_artifact(candidate_data)
+    if change == "selection":
+        evaluation["selected"] = "retained"
+    elif change == "labels":
+        evaluation["candidate_selection_used_test_labels"] = True
+    elif change == "gate":
+        evaluation["calibration_summary"]["chosen"]["decision_eligible"] = False
+    elif change == "base":
+        raw["base_model"]["output_bias"] = [1., 2., 3.]
+    elif change == "serving":
+        raw["metadata"]["decision_eligible"] = True
+    else:
+        raw["blend"] = 1.
+    with pytest.raises(ValueError):
+        selected_candidate_model(raw, evaluation, baseline, offline_tree=True)
+
+
+def serving_model(candidate_data):
+    base, call_head = candidate_data
+    work_head = {**call_head, "target": "work", "models": call_head["models"][:1]}
+    candidate = ConditionalTreeCandidate(base, work_head, .5)
+    raw = deepcopy(base.raw)
+    raw["conditional_progress_tree_head"] = portable_head(candidate)
+    return WorkflowWorkModel(raw), candidate, raw
+
+
+def test_portable_serving_export_matches_native_tree_scores_and_preserves_initial_state(candidate_data):
+    serving, candidate, raw = serving_model(candidate_data)
+    for state in (row(0, observed=0.), row(1, observed=2.), row(2, observed=300.)):
+        observed = state["features"]
+        expected = candidate.predict(candidate.task_projection("ab"), observed)
+        assert serving.predict(serving.task_projection("ab"), observed) == pytest.approx(expected, abs=1e-12)
+    with pytest.raises(ValueError, match="cached task structure"):
+        serving.predict(candidate.base.task_projection("ab"), row(0)["features"])
+    assert raw["conditional_progress_tree_head"]["representation_sha256"] == representation_fingerprint(candidate.base)
+    with pytest.raises(ValueError, match="direct-work"):
+        portable_head(ConditionalTreeCandidate(candidate.base, candidate_data[1], .5))
+    raw["conditional_progress_tree_head"]["features"].append("export_only_change")
+    assert "export_only_change" not in candidate.head["features"]
+
+
+@pytest.mark.parametrize("change", ("trunk", "source", "features", "trees", "cycle", "depth", "sigma"))
+def test_serving_tree_rejects_changed_trunk_and_malformed_portable_nodes(candidate_data, change):
+    _serving, _candidate, raw = serving_model(candidate_data)
+    head = raw["conditional_progress_tree_head"]
+    if change == "trunk":
+        raw["dynamic_weight"][0][0] += 1.
+    elif change == "source":
+        head["representation_sha256"] = "0" * 64
+    elif change == "features":
+        head["features"].append("unobserved_future_work")
+    elif change == "trees":
+        head["trees"] *= 129
+    elif change == "cycle":
+        head["trees"][0] = [[0, 0., 0, 0, 0.]]
+    elif change == "depth":
+        head["maximum_depth"] = 7
+    else:
+        head["calibration_sigma"] = 0.
+    with pytest.raises(ValueError):
+        WorkflowWorkModel(raw)
+
+
+def test_serving_tree_uses_no_lightgbm_import(candidate_data, monkeypatch):
+    import builtins
+
+    _serving, candidate, raw = serving_model(candidate_data)
+    original = builtins.__import__
+
+    def without_training_library(name, *args, **kwargs):
+        if name.startswith("lightgbm"):
+            raise AssertionError("serving inference must not import its training library")
+        return original(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", without_training_library)
+    model = WorkflowWorkModel(raw)
+    state = row(1)["features"]
+    expected = candidate.base.predict(candidate.base.task_projection("ab"), state)
+    assert len(expected) == len(model.predict(model.task_projection("ab"), state)) == 3
+
+
+def test_actual_worker_event_progress_uses_the_portable_conditional_branch(candidate_data):
+    from beliefkv.core.events import RelationType, RuntimeEvent, RuntimeEventKind as Kind
+    from beliefkv.predictor.workflow_rank_input import WorkflowRankInput
+    from beliefkv.runtime.workflow_work_worker import WorkflowWorkWorker
+
+    serving, candidate, _raw = serving_model(candidate_data)
+    worker = WorkflowWorkWorker("", "", model=serving, autostart=False)
+    try:
+        metadata = WorkflowRankInput.from_instructions(task_instructions="ab")
+        worker.submit("w", "event", RuntimeEvent(
+            "start", 0., Kind.WORKFLOW_START, "w",
+            attributes={"workflow_ranking_input": metadata.to_dict()},
+        ))
+        worker.submit("w", "event", RuntimeEvent(
+            "create", 1., Kind.INVOCATION_CREATE, "w",
+            invocation_id="root", context_id="ctx", relation_type=RelationType.ROOT,
+        ))
+        worker.process_pending()
+        initial = worker.prediction("w")
+        assert initial is not None
+        worker.submit("w", "started", "req", "root", "ctx", (1, 2))
+        worker.submit("w", "generated", "req", 128)
+        worker._next_inference["w"] = 0.
+        worker.process_pending()
+        prediction = worker.prediction("w")
+        state = worker._progress["w"].features()
+        expected = candidate.predict(candidate.task_projection("ab"), state)
+        assert prediction.probabilities == pytest.approx(expected, abs=1e-12)
+        assert prediction.revision > initial.revision
+        assert worker.counts["task_encodings"] == 1
+        assert worker.counts["inferences"] == 2
+        assert not worker.error
+    finally:
+        worker.close()
