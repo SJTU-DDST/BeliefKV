@@ -99,3 +99,25 @@ experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/
 封闭原生日志 SHA256，重新核对两轮测量组完整的
 2991 请求 / 362157 输出 token、自然完成、fresh drain 与 owned exit。
 原确认轮背景到达尾部覆盖失败继续保留，未修改为合格 workload。
+
+## 首次服务身份覆盖补查
+
+另行检查了两轮全部 92、141 个原完整窗口，读取相同封闭 native 前缀，
+搜索每个已选成员在其 workflow 首个可验证服务之前的样本。
+已知其他 attempt/context/session、零进展和选择前已启动的 batch 排除；
+较早的缺身份正进展、未知进展，以及未被原授予证据覆盖的 exact 正进展
+均会使该窗口保持不确定，不把部分身份补成确定服务。
+
+两轮均未发现上述更早的不确定或未关联样本。因此，补查后首波服务
+80/92、130/141 和稍后服务 12/92、11/141 的计数保持不变。
+这只加强原有总体内的服务顺序证据，未扩展到原 12、14 个未知窗口，
+也未将首次服务顺序解释为完整 JCT 收益。
+
+补查入口为 `scripts/audit_selected_service_identity_coverage.py`，
+与原服务和周期边界测试共 45 项通过。新增证据仍在同一目录：
+
+```text
+identity_coverage_cpu.xml
+first_identity_coverage.json
+confirmation_identity_coverage.json
+```
