@@ -269,6 +269,7 @@ def fit(
     observed_delegations=False, work_thresholds=None, ranking_loss_weight=0.,
     task_only_before_work=False, ranking_pair_mode="phase_matched", ordinal_loss_weight=0.,
     numeric_feature_transform=None, remaining_work_loss_weight=0., decision_observation_mass=0.,
+    ordered_work_head=False,
 ):
     import numpy as np
     import torch
@@ -281,7 +282,7 @@ def fit(
     if not rows or not calibration:
         raise ValueError("training and calibration workflows are required")
     names = feature_names(feature_schema)
-    from beliefkv.predictor.workflow_work import OBSERVED_RATIOS, work_numeric_features
+    from beliefkv.predictor.workflow_work import OBSERVED_RATIOS, SERVICE_PROGRESS, work_numeric_features
 
     if any(len(row["features"]) != len(names) for row in (*rows, *calibration)):
         raise ValueError("workflow training features differ from the declared schema")
@@ -303,7 +304,7 @@ def fit(
         or type(ordinal_loss_weight) not in (int, float)
         or not math.isfinite(ordinal_loss_weight) or not 0 <= ordinal_loss_weight <= 2.
         or ordinal_loss_weight and feature_schema != R5_SCHEMA
-        or numeric_feature_transform not in (None, OBSERVED_RATIOS)
+        or numeric_feature_transform not in (None, OBSERVED_RATIOS, SERVICE_PROGRESS)
         or numeric_feature_transform is not None and feature_schema != R5_SCHEMA
         or type(remaining_work_loss_weight) not in (int, float)
         or not math.isfinite(remaining_work_loss_weight) or not 0 <= remaining_work_loss_weight <= 2.
@@ -311,6 +312,7 @@ def fit(
         or type(decision_observation_mass) not in (int, float)
         or not math.isfinite(decision_observation_mass) or not 0 <= decision_observation_mass <= .75
         or decision_observation_mass and feature_schema != R5_SCHEMA
+        or type(ordered_work_head) is not bool or ordered_work_head and feature_schema != R5_SCHEMA
     ):
         raise ValueError("invalid workflow model regularization settings")
     if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
@@ -430,9 +432,13 @@ def fit(
     static_layer = torch.nn.Linear(task.shape[1], hidden_width, bias=False)
     dynamic_layer = torch.nn.Linear(numeric.shape[1], hidden_width)
     hidden_layer = torch.nn.Linear(hidden_width, max(4, hidden_width // 2))
-    output_layer = torch.nn.Linear(max(4, hidden_width // 2), 3)
+    output_layer = torch.nn.Linear(max(4, hidden_width // 2), 1 if ordered_work_head else 3)
     parameters = list(static_layer.parameters()) + list(dynamic_layer.parameters())
     parameters += list(hidden_layer.parameters()) + list(output_layer.parameters())
+    cutpoints = None
+    if ordered_work_head:
+        cutpoints = torch.nn.Parameter(torch.tensor((0., 1.), dtype=torch.float32))
+        parameters.append(cutpoints)
     work_head, work_target, work_normalization = None, None, None
     if remaining_work_loss_weight:
         from beliefkv.predictor.workflow_work_training import continuous_work_targets
@@ -463,6 +469,12 @@ def fit(
         hidden = torch.nn.functional.dropout(hidden, p=dropout, training=True)
         representation = torch.relu(hidden_layer(hidden))
         logits = output_layer(representation)
+        if cutpoints is not None:
+            ordered = torch.stack((cutpoints[0], cutpoints[0] + torch.nn.functional.softplus(cutpoints[1])))
+            cumulative = (ordered[None, :] - logits).sigmoid()
+            logits = torch.stack((
+                cumulative[:, 0], cumulative[:, 1] - cumulative[:, 0], 1. - cumulative[:, 1],
+            ), dim=1).clamp_min(1e-12).log()
         loss = (torch.nn.functional.cross_entropy(logits, target, reduction="none") * weight).sum()
         if work_head is not None:
             loss = loss + remaining_work_loss_weight * (
@@ -519,6 +531,16 @@ def fit(
             "online_inputs": "task_instructions_and_observed_progress_only",
         },
     }
+    if cutpoints is not None:
+        raw["ordered_work_cutpoints"] = array(torch.stack((
+            cutpoints[0], cutpoints[0] + torch.nn.functional.softplus(cutpoints[1]),
+        )))
+        raw["metadata"]["training_parameters"]["ordered_work_head"] = True
+        raw["metadata"]["ordered_work_head"] = {
+            "kind": "one_latent_score_two_ordered_logistic_cutpoints",
+            "coarse_output_probabilities_unchanged": True,
+            "online_features_unchanged": True,
+        }
     if task_encoder is not None:
         raw["task_encoder"] = task_encoder
         raw["metadata"]["task_training_encoding"] = "frozen_cpu_semantics_explicit_instructions_only"
@@ -539,10 +561,19 @@ def fit(
         from beliefkv.predictor.workflow_work import RATIO_FEATURES
 
         raw["numeric_feature_transform"] = numeric_feature_transform
-        raw["metadata"]["derived_numeric_features"] = {
-            "names": list(RATIO_FEATURES), "observed_R5_counters_only": True,
-            "new_events_or_prompt_inputs": False,
-        }
+        if numeric_feature_transform == OBSERVED_RATIOS:
+            raw["metadata"]["derived_numeric_features"] = {
+                "names": list(RATIO_FEATURES), "observed_R5_counters_only": True,
+                "new_events_or_prompt_inputs": False,
+            }
+        else:
+            from beliefkv.predictor.workflow_work import SCHEDULER_STATE_FEATURES
+
+            raw["metadata"]["numeric_observation_mask"] = {
+                "zeroed": list(SCHEDULER_STATE_FEATURES),
+                "reason": "avoid_current_scheduler_state_as_remaining_work_evidence",
+                "raw_observation_and_support_contract_unchanged": True,
+            }
     if ranking is not None:
         raw["metadata"]["training_parameters"]["ranking_loss_weight"] = ranking_loss_weight
         raw["metadata"]["ranking_training"] = {

@@ -40,6 +40,8 @@ EXECUTION_CONTROL_FIELDS = frozenset((
     "root_phase_target", "maximum_spawn_depth",
 ))
 OBSERVED_RATIOS = "observed_work_and_completion_ratios_v1"
+SERVICE_PROGRESS = "observed_service_without_scheduler_states_v1"
+SCHEDULER_STATE_FEATURES = ("ready", "running", "active_prompt_tokens")
 RATIO_FEATURES = (
     "attained_model_work", "output_per_call", "input_per_call",
     "root_output_per_call", "child_output_per_call",
@@ -82,13 +84,17 @@ def work_numeric_features(values, transform=None):
     values = np.asarray(values)
     if transform is None:
         return values
-    if transform != OBSERVED_RATIOS:
+    if transform not in (OBSERVED_RATIOS, SERVICE_PROGRESS):
         raise ValueError("unknown workflow numeric feature transform")
     if (
         values.shape != (len(R5_FEATURES),)
         or not np.isfinite(values).all() or (values < 0).any()
     ):
         raise ValueError("observed ratios require finite nonnegative R5 features")
+    if transform == SERVICE_PROGRESS:
+        values = values.copy()
+        values[[R5_FEATURES.index(name) for name in SCHEDULER_STATE_FEATURES]] = 0.
+        return values
     counts = dict(zip(R5_FEATURES, values))
     attained = .01 * counts["input_tokens"] + counts["output_tokens"]
     child_work = .01 * counts["child_input_tokens"] + counts["child_output_tokens"]
@@ -355,7 +361,7 @@ class WorkflowWorkModel:
 
         self.schema = raw.get("schema")
         self.numeric_transform = raw.get("numeric_feature_transform")
-        if self.numeric_transform not in (None, OBSERVED_RATIOS) or (
+        if self.numeric_transform not in (None, OBSERVED_RATIOS, SERVICE_PROGRESS) or (
             self.numeric_transform is not None and self.schema != R5_SCHEMA
         ):
             raise ValueError("unsupported workflow numeric feature transform")
@@ -392,6 +398,15 @@ class WorkflowWorkModel:
         self.thresholds = tuple(raw["work_thresholds"])
         if len(self.thresholds) != 2 or not 0 < self.thresholds[0] < self.thresholds[1]:
             raise ValueError("workflow work classes require two fixed positive thresholds")
+        self.ordered_cutpoints = raw.get("ordered_work_cutpoints")
+        if self.ordered_cutpoints is not None and (
+            self.schema != R5_SCHEMA
+            or not isinstance(self.ordered_cutpoints, list) or len(self.ordered_cutpoints) != 2
+            or any(type(value) not in (int, float) or not math.isfinite(value)
+                   for value in self.ordered_cutpoints)
+            or not self.ordered_cutpoints[0] < self.ordered_cutpoints[1]
+        ):
+            raise ValueError("ordered workflow probabilities require two finite increasing cutpoints")
         self.task_encoder = None
         self.work_prior = None
         self.initial_head = None
@@ -443,14 +458,17 @@ class WorkflowWorkModel:
             "hidden_weight", "hidden_bias", "output_weight", "output_bias",
         )}
         v = len(self.vocabulary)
-        f = len(self.feature_names) + (len(RATIO_FEATURES) if self.numeric_transform else 0)
+        f = len(self.feature_names) + (
+            len(RATIO_FEATURES) if self.numeric_transform == OBSERVED_RATIOS else 0
+        )
         text_dimension = v if self.task_encoder is None else self.task_encoder.dimension
         h, k = self.arrays["bias"].size, self.arrays["hidden_bias"].size
         shapes = {
             "idf": (v,), "center": (f,), "scale": (f,),
             "static_weight": (text_dimension, h), "dynamic_weight": (f, h), "bias": (h,),
             "hidden_weight": (h, k), "hidden_bias": (k,),
-            "output_weight": (k, 3), "output_bias": (3,),
+            "output_weight": (k, 3 if self.ordered_cutpoints is None else 1),
+            "output_bias": (3 if self.ordered_cutpoints is None else 1,),
         }
         if any(self.arrays[name].shape != shape or not np.isfinite(self.arrays[name]).all()
                for name, shape in shapes.items()) or (self.arrays["scale"] <= 0).any():
@@ -581,9 +599,16 @@ class WorkflowWorkModel:
         hidden = np.maximum(0., np.einsum(
             "i,ij->j", hidden, a["hidden_weight"], optimize=False,
         ) + a["hidden_bias"])
-        logits = (np.einsum(
+        logits = np.einsum(
             "i,ij->j", hidden, a["output_weight"], optimize=False,
-        ) + a["output_bias"]) / self.temperature
+        ) + a["output_bias"]
+        if self.ordered_cutpoints is not None:
+            scores = np.clip(np.asarray(self.ordered_cutpoints) - float(logits[0]), -700., 700.)
+            cumulative = 1. / (1. + np.exp(-scores))
+            logits = np.log(np.maximum(1e-12, np.asarray((
+                cumulative[0], cumulative[1] - cumulative[0], 1. - cumulative[1],
+            ))))
+        logits = logits / self.temperature
         probabilities = np.exp(logits - logits.max())
         probabilities /= probabilities.sum()
         probabilities = tuple(float(value) for value in probabilities)

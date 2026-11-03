@@ -12,7 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.predictor.workflow_work import OBSERVED_RATIOS, R5_FEATURES, R5_SCHEMA, WorkflowWorkModel
+from beliefkv.predictor.workflow_work import (
+    OBSERVED_RATIOS, R5_FEATURES, R5_SCHEMA, SERVICE_PROGRESS, WorkflowWorkModel,
+)
 from beliefkv.predictor.workflow_work_distribution import support_status
 from beliefkv.predictor.workflow_work_training import READY_BALANCED, READY_MIXED_PAIRS
 from scripts.extend_workflow_prediction_training import disjoint_training_rows
@@ -97,7 +99,9 @@ def main():
                  "baseline-evaluation", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument(
-        "--family", choices=("ready-pairs", "observed-ratios", "continuous-work", "semantic"),
+        "--family", choices=(
+            "ready-pairs", "observed-ratios", "continuous-work", "semantic", "ordered", "invariant",
+        ),
         default="ready-pairs",
     )
     parser.add_argument("--encoder", type=Path)
@@ -179,6 +183,38 @@ def main():
                 "ranking_pair_mode": "phase_matched", "hidden_width": 64,
             }),
         ]
+    elif args.family == "ordered":
+        candidates = [
+            ("retained_phase_rank", None),
+            ("ordered128_phase_rank", {
+                "ordered_work_head": True, "ranking_loss_weight": .1,
+                "ranking_pair_mode": "phase_matched",
+            }),
+            ("ordered64_phase_rank", {
+                "ordered_work_head": True, "ranking_loss_weight": .1,
+                "ranking_pair_mode": "phase_matched", "hidden_width": 64,
+            }),
+            ("ordered128_classification", {
+                "ordered_work_head": True, "ranking_loss_weight": 0.,
+                "ranking_pair_mode": "phase_matched",
+            }),
+        ]
+    elif args.family == "invariant":
+        candidates = [
+            ("retained_phase_rank", None),
+            ("service128_phase_rank", {
+                "numeric_feature_transform": SERVICE_PROGRESS, "ranking_loss_weight": .1,
+                "ranking_pair_mode": "phase_matched",
+            }),
+            ("service64_phase_rank", {
+                "numeric_feature_transform": SERVICE_PROGRESS, "ranking_loss_weight": .1,
+                "ranking_pair_mode": "phase_matched", "hidden_width": 64,
+            }),
+            ("service128_classification", {
+                "numeric_feature_transform": SERVICE_PROGRESS, "ranking_loss_weight": 0.,
+                "ranking_pair_mode": "phase_matched",
+            }),
+        ]
     write(args.output_dir / "plan.json", {
         "candidates": [(name, None if settings is None else {**shared, **settings})
                        for name, settings in candidates],
@@ -187,14 +223,20 @@ def main():
         "selection": "unchanged_support_gates_then_mean_initial_first_request_ready_ranking_ready_accuracy",
         "development_labels_used_for_selection": False,
         "ready_pairs_are_constructed_diagnostics_not_actual_competition": True,
-        "runtime_model_hidden_width_unchanged": True,
+        "runtime_model_hidden_width_unchanged": all(
+            settings is None or settings.get("hidden_width", shared["hidden_width"]) == len(baseline["bias"])
+            for _name, settings in candidates
+        ),
         "raw_observation_events_task_scope_and_workload_unchanged": True,
         "derived_numeric_features_added": args.family == "observed-ratios",
         "continuous_work_auxiliary_head_training_only": args.family == "continuous-work",
         "established_initial_head_preserved": (
-            args.family == "continuous-work" and "initial_state_head" in baseline
+            args.family in ("continuous-work", "ordered", "invariant")
+            and "initial_state_head" in baseline
         ),
         "frozen_local_semantic_encoder": args.family == "semantic",
+        "ordered_work_head": args.family == "ordered",
+        "scheduler_state_invariance": args.family == "invariant",
         "inputs_sha256": inputs, "GPU_action": False,
     })
     models, summaries = {}, {}
@@ -217,7 +259,7 @@ def main():
             )
             for key in ("admission_cost_profile", "free_dispatch_coalescing_window_ms"):
                 raw[key] = deepcopy(baseline[key])
-            if args.family == "continuous-work" and "initial_state_head" in baseline:
+            if args.family in ("continuous-work", "ordered", "invariant") and "initial_state_head" in baseline:
                 raw["initial_state_head"] = deepcopy(baseline["initial_state_head"])
         values = metrics(WorkflowWorkModel(raw), calibration)
         reasons = calibration_rejections(values, raw)
