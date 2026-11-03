@@ -1,8 +1,11 @@
 """Test additional original training tasks without changing holdouts or serving policy."""
 
 import argparse
+from collections import Counter
 from copy import deepcopy
+import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 import time
@@ -14,13 +17,14 @@ from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import (
     OBSERVED_RATIOS, R5_SCHEMA, WorkflowWorkModel, before_observed_work,
 )
-from beliefkv.predictor.workflow_work_training import READY_BALANCED
+from beliefkv.predictor.workflow_work_distribution import support_status
+from beliefkv.predictor.workflow_work_training import READY_BALANCED, project_task_weights, ready_weights
 from scripts.extend_workflow_prediction_training import (
     disjoint_training_rows, diverse_task_training_rows,
 )
 from scripts.improve_workflow_work_distribution import calibration_rejections
 from scripts.train_workflow_ready_ranking import metrics, score
-from scripts.train_workflow_work import capture_split, fit, write
+from scripts.train_workflow_work import capture_split, fit, probabilities, write
 from scripts.train_workflow_work_distribution import split_rows
 
 
@@ -101,7 +105,122 @@ def initial_training_rows(rows):
     return selected
 
 
-def conditional_initial_study(training, calibration, development, baseline, population, pins, output):
+def initial_project_folds(rows, *, count=5):
+    import numpy as np
+
+    projects = sorted({row["project"] for row in rows})
+    if not 3 <= count <= len(projects):
+        raise ValueError("initial calibration requires at least three complete project folds")
+    shuffled = np.random.default_rng(21).permutation(projects).tolist()
+    assignments = {project: index % count for index, project in enumerate(shuffled)}
+    return [
+        ([index for index, row in enumerate(rows) if assignments[row["project"]] != fold],
+         [index for index, row in enumerate(rows) if assignments[row["project"]] == fold])
+        for fold in range(count)
+    ]
+
+
+def cross_project_initial_calibration(rows, head, settings, *, width):
+    """Temperature and class support use predictions excluding each complete query project."""
+    import numpy as np
+    from scipy.optimize import minimize_scalar
+
+    folds = initial_project_folds(rows, count=min(5, len({row["project"] for row in rows})))
+    output, coverage, receipts = np.full((len(rows), 3), np.nan), np.zeros(len(rows), dtype=int), []
+    for training_indices, validation_indices in folds:
+        training = [rows[index] for index in training_indices]
+        validation = [rows[index] for index in validation_indices]
+        raw = fit(
+            training, validation, hidden_width=width,
+            **{**settings, "split_mode": "project"},
+        )
+        raw["temperature"] = 1.
+        output[validation_indices] = probabilities(WorkflowWorkModel(raw), validation)
+        coverage[validation_indices] += 1
+        receipts.append({
+            "training_projects": sorted({row["project"] for row in training}),
+            "held_out_projects": sorted({row["project"] for row in validation}),
+            "training_workflows": sorted({row["workflow"] for row in training}),
+            "held_out_workflows": sorted({row["workflow"] for row in validation}),
+            "unscaled_model_sha256": hashlib.sha256(
+                json.dumps(raw, sort_keys=True).encode(),
+            ).hexdigest(),
+        })
+    if not np.isfinite(output).all() or not (coverage == 1).all():
+        raise ValueError("initial cross-project calibration must cover every training state exactly once")
+    labels = np.searchsorted(
+        head["work_thresholds"], [row["remaining_work"] for row in rows], side="right",
+    )
+    counts = Counter(row["workflow"] for row in rows)
+    weights = np.asarray([1. / counts[row["workflow"]] for row in rows])
+    weights /= weights.sum()
+    weights = project_task_weights(rows, ready_weights(rows, weights))
+    logs = np.log(np.maximum(output, 1e-12))
+
+    def loss(value):
+        scaled = logs / math.exp(value)
+        scaled -= scaled.max(axis=1, keepdims=True)
+        return float(np.sum(weights * (
+            np.log(np.exp(scaled).sum(axis=1)) - scaled[np.arange(len(labels)), labels]
+        )))
+
+    temperature = math.exp(float(minimize_scalar(loss, bounds=(-1.6, 3.), method="bounded").x))
+    workflow_support = [
+        len({row["workflow"] for row, label in zip(rows, labels) if label == target})
+        for target in range(3)
+    ]
+    project_support = [
+        len({row["project"] for row, label in zip(rows, labels) if label == target})
+        for target in range(3)
+    ]
+    fixed_support = head["metadata"]["calibration_class_workflows"]
+    head["temperature"] = temperature
+    head["metadata"].update(
+        calibration_status="project_heldout_temperature",
+        calibration_class_workflows=workflow_support,
+        calibration_class_projects=project_support,
+        initial_fixed_calibration_class_workflows=fixed_support,
+        initial_probability_calibration="training_projects_out_of_fold_unscaled_predictions",
+        initial_calibration_folds=len(folds),
+        fixed_calibration_and_development_projects_used_for_internal_fitting=False,
+    )
+    return {
+        "temperature": temperature, "folds": receipts,
+        "project_class_support": project_support, "workflow_class_support": workflow_support,
+        "original_fixed_calibration_class_workflows": fixed_support,
+        "full_training_project_held_out_for_each_prediction": True,
+        "fold_model_temperatures_discarded": True,
+        "fixed_calibration_group_used_only_for_final_candidate_selection_and_validation": True,
+        "records": [
+            {"workflow": row["workflow"], "project": row["project"], "snapshot": row["snapshot"],
+             "unscaled_probabilities": values.tolist(), "class": int(label)}
+            for row, values, label in zip(rows, output, labels)
+        ],
+    }
+
+
+def initial_head_usage(raw, rows):
+    model = WorkflowWorkModel(raw)
+    head = model.initial_head
+    if head is None:
+        return {"supported": 0, "states": 0, "reasons": {}}
+    reasons = Counter()
+    encodings = {}
+    for row in initial_training_rows(rows):
+        text = row.get("task_text", row["text"])
+        if text not in encodings:
+            encodings[text] = head.task_encoding(text)
+        reasons[support_status(head, row["features"], encodings[text][1])] += 1
+    return {
+        "supported": reasons["calibrated_distribution"], "states": sum(reasons.values()),
+        "reasons": dict(reasons),
+    }
+
+
+def conditional_initial_study(
+    training, calibration, development, baseline, population, pins, output, *,
+    cross_project_calibration=False,
+):
     previous_ids = set(population["previous_expanded_split"]["training_execution_sha256"])
     existing = [row for row in training if row["source_workflow_sha256"] in previous_ids]
     initial_previous = initial_training_rows(existing)
@@ -133,6 +252,10 @@ def conditional_initial_study(training, calibration, development, baseline, popu
         "initial_condition": "zero_observed_input_output_and_no_observed_child",
         "progress_probabilities_after_condition_are_original_exactly": True,
         "calibration_states": len(initial_calibration),
+        "initial_temperature_calibration": (
+            "training_project_grouped_out_of_fold"
+            if cross_project_calibration else "original_fixed_initial_states"
+        ),
         "selection": "unchanged_calibration_support_gates_then_existing_ready_ranking_score",
         "development_labels_used_for_selection": False, "inputs_sha256": pins, "GPU_action": False,
     })
@@ -144,6 +267,9 @@ def conditional_initial_study(training, calibration, development, baseline, popu
             rows, width = specification
             print("fitting_conditional_initial: " + name, flush=True)
             head = fit(rows, initial_calibration, hidden_width=width, **settings)
+            if cross_project_calibration:
+                receipt = cross_project_initial_calibration(rows, head, settings, width=width)
+                write(output / name / "cross_project_calibration.json", receipt)
             head["metadata"].update(
                 prefill_token_weight=.01, decision_eligible=True,
                 online_features_use_observed_prefix_only=True,
@@ -158,6 +284,9 @@ def conditional_initial_study(training, calibration, development, baseline, popu
             write(output / name / "component.json", head)
         values = metrics(WorkflowWorkModel(raw), calibration)
         reasons = calibration_rejections(values, raw)
+        usage = initial_head_usage(raw, calibration)
+        if specification is not None and not usage["supported"]:
+            reasons.append("conditional_initial_head_has_no_supported_activation")
         if specification is not None:
             raw["metadata"].update(
                 decision_eligible=not reasons, decision_rejection_reasons=reasons,
@@ -169,6 +298,7 @@ def conditional_initial_study(training, calibration, development, baseline, popu
         summaries[name] = {
             "calibration": values, "selection_score": score(values),
             "decision_eligible": not reasons, "decision_rejection_reasons": reasons,
+            "initial_head_usage": usage,
         }
         write(output / name / "model.json", raw)
         write(output / name / "calibration.json", summaries[name])
@@ -203,6 +333,7 @@ def main():
                  "baseline-model", "baseline-evaluation", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--family", choices=("whole_task", "conditional_initial"), default="whole_task")
+    parser.add_argument("--initial-calibration", choices=("fixed", "cross_project"), default="fixed")
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve previous task-diversity training and selection outcomes")
@@ -241,6 +372,7 @@ def main():
     if args.family == "conditional_initial":
         conditional_initial_study(
             training, calibration, development, baseline, population, pins, args.output_dir,
+            cross_project_calibration=args.initial_calibration == "cross_project",
         )
         return
     settings = {

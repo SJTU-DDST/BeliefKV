@@ -8,7 +8,8 @@ from beliefkv.predictor.workflow_work import R5_FEATURES, R5_SCHEMA, WorkflowWor
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import train_workflow_task_diversity as study
 from scripts.train_workflow_task_diversity import (
-    CANDIDATES, candidate_model, choose_candidate, initial_training_rows, training_population,
+    CANDIDATES, candidate_model, choose_candidate, cross_project_initial_calibration,
+    initial_head_usage, initial_project_folds, initial_training_rows, training_population,
 )
 from scripts.train_workflow_work import capture_split
 from scripts.train_workflow_work_distribution import split_rows
@@ -150,6 +151,67 @@ def test_conditional_initial_training_uses_observed_activation_state_and_require
         initial_training_rows([initial, {**served, "workflow": "unseen-initial"}])
     with pytest.raises(ValueError, match="unserved"):
         initial_training_rows([{**initial, "attained_work": 1.}])
+
+
+def test_initial_calibration_folds_hold_out_all_tasks_of_a_project_together():
+    rows = [
+        {**row(identity, snapshot=snapshot), "project": project}
+        for identity, project in (("a", "same"), ("b", "same"), ("c", "other"), ("d", "third"))
+        for snapshot in range(2)
+    ]
+    folds = initial_project_folds(rows, count=3)
+    assert folds == initial_project_folds(rows, count=3)
+    assert sorted(index for _training, held_out in folds for index in held_out) == list(range(len(rows)))
+    for training, validation in folds:
+        assert not {rows[index]["project"] for index in training} & {
+            rows[index]["project"] for index in validation
+        }
+    with pytest.raises(ValueError, match="three"):
+        initial_project_folds(rows, count=2)
+
+
+def test_cross_project_calibration_uses_only_unscaled_predictions_excluding_query_projects(monkeypatch):
+    rows = [
+        {**row(str(index), remaining=total), "total_work": total, "attained_work": 0.}
+        for index, total in enumerate((5., 15., 30., 5., 15., 30.))
+    ]
+    rows.append({
+        **row("second-task", remaining=20.), "project": "0", "attained_work": 0., "total_work": 20.,
+    })
+    head = component([1., 0., -1.])
+    head["metadata"]["calibration_class_workflows"] = [1, 6, 5]
+    calls = []
+
+    def fitting(training, validation, **settings):
+        calls.append((training, validation))
+        assert settings["split_mode"] == "project"
+        assert not {value["project"] for value in training} & {
+            value["project"] for value in validation
+        }
+        raw = component([1., 0., -1.])
+        raw["temperature"] = 99.
+        return raw
+
+    monkeypatch.setattr(study, "fit", fitting)
+    report = cross_project_initial_calibration(rows, head, {}, width=32)
+    expected = predict(component([1., 0., -1.]))
+    assert len(calls) == 5
+    assert all(value["unscaled_probabilities"] == pytest.approx(expected) for value in report["records"])
+    assert report["original_fixed_calibration_class_workflows"] == [1, 6, 5]
+    assert head["metadata"]["calibration_class_workflows"] == [2, 2, 3]
+    assert head["metadata"]["initial_fixed_calibration_class_workflows"] == [1, 6, 5]
+    assert head["metadata"]["fixed_calibration_and_development_projects_used_for_internal_fitting"] is False
+    assert report["full_training_project_held_out_for_each_prediction"]
+
+
+def test_unused_initial_head_is_reported_instead_of_counted_as_a_prediction_experiment():
+    base, head = component([1., 0., -1.]), component([0., 1., -1.])
+    head["metadata"]["calibration_class_workflows"] = [1, 6, 5]
+    model = candidate_model("new_initial", base, initial=head)
+    values = [{**row("initial"), "attained_work": 0.}]
+    usage = initial_head_usage(model, values)
+    assert usage["supported"] == 0 and usage["states"] == 1
+    assert usage["reasons"] == {"missing_class_execution_support": 1}
 
 
 @pytest.mark.parametrize("family", ("whole_task", "conditional_initial"))
