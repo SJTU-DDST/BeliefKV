@@ -50,6 +50,7 @@ class CombinationCosts:
     relative_tie: float = .01
     prefill_ms_per_token_by_context: tuple = ()
     decode_cost_basis: str = "incremental"
+    selection_objective: str = "benefit_per_cost"
 
     def __post_init__(self):
         if (
@@ -64,6 +65,7 @@ class CombinationCosts:
             or type(self.decode_steps) is not int or not 1 <= self.decode_steps <= 128
             or not math.isfinite(self.relative_tie) or not 0 <= self.relative_tie < 1
             or self.decode_cost_basis not in ("incremental", "full_batch")
+            or self.selection_objective not in ("benefit_per_cost", "benefit")
         ):
             raise ValueError("invalid frozen combination cost profile")
         previous_bound, previous_rate = 0, 0.
@@ -179,12 +181,15 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=
         + max(0., after - before)
     )
     objective_cost = incremental + (before if costs.decode_cost_basis == "full_batch" else 0.)
+    density = benefit / (costs.epsilon_ms + objective_cost)
     result = {
-        "score": benefit / (costs.epsilon_ms + objective_cost),
+        "score": benefit if costs.selection_objective == "benefit" else density,
         "benefit": benefit, "incremental_cost_ms": incremental,
         "missing_unique_tokens": missing, "input_tokens": inputs,
         "next_chunk_input_tokens": staged_inputs,
     }
+    if costs.selection_objective == "benefit":
+        result.update(selection_objective="benefit", cost_normalized_score=density)
     if costs.decode_cost_basis == "full_batch":
         result.update(
             decode_cost_basis="full_batch", active_decode_cost_ms=before,

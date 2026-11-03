@@ -402,9 +402,12 @@ def main():
             profile["kind"] in (
                 "r5_frozen_batch_cost_proxy_capacity_v4", "r5_frozen_batch_cost_proxy_capacity_v5",
                 "r5_frozen_batch_cost_proxy_capacity_v6",
+                "r5_frozen_batch_cost_proxy_capacity_v7",
             )
         ),
-        plan_device_capacity=profile["kind"] == "r5_frozen_batch_cost_proxy_capacity_v6",
+        plan_device_capacity=profile["kind"] in (
+            "r5_frozen_batch_cost_proxy_capacity_v6", "r5_frozen_batch_cost_proxy_capacity_v7",
+        ),
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),

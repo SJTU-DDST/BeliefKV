@@ -73,8 +73,17 @@ def verify_learned_combination_pair(control, learned):
     profile, contract = artifacts[1].get("admission_cost_profile", {}), learned["comparison_contract"]
     if (
         model.schema != R5_SCHEMA or model.metadata.get("decision_eligible") is not True
-        or profile.get("kind") != "r5_frozen_batch_cost_proxy_capacity_v6"
+        or profile.get("kind") not in (
+            "r5_frozen_batch_cost_proxy_capacity_v6", "r5_frozen_batch_cost_proxy_capacity_v7",
+        )
         or CombinationCosts(**profile["costs"]).decode_cost_basis != "full_batch"
+        or (
+            CombinationCosts(**profile["costs"]).selection_objective == "benefit"
+        ) != (profile["kind"] == "r5_frozen_batch_cost_proxy_capacity_v7")
+        or (
+            profile["kind"] == "r5_frozen_batch_cost_proxy_capacity_v7"
+            and contract.get("combination_selection_objective") != "benefit"
+        )
         or not profile.get("identity")
         or contract.get("future_information_used") is not False
         or contract.get("workflow_work_ranking") is not True
@@ -82,7 +91,7 @@ def verify_learned_combination_pair(control, learned):
         or contract.get("physical_capacity_credit") is not False
         or contract.get("matched_pair_changes_only_remaining_work_ranking") is not False
     ):
-        raise ValueError("require explicit learned distributions and capacity-v6 combination planning")
+        raise ValueError("require explicit learned distributions and capacity-v6/v7 combination planning")
     for name in (
         "minimum_promising_measured_mean_JCT_reduction",
         "common_window_output_throughput_noninferiority_fraction",
@@ -154,6 +163,9 @@ def main():
         reference="nonranking_full", candidate="learned_R5_combination",
         only_remaining_work_ranking_changed=False,
         conditional_prediction_combination_and_cost_planning_are_joint_change=True,
+        combination_selection_objective=CombinationCosts(
+            **causal.load(artifacts[1])["admission_cost_profile"]["costs"],
+        ).selection_objective,
         complete_measured_work_fresh_drain_and_actual_exit=True,
         original_workload_decisions_preserved=decisions,
         single_run_statistical_significance_claimed=False,

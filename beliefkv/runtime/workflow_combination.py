@@ -38,16 +38,19 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             "r5_frozen_batch_cost_proxy_capacity_v3", "r5_frozen_batch_cost_proxy_capacity_v4",
             "r5_frozen_batch_cost_proxy_capacity_v5",
             "r5_frozen_batch_cost_proxy_capacity_v6",
+            "r5_frozen_batch_cost_proxy_capacity_v7",
         )
         if not isinstance(profile, dict) or profile.get("kind") not in kinds:
             raise ValueError("R5 requires its frozen, fingerprinted admission cost profile")
         self.include_unreferenced_capacity = profile["kind"] in kinds[1:]
         self.allow_deep_prefix_aggregate = profile["kind"] in kinds[2:]
         self.allow_feasible_resource_alternatives = profile["kind"] in kinds[3:]
-        self.plan_device_capacity = profile["kind"] == kinds[5]
+        self.plan_device_capacity = profile["kind"] in kinds[5:]
         self.costs = CombinationCosts(**profile["costs"])
         if (self.costs.decode_cost_basis == "full_batch") != (profile["kind"] in kinds[4:]):
-            raise ValueError("full-batch cost requires its explicit v5/v6 admission profile")
+            raise ValueError("full-batch cost requires its explicit v5/v6/v7 admission profile")
+        if (self.costs.selection_objective == "benefit") != (profile["kind"] == kinds[6]):
+            raise ValueError("benefit selection requires its explicit v7 admission profile")
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
         if type(self.oracle_reference_path_s) not in (int, float) or not 0 < self.oracle_reference_path_s < float("inf"):
