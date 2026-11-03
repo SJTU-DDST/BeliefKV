@@ -10,7 +10,7 @@ from beliefkv.predictor.workflow_qwen_encoder import (
     last_token_pool, validate_contract,
 )
 from beliefkv.predictor.workflow_task_encoder import TASK_FEATURES
-from scripts.train_workflow_qwen_initial_work import calibration_choice, initial_metrics
+from scripts.train_workflow_qwen_initial_work import calibration_choice, initial_metrics, prior_predictions
 
 
 def contract():
@@ -114,3 +114,53 @@ def test_initial_selection_does_not_trade_calibration_ranking_for_lower_utility_
     assert values == before
     values["candidate"]["pair_ranking_accuracy"] = .8
     assert calibration_choice(values) == "candidate"
+
+
+def test_semantic_class_experts_resolve_different_work_inside_the_same_long_class():
+    import math
+
+    long = {
+        "center": [0.], "scale": [1.], "coefficient": [math.log1p(230000.) - math.log1p(24000.)],
+        "bias": math.log1p(24000.), "log_total_sigma": 0.,
+    }
+    prior = {
+        "kind": "semantic_class_conditional_log_work_v1",
+        "class_conditional_priors": [deepcopy(long) for _ in range(3)],
+    }
+    rows = [{"text": "task-a"}, {"text": "task-b"}]
+    vectors = {"task-a": [0.], "task-b": [1.]}
+    logs, utility = prior_predictions(
+        prior, rows, vectors, 19144., probabilities=[[0., 0., 1.], [0., 0., 1.]],
+        thresholds=(13062.96, 22971.15),
+    )
+    assert np.expm1(logs) == pytest.approx([24000., 230000.], rel=1e-12)
+    assert utility[0] > utility[1]
+    changed = [{**row, "total_work": 1e9, "remaining_work": 1e9} for row in rows]
+    altered = prior_predictions(
+        prior, changed, vectors, 19144., probabilities=[[0., 0., 1.], [0., 0., 1.]],
+        thresholds=(13062.96, 22971.15),
+    )
+    assert altered[0] == pytest.approx(logs)
+    assert altered[1] == pytest.approx(utility)
+
+
+def test_semantic_experts_preserve_class_ranges_and_observed_posterior_mixture():
+    prior = {
+        "kind": "semantic_class_conditional_log_work_v1",
+        "class_conditional_priors": [
+            {"center": [0.], "scale": [1.], "coefficient": [0.], "bias": 100., "log_total_sigma": 0.},
+            {"center": [0.], "scale": [1.], "coefficient": [0.], "bias": 0., "log_total_sigma": 0.},
+            {"center": [0.], "scale": [1.], "coefficient": [0.], "bias": 0., "log_total_sigma": 0.},
+        ],
+    }
+    row, vectors = [{"text": "task"}], {"task": [0.]}
+    predictions = [
+        prior_predictions(prior, row, vectors, 19144., probabilities=[values], thresholds=(1000., 2000.))
+        for values in ([1., 0., 0.], [0., 1., 0.], [0., 0., 1.], [.5, .5, 0.])
+    ]
+    assert np.expm1(predictions[0][0][0]) <= 1000.
+    assert 1000. <= np.expm1(predictions[1][0][0]) < 2000.
+    assert np.expm1(predictions[2][0][0]) >= 2000.
+    assert predictions[3][1][0] == pytest.approx((predictions[0][1][0] + predictions[1][1][0]) / 2.)
+    with pytest.raises(ValueError, match="observed class probabilities"):
+        prior_predictions(prior, row, vectors, 19144.)

@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
-from beliefkv.predictor.workflow_continuous_work import fit_training_reference, normal_log_work_weight, remaining_work_weight
+from beliefkv.predictor.workflow_continuous_work import (
+    fit_training_reference, log_work_weight, normal_log_work_weight, remaining_work_weight,
+)
 from beliefkv.predictor.workflow_qwen_encoder import QwenTaskEncoder, encoder_contract
 from beliefkv.predictor.workflow_work import WorkflowWorkModel
 from scripts.train_workflow_semantic_initial_prior import fit_semantic_prior, ridge_predict
@@ -43,10 +45,58 @@ def initial_metrics(rows, log_predictions, utility, reference):
     }
 
 
-def prior_predictions(prior, rows, vectors, reference):
+def fit_class_conditional_priors(rows, vectors, thresholds):
+    from bisect import bisect_right
+
+    groups = [
+        [row for row in rows if bisect_right(thresholds, row["total_work"]) == label]
+        for label in range(3)
+    ]
+    if min(map(len, groups)) < 5:
+        raise ValueError("class-conditional work requires five training executions in each class")
+    priors, diagnostics = [], []
+    for values in groups:
+        fitted, diagnostic = fit_semantic_prior(values, vectors)
+        priors.append(fitted)
+        diagnostics.append(diagnostic)
+    return {"kind": "semantic_class_conditional_log_work_v1", "class_conditional_priors": priors}, {
+        "class_training_execution_counts": list(map(len, groups)),
+        "class_training_project_validation": diagnostics,
+        "future_training_class_is_a_label_not_a_query_input": True,
+    }
+
+
+def prior_predictions(prior, rows, vectors, reference, *, probabilities=None, thresholds=None):
     import numpy as np
 
     values = np.asarray([vectors[row["text"]] for row in rows])
+    if prior.get("kind") == "semantic_class_conditional_log_work_v1":
+        if (
+            probabilities is None or thresholds is None or len(thresholds) != 2
+            or np.asarray(probabilities).shape != (len(rows), 3)
+            or len(prior["class_conditional_priors"]) != 3
+        ):
+            raise ValueError("conditional work experts require observed class probabilities and fixed thresholds")
+        nodes, mass = np.polynomial.hermite.hermgauss(12)
+        nodes, mass = nodes * np.sqrt(2.), mass / np.sqrt(np.pi)
+        lower = (0., np.log1p(thresholds[0]), np.log1p(thresholds[1]))
+        upper = (np.nextafter(lower[1], 0.), np.nextafter(lower[2], 0.), 700.)
+        means, utility = [], []
+        for label, expert in enumerate(prior["class_conditional_priors"]):
+            predicted = ridge_predict(expert, values)
+            draws = np.clip(
+                predicted[:, None] + expert["log_total_sigma"] * nodes[None, :],
+                lower[label], upper[label],
+            )
+            means.append(draws @ mass)
+            utility.append(np.asarray([
+                [log_work_weight(float(value), reference) for value in row] for row in draws
+            ]) @ mass)
+        probability = np.asarray(probabilities)
+        return (
+            (probability * np.column_stack(means)).sum(1),
+            (probability * np.column_stack(utility)).sum(1),
+        )
     logs = ridge_predict(prior, values)
     utilities = np.asarray([
         normal_log_work_weight(float(value), prior["log_total_sigma"], reference) for value in logs
@@ -70,6 +120,8 @@ def main():
     for name in ("dataset", "cohort", "previous-training-data", "additional-training-data",
                  "model", "model-evaluation", "training-evaluation", "encoder", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--family", choices=("global", "class_conditional"), default="global")
+    parser.add_argument("--reuse-embeddings", type=Path)
     args = parser.parse_args()
     if args.output_dir.exists():
         raise FileExistsError("preserve prior semantic initial-work studies")
@@ -78,6 +130,8 @@ def main():
         "model", "model-evaluation", "training-evaluation",
     ))
     pins = {str(path.resolve()): sha256_file(path) for path in paths}
+    if args.reuse_embeddings is not None:
+        pins[str(args.reuse_embeddings.resolve())] = sha256_file(args.reuse_embeddings)
     data, cohort, previous, additional, raw, evaluation, training_evaluation = (
         json.loads(path.read_bytes()) for path in paths
     )
@@ -128,6 +182,7 @@ def main():
     }
     write(args.output_dir / "plan.json", {
         "encoder": contract, "settings": list(groups), "training_population": population,
+        "family": args.family,
         "target": "continuous_initial_log1p_complete_model_work",
         "initial_only_progress_predictions_unchanged": True,
         "selection": "minimum_fixed_calibration_utility_MSE_without_pair_ranking_regression",
@@ -136,6 +191,16 @@ def main():
         "development_labels_used_for_selection": False, "inputs_sha256": pins, "GPU_action": False,
     })
     encoder, vectors = QwenTaskEncoder(contract), {}
+    if args.reuse_embeddings is not None:
+        cached = json.loads(args.reuse_embeddings.read_bytes())
+        if (
+            cached.get("encoder") != contract or cached.get("explicit_task_text_only") is not True
+            or cached.get("future_work_labels_in_embeddings") is not False
+        ):
+            raise ValueError("reused semantic vectors require the same frozen encoder and explicit task inputs")
+        vectors = {text: np.asarray(vector, dtype=np.float32) for text, vector in cached["vectors"].items()}
+        if any(vector.shape != (encoder.dimension,) or not np.isfinite(vector).all() for vector in vectors.values()):
+            raise ValueError("reused semantic task vectors have incompatible dimensions or values")
     # Cache each explicit task once. Calibration text is visible, while its
     # labels cannot enter ridge fitting or regularization selection.
     text_rows = initial["training"] + initial["calibration"]
@@ -154,9 +219,15 @@ def main():
         cal_rows, base_logs, base_utility, reference["reference_work"],
     )
     for name, rows in groups.items():
-        prior, diagnostic = fit_semantic_prior(rows, vectors)
+        prior, diagnostic = (
+            fit_class_conditional_priors(rows, vectors, base.thresholds)
+            if args.family == "class_conditional" else fit_semantic_prior(rows, vectors)
+        )
         priors[name] = prior
-        logs, utility = prior_predictions(prior, cal_rows, vectors, reference["reference_work"])
+        logs, utility = prior_predictions(
+            prior, cal_rows, vectors, reference["reference_work"],
+            probabilities=base_cal, thresholds=base.thresholds,
+        )
         summaries[name] = initial_metrics(cal_rows, logs, utility, reference["reference_work"])
         write(args.output_dir / name / "prior.json", prior)
         write(args.output_dir / name / "training_project_validation.json", diagnostic)
@@ -175,11 +246,15 @@ def main():
         for row in dev_rows:
             if row["text"] not in vectors:
                 vectors[row["text"]] = encoder.encode(row["text"])[0]
-        logs, utility = prior_predictions(priors[selected], dev_rows, vectors, reference["reference_work"])
+        logs, utility = prior_predictions(
+            priors[selected], dev_rows, vectors, reference["reference_work"],
+            probabilities=base_dev, thresholds=base.thresholds,
+        )
         held_out[selected] = initial_metrics(dev_rows, logs, utility, reference["reference_work"])
         artifact = {
             "kind": "offline_qwen_semantic_initial_work_v1", "encoder": contract,
             "prior": deepcopy(priors[selected]), "reference": reference,
+            "family": args.family,
             "metadata": {"decision_eligible": False, "reason": "offline_initial_semantic_readout_not_serving_qualified"},
         }
         write(args.output_dir / "model.json", artifact)
@@ -193,6 +268,7 @@ def main():
     durations = [value["wall_seconds"] for value in encoder.measurements]
     write(args.output_dir / "evaluation.json", {
         "selected": selected, "calibration": summaries, "held_out": held_out,
+        "family": args.family,
         "training_population": population, "inputs_sha256": pins, "reference": reference,
         "task_embeddings_sha256": sha256_file(args.output_dir / "task_embeddings.json"),
         "model_sha256": sha256_file(args.output_dir / "model.json") if artifact is not None else None,
@@ -201,14 +277,14 @@ def main():
         "encoder_cost": {
             "startup_wall_seconds": encoder.startup_seconds, "unique_texts": len(vectors),
             "encoding_wall_seconds_total": sum(durations),
-            "encoding_wall_seconds_p50": float(np.quantile(durations, .5)),
-            "encoding_wall_seconds_p99": float(np.quantile(durations, .99)),
+            "encoding_wall_seconds_p50": float(np.quantile(durations, .5)) if durations else None,
+            "encoding_wall_seconds_p99": float(np.quantile(durations, .99)) if durations else None,
             "measurements": encoder.measurements,
         },
         "GPU_action": False, "deployment_adapter_implemented": False, "JCT_gain_proven": False,
     })
     print(json.dumps({"selected": selected, "held_out": held_out,
-                      "encoder_seconds_p50": float(np.quantile(durations, .5))}), flush=True)
+                      "encoder_seconds_p50": float(np.quantile(durations, .5)) if durations else None}), flush=True)
 
 
 if __name__ == "__main__":
