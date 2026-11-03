@@ -34,6 +34,13 @@ def select_control_optimized_candidate():
     PLAN, STATE = OUTPUT / "plan.json", OUTPUT / "watcher.state.json"
 
 
+def qualified_serving_checkout(waiter, qualification):
+    serving = qualification.get("serving_checkout")
+    if serving is not None:
+        return Path(serving)
+    return Path(waiter["argv"][1]).resolve().parents[1]
+
+
 def prepare():
     if PLAN.exists() or git_source_state(ROOT)["dirty"]:
         raise ValueError("preserve earlier analysis plans and freeze the analysis source")
@@ -41,7 +48,7 @@ def prepare():
     waiter = causal.load(waiter_path)
     qualification_path = candidate.HERE / "qualification.json"
     qualification = causal.load(qualification_path)
-    serving = Path(qualification.get("serving_checkout", Path(waiter["argv"][1]).resolve().parents[1]))
+    serving = qualified_serving_checkout(waiter, qualification)
     if git_source_state(serving) != qualification["source"]:
         raise ValueError("the queued qualified serving source changed")
     spec_path = candidate.HERE / "serving_ready/qualified_full.json"

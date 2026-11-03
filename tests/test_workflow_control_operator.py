@@ -219,3 +219,13 @@ def test_optimized_results_watcher_preserves_candidate_selection_in_child(monkey
     )
     results.queue()
     assert launches[0][-2:] == ["--watch", "--control-optimized"]
+
+
+def test_explicit_serving_checkout_does_not_require_post_exec_waiter_arguments(tmp_path):
+    serving = tmp_path / "qualified-serving"
+    assert results.qualified_serving_checkout({"argv": []}, {"serving_checkout": str(serving)}) == serving
+
+
+def test_historical_result_observers_keep_the_waiter_checkout_fallback(tmp_path):
+    entrypoint = tmp_path / "historical-serving/scripts/operator.py"
+    assert results.qualified_serving_checkout({"argv": ["python", str(entrypoint)]}, {}) == entrypoint.parents[1]
