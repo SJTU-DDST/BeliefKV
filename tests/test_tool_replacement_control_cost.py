@@ -85,3 +85,60 @@ def test_one_fresh_headroom_read_is_shared_with_the_same_demand_budget(
     )
     assert demand is not None and demand[0 if path == "replacement" else 1] > 0
     assert runtime._residency_headroom.observable
+
+
+def test_one_permitted_donor_check_reuses_its_exact_consumer_demand(demand_runtime, monkeypatch):
+    runtime, admission, controller, adder = pair(demand_runtime)
+    request, key = demand_runtime[5], admission.latest["consumer"]
+    donor = admission.latest["tool"]
+    runtime._observe_native_admission_capacity(running_batch=NS(reqs=[]), adder=adder)
+    controller._admission_adder = adder
+    controller.replacement.consumer = (request, key)
+    controller.replacement.donor = donor
+    inspect = Mock(wraps=controller.replacement.demand)
+    monkeypatch.setattr(controller.replacement, "demand", inspect)
+    result = controller._demand(request, key, donor)
+    assert result is not None and result[0] == key
+    inspect.assert_called_once_with(request, key)
+    assert admission.policy.programs["tool"].active
+    assert not admission.policy.programs["consumer"].active
+    assert not runtime.physical_ledger.pending_count
+
+
+def test_permitted_demand_is_rechecked_after_capacity_changes(demand_runtime):
+    runtime, admission, controller, adder = pair(demand_runtime)
+    request, key = demand_runtime[5], admission.latest["consumer"]
+    donor = admission.latest["tool"]
+    runtime._observe_native_admission_capacity(running_batch=NS(reqs=[]), adder=adder)
+    controller._admission_adder = adder
+    controller.replacement.consumer = (request, key)
+    controller.replacement.donor = donor
+    assert controller._demand(request, key, donor) is not None
+    admission.policy.programs["consumer"].tokens = 100
+    assert controller._demand(request, key, donor) is None
+    admission.policy.programs["consumer"].tokens = 10
+    assert controller._demand(request, key, donor) is not None
+    assert demand_runtime[4].component_data[0].value is not None
+
+
+@pytest.mark.parametrize("change", ("consumer", "donor", "paused_donor", "no_deficit"))
+def test_shared_demand_preserves_replacement_identity_and_capacity_guards(
+    demand_runtime, monkeypatch, change,
+):
+    runtime, admission, controller, adder = pair(demand_runtime)
+    request, key = demand_runtime[5], admission.latest["consumer"]
+    donor = admission.latest["tool"]
+    runtime._observe_native_admission_capacity(running_batch=NS(reqs=[]), adder=adder)
+    controller.replacement.consumer = (request, key)
+    controller.replacement.donor = donor
+    if change == "consumer":
+        controller.replacement.consumer = None
+    elif change == "donor":
+        controller.replacement.donor = replace(donor, invocation_id="another-donor")
+    elif change == "paused_donor":
+        admission.policy.programs["tool"].active = False
+        monkeypatch.setattr(controller.replacement, "demand", lambda *_args: (1, 1, 0))
+    else:
+        monkeypatch.setattr(controller.replacement, "demand", lambda *_args: (0, 0, 0))
+    assert controller.replacement._permitted_demand(request, key, donor) is None
+    assert not controller.replacement.permits(request, key, donor)

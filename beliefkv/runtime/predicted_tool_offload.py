@@ -355,10 +355,10 @@ class DemandAwareToolOffload(PredictedToolOffload):
         if (
             getattr(agents, "strategy", None) == "thunderagent_reference"
             and not agents.allows(key) and self.replacement.enabled
-            and self.replacement.permits(request, key, donor)
         ):
-            demand = self.replacement.demand(request, key)
-            return key, demand[0], demand[2]
+            demand = self.replacement._permitted_demand(request, key, donor)
+            if demand is not None:
+                return key, demand[0], demand[2]
         observation = runtime._read_request_reentry(request, key=key, refresh=True)
         cost = runtime._request_restore_cost(request, observation)
         if cost is None or not observation["missing_full_tokens"]:

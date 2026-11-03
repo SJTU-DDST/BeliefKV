@@ -76,16 +76,19 @@ class ReferenceToolReplacement:
         return max(0, needed - headroom.device_full_free_tokens), logical, cost[0]
 
     def permits(self, request, key, donor):
+        return self._permitted_demand(request, key, donor) is not None
+
+    def _permitted_demand(self, request, key, donor):
         if self.consumer != (request, key) or donor != self.donor:
-            return False
+            return None
         demand = self.demand(request, key)
         agents = self.offload.runtime._agent_admission
         owner = agents.policy.programs.get(donor.invocation_id)
         if demand is None or owner is None:
-            return False
+            return None
         # A physical release may already have paused A during this same pass.
         credit = owner.tokens + agents.policy.buffer_tokens if owner.active else 0
-        return demand[1] <= credit and (demand[0] > 0 or demand[1] > 0)
+        return demand if demand[1] <= credit and (demand[0] > 0 or demand[1] > 0) else None
 
     def _release_plan(self, key):
         runtime, cache = self.offload.runtime, self.offload.runtime._native_cache
