@@ -1,6 +1,7 @@
 """Observed-state continuous work readout for CPU policy diagnostics."""
 
 import math
+from functools import lru_cache
 
 from beliefkv.predictor.workflow_progress_tree import FEATURES, TreeProjection, features
 from beliefkv.predictor.workflow_work import before_observed_work
@@ -8,7 +9,7 @@ from beliefkv.predictor.workflow_work_readout import representation
 from beliefkv.predictor.workflow_work_training import project_task_weights
 
 
-KIND = "training_referenced_continuous_model_work_v1"
+KIND = "training_referenced_continuous_model_work_v2"
 
 
 def remaining_work_weight(remaining_work, reference_work):
@@ -19,6 +20,44 @@ def remaining_work_weight(remaining_work, reference_work):
     ):
         raise ValueError("continuous scheduling weights require finite nonnegative work and a positive reference")
     return 1. / (1. + remaining_work / reference_work)
+
+
+def log_work_weight(log1p_work, reference_work):
+    remaining_work_weight(0., reference_work)
+    if type(log1p_work) not in (int, float) or not math.isfinite(log1p_work):
+        raise ValueError("continuous work needs a finite log-work forecast")
+    if log1p_work <= 0.:
+        return 1.
+    log_work = (
+        math.log(math.expm1(log1p_work)) if log1p_work < 50.
+        else log1p_work + math.log1p(-math.exp(-log1p_work))
+    )
+    difference = log_work - math.log(reference_work)
+    if difference >= 0.:
+        inverse = math.exp(-difference)
+        return inverse / (1. + inverse)
+    return 1. / (1. + math.exp(difference))
+
+
+@lru_cache(maxsize=1)
+def _quadrature():
+    import numpy as np
+
+    nodes, weights = np.polynomial.hermite.hermgauss(12)
+    return tuple(nodes * math.sqrt(2.)), tuple(weights / math.sqrt(math.pi))
+
+
+def normal_log_work_weight(mean, sigma, reference_work):
+    if type(sigma) not in (int, float) or not math.isfinite(sigma) or sigma < 0.:
+        raise ValueError("continuous work uncertainty needs a finite nonnegative log scale")
+    if sigma == 0.:
+        return log_work_weight(mean, reference_work)
+    nodes, weights = _quadrature()
+    value = float(sum(
+        weight * log_work_weight(float(mean + sigma * node), reference_work)
+        for node, weight in zip(nodes, weights)
+    ))
+    return min(1., max(0., value))
 
 
 def fit_training_reference(rows, thresholds):
@@ -52,6 +91,12 @@ def fit_training_reference(rows, thresholds):
             float(np.average(np.log1p(work[classes == label]), weights=weights[classes == label]))
             for label in range(3)
         ],
+        "initial_class_expected_utility": [
+            float(np.average(
+                [remaining_work_weight(float(value), median) for value in work[classes == label]],
+                weights=weights[classes == label],
+            )) for label in range(3)
+        ],
         "training_executions": len(initial), "training_projects": len({row["project"] for row in initial}),
         "initial_class_execution_counts": counts,
         "reference_and_initial_priors_use_training_labels_only": True,
@@ -73,6 +118,12 @@ class ContinuousWorkReadout:
             or any(type(value) not in (int, float) or not math.isfinite(value) or value < 0
                    for value in contract["initial_class_mean_log_work"])
             or list(contract["initial_class_mean_log_work"]) != sorted(contract["initial_class_mean_log_work"])
+            or len(contract.get("initial_class_expected_utility", ())) != 3
+            or any(type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1
+                   for value in contract["initial_class_expected_utility"])
+            or list(contract["initial_class_expected_utility"]) != sorted(
+                contract["initial_class_expected_utility"], reverse=True,
+            )
         ):
             raise ValueError("continuous work requires its evaluated direct-work tree and fixed training prior")
         remaining_work_weight(0., contract["reference_work"])
@@ -96,6 +147,11 @@ class ContinuousWorkReadout:
                 )
             )
             source = "training_only_initial_class_log_prior"
+            distribution_utility = sum(
+                probability * utility for probability, utility in zip(
+                    probabilities, self.contract["initial_class_expected_utility"],
+                )
+            )
         else:
             hidden = representation(self.model, projection.progress_projection, observed)
             values = np.concatenate((features(observed, projection.task_structure), hidden))
@@ -104,6 +160,9 @@ class ContinuousWorkReadout:
             tree = self.model.conditional_tree.tree
             log_work = tree.score(values) + tree.offset
             source = "calibrated_continuous_tree_log_work"
+            distribution_utility = normal_log_work_weight(
+                log_work, tree.scale, self.contract["reference_work"],
+            )
         if not math.isfinite(log_work):
             raise ValueError("nonfinite continuous workflow work forecast")
         log_work = max(0., float(log_work))
@@ -114,6 +173,10 @@ class ContinuousWorkReadout:
             "log1p_remaining_work": log_work, "remaining_work_point": work,
             "point_semantics": "exponentiated_conditional_log_work_not_arithmetic_work_mean",
             "source": source, "support": support,
+            "distribution_effective_weight": (
+                float(distribution_utility) if support == "calibrated_distribution" else .5
+            ),
+            "distribution_semantics": "calibration_log_residual_normal_or_training_initial_class_empirical_utility",
             "effective_weight": (
                 remaining_work_weight(work, self.contract["reference_work"])
                 if support == "calibrated_distribution" else .5

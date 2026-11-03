@@ -34,7 +34,10 @@ from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import verify_execution
 
 
-VARIANTS = ("actual_cached", "tree_binned", "tree_continuous", "oracle_binned", "oracle_continuous")
+VARIANTS = (
+    "actual_cached", "tree_binned", "tree_continuous", "tree_continuous_distribution",
+    "oracle_binned", "oracle_continuous",
+)
 
 
 def inspect(rows, observations, costs, profile, model, contract, texts, measured):
@@ -95,6 +98,7 @@ def inspect(rows, observations, costs, profile, model, contract, texts, measured
             values = {
                 "actual_cached": candidate.weight, "tree_binned": prediction["effective_weight"],
                 "tree_continuous": point["effective_weight"],
+                "tree_continuous_distribution": point["distribution_effective_weight"],
                 "oracle_binned": (1., .5, .25)[bisect_right(model.thresholds, max(0., remaining))],
                 "oracle_continuous": remaining_work_weight(max(0., remaining), contract["reference_work"]),
             }
@@ -140,9 +144,14 @@ def inspect(rows, observations, costs, profile, model, contract, texts, measured
                 ),
             }
         for name, result in selections.items():
-            stats[name]["changes_tree_binned_set"] += (
-                set(result["selected"]) != set(selections["tree_binned"]["selected"])
-            )
+            changed = set(result["selected"]) != set(selections["tree_binned"]["selected"])
+            stats[name]["changes_tree_binned_set"] += changed
+            old_truth = selections["tree_binned"]["continuous_truth_evaluation"]
+            new_truth = result["continuous_truth_evaluation"]
+            if changed and old_truth is not None and new_truth is not None:
+                difference = new_truth["score"] - old_truth["score"]
+                stats[name]["changed_set_has_higher_true_surrogate_score"] += difference > 1e-12
+                stats[name]["changed_set_has_lower_true_surrogate_score"] += difference < -1e-12
         required_rows = [candidate for candidate in candidates if candidate.identity in required]
         protected = {candidate.workflow for candidate in required_rows}
         fitting = [
@@ -299,6 +308,7 @@ def main():
             "same_recorded_candidates_resources_costs_and_required_JOIN_rights": True,
             "actual_complete_search_reproduced_before_counterfactual": True,
             "learned_and_oracle_continuous_weights_use_same_model_work_units_and_training_reference": True,
+            "distribution_variant_uses_existing_calibration_sigma_fixed_12_node_quadrature_and_training_class_utility": True,
             "initial_states_use_explicit_training_only_class_prior_not_new_semantic_resolution": True,
             "complete_future_work_is_offline_oracle_label_only": True,
             "new_tree_predictions_are_synchronous_not_actual_cached_worker_predictions": True,

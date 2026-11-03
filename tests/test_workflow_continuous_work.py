@@ -10,7 +10,7 @@ from beliefkv.policy.workflow_combination import (
 )
 from beliefkv.predictor.workflow_conditional_tree import KIND as TREE_KIND
 from beliefkv.predictor.workflow_continuous_work import (
-    ContinuousWorkReadout, fit_training_reference, remaining_work_weight,
+    ContinuousWorkReadout, fit_training_reference, log_work_weight, normal_log_work_weight, remaining_work_weight,
 )
 from beliefkv.predictor.workflow_progress_tree import FEATURES
 from beliefkv.predictor.workflow_work import R5_FEATURES, WorkflowWorkModel
@@ -80,6 +80,37 @@ def test_continuous_utility_has_work_based_scale_and_no_class_saturation():
     assert remaining_work_weight(1200., 1200.) == .5
     assert remaining_work_weight(24000., 1200.) > remaining_work_weight(230000., 1200.) > 0.
     assert remaining_work_weight(1e300, 1e-200) == 0.
+
+
+def test_uncertainty_utility_uses_the_existing_log_distribution_and_remains_bounded():
+    reference = 19144.06
+    for work in (0., 1., 24000., 230000., 1e200):
+        assert log_work_weight(math.log1p(work), reference) == pytest.approx(
+            remaining_work_weight(work, reference), rel=1e-12,
+        )
+        assert normal_log_work_weight(math.log1p(work), 0., reference) == log_work_weight(
+            math.log1p(work), reference,
+        )
+    assert normal_log_work_weight(math.log1p(230000.), 1., reference) > remaining_work_weight(230000., reference)
+    assert normal_log_work_weight(math.log1p(100.), 1., reference) < remaining_work_weight(100., reference)
+    assert 0 <= normal_log_work_weight(1000., 1., reference) <= 1
+    assert 0 <= normal_log_work_weight(-1000., 1., reference) <= 1
+    for invalid in (-1., math.nan, math.inf):
+        with pytest.raises(ValueError):
+            normal_log_work_weight(10., invalid, reference)
+
+
+def test_initial_distribution_utility_uses_training_class_work_instead_of_fixed_class_coefficients():
+    serving, fitted = model(), contract()
+    readout = ContinuousWorkReadout(serving, fitted)
+    initial = readout.predict(
+        serving.task_projection("ab"), observed(0.), probabilities=(0., 0., 1.),
+        support="calibrated_distribution",
+    )
+    expected = sum(remaining_work_weight(work, fitted["reference_work"]) for work in (24000., 230000.)) / 2.
+    assert initial["distribution_effective_weight"] == pytest.approx(expected)
+    assert fitted["initial_class_expected_utility"] != [1., .5, .25]
+    assert initial["distribution_effective_weight"] != initial["effective_weight"]
 
 
 def test_continuous_readout_recovers_distinct_work_hidden_by_equal_long_weights():
