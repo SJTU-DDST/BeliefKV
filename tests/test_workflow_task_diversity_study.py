@@ -214,7 +214,7 @@ def test_unused_initial_head_is_reported_instead_of_counted_as_a_prediction_expe
     assert usage["reasons"] == {"missing_class_execution_support": 1}
 
 
-@pytest.mark.parametrize("family", ("whole_task", "conditional_initial"))
+@pytest.mark.parametrize("family", ("whole_task", "conditional_initial", "call_supervision"))
 def test_actual_training_components_are_loadable_and_selection_precedes_development(tmp_path, monkeypatch, family):
     dataset, cohort, previous, additional, evaluation = populations()
     sources = tmp_path / "source_fixture.json"
@@ -222,14 +222,18 @@ def test_actual_training_components_are_loadable_and_selection_precedes_developm
 
     def complete_rows(identity, project, total):
         result = []
-        for snapshot in range(2):
+        for snapshot in range(3):
+            attained = (0., 1., total)[snapshot]
             value = {
-                **row(identity, snapshot=snapshot, remaining=total - snapshot),
-                "project": project, "total_work": total, "attained_work": float(snapshot),
-                "event": "workflow_start" if not snapshot else "llm_submit",
+                **row(identity, snapshot=snapshot, remaining=total - attained),
+                "project": project, "total_work": total, "attained_work": attained,
+                "event": ("workflow_start", "llm_submit", "return")[snapshot],
             }
-            value["features"][R5_FEATURES.index("ready")] = float(snapshot)
-            value["features"][R5_FEATURES.index("output_tokens")] = float(snapshot)
+            value["features"][R5_FEATURES.index("ready")] = float(snapshot == 1)
+            value["features"][R5_FEATURES.index("output_tokens")] = attained
+            value["features"][R5_FEATURES.index("root_output_tokens")] = attained
+            value["features"][R5_FEATURES.index("completed_calls")] = float(snapshot == 2)
+            value["features"][R5_FEATURES.index("root_completed_calls")] = float(snapshot == 2)
             result.append(value)
         return result
 

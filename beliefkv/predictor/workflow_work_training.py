@@ -59,6 +59,77 @@ def continuous_work_targets(rows, weights):
     return (target - mean) / scale, {"log_mean": mean, "log_scale": scale}
 
 
+def remaining_call_counts(rows):
+    """Derive offline root/child call labels from complete causal snapshot sequences."""
+    import numpy as np
+    from beliefkv.predictor.workflow_work import R5_FEATURES
+
+    indices = [R5_FEATURES.index(name) for name in (
+        "completed_calls", "root_completed_calls", "child_completed_calls",
+    )]
+    groups = defaultdict(list)
+    for position, row in enumerate(rows):
+        identity, snapshot, features = row.get("workflow"), row.get("snapshot"), row["features"]
+        if (
+            type(identity) is not str or not identity or type(snapshot) is not int or snapshot < 0
+            or len(features) != len(R5_FEATURES)
+            or any(not math.isfinite(value) or value < 0 for value in features)
+            or any(not math.isfinite(row[name]) or row[name] < 0
+                   for name in ("total_work", "attained_work", "remaining_work"))
+            or row["total_work"] <= 0
+            or not math.isclose(
+                row["total_work"], row["attained_work"] + row["remaining_work"],
+                abs_tol=1e-6, rel_tol=0.,
+            )
+        ):
+            raise ValueError("remaining-call labels require complete R5 workflow snapshots")
+        counts = tuple(features[index] for index in indices)
+        if any(value != int(value) for value in counts) or counts[0] != counts[1] + counts[2]:
+            raise ValueError("observed root/child completions must conserve integral logical calls")
+        groups[identity].append((snapshot, position, counts))
+    if not groups:
+        raise ValueError("remaining-call supervision requires complete workflows")
+    targets = np.zeros((len(rows), 2), dtype=float)
+    final_counts = {}
+    for identity, values in groups.items():
+        values.sort()
+        if [value[0] for value in values] != list(range(len(values))):
+            raise ValueError("remaining-call labels require every original snapshot exactly once")
+        final_row, final = rows[values[-1][1]], values[-1][2]
+        if (
+            final[0] <= 0 or not math.isclose(final_row["remaining_work"], 0., abs_tol=1e-6)
+            or not math.isclose(final_row["total_work"], final_row["attained_work"], abs_tol=1e-6)
+            or values[0][2] != (0., 0., 0.) or rows[values[0][1]]["attained_work"] != 0.
+        ):
+            raise ValueError("remaining-call labels require the complete natural model-work tail")
+        previous = (0., 0., 0.)
+        for _snapshot, position, counts in values:
+            if any(current < old for current, old in zip(counts, previous)):
+                raise ValueError("logical completion counts cannot go backwards")
+            targets[position] = (final[1] - counts[1], final[2] - counts[2])
+            previous = counts
+        final_counts[identity] = {
+            "total": int(final[0]), "root": int(final[1]), "child": int(final[2]),
+        }
+    return targets, final_counts
+
+
+def remaining_call_targets(rows, weights):
+    import numpy as np
+
+    counts, _finals = remaining_call_counts(rows)
+    weights = np.asarray(weights, dtype=float)
+    if (
+        weights.shape != (len(rows),) or not np.isfinite(weights).all()
+        or (weights < 0).any() or weights.sum() <= 0
+    ):
+        raise ValueError("remaining-call normalization requires finite positive training mass")
+    target = np.log1p(counts)
+    center = np.average(target, axis=0, weights=weights)
+    scale = np.maximum(.25, np.sqrt(np.average((target - center) ** 2, axis=0, weights=weights)))
+    return (target - center) / scale, {"log_mean": center.tolist(), "log_scale": scale.tolist()}
+
+
 DECISION_OBSERVATION = "sealed_live_admission_competition_v1"
 
 

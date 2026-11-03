@@ -327,12 +327,103 @@ def conditional_initial_study(
     } for name, values in held_out.items()}), flush=True)
 
 
+def call_supervision_study(training, calibration, development, baseline, population, pins, output):
+    previous_ids = set(population["previous_expanded_split"]["training_execution_sha256"])
+    existing = [row for row in training if row["source_workflow_sha256"] in previous_ids]
+    settings = {
+        "epochs": 200, "feature_schema": R5_SCHEMA, "split_mode": "workflow",
+        "hidden_width": 128, "vocabulary_size": 8192, "dropout": .1, "weight_decay": .05,
+        "training_weighting": READY_BALANCED, "ranking_loss_weight": .1,
+        "ranking_pair_mode": "phase_matched", "work_thresholds": baseline["work_thresholds"],
+    }
+    candidates = {
+        "retained": None,
+        "calls_previous0.1": (existing, .1, False),
+        "calls_expanded0.1": (training, .1, True),
+        "calls_expanded0.3": (training, .3, True),
+    }
+    write(output / "plan.json", {
+        "candidates": {name: None if value is None else {
+            "training_workflows": len({row["workflow"] for row in value[0]}),
+            "auxiliary_loss_weight": value[1], "balance_training_projects": value[2],
+        } for name, value in candidates.items()},
+        "training_settings": settings, **population,
+        "auxiliary_targets": ["root_remaining_calls", "child_remaining_calls"],
+        "complete_future_call_counts_used_for_training_labels_only": True,
+        "initial_head_preserved": True, "no_online_auxiliary_head_or_new_features": True,
+        "selection": "unchanged_calibration_support_gates_then_existing_ready_ranking_score",
+        "development_labels_used_for_selection": False, "inputs_sha256": pins, "GPU_action": False,
+    })
+    models, summaries = {}, {}
+    for name, specification in candidates.items():
+        if specification is None:
+            raw = deepcopy(baseline)
+        else:
+            rows, loss_weight, balance = specification
+            print("fitting_call_supervision: " + name, flush=True)
+            progress = fit(
+                rows, calibration, remaining_calls_loss_weight=loss_weight,
+                balance_training_projects=balance, **settings,
+            )
+            progress["metadata"].update(
+                decision_eligible=True, prefill_token_weight=.01,
+                split_contract=(
+                    population["expanded_split"] if balance else population["previous_expanded_split"]
+                ),
+                progress_observation_contract=baseline["metadata"]["progress_observation_contract"],
+                training_dataset_sha256=baseline["metadata"]["training_dataset_sha256"],
+                candidate_selection_uses_calibration_only=True,
+                online_features_use_observed_prefix_only=True,
+                unseen_project_generalization_claimed=False,
+            )
+            raw = candidate_model("new_progress", baseline, progress=progress)
+        values = metrics(WorkflowWorkModel(raw), calibration)
+        reasons = calibration_rejections(values, raw)
+        if specification is not None:
+            raw["metadata"].update(
+                decision_eligible=not reasons, decision_rejection_reasons=reasons,
+                calibration_distribution_metrics=values["all"],
+            )
+        models[name] = raw
+        summaries[name] = {
+            "calibration": values, "selection_score": score(values),
+            "decision_eligible": not reasons, "decision_rejection_reasons": reasons,
+        }
+        write(output / name / "model.json", raw)
+        write(output / name / "calibration.json", summaries[name])
+        print(json.dumps({"candidate": name, "score": score(values), "rejections": reasons}), flush=True)
+    selected = choose_candidate(summaries, candidates)
+    write(output / "selection.json", {"selected": selected, "calibration_summary": summaries})
+    print("selected_before_development: " + selected, flush=True)
+    held_out = {name: metrics(WorkflowWorkModel(models[name]), development)
+                for name in dict.fromkeys(("retained", selected))}
+    if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
+        raise ValueError("a frozen remaining-call supervision input changed")
+    write(output / "model.json", models[selected])
+    write(output / "evaluation.json", {
+        "selected": selected, "held_out": held_out, "calibration_summary": summaries,
+        **population, "inputs_sha256": pins, "model_sha256": sha256_file(output / "model.json"),
+        "candidate_selection_used_test_labels": False,
+        "validation_scope": "reused_fixed_development_holdout_not_confirmatory",
+        "GPU_action": False, "JCT_gain_proven": False,
+    })
+    print(json.dumps({name: {
+        "initial_ranking": values["initial_pair_ranking"]["accuracy"],
+        "first_request_ranking": values["first_request_pairs"]["accuracy"],
+        "ready_ranking": values["ready_cross_progress_pairs"]["accuracy"],
+        "classification": values["all"]["workflow_equal_weight_accuracy"],
+        "long_to_short": values["all"]["long_to_short_rate"],
+    } for name, values in held_out.items()}), flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("dataset", "cohort", "previous-training-data", "additional-training-data",
                  "baseline-model", "baseline-evaluation", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
-    parser.add_argument("--family", choices=("whole_task", "conditional_initial"), default="whole_task")
+    parser.add_argument(
+        "--family", choices=("whole_task", "conditional_initial", "call_supervision"), default="whole_task",
+    )
     parser.add_argument("--initial-calibration", choices=("fixed", "cross_project"), default="fixed")
     args = parser.parse_args()
     if args.output_dir.exists():
@@ -373,6 +464,11 @@ def main():
         conditional_initial_study(
             training, calibration, development, baseline, population, pins, args.output_dir,
             cross_project_calibration=args.initial_calibration == "cross_project",
+        )
+        return
+    if args.family == "call_supervision":
+        call_supervision_study(
+            training, calibration, development, baseline, population, pins, args.output_dir,
         )
         return
     settings = {

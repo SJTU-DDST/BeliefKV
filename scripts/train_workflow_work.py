@@ -271,6 +271,7 @@ def fit(
     numeric_feature_transform=None, remaining_work_loss_weight=0., decision_observation_mass=0.,
     ordered_work_head=False,
     balance_training_projects=False,
+    remaining_calls_loss_weight=0.,
 ):
     import numpy as np
     import torch
@@ -316,6 +317,9 @@ def fit(
         or type(ordered_work_head) is not bool or ordered_work_head and feature_schema != R5_SCHEMA
         or type(balance_training_projects) is not bool
         or balance_training_projects and feature_schema != R5_SCHEMA
+        or type(remaining_calls_loss_weight) not in (int, float)
+        or not math.isfinite(remaining_calls_loss_weight) or not 0 <= remaining_calls_loss_weight <= 2.
+        or remaining_calls_loss_weight and feature_schema != R5_SCHEMA
     ):
         raise ValueError("invalid workflow model regularization settings")
     if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
@@ -459,6 +463,16 @@ def fit(
             torch.manual_seed(seed + 1)
             work_head = torch.nn.Linear(max(4, hidden_width // 2), 1)
         parameters += list(work_head.parameters())
+    calls_head, calls_target, calls_normalization = None, None, None
+    if remaining_calls_loss_weight:
+        from beliefkv.predictor.workflow_work_training import remaining_call_targets
+
+        call_values, calls_normalization = remaining_call_targets(rows, balanced)
+        calls_target = torch.tensor(call_values, dtype=torch.float32)
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(seed + 2)
+            calls_head = torch.nn.Linear(max(4, hidden_width // 2), 2)
+        parameters += list(calls_head.parameters())
     optimizer = torch.optim.AdamW(parameters, lr=.003, weight_decay=weight_decay)
     ranking = None
     if ranking_loss_weight:
@@ -492,6 +506,12 @@ def fit(
                 torch.nn.functional.smooth_l1_loss(
                     work_head(representation).squeeze(1), work_target, reduction="none",
                 ) * weight
+            ).sum()
+        if calls_head is not None:
+            loss = loss + remaining_calls_loss_weight * (
+                torch.nn.functional.smooth_l1_loss(
+                    calls_head(representation), calls_target, reduction="none",
+                ).mean(1) * weight
             ).sum()
         if ordinal_loss_weight:
             cumulative = logits.softmax(1).cumsum(1)[:, :2]
@@ -621,6 +641,15 @@ def fit(
             "training_normalization": work_normalization,
             "offline_labels_only": True, "auxiliary_head_exported": False,
             "online_model_dimensions_unchanged": True,
+        }
+    if calls_head is not None:
+        raw["metadata"]["training_parameters"]["remaining_calls_loss_weight"] = remaining_calls_loss_weight
+        raw["metadata"]["remaining_call_supervision"] = {
+            "kind": "root_and_child_log_remaining_calls_smooth_l1",
+            "training_normalization": calls_normalization,
+            "offline_complete_execution_labels_only": True,
+            "partial_current_calls_remain_in_count_until_observed_result": True,
+            "auxiliary_head_exported": False, "online_model_dimensions_unchanged": True,
         }
     if decision_observation_mass:
         from beliefkv.predictor.workflow_work_training import DECISION_OBSERVATION
