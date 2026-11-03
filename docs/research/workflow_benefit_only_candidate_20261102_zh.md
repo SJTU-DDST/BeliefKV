@@ -102,6 +102,29 @@ Full、oracle、Thunder 或旧比值对照。完成模型启动后，CPU bootstr
 完整结果仍需比较非排序 Full、旧比值及 Thunder，并核对实际新准入和
 后续服务。首轮若获益，还需要确认可重复性。当前目标继续 active。
 
+## 完整结果的 CPU 自动分析
+
+2026-11-03 08:04:35 UTC，独立干净分析目录
+`/home/longhao/experiment/.worktrees/beliefkv-benefit-results-7d49ac62`
+已启动结果观察器。提交为 `7d49ac62`，70 项相关 CPU 检查全部通过。
+实际 PID 为 793352，start ticks 为 `786333804`，nice19、CPU0、
+CUDA hidden。其当前状态为 `waiting_resource_waiter`；GPU 等待器
+780699 仍在运行，外部三个 GPU 占用者未结束，没有新模型结果。
+
+观察器已绑定完成对照和候选资格输入，待固定 18 成员正常完成、取得
+完整复核文件且 GPU 运行进程实际退出后，顺序执行五项 CPU 分析：
+
+- 与非排序 Full 比较完整测量 JCT 和共同窗口吞吐。
+- 与旧比值首轮比较，验证除组合目标外的预测器和成本参数完全相同。
+- 与旧比值确认轮独立比较，保留两轮，不挑选更有利的参考结果。
+- 与相同 workload、资源和 acting-decay 的 ThunderAgent 比较。
+- 使用候选自身冻结服务目录的审计器，核对选择、实际准入和后续服务。
+
+结果目录为本实验内的 `final_results_r1/`，包含冻结 `plan.json` 和
+`watcher.state.json`。观察器只分析结果，不注册 GPU 后继；原有 workload
+失败、完整尾部和实际停止证据全部保留。其启动不代表候选已经获得 JCT
+收益，也不修改仍在排队的 `225db65e` 服务版本或 1179 项资格绑定。
+
 ## 证据
 
 父目录：
