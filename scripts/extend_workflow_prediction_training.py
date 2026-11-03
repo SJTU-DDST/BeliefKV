@@ -26,6 +26,34 @@ def disjoint_training_rows(original, additional, calibration, evaluation):
     return original + additional
 
 
+def diverse_task_training_rows(original, additional, calibration, evaluation):
+    """Add different original tasks within training projects, never within holdout projects."""
+    from collections import Counter
+
+    if not original or not additional:
+        raise ValueError("task diversification requires complete original and additional executions")
+    training_projects = {row["project"] for row in original}
+    held_out_projects = {row["project"] for row in calibration + evaluation}
+    incoming_projects = {row["project"] for row in additional}
+    if (
+        training_projects & held_out_projects or not incoming_projects <= training_projects
+        or incoming_projects & held_out_projects
+    ):
+        raise ValueError("new tasks must stay within existing training projects and exclude holdouts")
+    for field in ("workflow", "source_workflow_sha256", "task_template"):
+        if {row[field] for row in additional} & {
+            row[field] for row in original + calibration + evaluation
+        }:
+            raise ValueError("additional original task " + field + " overlaps an existing execution")
+    initial = Counter(row["workflow"] for row in additional if row["snapshot"] == 0)
+    if set(initial) != {row["workflow"] for row in additional} or any(
+        value != 1 for value in initial.values()
+    ):
+        raise ValueError("every new original task needs exactly one complete execution initial state")
+    capture_split(original + additional, calibration, evaluation, require_capture_disjoint=False)
+    return original + additional
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("dataset", "cohort", "additional-labels", "output-dir"):

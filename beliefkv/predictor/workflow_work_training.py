@@ -10,6 +10,33 @@ PHASE_PAIRS = "phase_matched"
 READY_MIXED_PAIRS = "ready_mixed_progress"
 
 
+def project_task_weights(rows, weights):
+    """Give projects equal mass and divide that mass equally across their original tasks."""
+    import numpy as np
+
+    result = np.asarray(weights, dtype=float).copy()
+    if (
+        not rows or result.shape != (len(rows),) or not np.isfinite(result).all()
+        or (result <= 0).any()
+    ):
+        raise ValueError("project/task balancing requires finite positive complete-workflow weights")
+    projects, ownership = defaultdict(lambda: defaultdict(list)), {}
+    for index, row in enumerate(rows):
+        project, workflow = row.get("project"), row.get("workflow")
+        if (
+            type(project) is not str or not project or type(workflow) is not str or not workflow
+            or workflow in ownership and ownership[workflow] != project
+        ):
+            raise ValueError("a complete training workflow must have one explicit project owner")
+        ownership[workflow] = project
+        projects[project][workflow].append(index)
+    for workflows in projects.values():
+        target = 1. / len(projects) / len(workflows)
+        for indices in workflows.values():
+            result[indices] *= target / result[indices].sum()
+    return result
+
+
 def continuous_work_targets(rows, weights):
     """Normalize complete-work labels for an offline auxiliary training head."""
     import numpy as np
@@ -109,7 +136,9 @@ def ready_weights(rows, base):
     return weights
 
 
-def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512, mode=PHASE_PAIRS):
+def work_ranking_pairs(
+    rows, *, seed=21, pairs_per_phase=512, mode=PHASE_PAIRS, balance_projects=False,
+):
     """Offline labels define pair targets and strata, never additional features."""
     import numpy as np
 
@@ -117,7 +146,10 @@ def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512, mode=PHASE_PAIRS):
         raise ValueError("invalid bounded workflow ranking pair count")
     if mode not in (PHASE_PAIRS, READY_MIXED_PAIRS):
         raise ValueError("unknown workflow ranking pair mode")
+    if type(balance_projects) is not bool:
+        raise ValueError("project-balanced ranking must be explicitly enabled")
     groups = defaultdict(lambda: defaultdict(list))
+    owners = {}
     for index, row in enumerate(rows):
         total, attained, remaining = row["total_work"], row["attained_work"], row["remaining_work"]
         if (
@@ -126,6 +158,14 @@ def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512, mode=PHASE_PAIRS):
             or not math.isclose(total, attained + remaining, abs_tol=1e-6)
         ):
             raise ValueError("ranking labels require complete conserved workflow work")
+        if balance_projects:
+            project = row.get("project")
+            if (
+                type(project) is not str or not project
+                or row["workflow"] in owners and owners[row["workflow"]] != project
+            ):
+                raise ValueError("project-balanced ranking requires consistent training project owners")
+            owners[row["workflow"]] = project
         phase = -1 if row["snapshot"] == 0 else min(2, int(3 * attained / total))
         groups[phase][row["workflow"]].append(index)
     if mode == READY_MIXED_PAIRS:
@@ -146,12 +186,25 @@ def work_ranking_pairs(rows, *, seed=21, pairs_per_phase=512, mode=PHASE_PAIRS):
         identities = sorted(workflows)
         if len(identities) < 2:
             continue
+        project_workflows = defaultdict(list)
+        if balance_projects:
+            for identity in identities:
+                project_workflows[owners[identity]].append(identity)
+            project_ids = sorted(project_workflows)
+            if len(project_ids) < 2:
+                continue
         stratum = []
         # Uniform workflows prevent a long trace from generating more pair mass.
         for _attempt in range(pairs_per_phase):
-            first, second = rng.choice(len(identities), size=2, replace=False)
-            left = int(rng.choice(workflows[identities[first]]))
-            right = int(rng.choice(workflows[identities[second]]))
+            if balance_projects:
+                first, second = rng.choice(len(project_ids), size=2, replace=False)
+                first = str(rng.choice(project_workflows[project_ids[first]]))
+                second = str(rng.choice(project_workflows[project_ids[second]]))
+            else:
+                first, second = rng.choice(len(identities), size=2, replace=False)
+                first, second = identities[first], identities[second]
+            left = int(rng.choice(workflows[first]))
+            right = int(rng.choice(workflows[second]))
             difference = math.log1p(rows[right]["remaining_work"]) - math.log1p(rows[left]["remaining_work"])
             if abs(difference) < .1:
                 continue

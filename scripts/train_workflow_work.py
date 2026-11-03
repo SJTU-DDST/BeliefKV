@@ -270,6 +270,7 @@ def fit(
     task_only_before_work=False, ranking_pair_mode="phase_matched", ordinal_loss_weight=0.,
     numeric_feature_transform=None, remaining_work_loss_weight=0., decision_observation_mass=0.,
     ordered_work_head=False,
+    balance_training_projects=False,
 ):
     import numpy as np
     import torch
@@ -313,6 +314,8 @@ def fit(
         or not math.isfinite(decision_observation_mass) or not 0 <= decision_observation_mass <= .75
         or decision_observation_mass and feature_schema != R5_SCHEMA
         or type(ordered_work_head) is not bool or ordered_work_head and feature_schema != R5_SCHEMA
+        or type(balance_training_projects) is not bool
+        or balance_training_projects and feature_schema != R5_SCHEMA
     ):
         raise ValueError("invalid workflow model regularization settings")
     if split_mode == "project" and {row["project"] for row in rows} & {row["project"] for row in calibration}:
@@ -387,6 +390,10 @@ def fit(
     workflow_counts = Counter(row["workflow"] for row in rows)
     weights = np.asarray([1. / workflow_counts[row["workflow"]] for row in rows])
     weights /= weights.sum()
+    if balance_training_projects:
+        from beliefkv.predictor.workflow_work_training import project_task_weights
+
+        weights = project_task_weights(rows, weights)
     center = np.average(numeric, axis=0, weights=weights)
     scale = np.maximum(.25, np.sqrt(np.average((numeric - center) ** 2, axis=0, weights=weights)))
     task_indices = None
@@ -428,6 +435,8 @@ def fit(
         from beliefkv.predictor.workflow_work_training import decision_observation_weights
 
         balanced = decision_observation_weights(rows, balanced, decision_observation_mass)
+    if balance_training_projects:
+        balanced = project_task_weights(rows, balanced)
     weight = torch.tensor(balanced, dtype=torch.float32)
     static_layer = torch.nn.Linear(task.shape[1], hidden_width, bias=False)
     dynamic_layer = torch.nn.Linear(numeric.shape[1], hidden_width)
@@ -455,7 +464,9 @@ def fit(
     if ranking_loss_weight:
         from beliefkv.predictor.workflow_work_training import work_ranking_pairs
 
-        pairs = np.asarray(work_ranking_pairs(rows, seed=seed, mode=ranking_pair_mode))
+        pairs = np.asarray(work_ranking_pairs(
+            rows, seed=seed, mode=ranking_pair_mode, balance_projects=balance_training_projects,
+        ))
         ranking = (
             torch.tensor(pairs[:, 0], dtype=torch.long),
             torch.tensor(pairs[:, 1], dtype=torch.long),
@@ -541,6 +552,16 @@ def fit(
             "coarse_output_probabilities_unchanged": True,
             "online_features_unchanged": True,
         }
+    if balance_training_projects:
+        raw["metadata"]["training_parameters"]["balance_training_projects"] = True
+        raw["metadata"]["project_task_balance"] = {
+            "projects": len({row["project"] for row in rows}),
+            "workflows": len(workflow_counts),
+            "numeric_normalization_and_training_loss": "equal_project_then_equal_task_workflow",
+            "ranking_pairs": "uniform_distinct_projects_then_uniform_task_workflows",
+            "project_identity_used_as_online_feature": False,
+            "calibration_execution_weights_unchanged": True,
+        }
     if task_encoder is not None:
         raw["task_encoder"] = task_encoder
         raw["metadata"]["task_training_encoding"] = "frozen_cpu_semantics_explicit_instructions_only"
@@ -625,6 +646,9 @@ def fit(
             ) if semantic is None
             else "frozen_cpu_semantics_one_static_projection_per_workflow_per_epoch"
         )
+    if balance_training_projects:
+        raw["metadata"]["project_task_balance"]["within_workflow_weighting"] = raw["metadata"]["loss_weighting"]
+        raw["metadata"]["loss_weighting"] = "equal_project_then_equal_task_workflow"
     model = WorkflowWorkModel(raw)
     # A single held-out temperature, with workflows equally weighted.
     predictions = probabilities(model, calibration)
