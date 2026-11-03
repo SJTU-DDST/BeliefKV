@@ -50,6 +50,18 @@ def diverse_task_training_rows(original, additional, calibration, evaluation):
         value != 1 for value in initial.values()
     ):
         raise ValueError("every new original task needs exactly one complete execution initial state")
+    identities = {}
+    for row in additional:
+        fields = tuple(row[name] for name in (
+            "project", "task_template", "source_capture", "source_workflow_sha256",
+        ))
+        if row["workflow"] in identities and identities[row["workflow"]] != fields:
+            raise ValueError("new original task ownership changes within its complete execution")
+        identities[row["workflow"]] = fields
+    for field in (1, 3):
+        values = [identity[field] for identity in identities.values()]
+        if len(set(values)) != len(values):
+            raise ValueError("new original tasks contain duplicate task or execution identities")
     capture_split(original + additional, calibration, evaluation, require_capture_disjoint=False)
     return original + additional
 

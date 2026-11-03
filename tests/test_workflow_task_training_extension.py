@@ -57,6 +57,22 @@ def test_extra_tasks_do_not_increase_total_project_mass_or_overweight_dense_snap
     assert weights[1] / weights[0] == pytest.approx(3.)
 
 
+@pytest.mark.parametrize("change", ("task", "execution", "ownership"))
+def test_new_task_execution_identities_are_unique_and_stable_within_the_incoming_population(change):
+    original, calibration, evaluation = (
+        [example("old", "train")], [example("cal", "cal")], [example("dev", "dev")],
+    )
+    first, second = example("one", "train"), example("two", "train")
+    if change == "task":
+        second["task_template"] = first["task_template"]
+    elif change == "execution":
+        second["source_workflow_sha256"] = first["source_workflow_sha256"]
+    else:
+        second.update(workflow=first["workflow"], snapshot=1)
+    with pytest.raises(ValueError, match="identit|ownership"):
+        diverse_task_training_rows(original, [first, second], calibration, evaluation)
+
+
 def test_project_balanced_ranking_retains_old_default_and_draws_only_distinct_projects():
     rows = [
         {**example(str(index), project), "total_work": total, "remaining_work": total}
