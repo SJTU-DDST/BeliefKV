@@ -100,9 +100,9 @@ def main():
                     break
                 if state_doc["status"].startswith("stopped_") and not complete.exists():
                     state.update(status="stopped_incomplete", error=state_doc.get("error"))
-                    write(state_path, state)
+                    causal.reservation.write_json(state_path, state)
                     raise RuntimeError("the comparison exited before complete measured work")
-            write(state_path, state)
+            causal.reservation.write_json(state_path, state)
             time.sleep(15.)
     result = review(registrations, directories, args.cohort)
     pins = [
@@ -117,7 +117,7 @@ def main():
     result["inputs_sha256"] = {str(path.resolve()): sha256_file(path) for path in pins}
     write(args.output, result)
     if args.watch:
-        write(state_path, {
+        causal.reservation.write_json(state_path, {
             "status": "complete_verified", "process": causal.reservation.process(os.getpid()),
             "checked_at": datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(),
         })

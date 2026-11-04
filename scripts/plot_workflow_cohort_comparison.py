@@ -19,6 +19,7 @@ from scripts.train_workflow_work import write
 # Okabe-Ito colors; explicit labels keep method colors stable across comparisons.
 COLORS = {
     "Nonranking Full": "#0072B2",
+    "Latest without R5": "#56B4E9",
     "Joint optimization": "#CC79A7",
     "ThunderAgent": "#D55E00",
     "Ratio first": "#009E73",

@@ -55,7 +55,8 @@ def utility_metrics(rows, weights, reference_work):
                 values = [item for item in values if item[0]["snapshot"] == 0]
             else:
                 values = [
-                    item for item in values if item[0]["features"][R5_FEATURES.index("ready")] > 0
+                    item for item in values if item[0].get("decision_state") is True
+                    or item[0]["features"][R5_FEATURES.index("ready")] > 0
                 ]
             if values:
                 indices = np.unique(np.linspace(0, len(values) - 1, min(len(values), 8), dtype=int))
