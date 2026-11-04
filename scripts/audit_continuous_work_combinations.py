@@ -277,6 +277,7 @@ def main():
                  "additional-training-data", "model", "model-evaluation", "training-evaluation", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--semantic-initial-study", type=Path)
+    parser.add_argument("--observation-output", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve previous continuous work diagnostics")
@@ -344,7 +345,10 @@ def main():
         sha256_file(policy) != plan["source_sha256"]["beliefkv/policy/workflow_combination.py"]
         or set(labels["workflows"]) != set(plan["workflow_ids"])
         or data["sources_sha256"].get(str(label_path.resolve())) != sha256_file(label_path)
-        or profile["kind"] != "r5_frozen_batch_cost_proxy_capacity_v6"
+        or profile["kind"] not in (
+            "r5_frozen_batch_cost_proxy_capacity_v6",
+            "r5_frozen_batch_cost_proxy_capacity_v7",
+        )
     ):
         raise ValueError("continuous audit requires unchanged executed policy, workload and complete labels")
     for path in (
@@ -385,6 +389,16 @@ def main():
                 raise ValueError("source task text differs from its actual observed workflow-start metadata")
     totals = {workflow: value["total_work_units"] / 100. for workflow, value in labels["workflows"].items()}
     audit(observations, timeline, labels["requests"], totals, {"tree": model})
+    if args.observation_output is not None:
+        if args.observation_output.exists():
+            raise FileExistsError("preserve previous reconstructed prediction observations")
+        write(args.observation_output, {
+            "observations": observations, "task_texts": texts,
+            "model_sha256": pins[str(args.model.resolve())],
+            "registration_sha256": pins[str(args.registration.resolve())],
+            "inputs_sha256": pins, "input_jsonl_prefixes": reader.prefixes,
+            "future_remaining_work_is_label_only": True,
+        })
     print(json.dumps({"stage": "observed_inputs_reconstructed", "entries": len(rows)}), flush=True)
     result = inspect(
         rows, observations, CombinationCosts(**profile["costs"]), profile, model, contract, texts,

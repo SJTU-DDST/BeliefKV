@@ -200,6 +200,22 @@ def test_foreign_native_ownership_cannot_change_the_predictor_input():
         observation_timeline(events, native, requests)
 
 
+def test_overlap_progress_uses_reported_cumulative_output_instead_of_launch_ordinal():
+    events, requests, native, _decisions = fixture()
+    sample = native[0]["request_samples"][0]
+    sample.update(
+        output_tokens_before=126, output_tokens_reported_before=127,
+        output_tokens_after=128, token_delta=1,
+    )
+    timeline = observation_timeline(events, native, requests)
+    assert [item for _when, _priority, _index, item in timeline if isinstance(item, tuple)] == [
+        ("a-req", 128),
+    ]
+    sample["output_tokens_after"] = 129
+    with pytest.raises(ValueError, match="cumulative native output"):
+        observation_timeline(events, native, requests)
+
+
 def test_missing_selector_metadata_is_unknown_rather_than_a_prediction_error():
     values = [{
         "candidates": [

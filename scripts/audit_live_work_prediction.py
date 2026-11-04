@@ -144,7 +144,16 @@ def observation_timeline(events, native, requests):
             if member["token_delta_semantics"] != "observed_output_ids_delta":
                 raise ValueError("require observed output IDs, not prefill input tokens")
             before, delta = member["output_tokens_before"], member["token_delta"]
-            count = before + delta
+            if "output_tokens_after" in member:
+                count = member["output_tokens_after"]
+                reported = member.get("output_tokens_reported_before")
+                if (
+                    type(count) is not int or type(reported) is not int
+                    or reported < 0 or count < 0 or delta != max(0, count - reported)
+                ):
+                    raise ValueError("invalid cumulative native output accounting")
+            else:
+                count = before + delta
             if count > requests[request]["output_tokens"] or now < submits[request].ts_ms:
                 raise ValueError("invalid observed native output")
             if request in results and now > results[request].ts_ms:
