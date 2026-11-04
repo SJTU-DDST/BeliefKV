@@ -82,3 +82,33 @@ def test_unpublished_owner_handles_do_not_establish_terminal_state(tmp_path, mon
     prepared = plan(tmp_path, monkeypatch)
     running_files(tmp_path, owners=False)
     assert results.readiness(prepared) == "waiting_observable_owner_handles"
+
+
+@pytest.mark.parametrize("owners", ("all", "watcher_only", "none"))
+def test_real_process_helper_contract_never_receives_an_unpublished_handle(tmp_path, monkeypatch, owners):
+    prepared = plan(tmp_path, monkeypatch)
+    running_files(tmp_path, owners=False)
+    state = {"status": "starting_full"}
+    if owners != "none":
+        state.update(watcher={"pid": 2}, server=None, driver=None)
+    if owners == "all":
+        state.update(server={"pid": 3}, driver={"pid": 4})
+    (tmp_path / "comparison.state.json").write_text(json.dumps(state))
+    called = []
+
+    def strict_alive(handle):
+        assert isinstance(handle, dict), "the production process helper requires an actual identity"
+        called.append(handle["pid"])
+        return handle["pid"] == 2
+
+    monkeypatch.setattr(results.causal.reservation, "alive", strict_alive)
+    expected = "waiting_observable_owner_handles" if owners == "none" else "waiting_complete_measured_work"
+    assert results.readiness(prepared) == expected
+    assert None not in called
+
+
+def test_complete_files_without_published_gpu_owners_cannot_establish_actual_exit(tmp_path, monkeypatch):
+    prepared = plan(tmp_path, monkeypatch)
+    running_files(tmp_path, owners=False)
+    completed_files(tmp_path)
+    assert results.readiness(prepared) == "waiting_observable_owner_handles"

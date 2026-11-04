@@ -34,6 +34,12 @@ def select_control_optimized_candidate():
     PLAN, STATE = OUTPUT / "plan.json", OUTPUT / "watcher.state.json"
 
 
+def configure_output(directory):
+    global OUTPUT, PLAN, STATE
+    OUTPUT = Path(directory).resolve()
+    PLAN, STATE = OUTPUT / "plan.json", OUTPUT / "watcher.state.json"
+
+
 def qualified_serving_checkout(waiter, qualification):
     serving = qualification.get("serving_checkout")
     if serving is not None:
@@ -144,9 +150,12 @@ def prepare():
 
 
 def readiness(plan):
+    def alive(handle):
+        return bool(handle) and causal.reservation.alive(handle)
+
     registration = Path(plan["comparison"])
     if not registration.exists():
-        if not causal.reservation.alive(plan["resource_waiter"]) and not registration.exists():
+        if not alive(plan["resource_waiter"]) and not registration.exists():
             raise RuntimeError("the resource waiter exited before comparison registration")
         return "waiting_resource_waiter"
     state_path = registration.with_suffix(".state.json")
@@ -160,13 +169,13 @@ def readiness(plan):
     reviews = [Path(plan["review_dir"]) / name for name in (
         "review.json", "cohort.json", "workload_decision.json",
     )]
-    if complete.exists() and all(path.exists() for path in reviews) and not any(
-        causal.reservation.alive(owner) for owner in owners
+    if all(owners) and complete.exists() and all(path.exists() for path in reviews) and not any(
+        alive(owner) for owner in owners
     ):
         return "complete_review_ready"
-    if causal.reservation.alive(observer.get("process")):
+    if alive(observer.get("process")):
         return "waiting_measured_cohort_or_review"
-    if any(causal.reservation.alive(owner) for owner in owners):
+    if any(alive(owner) for owner in owners):
         return "waiting_complete_measured_work"
     if observer.get("status", "").startswith("stopped_"):
         raise RuntimeError("preserve incomplete cohort review: " + repr(observer.get("error")))
@@ -238,7 +247,8 @@ def queue():
             if candidate.__name__.endswith("start_workflow_control_optimized_candidate") else []
         )
         child = subprocess.Popen(
-            ["taskset", "-c", "0", sys.executable, str(Path(__file__)), "--watch", *options], cwd=ROOT,
+            ["taskset", "-c", "0", sys.executable, str(Path(__file__)),
+             "--output-dir", str(OUTPUT), "--watch", *options], cwd=ROOT,
             stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
         )
     process = causal.reservation.process(child.pid)
@@ -252,9 +262,12 @@ if __name__ == "__main__":
     for name in ("prepare", "queue", "watch"):
         modes.add_argument("--" + name, action="store_true")
     parser.add_argument("--control-optimized", action="store_true")
+    parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or os.getpriority(os.PRIO_PROCESS, 0) != 19:
         raise ValueError("complete-results preparation and observation require hidden CUDA and nice19")
     if args.control_optimized:
         select_control_optimized_candidate()
+    if args.output_dir is not None:
+        configure_output(args.output_dir)
     prepare() if args.prepare else queue() if args.queue else watch()

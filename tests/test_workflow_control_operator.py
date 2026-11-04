@@ -222,6 +222,7 @@ def test_optimized_results_watcher_preserves_candidate_selection_in_child(monkey
     )
     results.queue()
     assert launches[0][-2:] == ["--watch", "--control-optimized"]
+    assert launches[0][launches[0].index("--output-dir") + 1] == str(output)
 
 
 def test_explicit_serving_checkout_does_not_require_post_exec_waiter_arguments(tmp_path):
