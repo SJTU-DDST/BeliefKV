@@ -1,10 +1,24 @@
 from copy import deepcopy
 import json
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts.start_workflow_ranking_disabled import verify_pair
+
+
+def test_import_does_not_reconfigure_the_previous_operator():
+    result = subprocess.run([
+        sys.executable, "-c",
+        "from scripts import start_workflow_control_optimized_candidate as old; "
+        "assert not old.CONTROL_REFRESH; "
+        "from scripts import start_workflow_ranking_disabled; "
+        "assert not old.CONTROL_REFRESH",
+    ], cwd=Path(__file__).resolve().parents[1], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
 
 
 def pair(tmp_path):

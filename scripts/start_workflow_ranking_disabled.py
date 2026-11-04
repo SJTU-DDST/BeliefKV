@@ -22,9 +22,8 @@ from scripts.qualify_free_page_h2d_fence import check_reservation
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import verify_execution
 
-previous.select_control_refresh_candidate()
 MAIN, BASE, NATIVE, COHORT = previous.MAIN, previous.BASE, previous.NATIVE, previous.COHORT
-HERE = BASE / "r5_host400_control_optimized_r1/ranking_disabled_control_r1"
+HERE = BASE / "r5_host400_control_optimized_r1/ranking_disabled_control_r1/qualification_retry_r2"
 REG = previous.OPS / "workflow_original73_host400_ranking_disabled_20261104_r1.registration.json"
 OBSERVER = previous.OPS / "workflow_original73_host400_ranking_disabled_cohort_20261104_r1.registration.json"
 RUN = MAIN / "experiments/raw/workflow_original73_host400_ranking_disabled_20261104_r1"
@@ -220,4 +219,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999":
         raise ValueError("hide CUDA in this operator; only its registered server owns the GPU")
+    previous.select_control_refresh_candidate()
     prepare() if args.prepare else register() if args.register else observe()
