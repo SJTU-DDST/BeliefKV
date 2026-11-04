@@ -259,6 +259,64 @@ r5_host400_control_optimized_r1/ranking_disabled_control_r1/tokenizer_bound_r3/
 两份报告位于本实验的 `useful_token_cost_r1` 下，绑定原注册、封闭日志、
 关键路径读器和实际策略源码。新分析以 CPU0、nice19、CUDA hidden、单线程执行。
 
+### 窗口协调的进一步核对与共享路径修复
+
+用户追问“为什么新路径关闭了”后，进一步核对了完整调用链。此前说法需要明确：
+**acting decay 没有关闭，缺少的是窗口到期与完整工作集控制之间的连接。**
+这段连接原来只在 `WorkflowOracleAdmission::tick`，切到 learned
+`WorkflowSizeAdmission` 时没有进入共享基类。`remaining_work_ranking_enabled=false`
+只使组合选择返回 S0，不负责选择 adapter，也不控制这个连接；不存在有意为了 R5
+而关闭它的性能设计理由。
+
+两种动作不同：
+
+- 完整工作集控制刷新真实上下文增长，按工具保留权重/decay 比较恢复候选，
+  再强制检查未折扣总预算，必要时暂停安全的阻塞 owner。物理页和实际执行仍需
+  原生 KV、锁和容量检查。
+- 窗口免费分发只使用 `remaining_capacity()` 的未折扣空闲额度，不能把
+  decay 折扣直接当成已释放的真实容量，也不自己完成阻塞 owner 的协调。
+
+两个周期都为 2 秒，不代表相位相同。若一次完整控制在 1.8 秒执行，下次计划为
+3.8 秒，而 B 在 1.9 秒才 ready、既有窗口在 2.0 秒到期，免费额度不足时，
+旧路径可将本次完整控制前移到 2.0 秒；原 learned 路径只有免费分发，然后仍需等待
+后续完整控制。这个算例说明调用顺序，不证明 B 当时物理可准入或提前量等于 JCT。
+
+新增 `window_control_alignment.json` 沿完整封闭原生日志按同一 tick 的单调时间核对：
+
+| 全程有 pending 的窗口分发 | 旧关闭轮 | 最新关闭轮 |
+| --- | ---: | ---: |
+| 总数 | 930 | 915 |
+| 同一 tick 执行完整工作集控制 | 930 | 857 |
+| 未同步执行完整控制 | 0 | 58 |
+| 未同步控制且免费准入为零 | 0 | 50 |
+
+最新轮这 50 次之后，到下一次实际完整控制的间隔 P50 为 1271.186ms、
+P90 为 1571.000ms、最大 1643.088ms。时间合计 56.817 秒是相关窗口的描述统计，
+不能相加为可消除 JCT，也没有证明每次重新协调都能找到可行消费者。
+旧轮已记录的显式 `oracle_coalescing_reconciliation_ticks` 只有 1 次；
+不能把 930 次同 tick 控制误称为额外增加了 930 次控制。
+
+main 现已在 `WorkflowSizeAdmission::tick` 的公共入口补上相同条件：
+配置了定时窗口、窗口已到期、有 pending、正常控制还未到期时，
+将 `next_tick` 前移到当前 tick，再走原完整控制。没有新增定时器、物理权限、
+工具替换周期或 work 预测。R5 开启/关闭使用相同逻辑；
+旧 oracle 自己已协调时，公共入口不会再重复协调。
+状态中新增 `workflow_coalescing_reconciles_decay_at_window_deadline`，
+实际前移计数为 `workflow_coalescing_reconciliation_ticks`。
+
+CPU 用例使用真实 runtime 与 R5 分布配置，构造阻塞 A、已提交 B/C 及两个不同相位：
+原代码在 R5 开启和关闭时都保持 B 未激活，修复后均在窗口到期时恢复 B，
+安全暂停阻塞 A，并保持未折扣容量非负。另覆盖窗口未到期、pending 索引为空、
+未设置定时窗口时不额外执行完整控制。
+`window_before_fix.xml` 保留 2 个复现失败、3 个通过；初次相关检查有 250 通过及
+2 个因未指定 native checkout 的 skip。设置相同 qualified native 源后，
+最终 `window_shared_after_fix_native.xml` **252 项全部通过、无 skip**，
+包含原生 Host 恢复容量边界、旧 oracle 窗口、工具权重和 paper adapter 隔离。
+
+这里只修复窗口到期的容量协调连接，没有宣称统一旧路径的全部窗口准入过滤或
+周期 sibling 参考排列。历史冻结运行和性能指标不变；未启动 GPU，
+也没有据 CPU 用例宣称 34.012 秒回退已被消除。后续与其余成熟修订合并验证。
+
 ## 后续投入决定
 
 用户在本轮完整结果后要求：如果继续提高预测准确度的收益有限，可以暂停，

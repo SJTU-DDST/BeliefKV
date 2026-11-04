@@ -272,6 +272,15 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def tick(self, *, now=None):
         now = time.monotonic() if now is None else now
+        deferred = self._deferred_dispatch
+        if (
+            self.policy is not None and deferred is not None
+            and getattr(deferred, "window_ms", 0) and deferred.window_open(now)
+            and self._dispatch_pending and now < self.next_tick
+        ):
+            # Raw free-budget dispatch cannot reconcile decayed blocked owners.
+            self.next_tick = now
+            self.counts["workflow_coalescing_reconciliation_ticks"] += 1
         due = self.policy is not None and now >= self.next_tick
         if due:
             control_wall, control_cpu = time.perf_counter(), time.thread_time()
@@ -377,6 +386,9 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             "workflow_size_resume_scope": (
                 "paused_periodic_and_bounded_free_dispatch"
                 if dispatch else "paused_within_original_category"
+            ),
+            "workflow_coalescing_reconciles_decay_at_window_deadline": bool(
+                getattr(self._deferred_dispatch, "window_ms", 0)
             ),
             "workflow_work_predictor": self._work.status(),
             "workflow_size_other_admission_paths": (
