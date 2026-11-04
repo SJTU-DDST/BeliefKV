@@ -37,6 +37,30 @@ class PredictedToolOffload:
         if replacement is not None:
             replacement.next_ms = 0.
 
+    def hint_updated(self, previous, hint, *, now_ms):
+        replacement = getattr(self, "replacement", None)
+        if self.next_ms <= now_ms and (replacement is None or replacement.next_ms <= now_ms):
+            self.runtime.counts["tool_offload_hint_already_due"] += 1
+            return
+        if (
+            previous is None or previous.key != hint.key
+            or previous.invocation_revision_ts_ms != hint.invocation_revision_ts_ms
+            or previous.predictor_sha256 != hint.predictor_sha256
+            or previous.residual_support_detail != hint.residual_support_detail
+            or not previous.live(hint.key, now_ms=now_ms)
+            or hint.expires_monotonic_ms <= now_ms + self.interval_ms
+        ):
+            self.rearm()
+            self.runtime.counts["tool_offload_hint_rearms"] += 1
+            return
+        # A refresh replaces the forecast, not the wait. Never extend an
+        # existing deadline; newly eligible donors are retried within 200 ms.
+        deadline = now_ms + self.interval_ms
+        self.next_ms = min(self.next_ms, deadline)
+        if replacement is not None:
+            replacement.next_ms = min(replacement.next_ms, deadline)
+        self.runtime.counts["tool_offload_hint_refreshes_coalesced"] += 1
+
     def _eligible(self, key):
         runtime = self.runtime
         hint = runtime._live_tool_hint(key)

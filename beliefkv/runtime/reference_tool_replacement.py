@@ -90,12 +90,13 @@ class ReferenceToolReplacement:
         credit = owner.tokens + agents.policy.buffer_tokens if owner.active else 0
         return demand if demand[1] <= credit and (demand[0] > 0 or demand[1] > 0) else None
 
-    def _release_plan(self, key):
+    def _release_plan(self, key, *, advance=True):
         runtime, cache = self.offload.runtime, self.offload.runtime._native_cache
         pending, selected, total = {}, [], 0
         nodes = tuple(runtime._pressure_candidate_groups().get(key, ()))
         start = self.offload.node_cursor % len(nodes) if nodes else 0
-        self.offload.node_cursor += self.offload.max_nodes
+        if advance:
+            self.offload.node_cursor += self.offload.max_nodes
         for node_id in islice((*nodes[start:], *nodes[:start]), self.offload.max_nodes):
             try:
                 node = cache.tree_core.node_by_id(node_id)
@@ -253,6 +254,8 @@ class ReferenceToolReplacement:
         controller, runtime = self.offload, self.offload.runtime
         agents = runtime._agent_admission
         donors = tuple(hint.key for hint in runtime.tool_wait_hints.values())
+        donor_window_checked = False
+        prechecked_donor = None
         for key in self.order:
             request = agents._live_requests.get(key.request_id)
             if request is None:
@@ -260,6 +263,12 @@ class ReferenceToolReplacement:
             if not self._logical_window_can_fit(key, donors):
                 agents.counts["tool_event_replacement_logical_window_skips"] += 1
                 continue
+            if not donor_window_checked:
+                prechecked_donor = self._first_candidate_donor(donors)
+                if prechecked_donor is None:
+                    agents.counts["tool_event_replacement_no_eligible_donor"] += 1
+                    break
+                donor_window_checked = True
             self.consumer = controller.consumer = (request, key)
             demand = self.demand(*self.consumer, refresh=True)
             if demand is None or demand[0] <= 0 and demand[1] <= 0:
@@ -268,18 +277,31 @@ class ReferenceToolReplacement:
                 donor = donors[(controller.cursor + offset) % len(donors)]
                 self.donor = donor
                 item = agents.policy.programs.get(donor.invocation_id)
+                # Reuse this preliminary check once. Eviction and backup
+                # authorization still recheck the live wait and protection.
+                prechecked = donor == prechecked_donor
+                if prechecked:
+                    prechecked_donor = None
                 if (
-                    item is None or not PredictedToolOffload._eligible(controller, donor)
+                    item is None
+                    or not prechecked and not PredictedToolOffload._eligible(controller, donor)
                     or not runtime._agent_observed_blocked_budget_key(donor)
                     or not self.permits(*self.consumer, donor)
                 ):
                     continue
-                headroom = observe_static_full_mamba_headroom(runtime._native_cache)
-                selection = runtime._refreshed_shadow_backup_selection(
-                    context_id=donor.context_id,
-                    host_full_free_tokens=headroom.host_full_free_tokens,
-                )
-                release_order, available = self._release_plan(donor)
+                release_order, available = self._release_plan(donor, advance=False)
+                selection = None
+                if available >= max(1, demand[0]):
+                    controller.node_cursor += controller.max_nodes
+                    agents.counts["tool_event_replacement_shadow_refresh_skips"] += 1
+                else:
+                    headroom = observe_static_full_mamba_headroom(runtime._native_cache)
+                    selection = runtime._refreshed_shadow_backup_selection(
+                        context_id=donor.context_id,
+                        host_full_free_tokens=headroom.host_full_free_tokens,
+                    )
+                    release_order, available = self._release_plan(donor)
+                    agents.counts["tool_event_replacement_shadow_refresh_fallbacks"] += 1
                 if available >= max(1, demand[0]):
                     if not controller._evict_backed(donor, node_ids=release_order):
                         continue
@@ -313,6 +335,22 @@ class ReferenceToolReplacement:
         agents.counts["tool_event_replacement_no_complete_pair"] += 1
         controller.cursor += controller.max_contexts
         return False
+
+    def _first_candidate_donor(self, donors):
+        from beliefkv.runtime.predicted_tool_offload import PredictedToolOffload
+
+        controller, runtime = self.offload, self.offload.runtime
+        agents = runtime._agent_admission
+        for offset in range(min(len(donors), controller.max_contexts)):
+            donor = donors[(controller.cursor + offset) % len(donors)]
+            agents.counts["tool_event_replacement_donor_prefilter_checks"] += 1
+            if (
+                donor.invocation_id in agents.policy.programs
+                and PredictedToolOffload._eligible(controller, donor)
+                and runtime._agent_observed_blocked_budget_key(donor)
+            ):
+                return donor
+        return None
 
     def _logical_window_can_fit(self, key, donors):
         agents = self.offload.runtime._agent_admission
