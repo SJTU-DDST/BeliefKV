@@ -23,7 +23,7 @@ def distribution_configuration(tmp_path):
     return values
 
 
-@pytest.mark.parametrize("expired,expected", ((False, {"b", "c"}), (True, {"a"})))
+@pytest.mark.parametrize("expired,expected", ((False, {"a"}), (True, {"b", "c"})))
 def test_real_r5_distribution_or_expiry_reaches_shared_admission_and_native_candidates(
     monkeypatch, tmp_path, expired, expected,
 ):
@@ -38,7 +38,8 @@ def test_real_r5_distribution_or_expiry_reaches_shared_admission_and_native_cand
         now = time.monotonic()
         for name in ("a", "b", "c"):
             admission._work._predictions[name] = DistributionWorkPrediction(
-                (.4, .35, .25), 0, 1, now, "model", "calibrated_distribution",
+                (1., 0., 0.) if name == "a" else (0., 0., 1.),
+                0 if name == "a" else 2, 1, now, "model", "calibrated_distribution",
                 now - 1. if expired else now + 3., 1,
             )
         admission.tick()
@@ -52,8 +53,12 @@ def test_real_r5_distribution_or_expiry_reaches_shared_admission_and_native_cand
         if expired:
             assert choice["decision"]["reason"] == "predictions_unavailable_reference_fallback"
         else:
-            assert all(value["probabilities"] == (.4, .35, .25) for value in choice["predictions"].values())
-            assert all(value["weight"] == pytest.approx(.6375) for value in choice["candidates"])
+            assert choice["decision"]["reference"] == ("b", "c")
+            assert choice["predictions"]["a"]["probabilities"] == (1., 0., 0.)
+            assert choice["predictions"]["b"]["probabilities"] == (0., 0., 1.)
+            assert {
+                value["identity"]: value["weight"] for value in choice["candidates"]
+            } == pytest.approx({"a": 1., "b": .25, "c": .25})
         candidates = [admission._live_requests[name + "-request"] for name in ("a", "b", "c")]
         plan = runtime.plan_native_prefill(candidates, running_batch=SimpleNamespace(reqs=[]), adder=None)
         selected = combination_tests.select_native_prefill_candidates(

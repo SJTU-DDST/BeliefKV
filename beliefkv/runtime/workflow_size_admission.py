@@ -135,6 +135,13 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             and self._candidate(key.request_id, key, include_first=True) is not None
         )
 
+    def _protected_join(self, key):
+        request = self._live_requests.get(key.request_id) if key is not None else None
+        return bool(
+            key is not None and key.invocation_id in self.runtime._join_priority_pending
+            and request is not None and self.runtime._ready_join_parent(request, key)
+        )
+
     def _order_dispatch_keys(self, keys, joins):
         if not keys:
             return keys
@@ -414,6 +421,11 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "workflow_combination_scope": "periodic_and_coalesced_first_continuation_sibling_admission",
                 "workflow_combination_join_recovery": "protected_existing_join_eos_rights_unchanged",
                 "workflow_combination_category": "stable_reference_preference_not_hard_search_partition",
+                "workflow_combination_free_reference_order": (
+                    "protected_join_category_context"
+                    if self.rank_before_category or self._conditional_distribution
+                    else "native_dispatch_window"
+                ),
                 "workflow_combination_cost_identity": self._combination.cost_identity,
                 "workflow_combination_max_candidates": 8,
                 "workflow_combination_search_budget_ns": 500_000,

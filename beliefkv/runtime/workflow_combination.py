@@ -450,10 +450,26 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             try:
                 writer = getattr(runtime, "_opportunity_writer", None)
                 if writer is not None:
+                    reference_window = None
+                    if source == "undiscounted_free_dispatch":
+                        reference_window = [
+                            {
+                                "key": asdict(key),
+                                "logical_tokens": item.tokens + a.policy.buffer_tokens,
+                                "category": resume_category(item),
+                                "sequence": item.queue_sequence,
+                                "protected_join": a._protected_join(key),
+                            }
+                            for key in keys
+                            if (item := a.policy.programs.get(key.invocation_id)) is not None
+                        ]
                     writer.record({
                         "event": "workflow_combination_selection", "source": source,
                         "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
                         "decision": result, "candidates": [asdict(row) for row in candidates],
+                        "logical_reference_window": reference_window,
+                        "logical_reference_capacity_tokens": capacity,
+                        "logical_reference_maximum": maximum,
                         "keys": {identity: asdict(key) for identity, key in summaries.items()},
                         "predictions": {
                             workflow: asdict(value) if value is not None else None
@@ -508,7 +524,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         ready = [
             key for key in keys if a._candidate(key.request_id, key, include_first=True) is not None
         ]
-        if a.rank_before_category:
+        if a.rank_before_category or getattr(a, "_conditional_distribution", False):
             ready.sort(key=lambda key: (
                 0 if a._protected_join(key) else 1,
                 resume_category(a.policy.programs[key.invocation_id]),
