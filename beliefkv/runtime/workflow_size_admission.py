@@ -18,6 +18,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     join_sibling_policy_name = ReferenceFreeContinuationAdmission.join_sibling_policy_name + "_workflow_size"
     rank_kind = "learned_work_class"
     rank_before_category = False
+    coalescing_reconciliation_counter = "workflow_coalescing_reconciliation_ticks"
 
     def __init__(self, runtime):
         self._combination = None
@@ -99,8 +100,13 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def _prediction(self, invocation):
         workflow = self.workflows.get(invocation)
         if workflow not in self._rank_cache:
-            self._rank_cache[workflow] = self._work.prediction(workflow)
+            self._rank_cache[workflow] = self._workflow_prediction(workflow)
         return self._rank_cache[workflow]
+
+    def _workflow_prediction(self, workflow):
+        if self._deferred_dispatch is not None:
+            return self._deferred_dispatch.prediction(workflow)
+        return self._work.prediction(workflow)
 
     def _rank(self, invocation, now):
         return self._priority(self._prediction(invocation))
@@ -167,7 +173,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 continue
             workflow = key.root_workflow_id
             if workflow not in predictions:
-                predictions[workflow] = self._work.prediction(workflow)
+                predictions[workflow] = self._workflow_prediction(workflow)
             prediction = predictions[workflow]
             bucket = self._priority(prediction)
             req = self._live_requests.get(key.request_id)
@@ -280,14 +286,16 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def tick(self, *, now=None):
         now = time.monotonic() if now is None else now
         deferred = self._deferred_dispatch
-        if (
-            self.policy is not None and deferred is not None
-            and getattr(deferred, "window_ms", 0) and deferred.window_open(now)
-            and self._dispatch_pending and now < self.next_tick
-        ):
-            # Raw free-budget dispatch cannot reconcile decayed blocked owners.
-            self.next_tick = now
-            self.counts["workflow_coalescing_reconciliation_ticks"] += 1
+        if deferred is not None:
+            return deferred.tick(now)
+        return self._tick_working_set(now=now)
+
+    def _dispatch_at_boundary(self, now):
+        deferred = self._deferred_dispatch
+        if deferred is None or not deferred.window_ms:
+            super()._dispatch_at_boundary(now)
+
+    def _tick_working_set(self, *, now):
         due = self.policy is not None and now >= self.next_tick
         if due:
             control_wall, control_cpu = time.perf_counter(), time.thread_time()
@@ -299,8 +307,6 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 self._index_resume_groups()
         super().tick(now=now)
         if not due:
-            if self._deferred_dispatch is not None:
-                self._deferred_dispatch.dispatch(now)
             return
         choice = self.policy.last_selection
         control_cpu_us = (time.thread_time() - control_cpu) * 1e6
@@ -346,8 +352,6 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 ],
                 "physical_capacity_credit": False,
             })
-        if self._deferred_dispatch is not None:
-            self._deferred_dispatch.dispatch(now)
 
     def native_service(self, batch, completed_ids):
         super().native_service(batch, completed_ids)
@@ -395,6 +399,16 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 if dispatch else "paused_within_original_category"
             ),
             "workflow_coalescing_reconciles_decay_at_window_deadline": bool(
+                getattr(self._deferred_dispatch, "window_ms", 0)
+            ),
+            "workflow_admission_controller": (
+                "shared_native_boundary_control_then_bounded_residual_dispatch"
+                if self._deferred_dispatch is not None else "reference_periodic_and_free_dispatch"
+            ),
+            "workflow_admission_ordinary_boundary_ms": (
+                self._deferred_dispatch.window_ms if self._deferred_dispatch is not None else 0
+            ),
+            "workflow_admission_separate_free_fallback": dispatch and not bool(
                 getattr(self._deferred_dispatch, "window_ms", 0)
             ),
             "workflow_work_predictor": self._work.status(),

@@ -403,7 +403,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 if self._prefix_summary_detail is not None:
                     prefix_summaries[key.invocation_id] = self._prefix_summary_detail
                 if key.root_workflow_id not in predictions:
-                    predictions[key.root_workflow_id] = a._work.prediction(key.root_workflow_id)
+                    predictions[key.root_workflow_id] = self.prediction(key.root_workflow_id)
                 prediction = predictions[key.root_workflow_id]
                 if a._supported(prediction):
                     weight = (

@@ -1,4 +1,4 @@
-"""Coalesce free-budget events at native boundaries or declared oracle epochs."""
+"""Coordinate working-set control and bounded dispatch at native boundaries."""
 
 import time
 
@@ -13,6 +13,38 @@ class DeferredFreeAdmission:
         self.protected_dirty = False
         self.window_started = None
         self.next_dispatch = 0.
+        self._boundary_initialized = False
+        self._boundary_predictions = None
+
+    def prediction(self, workflow):
+        if self._boundary_predictions is None:
+            return self.admission._work.prediction(workflow)
+        if workflow not in self._boundary_predictions:
+            self._boundary_predictions[workflow] = self.admission._work.prediction(workflow)
+        return self._boundary_predictions[workflow]
+
+    def tick(self, now):
+        a = self.admission
+        if (
+            a.policy is not None and self.window_ms and self.window_open(now)
+            and a._dispatch_pending and now < a.next_tick
+        ):
+            # Free dispatch cannot spend a blocked owner's discounted budget.
+            a.next_tick = now
+            a.counts[a.coalescing_reconciliation_counter] += 1
+        self._boundary_predictions = {}
+        try:
+            a._tick_working_set(now=now)
+            if a.policy is not None and self.window_ms and not self._boundary_initialized:
+                # Preserve the first fallback's window phase and live JOIN
+                # notification, including an idle boundary before first arrival.
+                self._notify()
+                self._boundary_initialized = True
+            # Re-read raw capacity after pressure reconciliation; the residual
+            # dispatch keeps its original bounded candidates and grant limit.
+            self.dispatch(now)
+        finally:
+            self._boundary_predictions = None
 
     def window_open(self, now):
         return not self.window_ms or (

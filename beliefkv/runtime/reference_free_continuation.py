@@ -265,6 +265,9 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
                     item = self.policy.programs.get(identity)
                     if item is not None and item.active and item.pending:
                         self._residency_pause.compared_requests.add(self.latest[identity])
+        self._dispatch_at_boundary(now)
+
+    def _dispatch_at_boundary(self, now):
         if now >= self._next_dispatch:
             self._next_dispatch = now + self.dispatch_interval_ms / 1000.
             self.counts["free_dispatch_fallback_ticks"] += 1
