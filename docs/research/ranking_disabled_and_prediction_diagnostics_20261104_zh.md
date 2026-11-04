@@ -165,6 +165,13 @@ JOIN 组、必需权限和搜索逻辑，先精确复现原执行，再比较：
 因而总是优先服务了真实最短 workflow”。
 不能仅凭这两次授予给该成员的全部 348.75 秒改善作独占因果归因。
 
+后续[资格保留与服务核对](r5_selection_service_survival_20261104_zh.md)
+覆盖全部 66 个新选中 episode：57 个在原保守观察窗内服务，另外 9 个等待期间
+没有观察到同请求 inactive、实际暂停或重新授予，也没有更早的部分身份正进度。
+最长两次实际等待为 26.563、19.013 秒，期间的 worker 区间以 prefill 为主。
+这不是排序资格被后续控制撤销的证据，也不证明两请求当时物理可提前执行。
+普通 decode 身份字段已在未来遥测中补齐，不回填历史缺失或修改旧性能结果。
+
 证据为 `prediction_analysis_r1/neutral_weight_counterfactual.json`、
 启用轮的 `final_results_r1/actual_admission_service.json` 和相同现场的
 `continuous_and_oracle.json`。实际 4.81% 仍只归于本轮定义的整体决策对照。

@@ -1789,9 +1789,9 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert service[0]["request_samples"][0]["attempt_id"] == 3
     assert service[0]["request_samples"][0]["session_id"] == "native-session"
     assert service[0]["request_samples"][0]["session_generation"] == 2
-    assert not {"attempt_id", "session_id", "session_generation"} & set(
-        service[1]["request_samples"][0]
-    )
+    assert service[1]["request_samples"][0]["attempt_id"] == 3
+    assert service[1]["request_samples"][0]["session_id"] == "native-session"
+    assert service[1]["request_samples"][0]["session_generation"] == 2
     assert service[1]["request_samples"][0]["token_delta"] == 2
     assert all(row["timing_semantics_version"] == "gpu_service_interval_v1" for row in service)
     for row in service:
@@ -2361,6 +2361,11 @@ def test_decode_deltas_conserve_tokens_when_forward_completions_overlap(
     result = next(event for event in events if event["kind"] == "llm_result")
     assert sum(decode_deltas) == result["attributes"]["output_tokens"] == 3
     decode_records = [record for record in records if record["phase"] == "decode"]
+    assert all(
+        sample[name] is None
+        for record in decode_records for sample in record["request_samples"]
+        for name in ("attempt_id", "session_id", "session_generation")
+    )
     assert decode_records[0]["launch_monotonic_ms"] == older.launch_ts * 1000
     assert decode_records[1]["launch_monotonic_ms"] == newer.launch_ts * 1000
     assert decode_records[1]["service_start_monotonic_ms"] == (
@@ -2369,6 +2374,42 @@ def test_decode_deltas_conserve_tokens_when_forward_completions_overlap(
     assert decode_records[1]["launch_monotonic_ms"] < (
         decode_records[1]["service_start_monotonic_ms"]
     )
+
+
+def test_decode_identity_is_a_snapshot_of_the_current_native_attempt(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    request = SimpleNamespace(
+        rid="request", cache_request_handle=SimpleNamespace(attempt_id=1),
+        session_id="session-old", session_generation=2,
+        beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "agent",
+            "context_id": "context", "context_epoch": 0,
+        },
+        origin_input_ids=[1], output_ids=[],
+        sampling_params=SimpleNamespace(max_new_tokens=8), finished=lambda: False,
+    )
+    batch = SimpleNamespace(
+        forward_mode=_Mode("decode"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[request],
+    )
+    try:
+        audit.on_launch(batch)
+        request.cache_request_handle.attempt_id = 3
+        request.session_id, request.session_generation = "session-new", 4
+        request.output_ids.append(1)
+        audit.on_completed(batch)
+        batch.forward_iter = 2
+        audit.on_launch(batch)
+        request.output_ids.append(2)
+        audit.on_completed(batch)
+    finally:
+        audit.close()
+    records = _read(tmp_path / "server/runtime_audit.jsonl")
+    assert [
+        tuple(record["request_samples"][0][name] for name in (
+            "attempt_id", "session_id", "session_generation",
+        )) for record in records
+    ] == [(1, "session-old", 2), (3, "session-new", 4)]
 
 
 def test_aborted_waiting_and_started_requests_do_not_leave_pending_telemetry(

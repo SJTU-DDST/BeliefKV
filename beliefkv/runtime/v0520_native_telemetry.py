@@ -1428,16 +1428,13 @@ class NativeReactiveTelemetry:
                     "prefill_extend_input_len" if sample_phase == "prefill"
                     else "observed_output_ids_delta"
                 ),
+                "attempt_id": getattr(
+                    getattr(req, "cache_request_handle", None), "attempt_id", None,
+                ),
+                "session_id": getattr(req, "session_id", None),
+                "session_generation": getattr(req, "session_generation", None),
                 **(
-                    {
-                        "prefill_geometry_source": geometry_source,
-                        "attempt_id": getattr(
-                            getattr(req, "cache_request_handle", None), "attempt_id", None,
-                        ),
-                        "session_id": getattr(req, "session_id", None),
-                        "session_generation": getattr(req, "session_generation", None),
-                    }
-                    if phase == "prefill" else {}
+                    {"prefill_geometry_source": geometry_source} if phase == "prefill" else {}
                 ),
             })
         if samples:
