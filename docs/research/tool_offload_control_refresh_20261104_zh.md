@@ -208,3 +208,24 @@ running/decode24、prefill2048/mixed off、工具时间和固定 18 测量成员
 不重跑基线；测量组自然结束后停止背景，统一核对完整 JCT、共同窗口
 吞吐、实际服务顺序、重算及线程 CPU。新的联合尝试保留独立注册，
 不恢复此前用户中断的部分运行。
+
+联合实现已提交为 `d5d12f27`。同一联合版本通过 2318 项 CPU 检查，
+无失败、错误或跳过，完整保留原 1346 项及刷新路径的 974 项检查身份。
+实际 registrar 的构造器及 native 来源校验均通过。首份 CPU 聚合报告
+因驱动先修改了测试进程中的 operator 全局选择而有两项编排检查失败；
+改为独立解释器执行后全部通过，原报告保存在
+`control400_serving_frozen_r1/bootstrap_scope_failure_r1/`，未启动额外 GPU。
+
+本轮实际注册为
+`workflow_original73_host400_control_refresh_20261104_r1`，端口 19002；
+实际服务与 GPU 监督器使用同一提交。服务进程的环境已核对为 400 ms、
+`.75` 卸载概率门槛和新的条件树模型。衍生模型仅继承原收益目标及成本
+profile，SHA256 为
+`fe07eabc1c2ee72230efdb2bff190276ffc372d45dfaeae41228d97a90bfc3d6`。
+监督器及服务均为 nice0；结果观察器和等待回放的停止观察器 bootstrap
+均为 nice19、CUDA hidden。启动核对时仍在初始化模型/Host 池，不能
+把它写成已经完成回放或已经获得 JCT 收益。
+
+启动与六项完成后 CPU 分析的证据位于
+`r5_host400_control_optimized_r1/control_refresh_r3/`。该命名仍属于原实验
+的后续尝试，没有为 CPU 检查、分析或每个小修改另开主实验编号。
