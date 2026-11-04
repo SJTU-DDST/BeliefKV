@@ -98,6 +98,66 @@ prefill batch。其余较短越窗等待为 0.396--1.322 秒，说明越窗与�
 而不是再次调短全局控制周期或为已 active 的请求增加逻辑 grant。
 只有存在各自可执行但次序可改变的消费者时，才考虑服务层排序修改。
 
+## 选中时的物理摘要与固定测量组
+
+后续补查将同一 66 个 episode 绑定到原始组合选择序号，得到全部选中时的
+资源摘要，以及首次精确服务时的实际 prefix/input。不能用后者替换前者：
+
+| 请求 | 选中时缺失 checkpoint | 本次新增输入 | 选中时 Device free | 选中集合所需 Device | 当前摘要可放下 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| GraphQL child，等待 26.563s | 3994 | 88 | 611 | 4101 | 否 |
+| REST child，等待 19.013s | 5305 | 1755 | 747 | 7079 | 否 |
+| DeFi root，等待 5.088s | 10390 | 30 | 386 | 10438 | 否 |
+| ML inference root，等待 2.507s | 188 | 218 | 1821 | 423 | 是 |
+
+所需 Device 列来自当时选中集合的 `selected_evaluation.required_device_tokens`，
+包含输入和增长预留；不将它混称为单个请求上下文。上述四次选中集合均为单成员。
+全体 66 个 episode 中，57 个选中集合没有通过当前 free/cold 摘要的容量检查，
+9 个通过；9 个越过原观察窗的 episode 中为 8 个未通过、1 个通过。
+选择器当时使用 planned-pool 几何，不是立即物理可执行的承诺。
+摘要未通过也不能反过来证明原生分配绝对不可行，因为没有记录完备的
+逐请求即时原生拒绝原因。
+
+首次实际服务时，GraphQL child 的 prefix 为 23915、新输入为 88；
+REST child 为 18271 和 1755。它们此前仍需恢复部分 checkpoint，
+不是已有 warm-short-cofill 原型要求的全驻留、无 H2D 消费者。
+ML inference 的摘要虽然放得下，也仍有 188 个缺失 checkpoint token。
+
+最长两次等待重叠的原始 root prefill，共 118 个 batch，从 prefix 546
+连续处理到 241025，新增输入 240479，无不连续区间。其原生身份只有一个：
+attempt 0、session generation 61，不是将不同 retry 拼成一段。
+这段 root 的首个服务到最后完成约 48.916 秒；该 worker 区间仍不是纯 GPU
+kernel 时间。两次等待期间，全局 `native_OTHER` 增量分别在 37--40、
+25--28 之间，`native_NO_TOKEN` 均为 0；它们没有目标请求身份，不能当成
+这两个 child 的容量或输入预算拒绝次数。
+
+固定运行源码为应用 `d5d12f2774fc`、原生树 `434c35dd6621`。
+原生 scheduler 先调用 `add_chunked_req`，再检查 waiting candidates；
+`OTHER` 还可能来自输入/chunk 预算、单次延迟器或 Host load-back 未成功。
+因此源码确认了已有 chunk owner 的先处理顺序，没有证明所有观察等待都由
+它独占造成。当前 `drained_chunk` 的早返回还要求 `tool_timing_only`，
+而本轮为 false；不能把该优化算作已生效的历史路径。
+
+另外重新绑定原来已冻结的 18 条测量成员，身份只用于私有离线分析：
+
+| 人群 | 新选中 episode | 不同 workflow | 授予到首次服务累计等待 | workflow 内区间去重后 | 越过原观察窗 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 固定测量组 | 14 | 10 | 9.753163s | 9.753163s | 2 |
+| 非测量成员 | 52 | 27 | 74.674168s | 74.635387s | 7 |
+
+两个最长等待都属于非测量成员。测量组越窗的两次分别为 mobile social
+395.988ms、desktop media 751.557ms，合计 1.147545 秒。
+9.753163 秒若只作记账均摊到完整 18 条成员，为约 0.542 秒/成员；
+这不是可实现的平均 JCT 改善，也不是全系统调度收益上界。
+背景请求会影响后续资源竞争，去掉等待后整个执行轨迹也可能改变，
+所以不能据此判断背景优化完全无价值。
+
+据此，暂不以这两次背景长等待为理由增加新的请求优先级或扩大 warm cofill
+到带恢复的消费者。已有完整 R5 配对的 4.807688% 仍需新的匹配运行验证
+重复性；不能把当前观察等待直接转换成新的 1% 收益承诺。
+如果后续评估服务层修改，需要先取得目标请求在实际原生 adder 中的可执行
+证据，并同时保留被延后 chunk owner 的代价，而不是只计算受益方。
+
 ## 普通 decode 身份记录修复
 
 `beliefkv/runtime/v0520_native_telemetry.py::on_launch` 原来仅在
@@ -130,7 +190,23 @@ r5_host400_control_optimized_r1/prediction_analysis_r1/
   actual_selection_service_survival_r2.json
 ```
 
-r1 保留首次资格/身份核对；r2 增加等待期间的 worker 分解，最终读器指纹以 r2 为准。
-两份分析使用相同原始封闭输入，没有修改前一份结果或消耗新主实验版本号。
+r1 保留首次资格/身份核对；r2 增加等待期间的 worker 分解，该阶段指纹以 r2 为准。
+后续 r3 增加选中资源和首次服务形状，r4 增加原生身份变体与 mixed 成员检查，
+两份中间结果保留。最终完整结果为：
+
+```text
+prediction_analysis_r1/actual_selection_service_geometry_cohort_r1.json
+prediction_analysis_r1/service_survival_geometry_cohort_cpu_r1.xml
+```
+
+最终读器及关联审计 121 项通过，无失败或跳过，其中读器自身为 33 项。
+另有原生 adder、drained-chunk、short-continuation 和 compute-service 相关
+125 项通过。补测覆盖 mixed decode 不计作输入、基础身份缺失不能证明精确
+服务、同 request 不同 attempt 的披露、累计计数区间、固定测量成员不重选和
+并行等待区间去重。后续完整读取均验证同一原始封闭输入。
+保留此前因 SGLang 导入来源错误的失败检查；后续显式固定已审阅 checkout 的
+`PYTHONPATH` 后通过，没有改弱现有原生断言。
+
+所有分析使用相同原始封闭输入，没有修改前一份结果或消耗新主实验版本号。
 CPU 运行采用 CPU0、nice19、CUDA hidden、OMP/OpenBLAS/MKL 单线程。
 未注册 GPU 实验或自动后继，完整目标仍未达到可重复性能验收。
