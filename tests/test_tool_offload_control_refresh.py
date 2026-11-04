@@ -261,14 +261,41 @@ def test_incomplete_backed_index_refreshes_and_serves_in_the_same_attempt(
         runtime._remember_parent_pressure_node(donor.id, key, donor.creation_time)
         assert len(donor.component_data[0].value) == 16
     inspect = Mock(wraps=runtime._refreshed_shadow_backup_selection)
+    plan = Mock(wraps=controller.replacement._release_plan)
     monkeypatch.setattr(runtime, "_refreshed_shadow_backup_selection", inspect)
+    monkeypatch.setattr(controller.replacement, "_release_plan", plan)
     before = controller.node_cursor
     assert run(parts)
     inspect.assert_called_once()
+    assert plan.call_count == 2
     assert admission.counts["tool_event_replacement_shadow_refresh_fallbacks"] == 1
     assert controller.node_cursor == before + 2 * controller.max_nodes
     assert admission.policy.programs["consumer"].active
     assert runtime.counts["predicted_tool_offload_freed_component_0"] == 32
+
+
+@pytest.mark.parametrize("blocked", ("locked", "unbacked"))
+def test_readonly_shadow_refresh_reuses_only_its_same_call_plan(
+    demand_runtime, monkeypatch, blocked,
+):
+    parts = pair(demand_runtime)
+    runtime, admission, controller, _adder = parts
+    donor = demand_runtime[4]
+    if blocked == "locked":
+        donor.component_data[0].lock_ref = 1
+    else:
+        donor.component_data[0].host_value = None
+        demand_runtime[2].tree_core._update_duplicate_tracking(donor)
+        monkeypatch.setattr(runtime, "issue_shadow_backup_steps", Mock(return_value=()))
+    plan = Mock(wraps=controller.replacement._release_plan)
+    monkeypatch.setattr(controller.replacement, "_release_plan", plan)
+    assert not run(parts)
+    plan.assert_called_once()
+    assert admission.counts["tool_event_replacement_release_plan_reuses"] == 1
+    assert controller.node_cursor == controller.max_nodes
+    assert donor.component_data[0].value is not None
+    assert not admission.policy.programs["consumer"].active
+    assert not runtime.physical_ledger.pending_count
 
 
 @pytest.mark.parametrize("race", ("tool_return", "consumer_disappears", "new_lock", "native_refusal"))

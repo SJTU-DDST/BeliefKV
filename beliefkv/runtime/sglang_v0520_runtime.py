@@ -7592,6 +7592,7 @@ class NativeAdmissionRuntime:
             self._parent_pressure_next_position += 1
         self._parent_pressure_candidates[node_id] = (key, created)
         self._parent_pressure_group_size = len(self._parent_pressure_candidates)
+        self.counts["parent_pressure_index_updates"] += 1
 
     @timed_runtime("prepare_candidate_maintenance")
     def _prune_parent_pressure_candidates(self) -> None:

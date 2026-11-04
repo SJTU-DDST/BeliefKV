@@ -289,6 +289,8 @@ class ReferenceToolReplacement:
                     or not self.permits(*self.consumer, donor)
                 ):
                     continue
+                index_revision = runtime.counts["parent_pressure_index_updates"]
+                semantic_revision = runtime.semantic_revision
                 release_order, available = self._release_plan(donor, advance=False)
                 selection = None
                 if available >= max(1, demand[0]):
@@ -300,7 +302,17 @@ class ReferenceToolReplacement:
                         context_id=donor.context_id,
                         host_full_free_tokens=headroom.host_full_free_tokens,
                     )
-                    release_order, available = self._release_plan(donor)
+                    if (
+                        runtime.counts["parent_pressure_index_updates"] == index_revision
+                        and runtime.semantic_revision == semantic_revision
+                    ):
+                        # Shadow capture only reads native state and registers
+                        # candidates. With no registration/event, keep this
+                        # same-call plan; actual release still revalidates KV.
+                        controller.node_cursor += controller.max_nodes
+                        agents.counts["tool_event_replacement_release_plan_reuses"] += 1
+                    else:
+                        release_order, available = self._release_plan(donor)
                     agents.counts["tool_event_replacement_shadow_refresh_fallbacks"] += 1
                 if available >= max(1, demand[0]):
                     if not controller._evict_backed(donor, node_ids=release_order):
