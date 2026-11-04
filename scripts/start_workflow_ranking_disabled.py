@@ -23,7 +23,7 @@ from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import verify_execution
 
 MAIN, BASE, NATIVE, COHORT = previous.MAIN, previous.BASE, previous.NATIVE, previous.COHORT
-HERE = BASE / "r5_host400_control_optimized_r1/ranking_disabled_control_r1/qualification_retry_r2"
+HERE = BASE / "r5_host400_control_optimized_r1/ranking_disabled_control_r1/tokenizer_bound_r3"
 REG = previous.OPS / "workflow_original73_host400_ranking_disabled_20261104_r1.registration.json"
 OBSERVER = previous.OPS / "workflow_original73_host400_ranking_disabled_cohort_20261104_r1.registration.json"
 RUN = MAIN / "experiments/raw/workflow_original73_host400_ranking_disabled_20261104_r1"
@@ -123,7 +123,10 @@ def prepare():
             sys.executable, "-m", "pytest", "-q", *tests, "--tb=short",
             "--junitxml=" + str(HERE / "cpu.xml"),
         ], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
-            env={**os.environ, "SGLANG_SOURCE_CHECKOUT": str(NATIVE)})
+            env={
+                **os.environ, "SGLANG_SOURCE_CHECKOUT": str(NATIVE),
+                "BELIEFKV_CONTEXT_TOKENIZER_TEST": disabled["common_environment"]["MODEL_PATH"],
+            })
     if result.returncode:
         raise ValueError("preserve the failed matched-control CPU qualification")
     result = subprocess.run([
