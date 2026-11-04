@@ -29,6 +29,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         if hashlib.sha256(content).hexdigest() != admission.runtime.workflow_work_model_sha256:
             raise ValueError("R5 cost profile and prediction artifact differ")
         raw = json.loads(content)
+        ranking = raw.get("remaining_work_ranking_enabled", True)
+        if type(ranking) is not bool:
+            raise ValueError("remaining-work ranking switch must be a boolean")
+        admission.remaining_work_ranking_enabled = ranking
         super().__init__(
             admission, window_ms=raw.get("free_dispatch_coalescing_window_ms", 0),
         )
@@ -333,6 +337,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         started, cpu = time.perf_counter_ns(), time.thread_time_ns()
         result = {
             "selected": tuple(key.invocation_id for key in reference),
+            "reference": tuple(key.invocation_id for key in reference),
             "reason": "metadata_unavailable_reference_fallback",
         }
         summaries, candidates, predictions, resources = {}, [], {}, None
