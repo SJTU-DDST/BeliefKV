@@ -206,3 +206,15 @@ experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/
 读器和既有计算机会审计共 16 项 CPU 检查通过，未修改在线服务。
 上述 46/34/22 计数来自运行中联合实验的封存前缀，含预热和背景，
 不是整个实验的最终计数，也不是独立 workflow 数或性能收益。
+
+## 分支级 Oracle 初筛更新
+
+随后已实现只读 RETURN 祖先路径计算，核对该前缀的 56 个组观察：
+当前工具等待单独足以覆盖另一个 child 完整剩余路径的观察为零。
+完整分支路径形成 40 个正理想余量候选观察；放入真实竞争者后，
+20 个一对一跨 workflow 替代里有 8 个在点估计上放得下，
+其中 1 个竞争者来自测量组。
+
+这些仍没有扣除真实迁移、干扰、资格释放预测和 competitor 自身 JOIN。
+目前不为该机制单独启动完整 GPU 实验，先核查完整工作量选择的机会。
+详细边界见[分支 Oracle 初筛](../research/join_branch_oracle_screen_20261104_zh.md)。
