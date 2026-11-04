@@ -14,21 +14,27 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.workflow_combination import CombinationCosts
 from scripts import run_causal_comparison as causal
-from scripts.review_learned_work_ranking import control_optimization_scope, verify_learned_traffic
+from scripts.review_learned_work_ranking import (
+    control_optimization_environment_changes, control_optimization_scope,
+    verify_joint_predictor_reference, verify_learned_traffic,
+)
 from scripts.review_matched_work_ranking import evaluate_pair_cohorts
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
 def verify_objective_pair(reference, candidate):
+    optimization = control_optimization_scope(candidate)
+    prediction_changed = optimization is not None and optimization["prediction_changed"]
     allowed = {
         prefix + field for prefix in ("", "BELIEFKV_")
         for field in ("WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256")
     }
+    allowed |= control_optimization_environment_changes(reference, candidate)
     old, new = (spec["common_environment"] for spec in (reference, candidate))
     if (
         reference["order"] != ["full"] or candidate["order"] != ["full"]
-        or old.keys() != new.keys()
+        or old.keys() - allowed != new.keys() - allowed
         or any(old[name] != new[name] for name in old.keys() - allowed)
         or any(reference.get(name) != candidate.get(name) for name in (
             "source_registration", "workflow_arrivals", "tool_timing_overlay",
@@ -50,6 +56,7 @@ def verify_objective_pair(reference, candidate):
         models.append(causal.load(path))
         paths.append(path)
     profiles = [model["admission_cost_profile"] for model in models]
+    verify_joint_predictor_reference(models[0], candidate)
     if (
         profiles[0]["kind"] != "r5_frozen_batch_cost_proxy_capacity_v6"
         or profiles[1]["kind"] != "r5_frozen_batch_cost_proxy_capacity_v7"
@@ -58,8 +65,10 @@ def verify_objective_pair(reference, candidate):
         or any(CombinationCosts(**p["costs"]).decode_cost_basis != "full_batch" for p in profiles)
         or {k: v for k, v in profiles[1]["costs"].items() if k != "selection_objective"} != profiles[0]["costs"]
         or profiles[0].get("oracle_reference_path_s") != profiles[1].get("oracle_reference_path_s")
-        or {k: v for k, v in models[0].items() if k != "admission_cost_profile"}
-        != {k: v for k, v in models[1].items() if k != "admission_cost_profile"}
+        or not prediction_changed and (
+            {k: v for k, v in models[0].items() if k != "admission_cost_profile"}
+            != {k: v for k, v in models[1].items() if k != "admission_cost_profile"}
+        )
     ):
         raise ValueError("objective comparison changed the predictor, cost values or planning scope")
     for profile in profiles:
@@ -69,12 +78,11 @@ def verify_objective_pair(reference, candidate):
         if profile["identity"] != identity:
             raise ValueError("objective profile fingerprint changed")
     contract = candidate["comparison_contract"]
-    optimization = control_optimization_scope(candidate)
     if (
         contract.get("combination_selection_objective") != "benefit"
         or contract.get("only_combination_selection_objective_changed") is not (optimization is None)
         or contract.get("cost_tie_break_added") is not False
-        or contract.get("prediction_parameters_and_support_unchanged") is not True
+        or contract.get("prediction_parameters_and_support_unchanged") is not (not prediction_changed)
         or any(contract.get(name) != reference["comparison_contract"].get(name) for name in (
             "future_information_used", "physical_capacity_credit",
             "minimum_promising_measured_mean_JCT_reduction",

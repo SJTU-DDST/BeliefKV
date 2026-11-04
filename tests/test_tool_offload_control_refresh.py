@@ -133,6 +133,75 @@ def test_forecast_that_becomes_eligible_runs_by_the_existing_200_ms_deadline(
     assert demand_runtime[4].component_data[0].value is None
 
 
+@pytest.mark.parametrize("interval_ms", (300, 400, 500))
+def test_changed_retry_deadline_still_serves_a_newly_eligible_forecast(
+    demand_runtime, monkeypatch, interval_ms,
+):
+    monkeypatch.setenv("BELIEFKV_TOOL_OFFLOAD_INTERVAL_MS", str(interval_ms))
+    test_forecast_that_becomes_eligible_runs_by_the_existing_200_ms_deadline(
+        demand_runtime, monkeypatch,
+    )
+
+
+@pytest.mark.parametrize("interval_ms", (300, 400, 500))
+def test_retry_interval_does_not_change_offload_profitability(
+    demand_runtime, monkeypatch, interval_ms,
+):
+    parts = pair(demand_runtime)
+    runtime, _admission, controller, _adder = parts
+    worth = controller._worth_offloading
+    checked = []
+
+    def compare(*args, **kwargs):
+        controller.interval_ms = 200.
+        original_result = worth(*args, **kwargs)
+        original_threshold = runtime.counts["tool_offload_threshold_us_last"]
+        controller.interval_ms = interval_ms
+        result = worth(*args, **kwargs)
+        assert result == original_result
+        assert runtime.counts["tool_offload_threshold_us_last"] == original_threshold > 0
+        checked.append(original_threshold)
+        return result
+
+    monkeypatch.setattr(controller, "_worth_offloading", compare)
+    assert run(parts)
+    assert checked
+    assert controller.control_cost_margin_ms == 400.
+
+
+@pytest.mark.parametrize("event_path", ("tool_return", "backup_ack", "new_request"))
+def test_longer_backoff_keeps_actual_event_wakeups(demand_runtime, monkeypatch, event_path):
+    monkeypatch.setenv("BELIEFKV_TOOL_OFFLOAD_INTERVAL_MS", "400")
+    if event_path == "backup_ack":
+        from tests.test_reference_tool_replacement import (
+            test_backup_ack_retries_immediately_and_revalidates_both_sides as check,
+        )
+        check(demand_runtime, None)
+    elif event_path == "tool_return":
+        from tests.test_reference_tool_replacement import (
+            test_new_tool_return_event_rearms_without_advancing_the_control_clock as check,
+        )
+        check(demand_runtime)
+    else:
+        parts = pair(demand_runtime)
+        runtime, admission, controller, _adder = parts
+        controller.next_ms = controller.replacement.next_ms = float("inf")
+        runtime.on_events((event(
+            10, Kind.LLM_SUBMIT, invocation_id="consumer", context_id="ctx-consumer",
+            attributes={"request_id": "consumer"},
+        ),))
+        assert controller.next_ms == controller.replacement.next_ms == 0.
+        assert run(parts)
+        assert admission.policy.programs["consumer"].active
+
+
+@pytest.mark.parametrize("value", ("0", "-1", "nan", "inf", "-inf", "bad"))
+def test_invalid_retry_interval_is_rejected(demand_runtime, monkeypatch, value):
+    monkeypatch.setenv("BELIEFKV_TOOL_OFFLOAD_INTERVAL_MS", value)
+    with pytest.raises(ValueError):
+        DemandAwareToolOffload(demand_runtime[0])
+
+
 @pytest.mark.parametrize("guard", (
     "unsupported_prediction", "foreign_prediction", "pending_donor", "restore_ticket",
     "wrong_session", "unobserved_block",

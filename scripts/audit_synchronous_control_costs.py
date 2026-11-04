@@ -169,6 +169,9 @@ def inspect_opportunities(records, window):
             "tool_event_replacement_choices", "tool_event_replacement_no_complete_pair",
             "tool_event_replacement_grants", "tool_event_replacement_backup_attempts",
             "tool_event_replacement_cpu_ns", "tool_event_replacement_logical_window_skips",
+            "tool_event_replacement_no_eligible_donor", "tool_event_replacement_donor_prefilter_checks",
+            "tool_event_replacement_shadow_refresh_skips", "tool_event_replacement_shadow_refresh_fallbacks",
+            "tool_event_replacement_release_plan_reuses",
             "streaming_progress_checks",
             "streaming_progress_updates",
         )
@@ -190,6 +193,12 @@ def inspect_opportunities(records, window):
             )
         },
         "replacement_counters_at_latest_snapshot": replacements,
+        "hint_wake_counters_at_latest_snapshot": {
+            name: last_state.get("counts", {}).get(name) for name in (
+                "tool_offload_hint_rearms", "tool_offload_hint_already_due",
+                "tool_offload_hint_refreshes_coalesced",
+            )
+        },
         "observed_action_records": {scope: dict(values) for scope, values in event_counts.items()},
         "action_records_without_monotonic_clock_not_assigned_to_common_window": dict(unknown_action_clocks),
         "individual_event_timing_seconds": {

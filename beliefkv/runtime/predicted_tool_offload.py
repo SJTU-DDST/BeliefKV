@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from itertools import islice
+import math
 import os
 import time
 
@@ -11,11 +12,17 @@ from beliefkv.runtime.native_transfer_policy import consumer_input_reserve
 
 class PredictedToolOffload:
     interval_ms = 200.
+    control_cost_margin_ms = 400.
     max_contexts = 8
     max_nodes = 16
 
     def __init__(self, runtime):
         self.runtime = runtime
+        self.interval_ms = float(os.environ.get(
+            "BELIEFKV_TOOL_OFFLOAD_INTERVAL_MS", str(type(self).interval_ms),
+        ))
+        if not math.isfinite(self.interval_ms) or self.interval_ms <= 0.:
+            raise ValueError("tool offload interval must be finite and positive")
         self.next_ms = 0.
         self.cursor = 0
         self.node_cursor = 0
@@ -54,7 +61,7 @@ class PredictedToolOffload:
             self.runtime.counts["tool_offload_hint_rearms"] += 1
             return
         # A refresh replaces the forecast, not the wait. Never extend an
-        # existing deadline; newly eligible donors are retried within 200 ms.
+        # existing deadline; retry newly eligible donors within one interval.
         deadline = now_ms + self.interval_ms
         self.next_ms = min(self.next_ms, deadline)
         if replacement is not None:
@@ -501,7 +508,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
             self._service_ms(backup_tokens * unit[0], "d2h")
             + self._service_ms(consumer_bytes, "h2d")
             + self._service_ms(restore_tokens * unit[0], "h2d")
-            + 2 * self.interval_ms
+            + self.control_cost_margin_ms
             + logical_handover_ms
         )
         if cold:

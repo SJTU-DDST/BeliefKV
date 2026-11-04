@@ -25,11 +25,13 @@ PLAN = OUTPUT / "plan.json"
 STATE = OUTPUT / "watcher.state.json"
 
 
-def select_control_optimized_candidate():
+def select_control_optimized_candidate(*, refresh=False):
     global candidate, OUTPUT, PLAN, STATE
     from scripts import start_workflow_control_optimized_candidate
 
     candidate = start_workflow_control_optimized_candidate
+    if refresh:
+        candidate.select_control_refresh_candidate()
     OUTPUT = candidate.HERE / "final_results_r1"
     PLAN, STATE = OUTPUT / "plan.json", OUTPUT / "watcher.state.json"
 
@@ -243,7 +245,7 @@ def queue():
         raise ValueError("preserve prior observer execution and its frozen source")
     with (OUTPUT / "watcher.log").open("x") as log:
         options = (
-            ["--control-optimized"]
+            ["--control-refresh"] if getattr(candidate, "CONTROL_REFRESH", False) else ["--control-optimized"]
             if candidate.__name__.endswith("start_workflow_control_optimized_candidate") else []
         )
         child = subprocess.Popen(
@@ -261,13 +263,15 @@ if __name__ == "__main__":
     modes = parser.add_mutually_exclusive_group(required=True)
     for name in ("prepare", "queue", "watch"):
         modes.add_argument("--" + name, action="store_true")
-    parser.add_argument("--control-optimized", action="store_true")
+    candidates = parser.add_mutually_exclusive_group()
+    candidates.add_argument("--control-optimized", action="store_true")
+    candidates.add_argument("--control-refresh", action="store_true")
     parser.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or os.getpriority(os.PRIO_PROCESS, 0) != 19:
         raise ValueError("complete-results preparation and observation require hidden CUDA and nice19")
-    if args.control_optimized:
-        select_control_optimized_candidate()
+    if args.control_optimized or args.control_refresh:
+        select_control_optimized_candidate(refresh=args.control_refresh)
     if args.output_dir is not None:
         configure_output(args.output_dir)
     prepare() if args.prepare else queue() if args.queue else watch()

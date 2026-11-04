@@ -3057,6 +3057,14 @@ class NativeAdmissionRuntime:
                     type(self._predicted_tool_offload).__name__
                     if self._predicted_tool_offload is not None else None
                 ),
+                "tool_offload_interval_ms": (
+                    self._predicted_tool_offload.interval_ms
+                    if self._predicted_tool_offload is not None else None
+                ),
+                "tool_offload_control_cost_margin_ms": (
+                    self._predicted_tool_offload.control_cost_margin_ms
+                    if self._predicted_tool_offload is not None else None
+                ),
                 "idle_prepare_io_backend": self.idle_prepare_io_backend,
                 "tool_offload_min_survival": self.tool_offload_min_survival,
                 "host_demand_reserve_bytes": self.host_demand_reserve_bytes,

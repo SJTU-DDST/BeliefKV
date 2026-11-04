@@ -20,6 +20,33 @@ from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
+CONTROL_OPTIMIZATION_MODULES = {
+    "tool_replacement_feasibility_prefilter_and_same_check_headroom": frozenset((
+        "beliefkv/runtime/predicted_tool_offload.py",
+        "beliefkv/runtime/reference_tool_replacement.py",
+    )),
+    "tool_hint_coalescing_donor_prefilter_and_settled_release_plan": frozenset((
+        "beliefkv/runtime/predicted_tool_offload.py",
+        "beliefkv/runtime/reference_tool_replacement.py",
+        "beliefkv/runtime/sglang_v0520_runtime.py",
+    )),
+    "latest_predictor_and_tool_control_400ms_retry": frozenset((
+        "beliefkv/predictor/workflow_conditional_tree.py",
+        "beliefkv/predictor/workflow_continuous_work.py",
+        "beliefkv/predictor/workflow_progress_tree.py",
+        "beliefkv/predictor/workflow_qwen_encoder.py",
+        "beliefkv/predictor/workflow_work.py",
+        "beliefkv/predictor/workflow_work_calibration.py",
+        "beliefkv/predictor/workflow_work_readout.py",
+        "beliefkv/predictor/workflow_work_reference.py",
+        "beliefkv/predictor/workflow_work_training.py",
+        "beliefkv/runtime/predicted_tool_offload.py",
+        "beliefkv/runtime/reference_tool_replacement.py",
+        "beliefkv/runtime/sglang_v0520_runtime.py",
+    )),
+}
+
+
 def control_optimization_scope(spec):
     contract = spec["comparison_contract"]
     scope = contract.get("synchronous_control_optimization")
@@ -29,7 +56,7 @@ def control_optimization_scope(spec):
     path = Path(gpu["control_optimization_qualification"])
     qualification = causal.load(path)
     if (
-        scope != "tool_replacement_feasibility_prefilter_and_same_check_headroom"
+        type(scope) is not str or scope not in CONTROL_OPTIMIZATION_MODULES
         or contract.get("admission_objective_and_control_optimization_are_joint_change") is not True
         or contract.get("only_combination_selection_objective_changed") is not False
         or contract.get("ranking_gain_isolated") is not False
@@ -37,19 +64,68 @@ def control_optimization_scope(spec):
         or gpu.get("serving_commit") != qualification["source"]["commit"]
         or qualification["source"].get("dirty") is not False
         or qualification.get("complete_prior_1179_cases_retained") is not True
-        or set(qualification.get("changed_runtime_modules", ())) != {
-            "beliefkv/runtime/predicted_tool_offload.py",
-            "beliefkv/runtime/reference_tool_replacement.py",
-        }
+        or set(qualification.get("changed_runtime_modules", ())) != CONTROL_OPTIMIZATION_MODULES.get(scope)
+        or len(CONTROL_OPTIMIZATION_MODULES.get(scope, ())) > 2
+        and qualification.get("complete_prior_1346_cases_retained") is not True
     ):
         raise ValueError("control optimization lacks its exact qualified joint-change contract")
     for name, digest in qualification["inputs_sha256"].items():
         if sha256_file(Path(name)) != digest:
             raise ValueError("a control-optimization qualification input changed")
+    if scope.endswith("_400ms_retry") and (
+        qualification.get("tool_offload_retry_interval_ms") != 400
+        or qualification.get("tool_offload_control_cost_margin_ms") != 400
+        or contract.get("tool_offload_retry_interval_ms") != 400
+        or contract.get("tool_offload_control_cost_margin_ms") != 400
+        or contract.get("real_tool_request_and_transfer_events_wake_immediately") is not True
+        or spec["common_environment"].get("BELIEFKV_TOOL_OFFLOAD_INTERVAL_MS") != "400"
+    ):
+        raise ValueError("control optimization lacks its qualified 400 ms retry cadence")
+    if scope == "latest_predictor_and_tool_control_400ms_retry":
+        export_path = Path(qualification["predictor_export_path"])
+        export = causal.load(export_path)
+        model_path = Path(spec["common_environment"]["WORKFLOW_WORK_MODEL"])
+        model = causal.load(model_path)
+        if (
+            qualification.get("joint_predictor_optimization") != "qualified_conditional_progress_tree"
+            or contract.get("joint_predictor_optimization") != "qualified_conditional_progress_tree"
+            or contract.get("prediction_parameters_and_support_unchanged") is not False
+            or sha256_file(export_path) != qualification["predictor_export_sha256"]
+            or sha256_file(model_path) != spec["common_environment"]["WORKFLOW_WORK_MODEL_SHA256"]
+            or not export.get("conditional_progress_tree_head")
+            or {k: v for k, v in model.items() if k != "admission_cost_profile"}
+            != {k: v for k, v in export.items() if k != "admission_cost_profile"}
+        ):
+            raise ValueError("joint comparison changed outside the qualified conditional predictor")
     return {
         "scope": scope, "qualification": str(path), "serving_commit": gpu["serving_commit"],
         "only_objective_changed": False, "ranking_gain_isolated": False,
+        "prediction_changed": scope == "latest_predictor_and_tool_control_400ms_retry",
     }
+
+
+def verify_joint_predictor_reference(reference_model, candidate):
+    optimization = control_optimization_scope(candidate)
+    if optimization is None or not optimization["prediction_changed"]:
+        return
+    qualification = causal.load(Path(optimization["qualification"]))
+    source = Path(qualification["predictor_source_model_path"])
+    if (
+        sha256_file(source) != qualification["predictor_source_model_sha256"]
+        or {k: v for k, v in reference_model.items() if k != "admission_cost_profile"}
+        != {k: v for k, v in causal.load(source).items() if k != "admission_cost_profile"}
+    ):
+        raise ValueError("joint predictor comparison changed its original prediction reference")
+
+
+def control_optimization_environment_changes(reference, candidate):
+    scope = control_optimization_scope(candidate)
+    if scope is None or not scope["scope"].endswith("_400ms_retry"):
+        return set()
+    key = "BELIEFKV_TOOL_OFFLOAD_INTERVAL_MS"
+    if reference["common_environment"].get(key, "200") != "200":
+        raise ValueError("the retry cadence reference must use the original 200 ms")
+    return {key}
 
 
 def verify_learned_combination_pair(control, learned):
@@ -59,10 +135,11 @@ def verify_learned_combination_pair(control, learned):
             "WORKFLOW_COMBINATION_ADMISSION",
         )
     }
+    allowed |= control_optimization_environment_changes(control, learned)
     old, new = (row["common_environment"] for row in (control, learned))
     if (
         control["order"] != ["full"] or learned["order"] != ["full"]
-        or old.keys() != new.keys()
+        or old.keys() - allowed != new.keys() - allowed
         or any(old[name] != new[name] for name in old.keys() - allowed)
         or any(control.get(name) != learned.get(name) for name in (
             "source_registration", "workflow_arrivals", "tool_timing_overlay",
