@@ -221,6 +221,50 @@ Host 丢弃/额外重算、实际服务和背景尾部覆盖。若需要延长�
 工具时长，也不根据 Oracle 的收益重新选择测量成员。GPU 暂停期间这里只
 准备分析依据，不注册或启动更高并发的实验。
 
+## 到达诊断配置准备
+
+`scripts/prepare_arrival_rate_followup.py` 已补齐当前负载所需的两处准备能力：
+
+- 对 schema 6 的背景身份替换，先在原 schema 4 身份集合上按相同 seed、
+  permutation 和新到达率重建槽位，再应用原完整替换记录；保留任务与槽位
+  对应关系。到达表的 runtime 验证契约未变。
+- 新配置中的 `private_analysis_cohort` 同步更新为新文件与哈希，保留原
+  warmup、measured、background 成员和私有属性。原引用未更新、源文件
+  被改写或声明要向调度器交付测量成员时，准备失败。
+
+准备入口可复用已完成控制的 sampled supply 报告，检查 registration、
+到达表、cohort 哈希及完整共同窗口分箱；此类证据明确不包含 GPU 利用率
+或时间加权竞争结论。旧 `--idle-audit` 入口保留。新增可选
+`--previous-cohort-report`，把上节固定旧 JCT 的覆盖检查写入准备结果；
+检查本身不预测新 JCT，也不接受正式负载。
+
+已实际生成 20 初始、平均 50 秒、仍为相同 73 个项目及 18 个测量成员的
+CPU 诊断配置，位于原配对证据目录：
+
+```text
+arrival_pressure_followup_r1/
+  cpu.xml
+  mean50/
+    arrivals.json
+    analysis_cohort.json
+    full.json
+    preparation.json
+```
+
+独立检查生成文件确认：全部 73 个身份顺序和完整替换记录相同；每个非零
+到达偏移为原来的 5/7；测量成员、完整 JCT 终止规则相同；配置除到达与私有
+分析引用外逐字段相同。107 项相关 CPU 检查全部通过，无失败或跳过。
+本次修复只涉及准备工具，不改变在线调度器行为，不能归因任何 JCT 收益。
+
+该配置的静态覆盖检查明确失败，余量为 -884.291 秒，仍标记
+`formal_workload_accepted=false`、`oracle_registered=false`、
+`GPU_action=false`；没有改变原 20+70 配置或注册后续 GPU 实验。
+按同一 seed 的 50 秒间隔继续生成槽位，第 94 个槽位首次越过上述
+3717.602 秒的固定旧 JCT 完成偏移，比当前多 21 个槽位。这只描述到达
+时间几何，不证明需要或足够 94 个 workflow，不代表已有 21 个合格的新项目，
+也没有复制或追加任何原任务。更高压力的正式比较仍须解决真实背景覆盖，
+并实测容量竞争、实际服务、Host 状态丢失和完整 JCT。
+
 ## 下一步的选择
 
 1. 保留完整平均 JCT 和既定 18 成员，补充逐成员相对变化及工作量分层描述。
