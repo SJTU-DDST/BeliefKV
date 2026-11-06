@@ -478,9 +478,11 @@ class DemandAwareToolOffload(PredictedToolOffload):
     def _worth_offloading(
         self, key, *, backup_tokens, release_tokens, consumer_restore_bytes=None,
     ):
-        hint = self.runtime._live_tool_hint(key)
         consumer = self._live_consumer(key)
-        if hint is None or consumer is None:
+        if consumer is None:
+            return False
+        hint = self.runtime._live_tool_hint(key)
+        if hint is None:
             return False
         unit = self.runtime._residency_pool_bytes
         if unit is None:
@@ -537,7 +539,7 @@ class DemandAwareToolOffload(PredictedToolOffload):
 
     def _before_eviction(self, key, node):
         full = node.component_data[0]
-        return self._live_consumer(key) is not None and self._worth_offloading(
+        return self._worth_offloading(
             key, backup_tokens=0, release_tokens=len(full.value),
         )
 
