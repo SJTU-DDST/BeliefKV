@@ -173,3 +173,8 @@ experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/
 覆盖工具卸载授权和事件返回、
 真实 native 页与锁、配对配置与别名一致性、备份 receipt 和右删失分类。
 CPU 证据不建立新 GPU 正确性、完整共享回归或 JCT 收益。
+
+后续已完成[83 项目来源绑定与三臂准备](background83_source_binding_20261106_zh.md)：
+完整 CPU 验证通过 8188 项与 23 个子测试，原 7132 个身份全部保留，
+新组合来源已注册，Full/Oracle/ThunderAgent acting-decay 配置已接入。
+GPU 实验仍未注册，原始 `.pending.json` 和本节当时的准备状态作为历史证据保留。
