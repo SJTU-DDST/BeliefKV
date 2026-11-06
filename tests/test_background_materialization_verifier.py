@@ -31,6 +31,49 @@ def test_original_graph_prefix_and_native_work_are_compared_exactly():
     assert result["original_expected_native_work_and_causal_nodes_equal"]
 
 
+def test_source_origin_offset_change_is_explicit_and_requires_external_arrivals():
+    base, extended, before, after = plans()
+    node = extended.nodes[0]
+    extended = replace(extended, nodes=(
+        replace(node, delay_ms=node.delay_ms + 85.), *extended.nodes[1:],
+    ))
+    with pytest.raises(ValueError, match="changed original"):
+        verify_graph_prefix(base, extended, before, after)
+    result = verify_graph_prefix(
+        base, extended, before, after, external_workflow_arrivals=True,
+    )
+    assert not result["original_expected_native_work_and_causal_nodes_equal"]
+    assert result["original_expected_native_work_and_internal_causal_nodes_equal"]
+    assert result["workflow_start_offsets_overridden_by_external_arrivals"] == [{
+        "workflow_id": node.workflow_id, "original_stored_offset_ms": node.delay_ms,
+        "extended_stored_offset_ms": node.delay_ms + 85.,
+    }]
+
+
+@pytest.mark.parametrize("corrupt", ("event", "dependency", "tool-delay"))
+def test_external_arrivals_do_not_hide_changes_to_original_events_dependencies_or_tool_time(corrupt):
+    base, extended, before, after = plans()
+    index = 0
+    node = extended.nodes[index]
+    if corrupt == "event":
+        node = replace(node, event=replace(node.event, ts_ms=node.event.ts_ms + 1.))
+    elif corrupt == "dependency":
+        node = replace(node, dependencies=(extended.nodes[1].node_id,))
+    else:
+        index = next(
+            index for index, node in enumerate(extended.nodes)
+            if node.event is not None and node.event.kind.value == "tool_end"
+        )
+        node = replace(extended.nodes[index], delay_ms=extended.nodes[index].delay_ms + 1.)
+    extended = replace(extended, nodes=(
+        *extended.nodes[:index], node, *extended.nodes[index + 1:],
+    ))
+    with pytest.raises(ValueError, match="changed original"):
+        verify_graph_prefix(
+            base, extended, before, after, external_workflow_arrivals=True,
+        )
+
+
 @pytest.mark.parametrize("corrupt", ("delay", "dependency", "event", "usage", "expected", "request"))
 def test_graph_prefix_refuses_changes_that_counts_alone_would_miss(corrupt):
     base, extended, before, after = plans()

@@ -265,6 +265,91 @@ arrival_pressure_followup_r1/
 也没有复制或追加任何原任务。更高压力的正式比较仍须解决真实背景覆盖，
 并实测容量竞争、实际服务、Host 状态丢失和完整 JCT。
 
+## 复用已有轨迹补足持续背景
+
+继续检查已有 capture，发现 `remaining_node_original19_finish_r2/inventory.json`
+中的 19 个不同原项目此前未进入上述 81 项目池。该来源有 19 条自然完成、
+2492 个请求、原 owned exit 和 fresh drain 记录；本轮重新核对 inventory
+绑定的 59 个文件哈希，并确认所记录 watcher、driver、server、scheduler
+PID 已不存在。没有重新运行 native capture。
+
+按原六个 inventory 的声明顺序保留第一份项目代表，再加入该 Node 来源，
+可得 100 个不同项目，当前 73 条之外有 27 个未使用项目。新的任务多样性
+18 采集使用了已有项目的其他任务，不因 task ID 不同算作额外不同项目。
+这里复用原有项目 inventory，不需要为了填充背景先采新 trace。
+
+按已有背景扩展规则，取未使用项目中模型工作量最小的 10 条完整 workflow，
+不使用各策略收益或 JCT 选择任务。该候选保留原 73 条完整原任务，初始仍为
+20 条、固定测量成员仍为原 18 条；新增 10 条只追加在背景到达尾部。
+总计 83 个项目，模型工作量 P80/P20 为 2.961973，高于原 73 条的 2.934261；
+测量组成员及其原工作量没有变化。既有 P90/P10 不足 5 的限制仍然保留，
+不将此候选称为满足旧的更高多样性要求。
+
+候选采用平均 60 秒而非 50 秒到达，沿用 seed 35、初始 20 条及原 73 条
+身份顺序和替换记录。先按 6/7 缩放前缀，再继续同一指数随机流追加背景。
+新到达率比原 70 秒配置提高 16.67%，不代表实际在途或 ready 人口同比增加。
+
+| 静态覆盖检查 | 73 项目、60 秒 | 追加背景后的 83 项目、60 秒 |
+| --- | ---: | ---: |
+| 最后一条到达偏移 | 3399.973 秒 | 3941.573 秒 |
+| 固定旧 JCT 的最晚测量完成偏移 | 3776.594 秒 | 3776.594 秒 |
+| 背景覆盖余量 | -376.621 秒 | +164.979 秒 |
+
+追加背景后，表的总持续时间接近原 70 秒配置，不会仅因缩短到达间隔就把
+已知静态尾部留在排空阶段。但 +164.979 秒仍是固定旧 JCT 的检查结果；
+新并发下 JCT 可能增长，背景仍可能不足。没有据此认定稳态或实际压力已合格。
+
+准备工具已支持对 schema 6 背景替换前缀追加同随机流的到达；它保留完整
+前缀 provenance，并按原 runtime 入口验证。`prepare_background_tail_extension.py`
+可直接读取多个已有 inventory，保留第一个项目代表，同时进行可选的率调整
+及静态覆盖检查。原 73 条配置及其性能结果保持不变，没有自动更换主负载。
+
+候选已在 CPU 实际生成并加载完整可执行数据：
+
+```text
+arrival_pressure_followup_r1/
+  background_cpu.xml
+  background_cpu_r2.xml
+  background83_mean60/
+    population_plan.json
+    arrivals.json
+    analysis_cohort.json
+    preparation.json
+    prefix73/
+    composite_source/
+    tool_timing.json
+    tool_timing.prior.json
+    materialization_review.json
+    materialization_review_r2.json
+```
+
+完整候选包含 7 个 capture、83 条 workflow、12743 个请求、1599388 个输出
+token，342 个 JOIN；这些 JOIN 不全是多成员并行 JOIN。源 token 记录按原字节
+复用，各 source 时钟独立编译。新增背景沿用原 TraceLab 采样池、分类、
+seed 和 prior：原 2358 个工具时间条目逐项完全一致，仅新增 95 个条目，
+prior 的 SHA256 仍为
+`949e2b45b7f6c31c39ac4ff497a2a8bd9bcc6c1fdd055a3a94cc847bbc0835da`。
+未缩短、重新抽样或改写原 73 条工具时间，也没有复制原任务填充背景。
+
+初次独立校验 `materialization_review.json` 失败，证据保留。原因是从同一个
+5 项目 capture 多选一个开始较早的背景后，编译原点前移了 84.971535 ms，
+使原 3 个 `workflow_start.delay_ms` 改变；所有内部节点、依赖、事件、
+请求及工具时间一致。实际 executor 在提供完整到达 map 时覆盖独立根的
+deadline，这 3 个源捕获相对偏移不会参与回放到达。
+
+校验器现仅在两侧来源明确要求外部到达、且到达表和 cohort 均验证后，允许
+独立 `workflow_start` 的这一存储偏移差异，并逐条报告。原节点完全相等
+标志仍为 false，内部节点与原请求相等标志为 true；事件内容、根依赖或
+任意工具延迟变化仍拒绝。新的实际 executor 测试将根存储延迟设为 60 秒，
+提供零偏移到达后在 3 秒限时内完整执行，确认该覆盖语义，没有修改 executor。
+`materialization_review_r2.json` 通过，227 项相关 CPU 检查无失败或跳过；
+首次 152 项检查结果也保留。
+
+这份候选已解决“没有其他不同项目可复用”的准备障碍，但尚未形成新的服务
+或性能结果。没有注册新 GPU 实验，400 GB Host 与新候选的实际供给、容量
+竞争、状态丢弃/重算及两臂完整 JCT 比较仍待验证。保留旧 73 条收益作为旧
+配对，不与未来 83 条候选混算。
+
 ## 下一步的选择
 
 1. 保留完整平均 JCT 和既定 18 成员，补充逐成员相对变化及工作量分层描述。

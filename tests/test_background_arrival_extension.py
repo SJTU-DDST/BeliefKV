@@ -2,7 +2,7 @@ import pytest
 
 from beliefkv.experiments.replay_arrivals import (
     extend_poisson_arrival_plan, permuted_poisson_arrival_plan, poisson_arrival_plan,
-    validate_arrival_plan,
+    substitute_background_arrivals, validate_arrival_plan,
 )
 from beliefkv.experiments.workflow_cohort import declare_cohort, validate_cohort
 
@@ -92,3 +92,29 @@ def test_plain_poisson_extension_keeps_its_nonwarm_random_stream():
         ["a", "b", "c"], rate_per_second=.1, seed=21,
     )["arrival_schedule"]
     validate_arrival_plan(extended, ["a", "b", "c"])
+
+
+def test_substituted_prefix_can_be_extended_without_reshuffling_or_undoing_replacements():
+    parent = substitute_background_arrivals(
+        original(), [{"old_workflow_id": original()["arrival_schedule"][-1]["workflow_id"],
+                      "new_workflow_id": "replacement"}], preserved_prefix_workflows=4,
+    )
+    extended = extend_poisson_arrival_plan(parent, ["new1", "new2"])
+    identities = [row["workflow_id"] for row in parent["arrival_schedule"]]
+    expected = poisson_arrival_plan(
+        [*identities, "new1", "new2"], rate_per_second=1 / 70, seed=35, initial_workflows=2,
+    )
+    assert extended["arrival_schedule"] == expected["arrival_schedule"]
+    assert extended["prefix_plan"] == parent
+    assert extended["arrival_schedule"][:6] == parent["arrival_schedule"]
+    validate_arrival_plan(extended, [*identities, "new1", "new2"])
+
+
+def test_substituted_prefix_provenance_is_still_validated_before_extension():
+    parent = substitute_background_arrivals(
+        original(), [{"old_workflow_id": original()["arrival_schedule"][-1]["workflow_id"],
+                      "new_workflow_id": "replacement"}], preserved_prefix_workflows=4,
+    )
+    parent["replacements"][0]["new_workflow_id"] = "forged-replacement"
+    with pytest.raises(ValueError, match="substituted arrivals"):
+        extend_poisson_arrival_plan(parent, ["new"])

@@ -40,6 +40,37 @@ def two_workflows():
     return compile_causal_replay([*trace.events, *events], [*trace.native, *native])
 
 
+def test_external_arrivals_override_stored_workflow_start_offsets_in_actual_executor():
+    original = two_workflows()
+    plan = replace(original, nodes=tuple(
+        replace(node, delay_ms=60_000.)
+        if node.event is not None and node.event.kind is Kind.WORKFLOW_START else node
+        for node in original.nodes
+    ))
+    observed = []
+
+    async def emit(event):
+        observed.append(event)
+
+    async def serve(request, _submit):
+        return NativeReplayCompletion(
+            request, time.monotonic() * 1000., local_monotonic_clock_domain(),
+            *plan.request_usage[request],
+        )
+
+    async def run():
+        return await asyncio.wait_for(execute_causal_replay(
+            plan, serve, emit, workflow_arrival_offsets_ms={"w": 0., "b": 0.},
+            workflow_release_order=["w", "b"],
+        ), timeout=3.)
+
+    result = asyncio.run(run())
+    starts = [event for event in observed if event.kind is Kind.WORKFLOW_START]
+    assert [event.workflow_id for event in starts] == ["w", "b"]
+    assert starts[0].ts_ms == starts[1].ts_ms
+    assert result["completed_requests"] == len(plan.request_usage)
+
+
 def test_common_poisson_plan_is_independent_of_policy_and_model_randomness(tmp_path):
     expected = poisson_arrival_plan(["b", "w"], rate_per_second=.2, seed=21)
     random.seed(999)

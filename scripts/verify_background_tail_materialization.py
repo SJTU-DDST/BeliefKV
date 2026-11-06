@@ -1,6 +1,7 @@
 """Verify unchanged original work and measured traffic in a background extension."""
 
 import argparse
+from dataclasses import replace
 from datetime import datetime, timezone
 import json
 import os
@@ -11,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.replay_arrivals import extend_poisson_arrival_plan
+from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.tool_timing_overlay import apply_overlay
 from beliefkv.experiments.workflow_cohort import validate_cohort
@@ -18,21 +20,44 @@ from scripts.run_causal_gpu_replay import source_plan
 from scripts.train_workflow_work import write
 
 
-def verify_graph_prefix(base, extended, base_expected, extended_expected):
+def verify_graph_prefix(
+    base, extended, base_expected, extended_expected, *, external_workflow_arrivals=False,
+):
     identities = {node.workflow_id for node in base.nodes}
     original = {node.node_id: node for node in base.nodes}
     retained = {node.node_id: node for node in extended.nodes if node.workflow_id in identities}
-    if original != retained or any(
+    root_offsets = []
+    if original.keys() != retained.keys() or any(
         extended.request_usage.get(key) != value for key, value in base.request_usage.items()
     ) or {key: value for key, value in extended_expected.items() if key in base_expected} != base_expected:
         raise ValueError("background extension changed original requests, events, delays or dependencies")
+    for key, before in original.items():
+        after = retained[key]
+        if before == after:
+            continue
+        # External release maps override only independent workflow-start deadlines.
+        if not (
+            external_workflow_arrivals and before.event is not None
+            and before.event.kind is Kind.WORKFLOW_START
+            and not before.dependencies and not after.dependencies
+            and replace(after, delay_ms=before.delay_ms) == before
+        ):
+            raise ValueError("background extension changed original requests, events, delays or dependencies")
+        root_offsets.append({
+            "workflow_id": before.workflow_id,
+            "original_stored_offset_ms": before.delay_ms,
+            "extended_stored_offset_ms": after.delay_ms,
+        })
     old_requests = {node.request_id for node in retained.values() if node.request_id is not None}
     if old_requests != set(base_expected) or set(base.request_usage) != set(base_expected):
         raise ValueError("original request ownership or expected work is incomplete")
     return {
         "original_workflows": len(identities),
         "original_requests": len(base_expected), "original_causal_nodes": len(original),
-        "original_expected_native_work_and_causal_nodes_equal": True,
+        "original_expected_native_work_and_causal_nodes_equal": not root_offsets,
+        "original_expected_native_work_and_internal_causal_nodes_equal": True,
+        "external_workflow_arrivals_checked": external_workflow_arrivals,
+        "workflow_start_offsets_overridden_by_external_arrivals": root_offsets,
     }
 
 
@@ -118,8 +143,8 @@ def main():
             name: json.loads(path.read_bytes()) for name, path in paths.items()
             if name != "operator"
         }
-        base, base_expected, _ = source_plan(args.base_source_arm)
-        extended, extended_expected, _ = source_plan(args.source_arm)
+        base, base_expected, base_evidence = source_plan(args.base_source_arm)
+        extended, extended_expected, extended_evidence = source_plan(args.source_arm)
         before = documents["base_source"]["selected_workflows"]
         after = documents["source"]["selected_workflows"]
         population = documents["population-plan"]
@@ -130,12 +155,20 @@ def main():
         additional = [row["workflow_id"] for row in population["additional_workflows"]]
         if {node.workflow_id for node in extended.nodes} != {row["workflow_id"] for row in after}:
             raise ValueError("materialized graph differs from the declared original population")
+        traffic = verify_traffic(
+            documents["base-arrivals"], documents["arrivals"],
+            documents["base-cohort"], documents["cohort"], additional,
+        )
+        external_arrivals = all(
+            evidence.get("external_workflow_arrivals_required") is True
+            for evidence in (base_evidence, extended_evidence)
+        )
         result.update(
-            graph=verify_graph_prefix(base, extended, base_expected, extended_expected),
-            traffic=verify_traffic(
-                documents["base-arrivals"], documents["arrivals"],
-                documents["base-cohort"], documents["cohort"], additional,
+            graph=verify_graph_prefix(
+                base, extended, base_expected, extended_expected,
+                external_workflow_arrivals=external_arrivals,
             ),
+            traffic=traffic,
             tools=verify_overlay_prefix(
                 base, extended, documents["base-overlay"], documents["overlay"], additional,
             ),

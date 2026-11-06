@@ -15,6 +15,8 @@ from beliefkv.experiments.replay_arrivals import extend_poisson_arrival_plan
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workflow_cohort import declare_cohort, validate_cohort
 from beliefkv.experiments.workload_mix import summary
+from scripts.prepare_arrival_rate_followup import completion_coverage_screen, followup_protocol
+from scripts.prepare_composite_workload import project_representatives
 from scripts.train_workflow_work import write
 
 
@@ -79,29 +81,56 @@ def extend_population(base, available, arrivals, cohort, *, extra_count, minimum
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in (
-        "source-population", "available-population", "accepted-population", "arrivals", "cohort",
+        "source-population", "accepted-population", "arrivals", "cohort",
         "output-dir",
     ):
         parser.add_argument("--" + name, type=Path, required=True)
+    available = parser.add_mutually_exclusive_group(required=True)
+    available.add_argument("--available-population", type=Path)
+    available.add_argument("--available-inventory", type=Path, action="append")
     parser.add_argument("--extra-workflows", type=int, default=4)
+    parser.add_argument("--mean-interval-seconds", type=float)
+    parser.add_argument("--previous-cohort-report", type=Path)
     args = parser.parse_args()
     if args.output_dir.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or (
         os.getpriority(os.PRIO_PROCESS, 0) != 19
     ):
         parser.error("preserve previous preparations and use nice19 CPU-only execution")
+    available_paths = args.available_inventory or [args.available_population]
     paths = (
-        args.source_population, args.available_population, args.accepted_population,
-        args.arrivals, args.cohort, Path(__file__),
+        args.source_population, args.accepted_population, args.arrivals, args.cohort,
+        *available_paths,
+        *([args.previous_cohort_report] if args.previous_cohort_report is not None else []),
+        Path(__file__), ROOT / "scripts/prepare_arrival_rate_followup.py",
+        ROOT / "scripts/prepare_composite_workload.py",
         ROOT / "beliefkv/experiments/replay_arrivals.py",
         ROOT / "beliefkv/experiments/workflow_cohort.py",
     )
     pins = {str(path.resolve()): sha256_file(path) for path in paths}
-    base, available, accepted, arrivals, cohort = (
-        json.loads(path.read_bytes()) for path in paths[:5]
+    base, accepted, arrivals, cohort = (
+        json.loads(path.read_bytes()) for path in paths[:4]
     )
+    if args.available_inventory:
+        rows, duplicates = project_representatives([
+            json.loads(path.read_bytes()) for path in available_paths
+        ])
+        available = {"workflows": rows}
+    else:
+        available, duplicates = json.loads(args.available_population.read_bytes()), []
+    prefix, prefix_cohort = arrivals, cohort
+    if args.mean_interval_seconds is not None:
+        prefix, prefix_cohort = followup_protocol(
+            arrivals, cohort, mean_interval_seconds=args.mean_interval_seconds,
+        )
     minimum = accepted["population"]["model_work_units"]["p80_p20"]
     population, extended, updated = extend_population(
-        base, available, arrivals, cohort, extra_count=args.extra_workflows, minimum_ratio=minimum,
+        base, available, prefix, prefix_cohort, extra_count=args.extra_workflows,
+        minimum_ratio=minimum,
+    )
+    coverage = (
+        completion_coverage_screen(
+            arrivals, cohort, json.loads(args.previous_cohort_report.read_bytes()), extended,
+        ) if args.previous_cohort_report is not None else None
     )
     if any(sha256_file(Path(name)) != value for name, value in pins.items()):
         raise ValueError("background preparation inputs changed")
@@ -114,12 +143,23 @@ def main():
         "original_projects": len(base["selected_workflows"]), "projects": population["projects"],
         "additional_projects": [row["project"] for row in population["additional_workflows"]],
         "original_last_arrival_seconds": arrivals["arrival_schedule"][-1]["offset_seconds"],
+        "retimed_prefix_last_arrival_seconds": prefix["arrival_schedule"][-1]["offset_seconds"],
         "extended_last_arrival_seconds": extended["arrival_schedule"][-1]["offset_seconds"],
         "rate_per_second": extended["rate_per_second"],
+        "previous_rate_per_second": arrivals["rate_per_second"],
+        "arrival_rate_changed": prefix["rate_per_second"] != arrivals["rate_per_second"],
+        "arrival_identity_order_and_seed_retained": True,
+        "retimed_arrival_prefix_preserved": True,
+        "available_distinct_original_projects": len(available["workflows"]),
+        "duplicate_project_variants_retained": duplicates,
         "model_work_p80_p20": population["model_work_units"]["p80_p20"],
-        "minimum_ratio_basis": "no_lower_than_the_user_accepted_complete_original56_population",
+        "minimum_ratio_basis": "no_lower_than_the_supplied_accepted_original_population",
         "minimum_ratio": minimum, "measured_workflows": len(updated["measured_workflow_ids"]),
-        "same_original_project_rows_and_arrival_prefix": True,
+        "same_original_project_rows_and_arrival_prefix": (
+            prefix["arrival_schedule"] == arrivals["arrival_schedule"]
+        ),
+        "same_original_project_rows_and_fixed_measured_members": True,
+        "previous_measured_JCT_static_coverage_screen": coverage,
         "original_tools_tokens_and_dependency_graphs_must_still_be_preserved": True,
         "future_scheduled_arrival_is_not_proof_of_actual_ready_work_or_pressure": True,
         "must_measure_actual_ready_supply_pressure_Host_loss_and_complete_JCT": True,
