@@ -315,7 +315,7 @@ def test_selected_handoff_reserves_actual_input_and_preserves_growth(native_hand
 
     f = native_handoff
     f.runtime._native_input_reserve = 10
-    f.runtime._current_residency_budget = lambda: NS(
+    f.runtime._current_residency_budget = lambda *, headroom=None: NS(
         source="native_next_prefill", reserve_full_tokens=12,
     )
     f.offloader._admission_adder = NS(can_run_list=[], dllm_config=None)
@@ -332,7 +332,7 @@ def test_selected_handoff_reserves_actual_input_and_preserves_growth(native_hand
 def test_actual_prefill_plan_binds_and_releases_its_current_adder(native_handoff):
     f = native_handoff
     f.runtime._native_input_reserve = 10
-    f.runtime._current_residency_budget = lambda: NS(
+    f.runtime._current_residency_budget = lambda *, headroom=None: NS(
         source="native_next_prefill", reserve_full_tokens=12,
     )
     adder = NS(can_run_list=[], dllm_config=None, rem_input_tokens=10, rem_chunk_tokens=10)
@@ -383,7 +383,7 @@ def test_selected_input_reserve_never_spends_another_batch_or_growth_budget(
 
     f = native_handoff
     f.runtime._native_input_reserve = 10
-    f.runtime._current_residency_budget = lambda: NS(
+    f.runtime._current_residency_budget = lambda *, headroom=None: NS(
         source="native_next_prefill", reserve_full_tokens=15 if cause == "growth_space" else 12,
     )
     f.offloader._admission_adder = (
