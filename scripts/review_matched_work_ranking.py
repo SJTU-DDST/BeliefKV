@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as causal
+from scripts.review_predictive_thunder_cohort import matching_serving_traffic
 from scripts.review_sustained_oracle import compare_cohorts
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
@@ -27,7 +28,7 @@ def verify_ranking_only_pair(control, oracle, *, allow_legacy_control_declaratio
         control["order"] != ["full"] or oracle["order"] != ["full"]
         or any(control.get(name) != oracle.get(name) for name in (
             "source_registration", "workflow_arrivals", "tool_timing_overlay",
-            "stream_response_metrics", "workload_acceptance",
+            "stream_response_metrics", "workload_acceptance", "private_analysis_cohort",
         ))
         or old.keys() != new.keys()
         or any(old[name] != new[name] for name in old.keys() - fields)
@@ -117,7 +118,7 @@ def verify_calibrated_combination_pair(control, oracle):
         control["order"] != ["full"] or oracle["order"] != ["full"]
         or any(control.get(name) != oracle.get(name) for name in (
             "source_registration", "workflow_arrivals", "tool_timing_overlay",
-            "stream_response_metrics", "workload_acceptance",
+            "stream_response_metrics", "workload_acceptance", "private_analysis_cohort",
         ))
         or old.keys() != new.keys()
         or any(old[name] != new[name] for name in old.keys() - allowed)
@@ -181,6 +182,7 @@ def main():
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output.exists():
         raise ValueError("hide CUDA and preserve earlier comparison evidence")
     plans = [causal.load(path) for path in (args.control, args.oracle)]
+    matching_serving_traffic(*plans)
     for plan in plans:
         causal.comparison.verify_sources(plan)
         if plan["workflow_arrivals_path"] != str(args.arrivals.resolve()):
@@ -238,6 +240,7 @@ def main():
         observed_at=datetime.now(timezone.utc).isoformat(),
         matched_repaired_control_with_same_progress_bookkeeping=ranking_only,
         only_remaining_work_ranking_changed=ranking_only,
+        matched_actual_traffic_and_serving_conditions_verified=True,
         calibrated_oracle_cost_and_set_selection_joint_change=not ranking_only,
         pair_kind=args.pair_kind,
         legacy_unpaired_control_declaration_explicitly_allowed=args.allow_legacy_control_declaration,
@@ -249,6 +252,7 @@ def main():
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             *paths, *(Path(plan["experiment_configuration"]) for plan in plans),
             Path(__file__), ROOT / "scripts/review_sustained_oracle.py",
+            ROOT / "scripts/review_predictive_thunder_cohort.py",
             ROOT / "scripts/verify_measured_execution.py",
         )},
         GPU_action=False, automatic_GPU_followup=False, performance_accepted=False,

@@ -139,3 +139,7 @@ experiments/reports/remaining_original_projects_20261030/useful_token_cost_r1/
 ready 供给、可改变集合的竞争、Host 状态损失、完整 JCT 和共同窗口吞吐
 尚未验证；保留 `formal_workload_accepted=false`、`performance_accepted=false`。
 旧 73 项目约 1.90% 的单对收益不能当作新负载结果或重复性证明。
+
+随后补齐了[结果审计的实际流量、资源和私有测量声明比较](matched_result_audit_preparation_20261106_zh.md)。
+相关 116 项与 11 个子测试通过；旧配对指标完全复现，新候选配置通过补充比较。
+服务冻结快照和本节完整 CPU 绑定保持原样，没有新增 GPU 动作。

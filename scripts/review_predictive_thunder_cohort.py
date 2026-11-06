@@ -25,21 +25,25 @@ TRAFFIC_FIELDS = (
 )
 
 
+def matching_serving_traffic(first, second):
+    for name in TRAFFIC_FIELDS:
+        if name not in first or first[name] != second.get(name):
+            raise ValueError("paired execution changed fixed traffic or serving conditions: " + name)
+    if first.get("native_execution_configuration") != second.get("native_execution_configuration"):
+        raise ValueError("paired execution changed the shared native execution configuration")
+    for name in ("expected_replay_capacity", "host_capacity_experiment"):
+        if first.get(name) != second.get(name):
+            raise ValueError("paired execution changed the explicit Host capacity experiment")
+    if host_numa.configuration(first.get("reference_environment", {})) != (
+        host_numa.configuration(second.get("reference_environment", {}))
+    ):
+        raise ValueError("paired execution changed the Host NUMA allocation configuration")
+
+
 def matching_traffic(predictive, thunder):
     if predictive.get("order") != ["full"] or thunder.get("order") != ["thunderagent_acting_decay"]:
         raise ValueError("require predictive and the acting-decay ThunderAgent reproduction")
-    for name in TRAFFIC_FIELDS:
-        if name not in predictive or predictive[name] != thunder.get(name):
-            raise ValueError("baseline changed fixed traffic or serving conditions: " + name)
-    if predictive.get("native_execution_configuration") != thunder.get("native_execution_configuration"):
-        raise ValueError("baseline changed the shared native execution configuration")
-    for name in ("expected_replay_capacity", "host_capacity_experiment"):
-        if predictive.get(name) != thunder.get(name):
-            raise ValueError("baseline changed the explicit Host capacity experiment")
-    if host_numa.configuration(predictive.get("reference_environment", {})) != (
-        host_numa.configuration(thunder.get("reference_environment", {}))
-    ):
-        raise ValueError("baseline changed the Host NUMA allocation configuration")
+    matching_serving_traffic(predictive, thunder)
     if thunder.get("oracle_information") is not None:
         raise ValueError("paper baseline must not declare oracle information")
 

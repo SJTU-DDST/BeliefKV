@@ -1,11 +1,14 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
+from scripts import review_matched_work_ranking as review
 from scripts.review_matched_work_ranking import evaluate_pair_cohorts, verify_ranking_only_pair
 from scripts.review_sustained_oracle import compare_cohorts
+from tests.test_predictive_thunder_cohort import plans
 from tests.test_sustained_oracle_review import censored_report
 
 
@@ -58,6 +61,56 @@ def change_artifact(configuration, change, *, rehash=True):
 def test_accepts_only_ranking_toggle_with_identical_progress_work(tmp_path):
     control, oracle = pair(tmp_path)
     assert len(verify_ranking_only_pair(control, oracle)) == 2
+
+
+@pytest.mark.parametrize("field,value", (
+    ("path", "/another/cohort.json"),
+    ("sha256", "another-cohort"),
+    ("delivered_to_scheduler", True),
+))
+def test_ranking_pair_rejects_a_different_private_measurement_definition(tmp_path, field, value):
+    control, oracle = pair(tmp_path)
+    control["private_analysis_cohort"] = {
+        "path": "/fixed/cohort.json", "sha256": "fixed-cohort",
+        "delivered_to_scheduler": False,
+    }
+    oracle["private_analysis_cohort"] = deepcopy(control["private_analysis_cohort"])
+    oracle["private_analysis_cohort"][field] = value
+    with pytest.raises(ValueError, match="tasks, tools, arrivals or serving conditions"):
+        verify_ranking_only_pair(control, oracle)
+
+
+@pytest.mark.parametrize("field", (
+    "source_arm", "source_plan", "token_source_sha256", "source_capacity",
+    "source_server_parameters", "engine_tree", "workflow_ids", "sampling_mode",
+    "max_running_requests", "request_timeout_s", "stream_response_metrics",
+    "workflow_arrivals", "workflow_arrivals_path", "tool_timing_overlay",
+    "native_execution_configuration", "expected_replay_capacity", "host_capacity_experiment",
+))
+def test_result_entry_rejects_mismatched_executions_before_evaluating_gain(tmp_path, monkeypatch, field):
+    control, oracle = plans()
+    oracle["order"] = ["full"]
+    oracle[field] = {"changed": True}
+    files = []
+    for label, plan in (("control", control), ("oracle", oracle)):
+        path = tmp_path / (label + ".json")
+        path.write_text(json.dumps(plan))
+        files.append(path)
+    argv = ["review_matched_work_ranking"]
+    for name, value in (
+        ("control", files[0]), ("oracle", files[1]),
+        ("control-review-dir", tmp_path / "control_review"),
+        ("oracle-review-dir", tmp_path / "oracle_review"),
+        ("arrivals", tmp_path / "arrivals.json"), ("cohort", tmp_path / "cohort.json"),
+        ("output", tmp_path / "comparison.json"),
+    ):
+        argv.extend(("--" + name, str(value)))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
+    monkeypatch.setattr("sys.argv", argv)
+    monkeypatch.setattr(review.causal.comparison, "verify_sources", lambda plan: None)
+    with pytest.raises(ValueError, match="paired execution changed"):
+        review.main()
+    assert not (tmp_path / "comparison.json").exists()
 
 
 @pytest.mark.parametrize("change", (

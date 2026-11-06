@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import pytest
 
-from scripts.review_predictive_thunder_cohort import matching_traffic, named_metrics
+from scripts.review_predictive_thunder_cohort import matching_serving_traffic, matching_traffic, named_metrics
 from tests.test_sustained_oracle_review import censored_report
 
 
@@ -39,3 +39,31 @@ def test_baseline_rejects_changed_work_resources_arrivals_or_oracle_metadata(fie
     thunder[field] = "changed"
     with pytest.raises(ValueError):
         matching_traffic(predictive, thunder)
+
+
+@pytest.mark.parametrize("field", (
+    "native_execution_configuration", "expected_replay_capacity", "host_capacity_experiment",
+))
+def test_shared_serving_match_keeps_declared_capacity_and_native_execution(field):
+    first, second = plans()
+    second["order"] = ["full"]
+    second[field] = {"changed": True}
+    with pytest.raises(ValueError):
+        matching_serving_traffic(first, second)
+
+
+def test_shared_serving_match_does_not_require_equal_observed_numa_page_counts():
+    first, second = plans()
+    second["order"] = ["full"]
+    common = {
+        "MODEL_CACHE_LAYOUT": "full_only", "HICACHE_SIZE_GB": "400",
+        "HOST_NUMA_MEMORY_POLICY": "interleave", "HOST_NUMA_MEMORY_NODES": "0,1",
+        "HOST_NUMA_PLACEMENT_CHECK": "diagnostic",
+    }
+    first["reference_environment"] = second["reference_environment"] = common
+    first["observed_numa_pages"] = {"0": 40, "1": 60}
+    second["observed_numa_pages"] = {"0": 55, "1": 45}
+    matching_serving_traffic(first, second)
+    second["reference_environment"] = {**common, "HICACHE_SIZE_GB": "200"}
+    with pytest.raises(ValueError, match="NUMA allocation"):
+        matching_serving_traffic(first, second)
