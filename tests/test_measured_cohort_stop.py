@@ -111,8 +111,13 @@ def test_incremental_boundary_reader_does_not_consume_partial_json(tmp_path):
         stop.boundaries(rows, starts, ends, {"w1"})
 
 
-@pytest.mark.parametrize("broken_receipts", (False, True))
-@pytest.mark.parametrize("host_bytes", (None, 200000077824, 400000057344))
+@pytest.mark.parametrize("broken_receipts,host_bytes", [
+    pytest.param(
+        broken, host,
+        id=str(broken) if host is None else f"{host}-{broken}",
+    )
+    for host in (None, 200000077824, 400000057344) for broken in (False, True)
+])
 def test_supervision_is_resumed_even_if_receipt_validation_fails(tmp_path, broken_receipts, host_bytes):
     state = {
         "watcher": {"pid": 11}, "driver": {"pid": 12}, "server": {"pid": 13},
