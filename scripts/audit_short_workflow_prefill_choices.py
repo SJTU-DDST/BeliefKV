@@ -19,7 +19,7 @@ from beliefkv.runtime.workflow_work_oracle import (
 )
 from scripts.audit_causal_jct_paths import first_launches, request_cohorts
 from scripts.audit_native_system_costs import distribution
-from scripts.audit_periodic_admission_decisions import intervention
+from scripts.audit_periodic_admission_decisions import PublishedGrantInterventions
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.train_workflow_work import write
 
@@ -214,8 +214,9 @@ def inspect(registration_path, completed_review_path, path_report_path, *, maxim
         raise ValueError("complete native requests differ from the fixed oracle labels")
     timeline = [(row["ts_ms"], 0, row["event_id"]) for row in events]
     interventions = defaultdict(list)
+    tracker = PublishedGrantInterventions()
     for sequence, row in enumerate(reader(arm / "opportunities/admission_opportunities.jsonl")):
-        intervention(row, sequence, interventions)
+        tracker.observe(row, sequence, interventions)
         if row.get("event") == "agent_periodic_admission_decision":
             timeline.append((row["monotonic_s"] * 1000., 3, {
                 item["key"]["request_id"]: item for item in row["programs"] if item.get("key")

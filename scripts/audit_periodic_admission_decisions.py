@@ -27,7 +27,7 @@ EXTRA_GRANTS = frozenset((
 ))
 
 
-def intervention(record, sequence, interventions):
+def intervention(record, sequence, interventions, *, replacement_consumer_already_granted=False):
     name = record.get("event")
     immediate = name in ("agent_full_offload_paused", "agent_predicted_tool_replacement")
     pressure = name == "workflow_remaining_pressure_pause"
@@ -50,7 +50,8 @@ def intervention(record, sequence, interventions):
         interventions[owner].append((when * 1000., sequence))
         return
     members = (
-        [{"key": record["consumer"]}, {"key": record["donor"]}]
+        ([{"key": record["donor"]}] if replacement_consumer_already_granted else
+         [{"key": record["consumer"]}, {"key": record["donor"]}])
         if name == "agent_predicted_tool_replacement" else
         [{"key": record["key"]}]
         if name in ("agent_initial_registration_decision", "agent_full_offload_paused")
@@ -59,6 +60,89 @@ def intervention(record, sequence, interventions):
     for member in members:
         key = identity(member["key"], grant=True)
         interventions[key[2]].append((when * 1000., sequence))
+
+
+class PublishedGrantInterventions:
+    """Link a replacement marker only to its adjacent, validated grant."""
+
+    def __init__(self):
+        self.pending = None
+        self.choice_seen = False
+        self.links = []
+        self.unlinked_replacements = 0
+
+    def _choice_matches(self, row):
+        if self.pending is None or self.choice_seen:
+            return False
+        _sequence, grant, key = self.pending
+        members = [
+            item for item in row.get("candidates", ()) if item.get("selected") is True
+        ]
+        return (
+            row.get("grant_published") is True
+            and row.get("grant_event") == grant["event"]
+            and row.get("grant_monotonic_s") == grant["monotonic_s"]
+            and row.get("remaining_before_tokens") == grant["remaining_before_tokens"]
+            and row.get("selected_tokens") == grant["required_tokens"]
+            and len(members) == 1 and identity(members[0]["key"], grant=True) == key
+        )
+
+    def observe(self, row, sequence, changes):
+        event, linked = row.get("event"), False
+        pending = self.pending
+        if event == "agent_predicted_tool_replacement":
+            if pending is not None:
+                grant_sequence, grant, key = pending
+                linked = (
+                    identity(row["consumer"], grant=True) == key
+                    and identity(row["donor"], grant=True)[2] != key[2]
+                    and row.get("remaining_before_tokens") == grant["remaining_before_tokens"]
+                    and row.get("remaining_after_tokens") == grant["remaining_after_tokens"]
+                    and finite_number(row.get("monotonic_s"))
+                    and row["monotonic_s"] >= grant["monotonic_s"]
+                    and row.get("coalescing_window_bypassed") is True
+                    and row.get("ordinary_restore_lease") is False
+                    and row.get("physical_capacity_authority")
+                    == "settled_private_release_then_fresh_native_budget"
+                )
+                if linked:
+                    self.links.append({
+                        "grant_journal_sequence": grant_sequence,
+                        "replacement_journal_sequence": sequence,
+                        "grant_monotonic_s": grant["monotonic_s"],
+                        "replacement_monotonic_s": row["monotonic_s"],
+                        "consumer_key": key,
+                    })
+            self.unlinked_replacements += not linked
+            self.pending = None
+        elif event == "agent_free_capacity_choice" and self._choice_matches(row):
+            self.choice_seen = True
+        else:
+            self.pending = None
+            self.choice_seen = False
+            if event == "agent_dispatch_free_capacity_admitted":
+                try:
+                    members = validate_grant(row)
+                except (KeyError, TypeError, ValueError):
+                    members = []
+                if len(members) == 1:
+                    self.pending = sequence, row, members[0][0]
+        intervention(
+            row, sequence, changes, replacement_consumer_already_granted=linked,
+        )
+
+    def summary(self):
+        return {
+            "linked_tool_replacement_markers": len(self.links),
+            "unlinked_tool_replacement_markers": self.unlinked_replacements,
+            "links": self.links,
+            "scope": (
+                "One validated single-consumer free grant followed immediately by "
+                "its replacement marker, allowing one matching choice observation. "
+                "Exact attempt/session identity, budgets and monotonic order required. "
+                "The marker still bounds the donor; unlinked markers bound both owners."
+            ),
+        }
 
 
 def useful_work(member, phase):
@@ -76,9 +160,10 @@ def inspect(records, batches, *, include_free_grants=False):
     counts, decisions, grants = Counter(), [], []
     observations = []
     controls, interventions = [], defaultdict(list)
+    tracker = PublishedGrantInterventions()
     previous = -1.
     for sequence, record in enumerate(records):
-        intervention(record, sequence, interventions)
+        tracker.observe(record, sequence, interventions)
         if include_free_grants and record.get("event") == "agent_dispatch_free_capacity_admitted":
             for key, grant, _observed, _budget in validate_grant(record):
                 # This event follows the logical grant commit. Later pressure
@@ -214,6 +299,7 @@ def inspect(records, batches, *, include_free_grants=False):
     return {
         "counts": dict(counts), "competition_decisions": decisions,
         "control_observations": observations, **progress,
+        "published_grant_interventions": tracker.summary(),
         "scope": {
             "exact_periodic_resume_budget_and_before_after_state": True,
             "application_readiness_separate_from_timed_resume_eligibility": True,

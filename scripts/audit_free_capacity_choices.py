@@ -14,7 +14,7 @@ from scripts.audit_free_dispatch_service import identity
 from scripts.audit_native_system_costs import finite_number
 from scripts.audit_periodic_admission_decisions import (
     EVENT as PERIODIC_EVENT, EXTRA_GRANTS, associate_progress,
-    inspect as inspect_periodic, intervention, observation_phases,
+    inspect as inspect_periodic, observation_phases, PublishedGrantInterventions,
 )
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.train_workflow_work import write
@@ -186,8 +186,9 @@ def service_progress(result, records, batches):
     }
     controls, changes, grants, found = [], defaultdict(list), [], set()
     counts = Counter()
+    tracker = PublishedGrantInterventions()
     for sequence, row in enumerate(records):
-        intervention(row, sequence, changes)
+        tracker.observe(row, sequence, changes)
         if row.get("event") == PERIODIC_EVENT:
             now = row.get("monotonic_s")
             if not finite_number(now) or now < 0:
@@ -237,6 +238,7 @@ def service_progress(result, records, batches):
     return {
         "instrumentation": result["instrumentation"],
         "counts": dict(counts), **progress,
+        "published_grant_interventions": tracker.summary(),
         "deduplicated_decisions_with_bounded_useful_completion": len(completed),
         "deduplicated_unprotected_decisions_with_bounded_useful_completion": len(unprotected),
         "scope": {
@@ -345,6 +347,12 @@ def main():
         registration=str(args.registration.resolve()),
         registration_sha256=sha256_file(args.registration),
         analysis_sha256=sha256_file(Path(__file__)), input_jsonl_prefixes=reader.prefixes,
+        analysis_dependencies_sha256={
+            name: sha256_file(ROOT / name) for name in (
+                "scripts/audit_periodic_admission_decisions.py",
+                "scripts/audit_free_dispatch_service.py",
+            )
+        },
         verified_execution_protocol=execution["protocol"] if execution else None,
         GPU_action=False, performance_accepted=False,
     )
