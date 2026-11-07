@@ -200,3 +200,69 @@ CMS 单独具有规划可行性，但两个较长 workflow 的累计收益更大
 详细原始分析见 `background83_gpu_start_20261106_zh.md` 的对应章节。
 当前先完成已运行的 SGLang 对照，复用全部已完成方法，不自动扩展
 GPU 队列或重新运行排序三组。
+
+## SGLang 已结束的共同吞吐窗口
+
+04:43 左右，既有 CPU 读取器对仍在运行的同一个 native 回放封闭
+55.6927713505--1638.9548502657 秒窗口。证据位于
+`baseline_restart_20261107_r1/closed_common_window_r1/native_window_costs.json`。
+观察到的实际原生服务已覆盖至 1673.063549 秒；输出 ordinal 连续、
+逐 bin token 守恒，遥测丢失和失败记录均为 0。此时采样的 writer
+队列深度为 2，不是最终空闲排空证明。
+
+| 方法 | 同窗口输出 token/s | 同窗口 decode token/s | 输出相对 native 提升 |
+| --- | ---: | ---: | ---: |
+| SGLang native | 314.858169 | 312.238262 | 0 |
+| ThunderAgent acting-decay | 328.158558 | 325.470437 | 4.224247% |
+| 非排序 Full | 346.998142 | 344.155909 | 10.207762% |
+| Oracle | 346.064627 | 343.236289 | 9.911274% |
+| learned R5 | 347.541956 | 344.697828 | 10.380479% |
+
+新绘图器 `ops/plot_background83_native_window_20261107.py` 在读取前绑定
+输入文件哈希，核对五组相同、连续的 bin 边界及输出/decode token
+守恒，保留完整窗口的全部背景输出。图位于同目录
+`five_method_figures/closed_window_throughput.{png,pdf}`，另有 CSV
+和比较清单；PNG 已实际查看。CDF 按真实 bin 时长加权，方法颜色
+沿用 Okabe-Ito，没有单轮置信区间或 native 部分 JCT 估计。
+
+native 的前段吞吐较低，后段多个区间能追上或超过 Full。因此不能
+把共同窗口均值直接当作已建立的稳态优势。完整固定测量组仍需自然
+结束、全部 receipt 核对、新鲜排空及实际 owned-process 退出。
+04:47 同一个 scheduler 392898、driver 393784 及观察器继续运行，
+47 个已到达，9/18 测量成员完成，coordinator error 为空。
+
+## 当前目标证据与剩余工作
+
+项目数遵循用户最新指令为 83；持续保留原目标的 400GB Host、
+20 个初始成员、平均 70 秒到达、固定 18 个测量成员和完整 JCT。
+以下只区分已验证事实与缺失证据，不将 CPU 候选替代原目标。
+
+| 要求 | 当前权威证据 | 状态 |
+| --- | --- | --- |
+| 原始任务、token、依赖及工具时长一致 | 注册、输入哈希及完整测量 receipt 守恒 | 已完成四组，native 仅有窗口及前缀证明 |
+| 存在真实 ready-paused 容量竞争 | `full_review/workload_decision.json` 所有检查通过 | 已验证 |
+| Oracle 完整平均 JCT 至少约 1% 改善且吞吐不明显下降 | `oracle_comparison.json`，2.358199%，全部三项性能检查通过 | 单轮已验证 |
+| 不同选择落实到实际服务 | `oracle_service.json`：88 个新增请求尝试全部精确授予、压力后保留并实际服务，82 个有边界内有效完成 | 已验证本轮周期选择 |
+| 推进条件剩余工作预测调度 | `learned_comparison.json`，1.122611%；R5 共 63 个新增 episode 全部有授予及精确后续服务，54 个有边界内有效完成 | 单轮已验证，算法差异另列 |
+| 同配置 ThunderAgent acting-decay | `thunderagent_comparison.json`、完整 cohort 及实际退出 | 已完成 |
+| 同配置 SGLang native | 进程现场、完整共同窗口；固定 18 成员尚未结束 | 未完成 |
+| 约 1% 或更高改善能够重复 | 当前每方法仅一轮，不存在第二组同配置完整结果 | 未完成 |
+| NUMA 仅诊断、原有机制保留 | 已运行冻结配置及实际容量，未设置均匀分布门槛 | 已执行 |
+
+ready-paused 的 73.195187% 是共同窗口采样占比，不是时间加权占比。
+Oracle 的 88 次 episode 来自周期路径，R5 的 63 次包含 42 次周期
+和 21 次免费补位，不能直接用这两个计数比较选择覆盖率。
+
+已使用 CPU-only、nice19、CPU0 完成
+`ops/prepare_background83_replication_20261107.py`，输出
+`repeatability_preparation_r1/prepared_commands.json`。准备清单逐项核对
+原完整 Full、Oracle、learned 的代码、配置、任务、到达表、工具、
+容量和模型哈希，只替换注册路径、run-root 和端口；各组仍为
+18 个测量成员、2991 请求、362157 输出。复用原冻结 serving
+`631911fb89b3`、模型及已有 CPU/GPU 资格，不新增参数或训练。
+
+这是可复查的命令准备，不是重复性实测或已排队的 GPU 接续：
+`commands_executed=false`、`GPU_registered_stages=[]`。未来执行仍需
+先完成当前 native 的完整核对和实际退出，再检查当前预约、资源、
+端口与全部固定输入。新 CPU 短任务候选不用于这些重复命令；
+原目标保持 active。
