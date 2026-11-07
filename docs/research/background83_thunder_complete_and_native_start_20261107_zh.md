@@ -650,3 +650,36 @@ workflow，也不能将 483 次周期选择都称作容量竞争。共同吞吐
 06:59，实际 scheduler、driver、固定 cohort 观察器、coordinator、
 完整服务审计接续及组后暂停守卫均存活，30 个已到达、4/18 测量
 成员完成；仅继续当前冻结回放。
+
+## 重复 Oracle 的完整共同吞吐窗口
+
+07:08，同一 Oracle 已越过预定窗口末端。复用原有源绑定的
+`window_costs.py`，以 CPU-only、nice19、CPU0 读取封闭日志，
+得到 `repeatability_execution_r1/oracle_closed_common_window.json`。
+本次没有新建 GPU 阶段，仍为同一个 scheduler 431116。
+
+两轮均使用回放原点后
+`[55.6927713505, 1638.9548502657]` 秒、全部 workflow（包含背景），
+53 个相同边界的分箱。逐 bin 输出守恒及实际输出 ordinal 连续性
+通过，failed/dropped records 均为零；累计输出除以窗口实际长度，
+不是按完成成员数或无权重分箱均值计算。
+
+| 重复轮同一完整墙钟窗口 | 非排序 Full | Oracle |
+| --- | ---: | ---: |
+| 全部输出 token | 547251 | 546673 |
+| 全部输出 token/s | 345.647766 | 345.282697 |
+| decode token/s | 342.821954 | 342.458148 |
+
+Oracle 全部输出相对本轮 Full 为 99.894381%，下降 0.105619%；
+decode 下降 0.106121%。闭合窗口满足原定吞吐比例不低于 98% 的
+数值条件，尚未建立完整 JCT 改善或统计显著性。
+worker 服务证据已覆盖至 1669.478835 秒，读取时 writer queue
+为零；这是运行中快照，不是最终排空证明。报告继续明确
+`complete_measured_execution_verified=false`、
+`completed_request_receipts_reconciled=false`，最终仍须核对
+2991 条测量回执、正常尾部、窗口计数一致及实际服务退出。
+
+07:10，39 个 workflow 已到达、9/18 测量成员自然结束，
+Oracle、coordinator、固定 cohort 观察器、完整服务审计接续和
+组后暂停守卫均实际存活。当前仅等待同一冻结 Oracle 的剩余
+测量任务；后续仍按原门槛决定 R5，组后 GPU 暂停要求保持不变。
