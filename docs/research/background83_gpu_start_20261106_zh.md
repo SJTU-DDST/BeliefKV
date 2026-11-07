@@ -626,3 +626,26 @@ experiments/raw/workflow_original83_host400_mean70_oracle_20261106_r2/
 没有新增独立 GPU 小实验，也没有改变冻结 serving。Oracle 达标后才
 接续 learned；两者都达标后接续 ThunderAgent acting-decay 和 native。
 当前尚无完整 Oracle 收益，整体研究 goal 保持未完成。
+
+### Oracle 早期实际选择与服务
+
+`gpu_campaign_20261106_r2/oracle_live_service_r1/oracle_service.json`
+由既有 `audit_ranked_oracle_service.py` 对实际运行的 Oracle 封闭前缀
+生成。读器逐项重放冻结策略，并按相同控制时间、request/context/
+attempt/session 身份关联原生服务，不改变运行中的服务：
+
+| 早期实际作用 | 观察值 |
+| --- | ---: |
+| 实际 Oracle 选择边界 | 164 |
+| 相对同状态非排序 Full 的候选顺序 / 集合变化 | 130 / 11 |
+| 新入选 agent episode / 不同请求 attempt | 14 / 14 |
+| 精确授予、压力后保留、有后续精确服务 | 14 / 14 / 14 |
+| 下次控制或同 agent 已记录干预前有效服务 / 有效 batch 完成 | 12 / 12 |
+
+14 个新入选 episode 中，1 个属于固定测量组的 web CMS 项目，其他为
+非测量成员。该前缀的共同窗口和完整测量跨度均未结束；不会按该结果
+重新选择测量组，也不将这 1 个 episode 当作测量 JCT 已改善的证据。
+实际 Oracle 轨迹的局部非排序参照不是已执行 Full 另一条轨迹的重建，
+没有模拟参照的物理分配、压力协调或后续状态。该结果验证实际排序
+能够改变集合并被原生服务消费，净 JCT 与吞吐收益继续等待完整配对。
+后续完整读器使用自己的完整前缀，不能将两次观察的计数相加。
