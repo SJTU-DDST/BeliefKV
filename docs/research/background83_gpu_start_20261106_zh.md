@@ -847,3 +847,71 @@ Oracle 排序也有算法差异，两者差距不能全部归因于预测误差�
 该证明是现场执行和已完成请求前缀的一致性检查，不是完整 learned
 JCT 或收益验证。当时 learned 自己的测量组为 0/18、实际到达 25，
 未借用 Oracle 的完成计数；继续按原协议等待全部固定成员自然完成。
+
+### learned 封闭共同窗口与实际选择前缀
+
+`learned_window_costs_r1/summary.json` 使用同一个
+55.6927713505--1638.9548502657 秒共同墙钟窗口，人口包括背景 workflow。
+窗口已封闭，但 learned 固定测量组尚未全部完成，不能以窗口吞吐代替
+完整 JCT 验证。
+
+| 共同窗口指标 | 非排序 Full | learned R5 |
+| --- | ---: | ---: |
+| 输出吞吐，token/s | 346.998142 | 347.541956 |
+| decode 吞吐，token/s | 344.155909 | 344.697828 |
+| worker 时间加权有效 decode 宽度 | 13.722341 | 13.954142 |
+| 实际 prefill extend token | 5642730 | 5644389 |
+| prefill worker 时间，秒 | 596.953821 | 597.733392 |
+| decode worker 时间 / 输出，ms | 1.809502 | 1.806265 |
+
+共同窗口输出吞吐变化为 +0.156720%。learned 当前使用
+`r5_frozen_batch_cost_proxy_capacity_v7`、`selection_objective=benefit` 和
+`decode_cost_basis=full_batch`，准入收益没有再除以成本。该策略与
+Oracle 的直接剩余路径排序还存在组合算法及目标差异，不能把最终差距
+全部算作工作量预测误差。
+
+同窗口 R5 组合选择累计线程 CPU 为 0.929761 秒，周期工作集控制
+1.125773 秒，工具替换为 17.619789--17.819308 秒；另一个线程上的
+预测 worker 为 9.056665--9.083413 秒。包含性计时存在重叠，worker
+区间也不是纯 CUDA 时间，不能相加或视为可直接消除的 JCT。
+
+`learned_live_service_r1/choices_corrected_live.json` 覆盖比共同窗口
+更长的独立前缀：4614 条选择日志中，381 条进入可重放的搜索路径，
+其中 346 次完成枚举、11 次真正触发软截止、24 次为零枚举提前返回。
+最初摘要误将全部 35 次不完整调用称为截止，原文件保存在
+`summary_initial_deadline_count.json`，当前摘要绑定其 SHA 并明确修正。
+
+该前缀有 43 次集合变化、44 个新增请求 attempt，均有精确授予和后续
+原生服务；28 个周期选择中有 25 个、16 个免费补位中有 11 个在下一次
+控制或已记录同 agent 干预前完成有效服务。40 次改变保持相同数量，
+3 次数量减少，没有严格子集式收缩。测量组涉及 6 个 workflow 的
+10 个新增 episode。这些次数不是完整运行结果、全系统竞争覆盖率，
+也不能转成反事实 JCT。
+
+### CPU 选择审计器修复与最终审计接续
+
+旧冻结 CPU 读取器误拒绝运行时合法的初始化记录：
+`metadata_unavailable_reference_fallback` 同时包含空 `selected` 和空
+`reference`。问题属于分析器，不是 GPU 调度故障。提交 `eb0b94ad`
+仅修复读取器和测试：未搜索记录必须使用已知回退原因，并保留有效、
+无重复且顺序完全相同的 reference；改变或重排、残留搜索字段仍拒绝。
+此类记录保持 `search_replayed=false`，不授予新增服务或集合改变证据。
+
+174 个不同相关 CPU 用例通过；最初因缺少原生路径环境变量跳过的
+checkpoint 用例另行通过，未以跳过代替验证。初始真实失败调用没有
+保存读取边界，`failure_reproduction.json` 是后续明确封闭的复现，
+不是原始失败边界。修复后对该相同封闭复现的 3231 条记录重放通过：
+277 次搜索、2954 次原样 reference 回退，见 `sealed_failure_after.json`。
+
+原冻结分析计划及失败仍保留。独立的 CPU-only 最终观察器使用修复后
+读取器，计划、验证和状态位于
+`completed_service_analysis/learned_service_repaired/`。它等待完整
+`learned_comparison.json` 后审计全部选择，即使性能门槛未通过也执行；
+没有修改 campaign、注册、冻结服务代码或 GPU 启动条件。
+
+另有完整 Oracle 的同状态目标诊断
+`completed_service_analysis/oracle_rank_objectives.json`：相对实际含工具
+关键路径，改成纯模型关键路径会改变 23 次集合，其中 8 次涉及 4 个
+测量 workflow；改成模型总工作量会改变 19 次，其中 5 次涉及 3 个
+测量 workflow。它保持当时的候选、预算和 JOIN 权利，只重放逻辑
+选择，没有模拟后续物理执行，不能据此估算替代目标的 JCT 收益。
