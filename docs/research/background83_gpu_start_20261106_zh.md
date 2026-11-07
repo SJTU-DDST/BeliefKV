@@ -1293,3 +1293,47 @@ workflow 的次数从 96 增至 106 只是机制机会，不是完整 JCT 收益
 子集数；不能把这组分布外推成全控制 P99 改善。最长样本仍超过
 500 微秒，软预算不是硬实时上限。运行中的 ThunderAgent 和后续
 SGLang 不使用该候选；后续实际服务和完整 JCT 收益仍需独立验证。
+
+### 固定测量组的交互性与首次流式输出
+
+复用未修改的 `scripts/audit_measured_request_interactivity.py`，先对
+已完成 Full、Oracle、learned 重新核对测量完成证书、原始请求、
+排空和实际 owned-process 退出，再从同一固定 18 条 workflow、
+2991 个完整请求计算服务指标。三组均无零输出请求，实际流式
+workflow TTFT 覆盖均为 18/18。证据位于
+`completed_service_analysis/service_metrics/{full,oracle,learned}.json`。
+没有启动新 GPU 试验或重放已完成的方法。
+
+请求 E2E normalized interactivity 沿用项目既定定义：
+先取完整 HTTP 请求秒数除以输出 token 数的 P90，再取倒数。
+workflow TTFT 从原始到达算到任一 descendant 首个实际流式输出，
+不是 worker launch，也不代表用户已收到 root 的最终回答。
+
+| 完整测量指标 | 非排序 Full | Oracle | learned R5 |
+| --- | ---: | ---: | ---: |
+| 请求 pooled E2E normalized interactivity，token/s | 14.413483 | 14.185364 | 14.899629 |
+| 每 workflow 独立计算后等权平均，token/s | 15.633241 | 15.692796 | 16.157328 |
+| workflow 平均 TTFT，秒 | 74.609520 | 58.784412 | 73.484559 |
+| workflow TTFT P90，秒 | 158.398874 | 91.039642 | 169.310529 |
+
+Oracle 的完整平均 JCT 改善更大、首次服务也更早，但 pooled 请求
+interactivity 并未同步改善。learned 的请求慢尾指标更好，TTFT
+P90 则比非排序 Full 更差。不同指标关注的请求人口、尾部及服务
+阶段不同，不能把一种指标的改善推导成其他指标都改善；这里也
+没有把 50 token/s 示例变成新的 SLO。
+
+独立的 CPU-only 接续器
+`ops/finish_background83_service_metrics_20261107.py` 已注册于
+`baseline_restart_20261107_r1/service_metrics/plan.json`。实际进程
+386508/start ticks 9001661，nice19、CPU0、CUDA 隐藏，现场确认
+存活。它复用上述三份完整报告，先等新 ThunderAgent 的
+`thunderagent_comparison.json`，再等 `native_comparison.json`，
+逐组调用同一审计器，最后核对五组相同成员及完整请求数，生成
+服务指标 JSON 和等 workflow 权重的 TTFT/interactivity CDF。
+
+该接续器没有 GPU 注册或启动能力，不修改既有 baseline 计划、
+运行代码、到达或停止条件。缺失流式首输出保持缺失覆盖，不用
+launch 代替；最终图要求完整 TTFT 覆盖。03:51 的 baseline 为
+15/18 测量成员完成、63 个已到达，实际 coordinator、scheduler、
+driver、cohort observer 及此 CPU 接续器均存活。两组基线的完整
+JCT、服务指标和整体重复性仍未完成。
