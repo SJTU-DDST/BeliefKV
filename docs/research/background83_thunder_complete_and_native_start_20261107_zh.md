@@ -852,3 +852,11 @@ R5 的完整 interactivity。正、负完整结果都保留；如果执行器未
 暂停状态，任何不完整或预约变更都保留待复核，不自动标记 goal 完成。
 当前三组的 GPU 配置和执行器没有修改。25 项相关 CPU 边界检查通过，
 包含旧 hold/服务恢复检查，不能将其当作 GPU 或新调度策略性能证明。
+
+08:29，CPU 收尾计划实际登记到 `repeatability_execution_r1/postprocess_cpu_r1`；
+观察器 461341、start_ticks `10673691` 实际存活，nice19、CPU0、
+CUDA hidden，状态为 `waiting_registered_owners`，没有错误。
+同次实际进程检查确认 R5 scheduler 450397、driver 450827、
+完整服务审计观察器 454341 和 GPU 暂停守卫 435582 均存活。
+父执行器记录 54 个已到达、13/18 测量成员完成；目标仍未完成，
+不能将该状态或已闭合的吞吐窗口当作完整 JCT 验收。
