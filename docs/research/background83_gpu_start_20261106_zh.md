@@ -480,3 +480,65 @@ Okabe-Ito / 中性灰颜色，保留所有旧标签。相关 7 项已有 CPU 检
 报告为 `gpu_campaign_20261106_r2/plot_labels_cpu.xml`。只验证绘图数据
 约束，不属于新 serving 回归或 GPU 性能实验。后续图均沿用同一固定
 cohort、完整尾部和共同窗口，不从单次运行推导置信区间。
+
+### 完整共同窗口的延迟审计
+
+`ops/review_background83_mean70_window_20261106.py` 已登记一次纯 CPU
+窗口观察，计划位于本轮 `common_window_complete_r1/plan.json`。
+观察器 308314 实际为 nice19、CPU0、CUDA hidden；从已观察的原始
+workflow start 与冻结到达表取得相同 monotonic 原点，在窗口结束后
+再留 30 秒让正常服务日志发布，不修改测量窗口本身。
+
+它复用原有周期服务与局部 Oracle 读器，以及 mean60 已使用的参数化
+`window_costs.py`，分别保留各自封闭前缀。窗口成本读器核对实际执行
+配置、容量、有效输出 ordinal 连续性，以及 30 秒分箱与同一累计器
+的总量一致性；不把批次 worker 区间称作纯 CUDA 时间。它不核对尚未
+完成请求的最终回执、不证明测量组完整 JCT，也不触发新 GPU 实验。
+
+2026-11-06 23:25 America/Los_Angeles，窗口观察已实际完成，观察器及其
+CPU 子进程均退出；原 Full 服务和固定测量组观察器继续运行。
+`common_window_complete_r1/summary.json` 由同目录 `summarize.py`
+重新核对并绑定三份读器报告，完整窗口为 55.692771--1638.954850 秒：
+
+| 完整共同窗口指标 | 结果 |
+| --- | ---: |
+| 实际周期控制 | 768 |
+| 控制前存在 ready-paused | 638 / 768，83.072917% |
+| 周期 application-ready 逻辑竞争诊断 | 85 |
+| 实际排序候选集合中的跨 workflow 逻辑竞争 | 83 |
+| 上述实际候选竞争中剩余工作比至少为 2 | 73 |
+| 同状态局部 Oracle 改变恢复集合 | 51 |
+| 改变集合涉及测量成员的决策 / 不同测量 workflow | 23 / 9 |
+| 实际周期授予且压力协调后保留 | 694 / 694 |
+| 全部 workflow 输出 / decode 输出 | 549389 / 544889 token |
+| 输出 / decode 吞吐 | 346.998142 / 344.155909 token/s |
+
+638/768 按控制点统计，不是时间加权比例。51 次局部集合变化中，
+38 次成员数相同、11 次更少、2 次更多；没有仅删除成员的严格子集。
+这里的 9 个测量 workflow 是涉及不同候选选择的成员，不是已经获益
+的成员，也不代表反事实服务或 JCT 已经重建。
+
+两种竞争计数的差异已经按相同 monotonic 控制时间核对：完整窗口
+恰好相同的 768 个边界，仅 2 个边界分类不同。周期读器依据
+application-ready 和逻辑预算做较宽的诊断；实际排序候选还经过 runtime
+恢复资格、请求状态、工具状态等筛选。这两处周期日志中存在较小的
+可见 ready 对象，但它们没有进入实际排序候选，且局部 Oracle 在两处
+均未改变集合。精确拒绝守卫没有记录，不将 85 与 83 的差异归为某个
+具体实现问题，也不改写原始读器结果。差异键和边界保存在
+`summary.json.candidate_population_differences`。
+
+窗口内实际执行 5642730 个 extend token，prefill worker 区间合计
+596.953821 秒，约 0.105792 ms/extend token；decode worker 区间合计
+985.977774 秒，约 1.809502 ms/有效 decode token，有效 decode 宽度按
+worker 时间加权约 13.722341。精确 decode graph 没有配置 padding row。
+这些区间包含 worker 与系统执行因素，不是纯 CUDA 时间；worker 区间
+覆盖窗口也不证明 GPU 满载。后续应在同一到达表下检查排序是否改变了
+decode 宽度、prefill 成本和实际服务，而不能把更少的逻辑入选者直接
+等同于更低的实际 decode batch。
+
+成本读器已核对输出 ordinal 连续性、分箱总量和实际执行配置，但仍明确
+保留 `completed_request_receipts_reconciled=false`、
+`complete_measured_execution_verified=false`、`telemetry_drained=false`。
+本轮提供了继续完整配对所需的选择空间证据，暂不更换到达表或增加并发；
+背景尾部覆盖、完整平均 JCT 和 Oracle 实际收益仍等待最终审计。
+不跨 mean60 与 mean70 的不同到达窗口计算算法收益。
