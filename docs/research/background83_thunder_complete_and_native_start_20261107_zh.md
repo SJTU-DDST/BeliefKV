@@ -1,9 +1,9 @@
-# 83 项目：ThunderAgent 完整结果与 SGLang 启动
+# 83 项目：五方法完整结果与排序重复验证
 
 2026-11-07，America/Los_Angeles。保持用户最后确认的 83 项目配置，
-复用已完成的非排序 Full、Oracle 和 learned R5，只接续两组基线。
-本文记录完整 ThunderAgent 结果和实际 SGLang 启动，不是五方法
-全部完成、正式稳态或重复性验收。
+复用已完成的非排序 Full、Oracle 和 learned R5，已完成 ThunderAgent
+与 SGLang 两组基线。本文保留各阶段证据，并在末节记录完整五方法
+结果及同配置重复验证接续；首轮结果不建立正式稳态或重复性结论。
 
 ## 相同工作与资源
 
@@ -304,3 +304,99 @@ nice19、CPU0 下实际通过 24 项检查，0 失败、0 错误、0 跳过。
 04:57 实际原 scheduler 392898、driver 393784、cohort observer 393795
 及 coordinator 370129 继续存活，native 为 13/18 测量成员完成、
 55 个已到达，error 为空。当前仍先完成该运行。
+
+## 五方法完整结果与实际重复接续
+
+05:25，native 固定 18 个测量 workflow 全部自然完成。独立读取
+`cohort_termination/completion.json` 确认同样的 2991 请求、
+362157 输出、无测量截断、两份新鲜空闲快照及实际 owned-process
+退出。随后原 coordinator 完成 `native_comparison.json` 及
+`five_method_figures/`，以 `complete_matched_baseline_comparisons`
+正常退出；原 supervisor/server/scheduler/driver/cohort observer
+及 coordinator 的实际进程均已消失，GPU 当时无 compute owner。
+
+| 方法 | 完整平均 JCT，秒 | 完整 JCT P95，秒 | 同窗口输出 token/s | 同窗口 decode token/s |
+| --- | ---: | ---: | ---: | ---: |
+| SGLang native | 1273.285931 | 3451.122271 | 314.858169 | 312.238262 |
+| ThunderAgent acting-decay | 1125.102412 | 3032.987108 | 328.158558 | 325.470437 |
+| 非排序 Full | 1061.121917 | 2775.338936 | 346.998142 | 344.155909 |
+| Oracle | 1036.098550 | 2720.397967 | 346.064627 | 343.236289 |
+| learned R5 | 1049.209646 | 2704.624676 | 347.541956 | 344.697828 |
+
+R5 相比 native，平均 JCT 降低 17.598269%，同窗口输出吞吐提高
+10.380479%；16 条测量 workflow 改善、2 条变差。CMS 比 native
+慢 196.196078 秒，desktop-media 慢 3.059202 秒。不能从平均改善
+推断每个成员改善。R5 对 ThunderAgent 的改善仍为平均 JCT
+6.745410%、吞吐 5.906717%；排序自身相对非排序 Full 的收益仍为
+Oracle 2.358199%、R5 1.122611%，不能混用这些参照。
+
+native 最后测量结束偏移为 4146.391129 秒，背景最后计划到达为
+4598.502355 秒，未覆盖测量尾部为 0。实际到达 76 个、自然结束
+60 个；23 个非测量成员右截尾，其中 7 个未提交。完整 native
+比较的工作守恒、资源相同及全部三项性能检查均通过；正式 workload、
+性能和统计显著性 flag 仍保留审计器的保守语义。
+
+完整五方法 `five_method_figures/complete_JCT_and_decode.{png,pdf}`
+已生成且 PNG 已实际查看。JCT 使用相同固定 18 成员的完整尾部；
+decode 趋势及按时长加权的 CDF 使用共同墙钟窗口的全部背景输出。
+方法颜色保持一致，没有从单轮推导置信区间。
+
+### 完整服务指标及绘图恢复
+
+五组服务审计均完成相同的 2991 个请求、18/18 流式 TTFT 覆盖：
+
+| 方法 | pooled E2E NI，token/s | workflow 等权平均 E2E NI，token/s | 平均 workflow TTFT，秒 | workflow TTFT P90，秒 |
+| --- | ---: | ---: | ---: | ---: |
+| SGLang native | 7.451677 | 10.173902 | 47.782083 | 78.762256 |
+| ThunderAgent | 9.833988 | 10.906149 | 87.344796 | 162.206561 |
+| 非排序 Full | 14.413483 | 15.633241 | 74.609520 | 158.398874 |
+| Oracle | 14.185364 | 15.692796 | 58.784412 | 91.039642 |
+| learned R5 | 14.899629 | 16.157328 | 73.484559 | 169.310529 |
+
+R5 的完整 JCT 和请求交互性较好，但 native 的平均及 P90 workflow
+TTFT 更低。TTFT 为从到达到任意 descendant 的首次实际流式输出；
+NI 包含完整请求等待，不能用其中一种指标替代其他指标。
+
+原 CPU 服务观察器在全部指标审计完成后，绘图因 `KeyError('Oracle')`
+停止。源码核对确认同名模块从旧 analysis 快照导入，其 `COLORS`
+缺少 Oracle、R5 和 native。原失败状态与全部指标报告保留。
+`ops/render_background83_service_metrics_recovery_20261107.py` 只复用
+五份已完成报告，按精确文件路径读取当前 canonical palette，
+重新验证固定测量人口、输入哈希和 TTFT 覆盖，在新目录
+`service_metrics/render_recovery_r1/` 生成汇总 JSON、PNG 和 PDF。
+PNG 已实际查看；未重做指标审计或运行 GPU。
+
+### 重复验证实际启动
+
+05:27，在完整 native 对照、背景覆盖及原进程实际退出核对通过后，
+执行已准备的 `run_background83_frozen_replication_20261107.py --start`。
+新 coordinator 411682 实际存活，注册了重复 Full，端口 19024：
+
+```text
+ops/workflow_original83_host400_mean70_repeat_full_20261107_r1.registration.json
+ops/workflow_original83_host400_mean70_frozen_replication_20261107_r1.plan.json
+repeatability_execution_r1/start.json
+```
+
+`start.json` 绑定完整 native 的实际结束证据；旧 baseline 队列与所有
+结果保持不变。重复 Full 的 serving watcher 为 412107，
+执行 checkout 为 `beliefkv-causal-631911fb89b3-95a962e2c884`；
+仍为 serving `631911fb89b3`、相同 native、模型、工具时间、token、
+83 项目、到达表、固定 18 成员和容量。这里只启动已声明的重复
+Full；后续 Oracle、R5 由执行器逐组检查后接续，不再重复两组基线。
+启动不是重复性结果，目标保持 active。
+
+05:33，复用 `verify_shared_execution_live_20261101.py` 对本次
+重复 Full 做只读现场核对，输出
+`repeatability_execution_r1/live_full_verified.json`。实际唯一 GPU
+scheduler 为 412655，server 为 412576，driver 为 413529；
+cohort observer 413540 及 coordinator 411682 均存活，优先级符合
+GPU owner nice0、观察器 nice19 的要求。实际 Device/Host 容量及
+共享模型、引擎、graph 配置相同；运行时为非排序 Full，Oracle
+未来工作与组合准入均关闭，预测工具卸载保留，工具预取与逐层
+handoff 仍关闭。
+
+首批 12 个已完成请求、502 个输出的原始 token 哈希、身份及
+native position sampler 保留标记通过独立核对。这是新重复臂
+实际回放及前缀证明，不是完整 JCT。05:34 状态为 21 个已到达、
+0/18 测量成员完成，error 为空；只继续同一运行。
