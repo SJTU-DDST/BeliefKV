@@ -82,6 +82,87 @@ def test_unavailable_metadata_is_not_a_reproduced_or_changed_choice():
     assert result["selected_set_changed"] is None
 
 
+@pytest.mark.parametrize("reason", (
+    "metadata_unavailable_reference_fallback",
+    "remaining_work_ranking_disabled_reference",
+    "no_competing_choice",
+    "native_resources_unavailable_reference_fallback",
+    "reference_candidate_summary_unavailable",
+    "predictions_unavailable_reference_fallback",
+    "invalid_metadata_reference_fallback",
+))
+@pytest.mark.parametrize("selected", ([], ["a"]))
+def test_unsearched_runtime_reference_is_preserved_without_search_credit(reason, selected):
+    row, costs = evidence()
+    row.update(candidates=[], resources=None, keys={})
+    row["decision"] = {
+        "selected": selected, "reference": selected.copy(), "reason": reason,
+    }
+    result = replay_choice(row, costs, "frozen")
+    assert not result["search_replayed"]
+    assert result["selected_set_changed"] is None
+    assert result["newly_selected_invocations"] == []
+    assert result["fallback_reference"] == selected
+    assert result["fallback_reference_preserved"]
+
+
+@pytest.mark.parametrize("change", (
+    "different_selection", "reordered_selection", "duplicate_reference",
+    "invalid_reference_type", "search_reason", "search_complete",
+    "required_reference_members", "reference_evaluation", "selected_evaluation",
+))
+def test_unsearched_reference_cannot_hide_changed_members_or_search_evidence(change):
+    row, costs = evidence()
+    row.update(candidates=[], resources=None, keys={})
+    decision = {
+        "selected": ["a", "b"], "reference": ["a", "b"],
+        "reason": "metadata_unavailable_reference_fallback",
+    }
+    if change == "different_selection":
+        decision["selected"] = ["a"]
+    elif change == "reordered_selection":
+        decision["selected"].reverse()
+    elif change == "duplicate_reference":
+        decision["reference"] = ["a", "a"]
+    elif change == "invalid_reference_type":
+        decision["reference"] = "ab"
+    elif change == "search_reason":
+        decision["reason"] = "combination_changed"
+    elif change == "search_complete":
+        decision[change] = False
+    elif change == "required_reference_members":
+        decision[change] = []
+    else:
+        decision[change] = {}
+    row["decision"] = decision
+    with pytest.raises(ValueError):
+        replay_choice(row, costs, "frozen")
+
+
+def test_real_runtime_empty_bootstrap_does_not_claim_a_replayed_search(monkeypatch, tmp_path):
+    from tests.test_global_combination_oracle import queued
+
+    runtime, admission = queued(monkeypatch, tmp_path, window_ms=0)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    controller = admission._combination
+    try:
+        assert controller.select(
+            [], [], capacity=1000, maximum=0, source="periodic_decay_resume",
+        ) == []
+        result = inspect(
+            json.loads(json.dumps(records)), [], controller.costs, controller.cost_identity,
+            allow_feasible_resource_alternatives=controller.allow_feasible_resource_alternatives,
+            plan_device_capacity=controller.plan_device_capacity,
+        )
+        assert result["counts"]["combination_passes"] == 1
+        assert result["counts"]["searches_replayed"] == 0
+        assert result["counts"]["newly_selected_agent_episodes"] == 0
+        assert result["decisions"][0]["fallback_reference"] == []
+    finally:
+        runtime.close()
+
+
 def service_evidence():
     selection, costs = evidence()
     selected = selection["decision"]["selected"]

@@ -26,6 +26,15 @@ from scripts.verify_measured_execution import verify_execution
 
 EVENT = "workflow_combination_selection"
 SOURCES = frozenset(("periodic_decay_resume", "undiscounted_free_dispatch"))
+UNSEARCHED_REFERENCE_REASONS = frozenset((
+    "metadata_unavailable_reference_fallback",
+    "remaining_work_ranking_disabled_reference",
+    "no_competing_choice",
+    "native_resources_unavailable_reference_fallback",
+    "reference_candidate_summary_unavailable",
+    "predictions_unavailable_reference_fallback",
+    "invalid_metadata_reference_fallback",
+))
 
 
 def canonical(decision):
@@ -71,8 +80,25 @@ def replay_choice(
         "metadata_and_selection_wall_ns": row["metadata_and_selection_wall_ns"],
     }
     if "evaluated_subsets" not in observed:
+        if any(name in observed for name in (
+            "search_complete", "required_reference_members",
+            "reference_evaluation", "selected_evaluation",
+        )):
+            raise ValueError("combination search evidence lacks its enumeration count")
         if "reference" in observed:
-            raise ValueError("unreplayed metadata fallback must not claim a search reference")
+            reference = observed["reference"]
+            if (
+                observed["reason"] not in UNSEARCHED_REFERENCE_REASONS
+                or not isinstance(reference, (list, tuple))
+                or any(type(owner) is not str or not owner for owner in reference)
+                or len(set(reference)) != len(reference)
+                or list(selected) != list(reference)
+            ):
+                raise ValueError("unsearched fallback must preserve its exact reference")
+            # The producer records its unchanged reference before search metadata exists.
+            summary.update(
+                fallback_reference=list(reference), fallback_reference_preserved=True,
+            )
         return summary
     if type(observed.get("search_complete")) is not bool or (
         type(observed["evaluated_subsets"]) is not int or observed["evaluated_subsets"] < 0
