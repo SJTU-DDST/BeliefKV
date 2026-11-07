@@ -621,3 +621,32 @@ CPU-only、nice19、CPU0 守卫 435582 已实际存活，绑定 coordinator
 预约变更或请求旁的 `.cancel.json` 后退出，避免随后重新施加旧要求。
 登记后已核对当前预约文件哈希未变、暂停标记尚未建立，当前 Oracle
 继续执行；“等待结束”的守卫状态不是已经暂停 GPU 的证明。
+
+## 重复 Oracle 的选择至服务前缀
+
+06:57，复用 `audit_ranked_oracle_service.py` 对同一重复 Oracle 做
+一次 CPU-only、nice19、CPU0 封闭前缀审计，结果为
+`repeatability_execution_r1/live_oracle_service_prefix.json`。读取器
+核对实际 frozen policy 的源码哈希及与本轮非排序 Full 的配置差异，
+再使用实际候选、JOIN 保护、类别、分组和预算重建本地参考选择。
+
+| 整个封闭前缀，含初始和非测量成员 | 次数 |
+| --- | ---: |
+| 实际周期选择重放 | 483 |
+| 相对同状态非排序参考的准入集合变化 | 32 |
+| 新增 agent episode | 38 |
+| 获得精确请求授予、压力后保留并有实际服务 | 38 |
+| 在下一控制或同 agent 干预前有有效服务与有效 batch 完成 | 35 |
+
+这 38 个 episode 对应 38 个独立请求 attempt，不能算成 38 个
+workflow，也不能将 483 次周期选择都称作容量竞争。共同吞吐
+窗口内的子集为 448 次选择、31 次集合变化和 37 个新增 attempt；
+窗口尚未闭合，该子集不是完整共同窗口结果。
+
+审计支持本轮存在“不同选择、精确授予、压力后保留、实际服务”的
+链路，但没有重建其他准入入口或全系统反事实压力，也没有证明
+参考替代集合均满足原生物理容量，不能据此推算可消除的 JCT。
+`complete_measured_execution_verified=false` 保持不变。
+06:59，实际 scheduler、driver、固定 cohort 观察器、coordinator、
+完整服务审计接续及组后暂停守卫均存活，30 个已到达、4/18 测量
+成员完成；仅继续当前冻结回放。
