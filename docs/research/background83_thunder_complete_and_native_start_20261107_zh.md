@@ -597,3 +597,27 @@ Full 现场证明中的 `actual_retained_runtime/actual_retained_agent`
 这是现场前缀和实际运行证明，不是完整 Oracle JCT 或重复性收益。
 06:42，21 个 workflow 已到达，0/18 测量成员完成，coordinator
 及独立后续服务审计观察器均无错误，继续同一冻结回放。
+
+## 本组结束后的 GPU 暂停要求
+
+2026-11-07，用户要求：“这一轮重复的实验进行完成之后就先不接着
+进行 GPU 实验了。”范围为当前已声明的 Full/Oracle/R5 重复组，
+仍遵循原有性能门槛决定是否接续 R5。该组正常结束、未达到门槛
+或退出后，均不自动追加 GPU 复验、优化候选或 CUDA 资格试验；
+必须等待用户新的明确授权。CPU 分析、绘图和文档整理可以继续。
+
+当前冻结执行器本身只包含这三组，没有组后的 GPU 接续。另登记
+`scripts/hold_after_frozen_repetition.py`，请求为
+`ops/workflow_original83_host400_mean70_frozen_replication_20261107_r1.plan.pause_after.json`。
+CPU-only、nice19、CPU0 守卫 435582 已实际存活，绑定 coordinator
+411682 的 PID/start_ticks，并逐次核对三个注册中的所有实际 owner。
+它等待 coordinator 及全部服务 owner 退出后，才建立共享暂停
+标记，并将现有预约记录设为禁止自动恢复、需要用户明确释放。
+不改写当前执行器、冻结配置、正常尾部或提前暂停当前实验。
+
+六个 CPU 边界场景验证了 coordinator 存活、子进程仍存活时不得
+激活，以及全退出后的激活、新预约覆盖、显式取消、保留已有暂停。
+测试位于 `tests/test_post_repetition_gpu_hold.py`。守卫检测到较新
+预约变更或请求旁的 `.cancel.json` 后退出，避免随后重新施加旧要求。
+登记后已核对当前预约文件哈希未变、暂停标记尚未建立，当前 Oracle
+继续执行；“等待结束”的守卫状态不是已经暂停 GPU 的证明。
