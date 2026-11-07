@@ -717,3 +717,33 @@ selection 线程 CPU 样本合计 25.343489 秒、P90 为 201.869523 ms。
 当前只通过共同窗口吞吐这一部分条件。完整平均 JCT、背景尾部覆盖、
 Oracle 最终工作守恒及预测调度收益继续按原接续器验证，未修改门槛、
 测量成员、到达表或后续 baseline 的启动条件。
+
+### 共同窗口吞吐图与 CPU 绘图依赖
+
+同一 `oracle_window_costs_r1/` 下新增
+`decode_figures_cpu_r3/closed_window_decode.png`、同名 PDF、
+`throughput_bins.csv` 和 `provenance.json`。图仅显示上述完整共同窗口的
+decode 趋势及按 bin 时长加权的经验 CDF，不包含尚未完成的 Oracle
+JCT。所有背景 workflow 都计入，30 秒分箱的最后一箱实际为
+23.262079 秒；已核对两组相同边界、逐箱速率及原生 decode 输出总量。
+采用既定 Okabe-Ito 配色，实际查看 PNG 后未发现文字或坐标遮挡。
+两组整体分布接近，不据局部峰值推断完整 JCT 或 GPU 空闲。
+
+首次 CPU 绘图因 `beliefkv-next` 环境缺少 `matplotlib` 失败，保存在
+`decode_figures/failure.json`。仅以二进制 wheel、`--no-deps` 新增
+matplotlib 3.10.7、contourpy 1.3.3、cycler 0.12.1、fonttools 4.60.1、
+kiwisolver 1.4.9、pyparsing 3.2.5，安装回执为
+`plot_dependencies_install.json`。原有 numpy 2.3.5、pillow 12.3.0、
+python-dateutil 2.9.0.post0、packaging 26.2 的版本核对不变。
+
+第二次调用因 campaign 导入把冻结分析快照放在 `sys.path` 前端，
+误用了不含 `Oracle` 标签的旧配色表，保存在
+`decode_figures_cpu_r2/failure.json`。成功调用显式加载当前绘图脚本，
+并在 provenance 中记录实际配色及 CDF 函数的来源。上述失败均发生于
+CPU 图表导出前，没有新增 GPU 实验、改写运行中的 serving 或替换
+已注册计划。
+
+随后用已完成 Full 的真实 cohort 报告实际运行原
+`plot_workflow_cohort_comparison.py` CLI，完整成员检查、PNG/PDF 和 CSV
+导出均成功，输出为 `plot_pipeline_cpu_smoke/`。这补齐了自动出图入口
+的实际绘图依赖验证，不将它称为 Oracle 完整 JCT 验证或新的性能比较。
