@@ -98,6 +98,40 @@ Full 已实际进入 `running_full`。独立 CPU 读器在
 `oracle_choices.json`、`periodic_service.json`、`native_telemetry_observation.json`
 及 `summary.json` 保留各自哈希和范围；`summarize_prefix.py` 可复现汇总。
 
+## 完整共同窗口的中途审计
+
+`gpu_pair_20261106_r2/common_window_complete_r1/` 已独立封闭完整
+47.737--1404.818 秒共同窗口。测量成员的尾部仍在执行，以下不涉及部分
+JCT，也不是 Oracle 的实际性能结果。
+
+| 窗口内观察 | 结果 |
+| --- | ---: |
+| 实际周期控制 | 658 |
+| 控制前存在 ready-paused 候选 | 607 / 658 |
+| 跨 workflow 逻辑容量竞争 | 87 |
+| 相同状态下局部 Oracle 改变恢复集合 | 52 |
+| 实际周期授予且压力协调后保留 | 664 / 664 |
+| 全部 workflow 的有效输出 | 461020 token |
+| 其中 decode 输出 | 457131 token |
+| 输出 / decode 吞吐 | 339.714235 / 336.848528 token/s |
+
+前两份选择读器使用各自封闭前缀，但共同窗口的周期控制和竞争计数一致；
+窗口外计数不相加、不替代最终完整执行审计。607/658 是按控制点计的比例，
+不是时间加权的 ready-paused 占比。52 次集合改变保持原记录候选、预算、
+buffer 和 protected JOIN；没有模拟改变后的服务、压力协调或 JCT。
+
+`window_costs.py` 复用源绑定的有效 token 成本读器，逐项核对已观察输出序号，
+并将 30 秒分箱之和与同一累计器核对。窗口内 prefill 执行 5276859 个
+extend token，worker 区间约 564.174 秒；decode worker 区间约 792.972 秒，
+有效 decode 宽度按 worker 时间加权约 15.426。它们是 worker 区间和
+实际输出口径，不是纯 CUDA 时间、物理 HBM 利用率或新增输入全部需要重算
+的证明。精确 decode graph 在该窗口未产生 padding row。
+
+读器明确保留 `completed_request_receipts_reconciled=false`、
+`complete_measured_execution_verified=false` 和 `telemetry_drained=false`；
+封闭窗口不能代替测量组自然完成后的回执、排空和真实退出。当前证据支持
+完成已登记的同负载配对，不支持中途更换到达表或宣称调度收益。
+
 ## 启动前的路径绑定失败
 
 首次 entry 在 GPU 分配前被拒绝：原生 CPU 证据将 canonical patch 路径绑定到
