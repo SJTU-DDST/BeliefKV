@@ -860,3 +860,125 @@ CUDA hidden，状态为 `waiting_registered_owners`，没有错误。
 完整服务审计观察器 454341 和 GPU 暂停守卫 435582 均存活。
 父执行器记录 54 个已到达、13/18 测量成员完成；目标仍未完成，
 不能将该状态或已闭合的吞吐窗口当作完整 JCT 验收。
+
+## 重复 R5 的完整负结果
+
+08:52，固定 18 个测量 workflow 全部自然结束。08:55，原固定测量观察器完成
+回执、工作量、空闲快照和实际 owned-process 退出核验，父执行器随即完成比较。
+两组仍为相同的 2991 个请求、362157 个输出 token；没有截断测量尾部。
+
+| 重复组 | 非排序 Full | Oracle | learned R5 |
+| --- | ---: | ---: | ---: |
+| 完整平均 JCT / s | 1052.713786 | 1036.998610 | 1056.420447 |
+| P95 JCT / s | 2760.849832 | 2730.249648 | 2720.695038 |
+| 相对同组 Full 的平均 JCT 降幅 | 0 | 1.492825% | -0.352105% |
+| 共同窗口输出 token/s | 345.647766 | 345.282697 | 347.600696 |
+| 共同窗口 decode token/s | 342.821954 | 342.458148 | 344.763515 |
+
+R5 的共同窗口输出吞吐增加 0.565006%，平均 JCT 却增加 3.706660 秒。
+18 条中 10 条改善、8 条回退；P95 改善不改变平均 JCT 主门槛失败的结论。
+`learned_repeatability.json` 保留首轮 1.122611%、本轮 -0.352105%，
+`both_pass=false`。Oracle 为首轮 2.358199%、本轮 1.492825%，
+`both_pass=true`。两次运行不足以建立统计显著性；R5 的首轮收益尚未重复。
+
+父执行器以 `repeated_learned_needs_optimization_review` 正常退出，没有把本轮
+与首轮较慢的 Full 比较，没有追加 GPU 重试。首轮五方法完整比较及其原始结果
+继续保留；不得用旧 73 项目或不同背景到达的 ThunderAgent 替换当前对照。
+
+本轮实际到达 70 个 workflow，自然结束 60 个，其中 42 个非测量成员；
+23 个非测量成员右截尾，包含 13 个尚未提交的成员。最后测量完成偏移
+3797.683833 秒，小于计划最后到达 4598.502355 秒，背景覆盖通过。
+`complete_population_work_conserved=false` 仍表示没有运行完全部 83 个背景成员，
+不是完整固定测量组失败。完成证书明确验证：
+`actual_owned_exit_verified`、`fresh_idle_drain_verified`、
+`complete_measured_native_work_verified`、`no_measured_workflow_truncated` 均为 true。
+
+最终窗口仍为 `[55.6927713505, 1638.9548502657]` 秒，输出 550343、
+decode 545851 token。与原 `learned_closed_common_window.json` 的总数、53 个
+分箱及全部边界逐项一致；原现场报告的未完成标记保持 false，不将它改写成
+完整执行证明。完整执行由完成证书、`learned_review/` 和最终比较另行证明。
+
+## R5 改选及 JCT 路径
+
+冻结读取器在 `frozen_reader_r1/learned_choices.json` 完成全部选择核验：
+7000 个组合入口、481 次可重放搜索、79 次集合改变，新增 86 个 agent 执行片段。
+其中免费补位 23 个、周期授予 63 个，全部有精确授予及后续实际服务；
+周期片段还全部验证了压力协调后保留。对应边界内有效完成分别为 19、57 个。
+首轮为 61 次集合改变、63 个新增片段，其中 21 个免费补位、42 个周期授予，
+也均有精确实际服务。
+
+这些是局部片段及完整记录范围内的次数，不是独立 workflow 数、容量竞争总数，
+也不是可相加的因果 JCT 收益。更多改选已经落实为服务，但并未使本轮平均 JCT
+通过门槛，因此不能将负结果解释成“排序完全没有传到执行器”。
+
+`frozen_reader_r1/learned_JCT_paths.json` 核对两组完整 2991 条请求、
+362157 个输出与 18 条实际结束依赖路径。R5 减 Full 的平均路径分解如下：
+
+| 实际观测路径分量 | 平均差值 / s |
+| --- | ---: |
+| submit 至首次 native launch | +12.905137 |
+| 首次 launch 至 native complete | -12.833440 |
+| 其余事件及 dispatch | +3.634964 |
+| 完整平均 JCT | +3.706660 |
+
+launch 至 complete 包含交错和暂停，不是纯 GPU 执行。其余事件差值中
+`event:tool_end` 为 +3.698162 秒，这是观测依赖边间隔的分解项，不是工具
+overlay 被改写，也不是可独立归因的工具执行或控制线程耗时。
+
+最大的三个回退成员分别为 desktop-development +102.862940 秒、
+web-social +55.594741 秒、desktop-productivity +35.917873 秒。
+前两者的路径增量主要在首次服务等待；第三者主要在 launch 至 complete。
+desktop-development 的路径等待增加 130.600891 秒，服务内区间减少
+26.883000 秒。其一个同身份 post-tool 请求保持 248889 输入、87 输出 token，
+submit 至首次服务从 84.912106 增至 179.742892 秒，而 launch 至 complete
+仅从 3.522642 增至 3.845507 秒。该请求是后续容量和排序选择审计的具体入口，
+不能由此断言整轮差异全部来自一次排序、预测误差或控制开销。
+
+## 完整服务指标与 GPU 暂停
+
+CPU 收尾 `postprocess_cpu_r1` 在 08:56 完成，负结果同样生成三方法图表：
+`figures/complete_JCT_and_decode.png`、PDF、逐 bin CSV 及来源指纹。
+PNG 已实际查看，固定测量完整 JCT、共同墙钟窗口、所有背景输出及时间加权
+CDF 的口径一致，沿用 Okabe-Ito 配色，没有用单次运行构造置信区间。
+
+| 完整 2991 请求、18 workflow | 非排序 Full | Oracle | R5 |
+| --- | ---: | ---: | ---: |
+| pooled E2E normalized interactivity / token/s | 13.559464 | 14.370419 | 14.179079 |
+| workflow 等权 normalized interactivity / token/s | 14.933966 | 15.368912 | 15.313657 |
+| workflow 平均 TTFT / s | 68.974172 | 63.731207 | 62.919489 |
+| workflow P90 TTFT / s | 153.945700 | 91.063065 | 110.034563 |
+| 请求 seconds/output-token 的 P99 | 0.310227 | 0.375908 | 0.379624 |
+
+R5 的请求 P90 交互性及 workflow TTFT 改善，P99 完整请求耗时/token 和平均 JCT 回退，
+这些指标分别保留。TTFT 仍覆盖全部 18 个真实流式首输出，不以 native launch
+替代；不新增 SLO。
+
+08:55:38 PST，守卫确认父执行器和全部注册 GPU owner 实际退出，激活
+`/tmp/beliefkv-experiments.paused` 及现有预约文件。两者绑定当前重复组，
+`automatic_resume_allowed=false`、`resume_requires_explicit_user_release=true`。
+随后实际检查 GPU 无计算进程，coordinator、固定测量观察器、服务审计观察器、
+指标收尾观察器和暂停守卫均已退出。当前仅允许 CPU 分析，没有新的 GPU 后继。
+
+## 当前目标验收
+
+用户后续确认的 83 项目取代旧目标文字中的 73 项目，其他约束继续保留。
+本次按完整目标检查，不将已完成的 Oracle 子目标代替整体完成：
+
+| 要求 | 最终证据及状态 |
+| --- | --- |
+| 完整原任务、相同 token、依赖、工具及到达表 | 原始来源、冻结注册、三组完整回执与比较证明相同；通过 |
+| 400GB Host、20 初始、mean70、固定 18 测量成员 | 实际容量、同一 cohort 与实际启动参数；通过 |
+| NUMA 仅作诊断 | 当前配置为 diagnostic，复用已有注册及传输证明，无均匀分布硬门槛；通过 |
+| 真实 ready-paused 竞争 | Full 窗口采样供给 69.7924%，Oracle 周期 174 次逻辑竞争，R5 周期 126 次；通过诊断门槛 |
+| Oracle 重复约 1% JCT 改善、吞吐不低于 98% | 两轮分别 2.358199%、1.492825%，各自使用同组 Full；通过数值门槛 |
+| 改选到真实授予和服务 | 完整 Oracle 与 R5 精确 attempt 审计；通过，不作单次改选因果归因 |
+| R5 条件预测及组合准入 | 原冻结模型已实际执行；连续表达及项目隔离候选另行保留，尚未部署 |
+| R5 重复约 1% 完整 JCT 改善 | 首轮通过、本轮 -0.352105%，未通过；整体目标仍未完成 |
+| 同 workload ThunderAgent acting-decay 和 native | 首轮完整五方法结果已完成，正常尾部、回执及退出证明保留；通过 |
+| JOIN/EOS、预测卸载、prepare_host、连续性、sibling | 冻结配置与实际运行保留；工具预取、逐层 handoff 仍关闭 |
+| 固定测量正常尾部完成后停止背景 | 18/18 完整结束后停止，背景截尾明确记录；通过 |
+| 组后禁止继续 GPU | 暂停文件、marker、实际 owner 退出及 GPU 查询；已生效 |
+
+整体 goal 保持 active。后续可继续用现有完整记录做 CPU 诊断；任何需要新的
+GPU 性能验证的优化均等待用户明确释放，不能自行追加试验。R5 连续化和
+项目隔离的负结果另见 `r5_continuous_prediction_and_project_holdout_20261107_zh.md`。
