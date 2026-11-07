@@ -747,3 +747,103 @@ CPU 图表导出前，没有新增 GPU 实验、改写运行中的 serving 或�
 `plot_workflow_cohort_comparison.py` CLI，完整成员检查、PNG/PDF 和 CSV
 导出均成功，输出为 `plot_pipeline_cpu_smoke/`。这补齐了自动出图入口
 的实际绘图依赖验证，不将它称为 Oracle 完整 JCT 验证或新的性能比较。
+
+## mean70 完整 Oracle 通过与预测调度接续
+
+2026-11-07，America/Los_Angeles。Oracle 的固定 18 个测量成员均已
+自然完成；`oracle_comparison.json` 的平均 JCT、共同窗口输出吞吐和
+背景尾部覆盖三项检查全部通过，`fixed_cohort_performance_target_met`
+为 true。原接续器因此启动预先声明的 learned R5，没有更换 workload、
+到达表、测量成员、资源或 serving 版本。
+
+| 完整测量结果 | 非排序 Full | Oracle |
+| --- | ---: | ---: |
+| 固定测量 workflow | 18 | 18 |
+| 测量请求 / 输出 token | 2991 / 362157 | 2991 / 362157 |
+| 平均 JCT，秒 | 1061.121917 | 1036.098550 |
+| P50 JCT，秒 | 723.312153 | 629.258360 |
+| P95 JCT，秒 | 2775.338936 | 2720.397967 |
+| 最大 JCT，秒 | 3369.116674 | 3239.762056 |
+| 共同窗口输出吞吐，token/s | 346.998142 | 346.064627 |
+| 最后测量完成相对时间，秒 | 3782.061165 | 3652.706547 |
+
+完整平均 JCT 降低 25.023366 秒，即 **2.358199%**，11 个成员改善、
+7 个成员变差。共同窗口输出吞吐变化 -0.269026%，两组背景计划都
+覆盖完整测量尾部，未覆盖区间均为 0。比较只改变剩余工作排序，
+不是跨 mean60/mean70 的比较，也没有加入新的控制开销修复。
+
+`complete_oracle_verified.json` 另行核对比较器及完成证书绑定、两组
+相同的固定成员与原始 token 工作量、实际容量、测量 JCT 算术和两份
+新鲜健康空闲快照，并按 pid/start_ticks 复查旧 serving 的全部清理
+身份均已退出。冻结 supervisor 保留的原始中断状态明确归类为测量组
+完成后的背景取消，不作为失败重跑，也没有改写原始状态。
+
+Oracle 的 83 个计划成员中，67 个实际到达，58 个自然完成，25 个
+非测量成员右截尾，其中 16 个尚未提交。因此实际已到达而未完成的
+背景为 9 个，不能称 83 个全部完成。完整测量工作没有被截断。
+两组最终的同会话前缀丢失代理均为 0；FULL block 重算仍分别为
+22024、23650 token，独立保留，不称零重算。实际 Host 容量均为
+400000057344 字节，Device FULL 容量均为 805198 token。
+
+完整 `completed_service_analysis/oracle_service.json` 记录 1796 个
+实际选择边界、82 次集合变化、88 个新增 agent episode / 不同请求
+attempt。88 个均精确授予、压力后保留并获得精确后续服务，82 个在
+下一次控制或已记录同 agent 干预前取得有效服务及有效 batch 完成。
+共同窗口仍是 768 个边界、41 次集合变化；完整报告与早期前缀不能
+相加。局部非排序参照没有模拟另一条 Full 的物理分配和后续状态。
+
+完整 Oracle 同步计时位于
+`completed_service_analysis/oracle_synchronous_costs.json`。其最后
+累积工具替换检查线程 CPU 为 56.033346 秒，Full 为 58.521681 秒；
+观察跨度、控制次数及执行状态已经不同，不能把差值当作独立的控制
+代码优化收益。两组没有新增控制代码差异，包含性计时也不能相加或
+直接扣除 JCT。
+
+需保留结果边界：20 个完整预热成员的均值反而回退 1.885891%，其中
+15 个变差；背景只有 20 个共同完成成员，其 JCT 仍是条件完成子集
+统计。不能将测量组的 2.358199% 外推为所有 workflow 均改善、正式
+稳态或统计显著性，也尚未证明重复性。当前 Oracle 是特定排序规则
+使用未来信息的诊断，不是全局最优 JCT 上界。
+
+自动生成的完整 JCT ECDF、共同窗口 decode 趋势和时间加权分布位于
+`completed_service_analysis/oracle_figures/`，PNG 已实际查看，保留
+单次运行、固定测量组与背景人口说明。
+
+learned 已注册于端口 19019，运行目录为
+`experiments/raw/workflow_original83_host400_mean70_learned_20261106_r2/`，
+serving 仍为 `631911fb`、原生树仍为 `434c35dd6621`，预测模型 SHA256
+仍为 `fe07eabc1c2ee72230efdb2bff190276ffc372d45dfaeae41228d97a90bfc3d6`。
+初始化阶段的 campaign 18/18 仍属于 Oracle，learned 进度须使用其
+自己的 driver 和 cohort 观察器。预测调度达到相同门槛后，才接续
+ThunderAgent acting-decay 和 native。learned 的 R5 组合选择与直接
+Oracle 排序也有算法差异，两者差距不能全部归因于预测误差。
+
+### learned 实际回放与预测器核对
+
+2026-11-07 01:25 America/Los_Angeles，
+`ops/verify_background83_learned_live_20261107.py` 的独立现场检查通过，
+结果为 `gpu_campaign_20261106_r2/live_learned_verified.json`：
+
+- supervisor 340996、server 341462、driver 342639、唯一 GPU scheduler
+  341549 均实际存活、nice0；独立固定测量组观察器 342646 存活、nice19。
+- 实际 Device 为 805198 FULL token，Host 为 4069011 FULL token /
+  400000057344 字节，原生执行配置与完整 Full 相同。
+- 实际策略为 R5 组合准入，普通协调边界 2000 ms、搜索软预算
+  500000 ns；JOIN/EOS 权利与已有 active agent 连续性保留，
+  没有新增请求抢占。原有工具预测卸载、原生需求恢复等共同机制不变。
+- 预测模型实际 SHA 与声明的 `fe07eabc...bfc3d6` 完全一致，
+  `future_trace_used_online=false`、`future_information_used=false`、
+  `scheduler_waits_for_inference=false`，预测器 error 为空且有实际推理。
+- 已封闭的 1362 个完成请求、121789 个输出 token 的输入输出哈希、
+  请求/上下文身份、position sampler 与原生停止边界匹配原始 token
+  包。已有 1185 条实际 R5 选择日志；它们不是 1185 次集合改变或
+  1185 次独立竞争。
+
+早先一次内联 CPU 检查误将模型路径作为期望 SHA 参数，导致检查器
+拒绝；运行中的模型摘要实际匹配声明。修正后的检查器分别验证模型
+文件哈希与声明摘要，并把先前参数错误保留在现场证明中，没有改写
+运行中的预测器、注册或 GPU 轨迹。
+
+该证明是现场执行和已完成请求前缀的一致性检查，不是完整 learned
+JCT 或收益验证。当时 learned 自己的测量组为 0/18、实际到达 25，
+未借用 Oracle 的完成计数；继续按原协议等待全部固定成员自然完成。
