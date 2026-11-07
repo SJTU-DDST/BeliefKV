@@ -279,9 +279,18 @@ def main():
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--epochs", type=int, default=200)
     parser.add_argument("--tree-rounds", type=int, default=96)
+    parser.add_argument("--maximum-training-states", type=int, default=0)
+    parser.add_argument("--maximum-calibration-states", type=int, default=0)
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or args.output_dir.exists():
         raise ValueError("hide CUDA and preserve previous project evaluation evidence")
+    if (
+        not 1 <= args.epochs <= 10000 or not 1 <= args.tree_rounds <= 128
+        or any(value != 0 and not 2 <= value <= 10000 for value in (
+            args.maximum_training_states, args.maximum_calibration_states,
+        ))
+    ):
+        raise ValueError("use bounded fitting parameters or zero for every complete observed state")
     source_paths = [Path(__file__)] + [ROOT / path for path in (
         "beliefkv/predictor/workflow_work.py", "beliefkv/predictor/workflow_work_training.py",
         "beliefkv/predictor/workflow_continuous_work.py", "beliefkv/predictor/workflow_conditional_tree.py",
@@ -299,7 +308,8 @@ def main():
         "inputs_sha256": pins, "projects": len({row["project"] for row in all_rows}),
         "executions": len({row["workflow"] for row in all_rows}), "snapshots": len(all_rows),
         "outer_folds": args.folds, "epochs": args.epochs, "tree_rounds": args.tree_rounds,
-        "seed": 21, "maximum_training_states_per_execution": 128,
+        "seed": 21, "maximum_training_states_per_execution": args.maximum_training_states or None,
+        "maximum_calibration_states_per_execution": args.maximum_calibration_states or None,
         "maximum_evaluation_states_per_execution": 64,
         "training_uses_no_outer_or_calibration_weights": True,
         "vocabulary_scaling_both_MLPs_and_tree_refitted_inside_each_fold": True,
@@ -322,8 +332,13 @@ def main():
     for index, (training, calibration, evaluation) in enumerate(folds):
         started = time.monotonic()
         print(f"project_fold_{index}: fitting all predictor components", flush=True)
-        training_sample = sampled(training, 128)
-        calibration_sample = sampled(calibration, 64)
+        training_sample = (
+            sampled(training, args.maximum_training_states) if args.maximum_training_states else training
+        )
+        calibration_sample = (
+            sampled(calibration, args.maximum_calibration_states)
+            if args.maximum_calibration_states else calibration
+        )
         model, proof = fit_fold(
             training_sample, calibration_sample, epochs=args.epochs, tree_rounds=args.tree_rounds,
         )
@@ -346,9 +361,10 @@ def main():
                     evaluated, [row["raw_" + method + "_weight"] for row in evaluated], phase="ready",
                 ) for method in ("binned", "continuous")
             },
-            "model_sha256": hashlib.sha256(json.dumps(raw, sort_keys=True).encode()).hexdigest(),
         }
-        write(args.output_dir / f"fold_{index}" / "model.json", raw)
+        model_path = args.output_dir / f"fold_{index}" / "model.json"
+        write(model_path, raw)
+        report["model_sha256"] = sha256_file(model_path)
         write(args.output_dir / f"fold_{index}" / "tree_training.json", proof)
         write(args.output_dir / f"fold_{index}" / "predictions.json", evaluated)
         write(args.output_dir / f"fold_{index}" / "evaluation.json", report)

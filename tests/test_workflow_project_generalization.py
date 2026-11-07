@@ -1,5 +1,6 @@
 from copy import deepcopy
 import hashlib
+import json
 
 import pytest
 
@@ -10,6 +11,9 @@ from scripts.evaluate_workflow_continuous_projects import (
 )
 from scripts.train_workflow_work_distribution import snapshots
 from scripts.prepare_continuous_work_readout import training_rows
+from scripts.evaluate_frozen_workflow_projects import unseen_workflows
+from scripts.verify_workflow_prediction_artifact_bindings import verify
+from tests.test_workflow_continuous_serving import continuous_model
 from tests.test_workflow_work_distribution_training import execution
 
 
@@ -137,3 +141,43 @@ def test_readout_reference_uses_exact_training_executions_and_rejects_overlap():
     split["calibration_execution_sha256"].append(split["training_execution_sha256"][0])
     with pytest.raises(ValueError, match="overlapping"):
         training_rows(raw, rows)
+
+
+def test_frozen_project_evaluation_excludes_prior_calibration_and_development_too():
+    population = {"folds": [{
+        "training": {"projects": ["train"]}, "calibration": {"projects": ["cal"]},
+        "evaluation": {"projects": ["dev"]},
+    }] * 5}
+    composition = {"selected_workflows": [
+        {"project": name, "workflow_id": name + "-workflow"}
+        for name in ("train", "cal", "dev", "unseen")
+    ]}
+    assert unseen_workflows(composition, population) == [composition["selected_workflows"][-1]]
+    composition["selected_workflows"].append(composition["selected_workflows"][-1])
+    with pytest.raises(ValueError, match="previously unseen"):
+        unseen_workflows(composition, population)
+
+
+@pytest.mark.parametrize("kind", ("canonical", "bytes", "changed"))
+def test_saved_models_keep_byte_hash_separate_from_canonical_json(tmp_path, kind):
+    path = tmp_path / "fold_0" / "model.json"
+    path.parent.mkdir()
+    raw = continuous_model().raw
+    payload = json.dumps(raw, indent=2).encode()
+    path.write_bytes(payload)
+    reported = (
+        hashlib.sha256(json.dumps(raw, sort_keys=True).encode()).hexdigest()
+        if kind == "canonical" else hashlib.sha256(payload).hexdigest()
+    )
+    (tmp_path / "evaluation.json").write_text(json.dumps({"folds": [{
+        "fold": 0, "model_sha256": reported,
+    }]}))
+    if kind == "changed":
+        raw["metadata"]["changed"] = True
+        path.write_text(json.dumps(raw))
+        with pytest.raises(ValueError, match="differs"):
+            verify(tmp_path)
+    else:
+        result = verify(tmp_path)
+        assert result["models"][0]["model_file_sha256"] == hashlib.sha256(payload).hexdigest()
+        assert result["models"][0]["original_report_hashes_file_bytes"] == (kind == "bytes")
