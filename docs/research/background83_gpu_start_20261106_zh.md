@@ -1337,3 +1337,19 @@ launch 代替；最终图要求完整 TTFT 覆盖。03:51 的 baseline 为
 15/18 测量成员完成、63 个已到达，实际 coordinator、scheduler、
 driver、cohort observer 及此 CPU 接续器均存活。两组基线的完整
 JCT、服务指标和整体重复性仍未完成。
+
+## ThunderAgent 完整结果与实际 native 接续
+
+最新完成证据已整理到
+[完整结果记录](background83_thunder_complete_and_native_start_20261107_zh.md)：
+新 ThunderAgent 固定 18 条测量 workflow、2991 个请求、
+362157 个输出完整完成，背景覆盖全部尾部，实际排空和 owned-process
+退出已核对。R5 平均 JCT 相比 ThunderAgent 降低 6.745410%，
+共同窗口吞吐提高 5.906717%；15 条改善、3 条变差。
+该结果的 R5 相对非排序 Full 排序增益仍为 1.122611%。
+
+SGLang 已在端口 19023 实际回放。独立 native 现场读取器核对相同
+引擎和 Device/Host 容量、自定义 agent 准入关闭、唯一实际 GPU owner，
+以及首批 15 个完成请求、636 个输出的原始哈希/身份和采样路径。
+四方法完整 JCT/decode 图已生成并实际查看。五方法完整结果与重复性
+仍待完成，没有据单轮结果标记目标已完成。
