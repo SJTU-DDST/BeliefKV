@@ -779,3 +779,76 @@ GPU 执行或迁移耗时。事件间隔按实际观测时钟重建，不代表�
 图明确标注每个方法单次运行、不绘制置信区间。吞吐趋势整体
 接近，与共同窗口 decode 的 342.821954 对 342.458148 token/s
 一致，没有通过不同墙钟窗口扩大收益。
+
+## 重复轮的交互指标补充
+
+复用冻结分析目录 `63815c5e` 中的
+`audit_measured_request_interactivity.py`，分别核对本轮 Full 和
+Oracle 的完整 2991 个请求。两个结果写入
+`frozen_reader_r1/full_interactivity.json`、
+`frozen_reader_r1/oracle_interactivity.json`，TTFT 均覆盖全部 18 个
+固定测量 workflow；不使用 native launch 代替真实流式首输出。
+
+| 完整测量人口 | 非排序 Full | Oracle |
+| --- | ---: | ---: |
+| pooled E2E normalized interactivity / token/s | 13.559464 | 14.370419 |
+| workflow 等权的 normalized interactivity / token/s | 14.933966 | 15.368912 |
+| workflow 平均 TTFT / s | 68.974172 | 63.731207 |
+| workflow P90 TTFT / s | 153.945700 | 91.063065 |
+| 请求 seconds/output-token 的 P99 | 0.310227 | 0.375908 |
+
+Normalized interactivity 定义为完整 HTTP 请求耗时除以输出 token 数的
+P90 的倒数，不扣除 TTFT；不是 token/s 的 P90、纯 decode 速度或
+50 token/s SLO。workflow 等权行先按每个 workflow 使用同一定义，
+再对 18 个 workflow 等权平均。P99 仍有回退，因此不将 JCT、
+TTFT 和 P90 指标的改善描述为所有尾部请求都获益。原始时序与
+来源指纹保留，没有重跑 GPU。
+
+## 重复 R5 的完整共同窗口
+
+08:18，同一 R5 的原生服务已观察至回放原点后 1727.416365 秒。
+沿用原有 `window_costs.py` 读取封闭前缀，结果为
+`repeatability_execution_r1/learned_closed_common_window.json`。
+固定窗口仍为 `[55.6927713505, 1638.9548502657]` 秒；
+三组均使用 53 个相同边界的分箱，输出与 decode token 分别守恒。
+
+| 相同窗口，含所有背景 workflow | 非排序 Full | Oracle | R5 |
+| --- | ---: | ---: | ---: |
+| 输出 token | 547251 | 546673 | 550343 |
+| decode token | 542777 | 542201 | 545851 |
+| 输出 token/s | 345.647766 | 345.282697 | 347.600696 |
+| decode token/s | 342.821954 | 342.458148 | 344.763515 |
+
+R5 输出吞吐相对本轮 Full 改善 0.565006%，满足吞吐比例不低于
+98% 的数值条件。failed/dropped records 为零，读取时 writer queue
+为零，输出 ordinal 连续性通过。它仍是闭合窗口诊断：
+`complete_measured_execution_verified=false`、
+`completed_request_receipts_reconciled=false`，不能据此判断整轮
+JCT 或重复性门槛已通过；原窗口报告不在完成后被改写为完整执行证明。
+
+## 完整收尾的待验收项
+
+当前目标按用户后续确认的 83 项目执行，旧 73 项目结果保留为历史。
+最终验收继续使用相同 Host400GB、20 初始、mean70、固定 18 测量成员：
+
+| 要求 | 当前证据或待完成项 |
+| --- | --- |
+| 原始任务、token、依赖、工具 overlay 和到达表一致 | 冻结注册、两轮完整 Oracle/Full 及首轮 R5、ThunderAgent、native 的同工作量核对 |
+| 真实 ready-paused 竞争 | 两轮负载诊断及实际周期候选；不以队列总长代替竞争 |
+| Oracle 重复至少约 1% JCT 改善，吞吐无明显下降 | 首轮 2.358199%、重复轮 1.492825%；对应同组共同窗口门槛通过 |
+| 改选影响准入和后续服务 | 两轮完整精确 attempt 授予、压力后保留、实际服务及有效完成审计 |
+| R5 条件分布确实用于执行 | 原冻结模型的现场及首轮完整证据；重复轮运行中 |
+| R5 重复完整 JCT、全部原生回执和正常尾部 | 待本轮 18 个固定成员全部自然完成，禁止仅用先完成成员计算 |
+| R5 完整改选、服务、JCT 路径与交互指标 | 改选和路径由 454341 接续；交互指标在完成后读取 |
+| NUMA 仅作诊断，不强制两个节点均分 | 现有400GB注册及已完成实际执行；不新增内存放置试验 |
+| 保留 JOIN/EOS、工具预测卸载、prepare_host、连续性、sibling | 冻结源码及现场启用参数；工具预取和逐层 handoff 仍关闭 |
+| 组后停止 GPU，需要用户明确释放 | 守卫已登记并实际存活，当前仍在等待本组结束；待核对实际激活 |
+
+新增 `scripts/finish_ranking_repetition_metrics.py` 只执行 CPU 收尾：
+等待本组 coordinator、完整服务审计观察器实际退出，以及暂停记录和
+marker 均确认为当前组禁止自动恢复、需要用户明确释放后，才读取本轮
+R5 的完整 interactivity。正、负完整结果都保留；如果执行器未生成三组
+完整图表，则用相同 cohort 生成，否则核对来源后复用。结束前再核对
+暂停状态，任何不完整或预约变更都保留待复核，不自动标记 goal 完成。
+当前三组的 GPU 配置和执行器没有修改。25 项相关 CPU 边界检查通过，
+包含旧 hold/服务恢复检查，不能将其当作 GPU 或新调度策略性能证明。
