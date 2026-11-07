@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as causal
-from scripts.review_predictive_thunder_cohort import TRAFFIC_FIELDS
+from scripts.review_predictive_thunder_cohort import matching_serving_traffic
 from scripts.review_sustained_oracle import compare_cohorts
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
@@ -20,9 +20,7 @@ from scripts.verify_measured_execution import review_matches_execution, verify_e
 def matching_traffic(predictive, native):
     if predictive.get("order") != ["full"] or native.get("order") != ["native_matched"]:
         raise ValueError("require Predictive and the native SGLang replay baseline")
-    for name in TRAFFIC_FIELDS:
-        if name not in predictive or predictive[name] != native.get(name):
-            raise ValueError("native baseline changed fixed traffic or serving conditions: " + name)
+    matching_serving_traffic(predictive, native)
     if native.get("oracle_information") is not None:
         raise ValueError("native baseline must not receive oracle information")
 
@@ -92,6 +90,7 @@ def main():
         formal_workload_accepted=False, single_run_statistical_significance_claimed=False,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             *inputs, Path(__file__), ROOT / "scripts/review_sustained_oracle.py",
+            ROOT / "scripts/review_predictive_thunder_cohort.py",
             ROOT / "scripts/verify_measured_execution.py", ROOT / "scripts/stop_after_measured_cohort.py",
         )},
         GPU_action=False, automatic_GPU_followup=False, performance_accepted=False,

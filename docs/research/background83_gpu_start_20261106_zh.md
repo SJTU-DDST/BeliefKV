@@ -204,3 +204,42 @@ chunk2048、共同执行配置和 NUMA 放置策略。算法自身的控制周�
 当前实际已登记的 GPU 接续仍只有 Oracle；预测、ThunderAgent 和 native
 的运行注册尚未创建。条件满足后按上述顺序执行，沿用必要的输入、
 实际资源及停止协议检查，避免为未改变的部分新增独立 GPU 小实验。
+
+### 同负载后续配置的 CPU 准备
+
+`gpu_pair_20261106_r2/conditional_followups_r1/prepare.py` 已执行，
+产出 `learned.json`、`native.json`、`evaluation.json` 和 `review.json`。
+使用同一冻结 `631911fb` 的环境生成器及真实 runtime constructor，
+learned 与 ThunderAgent 配置均通过；native 的检查确认不构造 Full
+runtime、不启用自定义 admission socket，并关闭 Full 迁移、工作量排序
+及 prepare_host。native 的配置检查不代表 GPU 服务已经启动。
+
+预测配置沿用此前已执行的条件树模型
+`fe07eabc1c2ee72230efdb2bff190276ffc372d45dfaeae41228d97a90bfc3d6`。
+其预测参数与已评价导出逐项相同，只保留旧的无成本分母组合 profile；
+没有用本轮结果重新选模型或声称新的准确率提升。相对当前非排序 Full，
+环境只改变已声明的模型来源、模型路径/哈希和组合选择开关，流量、
+资源、统一控制与工具检查参数保持一致。旧模板中仍指向早期模型的
+qualification 元数据已在派生配置中改为实际模型和对应评价证据。
+
+当前 Oracle 使用直接全局剩余路径排序，learned 使用条件概率与 JOIN
+组合选择，因此二者的差距不能全部归于预测误差。后续结果需要分别相对
+相同非排序 Full 报告完整 JCT 与共同窗口吞吐。组合成本沿用旧对照标定，
+明确不是本轮 83 项目的新成本标定。
+
+三份配置的来源、到达表、工具 overlay、私有测量组和 Host 分配策略
+已逐项相同；native 固定测量组停止协议也通过声明检查。CPU 检查未分配
+新的 GPU/400GB 池、未重跑全量回归，也未注册后续 GPU。正式运行仍需绑定
+实际派生配置，并满足前述完整负载、Oracle 和预测收益条件。
+
+native 结果比较器另外补齐共享执行条件检查，复用 ThunderAgent 比较器的
+`matching_serving_traffic`。旧比较器虽然检查流量并在最终比较时核对实际
+容量，但遗漏 `native_execution_configuration`、声明容量实验及 Host
+分配配置；可能接受不同执行配置或不同 Host 策略的两份声明。四项拒绝
+用例在修复前失败、修复后通过。最终相关 62 项 CPU 检查全部通过，
+报告为本目录 `native_comparison_before.xml` 和 `native_comparison_after.xml`。
+页面数量的实测差异仍是诊断，不要求两组 NUMA 页面比例相等。
+
+该修改仅用于未来 native 结果审计，同时将共享检查 helper 纳入结果溯源；
+没有改动运行中的服务、Oracle 接续器或任何项目测试。当前运行及其
+8188 项冻结证据保持原样，不能把这 62 项称为重跑整套 serving 回归。
