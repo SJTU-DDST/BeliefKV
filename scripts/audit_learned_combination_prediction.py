@@ -27,6 +27,21 @@ from scripts.review_learned_work_ranking import verify_learned_combination_pair
 from scripts.train_workflow_work import write
 
 
+def planning_costs(profile):
+    objectives = {
+        "r5_frozen_batch_cost_proxy_capacity_v6": "benefit_per_cost",
+        "r5_frozen_batch_cost_proxy_capacity_v7": "benefit",
+    }
+    costs = CombinationCosts(**profile["costs"])
+    if (
+        profile.get("kind") not in objectives
+        or costs.decode_cost_basis != "full_batch"
+        or costs.selection_objective != objectives[profile["kind"]]
+    ):
+        raise ValueError("diagnostic requires the declared full-pool planning profile and objective")
+    return costs
+
+
 def combination_candidates(row):
     values = []
     for raw in row["candidates"]:
@@ -228,10 +243,9 @@ def main():
     }
     audit(observations, timeline, labels["requests"], totals, {"synchronous": model})
     profile = model.raw["admission_cost_profile"]
-    if profile["kind"] != "r5_frozen_batch_cost_proxy_capacity_v6":
-        raise ValueError("diagnostic requires the declared full-pool planning profile")
+    costs = planning_costs(profile)
     result = inspect(
-        rows, observations, CombinationCosts(**profile["costs"]), profile, model.thresholds,
+        rows, observations, costs, profile, model.thresholds,
         set(causal.load(args.cohort)["measured_workflow_ids"]),
     )
     if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
@@ -240,6 +254,11 @@ def main():
         analysis_commit=subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True,
         ).strip(),
+        actual_cost_profile={
+            "kind": profile["kind"], "identity": profile["identity"],
+            "decode_cost_basis": costs.decode_cost_basis,
+            "selection_objective": costs.selection_objective,
+        },
         input_jsonl_prefixes=reader.prefixes, inputs_sha256=pins, GPU_action=False,
         scope={
             "actual_cached_weights_and_fixed_resource_cost_JOIN_contract": True,

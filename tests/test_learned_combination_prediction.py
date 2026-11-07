@@ -5,9 +5,31 @@ import json
 import pytest
 
 from beliefkv.policy.workflow_combination import choose_combination
-from scripts.audit_learned_combination_prediction import inspect, pair_quality
+from scripts.audit_learned_combination_prediction import inspect, pair_quality, planning_costs
 from tests.test_combination_device_planning import audit_row, resource, rows
 from tests.test_combination_full_batch_costs import costs
+
+
+@pytest.mark.parametrize(("kind", "objective"), (
+    ("r5_frozen_batch_cost_proxy_capacity_v6", "benefit_per_cost"),
+    ("r5_frozen_batch_cost_proxy_capacity_v7", "benefit"),
+))
+def test_planning_profile_preserves_its_recorded_objective(kind, objective):
+    expected = replace(costs(), selection_objective=objective)
+    assert planning_costs({"kind": kind, "costs": asdict(expected)}) == expected
+
+
+@pytest.mark.parametrize(("kind", "objective", "basis"), (
+    ("r5_frozen_batch_cost_proxy_capacity_v5", "benefit_per_cost", "full_batch"),
+    ("r5_frozen_batch_cost_proxy_capacity_v6", "benefit", "full_batch"),
+    ("r5_frozen_batch_cost_proxy_capacity_v7", "benefit_per_cost", "full_batch"),
+    ("r5_frozen_batch_cost_proxy_capacity_v6", "benefit_per_cost", "incremental"),
+    ("r5_frozen_batch_cost_proxy_capacity_v7", "benefit", "incremental"),
+))
+def test_planning_profile_rejects_unsupported_or_mismatched_costs(kind, objective, basis):
+    value = replace(costs(), selection_objective=objective, decode_cost_basis=basis)
+    with pytest.raises(ValueError, match="planning profile and objective"):
+        planning_costs({"kind": kind, "costs": asdict(value)})
 
 
 def evidence(*, required=(), deadline=False, all_fit=False):
