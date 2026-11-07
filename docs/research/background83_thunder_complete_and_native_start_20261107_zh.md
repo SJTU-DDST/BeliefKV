@@ -400,3 +400,33 @@ handoff 仍关闭。
 native position sampler 保留标记通过独立核对。这是新重复臂
 实际回放及前缀证明，不是完整 JCT。05:34 状态为 21 个已到达、
 0/18 测量成员完成，error 为空；只继续同一运行。
+
+### 重复轮的实际选择与服务审计接续
+
+05:38，独立 CPU 观察器
+`ops/finish_background83_replication_service_20261107.py` 已登记并实际
+运行，PID 415479、nice19、CPU0、CUDA 隐藏、单线程数值库。
+固定计划及状态位于
+`repeatability_execution_r1/complete_service_analysis/{plan,state}.json`，
+绑定当前重复 coordinator、固定 cohort 和全部只读审计源码哈希。
+
+观察器等待完整的 Oracle 或 learned 对照后，再调用原有审计器：
+
+- Oracle 使用 `audit_ranked_oracle_service.py --complete`，复核实际
+  周期选择与精确请求授予、压力后保留和有界后续服务。
+- learned 使用 `audit_workflow_combination_choices.py --complete
+  --policy-kind learned`，同时核对周期与免费补位；独立工具替换
+  仍与组合选择分开，不能混用计数人口。
+- 两者分别调用 `audit_cohort_jct_paths.py`，用同一原始源图和本轮
+  Full 重建完整固定 18 条 JCT，区分提交至实际服务的等待、服务
+  后区间和其余事件。路径分解不作为纯 GPU 时间或独占因果归因。
+
+即使完整结果未达到性能门槛，也会审计该结果；若 GPU coordinator
+因此未执行后续臂，则明确记录没有该完整比较，不另启 GPU。
+这些 CPU 输出是后续证据，不是已取得的重复性收益。原 GPU 执行器、
+冻结服务代码、配置及运行顺序保持不变。
+
+05:39，实际重复 Full 的 scheduler 412655、driver 413529、
+cohort observer 413540、coordinator 411682 及上述 CPU 观察器均
+存活。Full 为 25 个已到达、0/18 测量成员完成；两个观察器 error
+均为空。当前依然等待本轮 Full 的完整测量结果。
