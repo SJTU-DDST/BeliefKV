@@ -1195,3 +1195,47 @@ greedy 代理。排序仍保持已就绪 sibling 相邻，不等待未就绪成�
 03:17 America/Los_Angeles，实际 ThunderAgent scheduler、driver、
 cohort observer 和 coordinator 仍存活，固定测量组为 4/18、已到达
 32 条，error 为空。同一运行继续自然完成，SGLang 尚未接管 GPU。
+
+### 新 ThunderAgent 的完整共同吞吐窗口
+
+03:25 America/Los_Angeles，使用已经绑定的只读 `window_costs.py`
+核对新 ThunderAgent 的完整共同窗口
+55.6927713505--1638.9548502657 秒。读取前确认同一 supervisor、server
+及 driver 实际存活，等待窗口结束后 30 秒，封闭前缀实际包含至
+1669.623545 秒的原生服务记录。输出 ordinal 连续性与逐 bin token
+守恒通过，写入、丢弃记录计数为 0。窗口包含全部 workflow 和背景，
+不是部分完成 workflow 的均值。
+
+证据位于
+`baseline_restart_20261107_r1/closed_common_window_r1/thunder_window_costs.json`：
+
+| 方法 | 共同窗口输出 token/s | decode token/s | 输出吞吐相对 ThunderAgent |
+| --- | ---: | ---: | ---: |
+| ThunderAgent acting-decay | 328.158558 | 325.470437 | 0 |
+| 非排序 Full | 346.998142 | 344.155909 | +5.741001% |
+| Oracle | 346.064627 | 343.236289 | +5.456530% |
+| learned R5 | 347.541956 | 344.697828 | +5.906717% |
+
+ThunderAgent 窗口输出为 519561，其中 decode 515305；learned R5 的
+完整窗口逐 bin 输出同此前已完成 cohort 报告一致。FULL 系列之间
+吞吐很接近，R5 的本轮主要目标仍是完整平均 JCT。
+
+原生 worker 区间诊断中，ThunderAgent 的 decode 每输出区间成本为
+1.834936 ms，learned 为 1.806265 ms；时间加权有效 decode 宽度为
+13.425962 和 13.954142。ThunderAgent 实际 prefill extend 为
+5455284 token、627.178868 秒，learned 为 5644389 token、
+597.733392 秒。各方法在相同墙钟窗口推进的请求人口不同，worker
+区间也包含等待与提交，不能把这些均值直接归因于同一 CUDA kernel、
+迁移成本或某个调度模块。
+
+`ops/plot_background83_baseline_window_20261107.py` 使用已有三组完整
+cohort 报告和新的 ThunderAgent 窗口，验证相同 30 秒 bin 边界及
+输出/decode 守恒，生成 `figures/closed_window_throughput.png`、
+PDF、CSV 和 `comparison.json`。PNG 已实际查看。图包含全部窗口
+时间，CDF 按 bin 的真实墙钟长度加权，沿用 Okabe-Ito 方法配色，
+没有单轮推导置信区间，也没有估计未完成的 ThunderAgent JCT。
+
+03:27 的固定测量观察器为 9/18、41 个已到达，所有实际 owner 仍
+存活，完整 ThunderAgent JCT、最终 receipt 排空核对和 SGLang 结果
+仍待完成。本节是已封闭吞吐窗口的证据，不替代完整测量验收或
+重复性验证，也不触发其他 GPU 试验。
