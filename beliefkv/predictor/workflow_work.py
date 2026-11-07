@@ -497,6 +497,19 @@ class WorkflowWorkModel:
             from beliefkv.predictor.workflow_conditional_tree import ConditionalProgressTreeHead
 
             self.conditional_tree = ConditionalProgressTreeHead(raw["conditional_progress_tree_head"], self)
+        self.continuous_readout = None
+        if "continuous_work_readout" in raw:
+            from beliefkv.predictor.workflow_continuous_work import (
+                SERVING_KIND, ContinuousWorkReadout, forecast_fingerprint,
+            )
+
+            continuous = raw["continuous_work_readout"]
+            if (
+                not isinstance(continuous, dict) or continuous.get("serving_kind") != SERVING_KIND
+                or continuous.get("forecast_sha256") != forecast_fingerprint(raw)
+            ):
+                raise ValueError("continuous workflow work requires its source-bound forecast contract")
+            self.continuous_readout = ContinuousWorkReadout(self, continuous)
 
     @classmethod
     def load(cls, path, digest):
@@ -563,9 +576,11 @@ class WorkflowWorkModel:
             raise ValueError("workflow work model and runtime execution controls differ")
         return execution_control_text(controls)
 
-    def predict(self, projection, features):
+    def predict(self, projection, features, *, with_work=False):
         import numpy as np
 
+        if with_work and self.continuous_readout is None:
+            raise ValueError("continuous inference requires an explicit continuous-work artifact")
         tree_projection = None
         if self.conditional_tree is not None:
             from beliefkv.predictor.workflow_progress_tree import TreeProjection
@@ -605,7 +620,10 @@ class WorkflowWorkModel:
                     initial_projection.initial_projection, features,
                 )
                 if self.initial_blend == 1.:
-                    return initial_probabilities
+                    return (
+                        (initial_probabilities, self.continuous_readout.estimate(initial_probabilities))
+                        if with_work else initial_probabilities
+                    )
         if self.task_only_before_work:
             features = work_prediction_features(features, task_only_before_work=True)
         numeric = (
@@ -640,6 +658,15 @@ class WorkflowWorkModel:
             else self.work_prior.combine(probabilities, mean, features, self.thresholds)
         )
         if tree_projection is not None:
+            if with_work:
+                probabilities, distribution = self.conditional_tree.forecast(
+                    probabilities, features, tree_projection.task_structure, hidden, self.thresholds,
+                )
+                return probabilities, self.continuous_readout.estimate(
+                    probabilities, **(
+                        {"mean": distribution[0], "sigma": distribution[1]} if distribution is not None else {}
+                    ),
+                )
             probabilities = self.conditional_tree.combine(
                 probabilities, features, tree_projection.task_structure, hidden, self.thresholds,
             )

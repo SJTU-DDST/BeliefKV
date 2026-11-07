@@ -147,9 +147,11 @@ class ProgressTreeHead:
         return leaves.reshape(-1, 3).sum(0) if self.objective == "multiclass" else float(leaves.sum())
 
     def probabilities(self, values, thresholds):
+        return self.probabilities_from_score(self.score(values), thresholds)
+
+    def probabilities_from_score(self, score, thresholds):
         import numpy as np
 
-        score = self.score(values)
         if self.objective == "multiclass":
             logits = score / self.temperature
             probability = np.exp(logits - logits.max())

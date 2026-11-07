@@ -116,6 +116,15 @@ def probability_weight(probabilities):
     return sum(p * factor for p, factor in zip(probabilities, (1., .5, .25)))
 
 
+def prediction_weight(prediction):
+    weight = getattr(prediction, "effective_weight", None)
+    if weight is None:
+        return probability_weight(prediction.probabilities)
+    if type(weight) not in (int, float) or not math.isfinite(weight) or not 0 <= weight <= 1:
+        raise ValueError("continuous workflow utility must be finite and bounded")
+    return weight
+
+
 def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=None):
     if (
         not rows or len(rows) > resources.slots

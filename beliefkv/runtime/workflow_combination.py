@@ -9,7 +9,7 @@ import time
 
 from beliefkv.policy.workflow_combination import (
     CombinationCandidate, CombinationCosts, CombinationResources,
-    choose_combination, probability_weight,
+    choose_combination, prediction_weight,
 )
 from beliefkv.policy.workflow_size_resume import resume_category
 from beliefkv.runtime.deferred_free_admission import DeferredFreeAdmission
@@ -408,7 +408,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 if a._supported(prediction):
                     weight = (
                         1. / (1. + prediction.remaining_path_s / self.oracle_reference_path_s)
-                        if prediction.evidence == "oracle" else probability_weight(prediction.probabilities)
+                        if prediction.evidence == "oracle" else prediction_weight(prediction)
                     )
                 else:
                     weight = .5

@@ -39,11 +39,18 @@ class ConditionalProgressTreeHead:
         }, feature_names=names)
 
     def combine(self, original, observed, task_structure, hidden, thresholds):
+        return self.forecast(original, observed, task_structure, hidden, thresholds)[0]
+
+    def forecast(self, original, observed, task_structure, hidden, thresholds):
         import numpy as np
 
         if before_observed_work(observed):
-            return original
+            return original, None
         values = np.concatenate((features(observed, task_structure), hidden))
-        own = self.tree.probabilities(values, thresholds)
-        return tuple(float((1. - self.blend) * old + self.blend * new)
-                     for old, new in zip(original, own))
+        score = self.tree.score(values)
+        own = self.tree.probabilities_from_score(score, thresholds)
+        return (
+            tuple(float((1. - self.blend) * old + self.blend * new)
+                  for old, new in zip(original, own)),
+            (score + self.tree.offset, self.tree.scale),
+        )

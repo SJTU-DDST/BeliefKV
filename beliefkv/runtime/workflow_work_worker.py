@@ -32,6 +32,15 @@ class DistributionWorkPrediction(WorkPrediction):
     structural_revision: int
 
 
+@dataclass(frozen=True)
+class ContinuousDistributionWorkPrediction(DistributionWorkPrediction):
+    effective_weight: float
+    log1p_remaining_work: float
+    log_work_sigma: float | None
+    reference_work: float
+    work_source: str
+
+
 class WorkflowWorkWorker:
     interval_s = .2
     queue_limit = 4096
@@ -250,7 +259,11 @@ class WorkflowWorkWorker:
                 continue
             wall, cpu = time.perf_counter(), time.thread_time()
             features = progress.features(feature_schema=self.model.schema)
-            probabilities = self.model.predict(projection, features)
+            continuous = None
+            if self.model.continuous_readout is not None:
+                probabilities, continuous = self.model.predict(projection, features, with_work=True)
+            else:
+                probabilities = self.model.predict(projection, features)
             best = max(range(3), key=lambda index: probabilities[index])
             supported = not self._r5 and (
                 max(probabilities) >= .6
@@ -276,6 +289,14 @@ class WorkflowWorkWorker:
                     support, published + self.model.distribution_contract["maximum_cache_age_s"],
                     self._structural_consumed[workflow],
                 )
+                if continuous is not None:
+                    prediction = ContinuousDistributionWorkPrediction(
+                        **prediction.__dict__,
+                        effective_weight=continuous["distribution_effective_weight"] if supported else .5,
+                        log1p_remaining_work=continuous["log1p_remaining_work"],
+                        log_work_sigma=continuous["log_work_sigma"],
+                        reference_work=continuous["reference_work"], work_source=continuous["source"],
+                    )
                 self._next_inference[workflow] = published + self.model.distribution_contract["minimum_refresh_s"]
                 self.counts["distribution_" + support] += 1
             self.counts["inferences"] += 1
@@ -352,6 +373,10 @@ class WorkflowWorkWorker:
                 "maximum_cache_age_s": self.model.distribution_contract["maximum_cache_age_s"],
                 "unchanged_input_cache_validation": "nonblocking_revision_and_live_producer",
                 "inference_timestamp_preserved_on_validity_refresh": True,
+                "admission_work_weight": (
+                    "expected_training_referenced_continuous_work_utility"
+                    if self.model.continuous_readout is not None else "three_class_probability_utility"
+                ),
             } if self._r5 else {}),
         }
 

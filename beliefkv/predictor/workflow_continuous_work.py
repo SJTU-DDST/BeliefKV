@@ -1,5 +1,7 @@
-"""Observed-state continuous work readout for CPU policy diagnostics."""
+"""Continuous remaining-work estimates with a training-derived scheduling scale."""
 
+import hashlib
+import json
 import math
 from functools import lru_cache
 
@@ -10,6 +12,27 @@ from beliefkv.predictor.workflow_work_training import project_task_weights
 
 
 KIND = "training_referenced_continuous_model_work_v2"
+SERVING_KIND = "single_pass_conditional_continuous_work_v1"
+
+
+def forecast_fingerprint(raw):
+    from beliefkv.predictor.workflow_work_readout import TRUNK_FIELDS
+
+    fields = TRUNK_FIELDS + (
+        "work_thresholds", "output_weight", "output_bias", "temperature",
+        "ordered_work_cutpoints", "initial_state_head", "conditional_progress_tree_head",
+        "distribution_contract",
+    )
+    return hashlib.sha256(json.dumps(
+        {name: raw.get(name) for name in fields}, sort_keys=True,
+    ).encode()).hexdigest()
+
+
+def serving_contract(model, rows):
+    return {
+        **fit_training_reference(rows, model.thresholds),
+        "serving_kind": SERVING_KIND, "forecast_sha256": forecast_fingerprint(model.raw),
+    }
 
 
 def remaining_work_weight(remaining_work, reference_work):
@@ -105,7 +128,7 @@ def fit_training_reference(rows, thresholds):
 
 
 class ContinuousWorkReadout:
-    """Offline adapter: no serving eligibility or cache refresh behavior is added."""
+    """Interpret one conditional log-work forecast without class quantization."""
 
     def __init__(self, model, contract):
         if (
@@ -129,56 +152,63 @@ class ContinuousWorkReadout:
         remaining_work_weight(0., contract["reference_work"])
         self.model, self.contract = model, contract
 
-    def predict(self, projection, observed, *, probabilities, support):
-        import numpy as np
-
-        if not isinstance(projection, TreeProjection):
-            raise ValueError("continuous work requires the existing cached task/tree representation")
+    def estimate(self, probabilities, *, mean=None, sigma=None, support="calibrated_distribution"):
         if (
             len(probabilities) != 3
             or any(not math.isfinite(value) or not 0 <= value <= 1 for value in probabilities)
             or not math.isclose(sum(probabilities), 1., abs_tol=1e-6)
         ):
             raise ValueError("initial continuous work requires valid observed-state probabilities")
-        if before_observed_work(observed):
+        if mean is None and sigma is None:
             log_work = sum(
                 probability * center for probability, center in zip(
                     probabilities, self.contract["initial_class_mean_log_work"],
                 )
             )
             source = "training_only_initial_class_log_prior"
-            distribution_utility = sum(
-                probability * utility for probability, utility in zip(
+            utility = sum(
+                probability * value for probability, value in zip(
                     probabilities, self.contract["initial_class_expected_utility"],
                 )
             )
         else:
-            hidden = representation(self.model, projection.progress_projection, observed)
-            values = np.concatenate((features(observed, projection.task_structure), hidden))
-            if len(values) != len(FEATURES) + len(hidden):
-                raise ValueError("continuous work representation dimensions differ")
-            tree = self.model.conditional_tree.tree
-            log_work = tree.score(values) + tree.offset
+            if (
+                type(mean) not in (int, float) or not math.isfinite(mean)
+                or type(sigma) not in (int, float) or not math.isfinite(sigma) or sigma < 0
+            ):
+                raise ValueError("continuous work requires a finite conditional log distribution")
+            log_work = mean
             source = "calibrated_continuous_tree_log_work"
-            distribution_utility = normal_log_work_weight(
-                log_work, tree.scale, self.contract["reference_work"],
-            )
-        if not math.isfinite(log_work):
-            raise ValueError("nonfinite continuous workflow work forecast")
+            utility = normal_log_work_weight(mean, sigma, self.contract["reference_work"])
         log_work = max(0., float(log_work))
         if log_work > 700.:
             raise ValueError("continuous workflow work forecast exceeds numerical support")
         work = math.expm1(log_work)
         return {
             "log1p_remaining_work": log_work, "remaining_work_point": work,
+            "log_work_sigma": sigma, "reference_work": self.contract["reference_work"],
             "point_semantics": "exponentiated_conditional_log_work_not_arithmetic_work_mean",
             "source": source, "support": support,
-            "distribution_effective_weight": (
-                float(distribution_utility) if support == "calibrated_distribution" else .5
-            ),
+            "distribution_effective_weight": float(utility) if support == "calibrated_distribution" else .5,
             "distribution_semantics": "calibration_log_residual_normal_or_training_initial_class_empirical_utility",
             "effective_weight": (
                 remaining_work_weight(work, self.contract["reference_work"])
                 if support == "calibrated_distribution" else .5
             ),
         }
+
+    def predict(self, projection, observed, *, probabilities, support):
+        import numpy as np
+
+        if not isinstance(projection, TreeProjection):
+            raise ValueError("continuous work requires the existing cached task/tree representation")
+        if before_observed_work(observed):
+            return self.estimate(probabilities, support=support)
+        hidden = representation(self.model, projection.progress_projection, observed)
+        values = np.concatenate((features(observed, projection.task_structure), hidden))
+        if len(values) != len(FEATURES) + len(hidden):
+            raise ValueError("continuous work representation dimensions differ")
+        tree = self.model.conditional_tree.tree
+        return self.estimate(
+            probabilities, mean=tree.score(values) + tree.offset, sigma=tree.scale, support=support,
+        )
