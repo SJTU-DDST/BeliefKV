@@ -266,3 +266,41 @@ Oracle 的 88 次 episode 来自周期路径，R5 的 63 次包含 42 次周期
 先完成当前 native 的完整核对和实际退出，再检查当前预约、资源、
 端口与全部固定输入。新 CPU 短任务候选不用于这些重复命令；
 原目标保持 active。
+
+### 重复验证执行器的 CPU 实现
+
+`ops/run_background83_frozen_replication_20261107.py` 已实现冻结
+Full、Oracle、learned 的单次顺序重复执行，未启动。其
+`--prepare` 只消费上述固定命令和通过的 CPU 检查，生成
+`ops/workflow_original83_host400_mean70_frozen_replication_20261107_r1.plan.json`，
+分析目录为 `repeatability_execution_r1/`。
+
+`--start` 要求当前五方法 coordinator 完成、native 完整固定测量
+比较及背景覆盖通过，且原 coordinator、测量观察器、supervisor、
+server、driver 和登记的后代实际退出，再检查预约、资源、全部端口、
+socket、注册路径及输入哈希。冻结 supervisor 在主动取消背景后
+可能仍记录 driver 中断；该标签不单独决定是否完成，执行器依赖
+已验证的测量完成证书、fresh drain 和实际退出证据。
+
+每个重复臂仍由冻结的 `stop_after_measured_cohort.py` 等待相同
+18 个测量成员自然完成，然后停止背景并审计。Full 必须通过原
+workload 检查；Oracle 和 learned 分别与本次 Full 比较，同时保留
+原轮结果。两轮都要求平均 JCT 改善至少 1%、共同窗口吞吐比至少
+0.98 及背景覆盖。小收益或负收益会保存结果并停止后续接续，
+不自动换种子、重跑或删掉失败结果；两轮通过也不建立统计显著性。
+
+`ops/test_background83_frozen_replication_20261107.py` 在 CPU-only、
+nice19、CPU0 下实际通过 24 项检查，0 失败、0 错误、0 跳过。
+证据为 `repeatability_preparation_r1/executor_cpu_checks.json`，
+绑定执行器 SHA256
+`b07d990609043cd9fa10ba29c9f0d71db4bab3f181e2bf7e459343444d787e93`。
+覆盖活跃或缺身份的前驱、部分窗口、测量成员/请求/输出缺口、
+背景覆盖不足、主动背景取消，以及实际三组命令仅改变运行标识。
+这是执行控制逻辑和命令等价的 CPU 检查，不是新 GPU 或重复性结果。
+
+执行计划明确 `commands_executed=false`、
+`automatic_start_or_watcher_registered=false`、`GPU_registered_stages=[]`；
+没有修改原来的 baseline coordinator、冻结 serving、配置或 GPU 队列。
+04:57 实际原 scheduler 392898、driver 393784、cohort observer 393795
+及 coordinator 370129 继续存活，native 为 13/18 测量成员完成、
+55 个已到达，error 为空。当前仍先完成该运行。
