@@ -915,3 +915,86 @@ checkpoint 用例另行通过，未以跳过代替验证。初始真实失败调
 测量 workflow；改成模型总工作量会改变 19 次，其中 5 次涉及 3 个
 测量 workflow。它保持当时的候选、预算和 JOIN 权利，只重放逻辑
 选择，没有模拟后续物理执行，不能据此估算替代目标的 JCT 收益。
+
+## mean70 完整预测调度通过与 baseline 接续
+
+2026-11-07 02:21 America/Los_Angeles，
+`learned_comparison.json` 已通过完整固定测量组平均 JCT、共同窗口输出
+吞吐和背景尾部覆盖检查。Full、Oracle、learned 的各 18 个测量成员
+均自然完成相同的 2991 个请求、362157 个输出 token；没有截去正常
+长尾。三组分别通过原定 workload 的全部 11 项诊断，门槛未修改。
+
+| 完整测量结果 | 非排序 Full | Oracle | learned R5 |
+| --- | ---: | ---: | ---: |
+| 平均 JCT，秒 | 1061.121917 | 1036.098550 | 1049.209646 |
+| 相对非排序 Full 平均 JCT 降幅 | 0 | 2.358199% | 1.122611% |
+| P50 JCT，秒 | 723.312153 | 629.258360 | 718.769721 |
+| P95 JCT，秒 | 2775.338936 | 2720.397967 | 2704.624676 |
+| 最大 JCT，秒 | 3369.116674 | 3239.762056 | 3264.697334 |
+| 共同窗口输出吞吐，token/s | 346.998142 | 346.064627 | 347.541956 |
+| 最后测量完成相对时间，秒 | 3782.061165 | 3652.706547 | 3677.641825 |
+
+learned 的平均 JCT 减少 11.912270 秒、共同窗口输出吞吐变化
++0.156720%，达到此前至少 1% JCT 改善且吞吐不低于对照 98% 的
+工程门槛。9 个测量成员改善、9 个变差。20 个完整预热成员平均 JCT
+回退 0.754319%，6 个改善、14 个变差；21 个共同完成的背景成员是
+条件完成子集，其均值变化不能代表全部背景任务。
+
+learned 实际到达 69 个、自然完成 59 个，24 个非测量成员右截尾，
+其中 14 个未提交、10 个到达但未完成。背景计划覆盖完整测量尾部，
+未覆盖区间为 0。原始 supervisor 保留因背景取消而生成的
+`stopped_for_investigation`，完成证书、精确测量工作、两份新鲜空闲
+快照和实际 owned-process 退出由独立 cohort 协议核对，不改写原始
+状态。它是单轮有界人口的正收益结果，不是重复性、统计显著性或
+正式稳态的证明。
+
+### 完整 R5 选择到实际服务
+
+修复后的最终 CPU 审计完成，输出为
+`completed_service_analysis/learned_service_repaired/choices.json`：
+
+- 7358 条组合选择日志，546 条搜索路径重放，61 次集合变化。
+- 56 次改变保持相同数量、4 次数量减少、1 次增加；这些是同状态
+  逻辑参照的集合几何，不等于替代执行的实际 decode 宽度。
+- 63 个新增 agent episode / 不同请求 attempt 全部有精确授予和
+  后续原生服务；42 个周期选择均在压力协调后保留，21 个免费补位
+  均有直接授予。没有把独立工具替换授予算作 R5 选择收益。
+- 其中 38 个周期选择、16 个免费补位在下一次控制或已记录同 agent
+  干预前完成有效服务。上述有界完成不是全部可消除 JCT。
+- 全部选择元数据及选择计时累计线程 CPU 为 1.752212 秒；不是全程
+  控制成本，也不能直接解释完整 JCT 差值。
+
+原冻结读取器的 `learned_service` 失败及日志继续保留；修复后的
+独立观察器明确报告完整测量执行已验证、退出码 0。原分析接续器
+没有因此停止，完整 learned JCT、共同窗口 decode 趋势和时间加权
+分布图已生成于 `completed_service_analysis/learned_figures/`，
+PNG 已实际查看。
+
+### 相同 workload 的对照顺序
+
+两个排序门槛通过后，原 campaign 已注册并开始启动
+`workflow_original83_host400_mean70_thunderagent_acting_decay_20261106_r2`，
+端口 19020，serving 仍为 `631911fb`、native 树仍为 `434c35dd6621`。
+02:26 已实际进入 replay，固定测量组观察器和顺序接续器均存活。
+`live_thunder_verified.json` 独立验证首批 9 个精确请求、355 个输出
+token，唯一 GPU scheduler 为 360817，supervisor/server/driver 均为
+nice0，cohort 观察器为 nice19。实际 Device 为 805198 FULL token，
+Host 为 4069011 FULL token / 400000057344 字节，与 Full 和声明一致。
+原始任务、token 来源、依赖、工具 overlay、到达表和原生执行配置
+亦与 Full 一致。
+
+现场日志中的 paper 策略为
+`thunderagent_public_single_backend_acting_decay`，program 身份为
+`invocation_id`，控制周期 5000 ms、衰减半衰期 1 秒；Full
+`agent_admission` 为空，prepare_host、预测工具卸载、工具预取和逐层
+handoff 均关闭，`future_information_used=false`。这是实际启动和
+已完成请求前缀验证，尚无完整 ThunderAgent JCT 或比较收益。
+
+接着按既定条件运行端口 19021 的 `native_matched`。所有方法复用
+相同的 83 个原项目、20 个初始 workflow、平均 70 秒持续到达表、
+固定 18 个测量成员、原始 token/依赖/工具时间、实际 Device/Host
+容量及原生执行配置。ThunderAgent 保留原 paper acting-decay 和
+5 秒控制周期，不继承 Full 的 JOIN/EOS、预测卸载或 prepare_host。
+SGLang 对照是相同 token 回放和共享执行平面的 native 策略臂，
+关闭 Full 的调度迁移策略，不是重新采集自然轨迹或声称未修改上游。
+两组均在固定测量组全部完成后停止背景，保留完整测量 JCT。
