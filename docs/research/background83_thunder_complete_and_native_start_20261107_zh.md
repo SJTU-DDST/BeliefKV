@@ -520,3 +520,80 @@ workflow 统一减去一个计时偏移。
 两轮 ThunderAgent 本身的差异，不能全部记为设计收益。
 当前继续既有同配置 Full/Oracle/R5 重复接续，以检查约 1% 的
 排序增益是否重现，不由本次历史比较提前宣布重复性成立。
+
+## 重复 Full 完整结果
+
+06:33，固定 18 条测量 workflow 全部自然结束。最后一条
+desktop-development 完成全部 369 个请求和 59093 个输出 token。
+原观察器随后核对所有 2991 个测量请求、362157 个输出、原始
+token 包及正常尾部，获得两份新鲜空闲遥测快照，并确认所有
+登记的服务进程实际退出。完整证书保存在重复 Full 的
+`cohort_termination/completion.json`，不是仅凭 supervisor 标签判定。
+
+| 同配置非排序 Full | 首轮 | 重复轮 |
+| --- | ---: | ---: |
+| 固定 18 条完整平均 JCT，秒 | 1061.121917 | 1052.713786 |
+| P95 完整 JCT，秒 | 2775.338936 | 2760.849832 |
+| 共同窗口全部输出，token/s | 346.998142 | 345.647766 |
+| 共同窗口 decode，token/s | 344.155909 | 342.821954 |
+
+重复轮平均 JCT 下降 0.792381%，共同窗口输出下降 0.389160%，
+decode 下降 0.387602%。这只是同一非排序对照的两次观测，不能当作
+排序收益，也不能由两点建立统计显著性或波动上界。
+早前 `full_closed_common_window.json` 的两项吞吐与最终完整
+`full_review/cohort.json` 逐项一致；没有移动吞吐窗口。
+
+最后测量完成偏移为 3694.820893 秒，背景到达计划延伸至
+4598.502355 秒，测量尾部覆盖通过。实际到达 69 条，自然结束
+59 条；24 条非测量成员右截尾，其中 14 条尚未提交。只以原固定
+18 条完整成员统计主 JCT，不以背景完成子集替代。
+
+`repeatability_execution_r1/full_review/workload_decision.json`
+的 11 项检查全部通过，`accepted_for_oracle_diagnostic=true`。
+原始审计还记录：
+
+- 共同窗口 1493 个状态采样中，1042 个存在 ready-paused，
+  即约 69.79%；这是采样占比，不是时间加权比例。
+- 整轮 1815 次周期控制中，166 次存在跨 workflow 的逻辑集合
+  容量竞争，不能视为 166 次已证明所有替代集合均满足原生物理容量。
+- 1801 个 ready 授予 episode 全部在压力协调后保留、获得精确请求
+  服务；1690 个在下一控制或对应干预前获得有效服务，1673 个在
+  同样边界内完成有效 batch。这些是非排序 Full 的服务证据，
+  不是 Oracle 的新增选择计数。
+
+06:36，原 coordinator 在上述审计与实际退出通过后，自动注册
+`workflow_original83_host400_mean70_repeat_oracle_20261107_r1`，
+端口 19025，冻结 serving `631911fb89b3`、native `434c35dd6621`。
+实际 supervisor 430549、server 431037 已启动，此时 driver
+尚未开始；这不是 Oracle 已完成回放或已取得重复性收益。
+后续 Oracle 和 R5 均使用本轮 1052.713786 秒的 Full 作对应对照。
+
+为复用首轮已验证的现场读取器，新增
+`scripts/verify_background83_repetition_live.py`。它只将注册、完成
+证书、cohort 和 coordinator 绑定到当前重复轮，并显式适配实际
+Full 现场证明中的 `actual_retained_runtime/actual_retained_agent`
+字段。别名保留原值，原证明文件不变；输出继续绑定原文件、
+原读取器及适配器自己的源码哈希。三个实际证据和不变性检查、
+七个无效证据或策略冲突检查通过；这些是 CPU 分析检查，不是
+新的 GPU 或 serving 资格。实际 Oracle/R5 现场核对尚待开始回放。
+
+06:41，重复 Oracle 已实际进入回放；
+`repeatability_execution_r1/live_oracle_verified.json` 复用原 Oracle
+读取器完成独立现场核对：
+
+- 唯一实际 GPU scheduler 431116 属于 server 431037，
+  supervisor 430549、driver 432067 和固定 cohort 观察器
+  432083 均实际存活，优先级分别符合 nice0/nice19 的要求。
+- 实际原生执行配置、805198 Device token 和 4069011 Host
+  token 与本轮完整 Full 完全一致，原始请求工作及到达表匹配。
+- 实际剩余工作 Oracle 排序、决策和恢复的未来工作输入均启用，
+  组合准入关闭；预测工具卸载保留，工具预取与逐层 handoff 关闭。
+  工具压力卸载仍不使用未来工具时长。
+- 首批 12 个完成请求、502 个输出的原始 token、请求身份、
+  自校验哈希、position sampler 和原生停止路径匹配。
+- 本轮 Full 的完整完成证书、负载验收及实际退出同时通过读取器
+  核对；现场证明没有误绑定到首轮 Full。
+
+这是现场前缀和实际运行证明，不是完整 Oracle JCT 或重复性收益。
+06:42，21 个 workflow 已到达，0/18 测量成员完成，coordinator
+及独立后续服务审计观察器均无错误，继续同一冻结回放。
