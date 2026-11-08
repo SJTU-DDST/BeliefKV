@@ -12,6 +12,7 @@ from beliefkv.runtime.workflow_work_oracle import (
 from beliefkv.predictor.workflow_work import R5_SCHEMA
 from beliefkv.predictor.workflow_continuous_work import remaining_work_weight
 from scripts.prepare_model_work_combination_oracle import prepare
+from scripts.run_model_work_pressure_oracle import verify_pressure_extension
 from tests.test_model_work_combination_oracle import artifact as binned_artifact, continuous_artifact, queued
 from tests.test_workflow_work_oracle import oracle_file, source
 
@@ -24,6 +25,36 @@ def artifact(tmp_path):
         pressure_work_order=TOOL_BAND_PRESSURE_ORDER,
     )
     return raw
+
+
+def test_launch_only_adds_the_declared_pressure_scope(tmp_path):
+    previous, candidate = continuous_artifact(tmp_path), artifact(tmp_path)
+    before = deepcopy((previous, candidate))
+    verify_pressure_extension(previous, candidate)
+    assert (previous, candidate) == before
+
+
+@pytest.mark.parametrize("change", (
+    "old_kind", "new_kind", "scope", "order", "requests", "reference", "costs",
+))
+def test_launch_rejects_pressure_scope_or_original_work_changes(tmp_path, change):
+    previous, candidate = continuous_artifact(tmp_path), artifact(tmp_path)
+    if change == "old_kind":
+        previous["kind"] = "another"
+    elif change == "new_kind":
+        candidate["kind"] = previous["kind"]
+    elif change == "scope":
+        candidate["pressure_work_order"] = "global"
+    elif change == "order":
+        candidate["admission_order"] = previous["admission_order"]
+    elif change == "requests":
+        candidate["requests"] = {}
+    elif change == "reference":
+        candidate["combination_work_reference"]["reference_work"] = 999.
+    else:
+        candidate["admission_cost_profile"]["identity"] = "another"
+    with pytest.raises(ValueError):
+        verify_pressure_extension(previous, candidate)
 
 
 def pressure(admission, states):

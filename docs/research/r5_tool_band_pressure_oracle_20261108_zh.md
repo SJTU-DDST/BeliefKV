@@ -122,3 +122,20 @@ rank 定义，新压力模式也有独立名称。没有覆写历史登记、日
 比较应复用已完成 Full、学习 R5、连续真值、ThunderAgent acting-decay 和 native。
 不能把这一新增压力策略的差异继续称为纯预测误差，也不据合成单测宣称净收益。
 整体目标保持 active。
+
+## 启动与收尾入口
+
+已补充独立入口 `scripts/run_model_work_pressure_oracle.py`，只接受已完成连续
+真值的相同 artifact 加三个声明字段变化；实际原始请求、训练标尺及普通组合
+选择器变化均拒绝。仍需完整源码绑定、干净冻结、前轮实际退出以及新鲜 GPU、
+Host 内存、端口、hold 与原生来源检查。
+
+CPU 收尾器默认继续拒绝压力模式，只有执行计划显式声明
+`remaining_model_work_within_tool_retention_bands_v1` 才接受。报告分别记录
+普通组合选择器不变、压力选择范围扩展，不能称为纯预测误差比较。新模式使用
+独立名称 `Tool-band Pressure Oracle` 和 Okabe-Ito 黑色，可同时比较 Full、
+学习 R5、三档真值及连续真值，保留完整固定测量人口和共同吞吐窗口。
+
+启动、收尾及相关绘图定向检查 85 项通过，无失败、错误或跳过；包含先前模式
+的兼容检查。这不是额外 85 项独立于前述 552 项，也不是完整绑定或 GPU 证据。
+结果为 `launch_finish_cpu_r1.xml`。当前尚无本候选 GPU 净收益。

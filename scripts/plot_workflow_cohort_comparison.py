@@ -22,6 +22,7 @@ COLORS = {
     "Oracle": "#009E73",
     "Model-work Oracle": "#E69F00",
     "Continuous-work Oracle": "#009E73",
+    "Tool-band Pressure Oracle": "#000000",
     "Learned R5": "#CC79A7",
     "SGLang native": "#999999",
     "Latest without R5": "#56B4E9",

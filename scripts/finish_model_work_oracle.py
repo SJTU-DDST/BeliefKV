@@ -15,7 +15,10 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.workflow_combination import CombinationCosts
-from beliefkv.runtime.workflow_work_oracle import COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND
+from beliefkv.runtime.workflow_work_oracle import (
+    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
+    TOOL_BAND_PRESSURE_ORDER,
+)
 from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint, remaining_work_weight
 from scripts import run_causal_comparison as causal
 from scripts.audit_sealed_wait_prefetch import SealedRecords
@@ -52,7 +55,7 @@ def wait_observer_publication(path, owner, pulse, *, timeout_s=30.):
         time.sleep(.1)
 
 
-def verify_same_objective(learned, candidate, model, truth):
+def verify_same_objective(learned, candidate, model, truth, *, allow_tool_band_pressure=False):
     allowed = {
         prefix + name for prefix in ("", "BELIEFKV_")
         for name in ("WORKFLOW_WORK_SOURCE", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256")
@@ -61,6 +64,10 @@ def verify_same_objective(learned, candidate, model, truth):
     modes = {
         COMBINATION_WORK_KIND: "three_bins", CONTINUOUS_COMBINATION_WORK_KIND: "continuous",
     }
+    pressure = truth.get("kind") == CONTINUOUS_PRESSURE_WORK_KIND
+    if allow_tool_band_pressure:
+        modes[CONTINUOUS_PRESSURE_WORK_KIND] = "continuous"
+    order = "r5_combination_and_tool_band_pressure" if pressure else "r5_combination_only"
     if (
         learned.get("order") != ["full"] or candidate.get("order") != ["full"]
         or old.keys() != new.keys()
@@ -77,7 +84,12 @@ def verify_same_objective(learned, candidate, model, truth):
         ))
         or truth.get("kind") not in modes
         or truth.get("combination_work_readout") != modes.get(truth.get("kind"))
-        or truth.get("admission_order") != "r5_combination_only"
+        or truth.get("admission_order") != order
+        or (pressure and (
+            truth.get("pressure_work_order") != TOOL_BAND_PRESSURE_ORDER
+            or old.get("AGENT_PRESSURE_PAUSE_POLICY") != "workflow_tool_aware"
+        ))
+        or (not pressure and "pressure_work_order" in truth)
         or truth.get("remaining_work_ranking_enabled") is not True
         or truth.get("work_thresholds") != model.get("work_thresholds")
         or truth.get("admission_cost_profile") != model.get("admission_cost_profile")
@@ -86,7 +98,7 @@ def verify_same_objective(learned, candidate, model, truth):
         )
     ):
         raise ValueError("the diagnostic differs from learned R5 beyond the declared work provider")
-    if truth["kind"] == CONTINUOUS_COMBINATION_WORK_KIND:
+    if modes[truth["kind"]] == "continuous":
         reference = truth.get("combination_work_reference") or {}
         if (
             reference.get("forecast_sha256") != forecast_fingerprint(model)
@@ -96,6 +108,26 @@ def verify_same_objective(learned, candidate, model, truth):
         ):
             raise ValueError("continuous work diagnostic differs from its retained training reference")
         remaining_work_weight(0., reference.get("reference_work"))
+
+
+def comparison_scope(truth):
+    pressure = truth["kind"] == CONTINUOUS_PRESSURE_WORK_KIND
+    return {
+        "same_R5_selector_and_three_bin_utility_verified": truth["kind"] == COMBINATION_WORK_KIND,
+        "same_R5_selector_and_declared_work_readout_verified": True,
+        "same_noncombination_policy_verified": not pressure,
+        "work_used_for_tool_band_pressure": pressure,
+        "pressure_work_order": truth.get("pressure_work_order"),
+        "not_a_pure_prediction_error_comparison": truth["kind"] != COMBINATION_WORK_KIND,
+    }
+
+
+def method_label(truth):
+    return {
+        COMBINATION_WORK_KIND: "Model-work Oracle",
+        CONTINUOUS_COMBINATION_WORK_KIND: "Continuous-work Oracle",
+        CONTINUOUS_PRESSURE_WORK_KIND: "Tool-band Pressure Oracle",
+    }[truth["kind"]]
 
 
 def register(execution_path, output):
@@ -225,12 +257,18 @@ def watch(plan_path):
         candidate_config = causal.load(Path(reg["experiment_configuration"]))
         artifact_path = Path(candidate_config["common_environment"]["WORKFLOW_WORK_MODEL"])
         artifact = causal.load(artifact_path)
-        continuous = artifact.get("kind") == CONTINUOUS_COMBINATION_WORK_KIND
+        continuous = artifact.get("combination_work_readout") == "continuous"
+        pressure = execution.get("pressure_work_order") == TOOL_BAND_PRESSURE_ORDER
         learned_config = causal.load(Path(causal.load(
             Path(execution["reference"]["learned"]["registration"])
         )["experiment_configuration"]))
         model_path = Path(learned_config["common_environment"]["WORKFLOW_WORK_MODEL"])
-        verify_same_objective(learned_config, candidate_config, causal.load(model_path), artifact)
+        verify_same_objective(
+            learned_config, candidate_config, causal.load(model_path), artifact,
+            allow_tool_band_pressure=pressure,
+        )
+        if pressure != (artifact.get("kind") == CONTINUOUS_PRESSURE_WORK_KIND):
+            raise ValueError("execution pressure scope differs from its explicit oracle kind")
         candidate_execution = verify_execution(reg_path, cohort_path)
         candidate_directory = Path(causal.load(
             reg_path.with_name(reg_path.name.replace(".registration.json", ".cohort.registration.json"))
@@ -259,8 +297,7 @@ def watch(plan_path):
             input_paths.extend((old_path, old_directory / "cohort.json", old_directory / "review.json"))
         write(output / "comparison.json", {
             "results": results, "complete_measured_work_fresh_drain_and_actual_exit": True,
-            "same_R5_selector_and_three_bin_utility_verified": not continuous,
-            "same_R5_selector_and_declared_work_readout_verified": True,
+            **comparison_scope(artifact),
             "work_readout": artifact["combination_work_readout"],
             "continuous_training_reference": artifact.get("combination_work_reference"),
             "one_new_run_does_not_establish_repeatability": True,
@@ -299,11 +336,15 @@ def watch(plan_path):
                     Path(execution["reference"]["binned_truth"]["review"]) / "cohort.json"
                 ),
             ))
+        if pressure and "continuous_truth" in execution["reference"]:
+            reports.extend((
+                "--report", "Continuous-work Oracle=" + str(
+                    Path(execution["reference"]["continuous_truth"]["review"]) / "cohort.json"
+                ),
+            ))
         cpu("figures", [
             *reports,
-            "--report", (
-                "Continuous-work Oracle=" if continuous else "Model-work Oracle="
-            ) + str(candidate_directory / "cohort.json"),
+            "--report", method_label(artifact) + "=" + str(candidate_directory / "cohort.json"),
             "--output-dir", output / "figures",
         ])
         state.update(status="complete_model_work_oracle_CPU_analysis", measured_completed=18,

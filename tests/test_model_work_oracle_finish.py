@@ -4,7 +4,10 @@ from types import SimpleNamespace as NS
 
 import pytest
 
-from beliefkv.runtime.workflow_work_oracle import COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND
+from beliefkv.runtime.workflow_work_oracle import (
+    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
+    TOOL_BAND_PRESSURE_ORDER,
+)
 from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint
 from scripts import finish_model_work_oracle as finish
 from scripts.plot_workflow_cohort_comparison import COLORS, render
@@ -164,3 +167,77 @@ def test_published_observer_needs_no_startup_delay(tmp_path, monkeypatch):
     path.write_text("{}")
     monkeypatch.setattr(finish.time, "sleep", lambda _: pytest.fail("delayed an existing observer"))
     finish.wait_observer_publication(path, {}, lambda: pytest.fail("unnecessary progress pulse"))
+
+
+def pressure_pair():
+    control, candidate, model, truth = pair()
+    for config in (control, candidate):
+        config["common_environment"]["AGENT_PRESSURE_PAUSE_POLICY"] = "workflow_tool_aware"
+    truth.update(
+        kind=CONTINUOUS_PRESSURE_WORK_KIND, combination_work_readout="continuous",
+        admission_order="r5_combination_and_tool_band_pressure",
+        pressure_work_order=TOOL_BAND_PRESSURE_ORDER,
+        combination_reference_source_model_sha256="old",
+        combination_work_reference={
+            "forecast_sha256": forecast_fingerprint(model),
+            "work_thresholds": model["work_thresholds"], "reference_work": 200.,
+            "reference_and_initial_priors_use_training_labels_only": True,
+        },
+    )
+    return control, candidate, model, truth
+
+
+def test_pressure_finish_requires_explicit_permission_to_compare_the_extended_scope():
+    values = pressure_pair()
+    before = deepcopy(values)
+    with pytest.raises(ValueError, match="differs"):
+        finish.verify_same_objective(*values)
+    finish.verify_same_objective(*values, allow_tool_band_pressure=True)
+    assert values == before
+    scope = finish.comparison_scope(values[-1])
+    assert scope["same_R5_selector_and_declared_work_readout_verified"]
+    assert not scope["same_noncombination_policy_verified"]
+    assert not scope["same_R5_selector_and_three_bin_utility_verified"]
+    assert scope["not_a_pure_prediction_error_comparison"]
+    assert scope["work_used_for_tool_band_pressure"]
+
+
+@pytest.mark.parametrize("field", ("scope", "tool_policy", "reference", "workload", "selector"))
+def test_pressure_finish_still_rejects_unrelated_changes(field):
+    control, candidate, model, truth = pressure_pair()
+    if field == "scope":
+        truth["pressure_work_order"] = "global"
+    elif field == "tool_policy":
+        for config in (control, candidate):
+            config["common_environment"]["AGENT_PRESSURE_PAUSE_POLICY"] = "workflow_remaining"
+    elif field == "reference":
+        truth["combination_work_reference"]["reference_and_initial_priors_use_training_labels_only"] = False
+    elif field == "workload":
+        candidate["workflow_arrivals"] = "different"
+    else:
+        truth["admission_cost_profile"] = {"kind": "different"}
+    with pytest.raises(ValueError, match="differs"):
+        finish.verify_same_objective(
+            control, candidate, model, truth, allow_tool_band_pressure=True,
+        )
+
+
+def test_legacy_finish_cannot_accept_a_hidden_pressure_declaration():
+    control, candidate, model, truth = pair()
+    truth["pressure_work_order"] = TOOL_BAND_PRESSURE_ORDER
+    with pytest.raises(ValueError, match="differs"):
+        finish.verify_same_objective(control, candidate, model, truth, allow_tool_band_pressure=True)
+
+
+def test_pressure_method_has_a_distinct_label_and_preserves_complete_plot_population(tmp_path):
+    labels = (
+        "Nonranking Full", "Learned R5", "Model-work Oracle",
+        "Continuous-work Oracle", finish.method_label(pressure_pair()[-1]),
+    )
+    assert len({COLORS[label] for label in labels}) == len(labels)
+    raw = report()
+    render({label: deepcopy(raw) for label in labels}, (), tmp_path / "figures")
+    provenance = json.loads((tmp_path / "figures/provenance.json").read_bytes())
+    assert provenance["cohort"] == raw["cohort"]
+    assert provenance["complete_fixed_cohort_JCT"]
+    assert provenance["colors"][labels[-1]] == "#000000"
