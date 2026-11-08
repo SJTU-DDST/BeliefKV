@@ -15,6 +15,7 @@ from beliefkv.runtime.workflow_work_worker import WorkPrediction
 
 KIND = "workflow_model_tool_critical_path_oracle_v1"
 COST_KIND = "workflow_model_tool_calibrated_cost_oracle_v2"
+COMBINATION_WORK_KIND = "workflow_model_work_combination_oracle_v1"
 
 
 def critical_path_graphs(plan):
@@ -47,13 +48,28 @@ def _count(value):
 class WorkflowWorkOracleArtifact:
     def __init__(self, raw):
         if (
-            raw.get("kind") not in (KIND, COST_KIND) or raw.get("future_information_used") is not True
+            raw.get("kind") not in (KIND, COST_KIND, COMBINATION_WORK_KIND)
+            or raw.get("future_information_used") is not True
             or raw.get("deployable") is not False or raw.get("prefill_token_weight") != .01
         ):
             raise ValueError("require an explicitly declared model-work oracle")
         cost_fields = ("model_prefill_seconds_per_token", "model_prefill_progress")
-        if raw["kind"] == KIND and any(name in raw for name in cost_fields):
+        if raw["kind"] != COST_KIND and any(name in raw for name in cost_fields):
             raise ValueError("calibrated path costs require the separate v2 oracle declaration")
+        self.combination_only = raw["kind"] == COMBINATION_WORK_KIND
+        if self.combination_only and (
+            raw.get("admission_order") != "r5_combination_only"
+            or raw.get("combination_work_readout") != "three_bins"
+            or raw.get("remaining_work_ranking_enabled") is not True
+            or raw.get("admission_cost_profile", {}).get("kind")
+            != "r5_frozen_batch_cost_proxy_capacity_v7"
+        ):
+            raise ValueError("model-work oracle requires explicit R5-only three-bin combination admission")
+        if not self.combination_only and (
+            "combination_work_readout" in raw
+            or raw.get("admission_order") == "r5_combination_only"
+        ):
+            raise ValueError("R5-only work readout requires its separate oracle kind")
         self.model_prefill_seconds_per_token = raw.get("model_prefill_seconds_per_token")
         self.model_prefill_progress = raw.get("model_prefill_progress", "request_completion")
         if raw["kind"] == COST_KIND and (
@@ -66,7 +82,8 @@ class WorkflowWorkOracleArtifact:
             raise ValueError("v2 oracle requires finite prefill cost and observed progress semantics")
         window = raw.get("free_dispatch_coalescing_window_ms", 0)
         if type(window) is not int or window not in (0, 1000, 2000) or (
-            window and raw.get("admission_order") != "global_ready_remaining_path"
+            window and not self.combination_only
+            and raw.get("admission_order") != "global_ready_remaining_path"
         ):
             raise ValueError("timed coalescing requires a global oracle and 0, 1000 or 2000 ms")
         if type(raw.get("remaining_work_ranking_enabled", True)) is not bool:
@@ -321,6 +338,7 @@ class WorkflowWorkOracle:
 
     def __init__(self, path, digest):
         self.artifact = WorkflowWorkOracleArtifact.load(path, digest)
+        self.combination_only = self.artifact.combination_only
         self.digest = digest
         self.counts = Counter()
         self._remaining = {
@@ -469,6 +487,8 @@ class WorkflowWorkOracle:
         prediction = self._predictions.get(workflow) if not self.error else None
         if prediction is None:
             return None
+        if self.combination_only:
+            return prediction
         started, now = time.thread_time(), time.monotonic()
         self.counts["path_queries"] += 1
         if workflow not in self._path_cache:
@@ -504,12 +524,16 @@ class WorkflowWorkOracle:
             "artifact_sha256": self.digest, "error": self.error,
             "kind": self.artifact.raw["kind"], "deployable": False,
             "future_trace_used_online": True, "scheduler_waits_for_inference": False,
-            "rank": "remaining_model_tool_critical_path_seconds",
+            "rank": (
+                "remaining_model_work_three_bins_combination_only" if self.combination_only
+                else "remaining_model_tool_critical_path_seconds"
+            ),
+            "combination_only": self.combination_only,
             "work_definition": "0.01*necessary_input_tokens+output_tokens",
             "input_progress": "completion_only_like_learned_labels",
             "output_progress": "observed_native_output_every_128_tokens_and_completion",
-            "future_tool_durations_used": True,
-            "future_dependency_graph_used_for_rank_only": True,
+            "future_tool_durations_used": not self.combination_only,
+            "future_dependency_graph_used_for_rank_only": not self.combination_only,
             "model_seconds_per_work_token": self.artifact.model_seconds_per_work_token,
             "model_prefill_seconds_per_token": self.artifact.model_prefill_seconds_per_token,
             "model_prefill_progress": self.artifact.model_prefill_progress,

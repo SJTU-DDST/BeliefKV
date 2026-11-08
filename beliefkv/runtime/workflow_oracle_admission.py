@@ -36,9 +36,14 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         if not self.remaining_work_ranking_enabled:
             self.rank_kind = "reference_category_context_with_matched_oracle_bookkeeping"
         order = oracle.artifact.raw.get("admission_order", "within_reference_category")
-        if order not in ("within_reference_category", "global_ready_remaining_path"):
+        if order not in (
+            "within_reference_category", "global_ready_remaining_path", "r5_combination_only",
+        ):
             oracle.close()
             raise ValueError("unsupported explicit oracle admission order")
+        if oracle.combination_only and not getattr(runtime, "workflow_combination_admission", False):
+            oracle.close()
+            raise ValueError("model-work oracle requires the R5 combination selector")
         self._global_priority = order == "global_ready_remaining_path"
         return oracle
 
@@ -69,6 +74,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     def _logical_ready_paused(self, item):
         if not super()._logical_ready_paused(item):
             return False
+        if self._work.combination_only:
+            return True
         deferred = self._deferred_dispatch
         if deferred is None or not getattr(deferred, "window_ms", 0):
             return True
@@ -98,6 +105,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         return result
 
     def _priority(self, prediction):
+        if self._work.combination_only:
+            return 1
         if prediction is None or prediction.evidence != "oracle":
             raise ValueError("oracle ranking requires its exact bound workflow prediction")
         return prediction.remaining_path_s if self.remaining_work_ranking_enabled else 0.
@@ -126,10 +135,13 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
             ),
             "workflow_oracle_future_work_used_for_recovery": self.remaining_work_ranking_enabled,
             "workflow_oracle_admission_order": (
+                "r5_combination_only" if self._work.combination_only else
                 "global_ready_remaining_path" if self.rank_before_category else
                 "within_reference_category"
             ),
             "workflow_size_other_admission_paths": (
+                "protected_join_unchanged;first_continuation_sibling_use_exact_model_work_bins"
+                if self._work.combination_only else
                 "protected_join_unchanged;first_continuation_sibling_use_shared_remaining_path_dispatch"
                 if self.rank_before_category else
                 "join_unchanged;bounded_free_dispatch_uses_oracle_model_tool_path"
@@ -147,6 +159,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 getattr(deferred, "window_ms", 0)
             ),
             "workflow_oracle_tool_replacement_selection": (
+                "original_order_like_learned_R5" if self._work.combination_only else
                 "remaining_path_order_then_actual_single_donor_pair;ordinary_set_budget_not_applied"
             ),
+            "workflow_oracle_combination_only": self._work.combination_only,
         }

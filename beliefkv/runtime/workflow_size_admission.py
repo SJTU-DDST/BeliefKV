@@ -42,7 +42,10 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         )
         super().__init__(runtime)
         self._work = self._create_work(runtime)
-        self._conditional_distribution = getattr(getattr(self._work, "model", None), "schema", None) == R5_SCHEMA
+        self._conditional_distribution = (
+            getattr(getattr(self._work, "model", None), "schema", None) == R5_SCHEMA
+            or getattr(self._work, "combination_only", False)
+        )
         if self._conditional_distribution:
             self.rank_kind = "conditional_work_distribution_combination_only"
         self.pressure_pause_policy = getattr(runtime, "agent_pressure_pause_policy", "reference")
