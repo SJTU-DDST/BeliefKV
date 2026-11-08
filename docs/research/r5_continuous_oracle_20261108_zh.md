@@ -138,3 +138,39 @@ CPU 修复增加最长 30 秒的首次状态发布等待，观察器已退出或
 2 次有窗口外且各自逻辑放得下的候选，只有 1 次的其他 workflow 比窗口内所有
 逻辑可行候选更短，没有相差两倍的情况。窗口外的物理前缀与容量仍未知，周期
 恢复未覆盖，不能据此声称扩大窗口能改善 JCT。证据为 `free_candidate_window_r1.json`。
+
+## 正式回放现场核验
+
+23:51 Asia/Shanghai 的 `gpu_live_entry_r1.json` 独立核对：
+
+- GPU 监督器 591840、服务 592327、唯一 GPU scheduler 592423、回放 593443
+  的 PID/start ticks 保持不变并实际存活，服务和回放均为 nice0。
+- 原停止观察器 593491 独立存活。累计 25 个 workflow 到达，测量完成 0/18；
+  不能计算已完成少数成员的平均值代替固定完整测量 JCT。
+- 383 个实际候选权重逐项匹配 `1/(1+remaining_model_work/19144.06)`。
+  线上明确的 Oracle kind/rank、训练参考量及未来工具时长开关均匹配登记。
+- 已封闭的 1171 个完整请求逐项匹配原请求身份、输入输出长度、token 哈希、
+  实际输出 token 数和原生停止原因。该前缀不是完整测量工作验收。
+- 实际 Device/Host 完整容量与上一项三档真值 census 字段完全相同。
+
+CPU 收尾修复提交为 `906cd34a`，从独立冻结目录
+`beliefkv-continuous-finish-906cd34a` 启动 594948。其实际 nice19、CPU0、
+CUDA hidden 身份已核对，状态为 `waiting_existing_cohort_observer`。
+恢复过程没有向任何进程发信号，所有原 GPU 与停止观察器身份保持存活。
+证明为 `execution_r1/complete_cpu_r2/supersession.json`。
+
+原 `execution_r1/execution_state.json` 与 `complete_cpu_r1/state.json` 保留
+CPU 发布竞争的失败状态，不再用它们判断 GPU 或新收尾器是否运行。新的 CPU
+权威入口为：
+
+```text
+execution_r1/complete_cpu_r2/
+  plan.json
+  supersession.json
+  state.json
+```
+
+GPU 服务冻结仍为 `78dac126`，没有把 CPU 衔接修复写入运行中的服务。本轮
+只登记连续真值这一项 GPU 诊断，没有新增 GPU 后继或重跑其他 baseline。
+完整测量 JCT、共同窗口吞吐和实际改选服务仍待全部测量成员自然完成后核验，
+整体目标保持 active。
