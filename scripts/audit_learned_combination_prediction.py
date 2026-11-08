@@ -1,6 +1,7 @@
 """Separate cached prediction, model error and fixed combination objectives on sealed history."""
 
 import argparse
+import ast
 from bisect import bisect_right
 from collections import Counter, defaultdict
 from dataclasses import replace
@@ -19,6 +20,7 @@ from beliefkv.policy.workflow_combination import (
     CombinationCandidate, CombinationCosts, CombinationResources, _evaluate, choose_combination,
 )
 from beliefkv.predictor.workflow_work import WorkflowWorkModel
+from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint, remaining_work_weight
 from scripts import run_causal_comparison as causal
 from scripts.audit_live_work_prediction import audit, observation_timeline
 from scripts.audit_sealed_wait_prefetch import SealedRecords
@@ -40,6 +42,31 @@ def planning_costs(profile):
     ):
         raise ValueError("diagnostic requires the declared full-pool planning profile and objective")
     return costs
+
+
+def verify_selection_policy(plan, policy, parity_path=None):
+    expected = plan["source_sha256"]["beliefkv/policy/workflow_combination.py"]
+    current = sha256_file(policy)
+    if current == expected:
+        return
+    if parity_path is None:
+        raise ValueError("diagnostic combination policy differs from the actual serving policy")
+    proof = causal.load(parity_path)
+    original = Path(plan["execution_checkout"]) / "beliefkv/policy/workflow_combination.py"
+    if (
+        proof.get("original_module_sha256") != expected
+        or proof.get("current_module_sha256") != current
+        or proof.get("only_added_function") != "prediction_weight"
+        or sha256_file(original) != expected
+    ):
+        raise ValueError("selection parity proof does not bind the actual serving and analysis modules")
+    before, after = ast.parse(original.read_bytes()), ast.parse(policy.read_bytes())
+    added = [node for node in after.body if isinstance(node, ast.FunctionDef) and node.name == "prediction_weight"]
+    if len(added) != 1:
+        raise ValueError("selection parity needs exactly its declared added readout helper")
+    after.body = [node for node in after.body if node is not added[0]]
+    if ast.dump(before, include_attributes=False) != ast.dump(after, include_attributes=False):
+        raise ValueError("the actual selector changed beyond its added readout helper")
 
 
 def combination_candidates(row):
@@ -84,7 +111,7 @@ def pair_quality(decisions, name, measured=None):
     }
 
 
-def inspect(rows, observations, costs, profile, thresholds, measured):
+def inspect(rows, observations, costs, profile, thresholds, measured, *, continuous_reference=None):
     if len(rows) != len(observations):
         raise ValueError("each observed combination requires its exact reconstructed boundary")
     counts, decisions = Counter(), []
@@ -126,7 +153,10 @@ def inspect(rows, observations, costs, profile, thresholds, measured):
                 "actual_cached": candidate.weight,
                 "synchronous": synchronous["effective_weight"] if synchronous else .5,
                 "oracle_three_bins": (1., .5, .25)[bisect_right(thresholds, max(0., remaining))],
-                "oracle_continuous": 1. / (1. + max(0., remaining) / thresholds[0]),
+                "oracle_continuous": remaining_work_weight(
+                    max(0., remaining),
+                    thresholds[0] if continuous_reference is None else continuous_reference,
+                ),
             }
         results = {}
         for name in ("actual_cached", "synchronous", "oracle_three_bins", "oracle_continuous"):
@@ -197,6 +227,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("registration", "control", "cohort", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--continuous-reference-model", type=Path)
+    parser.add_argument("--selection-core-parity", type=Path)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve previous observed prediction diagnostics")
@@ -206,8 +238,7 @@ def main():
     specs = [causal.load(Path(value["experiment_configuration"])) for value in (control, plan)]
     verify_learned_combination_pair(*specs)
     policy = ROOT / "beliefkv/policy/workflow_combination.py"
-    if sha256_file(policy) != plan["source_sha256"].get("beliefkv/policy/workflow_combination.py"):
-        raise ValueError("diagnostic combination policy differs from the actual serving policy")
+    verify_selection_policy(plan, policy, args.selection_core_parity)
     model_path = Path(specs[1]["common_environment"]["WORKFLOW_WORK_MODEL"])
     label_path = Path(control["reference_environment"]["BELIEFKV_WORKFLOW_WORK_MODEL"])
     pins = {str(path.resolve()): sha256_file(path) for path in (
@@ -217,6 +248,12 @@ def main():
         ROOT / "scripts/audit_workflow_combination_choices.py",
         ROOT / "beliefkv/policy/workflow_combination.py",
     )}
+    if args.selection_core_parity is not None:
+        for path in (
+            args.selection_core_parity,
+            Path(plan["execution_checkout"]) / "beliefkv/policy/workflow_combination.py",
+        ):
+            pins[str(path.resolve())] = sha256_file(path)
     reader, arm = SealedRecords(), Path(plan["run_root"]) / "full"
     rows = [
         row for row in reader(arm / "opportunities/admission_opportunities.jsonl")
@@ -237,6 +274,19 @@ def main():
     )
     timeline = observation_timeline(events, native, labels["requests"])
     model = WorkflowWorkModel.load(model_path, pins[str(model_path.resolve())])
+    reference = None
+    if args.continuous_reference_model is not None:
+        reference_path = args.continuous_reference_model.resolve()
+        pins[str(reference_path)] = sha256_file(reference_path)
+        continuous_model = WorkflowWorkModel.load(reference_path, pins[str(reference_path)])
+        reference = continuous_model.raw.get("continuous_work_readout")
+        if (
+            reference is None
+            or forecast_fingerprint(continuous_model.raw) != forecast_fingerprint(model.raw)
+            or continuous_model.raw.get("metadata", {}).get("continuous_work_source_model_sha256")
+            != pins[str(model_path.resolve())]
+        ):
+            raise ValueError("continuous audit requires the same retained predictor and training-only scale")
     totals = {
         workflow: value["total_work_units"] / 100.
         for workflow, value in labels["workflows"].items()
@@ -247,6 +297,7 @@ def main():
     result = inspect(
         rows, observations, costs, profile, model.thresholds,
         set(causal.load(args.cohort)["measured_workflow_ids"]),
+        continuous_reference=reference["reference_work"] if reference is not None else None,
     )
     if any(sha256_file(Path(path)) != digest for path, digest in pins.items()):
         raise ValueError("an immutable combination diagnostic input changed")
@@ -272,6 +323,8 @@ def main():
             "whole_run_service_or_JCT_counterfactual_proven": False,
         },
     )
+    if reference is not None:
+        result["continuous_training_reference"] = reference
     write(args.output, result)
     print(json.dumps({"counts": result["counts"], "ranking": result["ranking"]}), flush=True)
 

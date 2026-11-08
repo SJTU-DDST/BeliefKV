@@ -14,13 +14,14 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import R5_SCHEMA, WorkflowWorkModel
+from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint
 from beliefkv.runtime.workflow_work_oracle import (
-    COMBINATION_WORK_KIND, WorkflowWorkOracleArtifact,
+    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, WorkflowWorkOracleArtifact,
 )
 from scripts.train_workflow_work import write
 
 
-def prepare(config, model, labels, artifact_path):
+def prepare(config, model, labels, artifact_path, *, continuous_model=None):
     common = config["common_environment"]
     if (
         model.schema != R5_SCHEMA
@@ -40,6 +41,20 @@ def prepare(config, model, labels, artifact_path):
         "admission_cost_profile": deepcopy(model.raw["admission_cost_profile"]),
         "free_dispatch_coalescing_window_ms": model.raw["free_dispatch_coalescing_window_ms"],
     })
+    if continuous_model is not None:
+        reference = continuous_model.raw.get("continuous_work_readout")
+        if (
+            reference is None
+            or forecast_fingerprint(continuous_model.raw) != forecast_fingerprint(model.raw)
+            or continuous_model.raw.get("metadata", {}).get("continuous_work_source_model_sha256")
+            != common["WORKFLOW_WORK_MODEL_SHA256"]
+        ):
+            raise ValueError("continuous oracle reference must come from the same retained R5 predictor")
+        artifact.update(
+            kind=CONTINUOUS_COMBINATION_WORK_KIND, combination_work_readout="continuous",
+            combination_work_reference=deepcopy(reference),
+            combination_reference_source_model_sha256=common["WORKFLOW_WORK_MODEL_SHA256"],
+        )
     for name in ("model_prefill_seconds_per_token", "model_prefill_progress"):
         artifact.pop(name, None)
     WorkflowWorkOracleArtifact(artifact)
@@ -67,6 +82,17 @@ def prepare(config, model, labels, artifact_path):
     for name in ("WORKFLOW_WORK_MODEL_SHA256", "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"):
         env[name] = artifact_digest
     candidate["workflow_work_qualification"]["model_sha256"] = artifact_digest
+    if continuous_model is not None:
+        candidate.update(
+            purpose="Same R5 selector, exact continuous remaining model work and fixed training scale",
+            status="CPU_prepared_continuous_model_work_oracle_not_registered",
+        )
+        candidate["workflow_work_qualification"].update(
+            three_bin_thresholds_and_cost_profile_copied_from_learned_model=False,
+            cost_profile_and_work_thresholds_copied_from_learned_model=True,
+            continuous_reference_uses_retained_training_labels_only=True,
+            continuous_learned_model_serving_eligibility_granted=False,
+        )
     contract = candidate["comparison_contract"]
     contract.update({
         "future_information_used": True, "deployable": False,
@@ -81,6 +107,19 @@ def prepare(config, model, labels, artifact_path):
         "ranking_gain_isolated": False,
         "oracle_bookkeeping_synchronous_unlike_learned_worker": True,
     })
+    if continuous_model is not None:
+        contract.update(
+            workflow_work_prediction="exact_continuous_remaining_model_work",
+            workflow_resume_key=[
+                "protected_ready_JOIN", "training_scaled_continuous_work_combination", "reference_tie",
+            ],
+            oracle_candidate_kind="same_R5_selector_exact_continuous_model_work",
+            same_learned_combination_selector_and_utility_mapping=False,
+            same_learned_combination_selector=True,
+            continuous_utility_reference_work=reference["reference_work"],
+            continuous_utility_definition="1/(1+remaining_model_work/reference_work)",
+            prediction_and_utility_mapping_are_joint_change=True,
+        )
     changed = {
         name for name in common if env.get(name) != common[name]
     } | {name for name in env if name not in common}
@@ -98,6 +137,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("learned-config", "oracle-labels", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--continuous-reference-model", type=Path)
     args = parser.parse_args()
     if args.output_dir.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or (
         os.getpriority(os.PRIO_PROCESS, 0) != 19
@@ -111,9 +151,15 @@ def main():
     ):
         raise ValueError("learned model aliases differ")
     model = WorkflowWorkModel.load(path, common["WORKFLOW_WORK_MODEL_SHA256"])
+    continuous_model = (
+        WorkflowWorkModel.load(
+            args.continuous_reference_model, sha256_file(args.continuous_reference_model),
+        ) if args.continuous_reference_model is not None else None
+    )
     artifact_path = args.output_dir / "oracle.json"
     artifact, candidate = prepare(
         config, model, json.loads(args.oracle_labels.read_bytes()), artifact_path,
+        continuous_model=continuous_model,
     )
     args.output_dir.mkdir(parents=True, exist_ok=False)
     write(artifact_path, artifact)
@@ -124,12 +170,18 @@ def main():
         "GPU_action": False, "GPU_registered": False,
         "input_sha256": {str(p.resolve()): sha256_file(p) for p in (
             args.learned_config, args.oracle_labels, path, Path(__file__),
+            *((args.continuous_reference_model,) if args.continuous_reference_model is not None else ()),
         )},
         "artifact_sha256": sha256_file(artifact_path),
         "configuration_sha256": sha256_file(args.output_dir / "full.json"),
         "complete_workflows": len(artifact["workflows"]),
         "complete_requests": len(artifact["requests"]),
         "work_thresholds": artifact["work_thresholds"],
+        "work_readout": artifact["combination_work_readout"],
+        "continuous_reference_work": (
+            continuous_model.raw["continuous_work_readout"]["reference_work"]
+            if continuous_model is not None else None
+        ),
         "cost_identity": artifact["admission_cost_profile"]["identity"],
         "learned_schema_and_pressure_tool_order_semantics_preserved": True,
         "bookkeeping_execution_cost_identical_claimed": False,

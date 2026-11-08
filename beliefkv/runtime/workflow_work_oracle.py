@@ -16,6 +16,7 @@ from beliefkv.runtime.workflow_work_worker import WorkPrediction
 KIND = "workflow_model_tool_critical_path_oracle_v1"
 COST_KIND = "workflow_model_tool_calibrated_cost_oracle_v2"
 COMBINATION_WORK_KIND = "workflow_model_work_combination_oracle_v1"
+CONTINUOUS_COMBINATION_WORK_KIND = "workflow_continuous_model_work_combination_oracle_v1"
 
 
 def critical_path_graphs(plan):
@@ -48,7 +49,9 @@ def _count(value):
 class WorkflowWorkOracleArtifact:
     def __init__(self, raw):
         if (
-            raw.get("kind") not in (KIND, COST_KIND, COMBINATION_WORK_KIND)
+            raw.get("kind") not in (
+                KIND, COST_KIND, COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
+            )
             or raw.get("future_information_used") is not True
             or raw.get("deployable") is not False or raw.get("prefill_token_weight") != .01
         ):
@@ -56,15 +59,47 @@ class WorkflowWorkOracleArtifact:
         cost_fields = ("model_prefill_seconds_per_token", "model_prefill_progress")
         if raw["kind"] != COST_KIND and any(name in raw for name in cost_fields):
             raise ValueError("calibrated path costs require the separate v2 oracle declaration")
-        self.combination_only = raw["kind"] == COMBINATION_WORK_KIND
+        self.combination_only = raw["kind"] in (
+            COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
+        )
+        self.continuous_combination = raw["kind"] == CONTINUOUS_COMBINATION_WORK_KIND
+        readout = "continuous" if self.continuous_combination else "three_bins"
         if self.combination_only and (
             raw.get("admission_order") != "r5_combination_only"
-            or raw.get("combination_work_readout") != "three_bins"
+            or raw.get("combination_work_readout") != readout
             or raw.get("remaining_work_ranking_enabled") is not True
             or raw.get("admission_cost_profile", {}).get("kind")
             != "r5_frozen_batch_cost_proxy_capacity_v7"
         ):
-            raise ValueError("model-work oracle requires explicit R5-only three-bin combination admission")
+            raise ValueError("model-work oracle requires its explicit R5-only combination readout")
+        self.continuous_reference = raw.get("combination_work_reference")
+        if self.continuous_combination:
+            from beliefkv.predictor.workflow_continuous_work import KIND as REFERENCE_KIND
+            from beliefkv.predictor.workflow_continuous_work import SERVING_KIND, remaining_work_weight
+
+            reference = self.continuous_reference
+            if (
+                not isinstance(reference, dict)
+                or reference.get("kind") != REFERENCE_KIND
+                or reference.get("serving_kind") != SERVING_KIND
+                or reference.get("target") != "remaining_logical_model_work"
+                or reference.get("work_thresholds") != raw.get("work_thresholds")
+                or reference.get("reference_and_initial_priors_use_training_labels_only") is not True
+                or any(
+                    not isinstance(digest, str) or len(digest) != 64
+                    or any(character not in "0123456789abcdef" for character in digest)
+                    for digest in (
+                        reference.get("forecast_sha256"),
+                        raw.get("combination_reference_source_model_sha256"),
+                    )
+                )
+            ):
+                raise ValueError("continuous work oracle requires its bound training reference")
+            remaining_work_weight(0., reference.get("reference_work"))
+        elif any(name in raw for name in (
+            "combination_work_reference", "combination_reference_source_model_sha256",
+        )):
+            raise ValueError("continuous work reference requires its separate oracle kind")
         if not self.combination_only and (
             "combination_work_readout" in raw
             or raw.get("admission_order") == "r5_combination_only"
@@ -228,6 +263,12 @@ class OracleWorkPrediction(WorkPrediction):
 
 
 @dataclass(frozen=True)
+class ContinuousOracleWorkPrediction(OracleWorkPrediction):
+    effective_weight: float
+    reference_work: float
+
+
+@dataclass(frozen=True)
 class _CachedPaths:
     finish_floor: float
     finish_deadline: float
@@ -380,10 +421,20 @@ class WorkflowWorkOracle:
         self._path_cache.pop(workflow, None)
         value = remaining / 100.
         bucket = bisect_right(self.artifact.thresholds, value)
-        self._predictions[workflow] = OracleWorkPrediction(
+        prediction = OracleWorkPrediction(
             tuple(float(index == bucket) for index in range(3)), bucket,
             self._revision[workflow], time.monotonic(), "oracle", value, remaining, 0., 0., 0.,
         )
+        if self.artifact.continuous_combination:
+            from beliefkv.predictor.workflow_continuous_work import remaining_work_weight
+
+            reference = self.artifact.continuous_reference["reference_work"]
+            prediction = ContinuousOracleWorkPrediction(
+                prediction.probabilities, prediction.bucket, prediction.revision,
+                prediction.updated_at, prediction.evidence, value, remaining, 0., 0., 0.,
+                remaining_work_weight(value, reference), reference,
+            )
+        self._predictions[workflow] = prediction
 
     def submit(self, workflow, action, *args):
         started = time.thread_time()
@@ -525,10 +576,17 @@ class WorkflowWorkOracle:
             "kind": self.artifact.raw["kind"], "deployable": False,
             "future_trace_used_online": True, "scheduler_waits_for_inference": False,
             "rank": (
-                "remaining_model_work_three_bins_combination_only" if self.combination_only
+                "remaining_model_work_continuous_combination_only"
+                if self.artifact.continuous_combination
+                else "remaining_model_work_three_bins_combination_only" if self.combination_only
                 else "remaining_model_tool_critical_path_seconds"
             ),
             "combination_only": self.combination_only,
+            "combination_work_readout": self.artifact.raw.get("combination_work_readout"),
+            "continuous_reference_work": (
+                self.artifact.continuous_reference["reference_work"]
+                if self.artifact.continuous_combination else None
+            ),
             "work_definition": "0.01*necessary_input_tokens+output_tokens",
             "input_progress": "completion_only_like_learned_labels",
             "output_progress": "observed_native_output_every_128_tokens_and_completion",

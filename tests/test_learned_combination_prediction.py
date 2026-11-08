@@ -5,7 +5,10 @@ import json
 import pytest
 
 from beliefkv.policy.workflow_combination import choose_combination
-from scripts.audit_learned_combination_prediction import inspect, pair_quality, planning_costs
+from scripts.audit_learned_combination_prediction import (
+    inspect, pair_quality, planning_costs, verify_selection_policy,
+)
+from beliefkv.experiments.source_provenance import sha256_file
 from tests.test_combination_device_planning import audit_row, resource, rows
 from tests.test_combination_full_batch_costs import costs
 
@@ -137,3 +140,46 @@ def test_ordinal_oracle_ties_do_not_claim_continuous_size_accuracy():
     assert result["boundary_equal_weight_accuracy"] == .5
     assert result["pair_observations"] == 1
     assert pair_quality([decision], "bins", {"a"})["boundaries"] == 0
+
+
+def test_continuous_truth_uses_declared_training_scale_without_changing_other_variants():
+    row, observed = evidence()
+    before = analyse(row, observed)
+    after = inspect(
+        [row], [observed], costs(), {"identity": row["cost_identity"]}, (100., 300.),
+        {value["workflow"] for value in row["candidates"]}, continuous_reference=200.,
+    )
+    left, right = (value["decisions"][0] for value in (before, after))
+    for a, b in zip(left["ordinary_workflows"], right["ordinary_workflows"]):
+        for name in ("actual_cached", "synchronous", "oracle_three_bins"):
+            assert a["weights"][name] == b["weights"][name]
+        assert b["weights"]["oracle_continuous"] == 1. / (1. + b["remaining_model_work"] / 200.)
+        assert a["weights"]["oracle_continuous"] != b["weights"]["oracle_continuous"]
+    for name in ("actual_cached", "synchronous", "oracle_three_bins"):
+        assert left["selections"][name] == right["selections"][name]
+
+
+def test_selector_parity_accepts_only_the_explicit_unused_readout_helper(tmp_path):
+    frozen = tmp_path / "frozen/beliefkv/policy/workflow_combination.py"
+    frozen.parent.mkdir(parents=True)
+    frozen.write_text("def choose_combination():\n    return 1\n")
+    policy = tmp_path / "current.py"
+    policy.write_text(frozen.read_text() + "\ndef prediction_weight(value):\n    return value\n")
+    proof = tmp_path / "parity.json"
+    plan = {
+        "execution_checkout": str(tmp_path / "frozen"),
+        "source_sha256": {"beliefkv/policy/workflow_combination.py": sha256_file(frozen)},
+    }
+    proof.write_text(json.dumps({
+        "original_module_sha256": sha256_file(frozen),
+        "current_module_sha256": sha256_file(policy), "only_added_function": "prediction_weight",
+    }))
+    with pytest.raises(ValueError, match="differs"):
+        verify_selection_policy(plan, policy)
+    verify_selection_policy(plan, policy, proof)
+    policy.write_text(policy.read_text().replace("return 1", "return 2"))
+    altered = json.loads(proof.read_bytes())
+    altered["current_module_sha256"] = sha256_file(policy)
+    proof.write_text(json.dumps(altered))
+    with pytest.raises(ValueError, match="changed beyond"):
+        verify_selection_policy(plan, policy, proof)

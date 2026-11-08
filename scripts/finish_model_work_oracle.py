@@ -15,7 +15,8 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.workflow_combination import CombinationCosts
-from beliefkv.runtime.workflow_work_oracle import COMBINATION_WORK_KIND
+from beliefkv.runtime.workflow_work_oracle import COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND
+from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint, remaining_work_weight
 from scripts import run_causal_comparison as causal
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.audit_workflow_combination_choices import inspect
@@ -46,6 +47,9 @@ def verify_same_objective(learned, candidate, model, truth):
         for name in ("WORKFLOW_WORK_SOURCE", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256")
     }
     old, new = learned["common_environment"], candidate["common_environment"]
+    modes = {
+        COMBINATION_WORK_KIND: "three_bins", CONTINUOUS_COMBINATION_WORK_KIND: "continuous",
+    }
     if (
         learned.get("order") != ["full"] or candidate.get("order") != ["full"]
         or old.keys() != new.keys()
@@ -60,8 +64,8 @@ def verify_same_objective(learned, candidate, model, truth):
         or any(new[name] != new.get("BELIEFKV_" + name) for name in (
             "WORKFLOW_WORK_SOURCE", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",
         ))
-        or truth.get("kind") != COMBINATION_WORK_KIND
-        or truth.get("combination_work_readout") != "three_bins"
+        or truth.get("kind") not in modes
+        or truth.get("combination_work_readout") != modes.get(truth.get("kind"))
         or truth.get("admission_order") != "r5_combination_only"
         or truth.get("remaining_work_ranking_enabled") is not True
         or truth.get("work_thresholds") != model.get("work_thresholds")
@@ -71,6 +75,16 @@ def verify_same_objective(learned, candidate, model, truth):
         )
     ):
         raise ValueError("the diagnostic differs from learned R5 beyond the declared work provider")
+    if truth["kind"] == CONTINUOUS_COMBINATION_WORK_KIND:
+        reference = truth.get("combination_work_reference") or {}
+        if (
+            reference.get("forecast_sha256") != forecast_fingerprint(model)
+            or reference.get("work_thresholds") != model.get("work_thresholds")
+            or reference.get("reference_and_initial_priors_use_training_labels_only") is not True
+            or truth.get("combination_reference_source_model_sha256") != old.get("WORKFLOW_WORK_MODEL_SHA256")
+        ):
+            raise ValueError("continuous work diagnostic differs from its retained training reference")
+        remaining_work_weight(0., reference.get("reference_work"))
 
 
 def register(execution_path, output):
@@ -179,7 +193,9 @@ def watch(plan_path):
             raise RuntimeError("preserve failed CPU finish: " + name)
 
     try:
-        while causal.reservation.alive(plan["superseded_CPU_coordinator"]):
+        while plan.get("superseded_CPU_coordinator") and causal.reservation.alive(
+            plan["superseded_CPU_coordinator"]
+        ):
             pulse()
             time.sleep(1.)
         while causal.reservation.alive(plan["cohort_observer"]):
@@ -197,6 +213,7 @@ def watch(plan_path):
         candidate_config = causal.load(Path(reg["experiment_configuration"]))
         artifact_path = Path(candidate_config["common_environment"]["WORKFLOW_WORK_MODEL"])
         artifact = causal.load(artifact_path)
+        continuous = artifact.get("kind") == CONTINUOUS_COMBINATION_WORK_KIND
         learned_config = causal.load(Path(causal.load(
             Path(execution["reference"]["learned"]["registration"])
         )["experiment_configuration"]))
@@ -230,7 +247,10 @@ def watch(plan_path):
             input_paths.extend((old_path, old_directory / "cohort.json", old_directory / "review.json"))
         write(output / "comparison.json", {
             "results": results, "complete_measured_work_fresh_drain_and_actual_exit": True,
-            "same_R5_selector_and_three_bin_utility_verified": True,
+            "same_R5_selector_and_three_bin_utility_verified": not continuous,
+            "same_R5_selector_and_declared_work_readout_verified": True,
+            "work_readout": artifact["combination_work_readout"],
+            "continuous_training_reference": artifact.get("combination_work_reference"),
             "one_new_run_does_not_establish_repeatability": True,
             "GPU_action": False, "goal_complete": False,
             "inputs_sha256": {str(path): sha256_file(path) for path in input_paths},
@@ -256,11 +276,22 @@ def watch(plan_path):
             ROOT / "scripts/audit_measured_request_interactivity.py",
             "--registration", reg_path, "--cohort", cohort_path, "--output", output / "interactivity.json",
         ])
-        cpu("figures", [
+        reports = [
             ROOT / "scripts/plot_workflow_cohort_comparison.py",
             "--report", "Nonranking Full=" + str(Path(execution["reference"]["full"]["review"]) / "cohort.json"),
             "--report", "Learned R5=" + str(Path(execution["reference"]["learned"]["review"]) / "cohort.json"),
-            "--report", "Model-work Oracle=" + str(candidate_directory / "cohort.json"),
+        ]
+        if continuous and "binned_truth" in execution["reference"]:
+            reports.extend((
+                "--report", "Model-work Oracle=" + str(
+                    Path(execution["reference"]["binned_truth"]["review"]) / "cohort.json"
+                ),
+            ))
+        cpu("figures", [
+            *reports,
+            "--report", (
+                "Continuous-work Oracle=" if continuous else "Model-work Oracle="
+            ) + str(candidate_directory / "cohort.json"),
             "--output-dir", output / "figures",
         ])
         state.update(status="complete_model_work_oracle_CPU_analysis", measured_completed=18,

@@ -4,7 +4,8 @@ from types import SimpleNamespace as NS
 
 import pytest
 
-from beliefkv.runtime.workflow_work_oracle import COMBINATION_WORK_KIND
+from beliefkv.runtime.workflow_work_oracle import COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND
+from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint
 from scripts import finish_model_work_oracle as finish
 from scripts.plot_workflow_cohort_comparison import COLORS, render
 from tests.test_workflow_cohort_comparison_plot import report
@@ -108,8 +109,8 @@ def test_cpu_coordinator_replacement_cannot_signal_a_serving_owner(tmp_path, mon
 
 def test_explicit_model_work_oracle_label_renders_with_preserved_measurement(tmp_path):
     raw = report()
-    labels = ("Nonranking Full", "Learned R5", "Model-work Oracle")
-    assert len({COLORS[label] for label in labels}) == 3
+    labels = ("Nonranking Full", "Learned R5", "Model-work Oracle", "Continuous-work Oracle")
+    assert len({COLORS[label] for label in labels}) == len(labels)
     render({label: deepcopy(raw) for label in labels}, (), tmp_path / "figures")
     provenance = json.loads((tmp_path / "figures/provenance.json").read_bytes())
     assert provenance["complete_fixed_cohort_JCT"] is True
@@ -117,3 +118,20 @@ def test_explicit_model_work_oracle_label_renders_with_preserved_measurement(tmp
     assert provenance["cohort"] == raw["cohort"]
     assert provenance["colors"]["Model-work Oracle"] == COLORS["Model-work Oracle"]
     assert (tmp_path / "figures/complete_JCT_and_decode.png").stat().st_size > 1000
+
+
+def test_continuous_truth_finish_preserves_declared_selector_and_reference():
+    control, candidate, model, truth = pair()
+    truth.update(
+        kind=CONTINUOUS_COMBINATION_WORK_KIND, combination_work_readout="continuous",
+        combination_reference_source_model_sha256="old",
+        combination_work_reference={
+            "forecast_sha256": forecast_fingerprint(model),
+            "work_thresholds": model["work_thresholds"], "reference_work": 200.,
+            "reference_and_initial_priors_use_training_labels_only": True,
+        },
+    )
+    finish.verify_same_objective(control, candidate, model, truth)
+    truth["combination_reference_source_model_sha256"] = "another-model"
+    with pytest.raises(ValueError, match="training reference"):
+        finish.verify_same_objective(control, candidate, model, truth)

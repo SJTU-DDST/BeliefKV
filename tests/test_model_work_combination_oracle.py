@@ -9,7 +9,11 @@ import time
 import pytest
 
 from beliefkv.runtime.workflow_work_oracle import (
-    COMBINATION_WORK_KIND, WorkflowWorkOracle, WorkflowWorkOracleArtifact,
+    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
+    WorkflowWorkOracle, WorkflowWorkOracleArtifact,
+)
+from beliefkv.predictor.workflow_continuous_work import (
+    KIND as REFERENCE_KIND, SERVING_KIND, forecast_fingerprint, remaining_work_weight,
 )
 from beliefkv.predictor.workflow_work import R5_SCHEMA
 from scripts.prepare_model_work_combination_oracle import prepare
@@ -33,16 +37,35 @@ def artifact(tmp_path):
     }
 
 
-def queued(monkeypatch, tmp_path):
-    contract = artifact(tmp_path)
+def continuous_artifact(tmp_path):
+    raw = artifact(tmp_path)
+    raw.update(
+        kind=CONTINUOUS_COMBINATION_WORK_KIND, combination_work_readout="continuous",
+        combination_reference_source_model_sha256="f" * 64,
+        combination_work_reference={
+            "kind": REFERENCE_KIND, "serving_kind": SERVING_KIND,
+            "target": "remaining_logical_model_work", "reference_work": 20.,
+            "work_thresholds": raw["work_thresholds"],
+            "reference_and_initial_priors_use_training_labels_only": True,
+            "forecast_sha256": forecast_fingerprint(raw),
+        },
+    )
+    return raw
+
+
+def queued(monkeypatch, tmp_path, *, continuous=False):
+    contract = continuous_artifact(tmp_path) if continuous else artifact(tmp_path)
     original_file, original_settings = fixture.oracle_file, fixture.settings
 
     def adapted(path, raw):
-        return original_file(path, {
-            **raw, **{name: contract[name] for name in (
+        fields = (
                 "kind", "admission_order", "remaining_work_ranking_enabled",
                 "combination_work_readout", "admission_cost_profile",
-            )},
+        ) + ((
+            "combination_work_reference", "combination_reference_source_model_sha256",
+        ) if continuous else ())
+        return original_file(path, {
+            **raw, **{name: contract[name] for name in fields},
         })
 
     monkeypatch.setattr(fixture, "oracle_file", adapted)
@@ -105,10 +128,11 @@ def test_work_truth_tracks_observed_service_without_using_future_tool_paths(tmp_
 
 
 @pytest.mark.parametrize("periodic", (False, True))
+@pytest.mark.parametrize("continuous", (False, True))
 def test_exact_work_changes_same_R5_selector_but_not_other_ranking_paths(
-    monkeypatch, tmp_path, periodic,
+    monkeypatch, tmp_path, periodic, continuous,
 ):
-    runtime, admission = queued(monkeypatch, tmp_path)
+    runtime, admission = queued(monkeypatch, tmp_path, continuous=continuous)
     records = []
     runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
     try:
@@ -132,8 +156,15 @@ def test_exact_work_changes_same_R5_selector_but_not_other_ranking_paths(
         assert not admission.policy.programs["long"].active
         decisions = [row for row in records if row["event"] == "workflow_combination_selection"]
         weights = {item["identity"]: item["weight"] for row in decisions for item in row["candidates"]}
-        assert weights["short"] == 1.
-        assert weights["long"] == .25
+        if continuous:
+            for owner in ("short", "long"):
+                prediction = admission._work.prediction(admission.latest[owner].root_workflow_id)
+                assert weights[owner] == remaining_work_weight(
+                    prediction.remaining_work, prediction.reference_work,
+                )
+        else:
+            assert weights["short"] == 1.
+            assert weights["long"] == .25
         state = admission.status()
         assert state["workflow_distribution_changes_pressure_victims"] is False
         assert state["workflow_distribution_changes_tool_replacement_order"] is False
@@ -143,8 +174,9 @@ def test_exact_work_changes_same_R5_selector_but_not_other_ranking_paths(
         runtime.close()
 
 
-def test_ready_JOIN_and_still_blocked_work_keep_existing_authority(monkeypatch, tmp_path):
-    runtime, admission = queued(monkeypatch, tmp_path)
+@pytest.mark.parametrize("continuous", (False, True))
+def test_ready_JOIN_and_still_blocked_work_keep_existing_authority(monkeypatch, tmp_path, continuous):
+    runtime, admission = queued(monkeypatch, tmp_path, continuous=continuous)
     try:
         runtime._join_priority_pending["long"] = "observed-join"
         monkeypatch.setattr(
@@ -157,8 +189,9 @@ def test_ready_JOIN_and_still_blocked_work_keep_existing_authority(monkeypatch, 
         runtime.close()
 
 
-def test_still_tool_blocked_short_work_cannot_enter_the_comparison(monkeypatch, tmp_path):
-    runtime, admission = queued(monkeypatch, tmp_path)
+@pytest.mark.parametrize("continuous", (False, True))
+def test_still_tool_blocked_short_work_cannot_enter_the_comparison(monkeypatch, tmp_path, continuous):
+    runtime, admission = queued(monkeypatch, tmp_path, continuous=continuous)
     try:
         runtime.graph.invocations["short"].active_tool_calls["tool"] = "execute"
         admission.tick(now=time.monotonic())
@@ -198,3 +231,82 @@ def test_preparation_preserves_tokens_thresholds_resources_and_noncombination_co
     assert candidate["common_environment"]["WORKFLOW_WORK_MODEL_SHA256"] == hashlib.sha256(
         (json.dumps(truth, ensure_ascii=False, allow_nan=False) + "\n").encode()
     ).hexdigest()
+
+
+@pytest.mark.parametrize("change", (
+    "missing_reference", "wrong_kind", "zero", "negative", "infinite", "boolean",
+    "wrong_thresholds", "evaluation_reference", "unbound_source",
+))
+def test_continuous_oracle_rejects_unbound_or_invalid_reference(tmp_path, change):
+    raw = continuous_artifact(tmp_path)
+    reference = raw["combination_work_reference"]
+    if change == "missing_reference":
+        raw.pop("combination_work_reference")
+    elif change == "wrong_kind":
+        raw["kind"] = COMBINATION_WORK_KIND
+    elif change in ("zero", "negative", "infinite", "boolean"):
+        reference["reference_work"] = {
+            "zero": 0., "negative": -1., "infinite": float("inf"), "boolean": True,
+        }[change]
+    elif change == "wrong_thresholds":
+        reference["work_thresholds"] = [1., 2.]
+    elif change == "evaluation_reference":
+        reference["reference_and_initial_priors_use_training_labels_only"] = False
+    else:
+        raw.pop("combination_reference_source_model_sha256")
+    with pytest.raises(ValueError):
+        WorkflowWorkOracleArtifact(raw)
+
+
+def test_continuous_truth_resolves_same_bucket_and_updates_only_from_observed_work(tmp_path, monkeypatch):
+    raw = continuous_artifact(tmp_path)
+    oracle = WorkflowWorkOracle(*oracle_file(tmp_path, raw))
+    monkeypatch.setattr(
+        "beliefkv.runtime.workflow_work_oracle.cache_remaining_paths",
+        lambda *args, **kwargs: pytest.fail("continuous model work read future tool paths"),
+    )
+    before = oracle.prediction("wf")
+    oracle.submit("wf", "started", "one", "child", "ctx", range(500))
+    assert oracle.prediction("wf") == before
+    oracle.submit("wf", "generated", "one", 17)
+    after = oracle.prediction("wf")
+    assert before.bucket == after.bucket
+    assert before.probabilities == after.probabilities
+    assert before.effective_weight == remaining_work_weight(47., 20.)
+    assert after.effective_weight == remaining_work_weight(30., 20.)
+    assert after.effective_weight > before.effective_weight
+    assert oracle.status()["future_tool_durations_used"] is False
+    assert oracle.status()["rank"] == "remaining_model_work_continuous_combination_only"
+
+
+def test_continuous_preparation_binds_retained_predictor_and_preserves_work(tmp_path):
+    raw = artifact(tmp_path)
+    digest = "f" * 64
+    env = {
+        "WORKFLOW_WORK_SOURCE": "learned", "BELIEFKV_WORKFLOW_WORK_SOURCE": "learned",
+        "WORKFLOW_COMBINATION_ADMISSION": "1",
+        "WORKFLOW_WORK_MODEL": "old", "BELIEFKV_WORKFLOW_WORK_MODEL": "old",
+        "WORKFLOW_WORK_MODEL_SHA256": digest, "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256": digest,
+    }
+    config = {"common_environment": env, "comparison_contract": {}}
+    model = NS(schema=R5_SCHEMA, thresholds=tuple(raw["work_thresholds"]), raw=raw)
+    reference = continuous_artifact(tmp_path)["combination_work_reference"]
+    continuous = NS(raw={
+        **deepcopy(raw), "continuous_work_readout": reference,
+        "metadata": {"decision_eligible": False, "continuous_work_source_model_sha256": digest},
+    })
+    before = deepcopy((config, raw, continuous.raw))
+    truth, candidate = prepare(
+        config, model, source(), tmp_path / "continuous.json", continuous_model=continuous,
+    )
+    assert (config, raw, continuous.raw) == before
+    assert truth["kind"] == CONTINUOUS_COMBINATION_WORK_KIND
+    assert truth["requests"] == source()["requests"]
+    assert truth["combination_work_reference"] == reference
+    assert truth["combination_reference_source_model_sha256"] == digest
+    assert candidate["comparison_contract"]["same_learned_combination_selector"] is True
+    assert candidate["comparison_contract"]["same_learned_combination_selector_and_utility_mapping"] is False
+    assert continuous.raw["metadata"]["decision_eligible"] is False
+    continuous.raw["metadata"]["continuous_work_source_model_sha256"] = "a" * 64
+    with pytest.raises(ValueError, match="same retained"):
+        prepare(config, model, source(), tmp_path / "bad.json", continuous_model=continuous)
