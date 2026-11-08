@@ -409,7 +409,9 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                     weight = (
                         1. / (1. + prediction.remaining_path_s / self.oracle_reference_path_s)
                         if prediction.evidence == "oracle"
-                        and not getattr(a._work, "combination_only", False)
+                        and not getattr(
+                            a._work, "model_work_only", getattr(a._work, "combination_only", False),
+                        )
                         else prediction_weight(prediction)
                     )
                 else:

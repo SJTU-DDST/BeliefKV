@@ -9,7 +9,8 @@ import time
 import pytest
 
 from beliefkv.runtime.workflow_work_oracle import (
-    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
+    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
+    TOOL_BAND_PRESSURE_ORDER,
     WorkflowWorkOracle, WorkflowWorkOracleArtifact,
 )
 from beliefkv.predictor.workflow_continuous_work import (
@@ -53,8 +54,14 @@ def continuous_artifact(tmp_path):
     return raw
 
 
-def queued(monkeypatch, tmp_path, *, continuous=False):
+def queued(monkeypatch, tmp_path, *, continuous=False, pressure=False):
     contract = continuous_artifact(tmp_path) if continuous else artifact(tmp_path)
+    if pressure:
+        contract.update(
+            kind=CONTINUOUS_PRESSURE_WORK_KIND,
+            admission_order="r5_combination_and_tool_band_pressure",
+            pressure_work_order=TOOL_BAND_PRESSURE_ORDER,
+        )
     original_file, original_settings = fixture.oracle_file, fixture.settings
 
     def adapted(path, raw):
@@ -63,7 +70,7 @@ def queued(monkeypatch, tmp_path, *, continuous=False):
                 "combination_work_readout", "admission_cost_profile",
         ) + ((
             "combination_work_reference", "combination_reference_source_model_sha256",
-        ) if continuous else ())
+        ) if continuous else ()) + (("pressure_work_order",) if pressure else ())
         return original_file(path, {
             **raw, **{name: contract[name] for name in fields},
         })

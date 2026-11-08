@@ -16,13 +16,20 @@ from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import R5_SCHEMA, WorkflowWorkModel
 from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint
 from beliefkv.runtime.workflow_work_oracle import (
-    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, WorkflowWorkOracleArtifact,
+    COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
+    TOOL_BAND_PRESSURE_ORDER, WorkflowWorkOracleArtifact,
 )
 from scripts.train_workflow_work import write
 
 
-def prepare(config, model, labels, artifact_path, *, continuous_model=None):
+def prepare(config, model, labels, artifact_path, *, continuous_model=None, tool_band_pressure=False):
     common = config["common_environment"]
+    if type(tool_band_pressure) is not bool or tool_band_pressure and (
+        continuous_model is None
+        or any(common.get(prefix + "AGENT_PRESSURE_PAUSE_POLICY") != "workflow_tool_aware"
+               for prefix in ("", "BELIEFKV_"))
+    ):
+        raise ValueError("pressure work order requires continuous truth and the unchanged tool-aware policy")
     if (
         model.schema != R5_SCHEMA
         or common.get("WORKFLOW_WORK_SOURCE") != "learned"
@@ -54,6 +61,12 @@ def prepare(config, model, labels, artifact_path, *, continuous_model=None):
             kind=CONTINUOUS_COMBINATION_WORK_KIND, combination_work_readout="continuous",
             combination_work_reference=deepcopy(reference),
             combination_reference_source_model_sha256=common["WORKFLOW_WORK_MODEL_SHA256"],
+        )
+    if tool_band_pressure:
+        artifact.update(
+            kind=CONTINUOUS_PRESSURE_WORK_KIND,
+            admission_order="r5_combination_and_tool_band_pressure",
+            pressure_work_order=TOOL_BAND_PRESSURE_ORDER,
         )
     for name in ("model_prefill_seconds_per_token", "model_prefill_progress"):
         artifact.pop(name, None)
@@ -93,6 +106,11 @@ def prepare(config, model, labels, artifact_path, *, continuous_model=None):
             continuous_reference_uses_retained_training_labels_only=True,
             continuous_learned_model_serving_eligibility_granted=False,
         )
+    if tool_band_pressure:
+        candidate.update(
+            purpose="Exact continuous model-work combination and mandatory same-tool-band pressure ordering",
+            status="CPU_prepared_continuous_pressure_oracle_not_registered",
+        )
     contract = candidate["comparison_contract"]
     contract.update({
         "future_information_used": True, "deployable": False,
@@ -120,6 +138,17 @@ def prepare(config, model, labels, artifact_path, *, continuous_model=None):
             continuous_utility_definition="1/(1+remaining_model_work/reference_work)",
             prediction_and_utility_mapping_are_joint_change=True,
         )
+    if tool_band_pressure:
+        contract.update(
+            oracle_candidate_kind="continuous_model_work_combination_and_tool_band_pressure",
+            oracle_future_work_used_outside_combination=True,
+            oracle_future_work_outside_combination_scope="mandatory_pressure_within_tool_retention_bands",
+            oracle_pressure_work_order=TOOL_BAND_PRESSURE_ORDER,
+            pressure_change_is_pure_prediction_effect=False,
+            ordinary_combination_selector_unchanged=True,
+            pressure_marks_grant_capacity=False,
+            existing_tool_weights_and_protected_native_state_preserved=True,
+        )
     changed = {
         name for name in common if env.get(name) != common[name]
     } | {name for name in env if name not in common}
@@ -138,6 +167,7 @@ def main():
     for name in ("learned-config", "oracle-labels", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--continuous-reference-model", type=Path)
+    parser.add_argument("--tool-band-pressure-order", action="store_true")
     args = parser.parse_args()
     if args.output_dir.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or (
         os.getpriority(os.PRIO_PROCESS, 0) != 19
@@ -160,6 +190,7 @@ def main():
     artifact, candidate = prepare(
         config, model, json.loads(args.oracle_labels.read_bytes()), artifact_path,
         continuous_model=continuous_model,
+        tool_band_pressure=args.tool_band_pressure_order,
     )
     args.output_dir.mkdir(parents=True, exist_ok=False)
     write(artifact_path, artifact)
@@ -183,7 +214,9 @@ def main():
             if continuous_model is not None else None
         ),
         "cost_identity": artifact["admission_cost_profile"]["identity"],
-        "learned_schema_and_pressure_tool_order_semantics_preserved": True,
+        "learned_schema_and_pressure_tool_order_semantics_preserved": not args.tool_band_pressure_order,
+        "tool_band_pressure_order_enabled": args.tool_band_pressure_order,
+        "tool_replacement_order_and_tool_retention_semantics_preserved": True,
         "bookkeeping_execution_cost_identical_claimed": False,
     })
     print(json.dumps({"configuration": str(args.output_dir / "full.json"), "GPU_action": False}))

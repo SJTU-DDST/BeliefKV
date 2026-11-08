@@ -44,7 +44,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self._work = self._create_work(runtime)
         self._conditional_distribution = (
             getattr(getattr(self._work, "model", None), "schema", None) == R5_SCHEMA
-            or getattr(self._work, "combination_only", False)
+            or getattr(self._work, "model_work_only", getattr(self._work, "combination_only", False))
         )
         if self._conditional_distribution:
             self.rank_kind = "conditional_work_distribution_combination_only"
@@ -331,6 +331,14 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                     "ts_ms": time.time() * 1000., "monotonic_s": now,
                     "pressure_pause_policy": self.pressure_pause_policy,
                     **decision,
+                    **({
+                        "eligible_candidate_keys": {
+                            item["invocation_id"]: (
+                                asdict(key) if (key := self.latest.get(item["invocation_id"])) is not None
+                                else None
+                            ) for item in decision["eligible_candidates"]
+                        },
+                    } if "eligible_candidates" in decision else {}),
                 })
         if writer is not None:
             writer.record({

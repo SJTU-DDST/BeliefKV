@@ -45,6 +45,7 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
         self.rank_before_category = rank_before_category
         self.last_selection = {}
         self.pressure_preference = None
+        self.observe_pressure_candidates = False
         self.last_pressure = []
         self.tool_pressure_state = None
         self._tool_states = {}
@@ -261,8 +262,8 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
                 -item.tokens if predicted else item.tokens, item.queue_sequence,
             )), predicted
 
-        def record(selected, reference, *, predicted, marked):
-            self.last_pressure.append({
+        def record(selected, reference, *, predicted, marked, candidates):
+            entry = {
                 "selected": selected.identity, "reference_selected": reference.identity,
                 "prediction_used": predicted,
                 "remaining_work_priority": preferences.get(selected.identity),
@@ -271,7 +272,18 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
                 "tool_state": asdict(self.tool_state(selected, timestamp)),
                 "tool_retention_weight": self.tool_state(selected, timestamp).weight,
                 "physical_capacity_credit": False,
-            })
+            }
+            if self.observe_pressure_candidates:
+                entry.update(
+                    same_band_reference_selected=min(candidates, key=lambda item: item.tokens).identity,
+                    eligible_candidates=[{
+                        "invocation_id": item.identity, "context_tokens": item.tokens,
+                        "remaining_work_priority": preferences.get(item.identity),
+                        "tool_state": asdict(self.tool_state(item, timestamp)),
+                        "queue_sequence": item.queue_sequence,
+                    } for item in candidates],
+                )
+            self.last_pressure.append(entry)
 
         try:
             resumed = self._resume()
@@ -300,7 +312,7 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
                     )
                     self._pause(selected, timestamp)
                     selected.marked_for_pause = False
-                    record(selected, reference, predicted=predicted, marked=False)
+                    record(selected, reference, predicted=predicted, marked=False, candidates=ordered)
                     continue
                 reasoning = [
                     item for item in active if item.pending and not item.marked_for_pause
@@ -321,7 +333,13 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
                     )
                     selected.marked_for_pause = True
                     planned += selected.tokens + self.buffer_tokens
-                    record(selected, reference, predicted=predicted, marked=True)
+                    record(
+                        selected, reference, predicted=predicted, marked=True,
+                        candidates=(
+                            [item for item in ordered if item is selected or not item.marked_for_pause]
+                            if self.observe_pressure_candidates else ()
+                        ),
+                    )
                 break
             return resumed
         finally:

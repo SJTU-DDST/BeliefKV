@@ -17,6 +17,8 @@ KIND = "workflow_model_tool_critical_path_oracle_v1"
 COST_KIND = "workflow_model_tool_calibrated_cost_oracle_v2"
 COMBINATION_WORK_KIND = "workflow_model_work_combination_oracle_v1"
 CONTINUOUS_COMBINATION_WORK_KIND = "workflow_continuous_model_work_combination_oracle_v1"
+CONTINUOUS_PRESSURE_WORK_KIND = "workflow_continuous_model_work_pressure_oracle_v1"
+TOOL_BAND_PRESSURE_ORDER = "remaining_model_work_within_tool_retention_bands_v1"
 
 
 def critical_path_graphs(plan):
@@ -51,6 +53,7 @@ class WorkflowWorkOracleArtifact:
         if (
             raw.get("kind") not in (
                 KIND, COST_KIND, COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
+                CONTINUOUS_PRESSURE_WORK_KIND,
             )
             or raw.get("future_information_used") is not True
             or raw.get("deployable") is not False or raw.get("prefill_token_weight") != .01
@@ -59,13 +62,26 @@ class WorkflowWorkOracleArtifact:
         cost_fields = ("model_prefill_seconds_per_token", "model_prefill_progress")
         if raw["kind"] != COST_KIND and any(name in raw for name in cost_fields):
             raise ValueError("calibrated path costs require the separate v2 oracle declaration")
-        self.combination_only = raw["kind"] in (
-            COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
+        self.model_work_only = raw["kind"] in (
+            COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
         )
-        self.continuous_combination = raw["kind"] == CONTINUOUS_COMBINATION_WORK_KIND
+        self.pressure_work_ranking = raw["kind"] == CONTINUOUS_PRESSURE_WORK_KIND
+        self.combination_only = self.model_work_only and not self.pressure_work_ranking
+        if self.pressure_work_ranking:
+            if raw.get("pressure_work_order") != TOOL_BAND_PRESSURE_ORDER:
+                raise ValueError("pressure oracle requires its explicit tool-retention-band scope")
+        elif "pressure_work_order" in raw:
+            raise ValueError("pressure work order requires its separate oracle kind")
+        self.continuous_combination = raw["kind"] in (
+            CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
+        )
         readout = "continuous" if self.continuous_combination else "three_bins"
-        if self.combination_only and (
-            raw.get("admission_order") != "r5_combination_only"
+        order = (
+            "r5_combination_and_tool_band_pressure" if self.pressure_work_ranking
+            else "r5_combination_only"
+        )
+        if self.model_work_only and (
+            raw.get("admission_order") != order
             or raw.get("combination_work_readout") != readout
             or raw.get("remaining_work_ranking_enabled") is not True
             or raw.get("admission_cost_profile", {}).get("kind")
@@ -100,9 +116,11 @@ class WorkflowWorkOracleArtifact:
             "combination_work_reference", "combination_reference_source_model_sha256",
         )):
             raise ValueError("continuous work reference requires its separate oracle kind")
-        if not self.combination_only and (
+        if not self.model_work_only and (
             "combination_work_readout" in raw
-            or raw.get("admission_order") == "r5_combination_only"
+            or raw.get("admission_order") in (
+                "r5_combination_only", "r5_combination_and_tool_band_pressure",
+            )
         ):
             raise ValueError("R5-only work readout requires its separate oracle kind")
         self.model_prefill_seconds_per_token = raw.get("model_prefill_seconds_per_token")
@@ -117,7 +135,7 @@ class WorkflowWorkOracleArtifact:
             raise ValueError("v2 oracle requires finite prefill cost and observed progress semantics")
         window = raw.get("free_dispatch_coalescing_window_ms", 0)
         if type(window) is not int or window not in (0, 1000, 2000) or (
-            window and not self.combination_only
+            window and not self.model_work_only
             and raw.get("admission_order") != "global_ready_remaining_path"
         ):
             raise ValueError("timed coalescing requires a global oracle and 0, 1000 or 2000 ms")
@@ -218,6 +236,16 @@ class WorkflowWorkOracleArtifact:
                     event_ids.add(event)
         if graph_requests != self.requests.keys():
             raise ValueError("oracle DAG omits model work")
+
+    @property
+    def rank_kind(self):
+        if self.pressure_work_ranking:
+            return "remaining_model_work_continuous_combination_and_tool_band_pressure"
+        if self.continuous_combination:
+            return "remaining_model_work_continuous_combination_only"
+        if self.combination_only:
+            return "remaining_model_work_three_bins_combination_only"
+        return "remaining_model_tool_critical_path_seconds"
 
     @classmethod
     def load(cls, path, digest):
@@ -380,6 +408,7 @@ class WorkflowWorkOracle:
     def __init__(self, path, digest):
         self.artifact = WorkflowWorkOracleArtifact.load(path, digest)
         self.combination_only = self.artifact.combination_only
+        self.model_work_only = self.artifact.model_work_only
         self.digest = digest
         self.counts = Counter()
         self._remaining = {
@@ -538,7 +567,7 @@ class WorkflowWorkOracle:
         prediction = self._predictions.get(workflow) if not self.error else None
         if prediction is None:
             return None
-        if self.combination_only:
+        if self.model_work_only:
             return prediction
         started, now = time.thread_time(), time.monotonic()
         self.counts["path_queries"] += 1
@@ -575,13 +604,12 @@ class WorkflowWorkOracle:
             "artifact_sha256": self.digest, "error": self.error,
             "kind": self.artifact.raw["kind"], "deployable": False,
             "future_trace_used_online": True, "scheduler_waits_for_inference": False,
-            "rank": (
-                "remaining_model_work_continuous_combination_only"
-                if self.artifact.continuous_combination
-                else "remaining_model_work_three_bins_combination_only" if self.combination_only
-                else "remaining_model_tool_critical_path_seconds"
-            ),
+            "rank": self.artifact.rank_kind,
             "combination_only": self.combination_only,
+            "model_work_only": self.model_work_only,
+            "pressure_work_order": (
+                TOOL_BAND_PRESSURE_ORDER if self.artifact.pressure_work_ranking else "reference"
+            ),
             "combination_work_readout": self.artifact.raw.get("combination_work_readout"),
             "continuous_reference_work": (
                 self.artifact.continuous_reference["reference_work"]
@@ -590,8 +618,8 @@ class WorkflowWorkOracle:
             "work_definition": "0.01*necessary_input_tokens+output_tokens",
             "input_progress": "completion_only_like_learned_labels",
             "output_progress": "observed_native_output_every_128_tokens_and_completion",
-            "future_tool_durations_used": not self.combination_only,
-            "future_dependency_graph_used_for_rank_only": not self.combination_only,
+            "future_tool_durations_used": not self.model_work_only,
+            "future_dependency_graph_used_for_rank_only": not self.model_work_only,
             "model_seconds_per_work_token": self.artifact.model_seconds_per_work_token,
             "model_prefill_seconds_per_token": self.artifact.model_prefill_seconds_per_token,
             "model_prefill_progress": self.artifact.model_prefill_progress,

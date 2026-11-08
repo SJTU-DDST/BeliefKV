@@ -19,6 +19,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
 
     def __init__(self, runtime):
         super().__init__(runtime)
+        if self._work.artifact.pressure_work_ranking:
+            self.rank_kind = self._work.artifact.rank_kind
         if self.rank_before_category:
             if not self.dispatch_interval_ms:
                 self.close()
@@ -27,6 +29,11 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 self._deferred_dispatch = DeferredFreeAdmission(
                     self, window_ms=self._work.artifact.raw.get("free_dispatch_coalescing_window_ms", 0),
                 )
+
+    def attach(self, cache):
+        super().attach(cache)
+        if self._work.artifact.pressure_work_ranking:
+            self.policy.observe_pressure_candidates = True
 
     def _create_work(self, runtime):
         oracle = WorkflowWorkOracle(runtime.workflow_work_model, runtime.workflow_work_model_sha256)
@@ -38,12 +45,18 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         order = oracle.artifact.raw.get("admission_order", "within_reference_category")
         if order not in (
             "within_reference_category", "global_ready_remaining_path", "r5_combination_only",
+            "r5_combination_and_tool_band_pressure",
         ):
             oracle.close()
             raise ValueError("unsupported explicit oracle admission order")
-        if oracle.combination_only and not getattr(runtime, "workflow_combination_admission", False):
+        if oracle.model_work_only and not getattr(runtime, "workflow_combination_admission", False):
             oracle.close()
             raise ValueError("model-work oracle requires the R5 combination selector")
+        if oracle.artifact.pressure_work_ranking and getattr(
+            runtime, "agent_pressure_pause_policy", "reference",
+        ) != "workflow_tool_aware":
+            oracle.close()
+            raise ValueError("model-work pressure oracle requires the existing tool-aware pressure policy")
         self._global_priority = order == "global_ready_remaining_path"
         return oracle
 
@@ -74,7 +87,7 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     def _logical_ready_paused(self, item):
         if not super()._logical_ready_paused(item):
             return False
-        if self._work.combination_only:
+        if self._work.model_work_only:
             return True
         deferred = self._deferred_dispatch
         if deferred is None or not getattr(deferred, "window_ms", 0):
@@ -105,7 +118,7 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         return result
 
     def _priority(self, prediction):
-        if self._work.combination_only:
+        if self._work.model_work_only:
             return 1
         if prediction is None or prediction.evidence != "oracle":
             raise ValueError("oracle ranking requires its exact bound workflow prediction")
@@ -114,6 +127,13 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     def _pressure_preference(self, item, now):
         if not self.remaining_work_ranking_enabled:
             return None
+        if self._work.artifact.pressure_work_ranking:
+            prediction = self._prediction(item.identity)
+            if not self._supported(prediction):
+                return None
+            if self._protected_join(self.latest.get(item.identity)):
+                return -1.
+            return prediction.remaining_work
         return super()._pressure_preference(item, now)
 
     def _supported(self, prediction):
@@ -125,6 +145,7 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     def status(self):
         deferred = self._deferred_dispatch
         compute = getattr(self.runtime, "_workflow_compute_service", None)
+        pressure = self._work.artifact.pressure_work_ranking
         return {
             **super().status(),
             "future_information_used": True, "deployable": False,
@@ -135,13 +156,14 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
             ),
             "workflow_oracle_future_work_used_for_recovery": self.remaining_work_ranking_enabled,
             "workflow_oracle_admission_order": (
+                "r5_combination_and_tool_band_pressure" if pressure else
                 "r5_combination_only" if self._work.combination_only else
                 "global_ready_remaining_path" if self.rank_before_category else
                 "within_reference_category"
             ),
             "workflow_size_other_admission_paths": (
                 "protected_join_unchanged;first_continuation_sibling_use_exact_model_work_bins"
-                if self._work.combination_only else
+                if self._work.model_work_only else
                 "protected_join_unchanged;first_continuation_sibling_use_shared_remaining_path_dispatch"
                 if self.rank_before_category else
                 "join_unchanged;bounded_free_dispatch_uses_oracle_model_tool_path"
@@ -159,8 +181,14 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 getattr(deferred, "window_ms", 0)
             ),
             "workflow_oracle_tool_replacement_selection": (
-                "original_order_like_learned_R5" if self._work.combination_only else
+                "original_order_like_learned_R5" if self._work.model_work_only else
                 "remaining_path_order_then_actual_single_donor_pair;ordinary_set_budget_not_applied"
             ),
             "workflow_oracle_combination_only": self._work.combination_only,
+            **({
+                "workflow_conditional_distribution_scope": "combination_and_mandatory_tool_band_pressure",
+                "workflow_distribution_changes_pressure_victims": True,
+                "workflow_oracle_pressure_work_order": self._work.artifact.raw["pressure_work_order"],
+                "workflow_oracle_pressure_candidate_observation": True,
+            } if pressure else {}),
         }

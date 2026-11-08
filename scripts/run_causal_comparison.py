@@ -1814,13 +1814,10 @@ def register(args):
     if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
         plan["oracle_information"] = {
             "deployable": False, "future_model_token_work_used": True,
-            "future_tool_durations_used": not oracle_artifact.combination_only,
-            "future_dependency_graph_used_for_rank_only": not oracle_artifact.combination_only,
-            "rank": (
-                "remaining_model_work_three_bins_combination_only"
-                if oracle_artifact.combination_only else
-                "remaining_model_tool_critical_path_seconds"
-            ),
+            "future_tool_durations_used": not oracle_artifact.model_work_only,
+            "future_dependency_graph_used_for_rank_only": not oracle_artifact.model_work_only,
+            "rank": oracle_artifact.rank_kind,
+            "future_model_work_used_for_pressure": oracle_artifact.pressure_work_ranking,
             "source_bound_artifact_sha256": oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
             "model_service_seconds": "predeclared_context_and_batch_averaged_proxy",
             "optimal_JCT_bound": False,
