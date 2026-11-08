@@ -41,6 +41,17 @@ def verify_pins(pins):
             raise ValueError("CPU finish input changed: " + name)
 
 
+def wait_observer_publication(path, owner, pulse, *, timeout_s=30.):
+    deadline = time.monotonic() + timeout_s
+    while not path.is_file():
+        if not causal.reservation.alive(owner):
+            raise ValueError("cohort observer exited before its first state publication")
+        if time.monotonic() >= deadline:
+            raise TimeoutError("cohort observer did not publish its first state within the bounded wait")
+        pulse()
+        time.sleep(.1)
+
+
 def verify_same_objective(learned, candidate, model, truth):
     allowed = {
         prefix + name for prefix in ("", "BELIEFKV_")
@@ -198,6 +209,7 @@ def watch(plan_path):
         ):
             pulse()
             time.sleep(1.)
+        wait_observer_publication(observer_path, plan["cohort_observer"], pulse)
         while causal.reservation.alive(plan["cohort_observer"]):
             observed = causal.load(observer_path)
             state.update(measured_completed=observed.get("measured_completed"),
@@ -297,7 +309,10 @@ def watch(plan_path):
         state.update(status="complete_model_work_oracle_CPU_analysis", measured_completed=18,
                      comparisons=results, choice_counts=choices["counts"])
     except BaseException as error:
-        state.update(status="stopped_preserve_model_work_oracle_CPU_analysis", error=repr(error))
+        state.update(
+            status="stopped_preserve_model_work_oracle_CPU_analysis", error=repr(error),
+            error_filename=getattr(error, "filename", None),
+        )
     pulse()
 
 

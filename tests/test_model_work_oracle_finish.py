@@ -135,3 +135,32 @@ def test_continuous_truth_finish_preserves_declared_selector_and_reference():
     truth["combination_reference_source_model_sha256"] = "another-model"
     with pytest.raises(ValueError, match="training reference"):
         finish.verify_same_objective(control, candidate, model, truth)
+
+
+def test_finish_waits_for_live_observers_first_atomic_publication(tmp_path, monkeypatch):
+    path = tmp_path / "observer.state.json"
+    pulses = []
+    monkeypatch.setattr(finish.causal.reservation, "alive", lambda owner: True)
+    monkeypatch.setattr(finish.time, "monotonic", lambda: 0.)
+    monkeypatch.setattr(finish.time, "sleep", lambda _: path.write_text("{}"))
+    finish.wait_observer_publication(path, {"pid": 1}, lambda: pulses.append(1))
+    assert path.is_file()
+    assert pulses == [1]
+
+
+@pytest.mark.parametrize("alive", (False, True))
+def test_initial_observer_publication_has_bounded_missing_owner_handling(tmp_path, monkeypatch, alive):
+    path = tmp_path / "missing.state.json"
+    ticks = iter((0., 31.))
+    monkeypatch.setattr(finish.causal.reservation, "alive", lambda owner: alive)
+    monkeypatch.setattr(finish.time, "monotonic", lambda: next(ticks))
+    monkeypatch.setattr(finish.time, "sleep", lambda _: pytest.fail("unbounded wait"))
+    with pytest.raises(TimeoutError if alive else ValueError, match="cohort observer"):
+        finish.wait_observer_publication(path, {"pid": 1}, lambda: None)
+
+
+def test_published_observer_needs_no_startup_delay(tmp_path, monkeypatch):
+    path = tmp_path / "observer.state.json"
+    path.write_text("{}")
+    monkeypatch.setattr(finish.time, "sleep", lambda _: pytest.fail("delayed an existing observer"))
+    finish.wait_observer_publication(path, {}, lambda: pytest.fail("unnecessary progress pulse"))
