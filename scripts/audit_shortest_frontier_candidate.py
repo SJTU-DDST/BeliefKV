@@ -1,7 +1,7 @@
 """Replay a shortest-frontier CPU candidate on complete registered choices."""
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime, timezone
 import json
 import math
@@ -21,7 +21,9 @@ from beliefkv.runtime.workflow_work_oracle import (
     CONTINUOUS_COMBINATION_WORK_KIND, WorkflowWorkOracleArtifact,
 )
 from scripts.audit_learned_combination_prediction import combination_candidates, planning_costs
-from scripts.audit_native_system_costs import distribution, finite_number
+from scripts.audit_free_dispatch_service import identity
+from scripts.audit_native_system_costs import distribution, finite_number, union_ms
+from scripts.audit_periodic_admission_decisions import useful_work
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.audit_workflow_combination_choices import EVENT, replay_choice
 from scripts.verify_measured_execution import verify_execution
@@ -87,6 +89,106 @@ def continuous_oracle_evidence(row, costs, reference_work):
     }
 
 
+def omitted_service_exposure(decisions, batches, measured):
+    """Measure historical service delays for alternatives, without inventing grants."""
+    queries, requests, seen = [], defaultdict(list), set()
+    measured = set(measured)
+    for decision in decisions:
+        for raw in decision["newly_selected_keys"]:
+            key = identity(raw, grant=True)
+            begin = decision["monotonic_s"] * 1000.
+            if not finite_number(begin) or begin < 0 or (key, begin) in seen:
+                raise ValueError("alternative service query has duplicate or invalid ownership/clock")
+            seen.add((key, begin))
+            query = {
+                "key": key, "begin_ms": begin, "source": decision["source"],
+                "measured_workflow": key[1] in measured,
+                "earlier_exact_services": 0, "prior_launches_excluded": 0,
+                "unknown_progress_samples": 0, "first_exact_service_ms": None,
+                "first_new_useful_service_ms": None,
+            }
+            queries.append(query)
+            requests[key[0]].append(query)
+    domains, counts = set(), Counter()
+    for batch in batches:
+        if batch.get("event") != "gpu_service_sample":
+            continue
+        launch, start, end = (batch.get(name) for name in (
+            "launch_monotonic_ms", "service_start_monotonic_ms", "complete_monotonic_ms",
+        ))
+        domain = batch.get("monotonic_clock_domain")
+        if (
+            not all(finite_number(value) for value in (launch, start, end))
+            or not 0 <= launch <= start <= end or not domain
+        ):
+            raise ValueError("historical alternative service has an invalid native clock")
+        domains.add(domain)
+        if len(domains) > 1:
+            raise ValueError("historical alternative services cross monotonic clock domains")
+        for member in batch.get("request_samples", ()):
+            targets = requests.get(member.get("request_id"))
+            if not targets:
+                continue
+            if any(member.get(name) is None for name in ("attempt_id", "session_id", "session_generation")):
+                counts["target_samples_with_unknown_attempt_or_session"] += 1
+                continue
+            key = identity(member)
+            for query in targets:
+                if key != query["key"]:
+                    continue
+                if start < query["begin_ms"]:
+                    query["earlier_exact_services"] += 1
+                    continue
+                if query["first_exact_service_ms"] is None or start < query["first_exact_service_ms"]:
+                    query["first_exact_service_ms"] = start
+                progress = useful_work(member, member.get("phase", batch.get("phase")))
+                if progress is None:
+                    query["unknown_progress_samples"] += 1
+                elif progress and launch < query["begin_ms"]:
+                    query["prior_launches_excluded"] += 1
+                elif progress and (
+                    query["first_new_useful_service_ms"] is None
+                    or start < query["first_new_useful_service_ms"]
+                ):
+                    query["first_new_useful_service_ms"] = start
+
+    def summarize(rows):
+        intervals = defaultdict(list)
+        for row in rows:
+            end = row["first_new_useful_service_ms"]
+            if end is not None:
+                intervals[row["key"][1]].append((row["begin_ms"], end))
+        return {
+            "alternative_request_episodes": len(rows),
+            "distinct_exact_request_attempts": len({row["key"] for row in rows}),
+            "distinct_workflows": len({row["key"][1] for row in rows}),
+            "with_following_exact_service": sum(row["first_exact_service_ms"] is not None for row in rows),
+            "with_following_new_useful_service": sum(
+                row["first_new_useful_service_ms"] is not None for row in rows
+            ),
+            "historical_useful_service_delay_ms": distribution([
+                row["first_new_useful_service_ms"] - row["begin_ms"]
+                for row in rows if row["first_new_useful_service_ms"] is not None
+            ]),
+            "within_workflow_useful_wait_union_sum_ms": sum(union_ms(spans) for spans in intervals.values()),
+        }
+
+    return {
+        "all": summarize(queries),
+        "measured": summarize([row for row in queries if row["measured_workflow"]]),
+        "nonmeasured": summarize([row for row in queries if not row["measured_workflow"]]),
+        "counts": dict(counts), "episodes": queries,
+        "semantics": {
+            "actual_historical_service_of_omitted_alternatives_only": True,
+            "no_actual_grant_to_the_counterfactual_choice_is_claimed": True,
+            "complete_attempt_and_session_identity_required": True,
+            "new_useful_service_excludes_preboundary_launches": True,
+            "repeated_and_parallel_waits_unioned_within_workflow": True,
+            "avoidable_JCT_or_whole_system_speedup_established": False,
+        },
+    }
+
+
 def summarize(decisions):
     result = {}
     for population, rows in (
@@ -119,6 +221,7 @@ def main():
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--frontier-audit", type=Path)
     source.add_argument("--continuous-oracle", action="store_true")
+    parser.add_argument("--observe-native-service", action="store_true")
     args = parser.parse_args()
     if (
         args.output.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999"
@@ -143,6 +246,9 @@ def main():
         ROOT / "scripts/audit_learned_combination_prediction.py",
         ROOT / "scripts/audit_workflow_combination_choices.py",
         ROOT / "scripts/audit_sealed_wait_prefetch.py",
+        ROOT / "scripts/audit_free_dispatch_service.py",
+        ROOT / "scripts/audit_native_system_costs.py",
+        ROOT / "scripts/audit_periodic_admission_decisions.py",
     )
     if args.frontier_audit is not None:
         paths = (*paths, args.frontier_audit)
@@ -249,6 +355,9 @@ def main():
                 by_id[owner].workflow in shortest for owner in original
             ),
             "ordinary_workflows": labels,
+            "newly_selected_keys": [
+                row["keys"][owner] for owner in choice["selected"] if owner not in original
+            ],
         })
         for repeat in range(2):
             names = ("actual", "candidate") if (len(decisions) + repeat) % 2 else ("candidate", "actual")
@@ -274,6 +383,11 @@ def main():
                         original if name == "actual" else selected
                     ),
                 })
+    service = None
+    if args.observe_native_service:
+        service = omitted_service_exposure(
+            decisions, reader(Path(registration["run_root"]) / "full/server/runtime_audit.jsonl"), measured,
+        )
     if (expected is not None and len(decisions) != len(expected)) or any(
         sha256_file(Path(path)) != digest for path, digest in pins.items()
     ):
@@ -301,6 +415,7 @@ def main():
         "coverage": dict(coverage),
         "continuous_oracle_reference_work": reference_work,
         "complete_measured_execution": execution,
+        "omitted_alternative_service_exposure": service,
         "inputs_sha256": pins, "input_jsonl_prefixes": reader.prefixes,
         "scope": {
             "same_complete_recorded_candidates_budgets_costs_and_required_JOIN": True,

@@ -7,7 +7,7 @@ import pytest
 from beliefkv.policy.workflow_combination import choose_combination
 from beliefkv.policy.workflow_shortest_frontier import choose_shortest_frontier
 from beliefkv.predictor.workflow_continuous_work import remaining_work_weight
-from scripts.audit_shortest_frontier_candidate import continuous_oracle_evidence
+from scripts.audit_shortest_frontier_candidate import continuous_oracle_evidence, omitted_service_exposure
 from scripts.audit_workflow_combination_choices import replay_choice
 from tests.test_combination_device_planning import audit_row
 from tests.test_workflow_shortest_frontier import fixture
@@ -113,3 +113,70 @@ def test_changed_actual_weight_and_incomplete_search_are_rejected():
     row["decision"]["search_complete"] = False
     with pytest.raises(ValueError, match="complete actual search"):
         continuous_oracle_evidence(row, costs, reference)
+
+
+def service_fixture():
+    query = {"monotonic_s": 10., "source": "periodic_decay_resume", "newly_selected_keys": [key("short")]}
+    member = key("short")
+    member["workflow_id"] = member.pop("root_workflow_id")
+    member.update(phase="decode", output_token_delta=1, token_delta=1)
+    batch = {
+        "event": "gpu_service_sample", "phase": "decode", "monotonic_clock_domain": "same-host",
+        "launch_monotonic_ms": 14990., "service_start_monotonic_ms": 15000.,
+        "complete_monotonic_ms": 15010., "request_samples": [member],
+    }
+    return query, batch
+
+
+def test_repeated_alternative_waits_are_unioned_without_fabricating_a_grant():
+    query, batch = service_fixture()
+    later = {**deepcopy(query), "monotonic_s": 12.}
+    result = omitted_service_exposure([query, later], [batch], {"workflow-short"})
+    assert result["measured"]["alternative_request_episodes"] == 2
+    assert result["measured"]["distinct_exact_request_attempts"] == 1
+    assert result["measured"]["historical_useful_service_delay_ms"]["sum"] == 8000.
+    assert result["measured"]["within_workflow_useful_wait_union_sum_ms"] == 5000.
+    assert result["semantics"]["no_actual_grant_to_the_counterfactual_choice_is_claimed"]
+    assert result["semantics"]["avoidable_JCT_or_whole_system_speedup_established"] is False
+
+
+@pytest.mark.parametrize("change", ("attempt", "session", "unknown", "zero", "prior_launch"))
+def test_foreign_unknown_zero_or_already_launched_service_cannot_validate_an_alternative(change):
+    query, batch = service_fixture()
+    member = batch["request_samples"][0]
+    if change == "attempt":
+        member["attempt_id"] = 1
+    elif change == "session":
+        member["session_id"] = "other"
+    elif change == "unknown":
+        member.pop("session_generation")
+    elif change == "zero":
+        member.update(token_delta=0, output_token_delta=0)
+    else:
+        batch["launch_monotonic_ms"] = 9990.
+    result = omitted_service_exposure([query], [batch], {"workflow-short"})
+    assert result["all"]["with_following_new_useful_service"] == 0
+    assert result["all"]["within_workflow_useful_wait_union_sum_ms"] == 0.
+
+
+def test_earlier_exact_service_does_not_hide_later_service_or_change_query_identity():
+    query, batch = service_fixture()
+    earlier = {
+        **deepcopy(batch), "launch_monotonic_ms": 8990.,
+        "service_start_monotonic_ms": 9000., "complete_monotonic_ms": 9010.,
+    }
+    result = omitted_service_exposure([query], [earlier, batch], set())
+    assert result["episodes"][0]["earlier_exact_services"] == 1
+    assert result["all"]["historical_useful_service_delay_ms"]["p50"] == 5000.
+    with pytest.raises(ValueError, match="duplicate"):
+        omitted_service_exposure([query, deepcopy(query)], [batch], set())
+
+
+def test_cross_clock_domains_and_impossible_native_clocks_are_rejected():
+    query, batch = service_fixture()
+    foreign = {**deepcopy(batch), "monotonic_clock_domain": "foreign"}
+    with pytest.raises(ValueError, match="clock domains"):
+        omitted_service_exposure([query], [batch, foreign], set())
+    batch["launch_monotonic_ms"] = 16000.
+    with pytest.raises(ValueError, match="invalid native clock"):
+        omitted_service_exposure([query], [batch], set())
