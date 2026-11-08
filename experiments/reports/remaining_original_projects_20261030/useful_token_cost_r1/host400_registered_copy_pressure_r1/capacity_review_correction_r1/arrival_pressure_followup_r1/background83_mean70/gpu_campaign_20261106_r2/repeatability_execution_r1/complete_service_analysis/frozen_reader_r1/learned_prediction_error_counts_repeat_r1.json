@@ -1,0 +1,72 @@
+{
+  "kind": "sealed_R5_same_state_model_work_error_counts_v1",
+  "GPU_action": false,
+  "input_audit": "learned_prediction_weights_repeat_r1.json",
+  "input_audit_sha256": "6737cb049e4baf6ffbbe5a19570121a1ab01c7b12355815fe8cabc4db848aea5",
+  "cohort_sha256": "4b829f6f3c9de15ef8862de8532ab4a25f3e44a8ed3f2508e69a926410283939",
+  "complete_searches": 437,
+  "excluded_incomplete_searches": 44,
+  "all_planning_capacity_competitions": {
+    "boundaries": 145,
+    "pair_observations": 609,
+    "correct_pair_observations": 499,
+    "reversed_pair_observations": 107,
+    "prediction_ties": 3,
+    "boundaries_with_reversed_pair": 64,
+    "boundaries_with_prediction_tie": 3,
+    "unique_workflow_pairs": 354,
+    "unique_reversed_workflow_pairs": 65,
+    "boundary_equal_weight_accuracy": 0.8188505747126437
+  },
+  "both_fixed_measured_workflows": {
+    "boundaries": 32,
+    "pair_observations": 44,
+    "correct_pair_observations": 32,
+    "reversed_pair_observations": 12,
+    "prediction_ties": 0,
+    "boundaries_with_reversed_pair": 11,
+    "boundaries_with_prediction_tie": 0,
+    "unique_workflow_pairs": 25,
+    "unique_reversed_workflow_pairs": 8,
+    "boundary_equal_weight_accuracy": 0.7083333333333334
+  },
+  "same_selector_changed_selected_sets": {
+    "synchronous_same_model_proxy": {
+      "all_complete_searches": 3,
+      "planning_competitions": 3,
+      "boundaries_containing_both_measured_pairs": 0
+    },
+    "perfect_three_model_work_bins": {
+      "all_complete_searches": 39,
+      "planning_competitions": 39,
+      "boundaries_containing_both_measured_pairs": 10
+    },
+    "perfect_continuous_model_work": {
+      "all_complete_searches": 29,
+      "planning_competitions": 29,
+      "boundaries_containing_both_measured_pairs": 5
+    }
+  },
+  "definitions": {
+    "population": "Complete reproducible searches with at least two individually planning-feasible ordinary workflows that cannot all fit.",
+    "pair_truth": "remaining_model_work; lower is shorter.",
+    "pair_prediction": "actual_cached utility; higher has priority.",
+    "reversed_pair": "(R_left-R_right)*(weight_left-weight_right)>0, after excluding ties.",
+    "truth_tie_tolerance": 1e-9,
+    "prediction_tie_tolerance": 1e-10,
+    "continuous_truth_utility": "1/(1+R/13062.96), as in the original frozen reader.",
+    "both_fixed_measured": "Both workflows in a pair belong to the fixed 18 measured members; this is not an unseen-project split.",
+    "changed_sets": "Compare selected invocation identity sets at the same saved boundary; order-only changes are excluded.",
+    "boundary_equal_weight_accuracy": "Each boundary has equal weight; prediction ties receive half credit."
+  },
+  "scope": {
+    "same_candidates_capacity_JOIN_constraints_and_combination_objective": true,
+    "repeated_pair_observations_are_independent_tasks": false,
+    "all_workflow_population_includes_training_projects": true,
+    "ordinary_pairs_exclude_required_JOIN_workflows": true,
+    "perfect_model_work_reference_is_the_GPU_tool_critical_path_oracle": false,
+    "changed_selected_set_proves_lower_whole_run_JCT": false,
+    "exact_error_count_against_different_state_GPU_oracle_established": false,
+    "planning_feasibility_is_immediate_native_admission": false
+  }
+}
