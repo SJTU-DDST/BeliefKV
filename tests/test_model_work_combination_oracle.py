@@ -127,8 +127,12 @@ def test_work_truth_tracks_observed_service_without_using_future_tool_paths(tmp_
     assert oracle.status()["deployable"] is False
 
 
-@pytest.mark.parametrize("periodic", (False, True))
-@pytest.mark.parametrize("continuous", (False, True))
+@pytest.mark.parametrize(("periodic", "continuous"), (
+    pytest.param(False, False, id="False"),
+    pytest.param(True, False, id="True"),
+    pytest.param(False, True, id="continuous-free"),
+    pytest.param(True, True, id="continuous-periodic"),
+))
 def test_exact_work_changes_same_R5_selector_but_not_other_ranking_paths(
     monkeypatch, tmp_path, periodic, continuous,
 ):
@@ -174,8 +178,7 @@ def test_exact_work_changes_same_R5_selector_but_not_other_ranking_paths(
         runtime.close()
 
 
-@pytest.mark.parametrize("continuous", (False, True))
-def test_ready_JOIN_and_still_blocked_work_keep_existing_authority(monkeypatch, tmp_path, continuous):
+def _check_ready_join_authority(monkeypatch, tmp_path, *, continuous):
     runtime, admission = queued(monkeypatch, tmp_path, continuous=continuous)
     try:
         runtime._join_priority_pending["long"] = "observed-join"
@@ -189,8 +192,15 @@ def test_ready_JOIN_and_still_blocked_work_keep_existing_authority(monkeypatch, 
         runtime.close()
 
 
-@pytest.mark.parametrize("continuous", (False, True))
-def test_still_tool_blocked_short_work_cannot_enter_the_comparison(monkeypatch, tmp_path, continuous):
+def test_ready_JOIN_and_still_blocked_work_keep_existing_authority(monkeypatch, tmp_path):
+    _check_ready_join_authority(monkeypatch, tmp_path, continuous=False)
+
+
+def test_continuous_ready_JOIN_keeps_existing_authority(monkeypatch, tmp_path):
+    _check_ready_join_authority(monkeypatch, tmp_path, continuous=True)
+
+
+def _check_still_tool_blocked_work(monkeypatch, tmp_path, *, continuous):
     runtime, admission = queued(monkeypatch, tmp_path, continuous=continuous)
     try:
         runtime.graph.invocations["short"].active_tool_calls["tool"] = "execute"
@@ -202,6 +212,14 @@ def test_still_tool_blocked_short_work_cannot_enter_the_comparison(monkeypatch, 
         assert not admission.policy.programs["short"].active
     finally:
         runtime.close()
+
+
+def test_still_tool_blocked_short_work_cannot_enter_the_comparison(monkeypatch, tmp_path):
+    _check_still_tool_blocked_work(monkeypatch, tmp_path, continuous=False)
+
+
+def test_continuous_still_tool_blocked_work_cannot_enter_the_comparison(monkeypatch, tmp_path):
+    _check_still_tool_blocked_work(monkeypatch, tmp_path, continuous=True)
 
 
 def test_preparation_preserves_tokens_thresholds_resources_and_noncombination_controls(tmp_path):
