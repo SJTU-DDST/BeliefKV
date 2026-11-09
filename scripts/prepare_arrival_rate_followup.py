@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.replay_arrivals import (
-    permuted_poisson_arrival_plan, substitute_background_arrivals, validate_arrival_plan,
+    extend_poisson_arrival_plan, permuted_poisson_arrival_plan, poisson_arrival_plan,
+    substitute_background_arrivals, validate_arrival_plan,
 )
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workflow_cohort import declare_cohort, validate_cohort
@@ -28,6 +29,31 @@ def permuted_source(arrivals):
     return source
 
 
+def retime_poisson(arrivals, *, rate_per_second, initial_workflows):
+    """Rebuild the same random stream and identity wrappers at the new rate."""
+    mode = arrivals["mode"]
+    common = {"rate_per_second": rate_per_second, "initial_workflows": initial_workflows}
+    if mode == "prefix_extended_poisson":
+        return extend_poisson_arrival_plan(
+            retime_poisson(arrivals["prefix_plan"], **common),
+            arrivals["additional_workflow_ids"],
+        )
+    if mode == "background_substituted_poisson":
+        return substitute_background_arrivals(
+            retime_poisson(arrivals["original_plan"], **common), arrivals["replacements"],
+            preserved_prefix_workflows=arrivals["preserved_prefix_workflows"],
+        )
+    identities = [row["workflow_id"] for row in arrivals["arrival_schedule"]]
+    if mode == "permuted_warm_start_poisson":
+        return permuted_poisson_arrival_plan(
+            identities, seed=arrivals["seed"], permutation_seed=arrivals["permutation_seed"],
+            **common,
+        )
+    if mode in ("poisson", "warm_start_poisson"):
+        return poisson_arrival_plan(identities, seed=arrivals["seed"], **common)
+    raise ValueError("require an original seeded Poisson plan")
+
+
 def followup_protocol(
     arrivals, cohort, *, mean_interval_seconds, initial_workflows=None,
 ):
@@ -37,6 +63,7 @@ def followup_protocol(
     if (
         arrivals["mode"] not in (
             "permuted_warm_start_poisson", "background_substituted_poisson",
+            "prefix_extended_poisson",
         )
         or cohort.get("schema_version") != 2
         or type(mean_interval_seconds) not in (int, float)
@@ -49,18 +76,9 @@ def followup_protocol(
         and initial > len(cohort["warmup_workflow_ids"])
     ):
         raise ValueError("initial workflows must be a positive integer within the fixed warmup group")
-    source = permuted_source(arrivals)
-    following = permuted_poisson_arrival_plan(
-        [row["workflow_id"] for row in source["arrival_schedule"]],
-        rate_per_second=1. / mean_interval_seconds, seed=source["seed"],
-        permutation_seed=source["permutation_seed"],
-        initial_workflows=initial,
+    following = retime_poisson(
+        arrivals, rate_per_second=1. / mean_interval_seconds, initial_workflows=initial,
     )
-    if arrivals["mode"] == "background_substituted_poisson":
-        following = substitute_background_arrivals(
-            following, arrivals["replacements"],
-            preserved_prefix_workflows=arrivals["preserved_prefix_workflows"],
-        )
     scale = mean_interval_seconds * arrivals["rate_per_second"]
     if any(
         left["workflow_id"] != right["workflow_id"]

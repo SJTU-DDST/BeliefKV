@@ -6,7 +6,8 @@ import sys
 import pytest
 
 from beliefkv.experiments.replay_arrivals import (
-    permuted_poisson_arrival_plan, substitute_background_arrivals,
+    extend_poisson_arrival_plan, permuted_poisson_arrival_plan, substitute_background_arrivals,
+    validate_arrival_plan,
 )
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workflow_cohort import declare_cohort, validate_cohort
@@ -181,6 +182,37 @@ def test_substituted_background_retiming_keeps_slots_and_original_permutation(in
     for field in ("warmup_workflow_ids", "measured_workflow_ids", "background_workflow_ids"):
         assert analysis[field] == cohort[field]
     validate_cohort(analysis, following)
+
+
+@pytest.mark.parametrize("mean", (50., 60., 70.))
+@pytest.mark.parametrize("initial", (8, 12))
+def test_extended_background_retiming_preserves_every_identity_and_random_draw(mean, initial):
+    base, cohort = substituted_protocol()
+    arrivals = extend_poisson_arrival_plan(base, [f"extra-{i}" for i in range(10)])
+    slots = arrivals["arrival_schedule"]
+    cohort = declare_cohort(
+        arrivals, warmup=12, measured=18, throughput_start_s=slots[12]["offset_seconds"],
+        throughput_end_s=slots[29]["offset_seconds"], stop_after_measured=True,
+    )
+    before = deepcopy(arrivals)
+    following, analysis = followup_protocol(
+        arrivals, cohort, mean_interval_seconds=mean, initial_workflows=initial,
+    )
+    assert arrivals == before
+    assert following["mode"] == "prefix_extended_poisson"
+    assert following["additional_workflow_ids"] == arrivals["additional_workflow_ids"]
+    assert following["prefix_plan"]["replacements"] == base["replacements"]
+    assert following["prefix_plan"]["original_plan"]["permutation_seed"] == 54
+    assert [row["workflow_id"] for row in following["arrival_schedule"]] == [
+        row["workflow_id"] for row in arrivals["arrival_schedule"]
+    ]
+    if initial == 8:
+        for old, new in zip(arrivals["arrival_schedule"], following["arrival_schedule"]):
+            assert new["offset_seconds"] == pytest.approx(old["offset_seconds"] * mean / 90.)
+    validate_arrival_plan(following, [row["workflow_id"] for row in slots])
+    validate_cohort(analysis, following)
+    for name in ("warmup_workflow_ids", "measured_workflow_ids", "background_workflow_ids"):
+        assert analysis[name] == cohort[name]
 
 
 def write_json(path, content):
