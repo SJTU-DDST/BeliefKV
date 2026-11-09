@@ -64,7 +64,7 @@ class JoinBlockedHandoff:
         parent = policy.programs.get(key.invocation_id)
         if (
             runtime.physical_disabled or parent is None or parent.active
-            or parent.marked_for_pause or admission.latest.get(key.invocation_id) != key
+            or parent.marked_for_pause
             or admission._handoff_join(key) != join_id
         ):
             return False
@@ -80,6 +80,7 @@ class JoinBlockedHandoff:
         if deficit <= 0:
             return admission._admit_from_free_capacity(
                 (parent,), event="agent_join_free_capacity_admitted", join_id=join_id,
+                grant_keys={parent.identity: key},
             )
         candidates = []
         for item in islice(policy.programs.values(), self.max_donors):

@@ -100,6 +100,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             })
         if self._join_handoff is not None:
             self._join_handoff.next_attempt = 0.
+            self._join_handoff.recovery.native_arrival(key)
             self._join_handoff.ready_parents(preferred=key)
             if self.allows(key) and self.runtime._ready_join_parent(req, key):
                 self._join_handoff.recovery.ensure(key)
@@ -212,6 +213,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
 
     def _admit_from_free_capacity(
         self, programs, *, event, join_id, choice_keys=None, choice_sequence=None,
+        grant_keys=None,
     ):
         # Extra grants can occur between the reference policy's periodic ticks.
         self._refresh_streaming_progress()
@@ -235,7 +237,9 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                 "monotonic_s": time.monotonic(), "join_id": join_id,
                 "programs": [
                     {
-                        "key": asdict(self.latest[item.identity]),
+                        "key": asdict((grant_keys or {}).get(
+                            item.identity, self.latest[item.identity],
+                        )),
                         "observed_context_tokens": item.tokens,
                         "complete_budget_tokens": item.tokens + self.policy.buffer_tokens,
                     } for item in programs
@@ -350,6 +354,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             self._residency_pause.serviced(batch)
         if self._join_handoff is not None:
             self._join_handoff.recovery.serviced(batch)
+            if completed_ids:
+                self._join_handoff.recovery.capacity_changed()
         if self._siblings is not None:
             self._siblings.serviced(batch)
             if completed_ids:
@@ -388,18 +394,40 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         item = self._restore_owner(key, source=source)
         return bool(item is not None and item.active)
 
-    def _handoff_join(self, key):
-        if self.policy is None or key is None or self.latest.get(key.invocation_id) != key:
+    def _confirmed_restore_ticket(self, key):
+        """Accept only the live checkpoint-to-consumer binding of this owner."""
+        if key is None:
             return None
-        item = self.policy.programs.get(key.invocation_id)
-        invocation = self.runtime.graph.invocations.get(key.invocation_id)
+        previous = self.latest.get(key.invocation_id)
+        parent = self.runtime.graph.invocations.get(key.invocation_id)
+        ticket = self.runtime._confirmed_join_tickets.get(parent.join_id) if parent else None
         if (
-            item is None or invocation is None or item.active or item.marked_for_pause
+            ticket is not None and ticket.phase == "confirmed" and ticket.key == key
+            and previous is not None and previous.attempt_id == key.attempt_id
+            and self.runtime._live_join_ticket(ticket)
+            and previous == (
+                ticket.checkpoint_key if ticket.client_request_id is not None else key
+            )
+        ):
+            return ticket
+        return None
+
+    def _handoff_join(self, key):
+        item = self._restore_owner(key, source="join_ticket")
+        if (
+            item is None or item.active or item.marked_for_pause
             or self.runtime._terminal(key)
-            or self.runtime.context_sessions.get(key.context_id) != key
-            or self._restore_owner(key, source="join_ticket") is None
         ):
             return None
+        ticket = self._confirmed_restore_ticket(key)
+        if ticket is not None and not item.pending:
+            return ticket.join_id
+        if (
+            self.latest.get(key.invocation_id) != key
+            or self.runtime.context_sessions.get(key.context_id) != key
+        ):
+            return None
+        invocation = self.runtime.graph.invocations[key.invocation_id]
         if not item.pending:
             join = self.runtime.graph.joins.get(invocation.join_id)
             if self._waiting_on_join(invocation, join):
@@ -420,13 +448,18 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             item = self._restore_owner(key, source=source)
             invocation = self.runtime.graph.invocations.get(key.invocation_id) if item is not None else None
             join = self.runtime.graph.joins.get(invocation.join_id) if invocation is not None else None
+            confirmed = self._confirmed_restore_ticket(key) if item is not None else None
             if (
-                item is not None and key == self.latest.get(key.invocation_id)
-                and not item.pending and not item.marked_for_pause
-                and self._waiting_on_join(invocation, join)
+                item is not None and not item.pending and not item.marked_for_pause
+                and (
+                    key == self.latest.get(key.invocation_id)
+                    and self._waiting_on_join(invocation, join)
+                    or confirmed is not None
+                )
             ):
                 if self._admit_from_free_capacity(
                     (item,), event="agent_join_free_capacity_admitted", join_id=join.join_id,
+                    grant_keys={item.identity: key},
                 ):
                     # This is a complete raw-budget grant. Native allocation,
                     # locks, copies and later pressure revocation stay separate.
@@ -539,6 +572,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             self._siblings.close()
         if self._join_handoff is not None:
             self._join_handoff.recovery.plans.clear()
+            self._join_handoff.recovery._last_attempt.clear()
 
 
 def validate_reference_admission(

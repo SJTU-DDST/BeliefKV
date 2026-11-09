@@ -1,4 +1,4 @@
-"""Expose current JOIN authority/backoff boundaries using bounded CPU fixtures."""
+"""Validate JOIN authority and bounded retry repairs using CPU fixtures."""
 
 import argparse
 from collections import Counter
@@ -47,6 +47,7 @@ def probe():
         admission.counts = Counter()
         admission.requests = {}
         admission._live_requests = {}
+        admission._residency_pause = None
         admission._join_handoff = JoinBlockedHandoff(admission)
         owner_recognized = admission._restore_owner(target, source="join_ticket") is owner
         paused = admission.claim_restore(target, source="join_ticket")
@@ -82,7 +83,7 @@ def probe():
         budget = NS(reserve_full_tokens=0, native_growth_full_tokens=0, native_prefill_full_tokens=0)
         with (
             patch("beliefkv.runtime.join_physical_recovery.observe_static_full_mamba_headroom", observer),
-            patch.object(recovery, "_consumer_live", return_value=True),
+            patch.object(recovery, "_live_consumer", return_value=True),
             patch.object(runtime, "_current_residency_budget", return_value=budget),
             patch.object(runtime, "_read_request_reentry", return_value={"missing_full_tokens": 0}),
             patch.object(runtime, "_request_restore_cost", return_value=(0, 0)),
@@ -95,18 +96,22 @@ def probe():
             with patch("time.monotonic", return_value=100.21):
                 recovery.advance(target, request=NS())
             later = runtime.counts["join_physical_plan_attempts"] - before
+            with patch("time.monotonic", return_value=100.26):
+                recovery.advance(target, request=NS())
+            retried = runtime.counts["join_physical_plan_attempts"] - before
         result["same_session_new_epoch_backoff"] = {
             "attempts_at_50ms": early, "headroom_reads_at_50ms": early_reads,
             "cumulative_attempts_at_210ms": later,
+            "cumulative_attempts_at_260ms": retried,
             "later_outcome_no_missing_prefix": runtime.counts[
                 "join_physical_plan_outcome_no_missing_prefix"
             ],
         }
         if (
-            not owner_recognized or paused or not active or confirmed_consumer
-            or early != 0 or early_reads != 0 or later != 1
+            not owner_recognized or not paused or not active or not confirmed_consumer
+            or early != 1 or early_reads != 1 or later != 1 or retried != 2
         ):
-            raise ValueError("current boundaries differ; review rather than accepting old diagnoses")
+            raise ValueError("JOIN authority or bounded retry repair failed")
         return result
     finally:
         runtime.close()
@@ -131,11 +136,12 @@ def main():
         "inputs_sha256": {str(path.resolve()): sha256_file(path) for path in files},
         "scope": (
             "Live confirmed binding and actual policy/recovery entry points with CPU "
-            "budget/native-stream stand-ins. Backoff probe holds authority valid to "
-            "isolate its timer. No DMA, performance benefit, physical fit, trace "
-            "occurrence count or correctness repair is established."
+            "budget/native-stream stand-ins. Backoff probe holds identity valid to "
+            "isolate its timer. Validates the repaired grant/confirmed-consumer/"
+            "new-epoch retry boundaries, not DMA, performance benefit, physical fit "
+            "or occurrence counts in the old GPU trace."
         ),
-        "GPU_action": False, "runtime_changed": False,
+        "GPU_action": False, "runtime_changed": False, "repair_checked": True,
     }
     write(args.output, result)
     print(result)

@@ -282,7 +282,8 @@ JOIN 的 78 个路径后继中，74 个服务前有暂存恢复：提交到首�
 全系统严格上界，但说明累计 1.454TB 并未在测量路径上形成同量级的串行停顿。
 “完全隐藏”还需要提前量、可共存容量和可重叠计算同时成立，当前不具备保证。
 
-本次源码和 CPU 定位确认以下待修缺口，尚未修改生产路径：
+修复前的源码和 CPU 定位确认以下缺口；当时尚未修改生产路径。
+后续修复及其证据见下节，原定位结果保留：
 
 1. 已合法绑定客户端后继、但尚未原生可见时，ticket 的 request/epoch 已推进，
    admission.latest 仍是原来的 key，context session 暂时分离。
@@ -317,6 +318,71 @@ JOIN 的 78 个路径后继中，74 个服务前有暂存恢复：提交到首�
 首次未指定原生源码时为 126 通过、51 跳过，该次不作为完整原生检查证明。
 定位脚本使用明确声明的 CPU 预算和传输 stand-in，不声称实际 DMA、物理
 容量或新调度效果。本次没有 GPU 动作，没有修改工具预取或冻结比较版本。
+
+### JOIN 恢复修复
+
+按用户要求补齐上述三个缺口，工具预取继续仅讨论，不增加新的 GPU 实验。
+
+1. 新增严格的 confirmed JOIN 恢复资格校验。已满足 JOIN 的 parent，
+   以及已合法绑定下一请求但尚未原生可见的 parent，可以申请完整未折扣
+   逻辑预算。客户端绑定必须指回 admission.latest 的精确 checkpoint，
+   保持 workflow、invocation、context、session、generation、attempt
+   身份一致，只允许已验证的 request/epoch 推进；继续调用原有 ticket
+   存活校验，拒绝过期、取消、额外工具/child 阻塞和不完整绑定。
+   免费准入保留原 WAIT_JOIN 分支的条件，阻塞 donor 交接也使用同一
+   confirmed 资格。没有提前改写 latest、创建原生请求或提供物理容量。
+   授予日志使用实际受益请求的 key。
+2. 物理计划对 confirmed JOIN 使用同一份已满足且存活的资格，保留 owner
+   已获逻辑额度的条件；provisional 分支仍要求真实原生 EOS。
+   已有额度但尚未 native-visible 的 confirmed parent 也能建立物理恢复
+   计划。新的 `confirmed_join_restore` 日志阶段与 `observed_eos_restore`
+   分开，避免把 confirmed 恢复误报成 EOS 预测。原生 FULL 分配器、
+   Host 副本、session 引用、锁、DMA 和动作前复核全部保留。
+3. 经验证的新请求 key/epoch，以及正式原生注册，允许对应计划重新检查，
+   不沿用旧请求的 200ms 退避。同一请求在没有新证据时仍为 200ms。
+   相关 consumer/donor 的容量失效和已验证物理 ACK 可以提前唤醒；
+   原生请求完成也允许容量重试。事件重试最早在上次尝试后 50ms，多个
+   ACK 合并为同一次唤醒；未改变 deadline 的事件不再比较 donor。
+   每次通知仅访问最多 24 个已有计划及各自最多 8 个 donor 身份，不读取
+   物理前缀，不在 decode token、普通 hint 刷新或语义版本变化时重置。
+   真正的容量读取与 donor 检查仍在后续有界 advance 中完成。
+
+CPU 诊断保存为 `JOIN_recovery_authority_cpu_r3.json`，原
+`JOIN_recovery_authority_cpu_r1.json` 故障定位及中间 r2 结果都保留。
+同一合法客户端绑定的 paused 申请和 confirmed 物理资格由 false 变 true；
+新 epoch 在 50ms 时进入容量检查，在 210ms 时累计仍为一次，260ms 时
+累计两次，说明只解除旧身份的退避，没有取消新身份自身的退避。
+
+新增回归使用真实 ReferenceThunderAdmission 与 ThunderActingDecayWorkingSet，
+覆盖完整预算、blocked donor、准确受益 key、错误身份/阻塞拒绝、
+confirmed 原生 burst 与 ACK、首次原生可见及有界容量唤醒。传输与预算池
+使用 CPU stand-in；共享套件同时覆盖实际原生树和分配器的 CPU 生命周期。
+首次共享检查为 1200 通过、4 项缺本地 tokenizer 跳过，保留在
+`JOIN_recovery_repair_cpu_r1.xml`。补充本地 tokenizer 的最终检查记录在
+`JOIN_recovery_repair_cpu_r2.xml`，1204 项全部通过，无失败或跳过。
+这不是新的 GPU 数值或性能验收，
+不能据此声称旧日志中的 44/65 条记录都已修复或推算 JCT 收益。
+排队比较仍冻结在 `7fa14a35`，不包含本次修复，没有热改冻结源码。
+
+### 工具预取与 workflow 关键路径
+
+工具后继的可复用 KV 若在 Host，模型消费对应层之前必须等这些页就绪。
+需求 H2D 与其他 agent 的 decode 重叠可以减少设备空闲，但不自动消除
+这个 workflow 自身的返回后等待。需求流水线覆盖 90.45% 的未标记 H2D
+字节，并不证明这部分传输已从所有 workflow 的关键路径消失。
+
+如果工具后继本来还要等待准入、选批，或者其并行 sibling 更晚结束，
+部分 H2D 等待也可能不会额外推迟最终完成。提前传输只有在能赶在实际
+服务之前完成、随后及时复用，而且不挤占其他有效工作时，才会产生净收益。
+之前 347 个暂存关键路径请求的 5.504925 秒只覆盖暂存后至首次服务的区间，
+不包括 84 个直接恢复及首次服务后的层等待，不能当作工具预取的全局上界；
+114.580425 秒也包含大量准入/选批等待，不能全当成可隐藏的 DMA。
+
+当前证据支持继续评估受限闲时工具预取，而非仅因存在 H2D 就默认启用。
+305 个对象中严格窗口至少 100ms 的只有 36 个，且窗口为并集，并非完整
+checkpoint 的实际传输证明。后续若验证新模式，应同时看返回后的暴露
+恢复等待、首次复用、再次驱逐/重复 H2D、真实需求干扰和控制 CPU，
+并让新鲜驻留状态参与后续准入；不能用工具等待对象之间的交换充当收益。
 
 ### 305 个对象的窗口排除原因
 

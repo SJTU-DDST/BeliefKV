@@ -14,11 +14,13 @@ class JoinPhysicalRecovery:
     max_plans = 24
     max_donors = 8
     max_nodes = 64
+    event_retry_interval_s = .05
 
     def __init__(self, handoff):
         self.handoff = handoff
         self.runtime = handoff.admission.runtime
         self.plans = OrderedDict()
+        self._last_attempt = {}
         self.consumer = None
         self._admission_adder = None
         self._dispatch_stage = "before_native_admission"
@@ -34,8 +36,29 @@ class JoinPhysicalRecovery:
             key, join_id, tuple(a.latest[item.identity] for item in donors), 0.,
         )
         self.plans.move_to_end(key.invocation_id)
+        self._last_attempt.pop(key.invocation_id, None)
         while len(self.plans) > self.max_plans:
-            self.plans.popitem(last=False)
+            identity, _ = self.plans.popitem(last=False)
+            self._last_attempt.pop(identity, None)
+
+    def native_arrival(self, key):
+        plan = self.plans.get(key.invocation_id)
+        if plan is not None and self._same_context(plan[0], key):
+            self.plans[key.invocation_id] = (key, *plan[1:3], 0.)
+            self._last_attempt.pop(key.invocation_id, None)
+
+    def capacity_changed(self, *, context_id=None):
+        """Wake affected plans without turning ACK bursts into per-tick scans."""
+        for identity, plan in self.plans.items():
+            deadline = self._last_attempt.get(identity, 0.) + self.event_retry_interval_s
+            if deadline >= plan[3]:
+                continue
+            if context_id is not None and not any(
+                key.context_id == context_id for key in (plan[0], *plan[2])
+            ):
+                continue
+            self.plans[identity] = (*plan[:3], deadline)
+            self.runtime.counts["join_physical_plan_event_rearmed"] += 1
 
     def ensure(self, key):
         """A physically cold parent may already have complete logical eligibility."""
@@ -48,6 +71,7 @@ class JoinPhysicalRecovery:
         if parent is None or not (
             a._waiting_on_join(parent, runtime.graph.joins.get(parent.join_id))
             or request is not None and runtime._ready_join_parent(request, key)
+            or a._confirmed_restore_ticket(key) is not None
         ):
             return
         candidates = []
@@ -61,11 +85,7 @@ class JoinPhysicalRecovery:
                 if len(candidates) == self.max_donors:
                     break
         if candidates:
-            join_id = (
-                parent.join_id if parent.state is InvocationState.WAIT_JOIN
-                else runtime._join_priority_pending.get(key.invocation_id)
-            )
-            self.remember(key, join_id, candidates)
+            self.remember(key, parent.join_id, candidates)
             a.counts["join_physical_plans_without_logical_handover"] += 1
 
     @staticmethod
@@ -90,7 +110,9 @@ class JoinPhysicalRecovery:
         )
 
     def _consumer_live(self):
-        request, key = self.consumer
+        return self._live_consumer(*self.consumer)
+
+    def _live_consumer(self, request, key):
         a = self.handoff.admission
         if request is not None:
             return (
@@ -99,12 +121,11 @@ class JoinPhysicalRecovery:
                 and a.runtime._ready_join_parent(request, key)
             )
         ticket = a.runtime._join_ticket
-        return bool(
-            ticket is not None and ticket.key == key
-            and a.runtime._live_join_ticket(ticket)
-            and a.runtime._join_ticket_has_native_eos(ticket)
-            and a.holds_restore(key)
-        )
+        if ticket is None or ticket.key != key or not a.holds_restore(key):
+            return False
+        if ticket.phase == "confirmed":
+            return a._confirmed_restore_ticket(key) is ticket
+        return a.runtime._live_join_ticket(ticket) and a.runtime._join_ticket_has_native_eos(ticket)
 
     def _worth_offloading(self, key, **_cost):
         return self._eligible(key) and self._consumer_live()
@@ -144,10 +165,17 @@ class JoinPhysicalRecovery:
             or not self._same_context(plan[0], key)
         ):
             return False
+        if plan[0] != key:
+            if not self._live_consumer(request, key):
+                return False
+            plan = key, *plan[1:3], 0.
+            self.plans[key.invocation_id] = plan
+            self._last_attempt.pop(key.invocation_id, None)
         now = time.monotonic()
         if now < plan[3]:
             return False
         self.plans[key.invocation_id] = (*plan[:3], now + .2)
+        self._last_attempt[key.invocation_id] = now
         runtime.counts["join_physical_plan_attempts"] += 1
         saved = (
             self.consumer, self._admission_adder, self._dispatch_stage, self._opportunity,
@@ -155,7 +183,12 @@ class JoinPhysicalRecovery:
         )
         self.consumer = request, key
         self._admission_adder = adder
-        self._dispatch_stage = "before_native_admission" if request is not None else "observed_eos_restore"
+        ticket = runtime._join_ticket
+        self._dispatch_stage = (
+            "before_native_admission" if request is not None else
+            "confirmed_join_restore" if ticket is not None and ticket.phase == "confirmed"
+            else "observed_eos_restore"
+        )
         self._opportunity = opportunity
         self._required_tokens = 0
         self._released = {}
@@ -355,6 +388,7 @@ class JoinPhysicalRecovery:
 
     def forget(self, invocation):
         self.plans.pop(invocation, None)
+        self._last_attempt.pop(invocation, None)
 
     def serviced(self, batch):
         if not self.plans:
@@ -364,5 +398,5 @@ class JoinPhysicalRecovery:
             key = self.runtime.visible.get(request.rid)
             plan = self.plans.get(key.invocation_id) if key is not None else None
             if plan is not None and self._same_context(plan[0], key):
-                self.plans.pop(key.invocation_id)
+                self.forget(key.invocation_id)
                 a.counts["join_physical_plan_native_services"] += 1

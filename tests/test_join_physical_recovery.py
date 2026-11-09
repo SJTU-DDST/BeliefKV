@@ -39,7 +39,7 @@ def bridge(f, *, eos=False):
         a.policy.programs["consumer"].acting = True
         a.requests.pop(f.request.rid)
         a._live_requests.pop(f.request.rid)
-        runtime._join_ticket = NS(key=key)
+        runtime._join_ticket = NS(key=key, phase="provisional")
         runtime._live_join_ticket = Mock(return_value=True)
         runtime._join_ticket_has_native_eos = Mock(return_value=True)
     else:

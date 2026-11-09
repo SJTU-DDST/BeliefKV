@@ -2603,6 +2603,9 @@ class NativeAdmissionRuntime:
         return ready
 
     def _invalidate_wait_transfer_observation(self, key: PrefillCandidateKey) -> None:
+        handoff = getattr(self._agent_admission, "_join_handoff", None)
+        if handoff is not None:
+            handoff.recovery.capacity_changed(context_id=key.context_id)
         semantic = self._semantic_target_cache.pop(key, None)
         tool = self._tool_opportunity_cache.pop(key, None)
         if semantic is not None or tool is not None:
@@ -11713,6 +11716,10 @@ class NativeAdmissionRuntime:
         if has_prefetch:
             self._execution_handoff_next_ms = 0.
         self.completed_physical_actions.extend(completed)
+        handoff = getattr(self._agent_admission, "_join_handoff", None)
+        if handoff is not None:
+            for context_id in {action.context_id for action in completed}:
+                handoff.recovery.capacity_changed(context_id=context_id)
         self._join_prepare_commands = {
             identity: command for identity, command in self._join_prepare_commands.items()
             if self.physical_ledger.is_pending(command)
