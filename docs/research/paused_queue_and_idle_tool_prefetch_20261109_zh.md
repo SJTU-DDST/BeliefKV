@@ -127,3 +127,27 @@ JOIN 同样有剩余需求恢复：246 个观察到的 JOIN 等待中，242 个�
 队列分析、到达重建、协调器拒绝错误身份/尾部覆盖/失败 CPU 输入，以及工具
 并行/分轮/准入条件的 65 项定向 CPU 检查通过。正式执行仍需完整源码绑定、
 干净冻结和新鲜资源检查；此处不声称新到达率或闲时预取已有性能收益。
+
+## 完整绑定与等待资源
+
+实现与曲线已提交 `7fa14a35`。其独立冻结的 `arrival_mean60/bound_cpu_r1`
+完整通过 8411 项及 23 个子测试，无失败、错误或跳过；保留此前 8390 个
+字面身份和全部原源码路径。绑定 2665 个源码路径及 199 个外部输入，
+源码、原生引擎及输入在执行期间未变。复用原生 434c35dd 和原有 400GB
+物理分配、传输证明，没有引入 NUMA 均匀分布门槛或新 GPU 组件测试。
+
+另对 338 个纯工具 Host 命中后继核对实际回执，全部已有精确 token 的完成
+记录，其中 38 个严格窗口候选也全部实际完成。证据为
+`idle_tool_successor_completion_r1.json`。仍不证明其 Host 副本在早期窗口
+已经 settled，或能完成原生 checkpoint 恢复。
+
+正式队列为 `arrival_mean60/execution_r1/execution_plan.json`，协调器
+816161 实际存活，冻结目录为 `beliefkv-mean60-work-ranking-7fa14a35`。
+2026-11-09 17:01 Asia/Shanghai 观察状态为 `waiting_resources_full`，
+`GPU_registered_stages=[]`，没有错误。GPU 当时由另一个进程 788921 占用约
+103616MiB、利用率 100%；本队列未创建模型或回放进程。
+
+资源释放后先执行 Full，只有其完整测量及实际 workload 检查通过才继续
+Oracle、R5；每组都重新核对 hold、输入、原生来源、资源和前轮实际退出。
+原生 /generate token 包、工具时长、400GB Host、running24、chunk2048、
+mixed off、seed21 均保留。本队列尚无 60 秒到达的性能结果。
