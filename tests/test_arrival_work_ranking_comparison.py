@@ -51,3 +51,35 @@ def test_failed_or_stale_cpu_evidence_does_not_reach_gpu_launch(tmp_path, monkey
     with pytest.raises(ValueError, match="source-bound CPU"):
         runner.start(preparation, cpu, tmp_path / "execution")
     assert not (tmp_path / "execution").exists()
+
+
+@pytest.mark.parametrize("label", ("full", "oracle", "learned"))
+def test_all_stages_replace_template_arrivals_with_the_declared_followup(label):
+    flags = (
+        "--registration", "--run-root", "--port", "--experiment-config",
+        "--workflow-arrivals", "--cpu-report", "--cpu-sources", "--engine-sources",
+    )
+    template = ["/python", "/old/run_causal_comparison.py"]
+    for flag in flags:
+        template.extend((flag, "old-" + flag.removeprefix("--")))
+    previous = list(template)
+    stage = {
+        "registration": f"/new/{label}.registration.json",
+        "run_root": f"/new/{label}", "port": 19035,
+        "configuration": f"/new/{label}.json",
+    }
+    prep = {"arrivals": "/new/mean60/arrivals.json"}
+    cpu = {"report": {"path": "/new/cpu.xml"}, "source_manifest": {"path": "/new/sources.json"}}
+    command = runner.stage_command(template, stage, prep, cpu, Path("/new/native.json"))
+    assert command[command.index("--workflow-arrivals") + 1] == prep["arrivals"]
+    assert command[command.index("--experiment-config") + 1] == stage["configuration"]
+    assert command[command.index("--cpu-sources") + 1] == cpu["source_manifest"]["path"]
+    assert template == previous
+
+
+@pytest.mark.parametrize("suffix", ("", "../old", "new/run", "New"))
+def test_new_run_identity_cannot_escape_or_alias_its_registration(tmp_path, monkeypatch, suffix):
+    preparation, cpu, _, _ = setup(monkeypatch)
+    with pytest.raises(ValueError, match="run suffix"):
+        runner.start(preparation, cpu, tmp_path / "execution", run_suffix=suffix)
+    assert not (tmp_path / "execution").exists()

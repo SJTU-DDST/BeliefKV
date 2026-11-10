@@ -102,9 +102,25 @@ def prepare(reference_path, output, mean):
     return plan
 
 
-def start(preparation_path, cpu_path, output):
+def stage_command(template, stage, preparation, cpu, native_path):
+    command = list(template)
+    command[1] = str(ROOT / "scripts/run_causal_comparison.py")
+    for flag, value in {
+        "--registration": stage["registration"], "--run-root": stage["run_root"],
+        "--port": stage["port"], "--experiment-config": stage["configuration"],
+        "--workflow-arrivals": preparation["arrivals"],
+        "--cpu-report": cpu["report"]["path"], "--cpu-sources": cpu["source_manifest"]["path"],
+        "--engine-sources": native_path,
+    }.items():
+        command[command.index(flag) + 1] = str(value)
+    return command
+
+
+def start(preparation_path, cpu_path, output, *, run_suffix="20261109_r1"):
     if output.exists():
         raise FileExistsError("preserve previous executions")
+    if not run_suffix or any(char not in "abcdefghijklmnopqrstuvwxyz0123456789_" for char in run_suffix):
+        raise ValueError("run suffix requires lowercase letters, digits and underscores")
     causal.fresh._require_clean(ROOT)
     prep, cpu = causal.load(preparation_path), causal.load(cpu_path)
     finish.verify_pins(prep["inputs_sha256"])
@@ -151,7 +167,7 @@ def start(preparation_path, cpu_path, output):
     stages = {}
     for index, label in enumerate(LABELS):
         port = 19035 + index
-        stem = f"workflow_original83_host400_mean60_{label}_20261109_r1"
+        stem = f"workflow_original83_host400_mean60_{label}_{run_suffix}"
         reg, run = OPS / (stem + ".registration.json"), MAIN / "experiments/raw" / stem
         if reg.exists() or run.exists() or os.path.lexists(f"/tmp/bkv-causal-{port}.sock"):
             raise FileExistsError("preserve an existing registration, run or runtime socket")
@@ -160,6 +176,7 @@ def start(preparation_path, cpu_path, output):
             raise ValueError("comparison port is occupied")
         stages[label] = {
             "registration": str(reg), "run_root": str(run), "port": port,
+            "configuration": prep["configurations"][label],
             "review": str(output.resolve() / (label + "_review")),
             "initial_resource_snapshot": resources,
         }
@@ -168,16 +185,7 @@ def start(preparation_path, cpu_path, output):
     write(native_path, native)
     causal.engine_evidence(engine, Path(template[template.index("--engine-report") + 1]), native_path)
     for label, stage in stages.items():
-        command = list(template)
-        command[1] = str(ROOT / "scripts/run_causal_comparison.py")
-        for flag, value in {
-            "--registration": stage["registration"], "--run-root": stage["run_root"],
-            "--port": stage["port"], "--experiment-config": prep["configurations"][label],
-            "--cpu-report": cpu["report"]["path"], "--cpu-sources": cpu["source_manifest"]["path"],
-            "--engine-sources": native_path,
-        }.items():
-            command[command.index(flag) + 1] = str(value)
-        stage["command"] = command
+        stage["command"] = stage_command(template, stage, prep, cpu, native_path)
     pins = [
         preparation_path, cpu_path, Path(cpu["report"]["path"]),
         Path(cpu["source_manifest"]["path"]), Path(__file__), native_path,
@@ -185,6 +193,7 @@ def start(preparation_path, cpu_path, output):
     plan_path = output / "execution_plan.json"
     write(plan_path, {
         **prep, "operator": str(ROOT), "stages": stages, "GPU_action": True,
+        "run_suffix": run_suffix,
         "inputs_sha256": {
             **prep["inputs_sha256"], **{str(path.resolve()): sha256_file(path) for path in pins},
         },
@@ -351,6 +360,7 @@ def main():
     parser.add_argument("--preparation", type=Path)
     parser.add_argument("--cpu-evidence", type=Path)
     parser.add_argument("--watch", type=Path)
+    parser.add_argument("--run-suffix", default="20261109_r1")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999":
         raise ValueError("hide CUDA in the coordinator; the serving launcher binds its own device")
@@ -359,7 +369,9 @@ def main():
     elif args.preparation and args.cpu_evidence and args.output_dir:
         if os.getpriority(os.PRIO_PROCESS, 0) != 0:
             raise ValueError("keep future serving parents at nice0")
-        print(json.dumps(start(args.preparation, args.cpu_evidence, args.output_dir)))
+        print(json.dumps(start(
+            args.preparation, args.cpu_evidence, args.output_dir, run_suffix=args.run_suffix,
+        )))
     elif args.reference_execution and args.output_dir:
         print(json.dumps(prepare(args.reference_execution, args.output_dir, args.mean_interval_seconds)))
     else:
