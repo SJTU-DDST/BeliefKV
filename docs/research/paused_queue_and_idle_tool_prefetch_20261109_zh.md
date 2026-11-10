@@ -584,3 +584,48 @@ tool-paused 候选。
 Oracle、R5；每组都重新核对 hold、输入、原生来源、资源和前轮实际退出。
 原生 /generate token 包、工具时长、400GB Host、running24、chunk2048、
 mixed off、seed21 均保留。本队列尚无 60 秒到达的性能结果。
+
+## mean60 队列修复与重新启动（2026-11-10）
+
+用户明确授权开始缩短到达间隔、制造更多 ready-paused 积压的 GPU 实验。
+旧 `execution_r1` 在资源释放后尝试注册 Full，但启动模板仍携带 mean70
+到达表，而新配置声明 mean60，注册器拒绝
+`external workflow arrivals differ from the declared experiment`。
+该次没有创建正式注册、模型服务或回放，原失败状态和
+`full_registration_result.json` 保留，不能说成已经执行过 mean60 GPU 对比。
+
+提交 `6cf3e88d` 修复三组启动命令，明确传入本轮 preparation 的到达表，
+并允许指定新的运行后缀以保留旧记录。新增检查同时覆盖 Full、Oracle、
+R5，80 项相关定向 CPU 检查通过。新配置为 `preparation_r3`，到达表与
+先前准备的 60 秒表哈希完全相同，不改随机样本、workflow 顺序或测量成员。
+
+本轮共同源码包含 `40dbb0d0` 的 JOIN 绑定、confirmed 恢复和有界重试
+修复；三组统一使用干净源码
+`beliefkv-mean60-joinfix-6cf3e88d`，未热改旧冻结来源。Full 保留原
+非工作量排序配置；连续工作量 Oracle 和学习 R5 使用各自原有排序。
+三组实际运行时构造检查通过，证据为 `preparation_r3/constructor_proof.json`。
+
+`bound_cpu_r2` 在新冻结源码运行 8615 项及 23 个子测试，全部通过，无
+失败、错误或跳过；保留此前 8411 个字面用例身份及全部源码路径，绑定
+2673 个源码路径，源码、原生引擎和外部输入在执行期间未变化。
+原生引擎仍为已验证的 434c35dd，未添加新的 GPU 组件或独立小改动实验。
+
+新执行入口为 `arrival_mean60/execution_r2/execution_plan.json`。
+协调器 PID 1184672、start ticks 34353881，实际存活，nice0，CUDA 对协调器
+隐藏。正式运行名为
+`workflow_original83_host400_mean60_{full,oracle,learned}_20261110_r1`，
+依次使用 19035、19036、19037 端口。
+
+配置保持 83 个原项目、20 个初始 workflow、平均 60 秒的持续泊松到达、
+400GB Host、running24、chunk2048、mixed off、原工具时长和 seed。
+工具预取及逐层 handoff 继续关闭。固定 18 个测量成员完整自然结束后停止
+非测量背景，核对实际工作、两次新鲜 idle drain 和真实进程退出。
+先运行非排序 Full；其真实 workload 检查通过后才自动继续 Oracle、R5，
+并输出 JCT 对比及 ready/JOIN/tool-paused 时间曲线。
+
+2026-11-10 18:18 Asia/Shanghai 的独立观察为 `waiting_resources_full`，
+`GPU_registered_stages=[]`，证据是 `execution_r2/launch_observation_r1.json`。
+另一用户的 GPU 进程 1181557 当时占用 62276MiB，GPU 利用率约 71%；
+本队列没有模型服务或回放。协调器持续复核资源和 hold，待整卡空闲后
+自动注册 Full，不与其他用户进程并行测量。这里只证明队列已启动，
+没有声称已进入 GPU 回放、达到更多 ready-paused 或取得新的性能收益。
