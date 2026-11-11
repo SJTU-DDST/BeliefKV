@@ -3,6 +3,7 @@
 import argparse
 from copy import deepcopy
 from datetime import datetime, timezone
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -207,8 +208,126 @@ def start(preparation_path, cpu_path, output, *, run_suffix="20261109_r1"):
     return {"execution_plan": str(plan_path), "process": causal.reservation.process(process.pid)}
 
 
+def continue_waiting_full(plan_path, output):
+    """Attach a new coordinator to the existing, still waiting Full supervisor."""
+    if output.exists():
+        raise FileExistsError("preserve previous continuation evidence")
+    causal.fresh._require_clean(ROOT)
+    plan = causal.load(plan_path)
+    finish.verify_pins(plan["inputs_sha256"])
+    previous_path = plan_path.parent / "state.json"
+    previous = causal.load(previous_path)
+    if (
+        previous.get("status") != "stopped_preserve_arrival_work_ranking_comparison"
+        or previous.get("current_stage") != "full"
+        or previous.get("GPU_registered_stages") != ["full"]
+        or previous.get("error") != "RuntimeError('serving supervisor exited or startup timed out')"
+        or causal.reservation.alive(previous["process"])
+    ):
+        raise ValueError("continue only the exited startup monitor with one registered Full")
+    stage = plan["stages"]["full"]
+    registration_path = Path(stage["registration"])
+    registration = causal.load(registration_path)
+    serving = causal.load(registration_path.with_suffix(".state.json"))
+    owner = previous["serving_watcher"]
+    if (
+        serving.get("status") not in ("waiting_idle_gpu", "waiting_resources_full")
+        or any(serving.get("watcher", {}).get(name) != owner.get(name)
+               for name in ("pid", "start_ticks", "argv"))
+        or not causal.reservation.alive(owner)
+        or serving.get("completed_arms") != []
+        or serving.get("owned")
+        or registration.get("order") != ["full"]
+        or registration.get("run_root") != stage["run_root"]
+        or registration.get("port") != stage["port"]
+        or registration.get("experiment_configuration") != stage["configuration"]
+        or registration.get("execution_checkout") != str(
+            Path(owner["argv"][1]).resolve().parents[1]
+        )
+    ):
+        raise ValueError("existing Full must be the same live, unstarted supervisor")
+    for label, item in plan["stages"].items():
+        observer = Path(item["registration"]).with_name(
+            Path(item["registration"]).name.replace(".registration.json", ".cohort.registration.json")
+        )
+        if Path(item["run_root"]).exists() or Path(item["review"]).exists() or observer.exists():
+            raise ValueError("do not restart GPU work, existing reviews or cohort observers")
+        if label != "full" and Path(item["registration"]).exists():
+            raise ValueError("a later stage is already registered")
+    causal.comparison.verify_sources(registration)
+    released()
+    resumed = deepcopy(plan)
+    resumed["operator"] = str(ROOT)
+    resumed["continued_from"] = str(plan_path.resolve())
+    resumed["coordinator_lock"] = str(plan_path.parent / "coordinator.lock")
+    resumed["stages"]["full"]["existing_watcher"] = owner
+    resumed["inputs_sha256"].update({
+        str(path.resolve()): sha256_file(path)
+        for path in (plan_path, previous_path, registration_path, Path(__file__))
+    })
+    output.mkdir(parents=True, exist_ok=False)
+    following_path = output / "execution_plan.json"
+    write(following_path, resumed)
+    with (output / "execution.log").open("x") as stream:
+        process = subprocess.Popen(
+            [sys.executable, str(Path(__file__).resolve()), "--watch", str(following_path)],
+            cwd=ROOT, stdin=subprocess.DEVNULL, stdout=stream, stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+    return {
+        "execution_plan": str(following_path), "process": causal.reservation.process(process.pid),
+        "existing_serving_watcher": owner, "GPU_registration_reused": True,
+    }
+
+
+def wait_for_actual_replay(stage, owner, state, wait, *, startup_timeout_s=1200.):
+    """Time actual startup separately from a live supervisor waiting for resources."""
+    deadline = None
+    registration_path = Path(stage["registration"])
+    label = state["current_stage"]
+    while True:
+        if not causal.reservation.alive(owner):
+            raise RuntimeError("serving supervisor exited before replay: " + label)
+        serving_path = registration_path.with_suffix(".state.json")
+        serving = causal.load(serving_path) if serving_path.exists() else {}
+        if serving and any(
+            serving.get("watcher", {}).get(name) != owner.get(name)
+            for name in ("pid", "start_ticks", "argv")
+        ):
+            raise ValueError("serving supervisor identity changed")
+        status = serving.get("status", "awaiting_state_publication")
+        if status.startswith(("stopped", "completed", "interrupted")):
+            raise RuntimeError("stage stopped before replay: " + label)
+        if status == "running_full" and all(
+            causal.reservation.alive(serving[name]) for name in ("server", "driver")
+        ):
+            return serving
+        waiting = status in (
+            "waiting_idle_gpu", "waiting_resources_full", "waiting_previous_causal_comparison",
+        )
+        if waiting:
+            deadline = None
+        else:
+            now = time.monotonic()
+            if deadline is None:
+                deadline = now + startup_timeout_s
+            if now >= deadline:
+                raise RuntimeError("serving startup timed out outside resource waiting: " + label)
+        state.update(
+            status=("waiting_resources_" if waiting else "waiting_actual_replay_") + label,
+            serving_status=status, serving_watcher=owner,
+        )
+        wait()
+
+
 def watch(plan_path):
     plan, output = causal.load(plan_path), plan_path.parent
+    with Path(plan.get("coordinator_lock", output / "coordinator.lock")).open("a+") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        watch_locked(plan, output)
+
+
+def watch_locked(plan, output):
     state = {
         "status": "starting_arrival_comparison", "process": causal.reservation.process(os.getpid()),
         "GPU_registered_stages": [],
@@ -238,33 +357,27 @@ def watch(plan_path):
         for label in LABELS:
             stage = plan["stages"][label]
             reg_path = Path(stage["registration"])
-            state.update(status="waiting_resources_" + label, current_stage=label)
-            while not causal.qualified.resources(stage["port"])["ready"]:
-                wait()
+            state.update(current_stage=label)
             finish.verify_pins(plan["inputs_sha256"])
             released()
-            launched = subprocess.run(stage["command"], cwd=ROOT, capture_output=True, text=True, timeout=240)
-            write(output / (label + "_registration_result.json"), {
-                "returncode": launched.returncode, "stdout": launched.stdout, "stderr": launched.stderr,
-            })
-            if launched.returncode:
-                raise RuntimeError("preserve rejected GPU registration: " + label)
+            owner = stage.get("existing_watcher")
+            if owner is None:
+                state["status"] = "waiting_resources_" + label
+                while not causal.qualified.resources(stage["port"])["ready"]:
+                    wait()
+                finish.verify_pins(plan["inputs_sha256"])
+                released()
+                launched = subprocess.run(stage["command"], cwd=ROOT, capture_output=True, text=True, timeout=240)
+                write(output / (label + "_registration_result.json"), {
+                    "returncode": launched.returncode, "stdout": launched.stdout, "stderr": launched.stderr,
+                })
+                if launched.returncode:
+                    raise RuntimeError("preserve rejected GPU registration: " + label)
+                owner = json.loads(launched.stdout)["watcher"]
+            elif label != "full":
+                raise ValueError("continuation may reuse only the existing unstarted Full")
             state["GPU_registered_stages"].append(label)
-            owner = json.loads(launched.stdout)["watcher"]
-            deadline = time.monotonic() + 1200.
-            state.update(status="waiting_actual_replay_" + label, serving_watcher=owner)
-            while True:
-                if reg_path.with_suffix(".state.json").exists():
-                    serving = causal.load(reg_path.with_suffix(".state.json"))
-                    if serving["status"] == "running_full" and all(
-                        causal.reservation.alive(serving[name]) for name in ("watcher", "server", "driver")
-                    ):
-                        break
-                    if serving["status"].startswith(("stopped", "completed", "interrupted")):
-                        raise RuntimeError("stage stopped before replay: " + label)
-                if not causal.reservation.alive(owner) or time.monotonic() >= deadline:
-                    raise RuntimeError("serving supervisor exited or startup timed out")
-                wait()
+            wait_for_actual_replay(stage, owner, state, wait)
             reg = causal.load(reg_path)
             frozen = Path(reg["execution_checkout"])
             observer_path = reg_path.with_name(reg_path.name.replace(".registration.json", ".cohort.registration.json"))
@@ -360,12 +473,17 @@ def main():
     parser.add_argument("--preparation", type=Path)
     parser.add_argument("--cpu-evidence", type=Path)
     parser.add_argument("--watch", type=Path)
+    parser.add_argument("--continue-plan", type=Path)
     parser.add_argument("--run-suffix", default="20261109_r1")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999":
         raise ValueError("hide CUDA in the coordinator; the serving launcher binds its own device")
     if args.watch:
         watch(args.watch)
+    elif args.continue_plan and args.output_dir:
+        if os.getpriority(os.PRIO_PROCESS, 0) != 0:
+            raise ValueError("keep future serving parents at nice0")
+        print(json.dumps(continue_waiting_full(args.continue_plan, args.output_dir)))
     elif args.preparation and args.cpu_evidence and args.output_dir:
         if os.getpriority(os.PRIO_PROCESS, 0) != 0:
             raise ValueError("keep future serving parents at nice0")
@@ -375,7 +493,7 @@ def main():
     elif args.reference_execution and args.output_dir:
         print(json.dumps(prepare(args.reference_execution, args.output_dir, args.mean_interval_seconds)))
     else:
-        parser.error("provide a reference and output, a preparation with CPU evidence, or --watch")
+        parser.error("provide preparation, --continue-plan with output, or --watch")
 
 
 if __name__ == "__main__":
