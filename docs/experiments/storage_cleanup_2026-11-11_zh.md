@@ -48,3 +48,41 @@
 完整清单和执行过程保存在
 `experiments/reports/storage_cleanup_20261111/`，日志归档及工作树管理资料
 分别保存在对应的 `experiments/archive/20261111_*` 目录。
+
+## 追加：worktree 与项目目录清理
+
+用户随后明确要求继续清理 worktree 和项目文件夹。本批额外回收
+39 个旧 checkout，其中 3 个位于 `experiment/` 同级目录，另外 36 个
+位于 `.worktrees/`。范围仍限 2026-11-08 前创建、干净、detached、
+未被进程或容器使用的副本。
+
+本批区分历史文档提及和实际程序输入：历史文档中出现过的旧副本允许
+保留恢复资料后回收；源码、测试、配置、近期操作元数据及输入的引用
+继续保留原有保护范围。分支附着、有修改、近期创建、正在使用，以及
+包含特殊或非私有 ignored 文件的 checkout 继续保留。一个旧 v132
+副本因非私有或特殊 ignored 数据未通过检查，未清理。
+
+| 项目 | 数量 | 本批净释放 |
+| --- | ---: | ---: |
+| 普通旧 checkout，含 3 个项目同级目录 | 29 | 9.363 GB |
+| 带符号链接的旧 checkout | 10 | 7.195 GB |
+| 主项目 Python 字节码缓存 | 2,482 份 | 77,938,688 字节 |
+| 主项目 pytest 缓存文件 | 5 份 | 2,117,632 字节 |
+| 本批合计 | 39 个 checkout 及可再生缓存 | 16.638 GB |
+
+本批归档、提交引用、Git tree 和工作树注册表的复核均通过。
+带链接副本额外实际恢复了一个完整 checkout、225 个 ignored 文件及
+1 个符号链接；解压后完整 tar 比对通过，临时 checkout 已无 force 地
+移除。外部引擎及数据链接目标保持原状。
+
+清理后，待跑 mean60 实验的 23 个输入及 2,673 个冻结绑定文件再次通过
+SHA256 检查。主项目已有的未提交源码、设计文档和实验实现继续保留。
+观察到磁盘可用约 224 GiB；两批共净释放约 117.56 GB。
+
+恢复与核验：
+
+- [本批普通 checkout 恢复索引](../../experiments/archive/20261111_project_worktrees/README.md)
+- [本批带链接 checkout 恢复索引](../../experiments/archive/20261111_project_linked_worktrees/README.md)
+- [普通副本校验](../../experiments/reports/storage_cleanup_20261111/project_worktrees/verification.json)
+- [带链接副本校验](../../experiments/reports/storage_cleanup_20261111/project_linked_worktrees/verification.json)
+- [实际恢复检查](../../experiments/reports/storage_cleanup_20261111/project_linked_worktrees/ignored_restore_probe.json)

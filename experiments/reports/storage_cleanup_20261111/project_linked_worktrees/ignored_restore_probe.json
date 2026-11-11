@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "commit": "b1365e7a924bcb9f40df063b3e2ded66b7e1732c",
+  "ignored_files": 225,
+  "symbolic_links": 1,
+  "complete_tar_comparison_after_extraction": true,
+  "temporary_checkout_removed_without_force": true
+}
