@@ -1,0 +1,119 @@
+{
+  "status": "verified",
+  "observed_at": "2026-11-11T12:36:16.866829+08:00",
+  "runs": [
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261012_v29",
+      "files": 19,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261012_v29.tar.zst",
+      "archive_sha256": "f9d8e6bc2ef886a66e60ed96ab18d37ff1aa989ee2a74eab348c9f8952c40e7f",
+      "source_allocated_bytes": 19952050176,
+      "archive_allocated_bytes": 485257216,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261012_v29.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "files": 19,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261014_v58.tar.zst",
+      "archive_sha256": "2c5529fe2ea6713e6b6162eff4dcbe2797dd39417a547258db60c7d7cde5e35f",
+      "source_allocated_bytes": 18772922368,
+      "archive_allocated_bytes": 471896064,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261014_v58.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_joint_wait_h2d_predictive_108root_2to4_v8d",
+      "files": 10,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_predictive_108root_2to4_v8d.tar.zst",
+      "archive_sha256": "90ee884d32dc98c2547d643ba4506db0369f5af835dd9d055716685294a6bebd",
+      "source_allocated_bytes": 7107985408,
+      "archive_allocated_bytes": 184913920,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_predictive_108root_2to4_v8d.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_joint_wait_h2d_ab_108root_2to4_v8c",
+      "files": 9,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_108root_2to4_v8c.tar.zst",
+      "archive_sha256": "aec63516ca90bd3e8ed8cbb1c04febf3fcfe98755aff9b597979c46d35895d1e",
+      "source_allocated_bytes": 6251020288,
+      "archive_allocated_bytes": 161394688,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_108root_2to4_v8c.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_joint_wait_h2d_ab_84root_v7",
+      "files": 20,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_84root_v7.tar.zst",
+      "archive_sha256": "93fff964c9a0e61cedee86ecea77bc1800e84854166defb7762db18efe97aa91",
+      "source_allocated_bytes": 7336607744,
+      "archive_allocated_bytes": 181288960,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_84root_v7.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_joint_wait_h2d_ab_84root_20261005_v5",
+      "files": 20,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_84root_20261005_v5.tar.zst",
+      "archive_sha256": "bc30c94e5b8b25130b30b2c9cebe018d92ce77b7ff5a81488c349deb34e29a0d",
+      "source_allocated_bytes": 6604722176,
+      "archive_allocated_bytes": 157601792,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_84root_20261005_v5.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_joint_wait_h2d_ab_84root_20261006_v6",
+      "files": 20,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_84root_20261006_v6.tar.zst",
+      "archive_sha256": "61cbc7a446b4ee048737f9d6b2babcaf1ca29bb14acbe63fc74a87ea44051fa6",
+      "source_allocated_bytes": 6542688256,
+      "archive_allocated_bytes": 150392832,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_84root_20261006_v6.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_joint_wait_h2d_ab_64root_v4",
+      "files": 18,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_64root_v4.tar.zst",
+      "archive_sha256": "8cdb942ed0df3cbc5cb6c4c0fccda49d8588db87806653b2c159acbabd65150f",
+      "source_allocated_bytes": 4645154816,
+      "archive_allocated_bytes": 122834944,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_joint_wait_h2d_ab_64root_v4.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_join_prepare_h2d_ab_64root_20261004_v1",
+      "files": 6,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_join_prepare_h2d_ab_64root_20261004_v1.tar.zst",
+      "archive_sha256": "6ac63de12d912bdece84ebd736c9182fa299db44e40c3c5e37227eda7f4cc960",
+      "source_allocated_bytes": 744779776,
+      "archive_allocated_bytes": 12152832,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_join_prepare_h2d_ab_64root_20261004_v1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_join_prepare_h2d_ab_64root_20261004_v3",
+      "files": 9,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_join_prepare_h2d_ab_64root_20261004_v3.tar.zst",
+      "archive_sha256": "36ac74a111277fe592157e00108b1230f2f9c46867037b3c90138660bdcae1a5",
+      "source_allocated_bytes": 2510684160,
+      "archive_allocated_bytes": 51015680,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_join_prepare_h2d_ab_64root_20261004_v3.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261010_v19b",
+      "files": 8,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261010_v19b.tar.zst",
+      "archive_sha256": "6aec4908d113467cc4c8f94378e89bd50e4cdaa2f7b8c6d934f479af28f99b8c",
+      "source_allocated_bytes": 2638782464,
+      "archive_allocated_bytes": 82169856,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261010_v19b.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    },
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261010_v16b",
+      "files": 8,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261010_v16b.tar.zst",
+      "archive_sha256": "84e1995267171a3ec1a6af474710fa101c3255900ac72abe4f8ddfae3eb6d1ab",
+      "source_allocated_bytes": 2699001856,
+      "archive_allocated_bytes": 85659648,
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261111_unused_logs/qwen35_native_predictive_replenished_108plus48_20261010_v16b.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw"
+    }
+  ],
+  "files": 166,
+  "net_reclaimed_bytes": 83659821056,
+  "all_complete_tar_comparisons_passed_before_removal": true,
+  "all_archive_hashes_and_member_lists_verified": true,
+  "all_original_plans_and_restore_markers_verified": true
+}
