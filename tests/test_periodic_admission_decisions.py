@@ -1,4 +1,6 @@
 from copy import deepcopy
+import json
+import sys
 
 import pytest
 
@@ -6,6 +8,87 @@ from beliefkv.experiments.replay_arrivals import poisson_arrival_plan
 from beliefkv.experiments.workflow_cohort import declare_cohort
 from scripts.audit_periodic_admission_decisions import inspect, observation_phases
 from tests.test_free_dispatch_service_audit import evidence
+
+
+@pytest.mark.parametrize("mode", ("measured", "full", "live"))
+def test_completion_cli_preserves_measured_full_and_live_scopes(tmp_path, monkeypatch, mode):
+    from scripts import audit_periodic_admission_decisions as module
+
+    registration, cohort, arrivals, output = (
+        tmp_path / (name + ".json") for name in ("registration", "cohort", "arrivals", "output")
+    )
+    registration.write_text(json.dumps({
+        "run_root": str(tmp_path), "workflow_arrivals_path": str(arrivals), "workflow_arrivals": {},
+    }))
+    cohort.write_text("{}")
+    arrivals.write_text("{}")
+    calls = []
+    proof = {
+        "protocol": "all_fixed_measured_workflows_completed",
+        "certificate": "completion.json", "certificate_sha256": "certificate",
+        "cohort_sha256": "cohort", "measured_requests": 3, "measured_output_tokens": 9,
+        "actual_owned_exit_verified": True,
+    }
+
+    def measured_check(*args):
+        assert mode == "measured"
+        calls.append(("measured", args))
+        return proof
+
+    def full_check(*args):
+        assert mode == "full"
+        calls.append(("full", args))
+        return {}
+
+    class Reader:
+        prefixes = {}
+
+        def __call__(self, _path):
+            return iter(())
+
+    monkeypatch.setattr(module, "verify_execution", measured_check)
+    monkeypatch.setattr(module, "complete_work", full_check)
+    monkeypatch.setattr(module, "SealedRecords", Reader)
+    monkeypatch.setattr(module, "inspect", lambda *_args: {"counts": {}})
+    monkeypatch.setattr(module, "observation_phases", lambda *_args: {})
+    command = ["audit", "--registration", str(registration), "--output", str(output)]
+    if mode != "live":
+        command.append("--complete")
+    if mode != "full":
+        command.extend(("--cohort", str(cohort)))
+    monkeypatch.setattr(sys, "argv", command)
+    module.main()
+    result = json.loads(output.read_bytes())
+    assert result["complete_work_and_owned_exit_verified"] is (mode == "full")
+    assert result["complete_measured_work_and_owned_exit_verified"] is (mode == "measured")
+    assert len(calls) == (0 if mode == "live" else 1)
+    if mode == "measured":
+        assert calls == [("measured", (registration, cohort))]
+        assert result["measured_execution_proof"] == proof
+    else:
+        assert "measured_execution_proof" not in result
+
+
+def test_failed_measured_certificate_cannot_fall_back_to_full_or_publish(tmp_path, monkeypatch):
+    from scripts import audit_periodic_admission_decisions as module
+
+    registration, cohort, output = (
+        tmp_path / (name + ".json") for name in ("registration", "cohort", "output")
+    )
+    registration.write_text("{}")
+
+    def refused(*_args):
+        raise ValueError("measured work or owned exit incomplete")
+
+    monkeypatch.setattr(module, "verify_execution", refused)
+    monkeypatch.setattr(module, "complete_work", lambda *_args: pytest.fail("full fallback"))
+    monkeypatch.setattr(sys, "argv", [
+        "audit", "--registration", str(registration), "--cohort", str(cohort),
+        "--output", str(output), "--complete",
+    ])
+    with pytest.raises(ValueError, match="incomplete"):
+        module.main()
+    assert not output.exists()
 
 
 def records():

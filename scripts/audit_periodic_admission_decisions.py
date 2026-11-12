@@ -17,6 +17,7 @@ from scripts.audit_free_dispatch_service import identity, validate_grant
 from scripts.audit_native_system_costs import distribution, finite_number
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.train_workflow_work import write
+from scripts.verify_measured_execution import verify_execution
 
 
 EVENT = "agent_periodic_admission_decision"
@@ -586,7 +587,10 @@ def main():
     if args.output.exists():
         raise FileExistsError("preserve prior decision observations")
     registration = json.loads(args.registration.read_bytes())
-    if args.complete and complete_work(args.registration) is None:
+    measured = None
+    if args.complete and args.cohort is not None:
+        measured = verify_execution(args.registration, args.cohort)
+    elif args.complete and complete_work(args.registration) is None:
         raise ValueError("complete decision audit requires full work, fresh drain and actual owned exit")
     arm = Path(registration["run_root"]) / "full"
     reader = SealedRecords()
@@ -618,8 +622,16 @@ def main():
         registration_sha256=sha256_file(args.registration),
         input_jsonl_prefixes=reader.prefixes, GPU_action=False, performance_accepted=False,
         analysis_sha256=sha256_file(Path(__file__)),
-        complete_work_and_owned_exit_verified=args.complete,
+        complete_work_and_owned_exit_verified=args.complete and measured is None,
+        complete_measured_work_and_owned_exit_verified=measured is not None,
     )
+    if measured is not None:
+        result["measured_execution_proof"] = {
+            name: measured[name] for name in (
+                "protocol", "certificate", "certificate_sha256", "cohort_sha256",
+                "measured_requests", "measured_output_tokens", "actual_owned_exit_verified",
+            )
+        }
     write(args.output, result)
     print(json.dumps(result["counts"]))
 
