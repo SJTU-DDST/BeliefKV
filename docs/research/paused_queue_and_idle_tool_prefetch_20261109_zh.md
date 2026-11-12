@@ -1143,3 +1143,32 @@ P50/P90/max 1.709/5.757/58.276ms，不能直接视为线程 CPU 或可消除开�
 顺序、时间与分布；授予容量由原审核器校验。三个完整封存日志与之前一致，新增免费授予后
 原 2355 个周期授予的全部 episode 字段逐项相同。分析不消耗 GPU，
 不需要重跑或重绑已排队的服务实验。
+
+### 同负载系统对照的 CPU 准备
+
+新增 `scripts/prepare_matched_background_baselines.py`，从已经排队的
+100/20/mean70 Full 执行计划生成 ThunderAgent acting-decay 和 native
+SGLang 的同流量配置，结果位于
+`background100_mean70/baselines_preparation_r1/`。准备前后复核执行计划、
+source、到达表、固定 18 个测量成员以及原有输入绑定，没有改变当前队列。
+这两份配置尚未登记为 GPU 后继，不声称已经启动或取得性能数据。
+
+两种对照保留同一 400GB Host、实际 HBM 容量、BF16/FA3、prefill 分块、
+CUDA graph、MoE 配置及 NUMA diagnostic 合同。ThunderAgent 继续使用
+每个 invocation 一个 program 的 acting-decay 版本，控制周期 5000ms、
+衰减半衰期 1s；native 显式声明相同 token replay 和固定测量完成后的
+背景停止协议，不以旧 source capture 代替本次对照。Full 的预测、JOIN
+与 Host 备份策略及工作量排序不会泄漏到这两种对照中。
+
+101 项相关 CPU 检查通过，包括流量、测量成员、容量、NUMA、未来信息、
+策略隔离、控制周期和未登记状态的破坏性配置用例。实际 ThunderAgent
+CPU 构造检查通过，native 明确不启用自定义准入运行时。准备时 CUDA
+隐藏、nice19、单线程并绑定 CPU0，不消耗 GPU 或另做 400GB 组件实验。
+
+2026-11-12 16:42 Asia/Shanghai 再次核对：position 等待进程
+PID1746978/start50820024 与匹配协调器 PID1746979/start50820029
+实际存活，心跳继续推进，分别处于 `waiting_gpu_calibration` 和
+`waiting_position_qualification`，position 的 `owned` 为空。GPU 由
+其他用户 PID1712120 占用约 106GB、利用率 100%，没有结束该进程或
+重复登记等待者。新负载仍须通过完整测量、持续背景覆盖及候选供给验收；
+准备好的系统对照等待同负载比较与实际退出条件满足后再登记。
