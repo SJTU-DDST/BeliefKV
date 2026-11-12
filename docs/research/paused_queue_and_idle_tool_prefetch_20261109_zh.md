@@ -1217,3 +1217,25 @@ fixture 并恢复原环境检查边界；不以这些 CPU 检查声明实际 GPU
 被接受，时间比较使用 1ns 量级绝对容差，并在设置环境后重新构造控制器、
 验证实际 300/400/500ms 间隔。运行时策略不变。357 项相关检查通过，
 首次失败及复查报告保留在 `startup_recovery_20261112_r1/`。
+
+修正测试后的完整绑定位于该目录的 `bound_cpu_r2/`：8687 个独立检查和
+23 个子测试通过，无失败、错误或跳过，保留全部 8650 个旧检查身份、
+2684 个源文件；执行前后源码、原生引擎及外部输入不变。冻结操作目录为
+`beliefkv-gpu-startup-8fbd7462`，原生引擎及全部 Full/Oracle/R5 配置沿用。
+
+2026-11-12 22:11 Asia/Shanghai 已实际重新登记 position 与匹配协调器，
+新执行计划位于 `startup_recovery_20261112_r1/execution_r2/`。
+position 登记为
+`ops/workflow_original100_host400_mean70_position_20261112_r2.registration.json`。
+22:13:13 的 `queue_verified.json` 核对两个实际进程的 PID、start_ticks、
+argv、nice0 和 30 秒内的心跳：等待者 PID1858220/start53045253，
+协调器 PID1858221/start53045258，状态分别为 `waiting_gpu_calibration`、
+`waiting_position_qualification`，无已启动 GPU 子进程。旧失败监督器和
+全部已记录子进程均实际退出。GPU 当前由 PID1824144 占用 136024MiB，
+利用率100%，没有结束该进程。
+
+该复核还逐项确认任务人口、工具、到达表、固定测量成员、资源及三份方法
+配置与 r1 相同。当前实际 GPU 登记仍仅 position，Full/Oracle/R5 为原
+协调器中的有条件后继；资源重试已经过 CPU 协议验证，尚无实际 GPU 冲突
+重试或本轮 JCT 结果。同负载 ThunderAgent/native 的配置已重新绑定到
+当前执行计划，字节哈希与先前配置一致，仍未额外登记 GPU 后继。
