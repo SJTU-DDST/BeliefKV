@@ -674,3 +674,36 @@ R5，80 项相关定向 CPU 检查通过。新配置为 `preparation_r3`，到�
 本修复保证正常继续等待和后续监控，不保证先于其他用户取得 GPU；
 该保证需要所有使用者共同遵守的预约或统一资源调度。当前尚无本轮
 mean60 GPU 回放或性能结果。
+
+## 用户授权停止占卡实验后实际启动（2026-11-12）
+
+用户已与当前占用 GPU 的用户确认，明确授权结束其实验并进行本轮实验。
+13:02 Asia/Shanghai 核对 GPU 进程为同一用户的 DeepSeek 服务
+`1645841`，父实验队列为 `1645836`，自动接续协调器为 `1488377`。
+读取并确认其 SIGTERM 清理入口后先终止协调器，再向已核对的服务与评测
+进程组发送 SIGTERM；对未响应的残留服务与评测进程发送 SIGKILL。
+13:05:13 独立检查列出的协调器、队列、服务和评测进程全部退出，GPU
+无计算进程、利用率 0%、空闲 143145MiB。授权、进程身份、信号与资源记录
+保存在本轮 continuation 的 `user_authorized_gpu_release_20261112.json`。
+
+现有 Full 监督器直接取得空卡，未重复注册本轮实验。13:09:50 已进入
+`running_full`，原生 prefill 与 decode 均实际推进。独立观察
+`full_live_start_20261112_r1.json` 核对：
+
+- 原 Full 监督器 `1492141`、外层协调器 `1502284`、server `1679975`、
+  唯一 GPU scheduler `1680051`、replay driver `1681240` 实际存活且 nice0。
+- 固定 18 测量观察器 `1681241` 实际存活、nice19，状态为
+  `waiting_fixed_measured_cohort`；13:10:42 已观察 21 个到达、0 个测量完成。
+- 实际 device pool 为 805198 tokens，Host pool 为 4069011 tokens、
+  400000057344 bytes；running24、chunk2048、mixed off、seed21。
+- 实际 Full 工作量排序和组合选择均关闭，未来工作量不用于决定或恢复；
+  普通控制及合并窗口均为 2000ms。原 83 项目、20 初始、平均 60 秒到达
+  和固定 18 测量成员保持原注册。
+- 启动观察的原生遥测 dropped/failed 均为 0，writer_error 为空，
+  writer queue 为 0。观察来自独立采样，不能当作原子快照。
+
+400GB Host 初始化属于服务启动阶段，本轮测量仍按原 workflow_start 到
+workflow_end 的完整 JCT 统计。当前只证明实际运行与监控已接续，尚无
+完整 JCT、平均竞争规模或性能收益。Full 完成全部固定测量、工作守恒、
+fresh drain、实际退出与 workload 检查后，由现有协调器继续 Oracle、
+R5，保留原检查门槛、自然长尾和停止背景的协议。
