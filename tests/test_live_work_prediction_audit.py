@@ -86,6 +86,73 @@ def test_features_use_published_prefix_and_future_work_is_only_a_label():
     assert changed[0]["candidates"][0]["features"] == first["features"]
 
 
+def test_completion_input_truth_matches_oracle_without_changing_predictor_features():
+    events, requests, native, decisions = fixture()
+    models = {"model": WorkflowWorkModel(distribution_raw())}
+    timeline = observation_timeline(events, native, requests)
+    earlier = audit(deepcopy(decisions), timeline, requests, {"a": 300., "b": 400.}, models)
+    completed = audit(
+        deepcopy(decisions), timeline, requests, {"a": 300., "b": 400.}, models,
+        input_progress="completion_only",
+    )
+    assert earlier[0]["candidates"][0]["observed_remaining_model_work"] == pytest.approx(171.98)
+    assert completed[0]["candidates"][0]["observed_remaining_model_work"] == 172.
+    assert completed[1]["candidates"][0]["observed_remaining_model_work"] == pytest.approx(43.98)
+    assert earlier[1]["candidates"][0]["observed_remaining_model_work"] == pytest.approx(43.98)
+    for old, new in zip(earlier, completed):
+        for a, b in zip(old["candidates"], new["candidates"]):
+            assert a["features"] == b["features"]
+            assert a["predictions"] == b["predictions"]
+
+
+def test_input_progress_can_reverse_remaining_work_order_before_request_completion():
+    events, requests, native, decisions = fixture()
+    requests["a-req"].update(input_increment=1000, prompt_tokens=1000)
+    timeline = observation_timeline(events, native, requests)
+    early = audit(deepcopy(decisions), timeline, requests, {"a": 300., "b": 167.}, {})
+    completed = audit(
+        deepcopy(decisions), timeline, requests, {"a": 300., "b": 167.}, {},
+        input_progress="completion_only",
+    )
+    early_work = [row["observed_remaining_model_work"] for row in early[0]["candidates"]]
+    completed_work = [row["observed_remaining_model_work"] for row in completed[0]["candidates"]]
+    assert early_work == [162., 167.]
+    assert completed_work == [172., 167.]
+
+
+def test_completion_input_truth_does_not_recharge_completed_parallel_members():
+    events, requests, native, decisions = fixture()
+    events = [
+        row for row in events if not (row["workflow_id"] == "b" and row["kind"] == "workflow_start")
+    ]
+    for row in events:
+        if row["workflow_id"] == "b":
+            row["workflow_id"] = "a"
+            if row["kind"] == "invocation_create":
+                row["relation_type"] = RelationType.SPAWN.value
+                row["parent_invocation_id"] = "a-root"
+    requests["b-req"].update(workflow_id="a", input_increment=1000, prompt_tokens=1000)
+    native[0]["request_samples"].append({
+        **deepcopy(native[0]["request_samples"][0]),
+        "request_id": "b-req", "invocation_id": "b-root", "context_id": "b-context",
+    })
+    for decision in decisions:
+        decision["candidates"] = decision["candidates"][:1]
+    values = audit(
+        decisions, observation_timeline(events, native, requests), requests, {"a": 600.}, {},
+        input_progress="completion_only",
+    )
+    assert values[0]["candidates"][0]["observed_remaining_model_work"] == 344.
+    assert values[1]["candidates"][0]["observed_remaining_model_work"] == pytest.approx(215.98)
+    assert values[1]["candidates"][0]["features"][R5_FEATURES.index("input_tokens")] == 1002.
+
+
+@pytest.mark.parametrize("convention", (None, True, "submit"))
+def test_unknown_input_progress_convention_is_rejected(convention):
+    with pytest.raises(ValueError, match="input progress convention"):
+        audit([], [], {}, {}, {}, input_progress=convention)
+
+
 def test_logical_competition_requires_actual_ready_window_and_exact_selection_identity():
     programs = [{
         "key": metadata(owner), "invocation_id": owner + "-root", "application_ready": True,

@@ -229,6 +229,11 @@ def main():
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--continuous-reference-model", type=Path)
     parser.add_argument("--selection-core-parity", type=Path)
+    parser.add_argument(
+        "--truth-input-progress", choices=("completion_only", "first_output"),
+        default="completion_only",
+        help="Oracle charges necessary input at request completion; first_output reproduces older audits.",
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve previous observed prediction diagnostics")
@@ -291,7 +296,10 @@ def main():
         workflow: value["total_work_units"] / 100.
         for workflow, value in labels["workflows"].items()
     }
-    audit(observations, timeline, labels["requests"], totals, {"synchronous": model})
+    audit(
+        observations, timeline, labels["requests"], totals, {"synchronous": model},
+        input_progress=args.truth_input_progress,
+    )
     profile = model.raw["admission_cost_profile"]
     costs = planning_costs(profile)
     result = inspect(
@@ -318,6 +326,8 @@ def main():
             "synchronous_features_use_observed_events_and_coarse_native_output_only": True,
             "future_complete_model_work_is_offline_label_only": True,
             "oracle_variants_are_model_work_not_tool_critical_path": True,
+            "oracle_model_work_input_progress": args.truth_input_progress,
+            "oracle_input_progress_matches_runtime": args.truth_input_progress == "completion_only",
             "full_pool_planning_fit_is_not_immediate_native_fit": True,
             "all_workflow_population_includes_training_projects": True,
             "whole_run_service_or_JCT_counterfactual_proven": False,

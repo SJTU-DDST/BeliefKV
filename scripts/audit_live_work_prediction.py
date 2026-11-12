@@ -240,7 +240,9 @@ def rank_summary(decisions, model_name, *, measured, held_out_only=False):
     return {"counts": dict(counts), "metrics": metrics}
 
 
-def audit(decisions, timeline, requests, totals, models):
+def audit(decisions, timeline, requests, totals, models, *, input_progress="first_output"):
+    if input_progress not in ("first_output", "completion_only"):
+        raise ValueError("require an explicit input progress convention")
     progress, projections, position = {}, {}, 0
     for decision in decisions:
         while position < len(timeline) and timeline[position][0] <= decision["monotonic_s"] * 1000.:
@@ -260,7 +262,12 @@ def audit(decisions, timeline, requests, totals, models):
                 candidate["unavailable_reason"] = "no_observed_task_metadata"
                 continue
             features = state.features()
-            attained = state.counts["input_tokens"] * .01 + state.counts["output_tokens"]
+            inputs = state.counts["input_tokens"]
+            if input_progress == "completion_only":
+                inputs -= sum(state.charged_inputs.values())
+                if inputs < 0:
+                    raise ValueError("active input work exceeds all observed input work")
+            attained = inputs * .01 + state.counts["output_tokens"]
             candidate["observed_remaining_model_work"] = totals[workflow] - attained
             if candidate["observed_remaining_model_work"] < -1e-6:
                 raise ValueError("observed model service exceeds complete logical work")
