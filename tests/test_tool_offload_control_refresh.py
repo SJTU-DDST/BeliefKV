@@ -1,6 +1,7 @@
 """Bound advisory refresh work without delaying real events or native checks."""
 
 from dataclasses import replace
+import time
 from types import SimpleNamespace as NS
 from unittest.mock import Mock
 
@@ -108,27 +109,32 @@ def test_forecast_that_becomes_eligible_runs_by_the_existing_200_ms_deadline(
     parts = pair(demand_runtime)
     runtime, admission, controller, _adder = parts
     hint = next(iter(runtime.tool_wait_hints.values()))
-    clock = [hint.issued_monotonic_ms + 10.]
+    clock = [max(time.monotonic() * 1000., hint.issued_monotonic_ms) + 10.]
     monkeypatch.setattr("time.monotonic", lambda: clock[0] / 1000.)
     runtime._online_tool_timing = NS(prefetch_supported=lambda *args, **kwargs: True)
+    # Keep issuance before processing despite floating point seconds/ms rounding.
     short = replace(
         hint, wait_p10_ms=1., wait_p50_ms=2., wait_p90_ms=3.,
-        issued_monotonic_ms=clock[0], residual_support_detail="online_run_command",
+        issued_monotonic_ms=clock[0] - 1., expires_monotonic_ms=clock[0] + 5000.,
+        residual_support_detail="online_run_command",
     )
     runtime._accept_tool_wait(short)
     assert not run(parts)
     deadline = controller.replacement.next_ms
-    assert deadline == clock[0] + controller.interval_ms
+    assert deadline == pytest.approx(clock[0] + controller.interval_ms, rel=0., abs=1e-6)
     clock[0] += 50.
     supported = replace(
-        hint, issued_monotonic_ms=clock[0], residual_support_detail="online_run_command",
+        hint, issued_monotonic_ms=clock[0] - 1., expires_monotonic_ms=clock[0] + 5000.,
+        residual_support_detail="online_run_command",
     )
     runtime._accept_tool_wait(supported)
+    assert runtime.tool_wait_hints[hint.key.context_id] is supported
+    assert not runtime.counts["tool_wait_result_stale"]
     assert controller.replacement.next_ms == deadline
     assert not run(parts)
     assert demand_runtime[4].component_data[0].value is not None
     clock[0] = deadline + 1.
-    assert run(parts)
+    assert run(parts), {"runtime": dict(runtime.counts), "admission": dict(admission.counts)}
     assert admission.policy.programs["consumer"].active
     assert demand_runtime[4].component_data[0].value is None
 
@@ -138,8 +144,10 @@ def test_changed_retry_deadline_still_serves_a_newly_eligible_forecast(
     demand_runtime, monkeypatch, interval_ms,
 ):
     monkeypatch.setenv("BELIEFKV_TOOL_OFFLOAD_INTERVAL_MS", str(interval_ms))
+    controller = DemandAwareToolOffload(demand_runtime[0])
+    assert controller.interval_ms == interval_ms
     test_forecast_that_becomes_eligible_runs_by_the_existing_200_ms_deadline(
-        demand_runtime, monkeypatch,
+        (demand_runtime[0], controller, *demand_runtime[2:]), monkeypatch,
     )
 
 
