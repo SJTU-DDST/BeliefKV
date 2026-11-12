@@ -805,3 +805,36 @@ ceiling 约 45.8701%。该需求代理不等于物理页占用、可准入证明
 Oracle/R5 的完整平均 JCT 结果。后续沿用同一协调器等待全部 18 个固定
 测量成员自然完成，核对工作守恒、fresh drain、实际退出和 workload 门槛，
 再继续已准备的同配置 Oracle/R5。新 goal 保持 active。
+
+### 局部回放的目标边界与一条长等待核对
+
+同目录 `local_oracle.json` 用冻结源码对非排序 Full 的实际候选、额度、
+JOIN 保护和 sibling 规则进行局部回放。共同窗口 658 次控制中，记录到
+362 次候选顺序变化、53 次选中集合变化；83 次竞争中 72 次的候选剩余
+关键路径比至少为 2。封存前缀共 929 次控制，92 次集合变化。
+
+这里必须保留目标差异：非排序 Full 的记账 artifact 为
+`paired_oracle_prepare_r2/full_work.json`，kind 是
+`workflow_model_tool_critical_path_oracle_v1`。该局部程序直接使用日志里的
+`remaining_path_s`，不是本轮待跑的
+`workflow_continuous_model_work_combination_oracle_v1`。因此 53 / 92 只能
+说明旧分数下局部选择可改变，不能视作连续模型工作量 Oracle 的生效次数、
+预测误差、收益上界或 JCT 预估。当前 GPU Full 仍关闭排序；后续 Oracle
+与 R5 按原准备的相同模型工作量目标和组合选择器运行。
+
+独立的 `local_service_order.json` 封存 928 次控制，在 109 次同集合、
+跨 workflow 的选中顺序变化中，97 次观察到所有 workflow 在下一控制
+或已记录干预前的新服务；其中 76 次已经同批首次服务，84 次最短者
+已经在首批服务，13 次最短者稍晚。12 次未完整观察不填为延迟。该记录
+同样属于旧分数的局部分析，不能外推本轮连续组合选择器的收益。
+
+另核对固定测量成员
+`python_desktop_development_expert_021` 的 root：
+请求 `beliefkv:01a18e75-aff4-7bc0-9131-6793c62ec300` 在
+`499756375.546643ms` 提交。控制边界 `500124.919812459s` 的原始记录中，
+该 agent 为 `active_before=false`、`pending_before=true`、
+`application_ready=true`、`resume_window_eligible=true`、
+`marked_before=false`；完整预算 248334 tokens，而恢复额度仅 87888。
+此时未找到该请求的原生服务记录。这一具体长等待有正确的 ready-paused
+身份，但当前额度不足；它不能当作一个各自放得下的排序候选，也不能据此
+推广所有长等待的原因。继续保留它的完整自然 JCT。
