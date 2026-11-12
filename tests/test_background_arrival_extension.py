@@ -34,6 +34,21 @@ def test_parent_plan_is_not_mutated_or_aliased():
     assert parent == saved
 
 
+def test_an_extended_population_can_continue_without_rewriting_any_previous_arrival():
+    first = extend_poisson_arrival_plan(original(), ["g", "h"])
+    second = extend_poisson_arrival_plan(first, ["i", "j"])
+    assert second["prefix_plan"] == first
+    assert second["arrival_schedule"][:8] == first["arrival_schedule"]
+    assert second["arrival_schedule"] == poisson_arrival_plan(
+        [row["workflow_id"] for row in first["arrival_schedule"]] + ["i", "j"],
+        rate_per_second=first["rate_per_second"], seed=first["seed"], initial_workflows=2,
+    )["arrival_schedule"]
+    validate_arrival_plan(second, list("abcdefghij"))
+    first["arrival_schedule"][-1]["offset_seconds"] += 1
+    with pytest.raises(ValueError):
+        extend_poisson_arrival_plan(first, ["i"])
+
+
 def test_fixed_measured_members_window_and_termination_rule_survive_background_extension():
     parent = original()
     start, end = (parent["arrival_schedule"][index]["offset_seconds"] for index in (2, 3))

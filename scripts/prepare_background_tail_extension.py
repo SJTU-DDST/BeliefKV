@@ -4,6 +4,7 @@ import argparse
 from copy import deepcopy
 from datetime import datetime, timezone
 import json
+import math
 import os
 from pathlib import Path
 import sys
@@ -90,6 +91,7 @@ def main():
     available.add_argument("--available-inventory", type=Path, action="append")
     parser.add_argument("--extra-workflows", type=int, default=4)
     parser.add_argument("--mean-interval-seconds", type=float)
+    parser.add_argument("--minimum-work-ratio", type=float)
     parser.add_argument("--previous-cohort-report", type=Path)
     args = parser.parse_args()
     if args.output_dir.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or (
@@ -122,7 +124,10 @@ def main():
         prefix, prefix_cohort = followup_protocol(
             arrivals, cohort, mean_interval_seconds=args.mean_interval_seconds,
         )
-    minimum = accepted["population"]["model_work_units"]["p80_p20"]
+    inherited_minimum = accepted["population"]["model_work_units"]["p80_p20"]
+    minimum = inherited_minimum if args.minimum_work_ratio is None else args.minimum_work_ratio
+    if not math.isfinite(minimum) or minimum < 1:
+        raise ValueError("declare a finite work-spread minimum of at least one")
     population, extended, updated = extend_population(
         base, available, prefix, prefix_cohort, extra_count=args.extra_workflows,
         minimum_ratio=minimum,
@@ -153,7 +158,12 @@ def main():
         "available_distinct_original_projects": len(available["workflows"]),
         "duplicate_project_variants_retained": duplicates,
         "model_work_p80_p20": population["model_work_units"]["p80_p20"],
-        "minimum_ratio_basis": "no_lower_than_the_supplied_accepted_original_population",
+        "minimum_ratio_basis": (
+            "no_lower_than_the_supplied_accepted_original_population"
+            if args.minimum_work_ratio is None else "explicit_new_background_population_contract"
+        ),
+        "inherited_minimum_ratio": inherited_minimum,
+        "minimum_ratio_explicitly_changed": minimum != inherited_minimum,
         "minimum_ratio": minimum, "measured_workflows": len(updated["measured_workflow_ids"]),
         "same_original_project_rows_and_arrival_prefix": (
             prefix["arrival_schedule"] == arrivals["arrival_schedule"]

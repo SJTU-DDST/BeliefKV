@@ -12,6 +12,7 @@ from tests.test_composite_workload import trace
 from tests.test_prepare_background_tail_extension import fixture
 from tests.test_tool_timing_overlay import document_for, named_plan
 from scripts.prepare_background_tail_extension import extend_population
+from scripts.prepare_arrival_rate_followup import followup_protocol
 
 
 def plans():
@@ -117,6 +118,26 @@ def test_background_traffic_retains_original_arrivals_fixed_members_and_complete
         verify_traffic(arrivals, extended, cohort, changed, additional)
     with pytest.raises(ValueError):
         verify_traffic(arrivals, extended, cohort, updated, list(reversed(additional)))
+
+
+def test_retiming_requires_explicit_rate_and_keeps_fixed_members():
+    base, available, arrivals, cohort = fixture()
+    prefix, analysis = followup_protocol(arrivals, cohort, mean_interval_seconds=80.)
+    population, extended, updated = extend_population(
+        base, available, prefix, analysis, extra_count=2, minimum_ratio=1.,
+    )
+    additional = [row["workflow_id"] for row in population["additional_workflows"]]
+    with pytest.raises(ValueError, match="arrival process"):
+        verify_traffic(arrivals, extended, cohort, updated, additional)
+    report = verify_traffic(
+        arrivals, extended, cohort, updated, additional, mean_interval_seconds=80.,
+    )
+    assert not report["original_arrivals_measured_members_and_common_window_equal"]
+    assert report["same_fixed_measured_members_and_complete_JCT_semantics"]
+    changed = deepcopy(updated)
+    changed["throughput_window_offset_seconds"][1] += 1
+    with pytest.raises(ValueError):
+        verify_traffic(arrivals, extended, cohort, changed, additional, mean_interval_seconds=80.)
 
 
 def test_background_tool_sampling_is_identical_for_every_original_call():

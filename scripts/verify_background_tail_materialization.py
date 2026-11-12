@@ -17,6 +17,7 @@ from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.tool_timing_overlay import apply_overlay
 from beliefkv.experiments.workflow_cohort import validate_cohort
 from scripts.run_causal_gpu_replay import source_plan
+from scripts.prepare_arrival_rate_followup import followup_protocol
 from scripts.train_workflow_work import write
 
 
@@ -61,14 +62,21 @@ def verify_graph_prefix(
     }
 
 
-def verify_traffic(base_arrivals, arrivals, base_cohort, cohort, additional):
+def verify_traffic(
+    base_arrivals, arrivals, base_cohort, cohort, additional, *, mean_interval_seconds=None,
+):
     validate_cohort(base_cohort, base_arrivals)
     validate_cohort(cohort, arrivals)
-    if arrivals != extend_poisson_arrival_plan(base_arrivals, additional):
+    prefix, expected_cohort = base_arrivals, base_cohort
+    if mean_interval_seconds is not None:
+        prefix, expected_cohort = followup_protocol(
+            base_arrivals, base_cohort, mean_interval_seconds=mean_interval_seconds,
+        )
+    if arrivals != extend_poisson_arrival_plan(prefix, additional):
         raise ValueError("background extension changed the original arrival process")
     changed_fields = {"arrival_plan_sha256", "background_workflow_ids"}
-    if any(base_cohort.get(key) != cohort.get(key)
-           for key in base_cohort.keys() | cohort.keys() if key not in changed_fields) or (
+    if any(expected_cohort.get(key) != cohort.get(key)
+           for key in expected_cohort.keys() | cohort.keys() if key not in changed_fields) or (
         cohort["background_workflow_ids"] != base_cohort["background_workflow_ids"] + additional
     ):
         raise ValueError("background extension changed measured members or complete JCT semantics")
@@ -76,7 +84,10 @@ def verify_traffic(base_arrivals, arrivals, base_cohort, cohort, additional):
         "measured_workflows": len(cohort["measured_workflow_ids"]),
         "warmup_workflows": len(cohort["warmup_workflow_ids"]),
         "background_workflows": len(cohort["background_workflow_ids"]),
-        "original_arrivals_measured_members_and_common_window_equal": True,
+        "original_arrivals_measured_members_and_common_window_equal": prefix == base_arrivals,
+        "same_fixed_measured_members_and_complete_JCT_semantics": True,
+        "retimed_prefix_matches_declared_seed_order_and_rate": True,
+        "mean_interval_seconds": mean_interval_seconds,
         "first_additional_arrival_seconds": arrivals["arrival_schedule"][
             len(base_arrivals["arrival_schedule"])
         ]["offset_seconds"],
@@ -118,6 +129,7 @@ def main():
     )
     for name in names:
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--mean-interval-seconds", type=float)
     args = parser.parse_args()
     if args.output.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or (
         os.getpriority(os.PRIO_PROCESS, 0) != 19
@@ -158,6 +170,7 @@ def main():
         traffic = verify_traffic(
             documents["base-arrivals"], documents["arrivals"],
             documents["base-cohort"], documents["cohort"], additional,
+            mean_interval_seconds=args.mean_interval_seconds,
         )
         external_arrivals = all(
             evidence.get("external_workflow_arrivals_required") is True

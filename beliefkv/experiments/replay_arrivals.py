@@ -62,7 +62,7 @@ def extend_poisson_arrival_plan(prefix_plan, extra_workflow_ids):
         prefix_plan.get("schema_version"), prefix_plan.get("mode")
     ) not in (
         (1, "poisson"), (2, "warm_start_poisson"), (4, "permuted_warm_start_poisson"),
-        (6, "background_substituted_poisson"),
+        (5, "prefix_extended_poisson"), (6, "background_substituted_poisson"),
     ):
         raise ValueError("background extension requires one original Poisson arrival plan")
     rows, extra = prefix_plan.get("arrival_schedule", ()), list(extra_workflow_ids)
