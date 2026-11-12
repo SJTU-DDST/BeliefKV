@@ -1049,3 +1049,41 @@ Full 仍须实测背景覆盖、ready 供给、容量竞争和 Host 状态损失
 GPU 执行将沿用原生 position 检查、固定测量停止观察器和匹配比较协调器。
 新源需完成 CPU 绑定及 24 请求的实际 token/session/stop 检查；不增加独立
 400GB 组件微实验。此处仅记录准备，实际排队身份在登记后另记。
+
+### 新负载已实际登记等待 GPU（2026-11-12 16:01 Asia/Shanghai）
+
+准备和队列代码已提交 `2c3bea97`。冻结操作目录为
+`beliefkv-background100-2c3bea97`，服务策略、预测参数和工具时长不另作更改。
+首次完整 CPU 绑定 `bound_cpu_r1` 保留 8646 通过、4 失败及 23 通过子测试；
+四项失败均为冻结目录缺少继承测试的本地只读引用。补齐已存在的原生
+源码和三个历史准备目录后，四项独立复查通过；`CPU_fixture_bindings.json`
+记录引用及所用文件哈希。完整 `bound_cpu_r2` 随后通过 8650 项和 23 项
+子测试，无失败或跳过，保留此前全部 8615 个测试身份，2678 个源码绑定，
+执行前后源码和外部输入不变。
+
+首次合成源登记因旧 background25 分析复核仍绑定旧 CPU 源码集而拒绝，
+未创建新源登记或 GPU 进程。现使用本次完整 CPU 证据重新复核同一份已
+完成的 25 项目原始采集，保留原失败和 publication-clock 修正；原始
+3249 请求、token、工具时长、正常完成与真实退出不变。新的
+`source_requalification_r1.json` 仅更新分析证据绑定，随后源登记成功。
+不是重新采集或新的 GPU 组件实验。
+
+实际源登记为
+`ops/workflow_original100_background_tail_source_20261112_r1.registration.json`。
+执行计划及证据位于 `background100_mean70/execution_r1/`：
+
+- `execution_plan.json` 绑定同一负载、三种配置、原生引擎和完整 CPU 证据。
+- position 登记
+  `workflow_original100_host400_mean70_position_20261112_r1.registration.json`
+  的实际等待进程为 PID1746978/start50820024，状态
+  `waiting_gpu_calibration`，nice0，无已启动模型服务或 driver。
+- 匹配比较协调器 PID1746979/start50820029 实际存活，nice0，
+  状态 `waiting_position_qualification`；两者实际 argv 和心跳均核对。
+- `queue_verified.json` 在 16:01:32 再次验证所有准备输入哈希和两个实际
+  进程。GPU 当时由其他用户的 PID1712120 占用 106104MiB、利用率100%，
+  当前程序等待资源，没有停止该进程。尚未产生本轮 JCT 或调度收益。
+
+顺序为新源 token/session/stop 检查及 sampling 校准、Full；固定 18 个
+成员完整完成、fresh drain 和实际退出，并通过持续负载验收后，才进入
+连续模型工作量 Oracle 和 R5。当前实际登记的 GPU 阶段仅 position，
+其余为协调器中的有条件后继，不声称它们已经启动。整个研究 goal 保持 active。
