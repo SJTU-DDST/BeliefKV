@@ -524,6 +524,8 @@ def check_predeclared_calibration(
     monkeypatch.setattr(calibration.controls, "source_plan", lambda _arm: (graph, {}, {}))
     monkeypatch.setattr(calibration.controls, "CapturedTokenCorpus", lambda *_args: nullcontext())
     monkeypatch.setattr(calibration.qualified, "resources", lambda _port: {"ready": True})
+    monkeypatch.setattr(calibration.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(calibration.gpu_startup, "snapshot", lambda: {"compute_processes": []})
     monkeypatch.setattr(calibration.subprocess, "run", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         calibration.subprocess, "Popen",

@@ -24,7 +24,7 @@ from beliefkv.experiments.composite_workload import (
     KIND as COMPOSED_SOURCE, composed_quality, registered_source_arm, verify_composed_registration,
 )
 from beliefkv.experiments.native_engine_variant import engine_patch
-from beliefkv.experiments import host_numa, native_execution
+from beliefkv.experiments import gpu_startup, host_numa, native_execution
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 from scripts import run_causal_comparison as controls
 from scripts import run_causal_source_capture as capture
@@ -503,7 +503,6 @@ def watch(registration):
                 pulse()
                 time.sleep(10.)
             run.mkdir(parents=True, exist_ok=False)
-            (run / "server").mkdir()
             subprocess.run(
                 [sys.executable, str(ROOT / "scripts/preflight_qwen35_host_pool.py"),
                  *host_numa.preflight_arguments(
@@ -513,8 +512,6 @@ def watch(registration):
                 check=True, capture_output=True, timeout=30,
             )
             pulse()
-            if not qualified.resources(plan["port"])["ready"]:
-                raise ValueError("GPU resources changed before calibration")
             with (run / "plugin_install.log").open("x") as output:
                 subprocess.run(
                     [sys.executable, "-m", "pip", "install", "--no-index", "--no-deps",
@@ -538,65 +535,94 @@ def watch(registration):
                     "expected_replay_capacity": expected_capacity,
                     "device_capacity_unchanged": True,
                 }
-            settings, flags, _socket = controls.environment(
-                reference, "native_matched", ROOT, Path(plan["engine_checkout"]),
-                run, plan["port"], run / "plugin", sampling_mode="position",
-                max_running_requests=running,
-                tool_restore_mode=reference["arms"]["full"].get(
-                    "TOOL_RESTORE_MODE", "speculative",
-                ),
-                execution_frontier_restore=bool(
-                    plan.get("experiment_config")
-                    and reference["arms"]["full"].get("EXECUTION_FRONTIER_RESTORE") == "1"
-                ),
-                frontier_cold_reclaim=bool(
-                    plan.get("experiment_config")
-                    and reference["arms"]["full"].get("FRONTIER_COLD_RECLAIM", "0") == "1"
-                ),
-            )
-            server = process(
-                ["bash", str(ROOT / "scripts/launch_qwen35_native_v0520.sh"), *flags],
-                qualified.driver_environment({"environment": settings}, os.environ), run / "server.log",
-            )
-            state.update(status="starting_position_gpu_check", server=identities[0])
-            deadline = time.monotonic() + 480.
-            ready = run / "server/native_telemetry_ready.json"
-            while True:
-                pulse()
-                if server.poll() is not None:
-                    raise ValueError("position GPU server exited at startup")
-                try:
-                    health = httpx.get(f"http://127.0.0.1:{plan['port']}/health", timeout=2.)
-                    available = health.is_success and ready.is_file()
-                except httpx.HTTPError:
-                    available = False
-                if available:
-                    break
-                if time.monotonic() >= deadline:
-                    raise ValueError("position GPU server did not become ready")
-                time.sleep(1.)
-            info = httpx.get(f"http://127.0.0.1:{plan['port']}/server_info", timeout=10.).json()
-            source_info = load(arm / "server/server_info.json")
-            parameters = controls.prefill_server_parameters(
-                {name: source_info[name] for name in SERVER_FIELDS}, reference["arms"]["full"],
-            )
-            parameters = host_numa.server_parameters(reference["arms"]["full"], parameters)
             execution = native_execution.configuration(reference["arms"]["full"], ROOT)
-            native_execution.verify_server_info(execution, info)
-            if execution is not None:
-                parameters.update({
-                    name: info[name] for name in (
-                        "model_path", "dtype", "kv_cache_dtype", "attention_backend", "max_total_tokens",
-                        "max_running_requests", "tp_size", "chunked_prefill_size", "enable_mixed_chunk",
-                        "page_size", "cuda_graph_config",
-                    )
-                })
-            required = {**parameters, "enable_custom_logit_processor": True, "enable_session_radix_cache": True}
-            if any(info.get(name) != value for name, value in required.items()):
-                raise ValueError("actual calibration server differs from the native source")
-            if load(run / "server/native_capacity_census.json")["capacity"] != expected_capacity:
-                raise ValueError("actual calibration pools differ from the native source")
-            reservation.write_json(run / "server/server_info.json", info)
+
+            def start_server(attempt, monitor):
+                (attempt / "server").mkdir()
+                settings, flags, _socket = controls.environment(
+                    reference, "native_matched", ROOT, Path(plan["engine_checkout"]),
+                    attempt, plan["port"], run / "plugin", sampling_mode="position",
+                    max_running_requests=running,
+                    tool_restore_mode=reference["arms"]["full"].get(
+                        "TOOL_RESTORE_MODE", "speculative",
+                    ),
+                    execution_frontier_restore=bool(
+                        plan.get("experiment_config")
+                        and reference["arms"]["full"].get("EXECUTION_FRONTIER_RESTORE") == "1"
+                    ),
+                    frontier_cold_reclaim=bool(
+                        plan.get("experiment_config")
+                        and reference["arms"]["full"].get("FRONTIER_COLD_RECLAIM", "0") == "1"
+                    ),
+                )
+                source_info = load(arm / "server/server_info.json")
+                parameters = controls.prefill_server_parameters(
+                    {name: source_info[name] for name in SERVER_FIELDS}, reference["arms"]["full"],
+                )
+                parameters = host_numa.server_parameters(reference["arms"]["full"], parameters)
+                server = process(
+                    ["bash", str(ROOT / "scripts/launch_qwen35_native_v0520.sh"), *flags],
+                    qualified.driver_environment({"environment": settings}, os.environ),
+                    attempt / "server.log",
+                )
+                state.update(status="starting_position_gpu_check", server=identities[0])
+                deadline = time.monotonic() + 480.
+                ready = attempt / "server/native_telemetry_ready.json"
+                while True:
+                    pulse()
+                    monitor.check(identities)
+                    if server.poll() is not None:
+                        raise ValueError("position GPU server exited at startup")
+                    try:
+                        health = httpx.get(f"http://127.0.0.1:{plan['port']}/health", timeout=2.)
+                        available = health.is_success and ready.is_file()
+                    except httpx.HTTPError:
+                        available = False
+                    if available:
+                        break
+                    if time.monotonic() >= deadline:
+                        raise ValueError("position GPU server did not become ready")
+                    time.sleep(1.)
+                monitor.check(identities, force=True)
+                info = httpx.get(f"http://127.0.0.1:{plan['port']}/server_info", timeout=10.).json()
+                reservation.write_json(attempt / "server/server_info.json", info)
+                native_execution.verify_server_info(execution, info)
+                actual_parameters = dict(parameters)
+                if execution is not None:
+                    actual_parameters.update({
+                        name: info[name] for name in (
+                            "model_path", "dtype", "kv_cache_dtype", "attention_backend", "max_total_tokens",
+                            "max_running_requests", "tp_size", "chunked_prefill_size", "enable_mixed_chunk",
+                            "page_size", "cuda_graph_config",
+                        )
+                    })
+                required = {
+                    **actual_parameters, "enable_custom_logit_processor": True,
+                    "enable_session_radix_cache": True,
+                }
+                if any(info.get(name) != value for name, value in required.items()):
+                    raise ValueError("actual calibration server differs from the native source")
+                gpu_startup.verify_capacity(
+                    expected_capacity, load(attempt / "server/native_capacity_census.json")["capacity"],
+                )
+                return settings, server, info, actual_parameters
+
+            def cleanup_startup(attempt):
+                nonlocal identities
+                controls.cleanup(attempt, identities, "position_startup_resource_failure")
+                report = load(attempt / "owned_process_cleanup.json")
+                identities = []
+                return report
+
+            state["startup_wait_status"] = "waiting_gpu_calibration"
+            settings, server, info, parameters = gpu_startup.retry_startup(
+                run, start_server,
+                wait_ready=lambda: controls.wait_for_resources(plan, state, pulse=pulse),
+                verify_inputs=lambda: comparison.verify_sources(plan),
+                cleanup=cleanup_startup, alive=reservation.alive, process=reservation.process,
+                state=state, pulse=pulse,
+            )
+            ready = run / "server/native_telemetry_ready.json"
             scheduler = reservation.process(load(ready)["scheduler_pid"])
             identities = controls.owned_processes(identities)
             if not scheduler or not any(

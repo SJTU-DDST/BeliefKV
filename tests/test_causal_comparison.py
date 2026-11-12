@@ -1456,6 +1456,7 @@ def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
     "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown", "capture_baseline",
     "orthogonal_controls", "telemetry_drain", "busy_start", "busy_between_arms",
+    "startup_contention",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
@@ -1464,7 +1465,8 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     failed_predecessor = failure == "failed_predecessor"
     captured_reference = failure == "capture_baseline"
     busy_start, busy_between = failure == "busy_start", failure == "busy_between_arms"
-    if busy_start or busy_between:
+    startup_contention = failure == "startup_contention"
+    if busy_start or busy_between or startup_contention:
         failure = None
     order = (
         ["no_tool_prefetch"] if failure in (
@@ -1544,8 +1546,8 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         if command[0] == "bash":
             if busy_start and not cleaned or busy_between and len(cleaned) == 1:
                 assert resource_checks[len(cleaned)] >= 6
-            label = Path(kwargs["env"]["RUN_ROOT"]).name
-            arm = run / label
+            arm = Path(kwargs["env"]["RUN_ROOT"])
+            label = arm.parent.parent.name if arm.parent.name == "startup_attempts" else arm.name
             current[:] = [label]
             launched.append(("server", label, kwargs["env"]))
             (arm / "server/native_telemetry_ready.json").write_text(json.dumps({"scheduler_pid": 101}))
@@ -1594,6 +1596,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         })
 
     monkeypatch.setattr(comparison.subprocess, "Popen", popen)
+    monkeypatch.setattr(comparison.gpu_startup, "snapshot", lambda: {
+        "compute_processes": [{"pid": 999, "used_memory_mib": 20000}]
+        if startup_contention and not cleaned and launched else [],
+    })
     monkeypatch.setattr(comparison.subprocess, "run", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(comparison.httpx, "get", get)
     monkeypatch.setattr(comparison.comparison, "verify_sources", lambda _plan: None)
@@ -1622,6 +1628,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         if reason == "complete_same_work_arm":
             assert arm.name in drained
         cleaned.append((arm.name, [row["pid"] for row in rows], reason))
+        if reason == "causal_startup_resource_failure":
+            (arm / "owned_process_cleanup.json").write_text(json.dumps({
+                "identities": [], "remaining_processes": [],
+            }))
 
     monkeypatch.setattr(comparison, "wait_for_telemetry_drain", drain)
     monkeypatch.setattr(comparison, "cleanup", cleanup)
@@ -1637,8 +1647,18 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     if failure is None:
         assert state["completed_arms"] == order
         assert state["status"] == "collected_performance_review_pending"
-        assert len(cleaned) == len(order)
+        assert len(cleaned) == len(order) + int(startup_contention)
         assert drained == order
+        if startup_contention:
+            assert [row[:2] for row in launched[:3]] == [
+                ("server", "full"), ("server", "full"), ("driver", "full"),
+            ]
+            assert cleaned[0][2] == "causal_startup_resource_failure"
+            accepted = json.loads((run / "full/accepted_startup.json").read_bytes())
+            failed = json.loads((run / "full/startup_attempts/0001/failure.json").read_bytes())
+            assert accepted["attempt"] == 2
+            assert failed["retryable"] and failed["actual_owned_exit_verified"]
+            assert not (run / "full/startup_attempts/0001/replay").exists()
         report = json.loads((run / "causal_comparison.json").read_bytes())
         assert report["all_normal_tails_retained"] and not report["performance_accepted"]
         assert all(row["mean_jct_ms"] == 5000. for row in report["results"].values())

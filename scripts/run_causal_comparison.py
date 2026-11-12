@@ -41,7 +41,7 @@ from beliefkv.experiments.subagent_retention import (
 )
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from beliefkv.experiments.native_engine_variant import COMMON_TREE, TOKENCAKE_TREE, engine_patch
-from beliefkv.experiments import host_numa, native_execution
+from beliefkv.experiments import gpu_startup, host_numa, native_execution
 from scripts.run_causal_gpu_replay import source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
@@ -1951,9 +1951,9 @@ def watch(registration):
                 pulse()
                 comparison.verify_sources(plan)
                 arm = run / label
-                for name in ("server", "opportunities"):
-                    (arm / name).mkdir(parents=True, exist_ok=False)
                 if label in PREFIX_PAPER_CONTROLS:
+                    for name in ("server", "opportunities"):
+                        (arm / name).mkdir(parents=True, exist_ok=False)
                     state.update(status="qualifying_components_" + label)
                     pulse()
                     proofs = qualify_paper_components(
@@ -1999,40 +1999,89 @@ def watch(registration):
                     "delayed_sampling_common_to_all_arms": env["SGLANG_ENABLE_DELAY_SAMPLE"] == "1",
                     "subagent_retention_requested": env["BELIEFKV_SUBAGENT_RETENTION"],
                 }
-                reservation.write_json(arm / "server/launch_configuration.json", launch)
-                with (arm / "server.log").open("x") as output:
-                    server = subprocess.Popen(
-                        ["bash", str(ROOT / "scripts/launch_qwen35_native_v0520.sh"), *flags],
-                        cwd=ROOT, env=qualified.driver_environment({"environment": env}, os.environ),
-                        stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
-                        start_new_session=True,
+                def start_server(attempt, monitor):
+                    nonlocal identities
+                    for name in ("server", "opportunities"):
+                        (attempt / name).mkdir(parents=True, exist_ok=True)
+                    attempt_env, attempt_flags, attempt_socket = environment(
+                        {"arms": {"full": plan["reference_environment"]}}, label, ROOT,
+                        Path(plan["engine_checkout"]), attempt, plan["port"], run / "plugin",
+                        sampling_mode=plan.get("sampling_mode", "legacy"),
+                        max_running_requests=plan.get("max_running_requests", 8),
+                        execution_frontier_restore=plan.get("execution_frontier_restore", False),
+                        frontier_cold_reclaim=plan.get("frontier_cold_reclaim", False),
+                        tool_restore_mode=plan.get("tool_restore_mode", "speculative"),
                     )
-                identities = [reservation.process(server.pid)]
-                state.update(status="starting_" + label, server=identities[0])
-                deadline = time.monotonic() + 480.
-                while True:
-                    pulse()
-                    if server.poll() is not None:
-                        raise ValueError("native server exited during startup")
-                    ready = arm / "server/native_telemetry_ready.json"
-                    census = arm / "server/native_capacity_census.json"
-                    try:
-                        health = httpx.get(f"http://127.0.0.1:{plan['port']}/health", timeout=2.)
-                        available = health.is_success and ready.is_file() and census.is_file()
-                    except httpx.HTTPError:
-                        available = False
-                    if available:
-                        break
-                    if time.monotonic() >= deadline:
-                        raise ValueError("native server did not become ready")
-                    time.sleep(1.)
-                info = httpx.get(f"http://127.0.0.1:{plan['port']}/get_server_info", timeout=10.).json()
-                required = {**plan["source_server_parameters"],
-                            "enable_beliefkv_admission": label != "native_matched",
-                            "enable_custom_logit_processor": True, "enable_session_radix_cache": True}
-                if any(info.get(key) != value for key, value in required.items()):
-                    raise ValueError("actual server parameters differ from the common source")
-                reservation.write_json(arm / "server/server_info.json", info)
+                    if attempt != arm and attempt_socket is not None:
+                        identity = hashlib.sha256(str(attempt.resolve()).encode()).hexdigest()[:20]
+                        attempt_socket = Path("/tmp") / f"bkv-startup-{identity}.sock"
+                        attempt_flags[attempt_flags.index("--beliefkv-event-socket-path") + 1] = str(attempt_socket)
+                    if attempt_socket is not None and attempt_socket.exists():
+                        raise ValueError("preserve an existing attempt event socket")
+                    reservation.write_json(attempt / "server/launch_configuration.json", launch)
+                    with (attempt / "server.log").open("x") as output:
+                        server = subprocess.Popen(
+                            ["bash", str(ROOT / "scripts/launch_qwen35_native_v0520.sh"), *attempt_flags],
+                            cwd=ROOT, env=qualified.driver_environment({"environment": attempt_env}, os.environ),
+                            stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
+                            start_new_session=True,
+                        )
+                    identities = [reservation.process(server.pid)]
+                    state.update(status="starting_" + label, server=identities[0])
+                    deadline = time.monotonic() + 480.
+                    ready = attempt / "server/native_telemetry_ready.json"
+                    census = attempt / "server/native_capacity_census.json"
+                    while True:
+                        pulse()
+                        monitor.check(identities)
+                        if server.poll() is not None:
+                            raise ValueError("native server exited during startup")
+                        try:
+                            health = httpx.get(f"http://127.0.0.1:{plan['port']}/health", timeout=2.)
+                            available = health.is_success and ready.is_file() and census.is_file()
+                        except httpx.HTTPError:
+                            available = False
+                        if available:
+                            break
+                        if time.monotonic() >= deadline:
+                            raise ValueError("native server did not become ready")
+                        time.sleep(1.)
+                    monitor.check(identities, force=True)
+                    info = httpx.get(f"http://127.0.0.1:{plan['port']}/get_server_info", timeout=10.).json()
+                    reservation.write_json(attempt / "server/server_info.json", info)
+                    required = {
+                        **plan["source_server_parameters"],
+                        "enable_beliefkv_admission": label != "native_matched",
+                        "enable_custom_logit_processor": True, "enable_session_radix_cache": True,
+                    }
+                    if any(info.get(key) != value for key, value in required.items()):
+                        raise ValueError("actual server parameters differ from the common source")
+                    gpu_startup.verify_capacity(
+                        plan.get("expected_replay_capacity", plan["source_capacity"]),
+                        load(census)["capacity"],
+                    )
+                    return server, attempt_socket, info, ready
+
+                def cleanup_startup(attempt):
+                    nonlocal identities
+                    cleanup(attempt, identities, "causal_startup_resource_failure")
+                    report = load(attempt / "owned_process_cleanup.json")
+                    identities = []
+                    return report
+
+                if label in PREFIX_PAPER_CONTROLS:
+                    server, event_socket, info, ready = start_server(
+                        arm, gpu_startup.Monitor(arm, process=reservation.process),
+                    )
+                else:
+                    state["startup_wait_status"] = "waiting_resources_" + label
+                    server, event_socket, info, ready = gpu_startup.retry_startup(
+                        arm, start_server,
+                        wait_ready=lambda: wait_for_resources(plan, state, pulse=pulse),
+                        verify_inputs=lambda: comparison.verify_sources(plan),
+                        cleanup=cleanup_startup, alive=reservation.alive, process=reservation.process,
+                        state=state, pulse=pulse,
+                    )
                 scheduler = reservation.process(load(ready)["scheduler_pid"])
                 identities = owned_processes(identities)
                 if not scheduler or not any(
