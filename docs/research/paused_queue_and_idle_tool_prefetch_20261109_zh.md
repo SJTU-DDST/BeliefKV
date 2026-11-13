@@ -1977,3 +1977,62 @@ Oracle实际历史上重新同步计算，客户端发表时间不等于服务�
 -0.3195%。窗口会影响幅度，但此检查没有显示扩大窗口就能把旧策略变成
 明确正收益。24/36仅为既有报告上的事后描述，不是新实验验收；原固定18
 仍是当前运行及后续门槛的唯一主测量组，没有选择最有利窗口替代它。
+
+### 剩余成员进展与原生短续接服务等待（2026-11-13）
+
+`short_first_execution_r1/remaining_progress/observe.py`以一个原生状态快照
+为边界，结合此前的客户端事件、实际active/paused成员及精确原生服务，
+区分未完成测量workflow的阻塞和进展。2906.44秒快照中已有15/18完成：
+
+| 尚未完成的成员 | 此快照中的实际观察 |
+| --- | --- |
+| desktop021 | 133个模型请求完成；无pending模型请求；child执行工具，parent等待JOIN |
+| trading066 | 310个模型请求完成；child处于active decode，最近样本距快照约190ms |
+| microservice008 | 190个模型请求完成；root处于active decode，同一请求已观测1740个输出token |
+
+后两项核对了同一attempt/session的服务身份。microservice的请求提交年龄
+56.60秒包含已经进行的decode，不是56.60秒纯排队。该快照不支持“剩余
+成员均卡在paused到active入口”的解释，也不能据此排除它们更早的等待。
+客户端事件发表不等于原生事件消费；原生周期身份可滞后于新请求，未知
+身份保持未知，未将缺少样本解释为无服务或KV不在HBM。
+
+初版CPU观察器误把客户端LLM_SUBMIT中不存在的`prompt_tokens`当作必填，
+在发布结果前退出。保留`observe_failed_r1.py`和`analysis_failure.json`；
+修正为缺失token数保持未知，单列已观察的完整逻辑预算。未修改服务器、
+事件内容或GPU实验，随后观察成功。
+
+到06:12 PST已实际推进至17/18，仅desktop021未结束。以原18个成员、
+已经自然完成的17个JCT及完整Full参考计算：达到1%改善要求平均JCT不超过
+1245.955114秒，因此最后一个workflow的完整JCT须不超过5079.915710秒。
+其原到达353.952421秒，最后完成offset阈值为5433.868131秒。该计算
+保存在`remaining_progress/completion_budget.json`，14:14:55 UTC时尚有
+1622.85秒余量；这是验收阈值，不是完成时间预测，不授权截断正常尾部。
+完整请求/token核对、共同吞吐、新鲜drain和实际进程退出仍需最终通过。
+
+另用已完成非排序Full的完整原始前缀筛查准入后的等待，而非只看Oracle
+相对reference的新成员。固定18有554个周期授予获得后续精确正数服务，
+其授予到服务时间直接相加为570.67秒；58个等待超过2秒。复用已验证的
+服务分析函数，58个中没有观察到首次精确服务前被暂停、变inactive、
+重授予，或存在更早的部分正数/未知进度。
+
+其中46个首次服务为完整的小prefill续接：原始prompt减去当次原生prefix，
+恰等于该次1至256个新增输入token。它们覆盖14个测量workflow，等待直接
+相加316.19秒，workflow内重叠区间取并集后296.15秒。报告字段沿用分析
+函数的episode命名，本次总体是完整Full的既有周期授予，不是46次新R5
+改选。该等待不是可消除JCT、关键路径求和或反事实收益上界。
+
+典型trading066 epoch19只需补25个输入token，却在授予后等待46.468835秒；
+该区间与desktop021首请求的连续prefill完全重合，后者118个prefill
+batch处理240479个新增输入token。security028 epoch4补207个token等待
+26.91秒，desktop021 epoch44补204个token等待22.82秒，也记录到其他
+大prefill主导的worker重合。数据及身份在`native_service_screen/screen.json`，
+原生HBM可容纳性和DMA在授予时是否就绪仍未知，不以首次服务时的prefix
+倒推出更早已驻留。
+
+源码确认当前原生调度先调用`PrefillAdder.add_chunked_req`，再遍历等待
+候选，持续chunk可耗尽本轮chunk预算。实际配置为chunk2048、整体
+max_prefill_tokens16384、mixed chunk关闭。原生行为和等待相关证据构成
+后续选批检查入口，尚不证明插入另一个请求安全或有净收益。尤其仅提前
+一次小prefill不保证decode随后推进，不能用首次服务/首token改善代替
+完整workflow JCT。当前保持正在运行的冻结源码与原生安全权利不变，
+先完成本轮Oracle；不据此直接开启新的GPU候选或宣称新设计收益。
