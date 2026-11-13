@@ -2529,3 +2529,80 @@ desktop021的完整JCT从5271.174533增加到5476.135510秒，增加
 完成”判定。后续应同时检查排空前的真实选择和足够长的背景覆盖。
 若延长背景，需预先固定同一任务及到达表用于所有方法，不能只给Oracle
 补背景，或更换测量成员来删除长尾。
+
+### R5成本感知组合候选与匹配GPU启动（2026-11-13）
+
+上一轮尾部分析属于有效进展：Oracle在背景停止新增前已落后，不能再用
+“增加paused总数”作为下一轮验收。当前先固定已完成Full的100项目
+合同，其中包含原83项目及此前授权的17个背景项目，不更换测量成员、
+工具样本或到达seed；仍为initial20、mean60、Host400GB、固定18。
+
+封存的真实选择中，desktop021的134token续接曾让位于110009或
+160808token的冷prefill组合。相同已标定成本摘要下，两次替代组合的
+完整批次成本代理分别从13898.72ms降至3234.83ms、22481.50ms降至
+3499.95ms。前者会从两个对象改为一个大KV对象，后者保持三个对象；
+因此不能只按对象数或整个workflow剩余量判断是否合算。两侧当时的
+即时物理摘要均未满足需求，这些数字不证明替代组合能立即获原生准入。
+
+新增R5内部选择器候选，源码提交`1dba314097eb`，工作树为
+`/home/longhao/experiment/.worktrees/beliefkv-maximal-cost-20261113`。
+另带入已完成的自然driver退出修复`b396b9a8`，没有修改运行中的旧源码。
+
+新开关为`cost_aware_maximal_admission`，默认false，要求已有短工作量
+排序、明确的v7 benefit/full-batch成本合同和启用的预测排序。其规则为：
+
+- 全部候选共同满足容量时全部选择，包括权重为零的可容纳对象。
+- 容量冲突时只比较“无法再加入任何候选”的可行组合，并用已有
+  workflow连续权重、JOIN覆盖收益和完整批次恢复/执行成本比较。
+- 保留同一reference的required JOIN、6/8候选范围、2秒普通边界、
+  事件式工具配对和active连续性；不增加新的原生分配或驱逐权限。
+- 资源枚举缓存逻辑预算、分块输入页下界和共享Host extent去重；
+  成本只评估不可再扩充的组合。0.5ms软预算耗尽时回退原reference。
+- 完整批次成本、模型参数和训练参考量保持原样；Oracle与R5必须声明
+  相同开关。审计按新策略重放真实截止点，并绑定新增策略源码。
+
+`maximal_cost_admission_preparation_r1/`已经生成匹配的Oracle/R5配置，
+构造器和同目标校验通过。未重新训练预测器，也没有把测试组成员或
+未来工具时间送给部署预测器。工具预取及逐层handoff仍按原配置关闭。
+
+`maximal_cost_admission_cpu_r1/completed_replay.json`复现完整旧负结果中
+全部489次已搜索选择，并逐次与独立的穷举可行超集检查对照，全部一致。
+不限时CPU选择有148次与原实际集合不同，59次涉及测量成员；真实
+0.5ms软预算下464次完成搜索、25次回退，保留了其中140次集合差异。
+函数线程CPU中位153.580us、最大617.937us；这些是CPU函数样本，
+不是完整控制开销、反事实服务或JCT改善。
+
+完整源码资格`maximal_cost_admission_cpu_r1/evidence.json`已通过：
+8781个literal testcase及23个subtest，全部原8731个身份保留、新增50个，
+失败/错误/跳过均为0；源码、182份外部输入和原生源码执行期间不变。
+先前132项相关检查也通过，包括真实runtime资格到native prefill候选的
+CPU集成路径；这些测试不替代GPU性能验证。
+
+GPU协调器2425835/start63361150已复用完整Full，并启动新Oracle：
+`maximal_cost_admission_execution_r1/plan.json`。原始执行为
+`workflow_original100_host400_mean60_shortfirst_oracle_maximal_20261113_r1`。
+监督器2426356、server2427103、唯一GPU scheduler2427260、
+replay2429438和固定18观察器2429444均实际存活并开始服务。
+
+`live_native_verification.json`独立验证624份真实完成请求的原始输入、
+输出token、原生停止和采样路径、相同物理容量及执行配置。
+`live_policy_verification.json`确认308条选择器记录中24次实际进入
+新组合搜索，其中3次相对于同边界reference改选；不是3次独立JCT收益。
+11:02 PST观察为25个到达、0/18测量完成，当前完整JCT尚无结果。
+
+CPU收集器2430038已接到真实固定组观察器，直接复用且cmp验证原完整
+收集脚本；待自然完成、fresh drain和实际退出后汇总七项完整分析。
+协调器仍按完整JCT/吞吐/实际服务门槛决定是否继续R5、ThunderAgent
+acting-decay及native；本轮无收益或失败同样保留，目标保持active。
+
+连续GPU访问保护由旧guard2152140交接给2428384/start63380797，
+24小时租约实际held。旧设备及helper权限先恢复后重新取得，旧状态
+归档在`device_access_before_maximal_renewal_20261113_r1.json`；
+原2184052暂停anchor保留，模型和原生服务未收到暂停/终止信号。
+续接证明见`device_access_renewal.json`，避免原17:13到期造成阶段抢占。
+
+首次附加只读核验错误覆盖了旧观察器ROOT，从而把共享ops目录解析到
+`.worktrees/ops`，在写入核验证明前失败。保留`verify_live_failed_r1.py`
+与`live_verifier_failure.json`；修正为保留原helper路径，预加载并逐个
+校验新operator的8个模块，再分别绑定其源码。随后完整核验成功，
+未修改服务或重启GPU。
