@@ -2335,3 +2335,53 @@ workflow。另有66次实际工具替换、20个测量消费者，全部有服�
 平均JCT及共同吞吐门槛后再继续R5，R5通过后继续ThunderAgent
 acting-decay和native。保留两侧测量尾部与背景覆盖的独立诊断，不降低
 门槛或更换测量成员。当前并未获得新的完整性能结果，目标保持active。
+
+### 大KV测量成员的长等待与真实选择（2026-11-13）
+
+本次续接实际复查同一GPU scheduler2371136及协调器、监督器、replay、
+固定组观察器和CPU完成收集器全部存活。前一轮已完成共同窗口竞争
+统计及实际查看PNG，属于progress；继续等待同一冻结执行，没有新GPU
+启动或70秒到达实验。09:15 PST观察为65个workflow已到达、15/18
+测量成员自然完成，writer_error为null、失败/丢记录均为0、写队列为0。
+
+`remaining_progress_r1/observe.py`复用已有只读观察器，在运行
+2101.950719秒的原生快照上，固定组尚有5个workflow未结束：
+
+- trading066、microservice008、social073的当前请求均为active decode，
+  最近一次精确原生进度距快照约32.55ms；前后两个parent正在等JOIN。
+- security028 root epoch23处于paused，客户端提交年龄约38.49秒。
+- desktop021 root epoch43处于paused，没有工具或JOIN阻塞，客户端
+  提交年龄553.61秒，完整逻辑需求248501token，未观察到该请求的原生
+  服务样本。缺少样本本身不能证明物理KV所在位置。
+
+这不是将提交年龄统一视作纯排队：三个active请求已经有decode进度；
+客户端事件发表与原生事件消费时刻也保留区别。该快照中的13/18与稍后
+实际停止观察器的15/18是不同时间边界，不能混用。
+
+`inspect_long_paused.py`绑定同一封存前缀，逐次匹配desktop的原始
+request/invocation/context epoch。271个ready-inactive控制观察中，
+266个单独逻辑额度不足，只有5个单独满足；最大可恢复额度319392token。
+这些是重复控制观察，不是271个独立请求，也不是98.2%的墙钟等待。
+
+`inspect_fitting_choices.py`将这5个边界逐一匹配到相同semantic revision
+和实际授予集合：
+
+- 3次具有目标候选摘要，目标连续工作量权重均为0.2849535；实际选中
+  workflow的权重更高。一个边界目标原本属于reference，短优先改成
+  两个新child与一个新root；另一个选择了同一ALL-JOIN的两个sibling
+  和另一个workflow的root。这些是实际取舍，不是从未进入排序。
+- 另外2次没有目标的完整原生候选摘要，其中1次没有可比较reference，
+  另1次只有1个可用slot；没有把它们写成已证明可执行却漏准入。
+- 单独逻辑可容纳和已记录候选摘要均不证明替代集合通过原生页、锁、
+  DMA或required JOIN条件，没有宣称替代服务或可消除JCT。
+
+离线原标签确认该request的prompt为248401token、新增输入134token、
+输出仅34token。原Oracle图下一步为工具调用，声明delay为6.167秒，
+随后还有模型调用和spawn。这里只用作结构观察，未将该未来信息送给
+在线工具预测或R5，也没有修改工具时长。
+
+因此，“整个workflow剩余工作多”与“眼前这次请求很短”确实可同时
+成立。该样本可用于完整结果后的成本/依赖取舍检查，但不能据此直接
+强制大KV请求优先：还需计入被延后的其他workflow、传输及后续服务。
+当前大部分观察首先受单体完整逻辑容量限制；仅扩大候选窗口不能给
+这266个边界创造额度。新的完整JCT和共同吞吐仍未验收，目标继续active。
