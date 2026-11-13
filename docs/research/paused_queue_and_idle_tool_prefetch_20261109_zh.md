@@ -2115,3 +2115,117 @@ active资格、原生prefill候选变化。首次用例未关闭setup期间的�
 
 下一次验证复用本轮Full与同一到达表，不用重新堆积paused总数替代机制
 修复。新候选的完整GPU资格和JCT仍待验证；目标保持active，尚未完成。
+
+### 候选窗口完整CPU资格与首次启动故障（2026-11-13）
+
+`579cb371`完整保留上轮8722个literal testcase身份并增加9个候选窗口
+用例。`work_priority_window_cpu_r2/evidence.json`实际确认8731项测试加
+23个subtest全部执行通过，无失败、错误或跳过；225.91秒为本次完整
+CPU回归墙钟时长，不是在线控制成本。2700个源码/配置入口及182个外部
+输入在执行前后均未改变，native检查状态也保持一致。
+
+首份`work_priority_window_cpu_r1`报告的4个失败均为缺少忽略路径的
+FileNotFoundError：新checkout未挂载此前已有的native源码入口、
+composite48历史源及两份历史实验配置。补齐与已资格checkout相同的
+4个符号链接后完整重跑，保留首份失败报告；没有修改测试或调度器来
+跳过这些失败。额外恢复的文件及链接目标绑定于r2的
+`environment_repair.json`。
+
+`work_priority_window_execution_r1`复用Full完整结果，实际登记
+`workflow_original100_host400_mean60_shortfirst_oracle_window_20261113_r1`。
+真实启动代码为579cb371/native434c35dd，HBM805198token、
+Host400000057344字节、running24、prefill2048、mean60、initial20及
+固定18测量成员均保持匹配。原协调器2351158、监督器2351660、
+server2352439与唯一GPU scheduler2352597曾实际存活；Host池分配后
+服务ready，replay2354734和固定组观察器2354735也实际启动。
+
+该尝试没有形成性能结果。replay收到
+`TimeoutError: runtime event ACK timed out after 3 attempts`后终止。
+实际日志只有21个workflow_start、20个invocation_create及14个
+llm_submit，没有测量成员完成，native_requests.jsonl为空。
+监督器与协调器均发布终态失败，全部owned进程随后实际退出，GPU
+计算上下文已消失；没有把观察超时误判为结束或重启来覆盖失败。
+
+最后一次完整记录的选集元数据检查墙钟为43.893微秒，单次控制观察
+CPU为320.598微秒；该边界只恢复3个初始root并返回no_competing_choice。
+此后主控制快照未再更新，原生状态仍有一个pending batch和3个pending
+request，后台审计线程继续发表状态。现有日志不能定位阻塞函数，
+不能直接将超时归因于新增排序、GPU计算、JIT或事件传输实现。
+
+随后使用完全相同的已资格代码、预测器、到达表及ACK设置，登记
+`work_priority_window_startup_diagnostic_r1`。诊断协调器2360887及
+监督器2361373已实际启动，诊断进程2362222在CPU0/nice19/CUDA隐藏
+条件下运行。`startup_investigation/watch_stall.py`只监视同一登记服务
+的真实scheduler PID/start身份与server父进程；真实初始请求存在、
+native批次pending且控制心跳超过10秒时，才在确认core大小为0后发
+一次SIGABRT，利用native现有faulthandler输出Python堆栈。被发信号的
+尝试明确不作JCT比较；未修改服务源码或放宽传输超时。
+
+原guard2152140与已暂停anchor2184052继续实际存活，未终止或恢复
+anchor，连续GPU使用权保持。首次失败的所有原始记录与已复制但尚未
+启动的Oracle完成CPU收集器保留，不启动旧R5或baseline来消耗空余GPU。
+下一步先用真实堆栈定位故障，再恢复有效的完整比较；目标仍未完成。
+
+### 首次采样编译阻塞与测量前准备（2026-11-13）
+
+诊断scheduler2362249/start62367207在08:08:32 PST被上述观察器发出
+一次SIGABRT。原生faulthandler确实输出主线程：从`run_batch`进入
+`model_runner.sample`，再进入FlashInfer的
+`top_k_top_p_sampling_from_probs/get_sampling_module`，
+最终停在`JitSpecNvcc.build/run_ninja/subprocess.run/communicate`。
+后台机会和遥测写线程都在正常等待队列，不在主线程序列化日志。
+该堆栈定位了当时的主线程阻塞；不证明候选排序自身不存在其他性能问题。
+
+诊断尝试以`stopped_preserve_five_method_comparison`结束。实际复查其
+协调器、监督器、server、scheduler、driver和观察器均已退出，GPU没有
+计算上下文；原anchor和guard继续存活。观察器没有启动GPU工作，但
+确实终止了本次自己登记的scheduler，不能将它描述为完全没有GPU动作。
+诊断结果和首份ACK超时保留，不计作有效JCT比较。
+
+实际服务使用SGLang的`redirect_third_party_caches`，FlashInfer缓存为
+`/home/longhao/.cache/sglang/.cache/flashinfer/0.6.18/90a/cached_ops`，
+不是直接导入FlashInfer时的默认`/home/longhao/.cache/flashinfer`。
+实际`sampling/build.ninja`绑定相同CUDA13工具链和`compute_90a/sm_90a`。
+只读`ninja -n -d explain`显示sampling对象依赖信息失效，需要编译及链接，
+旧`sampling.so`存在本身不能证明原生首次调用无需编译。
+
+本轮`flashinfer_sampling_preparation_r1/prepare.py`调用同一native缓存
+默认函数，使用隐藏CUDA与显式9.0a架构，在CPU0/1、nice19下预编译并
+加载相同采样模块。记录配置、源码、缓存、产物及新进程加载检查，
+不修改采样参数、ACK设置、调度器或现有完整Full结果。此项属于启动
+准备，不是新增调度方案、GPU性能结果或工作量预测收益。
+
+CPU编译并加载实际耗时75.851秒，新进程从相同缓存加载实际耗时0.839秒，
+两者`torch.cuda.is_initialized()`均为false。Ninja随后确认
+`no work to do`，相同产物SHA256为
+`f121c22e7d8bb0a3d07c0aec85203ba87855f6dd679c324fd54510f125175986`。
+不因缓存准备重新执行8731项服务源码资格，仍复用已验证r2证据。
+
+有效后续登记为`work_priority_window_execution_r2/plan.json`，
+Oracle原始执行为
+`workflow_original100_host400_mean60_shortfirst_oracle_window_20261113_r2`。
+协调器2369146/start62459581已验证并复用完整Full，没有重新执行Full。
+监督器2369880、server2370685、实际唯一GPU scheduler2371136、
+replay2373554、固定18观察器2373555均实际运行。100个不同原项目、
+initial20、mean60、固定18、Host400000057344字节与原生HBM805198token、
+running24、prefill2048保持匹配。源码仍为579cb371/native434c35dd。
+
+`live_startup/verified.json`独立核实12个真实完成请求的原始prompt、
+output、原生停止和保留采样路径；不是仅有HTTP进程或模型ready。
+后续`policy_and_sampling.json`核实109条短优先选择记录及相同采样产物。
+109是选择器进入记录，不是109次改选、竞争或收益。实际GPU利用率曾为
+100%，控制心跳继续推进；这不代表整轮GPU利用率或最终性能已经合格。
+
+初版附加分析将registration字符串传给Path专用load helper，在前述12份
+真实流量验证成功后失败。保留`verify_failed_r1.py`及`analysis_failure.json`，
+单独修正附加检查的Path输入并复用已封存验证，没有重跑GPU或修改服务。
+
+完整CPU结果收集器2373956已接到真实存活的固定18观察器，复制自上一轮
+`complete_oracle_evidence/collect.py`且cmp一致。它将在完整工作、drain和
+实际退出后生成竞争、容量释放到服务、选择与后续服务、paused曲线及
+JCT图。测量成员仍须全部自然完成，随后停止背景，不截断测量尾部。
+
+本轮先固定到达表检验候选覆盖修复，避免继续以增加paused数量替代收益。
+已有443个逻辑竞争边界和212个获得服务的新授予，但仅0.162281%平均
+JCT改善，说明下一项关键是有效选择及其后续服务影响；不能再仅凭并发
+不足解释。新的完整JCT和共同吞吐均尚无结果，目标继续active且未完成。
