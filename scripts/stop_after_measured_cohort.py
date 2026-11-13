@@ -97,6 +97,30 @@ def wait_exit(identity, *, timeout):
         time.sleep(.1)
 
 
+def cancel_driver_or_verify_natural_completion(comparison, arm, driver):
+    try:
+        send(driver, signal.SIGINT)
+        return False
+    except (RuntimeError, ProcessLookupError):
+        current = capture.reservation.process(driver["pid"])
+        if current is not None and (
+            current.get("start_ticks") != driver.get("start_ticks")
+            or current.get("state") not in ("Z", "X")
+        ):
+            raise RuntimeError("replay process identity changed before cohort shutdown")
+        summary = causal.load(arm / "replay/summary.json")
+        if (
+            any(summary.get(name) is not True for name in (
+                "causal_execution_completed", "exact_tokens_verified",
+                "original_native_stopping_verified", "native_session_http_lifecycle_completed",
+            ))
+            or Path(summary["source_arm"]).resolve() != Path(comparison["source_arm"]).resolve()
+            or summary["native_requests_sha256"] != sha256_file(arm / "replay/native_requests.jsonl")
+        ):
+            raise ValueError("exited replay lacks complete unchanged native work")
+        return True
+
+
 def supervisor_exit_timeout(arm):
     try:
         size = causal.load(arm / "server/native_capacity_census.json")["capacity"]["host_total_bytes"]
@@ -212,13 +236,15 @@ def stop_owned(comparison, cohort, output, *, state):
             if time.monotonic() >= deadline:
                 raise TimeoutError("supervision did not pause before client cancellation")
             time.sleep(.01)
-        send(driver, signal.SIGINT)
+        natural_completion = cancel_driver_or_verify_natural_completion(comparison, arm, driver)
         wait_exit(driver, timeout=60.)
         drained = idle_snapshots(arm, server)
         capture.reservation.write_json(output / "telemetry_drain.json", drained)
         receipts = receipt_proof(comparison, cohort, arm)
         if receipts["source_token_sha256"] != comparison["token_source_sha256"]:
             raise ValueError("cohort receipt proof belongs to a changed token corpus")
+        if natural_completion and receipts.get("complete_population_work_conserved") is not True:
+            raise ValueError("natural replay exit lacks complete population receipts")
         capture.reservation.write_json(output / "receipts.json", receipts)
         # The frozen supervisor keeps its original interruption record. The
         # separate certificate classifies this requested cohort termination.

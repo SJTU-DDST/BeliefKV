@@ -167,6 +167,84 @@ def test_unverified_or_reused_process_identity_is_never_signalled():
         kill.assert_not_called()
 
 
+@pytest.mark.parametrize("race", (False, True))
+def test_naturally_completed_replay_does_not_require_a_live_driver(tmp_path, race):
+    summary = {
+        "source_arm": str(tmp_path / "source"), "native_requests_sha256": "receipts",
+        "causal_execution_completed": True, "exact_tokens_verified": True,
+        "original_native_stopping_verified": True,
+        "native_session_http_lifecycle_completed": True,
+    }
+    with (
+        patch.object(stop, "send", side_effect=ProcessLookupError() if race else RuntimeError()),
+        patch.object(stop.capture.reservation, "process", return_value=None),
+        patch.object(stop.causal, "load", return_value=summary),
+        patch.object(stop, "sha256_file", return_value="receipts"),
+    ):
+        assert stop.cancel_driver_or_verify_natural_completion(
+            {"source_arm": summary["source_arm"]}, tmp_path, {"pid": 12, "start_ticks": "3"},
+        ) is True
+
+
+@pytest.mark.parametrize("mutation", ("incomplete", "source", "receipt", "reused", "live"))
+def test_exited_or_reused_driver_never_bypasses_completion_checks(tmp_path, mutation):
+    summary = {
+        "source_arm": str(tmp_path / "source"), "native_requests_sha256": "receipts",
+        "causal_execution_completed": mutation != "incomplete", "exact_tokens_verified": True,
+        "original_native_stopping_verified": True,
+        "native_session_http_lifecycle_completed": True,
+    }
+    current = None
+    if mutation == "source":
+        summary["source_arm"] = str(tmp_path / "different")
+    elif mutation == "receipt":
+        summary["native_requests_sha256"] = "changed"
+    elif mutation in ("reused", "live"):
+        current = {
+            "start_ticks": "4" if mutation == "reused" else "3",
+            "state": "Z" if mutation == "reused" else "R",
+        }
+    with (
+        patch.object(stop, "send", side_effect=RuntimeError()),
+        patch.object(stop.capture.reservation, "process", return_value=current),
+        patch.object(stop.causal, "load", return_value=summary),
+        patch.object(stop, "sha256_file", return_value="receipts"),
+        pytest.raises((RuntimeError, ValueError)),
+    ):
+        stop.cancel_driver_or_verify_natural_completion(
+            {"source_arm": str(tmp_path / "source")}, tmp_path, {"pid": 12, "start_ticks": "3"},
+        )
+
+
+@pytest.mark.parametrize("complete_population", (True, False, None))
+def test_natural_exit_still_requires_full_receipts_and_fresh_drain(tmp_path, complete_population):
+    state = {"watcher": {"pid": 11}, "driver": {"pid": 12}, "server": {"pid": 13}}
+    comparison = {"run_root": str(tmp_path), "token_source_sha256": "source", "order": ["full"]}
+    with (
+        patch.object(stop.capture.reservation, "alive", return_value=True),
+        patch.object(stop.capture.reservation, "process", return_value={"state": "T"}),
+        patch.object(stop, "send") as send,
+        patch.object(stop.os, "kill") as kill,
+        patch.object(stop, "cancel_driver_or_verify_natural_completion", return_value=True),
+        patch.object(stop, "wait_exit"),
+        patch.object(stop, "idle_snapshots", return_value={}) as drain,
+        patch.object(stop, "receipt_proof", return_value={
+            "source_token_sha256": "source", "complete_population_work_conserved": complete_population,
+        }),
+        patch.object(stop.capture.reservation, "write_json"),
+        patch.object(stop.causal, "load", return_value={"remaining_processes": [], "identities": []}),
+    ):
+        if complete_population is True:
+            stop.stop_owned(comparison, {}, tmp_path, state=state)
+            send.assert_any_call(state["watcher"], signal.SIGTERM)
+        else:
+            with pytest.raises(ValueError, match="complete population"):
+                stop.stop_owned(comparison, {}, tmp_path, state=state)
+            assert send.call_count == 1
+        drain.assert_called_once_with(tmp_path / "full", state["server"])
+        kill.assert_called_once_with(11, signal.SIGCONT)
+
+
 def test_shutdown_drain_requires_two_new_idle_snapshots_after_client_exit(tmp_path):
     def snapshot(when):
         return {
