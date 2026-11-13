@@ -2901,3 +2901,75 @@ package路径把`reframe/core/warnings.py`放在stdlib之前而失败。
 后续仍需补明确的原任务来源与采集绑定、
 完成自然采集，再重新合成共同背景和Oracle标签。新GPU对比尚未登记，
 原冻结执行、全部负结果及暂停anchor保留，整体goal继续active。
+
+### 原始背景采集、共同回放容量与到达前缀（2026-11-13）
+
+本次继续处理有限背景覆盖不足，不重复分析已经封存的单workflow尾部。
+旧窗口Oracle的最后测量成员仅在最后8.709206秒独自存活，且最后新增
+到达前进度已经落后；它贡献35.522010秒均值回退中的11.386721秒。
+停止器错误发生在自然完成以后。背景覆盖不足与停止器收尾错误是两个
+问题，前者影响持续serving评价，后者不增加已完成的JCT。后续完整
+maximal-cost Oracle已有正常收尾证书却仍回退2.249656%，保留该负结果。
+
+在独立开发工作树提交`4bd1b1ca`，新增显式原始SWE-rebench来源：
+公开原问题、原repo/base、实际干净Git tree和清单逐项绑定，不导出gold
+patch或测试，不将其冒名为LoCoBench。真实harness保留原SWE任务提示，
+原问题不缩写，原项目源码和测试不改。采集入口同时绑定已通过的root/
+child工具环境，显式传递`/opt/conda/envs/testbed`。合成不同原数据集必须
+使用显式开关，并记录各自来源；默认仍拒绝混用。原模型、原采样器、
+委派协议和软预算保留。这与`4305f9ee`剪枝、`1a39ba3b`连续效用一起
+通过`.../continuous_campaign_20261113_r1/swe_rebench_capture_cpu_r2/`
+完整资格：8830个literal用例及23个subtest，零失败、错误和跳过。
+
+33个不同原项目的自然采集已实际启动：
+`ops/workflow_swe_rebench_background33_source_20261113_r1.registration.json`，
+冻结app为`beliefkv-swerebench33r1-capture-4bd1b1caaa12`，原生引擎为
+`sglang-swerebench33r1-capture-434c35dd6621`。端口19056，原生policy、
+Qwen3-Coder-30B-A3B-Instruct、BF16、running24、chunk2048、mixed关闭；
+源采集Host仍200GB，最终比较Host400GB没有改变。33个root及concurrency33
+仅用于补充自然trace，不是新的持续到达性能比较，也不是合成133项目的
+匹配native结果。执行证据保留于`swe_rebench_capture_execution_r1/`。
+
+14:55 PST独立实际观察：watcher2537607/start64659417、driver2537864/
+start64660487仍活，GPU仅scheduler2538010/start64661896；已有5152个
+原生完成请求和29/33个自然结束结果，未发现capture error。这是运行
+前缀，不是33条完整资格或性能结果。原暂停anchor2184052未恢复或终止，
+设备访问guard仍保留，没有启动70秒到达GPU实验。
+
+本次还发现新源原生FULL容量为805199 token，旧七个源均805198；
+两侧Host容量相同，所有`SERVING_FIELDS`一致。差额恰为一页/一token/
+98304字节，不能直接改原始census，也不为这一个token重跑GPU采集。
+提交`13297e22`增加显式`--replay-capacity`：共同回放容量必须匹配
+一个原始源，所有源只能等于它或多一页；保留完整原始资源文件及SHA，
+输出独立合同，并在加载合成源时重新核验。默认精确资源相等规则不变；
+Host、模型精度、页大小、Mamba、更多差额、字节不一致及更小源仍拒绝。
+最终各方法仍须使用相同实际回放几何，原生分配/锁/DMA权限未改。
+
+66项相关检查先通过。完整资格首轮`source_resource_cpu_r1/`因我遗漏
+既有测试环境传递，出现127失败、8错误、746跳过；收尾又在写入前读取
+sources.json。保留原脚本、JUnit和日志，不将其当作代码或GPU失败。
+`source_resource_cpu_r2/`恢复同一已声明CPU环境并修正写入顺序，在
+同一干净`13297e22`上通过8847个literal用例及23个subtest，保留原8830
+个身份，新增17项，零失败/错误/跳过。2743个源码路径及236个外部输入
+在检查前后不变；实际八份采集资源也重新核对。没有重启运行中的采集。
+
+`swe_rebench_capture_completion_r1/`已实际启动只读CPU完成收集器：
+2716675/start64829484、nice19、CPU0、CUDA隐藏。它等待原监督器正常
+完成、token与causal审计、两次fresh idle排空及真实退出，才调用既有
+inventory和原始来源证明；资格失败则保留证据退出，不启动或停止GPU。
+模型秒数代理显式继承原background25 inventory中的0.019149832536849994，
+不重新拟合。这个代理不改`.01*necessary_input+output`模型工作量或
+原始工具时长；原100项目的common coefficient为null的事实仍保留。
+
+`background133_arrival_preparation_r1/`已固定实际33个启动身份及候选
+到达表：initial20、平均60秒，同一泊松随机流继续，最后到达6757.873103秒。
+原100条到达前缀逐项一致，原20个预热、18个测量成员和共同墙钟吞吐窗口
+不变，测量组全部自然结束后停止背景。新增顺序取采集前已固定的原清单
+顺序，不依据采集后的工作量、JCT或方法胜负重新排序。它目前只是身份/
+到达准备：全部33条完整资格、实际ready供给、Host有效状态和尾部覆盖
+仍待检查，不能将未来到达槽等同于实际持续竞争。
+
+新人口须重新匹配Full与Oracle，旧100项目Full不能用作133项目对照。
+剪枝与连续效用合并验证，不为容量检查或停止器修复单独跑GPU。R5及
+ThunderAgent acting-decay/native后续比较仍待Oracle收益门槛，不将
+源采集、CPU通过或延长背景包装为JCT提升，整体goal保持active。
