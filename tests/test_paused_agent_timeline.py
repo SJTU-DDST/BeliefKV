@@ -1,7 +1,9 @@
 from copy import deepcopy
+import json
 
 import pytest
 
+from scripts import plot_paused_agent_timeline as plots
 from scripts.plot_paused_agent_timeline import aggregate, samples
 
 
@@ -97,3 +99,78 @@ def test_time_weighting_clips_edges_and_does_not_fill_unobserved_gaps():
     assert report["covered_s"] == pytest.approx(.4)
     assert report["time_weighted_mean"]["ready_paused"] == pytest.approx(.75)
     assert report["ready_present_fraction"] == pytest.approx(.75)
+
+
+def recorded_prefix(tmp_path, *, finished=False, certified=False):
+    run = tmp_path / "run"
+    events = [event("workflow_start", 0), event("llm_submit", 100, request_id="r")]
+    if finished:
+        events.extend([
+            event("llm_result", 2000, request_id="r"), event("workflow_end", 3000),
+        ])
+    for path, rows in (
+        (run / "full/replay/runtime_events.replay.jsonl", events),
+        (run / "full/opportunities/admission_opportunities.jsonl", [
+            {"event": "admission_runtime_state", **state(when)}
+            for when in range(0, 6001, 500)
+        ]),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    arrivals = {"arrival_schedule": [{"workflow_id": "w", "offset_seconds": 0.}]}
+    arrival_path, registration = tmp_path / "arrivals.json", tmp_path / "registration.json"
+    plots.write(arrival_path, arrivals)
+    plots.write(registration, {
+        "run_root": str(run), "workflow_arrivals_path": str(arrival_path),
+        "workflow_arrivals": arrivals,
+    })
+    if certified:
+        plots.write(run / "cohort_termination/completion.json", {
+            name: True for name in (
+                "complete_measured_native_work_verified", "no_measured_workflow_truncated",
+                "fresh_idle_drain_verified", "actual_owned_exit_verified",
+            )
+        })
+    return registration, {
+        "measured_workflow_ids": ["w"],
+        "throughput_window_offset_seconds": [.5, 2. if finished else 10.],
+    }
+
+
+def test_live_prefix_stops_at_observed_time_without_filling_future_with_zeroes(tmp_path):
+    registration, cohort = recorded_prefix(tmp_path)
+    _rows, report = plots.inspect(registration, cohort, live_prefix=True)
+    assert report["observed_through_offset_s"] == 6.
+    assert report["common_window"]["end_s"] == 6.
+    assert report["declared_common_window_offset_seconds"] == [.5, 10.]
+    assert report["common_window"]["time_weighted_mean"]["ready_paused"] == 1.
+    assert not report["complete_common_window_observed"]
+    assert not report["complete_measured_work_drain_and_exit_verified"]
+    assert report["cohort_completion_s"] is report["through_measured_completion"] is None
+    assert report["input_jsonl_prefixes"]
+
+
+def test_default_report_still_requires_completion_certificate(tmp_path):
+    registration, cohort = recorded_prefix(tmp_path)
+    with pytest.raises(FileNotFoundError, match="completion.json"):
+        plots.inspect(registration, cohort)
+
+
+def test_observed_workflow_end_alone_never_certifies_a_live_prefix(tmp_path):
+    registration, cohort = recorded_prefix(tmp_path, finished=True)
+    _rows, report = plots.inspect(registration, cohort, live_prefix=True)
+    assert report["cohort_completion_s"] == 3.
+    assert report["complete_common_window_observed"]
+    assert not report["complete_measured_work_drain_and_exit_verified"]
+    assert report["through_measured_completion"] is None
+    assert report["through_observation"]["end_s"] == 3.
+
+
+def test_completed_report_retains_its_whole_measurement_semantics(tmp_path):
+    registration, cohort = recorded_prefix(tmp_path, finished=True, certified=True)
+    _rows, report = plots.inspect(registration, cohort)
+    assert report["cohort_completion_s"] == 3.
+    assert report["common_window"]["end_s"] == 2.
+    assert report["through_measured_completion"]["end_s"] == 3.
+    assert report["complete_measured_work_drain_and_exit_verified"]
+    assert not report["live_prefix"]

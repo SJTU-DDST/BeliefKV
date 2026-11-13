@@ -141,16 +141,20 @@ def aggregate(rows, start, end, *, maximum_gap_s=1.5):
     }
 
 
-def inspect(registration_path, cohort):
+def inspect(registration_path, cohort, *, live_prefix=False):
+    if type(live_prefix) is not bool:
+        raise ValueError("live-prefix analysis must be explicit")
     reg = json.loads(registration_path.read_bytes())
     _, arrivals = bound_arrivals(reg)
     arm = Path(reg["run_root"]) / "full"
-    certificate = json.loads((Path(reg["run_root"]) / "cohort_termination/completion.json").read_bytes())
-    if any(certificate.get(name) is not True for name in (
-        "complete_measured_native_work_verified", "no_measured_workflow_truncated",
-        "fresh_idle_drain_verified", "actual_owned_exit_verified",
-    )):
-        raise ValueError("require complete measured work, natural tails, fresh drain and actual exit")
+    certificate_path = Path(reg["run_root"]) / "cohort_termination/completion.json"
+    if not live_prefix:
+        certificate = json.loads(certificate_path.read_bytes())
+        if any(certificate.get(name) is not True for name in (
+            "complete_measured_native_work_verified", "no_measured_workflow_truncated",
+            "fresh_idle_drain_verified", "actual_owned_exit_verified",
+        )):
+            raise ValueError("require complete measured work, natural tails, fresh drain and actual exit")
     reader = SealedRecords()
     events = list(reader(arm / "replay/runtime_events.replay.jsonl"))
     states = [
@@ -160,23 +164,40 @@ def inspect(registration_path, cohort):
     rows, origin = samples(events, states, arrivals)
     members = set(cohort["measured_workflow_ids"])
     ends = {row["workflow_id"]: row["ts_ms"] for row in events if row["kind"] == "workflow_end"}
-    if not members <= ends.keys():
+    complete = members <= ends.keys()
+    if not complete and not live_prefix:
         raise ValueError("fixed measured members did not naturally complete")
-    end = max(ends[member] for member in members) / 1000. - origin / 1000.
+    completion = (
+        max(ends[member] for member in members) / 1000. - origin / 1000. if complete else None
+    )
+    observed = rows[-1]["offset_s"]
+    if live_prefix:
+        end = min(observed, completion) if complete else observed
+    else:
+        end = completion
     start, common_end = cohort["throughput_window_offset_seconds"]
-    if rows[-1]["offset_s"] < end or end < common_end:
+    if not live_prefix and (observed < end or end < common_end):
         raise ValueError("observations do not cover the complete measurement population")
+    if live_prefix and end <= start:
+        raise ValueError("the observed prefix has not reached the fixed measurement window")
     summaries = [aggregate(rows, lo, min(lo + 30., end)) for lo in range(0, math.ceil(end), 30)]
+    paths = [registration_path, Path(reg["workflow_arrivals_path"])]
+    if not live_prefix:
+        paths.append(certificate_path)
     return rows, {
         "registration": str(registration_path.resolve()),
-        "cohort_completion_s": end, "common_window": aggregate(rows, start, common_end),
-        "through_measured_completion": aggregate(rows, 0., end), "bins": summaries,
+        "cohort_completion_s": completion,
+        "observed_through_offset_s": observed,
+        "live_prefix": live_prefix,
+        "complete_measured_work_drain_and_exit_verified": not live_prefix,
+        "declared_common_window_offset_seconds": [start, common_end],
+        "complete_common_window_observed": observed >= common_end,
+        "common_window": aggregate(rows, start, min(end, common_end)),
+        "through_measured_completion": aggregate(rows, 0., end) if not live_prefix else None,
+        "through_observation": aggregate(rows, 0., end), "bins": summaries,
         "input_jsonl_prefixes": reader.prefixes,
         "inputs_sha256": {
-            str(path): sha256_file(path) for path in (
-                registration_path, Path(reg["workflow_arrivals_path"]),
-                Path(reg["run_root"]) / "cohort_termination/completion.json",
-            )
+            str(path): sha256_file(path) for path in paths
         },
     }
 
@@ -208,6 +229,8 @@ def render(reports, cohort, output):
     axes[0].legend(loc="upper right", ncol=2, fontsize=9)
     axes[-1].set_xlabel("Seconds Since First Workflow Arrival")
     axes[-1].set_xlim(left=0)
+    if any(report.get("live_prefix") for report in reports.values()):
+        axes[-1].set_xlim(0, max(report["through_observation"]["end_s"] for report in reports.values()))
     fig.suptitle(
         "All agents including background; 30-second time-weighted means\n"
         "Observed logical paused membership; JOIN takes precedence over overlapping tool waits. "
@@ -224,6 +247,7 @@ def main():
     parser.add_argument("--report", action="append", required=True, help="METHOD=REGISTRATION_JSON")
     parser.add_argument("--cohort", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--live-prefix", action="store_true", help="Plot only observed samples without claiming completion")
     args = parser.parse_args()
     if args.output_dir.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999":
         raise ValueError("preserve previous reports and hide CUDA for plotting")
@@ -232,7 +256,7 @@ def main():
         label, separator, path = argument.partition("=")
         if not separator or label not in COLORS or label in reports:
             raise ValueError("require distinct known methods")
-        raw[label], reports[label] = inspect(Path(path), cohort)
+        raw[label], reports[label] = inspect(Path(path), cohort, live_prefix=args.live_prefix)
     args.output_dir.mkdir(parents=True, exist_ok=False)
     for label, rows in raw.items():
         path = args.output_dir / (label.lower().replace(" ", "_") + "_samples.csv")
@@ -251,6 +275,8 @@ def main():
         "logical_pause_does_not_prove_physical_host_residency": True,
         "multiple_ready_workflows_does_not_prove_capacity_competition": True,
         "no_interpolation_across_observation_gaps": True,
+        "unobserved_prefix_tail_not_filled_with_zeroes": True,
+        "live_prefix": args.live_prefix,
         "GPU_action": False,
     })
     print(json.dumps({name: report["common_window"] for name, report in reports.items()}))
