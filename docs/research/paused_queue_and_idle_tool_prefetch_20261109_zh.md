@@ -1301,3 +1301,57 @@ pin、冻结服务源码与容量，并验证已完成前缀中的 1379 份 posi
 后继，尚无本轮完整 JCT 或五方法收益结果；不得将连续执行准备写成全部
 实验完成。初始失败、CPU 接管、设备租约和所有运行证据均保留在同一
 `continuous_campaign_20261113_r1/` 目录，不另增加主实验版本。
+
+### 2026-11-13 共同窗口的真实竞争与完整后处理准备
+
+继续复用上述实际服务和五阶段协调器。15:54 Asia/Shanghai 核对 Full
+已有 48 条 workflow 到达，固定测量组完成 12/18；GPU scheduler、固定
+完成观察器、协调器和设备保护均实际存活。尚未完成 Full 的自然长尾，
+尚无此轮 Oracle/R5 或系统对照的 JCT 收益。
+
+`common_window_prefix/periodic.json` 使用冻结的原周期分析器读取完整行
+封存前缀，再由 `summarize_measured_admission_competition.py` 绑定同一固定
+cohort 汇总。共同吞吐窗口 [55.692771, 1638.954850] 秒已完整观测：
+
+| 实际周期控制口径 | 本轮 100 项目 Full |
+| --- | ---: |
+| 周期控制 | 770 |
+| 跨 workflow 逻辑集合容量竞争 | 77，占 10.00% |
+| 每次控制的平均 ready-paused | 3.2455 |
+| 每次控制各自放得下的候选均值 | 1.1143 |
+| 竞争时平均候选 agent / workflow | 4.2857 / 4.0390 |
+| 竞争包含固定测量成员 | 37 |
+| 竞争包含至少两个测量 agent / 不同测量 workflow | 17 / 15 |
+
+这些是控制决策加权口径。不能将 77 次重复控制理解为 77 个不同请求，
+也不能与旧 83/mean60 的窗口直接作纯人口因果比较。该前缀的首个测量到达
+至已观测末端约 1699.843 秒尚未闭合，其完整自然长尾仍等待测量组结束。
+
+独立读取并对齐 runtime events 与原生资格快照，复用原分类、聚合及绘图
+函数，生成 `common_window_prefix/paused_curves/` 下的 PNG、PDF、原始
+采样 CSV 和带前缀指纹的 JSON。图像已实际打开检查。当前曲线观察到约
+1976.082 秒；完整共同窗口中可用区间覆盖 97.4064%，时间加权
+ready/JOIN/tool-paused 均值为 2.8527 / 13.3609 / 2.4794。存在 ready
+候选的可用区间占 75.6867%，至少两个 ready workflow 占 59.1624%。
+超过 1.5 秒的观察缺口不插值、不补零；这些人口指标也不等于容量竞争。
+
+新增 `scripts/collect_continuous_campaign_analysis.py` 作为只读 CPU
+后处理。它不修改或重启 GPU 协调器，不登记 GPU 后继、不授予准入、不修改
+固定停止协议。实际进程 PID2167964/start59418711 已启动，nice19、
+CPU0、CUDA 隐藏、单线程，等待同一实际协调器的完成证明。证明文件只作
+触发器，每个阶段还独立调用原 `verify_execution` 复核工作、fresh drain
+和实际退出，并要求不同方法的完整测量工作相同。
+
+后处理包括每种 Full/Oracle/R5 的双窗口竞争与测量成员参与、显式消费者
+绑定的释放到服务时延、控制臂 Oracle 局部机会及实际服务顺序、Oracle/R5
+实际组合选择与服务存活，以及三种方法的 paused 曲线。五种方法均验证完成
+后才绘制完整自然 JCT、共同墙钟窗口 decode 趋势与时间加权分布。
+实际核对 17 项任务、9 个冻结脚本的 CLI 接口及阶段依赖。没有以这些接口
+检查替代未完成的 GPU 结果，也未提前把实际组合选择计作 JCT 收益。
+
+审计发现旧协调器最终绘图采用的 Full/R5 等显示名称不在既有固定配色表中。
+该问题发生在五组服务验证之后，不影响 GPU 顺序或工作；当前不热改其已
+绑定源码。独立后处理使用原有规范名称 Nonranking Full、Continuous-work
+Oracle、Learned R5、ThunderAgent、SGLang native，并保留旧协调器可能
+产生的绘图拒绝记录；原始退出状态不得改写成成功。有效 CPU 登记和进度
+为 `cpu_evidence/registration.json`、`cpu_evidence/state.json`。
