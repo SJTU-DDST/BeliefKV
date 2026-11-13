@@ -382,12 +382,47 @@ def inspect(
     }
 
 
+def verify_model_work_pair(control, oracle, learned):
+    """Bind exact-work Oracle analysis through its declared learned R5 reference."""
+    from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact
+    from scripts.finish_model_work_oracle import verify_same_objective
+    from scripts.review_learned_work_ranking import verify_learned_combination_pair
+
+    paths = verify_learned_combination_pair(control, learned)
+    private = control.get("private_analysis_cohort")
+    if not isinstance(private, dict) or private.get("delivered_to_scheduler") is not False:
+        raise ValueError("model-work analysis requires its private fixed measurement cohort")
+    for name in (
+        "source_registration", "workflow_arrivals", "tool_timing_overlay",
+        "stream_response_metrics", "workload_acceptance", "private_analysis_cohort",
+    ):
+        if any(spec.get(name) != control.get(name) for spec in (learned, oracle)):
+            raise ValueError("model-work comparison changed traffic or its fixed private cohort")
+    environment = oracle["common_environment"]
+    path = Path(environment["WORKFLOW_WORK_MODEL"])
+    truth = WorkflowWorkOracleArtifact.load(
+        path, environment["WORKFLOW_WORK_MODEL_SHA256"],
+    ).raw
+    verify_same_objective(learned, oracle, causal.load(paths[1]), truth)
+    for name in (
+        "minimum_promising_measured_mean_JCT_reduction",
+        "common_window_output_throughput_noninferiority_fraction",
+    ):
+        if oracle["comparison_contract"].get(name) != control["comparison_contract"].get(name):
+            raise ValueError("model-work comparison changed its performance thresholds")
+    return [*paths, path]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("registration", "control", "cohort", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--complete", action="store_true")
     parser.add_argument("--policy-kind", choices=("oracle", "learned"), default="oracle")
+    parser.add_argument(
+        "--model-work-reference", type=Path,
+        help="learned R5 configuration binding an exact remaining-model-work Oracle",
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError("preserve earlier combination observations")
@@ -396,7 +431,28 @@ def main():
         causal.comparison.verify_sources(item)
     candidate_path, control_path = (Path(item["experiment_configuration"]) for item in (plan, control))
     candidate = causal.load(candidate_path)
-    if args.policy_kind == "learned":
+    validation_paths = []
+    if args.model_work_reference is not None:
+        if args.policy_kind != "oracle":
+            raise ValueError("a model-work reference applies only to Oracle analysis")
+        from scripts.review_predictive_thunder_cohort import matching_serving_traffic
+
+        matching_serving_traffic(control, plan)
+        validation_paths = [
+            args.model_work_reference,
+            *verify_model_work_pair(
+                causal.load(control_path), candidate, causal.load(args.model_work_reference),
+            ),
+            ROOT / "scripts/finish_model_work_oracle.py",
+            ROOT / "scripts/review_learned_work_ranking.py",
+            ROOT / "beliefkv/runtime/workflow_work_oracle.py",
+        ]
+        private = candidate["private_analysis_cohort"]
+        if private.get("path") != str(args.cohort.resolve()) or (
+            private.get("sha256") != sha256_file(args.cohort)
+        ):
+            raise ValueError("model-work analysis uses another private cohort")
+    elif args.policy_kind == "learned":
         from scripts.review_learned_work_ranking import verify_learned_combination_pair
 
         verify_learned_combination_pair(causal.load(control_path), candidate)
@@ -442,12 +498,14 @@ def main():
         ).strip(),
         registration=str(args.registration), complete_measured_execution_verified=args.complete,
         policy_kind=args.policy_kind,
+        exact_model_work_reference_verified=args.model_work_reference is not None,
         input_jsonl_prefixes=reader.prefixes,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             args.registration, args.control, args.cohort, candidate_path, control_path,
             artifact_path, Path(__file__), ROOT / "beliefkv/policy/workflow_combination.py",
             ROOT / "scripts/audit_periodic_admission_decisions.py",
             ROOT / "scripts/audit_free_dispatch_service.py",
+            *validation_paths,
         )},
         formal_workload_accepted=False, GPU_action=False, performance_accepted=False,
     )

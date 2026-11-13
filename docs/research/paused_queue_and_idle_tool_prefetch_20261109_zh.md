@@ -1564,3 +1564,99 @@ prompt token数，三个workflow均不属于固定测量组。这不能解释为
 两份只读输出均保存完整行前缀指纹和所用冻结分析源码hash。未增加GPU
 实验、未修改资源/到达/工具、未放宽完成证书或重算判定，也没有新的
 性能收益结论。Full全部18自然结束、fresh drain和真实退出仍在等待。
+
+### 60秒Full完整结束与Oracle实际选择（2026-11-13）
+
+`background100_mean60/continuous_campaign_20261113_r1`的非排序Full已完成固定18。
+2991个请求、362157个输出token与原始工作一致；独立停止观察器、协调器和
+CPU收集器均验证完整测量工作、两份新鲜idle快照及真实进程退出。共98个
+workflow自然结束，另外2个非测量workflow按既定协议右删失，100个均已到达。
+原监督器的停止记录保留，不把按协议取消背景视为测量失败。
+
+| Full完整测量指标 | 实测 |
+| --- | ---: |
+| 平均完整workflow JCT | 1258.540519s |
+| 中位完整workflow JCT | 784.072333s |
+| 最大完整workflow JCT | 5271.174533s |
+| 相同共同窗口全部workflow输出吞吐 | 340.056146 token/s |
+| 共同窗口decode输出吞吐 | 337.176437 token/s |
+| 最后测量成员完成偏移 | 5625.126954s |
+| 最后计划背景到达偏移 | 4658.624885s |
+
+负载检查仍只有`background_arrivals_cover_measured_tails`未通过，缺口
+966.502070s；未放宽门槛或把这轮提升为已接受的稳态负载。其余检查通过
+不等于Oracle必然获益。新鲜完整阶段分析位于`cpu_evidence/full_periodic.json`
+和`full_competition.json`，测量执行跨度从首个测量成员到达47.736661s
+至最后成员完成5625.126954s，不能只用截至最后测量到达的共同吞吐窗口
+代表整个JCT测量跨度。
+
+| 周期决策口径 | 共同吞吐窗口 | 完整测量执行跨度 |
+| --- | ---: | ---: |
+| 实际周期控制 | 659 | 2721 |
+| 跨workflow各自可装入、但集合装不下 | 90 | 433 |
+| 涉及测量成员的竞争 | 61 | 194 |
+| 至少两个测量workflow参与 | 31 | 64 |
+| 不同测量workflow参与 | 11/18 | 16/18 |
+
+`full_mechanism_complete_r1/model_work_supply.json`复用上述完整周期报告的
+相同journal封存指纹，排除未知标签和受保护JOIN后，完整测量跨度有431个
+普通多workflow边界，其中193个涉及测量workflow、245个剩余模型工作量
+差距至少5倍。6个未知标签观察和12个受保护JOIN观察明确排除。上述433、
+431、194、193分别对应不同资格口径，不应混用；它们也不是当前R5的
+实际集合改变、原生物理可行性、相互独立的选择或JCT收益。
+
+完整曲线、PDF和CSV保存在`full_mechanism_complete_r1/paused_curves/`，
+PNG已实际打开检查。首个测量到达到最后测量完成的时间加权ready/JOIN/tool
+paused分别为3.356193/12.986801/3.122270，观察覆盖98.272499%。
+有效观察中65.959281%的时间存在至少两个不同ready workflow。
+`tail_supply.json`复用同一CSV与已有时间加权函数：最后背景到达之后，
+ready-paused均值仍为2.885774，不能称整个966.5s都没有候选；但最后500s
+均值只有0.451700，多ready workflow仅占8.257394%的有效观察时间，
+有免费逻辑预算却没有ready-paused占68.205932%。这些是逻辑成员状态，
+不是物理HBM利用率或GPU空闲归因。
+
+最初误用`full_review/periodic_decisions.json`进行阶段分析，被缺失cohort
+绑定的检查拒绝；后续直接复用已登记CPU收集器生成的带阶段与固定cohort
+绑定的`cpu_evidence/full_periodic.json`，没有更改原报告或补造绑定。
+
+Oracle已在同一60秒到达表上实际回放。监督器2217837/start60305361、
+server2218527/start60309555、唯一GPU scheduler2218652/start60311111、
+driver2220363/start60331678以及独立固定测量观察器2220365/start60331837
+均实际核对。原冻结8fbd7462/native434c35dd、805198 HBM token和
+400000057344B Host保持一致。原回放后暂停观察器2196377在确认回放与
+独立cohort观察器后，仅暂停CPU协调器2184052/start59685073；
+GPU回放和固定18自然结束协议继续，device guard2152140仍持有使用权。
+不能把暂停协调器称为暂停GPU实验或整体goal。
+
+`oracle_live_entry_r1/verified.json`独立验证了1521个已完成前缀请求及
+137439个输出token的原始输入/输出hash、实际输出ID、身份和原生停止，
+并核对唯一GPU进程、server祖先、实际容量、原生执行与新鲜策略状态。
+实际为`r5_combination_only`、连续剩余模型工作量，固定训练归一化
+reference_work=19144.06；保留2秒普通边界、JOIN绕行和active连续性。
+这是前缀正确性核验，尚无完整Oracle JCT。
+
+实时分析发现旧组合CLI只支持含工具关键路径的calibrated组合Oracle，
+会拒绝本轮模型工作量Oracle。现在增加显式`--model-work-reference`
+配置入口，通过现有Full-to-learned检查及learned-to-exact-work检查绑定
+三个配置，仍检查私有固定cohort、工具/到达/资源、成本与归一化参考、
+artifact hash及性能门槛；历史默认入口没有放宽。117项相关CPU回归通过。
+前两份XML保留：首轮新fixture误用了旧简化标签，第二轮两条负例把Host
+设为其原值；修正fixture后`model_work_analysis_cpu_r3.xml`全通过。
+在线核验最初误用全量完成检查也被拒绝，原失败脚本另存；随后使用在线
+配置检查并独立核对实际完成前缀，没有放宽最终完整测量验证。
+
+`oracle_mechanism_prefix_r1/choices.json`使用新入口重放本轮实际组合选择：
+1665次入口中160次实际搜索可重放，21次改变相对当前局部S0的集合，
+新增22个选择成员。21个周期成员均保留资格并有精确原生服务，其中20个
+在下一控制或同agent干预前完成有效请求；另1个免费补位成员也有明确
+授予、服务及窗口内完成。7次软预算回退和所有未搜索入口均保留，不把
+入口次数作为有效竞争次数，也不把局部S0当作另一条完整Full轨迹。
+元数据加选择累计线程CPU为0.769442s，不是整个控制CPU或GPU暴露停顿。
+
+自动CPU收集已在原2185159真实退出后交接给2225184/start60431526，
+登记为`cpu_evidence_model_work_r1/registration.json`。它复用原watch实现
+和五份已完成Full分析，为后续Oracle选择加入新入口及精确learned参考，
+新分析源码与117项资格被指纹绑定；其余后继分析沿用冻结脚本。
+原GPU协调器、监督器、服务、driver和cohort观察器均未更换或热修改。
+Oracle完整结束后应先独立发布完整工作证明，完成实际选择/服务及JCT
+比较，再决定恢复该协调器推进R5和系统baseline。当前目标仍未完成。
