@@ -1239,3 +1239,65 @@ argv、nice0 和 30 秒内的心跳：等待者 PID1858220/start53045253，
 协调器中的有条件后继；资源重试已经过 CPU 协议验证，尚无实际 GPU 冲突
 重试或本轮 JCT 结果。同负载 ThunderAgent/native 的配置已重新绑定到
 当前执行计划，字节哈希与先前配置一致，仍未额外登记 GPU 后继。
+
+### 2026-11-13 获授权接管与五方法连续执行
+
+用户明确授权终止当前其他用户的实验，并要求 Full、Oracle、R5、
+ThunderAgent acting-decay、native SGLang 连续执行。接管前重新确认实际
+GPU context 为 PID2098073，所属模型服务由 PID2098053 的实验队列及
+PID1927198 的协调器管理。先保存包含 start_ticks 的十五个实际实验进程
+身份，再发送终止信号；有界清理后，仅对同一身份的存活者升级信号。全部
+已记录实验进程退出，GPU context 清空。没有终止另一用户的等待队列，
+没有修改其他用户的实验源码或发送消息。
+
+原 position 资格于 2026-11-13 02:00 Asia/Shanghai 已完成。此次复用
+实际通过的 token/session/native-stop/sampler 证明，保留原 Full 登记、
+原服务监督器及 8687 项源绑定 CPU 资格，不重复 GPU 资格实验。Full
+于 15:15 左右启动服务，15:19 完成初始化，随后开始正式回放。实际池为
+805198 个 HBM FULL token、4069011 个 Host FULL token，Host 字节数
+400000057344，与合同完全一致。
+
+新增两个外部运行控制脚本，服务算法仍使用冻结的 8fbd7462：
+
+- `scripts/hold_gpu_campaign_access.py` 保存 `/dev/nvidia0` 原 ACL，
+  在此有限实验链期间仅向本用户开放设备访问。设备交接不需要保留额外
+  CUDA context、显存分配或计算负载。实际发现 setuid
+  `nvidia-modprobe` 会重设设备权限，因此同时保存并暂时撤下该 helper 的
+  setuid 位。守护每两秒核对设备身份、权限、所有者 PID/start_ticks；
+  协调器退出、正常停止或最长十八小时届满时尝试精确恢复原 ACL 和
+  helper 权限。管理员对权限的另外修改不会被无条件覆盖。
+- `scripts/run_continuous_matched_campaign.py` 接管现有 Full 与完成观察器，
+  依次执行五种方法。每种方法均等固定十八个测量 workflow 自然完成后
+  停止背景，核对完整测量请求、实际配置、fresh drain 和实际进程退出，
+  再登记下一种。工作量、token、工具样本、依赖、到达表与资源保持一致。
+  用户已明确要求完整五方法比较，所以候选供给等诊断未通过时保留负结果，
+  不再仅凭该诊断取消系统对照；工作守恒或退出证明失败仍停止实验链。
+
+设备守护的首次尝试因 helper 重设 ACL 而停止，原状态保留；已按保存的
+原 ACL 恢复后重新获取。协调器首次启动还暴露切换冻结工作目录后使用
+相对计划路径的问题，保留首次 CPU 启动日志并统一为绝对路径。随后补充
+Popen 返回时 argv 尚空的身份竞态检查：等待实际监督器状态，严格校验
+PID/start_ticks 及其 `--watch` 登记目标，不把尚未 exec 的空 argv 当成
+不同进程。更换的只是 CPU 协调器，Full 服务和测量观察器没有重启。
+
+十五项早期 CPU 检查及最终十六项检查报告均保留；最终检查无失败或跳过，
+包含五种实际运行状态识别、固定流量参数保留、五阶段串联、负诊断继续、
+工作量不一致停止、绝对路径、Popen 身份竞态及权限精确恢复。完整链条的
+模拟通过不是五轮 GPU 完成证明，也不是性能收益。
+
+当前唯一有效执行入口为
+`startup_recovery_20261112_r1/continuous_campaign_20261113_r1/controller_final/plan.json`。
+15:26 Asia/Shanghai 核对协调器 PID2157828/start59251363、守护
+PID2152140/start59178239、原 Full 监督器 PID1929288/start54422044、
+GPU scheduler PID2153449 和完成观察器 PID2155845 均实际存活；
+两个先前 CPU 协调器已退出，状态为 `waiting_fixed_18_full`，23 个
+workflow 已到达，GPU 利用率采样为 100%。设备权限实际允许本用户，
+拒绝已核对的另外两个普通用户，守护仍为 `held`。
+
+`controller_final/live_execution_verified.json` 进一步重新核对所有输入
+pin、冻结服务源码与容量，并验证已完成前缀中的 1379 份 position 请求：
+身份、输入输出数量、原始 token hash 和 native finish reason 与源一致。
+这是运行中前缀证明。当前仅 Full 已正式启动，其余四种是该协调器的自动
+后继，尚无本轮完整 JCT 或五方法收益结果；不得将连续执行准备写成全部
+实验完成。初始失败、CPU 接管、设备租约和所有运行证据均保留在同一
+`continuous_campaign_20261113_r1/` 目录，不另增加主实验版本。
