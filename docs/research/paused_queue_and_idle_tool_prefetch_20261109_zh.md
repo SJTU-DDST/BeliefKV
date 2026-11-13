@@ -2662,3 +2662,35 @@ workflow，竞争时平均4.877778个候选。逻辑各自可容纳不证明替�
 三类paused图已实际打开检查，只展示相同共同窗口，超过1.5秒观察
 空档不插值。当前完整JCT、自然停止、fresh drain及实际退出仍待完成，
 不能凭这些机制记录接受性能收益或完成目标。
+
+### 新选择服务存续核验及R5后续收集（2026-11-13）
+
+沿用未修改的`live_mechanism/inspect_selected_service.py`，仅将分析目录
+绑定至`closed_common_window_r1`，新增`selected_service_prefix.json`。
+它重读同一1884.051807秒封存前缀，逐一验证37个新选成员的完整请求、
+attempt、session与generation：全部有精确原生服务，33个在原记录的
+下一控制或干预前开始服务，4个晚于这一观察边界。未发现这些区间内
+显式暂停、同agent再次授予、inactive控制或身份不明的控制记录。
+这不等于物理KV连续驻留，但没有发现由这几类逻辑撤销造成服务延后。
+
+授予至首次精确服务P50为358.719880ms，P90为1628.095117ms，最大
+34813.856458ms。涉及测量组的7个事件覆盖5个workflow，等待区间在
+各workflow内取并集后合计10726.821537ms，其中只有1个晚于原观察
+边界。另3个晚服务事件来自非测量任务。不能将这些等待直接计作
+可消除JCT，也不能把这7个事件的等待量当作全系统优化上界。
+
+为保持后续预测版本同口径，新增只读CPU收集器
+`maximal_cost_admission_execution_r1/complete_learned_evidence/collect.py`。
+7项任务与Oracle一致：周期控制、竞争、容量释放至服务、实际选择、
+选择存续、三类paused曲线及完整JCT/吞吐图；使用真实learned配置、
+`--policy-kind learned`和`Learned R5`图例，不借用Oracle提供者。
+启动前已实际导入和核对7项任务、所有脚本路径及参数，无Oracle阶段
+参数残留；这不是R5实际GPU执行或性能资格。
+
+收集器2445399/start63666854已实际存活，CPU0、nice19、CUDA隐藏，
+处于`waiting_registered_learned_observer`。仅等待现有协调器决定是否
+运行R5，不启动GPU、不改变阶段门槛；若协调器退出且R5未启动，会
+明确记录未启动。若实际运行，则保留全部18条自然JCT，核对两侧
+原始工作相同、fresh drain及真实退出后再收集；未观测到的背景服务
+保持显式缺口。当前Oracle、原收集器和GPU访问保护均未替换或重启，
+完整收益及全部对比仍待验证，目标保持active。
