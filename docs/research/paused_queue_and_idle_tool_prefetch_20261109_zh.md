@@ -2973,3 +2973,86 @@ inventory和原始来源证明；资格失败则保留证据退出，不启动�
 剪枝与连续效用合并验证，不为容量检查或停止器修复单独跑GPU。R5及
 ThunderAgent acting-decay/native后续比较仍待Oracle收益门槛，不将
 源采集、CPU通过或延长背景包装为JCT提升，整体goal保持active。
+
+### 133项目完整合成与实际Full回放（2026-11-13）
+
+上一轮属于实质进展：共同容量合同、CPU资格、真实33项目采集与完成
+收集器均已实施。本轮先核实原监督器实际退出，再继续合成和GPU启动，
+没有因为观察超时或设备显存释放而重启自然采集。
+
+33个不同原SWE-rebench项目全部自然完成：5296个请求、873996个输出
+token、117个JOIN及7个nested JOIN；每个root至少完成一个有两名以上
+真实模型服务child的JOIN。原生监督器状态为
+`source_captured_gpu_replay_pending`、退出码0、selection accepted。
+`swe_rebench_capture_completion_r1/`独立确认token、causal、两次fresh idle
+排空及所有原采集进程退出，inventory保留全部33条，eligible为33。
+这证明完整可复用轨迹，不证明原SWE任务的独立正确率或调度收益。
+
+`background133_materialization_r1/`使用原100条完整selected rows及采集前
+固定的33个新身份顺序，合成133项目、20895个请求、2781537个输出token。
+未挑选较幸运或较短的重复运行。原100条的208985704字节原始token文件
+完整成为新文件的逐字节前缀；原请求、内部因果节点及原2789个工具
+样本逐项相同，新增1831个execute样本。仍采用相同公开TraceLab
+WebFetch/WebSearch分类、同一held-out池、seed21及同一离线prior；
+其他工具保留原轨迹时长，没有改变原100条工具时长来修复尾部。
+
+原100条到达前缀、20个预热成员、18个测量成员及共同墙钟吞吐窗口保持
+一致，继续initial20/mean60。新增最后到达为6757.873103秒，比上一轮
+完整Oracle测量结束5750.630770秒多1007.242333秒；这是固定旧JCT的
+静态覆盖检查，不是新ready供给或新完成时刻的预测。综合模型工作量
+P80/P20=2.680422、P90/P10=4.230135，通过沿用的放宽后2.6门槛，
+不声称已达到此前更理想的3/5目标或已满足持续压力验收。
+
+CPU先绑定五种相同流量模式，实际runtime constructors通过；Full和
+Oracle重新绑定新人口标签，原15599个请求的工作量标签保持不变。
+Oracle与R5共用此前准备的连续效用，预测参数指纹仍为
+`98011dddd02062994b439b5121362ebbc4b0bc53a1468acbf3c6485a2e6ec6b3`。
+搜索剪枝和效用修正合并测试，没有为各个微小修改分别运行GPU对比。
+保留工具预测卸载、prepare_host、JOIN/EOS、sibling及active连续性，
+工具预取和逐层handoff仍关闭，NUMA不强制均衡。
+
+两次启动前的绑定问题均保留为CPU拒绝，没有消耗新的GPU实验：
+旧background25分析重资格仍引用旧代码，按当前CPU证据重新核验同一
+完整原采集；随后发现回放入口仍用单一自然LoCoBench规则检查混合清单。
+提交`76e2ff76`修复后者：混合项目只经完整、哈希绑定的合成源接受，
+核对项目/任务身份、显式混用声明和原公开SWE问题；自然采集入口仍拒绝
+混合回放清单，不放松原始任务或不同项目要求。376项相关检查先通过，
+`mixed_replay_ingress_cpu_r1/`随后通过8855个literal及23个subtest，
+保留8847个原身份、新增8项，零失败/错误/跳过；2743个源码路径和
+240个外部输入在执行前后保持不变，并实际验证133项目入口。
+
+新源登记为
+`ops/workflow_original133_background_source_20261113_r2.registration.json`。
+`background133_policy_preparation_r2/`仅替换待运行来源绑定，保持模型和
+runtime环境；r1待运行登记及拒绝记录均保留，没有覆盖旧采集或对比。
+新源position实际完成24/24 exact token/session/native stop检查和
+running1/8/24采样检查，随后自动启动同一Full。源采集及position
+不得作为133项目、Host400GB持续到达的native性能结果复用。
+
+CPU bootstrap在position正常退出、Full首次状态尚未写出之间直接读取
+Full状态，出现FileNotFoundError。原bootstrap退出，Full监督器2748800/
+start65129581继续存活并启动服务。保留原`bootstrap_state.json`与失败
+的analysis arming，使用
+`background133_execution_r1/coordinator_handoff_r2/plan.json`
+续接相同Full，未重启position、Full或GPU。当前主协调器为2751163/
+start65149927，固定18观察器2751707/start65155610，CPU收集器
+2752096/start65160875；它们的实际存活均已检查。原暂停anchor及guard
+未恢复、终止或替换。
+
+15:54 PST的`coordinator_handoff_r2/live_full_prefix.json`独立确认
+实际Full前缀538个请求、38364个输出token全部精确匹配原始输入/输出、
+身份、position采样及原生停止；实际运行中remaining-work ranking关闭。
+GPU仅scheduler2749677/start65135062，模型Qwen3-Coder-30B-A3B、
+BF16/FA3、running24、chunk2048、mixed关闭；实际FULL805198 token、
+Host4069011 token/400000057344字节，执行profile及物理容量匹配登记。
+服务、回放、测量观察器、主协调器及CPU收集器在该次观察中均验证为存活。
+15:57 PST主状态为`waiting_fixed_18_full`，25条已到达、测量完成0。
+这些前缀和瞬时GPU利用率不代表完整JCT或收益。
+
+当前有效入口是上述handoff目录，而不是已退出的bootstrap状态文件。
+Full完成后自动进入相同负载的Oracle，再依据既定约1%平均完整JCT、
+共同窗口吞吐及实际改选服务门槛推进R5、ThunderAgent acting-decay和
+native；不再运行70秒到达，也不复用旧100项目Full作为133项目对照。
+CPU分析已登记周期竞争、容量释放到服务、实际改选以及Full/Oracle的
+三类paused曲线；尚无新的完整JCT、持续尾部覆盖或可重复收益结论。
+整体goal继续active。
