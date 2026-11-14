@@ -4186,3 +4186,98 @@ consumer也可重叠，不能相加。窗口内未验证不等于以后从未服
 不承诺独占或FIFO，原guard继续关闭，stopped anchor保持不变。待新
 Oracle实际完成后，使用上述分析分别报告旧门槛允许/拒绝/未知的新动作、
 真实服务及完整18条JCT；当前没有新增GPU性能结论，整体goal仍active。
+
+### 有界工具边界调度与完整CPU分析（2026-11-14，北京时间）
+
+用户要求先完善工具边界上的近似抢占，再在GPU不可用期间完成CPU可行性
+分析。原共享协调器2975685/start68878640在仍为waiting_resources_oracle、
+GPU_registered_stages为空且实际GPU登记尚不存在时收到SIGTERM，已确认
+真实退出。其终止状态保留为stopped_preserve_five_method_comparison，
+原因为主动撤下未启动旧版本，不是GPU实验失败。2184052/start59685073
+anchor仍stopped，GPU防抢占保持关闭，未终止外部训练。
+
+新实现提交17918b63，分支perf/tool-boundary-scheduling-20261114，
+工作树为`/home/longhao/experiment/.worktrees/beliefkv-tool-boundary-scheduling-20261114`。
+完整设计仍在该树`docs/design/tool_boundary_preemption_20261114_zh.md`。
+本节证据位于同一tool_boundary_preemption_r1下的bounded_schedule_r1；
+新CPU分析/基准不消耗新的主GPU实验版本，也没有更换workload。
+
+原v1在真实ready-paused请求缺容量时，与已经WAIT_TOOL的对象逐对检查，
+不必等待普通2秒边界，但尚未完整择优选择donor。v2先用缓存的连续
+剩余模型工作及完整预算筛查，优先单donor；没有合适单体时可选最多两
+个已settled Host备份的donor。模型正在执行时不抢占，也不用未来trace
+来推断下一次工具调用。TOOL_START、真实ready请求和备份ACK唤醒检查。
+
+短工具返回后仍保留最多2000ms的边界资格，只适用于同context/session/
+generation、epoch加一、尚未分配原生资源的后继。原生已分配、已有输出、
+running batch、未满足JOIN、保护或资格过期时不能沿用。边界优先绑定
+最后实际服务的key，避免事件晚到而latest已经推进。上一epoch实际登记
+的节点及创建时间随资格保留，使用前再核对原生代数、创建时间和所有权；
+没有把新epoch输入当成已经计算。真实释放才暂停donor并释放逻辑预算。
+
+默认工作差门槛1.2倍并扣迁移成本及400ms余量；成功切换至少间隔1秒、
+同workflow冷却30秒。60秒预算上限为4倍实际Device token池，包含实际
+部分释放及可能重载、必要备份入队和consumer恢复预算。已有30秒ready
+等待后的边界保护保留。原75% survival卸载独立，不受新策略的全部约束。
+只为已入队备份的精确配对暂缓donor后继执行，最长2秒，避免ACK后还未
+交接就被它抢先执行；不虚报物理容量，失效即撤销。
+
+元数据每轮最多64个owner，昂贵检查最多8个；释放计划最多64个节点，
+实际每次仍最多16个。真实释放有进展时立即续接，无进展则保留退避。
+原生探测为2ms软预算，不同步等待DMA。两个donor不同时发起备份，
+部分失败不丢失已释放状态，不为同一consumer累积第三个donor。
+JOIN/EOS、prepare_host、sibling和正在执行请求的连续性保留；工具预取、
+逐层handoff仍关闭。这是现有调度权限的完善，不作通用工作集切换创新声明。
+
+`full_r3.json/oracle_r3.json`逐字节复核完整封存输入，并重现Full的2865
+个及旧benefit Oracle的3007个周期控制。空启动预算实测均805198 token；
+22/23个负逻辑余额原样保留。关联原生launch使用完整request/attempt/
+session身份，分别排除10264/10706个已经launch的返回后候选重复观测。
+这些不是独立请求数。原任务/token/工具时长/依赖/到达及固定18成员不变。
+
+| 完整观察轨迹上的CPU逻辑方案 | Full轨迹 | 旧Oracle轨迹 |
+| --- | ---: | ---: |
+| 仅仍在等工具，加入预算及防抖后的不同consumer请求 | 143 | 116 |
+| 加入工具返回后的未启动后继 | 214 | 164 |
+| 后一行中consumer属于测量组 | 33 | 24 |
+| 后一行的两个donor组合 | 15 | 11 |
+| 后一行至少使用的返回后donor记录数 | 116 | 65 |
+| 旧关键路径等待乐观缩短/JCT总和 | 2.111029% | 0.443693% |
+
+同一固定共同窗口内，后一种方案分别为48/34个consumer，其中16/10个
+属于测量组。上表完整跨度与共同窗口重叠，不能相加。所有方案选择均
+不读取测量成员身份；每个consumer请求只计一次，后续观测仍来自原运行。
+两个donor和单donor的备份成本敏感性分开，不能把不同情形当实测DMA。
+
+2.11%/0.44%是其他服务不变、donor没有损失时，旧测量关键路径上的
+乐观等待缩短量。它没有扣除donor延迟、batch外部性或实际控制开销，
+没有完整重建长ready等待保护，也没有观察launch前的所有原生分配。
+周期快照会漏掉中间事件，改动又会改变后续候选及关键路径。因此既不能
+称为净JCT提升，也不是新系统的严格上限，更不能保证新增收益超过1%。
+证据支持动作机会增加，同时表明现有Oracle后的额外空间仍有限。
+
+控制成本基准使用真实原生树/分配器的小CPU fixture，传输为stand-in。
+每类20次预热后保留500次主动重启检查，线程CPU P50/P90分别为：
+工作差不足39.607/41.948us，迁移成本否决140.029/143.390us，
+迁移预算耗尽21.032/22.385us。普通allows检查中位217.72ns，启用而无
+暂缓时232.23ns；已存在精确暂缓配对时约13.872us，仅针对该donor。
+四项基准通过，原始样本与源码SHA在native_costs_r1，首次错误pytest
+root导致从main导入失败的checks.xml保留，显式指定冻结root后
+checks_r2.xml通过，没有GPU执行。不能把小fixture成本外推为完整控制CPU。
+
+真实完整配置构造已接受133个workflow/20895个请求，见constructor.json；
+没有附加native cache或GPU模型。related_r3.xml已有328项通过。完整
+冻结CPU回归full_cpu_r1/evidence.json最终8988项及23个子测试全部通过，
+完整保留此前8933项身份、新增55项，零失败/错误/跳过。306项外部输入、
+全部源码路径及原生树在执行前后不变，当前冻结17918b63保持clean。
+首次fixture重复分配、已有pending调用、误用v1配置及缺少原生callback
+索引的问题，和新增返回后路径的active候选/epoch交接缺口均保留原JUnit；
+运行中保护用例也修正为传入真实running_batch，未放宽原生执行保护。
+
+完成完整CPU验证之后，campaign_r1/launch.py只为上述合并版本准备一轮
+新Oracle。原Full再次独立校验并复用，没有重跑GPU；学习版动作空间尚未
+匹配，仍禁止自动接上旧R5。新共享协调器3095297/start70872054在北京时间
+2026-11-14 23:46独立ps/state检查中存活，状态waiting_resources_oracle，
+GPU_registered_stages为空、Full已复用且无错误。原2975685已退出，
+2184052继续stopped；没有开启防抢占或承诺共享GPU的独占/FIFO。
+GPU仍被外部训练占用，本轮没有新增GPU JCT或吞吐结论，整体goal继续active。
