@@ -4060,3 +4060,86 @@ request offset当作全局offset，实际它相对每个workflow自己的到达�
 修正时加入登记的到达偏移，保留同一一致性检查，并区分原始首次
 launch与首次正推进。`probe_correction.md`保留该探针错误；它不属于
 GPU执行或原始JCT的故障。完整两臂封存输入校验随后通过，无GPU重跑。
+
+### 工具边界主动让位的 Oracle 实施与共享资源等待（2026-11-14）
+
+用户确认先在当前负载上评估工具边界主动替换，之后才根据真实机会决定
+是否补充自然完成、模型调用轮数更少的短 workflow。本轮保持当前133个
+不同原项目、initial20、mean60、400GB Host、原任务/token/工具时长/依赖/
+到达表和固定18个测量成员。复用已经完整结束的匹配非排序Full，不回退
+旧83项目或70秒配置，不重新登记Full GPU执行。
+
+实现分支为`perf/tool-boundary-oracle-20261114`，冻结工作树为
+`/home/longhao/experiment/.worktrees/beliefkv-bounded-replacements-20261114`。
+提交`b15f8877`（`perf: add cost-aware tool-boundary Oracle replacement`）
+增加显式默认关闭的Oracle候选；`efee8313`（`fix: exclude JOIN waits from
+tool-boundary preemption`）明确要求实际WAIT_TOOL，排除仍有工具回调的
+WAIT_JOIN。完整设计、公式和证据边界见该冻结树的
+`docs/design/tool_boundary_preemption_20261114_zh.md`。
+
+本候选扩大当前工具事件的动作空间，不中断原生正在执行的请求。只有
+真实ready消费者存在、容量不足、A/B属于不同workflow且工作量差能覆盖
+迁移代价时，才允许工具阻塞A让出额度。它不要求工具等待足够长，也不
+要求有工具预测。原75% survival的预测卸载仍独立保留。
+
+新增门槛采用已冻结秒/模型工作量系数，将当前工具视为已返回：
+`1000*s*(A剩余模型工作-B剩余模型工作)-2*必要D2H-B的H2D-A的H2D-400ms>0`。
+这是两任务串行近似，忽略批处理、未来工具和其他workflow，绝非最优JCT
+上界或可累计的节省秒数。动作日志同时记录旧forecast资格/成本门槛此刻
+是否也允许该配对，避免把已有路径可执行的动作全算作新增机会。
+
+必要备份继续走原生prepare、逐项ACK和锁/共享/身份/容量复核。缺少工具
+预测时，新`tool_boundary`准备及尾部规划资格只在当前同步配对内生效，
+不伪造工具hint。第一段真实释放可能已经使A paused；后续释放仅能为同一
+精确消费者继续。实际完整释放后再次读取原生容量，才正常授予B。
+2秒成功让位冷却及30秒真实ready等待后的下一工具边界保护抑制反复让位；
+后者覆盖旧路径造成的等待，不只覆盖新增策略。它们不是无饥饿保证。
+
+CPU机会筛查位于
+`maximal_benefit_campaign_startup_r2/tool_boundary_preemption_r1/`：
+
+| 完整已结束benefit Oracle的实际轨迹 | 观测数 |
+| --- | ---: |
+| 完整周期控制 | 3007 |
+| 有单donor/消费者逻辑配对的边界 | 335 |
+| 有正分两任务近似配对的边界 | 157 |
+| 正分配对重复观测 | 274 |
+| 以测量成员为消费者的正分观测 | 37 |
+| 至少涉及一个测量成员的正分观测 | 81 |
+| 去重正分配对 | 247 |
+
+`screen.py/screen.json`保留首版零截断负逻辑余额的口径错误。独立jq检查
+3007个边界，发现23个负余额、最小-9744token；`screen_exact_budget.py`
+按原负值重新扫描完整封存输入，上表主要计数没有改变。七个缺少结束
+观测的工具区间排除。共同吞吐窗口内为31个正分边界/54个重复配对观测，
+完整测量跨度内为157/274，二者重叠，不能相加。这些计数不证明物理可行、
+对旧路径新增、服务顺序改变或完整JCT收益。
+
+首个冻结b15f的完整绑定为8932项+23个子测试，原8874项身份均保留；
+JOIN状态修正后`full_bound_cpu_r2/evidence.json`为8933项+23个子测试，
+保留上一轮全部8932项，零失败/错误/跳过。源码、资源、外部输入和原生
+引擎状态执行前后不变。新用例使用真实原生树/分配器/准备接口，传输队列
+是CPU stand-in，不能算作CUDA传输或模型性能验证。最初的断言、dirty
+index fixture及预取lease stand-in清理错误保留在原JUnit中，没有改写成通过。
+
+`preparation_r3/`绑定最终源码及原Full/Oracle/R5参考三元组；没有为未适配
+该动作空间的学习模型登记GPU后继。`constructor.json`使用实际serving
+environment构造函数，实际133条/20895请求的完整Oracle策略初始化通过，
+CUDA隐藏且没有附加原生cache。分析脚本最初语法错误和漏做SERVER_FIELDS
+别名的构造错误保留在`constructor_failures.md`及原stderr JSON，修复了
+分析入口，没有放宽serving校验。
+
+用户此前要求关闭GPU防抢占，原guard2428384/start63380797已退出，
+lease为released，设备权限恢复0666、nvidia-modprobe恢复4755。本轮现有
+协调器增加显式shared模式：要求原保护保持释放，保留每阶段资源、源码、
+协调锁和实际进程身份检查，不重启guard；不保证共享GPU独占或FIFO。
+原2184052/start59685073 anchor仍保持stopped，不恢复或终止它。
+
+`campaign_r1/plan.json`只是b15f的未执行准备，随后由最终efee的
+`campaign_r2/plan.json`替代；没有两轮新增GPU实验。实际共享协调器为
+2975685/start68878640。2026-11-14 10:11UTC独立ps及state检查确认它存活、
+状态`waiting_resources_oracle`、已复核并复用Full、`GPU_registered_stages=[]`。
+当时NVML仍见外部2937393使用127618MiB。它将在实际资源满足后运行唯一
+新Oracle，完成完整18成员、fresh drain和真实退出后分析；Oracle-only
+合同阻止它自动接上尚未适配的R5。当前没有新的GPU性能或JCT收益结论，
+完整研究goal继续active。
