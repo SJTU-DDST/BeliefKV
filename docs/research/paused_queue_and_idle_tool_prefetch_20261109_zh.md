@@ -4281,3 +4281,34 @@ checks_r2.xml通过，没有GPU执行。不能把小fixture成本外推为完整
 GPU_registered_stages为空、Full已复用且无错误。原2975685已退出，
 2184052继续stopped；没有开启防抢占或承诺共享GPU的独占/FIFO。
 GPU仍被外部训练占用，本轮没有新增GPU JCT或吞吐结论，整体goal继续active。
+
+### 双donor及部分交接的离线服务归因（2026-11-15，北京时间）
+
+继续目标时确认旧service_evidence只识别v1且仅关联主donor；不能直接用它
+评价v2的两个donor及跨轮部分释放。已在bounded_schedule_r1/
+service_evidence_r1另建离线审计，不修改冻结17918b63、共享队列或原报告。
+它只接受完整执行和实际退出报告，重验注册、策略artifact及完整原始前缀，
+复现原有主donor关联后，再按实际grant为全部donor分别关联释放记录。
+
+每个group只按一次真实grant计数；只有全部donor有物理释放证据、且同一
+attempt/session在下次控制或相应干预前有正原生进度，才报告完整group
+服务验证。之前的部分释放一并保留，单条释放不能给两个grant重复作证。
+没有成功交接关联的释放独立保留，不能据此称为未服务、失败或浪费。
+原始释放缺少donor request/attempt及完整consumer身份，发现已记录身份
+别名时拒绝归因；不能声称已排除未记录别名或证明物理页独占。
+两个donor的旧forecast资格仍为unknown，不能算旧门槛拒绝或增量收益。
+
+最终27项针对性CPU用例全部通过，见checks_r2.xml；覆盖第二donor、部分
+释放、无grant、重复grant、epoch/attempt/session及观察边界。完整旧
+benefit Oracle重验得到300个legacy group、281个有界实际服务，逐条
+释放到服务时延与旧审计完全一致；这些group含491条物理释放记录，
+共496890 FULL token。另有726条未关联物理释放保留，新增策略释放为0。
+这是审计兼容性和归因准备，不是新的调度服务或JCT收益。
+
+首轮端到端检查将新策略跨workflow约束错误用于合法legacy同workflow/
+不同owner的交接而失败；已修正并增加正反回归，初始源码SHA和错误在
+first_end_to_end_failure.json，原25项checks_r1.xml保留。不是线上故障。
+最终源码、测试、JUnit和旧轨迹重验SHA已写入同目录README.md。
+00:03独立ps和/proc确认3095297/start70872054仍存活，最新state为
+waiting_resources_oracle、GPU_registered_stages为空；stopped anchor
+2184052仍Ts。没有查询/使用GPU、重启协调器或开启防抢占，完整目标未完成。
