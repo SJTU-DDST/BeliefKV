@@ -4143,3 +4143,46 @@ lease为released，设备权限恢复0666、nvidia-modprobe恢复4755。本轮�
 新Oracle，完成完整18成员、fresh drain和真实退出后分析；Oracle-only
 合同阻止它自动接上尚未适配的R5。当前没有新的GPU性能或JCT收益结论，
 完整研究goal继续active。
+
+### 工具边界新增动作的释放至服务归因准备（2026-11-14）
+
+本次补齐运行后分析，没有修改冻结服务树、排队计划、到达表或测量成员，
+也没有新增GPU实验。分析位于上一节同一证据目录的
+`service_evidence/audit.py`，消费完整结束且通过实际退出校验的
+`audit_bound_capacity_release_service.py`报告。它复核实际登记绑定的策略
+配置和工作量artifact，从封存journal重新关联相邻的释放、授予及消费者，
+并重验包括native progress在内的全部原始前缀SHA。
+
+分析将legacy动作与新策略动作分开。新动作按现场旧forecast局部门槛
+分为allowed、rejected和unknown；缺少旧门槛字段必须为unknown，不能
+当作rejected。该分类不重放完整旧策略，不能声称所有rejected动作都在
+完整旧策略下不可能发生。消费者必须保留精确request/attempt/session
+身份，实际新增服务还需在授予后的干预边界前出现正原生推进。
+未验证有界服务的动作和没有有效相邻授予关联的新标记均保留。
+
+18项局部CPU检查全部通过，见`service_evidence/checks_final.xml`。
+历史完整benefit Oracle的负对照回放见`legacy_reference.json`：
+
+| 历史已结束执行 | 释放与授予精确关联 | 有界新服务已验证 | 授予窗口内未验证 |
+| --- | ---: | ---: | ---: |
+| 完整观察跨度，全部消费者 | 300 | 281 | 19 |
+| 完整观察跨度，测量成员为消费者 | 53 | 50 | 3 |
+| 固定共同吞吐窗口，全部消费者 | 47 | 44 | 3 |
+
+300个关联均属于legacy，新增策略动作及未关联新增标记均为0，符合该
+历史配置尚未启用新机制的事实。完整跨度与共同窗口重叠，测量donor与
+consumer也可重叠，不能相加。窗口内未验证不等于以后从未服务。历史
+释放至有界服务P50为51.541239ms、P90为119.571208ms，仅描述原有路径，
+不能当作新增策略收益或可消除JCT。
+
+首次完整回放因既有helper的内存tuple与已存JSON的list表示不同而在
+发布报告前失败。修正版先做JSON表示归一化，再逐字段精确比较；没有
+删字段、取整时间或放宽身份校验。原始输入和历史报告没有修改，
+`service_evidence/README.md`保留该分析格式错误。
+
+2026-11-14 10:29UTC独立检查确认同一协调器2975685/start68878640
+存活，仍为`waiting_resources_oracle`，没有新GPU登记且已复用Full。
+当时外部训练2937393仍占用约127641MiB、GPU利用率100%。共享等待
+不承诺独占或FIFO，原guard继续关闭，stopped anchor保持不变。待新
+Oracle实际完成后，使用上述分析分别报告旧门槛允许/拒绝/未知的新动作、
+真实服务及完整18条JCT；当前没有新增GPU性能结论，整体goal仍active。
