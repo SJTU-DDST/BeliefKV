@@ -3737,3 +3737,64 @@ workflow让位于成本更低的长workflow请求。当前运行的benefit候选
 SHA，再次匹配。两个前缀分别读取，不宣称原子快照；冻结operator
 仍clean。现有协调器和完整CPU收集器继续等待同一运行收尾，整体
 goal保持active，尚未执行或验收后续R5及两种baseline。
+
+### Benefit候选的完整共同吞吐窗口与单位成本（2026-11-13）
+
+上一轮已确认52次局部改选、55个新增episode均进入实际原生服务，属于
+有效进展。本轮同一Oracle及协调器、固定组观察器和收集器再次实际
+存活，测量从9/18推进到13/18，54条已到达，没有源码热改或重启。
+
+`maximal_benefit_campaign_startup_r2/oracle_closed_window_r1/observe.py`
+仅适配本轮两个实际registration，复用冻结011db27f的
+`compare_closed_workflow_window.extract_window/match_completed_report/render`
+及原生`OutputConservation`。不使用未完成成员的条件平均JCT。
+Full及Oracle分别校验实际来源、到达/流量合同、Device/Host容量和
+健康writer；Full重新读取原始native后，46个bin、输出与decode速率
+均逐项匹配既有完整cohort报告，没有重跑Full GPU。
+
+共同墙钟窗口保持[47.736661,1404.818443)秒，包含全部背景输出，
+按实际native batch完成时刻归属；末bin保留真实宽度。原生forward
+唯一、单一时钟、到达前缀和输出ordinal均通过检查。
+
+| 同一固定共同窗口 | Nonranking Full | Benefit Oracle |
+| --- | ---: | ---: |
+| 全输出token | 464406 | 456282 |
+| decode输出token | 460498 | 452413 |
+| 全输出token/s | 342.209295 | 336.222920 |
+| decode输出token/s | 339.329587 | 333.371950 |
+
+全输出下降1.749331%，decode下降1.755708%；全输出保留98.250669%，
+仍通过预先声明的98%共同吞吐线，但接近边界，不能写作完全无执行
+代价。不能为通过条件移动窗口、改用完成时间作分母或提高容忍范围。
+`figures/decode_common_window.png/pdf`已生成并实际查看，趋势与按时间
+加权的分布均保留。图明确标注完整测量JCT待结束，无置信区间或重复
+性声称。两种方法的全程已到达数不同，只比较上述同一固定窗口，
+不将报告读取时的全程完成/到达数当作窗口内的人口。
+
+随后`costs.py`只读取`window.json`已经封存的同一四份JSONL前缀，
+复用`audit_useful_token_cost.analyze`核对输出ordinal及worker区间。
+窗口总输出和decode输出再次严格匹配上表，没有用较新的运行前缀
+更换成本人群，也没有借传空measured集合声称测量请求完整验收。
+
+| 共同窗口worker成本 | Full | Benefit Oracle |
+| --- | ---: | ---: |
+| 总worker ms/输出token | 2.923111 | 2.975216 |
+| decode worker ms/输出token | 1.714098 | 1.750262 |
+| decode worker加权有效宽度 | 15.757678 | 15.149031 |
+| decode平均上下文token | 36818.679495 | 37451.924909 |
+| prefill累计worker秒 | 568.171969 | 565.696345 |
+| decode累计worker秒 | 789.338519 | 791.841301 |
+| 实际prefill extend token | 5299616 | 5284800 |
+
+decode单位成本增加2.109824%，总单位输出成本增加1.782514%；
+prefill累计worker减少2.475624秒，decode累计增加2.502781秒。
+至少本窗口没有显示更大的prefill总占用。较小有效宽度与稍大上下文
+是实际组批构成证据；未经相同几何标准化，不能将2.11%全部归给某个
+kernel、NUMA或调度控制。worker区间包含提交、依赖等待和计算，
+不能由它覆盖窗口就推断GPU利用率100%或控制CPU为零。
+
+`window.json`及`costs.json`所绑定全部静态输入/实现SHA独立复核通过，
+成本读取器再次校验封存前缀且未扩展边界；服务operator仍不变。
+当前证据新增共同窗口吞吐和单位成本，未证明本轮完整平均JCT收益、
+最终fresh drain、实际退出或可重复性，整体goal仍active。所有18条
+测量继续自然完成，再按既定JCT及吞吐门槛决定后续阶段。
