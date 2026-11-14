@@ -3304,3 +3304,41 @@ Oracle仍显式future=true、deployable=false，不是部署预测准确度证�
 JCT、共同窗口吞吐和改选至服务核对，再按既定约1%均值收益与吞吐门槛
 推进R5及匹配ThunderAgent acting-decay/native；单次Full完成、背景覆盖或
 Oracle前缀改选均不满足最终目标，整体goal继续active。
+
+### Oracle运行前缀的改选至原生服务核对（2026-11-13 17:56 PST）
+
+上一轮完成Full完整验收、曲线、窗口对齐及Oracle实际GPU启动，属于实质
+进展。本轮先核实同一Oracle监督器、server、scheduler、driver、固定18
+观察器及协调器实际存活，未修改冻结源码，也没有追加GPU实验。
+
+使用已有`audit_workflow_combination_choices.py`及当前learned配置的
+`--model-work-reference`，在`oracle_service_prefix_r1/choices.json`封存
+独立运行前缀。继续使用同一133项目、固定18条、Full对照及连续模型
+工作量合同，实际搜索软截止也逐项重放，不改为不限时选择：
+
+| 本次封存前缀 | 数值 |
+| --- | ---: |
+| 实际搜索，全部成功重放 | 95 |
+| 相对同边界reference的集合变化 | 28 |
+| 新选成员episode | 30 |
+| 有精确实际准入及压力后保留证据 | 30 |
+| 后续有精确原生服务 | 30 |
+| 下一控制或已记录干预前完成有效batch | 28 |
+
+30个episode中仅5个属于测量成员，覆盖mobile_social058的3次和cms002的
+2次；5次均有后续精确服务及有界有效完成。其余25次属于预热或背景，
+不据此宣称测量JCT改善。episode不是独立workflow或独立请求数，reference
+只是该次局部原规则集合，不是整轮反事实。
+
+本前缀共有2848次组合入口检查，2582次返回metadata不可用/空候选的原
+reference回退；不能把入口调用总数当作可改选机会。另有3次实际软截止
+回退、3次reference前缀摘要不可用，均保留。两次未在有界窗口确认有效
+完成的新增episode仍有后续精确原生服务，不能据此认定请求从未执行。
+服务关联按请求attempt、context/session代次和实际周期授予边界核对，
+没有将“agent后来执行过”代替本次服务证据。
+
+分析使用的冻结来源、配置和实现哈希随后独立再次通过；JSONL前缀长度
+和SHA保留在报告中。当前只证明已经有改选落实到实际服务，不证明
+28次改选净有益、因果可消除等待或约1%的完整均值收益。18:00 PST主
+协调器已观察测量完成6/18，仍需等待全部自然JCT；完整分析收集器继续
+沿用，最终以全量记录重新验收，goal保持active。
