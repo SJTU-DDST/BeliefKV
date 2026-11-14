@@ -3544,3 +3544,97 @@ Nonranking Full/Continuous-work Oracle后成功，没有修改脚本或色表。
 保留该状态，这不是Oracle服务失败。整体goal仍active，尚未达到目标。
 下一步先基于当前完整现场核对评分取舍及受影响服务，再决定有依据的
 合并修正；不因0.25%结果直接复验同一弱方案，也不删除负面证据。
+
+### 最大可行准入集合的评分取舍与新Oracle（2026-11-13）
+
+继续沿用133个不同原项目、initial20、mean60、Host400GB及固定18个
+测量成员。原100条任务的token、工具样本、依赖与到达前缀保持原样；
+复用已经完成的133项目非排序Full，不重新运行Full或70秒到达实验。
+此前100项目的1171.463046秒背景停止新增后排空、最后8.709206秒
+单workflow存活及完成后的停止器错误已有独立分析，三者不能混为
+Oracle损失。新133项目已完成的Full和Oracle均无背景未覆盖测量区间，
+但这不证明压力严格平稳，也不保证接下来的候选同样没有覆盖缺口。
+
+核对当前选择器发现：配置中的`selection_objective=benefit`描述已有
+评分合同，但最大可行集合的最终比较明确使用`cost_normalized_score`。
+这是已有成本感知规则，不是预测器读取错误；不能仅凭字段名认为原
+实验已检验了不除以成本的组合目标。即使两组都是无法继续加入任何
+候选的可行集合，成本分母仍可能让较长workflow的便宜请求取代更短
+workflow的较贵请求，需要用真实集合和后续服务检验取舍。
+
+`coordinator_handoff_r2/maximal_objective_audit_r1/`在封存的实际Oracle
+记录上，先精确复现482次真实有界搜索，再仅比较469次完整搜索。
+13次真实软截止单列，不用离线完成搜索覆盖线上回退。保持相同候选、
+顺序、required JOIN、资源几何、最大可行性及1%相对近似相等规则，
+只将最终比较改为benefit。
+
+| 同一封存现场的CPU比较 | 结果 |
+| --- | ---: |
+| 普通跨workflow规划容量竞争 | 460 |
+| 原成本目标包含最短普通workflow候选 | 410/460，89.1304% |
+| benefit目标包含最短普通workflow候选 | 431/460，93.6957% |
+| 改变选择集合 | 75 |
+| 同样大小/变大/变小 | 62/6/7 |
+| 真正改变测量成员资格的集合 | 26 |
+| 新增/移除测量请求的不同请求数 | 9/14 |
+
+报告原`changes_involving_measured=35`包含仅在两组交集中出现的测量成员，
+不能当作35次测量成员被改选；按新增或移除成员核对后的26次另列。
+75组变化中只有2组两侧的当前device摘要均放得下；其余多数仍需要
+后续容量协调。所有集合只是规划可行，不能据此证明即时物理准入、
+反事实服务、独立调度样本或至少1%的完整JCT收益。
+
+候选源码提交为`011db27f317e`，开发树为
+`/home/longhao/experiment/.worktrees/beliefkv-maximal-benefit-20261113`。
+新增明确的`maximal_admission_objective=benefit`；历史默认仍为
+`benefit_per_cost`。保持全部共同放得下就全选，包括零权重成员，
+继续保留共享extent、输入/增长预算、required JOIN、6/8候选、
+0.5ms软预算、active连续性与原生物理复核。日志明确记录
+`selection_policy=maximal_benefit`，Oracle/R5准备、校验和选择审计
+采用同一声明。没有重新训练预测器，训练指纹98011ddd、77次训练执行/
+59项目及连续工作量合同不变；新增元数据会改变artifact字节SHA。
+
+`maximal_benefit_implementation_r1/recorded_search_parity.json`确认新默认
+逐次复现482次旧搜索及13次旧截止，新benefit模式逐次匹配全部469次
+完整离线选择及75次集合变化。相关检查61项、221项通过。首次局部
+fixture没有给足prefill成本，未产生其声称的分母反转；修正fixture
+系数后通过，未修改算法来迁就断言，失败记录保留。
+
+完整资格`maximal_benefit_bound_cpu_r2/`通过8874个literal testcase与
+23个subtest，保留原8855个身份并新增19个，零失败、错误或跳过；
+2744个源码路径、257个外部输入及原生源码在执行前后保持不变。
+r1的4个失败来自新worktree缺失被忽略的原资源路径，其余8870项通过；
+绑定与旧operator完全相同的原生目录及三份历史资源后，4项单独通过，
+再执行完整r2。保留r1，没有放宽断言或将缺失资源算作服务代码回归。
+
+首次启动准备`maximal_benefit_campaign_r1/`在GPU登记前退出：原生证据
+包含旧worktree中的canonical patch绝对路径，新operator路径不同；
+另一个CPU收集器启动遗漏输出目录。该次没有Oracle登记或GPU运行，
+失败状态保留。`maximal_benefit_campaign_startup_r2/native_rebinding.json`
+验证只去除patch路径及其派生状态哈希后两侧完整原生状态一致，
+patch SHA仍为c3a287b6，实际原生树仍为434c35dd。修正启动器路径绑定、
+目录创建与主状态发布顺序，未修改已合格的服务源码或原生代码。
+
+当前权威计划为`maximal_benefit_campaign_startup_r2/plan.json`，实际
+Oracle登记为`workflow_original133_host400_mean60_benefit_oracle_20261113_r2`。
+协调器2870180/start67133914、监督器2870946/start67139110、
+server2871727、唯一GPU scheduler2872132/start67144713、
+driver2874479和固定18观察器2874480均实际存活。服务nice0；
+CPU收集器2870245及观察器nice19。原2184052暂停anchor仍为Ts，
+GPU访问guard2428384保持held；没有恢复或终止anchor。
+
+`oracle_start_r1/report.json`在21:29 PST独立验证503个精确完成请求、
+35273个原输出token，22次实际搜索中12次相对reference改变集合；
+101个候选权重均严格匹配`1/(1+remaining_model_work)`，实际模式确为
+`maximal_benefit`。配置仍为BF16/FA3、running24、chunk2048、
+mixed=false、Device805198token、Host400000057344字节，实际MoE
+配置哈希9425a7d4，decode图1..24及breakable prefill保持一致。
+原始token、请求身份、session/epoch、停止及输入SHA独立复核通过。
+本项是运行前缀证明，没有提前宣称选择至服务关联或完整JCT收益。
+
+21:39 PST附近的实际主状态推进到29条已到达、1/18测量完成且无错误；
+与初次21:29的前缀分开记录，不将两个时刻当作原子快照。工具预取及
+逐层handoff继续关闭，JOIN/EOS、工具预测卸载、prepare_host及siblings
+保持启用。等待同一18条自然完成后，现有观察器与收集器继续执行完整
+原生工作、fresh drain、实际退出、共同吞吐及改选至服务检查，再按
+既定门槛决定后续R5和匹配baseline。总体goal仍active且未达成。
