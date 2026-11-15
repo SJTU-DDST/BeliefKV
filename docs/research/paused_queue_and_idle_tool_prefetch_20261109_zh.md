@@ -2,11 +2,17 @@
 
 ## 当前状态
 
-2026-11-15 21:48北京时间，用户明确要求GPU等待继续，已恢复同一容量积累
+2026-11-15 22:15北京时间，同一容量积累
 Oracle候选的实际队列3519214/start78808321，使用冻结d6d9aa1e及原133/
 initial20/mean60/Host400GB/fixed18。0.5秒占用检查、0.25秒空闲确认，
-当前其他用户仍使用GPU，尚无新GPU注册或模型服务。上一条停止指令对应的
+仍在实际等待，NVML检查已至3612次；其他用户仍使用GPU，尚无新GPU注册
+或模型服务。上一条停止指令对应的
 退出及显存桥释放证明保留，新等待不复用已退出owner，不重新运行Full。
+
+当前重点是让短workflow获得可用容量，以及补测当前60秒负载下的旧含工具
+关键路径全局排序。后者已完成CPU准备，尚未另行排队；与当前容量Oracle
+分别记录，不能把模型总工作量排序的结果冒充工具关键路径实测。具体准备、
+局部机会和控制成本边界见末节。
 
 最新acc8926a完整Oracle平均JCT为1278.157774秒，相对匹配Full回退
 0.260764%；下述benefit结果是此前已完成的另一种选择配置，不能混称同一轮。
@@ -5298,3 +5304,66 @@ start_ticks和实际完整argv；两次NVML观察poll从114增至371，间隔约
 GPU_registration_created=false，其他用户3500085仍在GPU计算，未终止
 其进程或启动我们的模型。恢复的是此前准备的容量Oracle，未因工具路径
 讨论额外登记GPU实验；整体收益目标仍未达成。
+
+### 提高短workflow收益的当前负载工具路径准备（2026-11-15 22:15，北京时间）
+
+用户要求继续提高短任务优先收益。本轮保留已冻结、正在等待资源的容量积累
+候选，不热改其源码、配置、启动器或注册。已有证据支持两个不同问题：
+容量候选处理短workflow的大请求被连续小额度补位绕过；工具路径对照检查
+当前模型总工作量目标是否错过了更接近workflow完成的排序。这两项均待GPU
+验收，不能按局部选择次数宣称目标已实现。
+
+发现已完成的133项目Full本身加载
+workflow_model_tool_critical_path_oracle_v1，只是
+remaining_work_ranking_enabled=false。它保留同一完整工具DAG、模型进度和
+2000ms窗口。因此无需重新收集轨迹或重新构造标签：直接复制其工件，只将
+排序开关设为true，即可准备旧global_ready_remaining_path方法在当前60秒
+负载下的对照。配置环境仅改变模型文件位置与摘要，组合选择保持关闭；
+原始任务、token、工具时长、依赖、到达表、400GB资源和私有fixed18不变。
+protected JOIN、即时预测A→B替换、prepare_host、active连续性及sibling保留，
+工具预取、逐层handoff及额外工具边界抢占均关闭。
+
+新增scripts/prepare_tool_path_oracle_recheck.py，验证完整Full证明、原固定
+测量成员、源绑定CPU闭包和相同标签后生成oracle_work.json及oracle.json，
+实际使用正式启动器environment()归一化并执行CPU构造。最初r1误用较低层
+arm_environment()，遗漏在线工具计时的正式环境归一化，构造在任何GPU
+动作前拒绝；constructor_error.json保留实际stderr。修复准备入口后r2通过，
+没有修改运行时来绕过错误，也没有重新执行GPU或9081项既有完整服务资格。
+
+最终工件包括133个workflow、20895个请求和106830个DAG节点。完整测量证明
+仍为原2991请求、362157输出。现有冻结服务资格9081项复用；新增准备逻辑
+22项通过，冻结树上的global/path/cache/进度/准入/配对/服务审计相关139项
+亦通过。新增22项另存preparation_cpu.xml，139项是已有资格的聚焦核对，
+不与9081重复累加成新服务资格。
+
+复用已有coordinator_handoff_r2/cpu_analysis/full_oracle_opportunities.json，
+未重读870MiB机会日志或原生日志。其完整封存审计已重放2865个控制，其中
+498次跨workflow逻辑容量竞争，旧关键路径排序改变280次局部选集；共同
+吞吐窗口内为70次。新只读汇总确认44次改选会新增测量成员的agent，涉及
+13/18条测量workflow。这里按控制episode和invocation统计，没有完整request
+epoch的反事实服务证明；物理可装入、后续压力及新轨迹均未模拟，不能把44
+次或280次折算为JCT收益，也不修订其他审计按不同候选口径得到的499次。
+
+真实Oracle provider的133条初始未服务路径与逐节点扫描一致。单条冷重建
+线程CPU中位2369.916us、P90 4052.874us、最大6968.773us；665次未发生状态
+更新的缓存查询中位3.233us、P90 3.653us、最大8.418us。初始全人口8778个
+无并列workflow对中，模型工作量和工具关键路径排序有1558个逆序。它不是
+实际同时竞争的候选分布。冷重建成本也不能忽略：实际实验仍需报告重建次数、
+完整同步控制CPU、吞吐及JCT，不能用缓存命中成本代表整轮开销。
+
+tool_path_recheck_r2/followup_readiness.json绑定最终准备工件、原Full注册
+external_inputs里的配置摘要、原局部审计及完整输入SHA，保存下一GPU方法
+的具体命令及独立审计入口。它尚未调用registrar或创建第二个资源等待者。
+普通组合campaign的audit_workflow_combination_choices不适用此方法，
+必须使用audit_ranked_oracle_service并核对自然完成、fresh drain、实际退出
+及相同完整测量工作；完整JCT和共同窗口输出吞吐使用原配对比较器。
+
+新方法计划使用已合格d6d9aa1e，已完成Full使用76e2ff76，源代码存在差异。
+准备明确标注ranking_only_causal_gain_isolated=false；配置只翻排序开关
+不等于GPU结果已隔离全部源码变化。保留配置配对和源差异两种事实，不将
+未来总收益完全归给短任务排序。GPU结果仍要求平均完整JCT改善至少约1%、
+共同窗口输出吞吐不低于Full的98%、实际选择消费和原始工作守恒。
+
+22:15实际等待者3519214/start78808321存活，NVML polls=3612，外部3500085
+仍计算。没有终止外部进程、重新运行Full或自动运行R5/其他baseline。
+整体goal继续active；当前没有新的GPU性能结论。
