@@ -4377,3 +4377,28 @@ donor，这些成员分组可以重叠。共11条物理释放、1008 FULL token�
 8允许/1拒绝/1未知，未知对应双donor组，不能把10组都称作新增机会；
 局部允许也不能证明旧完整选择器会选择同一配对。已证明机制执行了真实
 交接和准入并获得服务，完整18条JCT及共同窗口吞吐收益仍待结束后验证。
+
+### 下一轮显存接力owner移交的CPU准备（2026-11-15 14:12，北京时间）
+
+当前Oracle继续运行，尚未完整完成，不修改运行源码或owner。为避免下一
+匹配阶段把现存接力当作外部GPU任务，已在bounded_schedule_r1/
+bridge_handoff_r1实现原子owner转移、事务凭证及采用同一keeper的构造器。
+adopt.py实际绑定冻结verify_execution，须完整fixed18原始工作、fresh
+drain、真实进程退出全部成立，并核对已注册helper源码和唯一实际keeper
+计算上下文后才允许移交。没有调用它去改变当前运行。
+
+确认旧CPU协调器的resident-owner正常收尾会释放其目录全部control。
+所以不能在采用keeper后创建旧release marker；应先把同一keeper改交
+活的新owner，实例化并验证新监督器仍识别该PID，随后按精确身份结束
+已完成的旧CPU owner且不运行release-all finalizer。移交程序自身不发送
+信号、不分配GPU或启动模型，并保留旧state.owner作为历史描述。
+
+18项CPU检查全部通过，包含原17项及新增构造器采用检查；一项使用三个
+真实私有CPU子进程验证旧owner退出后新owner及原keeper仍存活，最后全部
+回收。GPU观察和完成proof在这些用例中是stand-in，不能当作真实CUDA
+移交已验证。CLI帮助入口亦已执行，未初始化NVML/CUDA。SHA和调用约束
+记录在同目录README，真正的下一轮交接仍须执行完整实机验收。
+
+14:12独立ps及现有协调器检查确认当前固定测量组已完成12/18、到达52条，
+核心五个进程全部存活，无错误或启动重试。没有新增GPU实验或预先启动
+尚未匹配的R5；完整Oracle JCT及共同窗口吞吐结果仍是后续选择的依据。
