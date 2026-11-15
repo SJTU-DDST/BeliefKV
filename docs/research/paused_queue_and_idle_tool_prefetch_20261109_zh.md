@@ -2,17 +2,18 @@
 
 ## 当前状态
 
-2026-11-15 22:15北京时间，同一容量积累
+2026-11-15 22:38北京时间，同一容量积累
 Oracle候选的实际队列3519214/start78808321，使用冻结d6d9aa1e及原133/
 initial20/mean60/Host400GB/fixed18。0.5秒占用检查、0.25秒空闲确认，
-仍在实际等待，NVML检查已至3612次；其他用户仍使用GPU，尚无新GPU注册
+仍在实际等待，NVML检查已至6442次；其他用户仍使用GPU，尚无新GPU注册
 或模型服务。上一条停止指令对应的
 退出及显存桥释放证明保留，新等待不复用已退出owner，不重新运行Full。
 
 当前重点是让短workflow获得可用容量，以及补测当前60秒负载下的旧含工具
-关键路径全局排序。后者已完成CPU准备，尚未另行排队；与当前容量Oracle
-分别记录，不能把模型总工作量排序的结果冒充工具关键路径实测。具体准备、
-局部机会和控制成本边界见末节。
+关键路径全局排序。后者的条件CPU接续器3532646/start79090987已实际启动，
+仅等待前者的执行计划及完整结果，不重复请求当前GPU资源。与当前容量
+Oracle分别记录，不能把模型总工作量排序的结果冒充工具关键路径实测。
+具体准备、局部机会和控制成本边界见末节。
 
 最新acc8926a完整Oracle平均JCT为1278.157774秒，相对匹配Full回退
 0.260764%；下述benefit结果是此前已完成的另一种选择配置，不能混称同一轮。
@@ -5367,3 +5368,60 @@ external_inputs里的配置摘要、原局部审计及完整输入SHA，保存�
 22:15实际等待者3519214/start78808321存活，NVML polls=3612，外部3500085
 仍计算。没有终止外部进程、重新运行Full或自动运行R5/其他baseline。
 整体goal继续active；当前没有新的GPU性能结论。
+
+### 条件工具路径对照接续已实际等待（2026-11-15 22:38，北京时间）
+
+上一轮完成的是工具路径方法准备。本轮新增
+scripts/run_tool_path_followup.py，把实际接续接入既有capacity_queue、
+RegisteredWatcher、fast supervisor和显存桥转交；没有修改现有3519214
+等待进程的源码、配置或角色。使用既有干净d6d9aa1e、9081项服务资格、
+当前133项目/initial20/mean60/Host400GB/fixed18及完整Full，原工作、
+源采样、工具、到达和测量窗口不变。
+
+新CPU进程首先核对前驱PID/start_ticks/完整argv。当前前驱尚未获得GPU，
+execution_plan.json还不存在，接续器等待它真实发布，不把注册缺席或观察
+延迟误判成终止。随后必须等待完整18条自然完成、完整结果审计及旧owner
+发布显存桥状态，再使用原fresh drain/实际退出证明和交接检查。前驱退出、
+源身份改变、失败状态或错误计划继续拒绝，不能据此启动新GPU重跑。
+
+沿用既有“前驱结果达到JCT、吞吐及背景覆盖门槛则先复核”的规则。
+否则才继续一个已准备的global_ready_remaining_path Oracle。普通组合
+campaign只在本CPU进程内限制为复用Full和单个Oracle；新配置仅添加
+Oracle后停止复核的元数据，common_environment及工具路径工件保持原样。
+旧tool_boundary_oracle_only_followup字段是已有单轮停止入口，不开启额外
+工具边界抢占。R5和其他baseline不会因旧模板中残留的后续阶段自动执行。
+
+全局方法必须替换原组合选择审计命令，删除仅适用于组合方法的policy-kind
+及model-work-reference参数，同时严格核对相同registration/control/cohort
+和完整结果范围。保留原固定18停止观察器、实际服务、完整JCT和共同窗口
+吞吐比较；全局方法的门槛还要求实际改选、精确授予及有界正原生服务。
+这些修改仅作用于新协调器进程的调用适配，不热改冻结服务或旧协调器。
+
+资源交接继续复用0.5秒busy/0.25秒idle确认的既有AdoptionQueue，只在前驱
+完成后使用，只有尚无receipt、owner未变且命中原明确busy错误时才重试。
+所有其他失败仍退出。注册器仅能启动精确唯一的已声明fast supervisor；
+已完成的旧CPU owner只能在证明及转交完成、下一监督器身份发布后退休。
+没有授权或实现终止其他用户进程，也不宣称shared队列保证独占或FIFO。
+
+聚焦CPU r2通过39项，其中24项新入口检查、9项既有交接及6项既有busy
+重试检查。额外6项lifecycle检查全部通过、无跳过；包括真实本地
+RegisteredWatcher对精确命令的唯一转接、重复启动拒绝、准备声明和全局
+审计命令的完整接线。没有加载模型、创建CUDA context、发送迁移或做
+GPU/JCT模拟。服务资格及实际GPU性能验收仍是独立要求。
+
+实际CPU接续器为3532646/start79090987，nice0/CUDA隐藏。bootstrap_owner
+最初捕获fork后exec前的短暂空argv，原快照保留；live_wait_verified_r1.json
+另以/proc完整argv和相同start_ticks核对真实exec后的角色，不将空argv
+当成完整身份凭据。实际等待记录从22:32:50推进到22:38:40，进程仍存活，
+status=waiting_previous_execution_plan_publication，bootstrap_error不存在。
+
+对应tool_path_followup_r1/plan.json及launch_intent.json封存了准备、代码、
+39项CPU报告和新配置SHA。此前tool_path_recheck_r2的“未排队”准备状态
+仍保持历史原样；实际接续状态以新目录和活进程为准。计划下一注册为
+workflow_original133_host400_mean60_tool_path_oracle_20261115_r1、端口19078，
+但在上述前驱完成和资源检查前不会创建它。
+
+22:38再次核对当前容量等待者3519214、接续器3532646及外部3500085实际
+存活；容量等待的NVML polls推进到6442，两个下一Oracle注册均不存在。
+新接续器当前不查询GPU空闲或抢占GPU，当前资源等待者仍只有3519214。
+整体goal保持active，固定18平均JCT约1%及吞吐98%目标尚无新实测验收。
