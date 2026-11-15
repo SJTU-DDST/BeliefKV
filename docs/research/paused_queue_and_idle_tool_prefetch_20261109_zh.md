@@ -4957,3 +4957,44 @@ review、17条测量完成、102条已到达、GPU_registration_created=false。
 新监督器发布精确身份后退出；模型/Host池启动及原生安全复核照旧。
 R5完成后也只发布自身结果并保留后续桥，不把三个阶段冒充全部比较；
 ThunderAgent、native SGLang和重复收益仍未完成，整体goal保持active。
+
+### 完整Full竞争请求去重（2026-11-15 19:35，北京时间）
+
+competition_identity_census.py只读取已封存的Full compact periodic报告、
+paused曲线CSV和完整退出凭证，不再扫描原生审计或机会日志。对请求使用
+request/workflow/invocation/context/epoch/attempt/session/generation完整
+身份，而不是只按workflow计数；所有控制分组互斥且总数守恒。
+
+| 相同观察口径 | 共同吞吐窗口 | 首个测量到达到最后测量完成 |
+| --- | ---: | ---: |
+| 全部周期控制 | 658 | 2829 |
+| 没有ready候选 | 70 | 239 |
+| 有ready但没有一个能单独逻辑装入 | 244 | 901 |
+| 仅一个workflow能单独装入 | 131 | 642 |
+| 多个workflow能单独且一起装入 | 112 | 548 |
+| 多个workflow能单独、但不能全部装入 | 101 | 499 |
+| 竞争中不同精确请求 | 277 | 1371 |
+| 其中属于固定测量组的不同请求 | 63 | 219 |
+| 竞争中不同workflow | 32 | 107 |
+| 其中属于固定测量组的workflow | 12 | 16 |
+
+独立jq直接读取同一compact报告，也得到499次竞争、1371个精确请求和
+107个workflow。该结果说明不能继续以“paused少、没有跨workflow竞争”
+作为全程收益不足的唯一解释。不同候选集合签名也不等于独立收益机会，
+一个请求最多在33次竞争检查中重复出现；逻辑fit仍不证明即时原生fit。
+
+工具开始不保证暂停，spawn也不等于已阻塞JOIN；实际卸载后的逻辑paused
+同步路径仍存在，真实依赖结束前不能作为计算候选。当前主要限制包括：
+一部分ready请求单独放不下、已有active连续性，以及当前选择改变后
+每token服务成本与后续交错的净代价。已修复的满reference窗口漏选和
+同pass负shadow复用仍由当前acc8926a冻结实验验证，不热改运行源码。
+
+首次离线脚本错误要求compact periodic报告自身的退出核验标记为真，
+但该报告生成时未启用独立核验，标记原值仍为false；脚本在输出前拒绝。
+修正后直接绑定既有full_execution_proof.json的注册、固定组、证书hash
+和真实owner退出，以及已核验曲线报告；未篡改旧报告或跳过完整执行
+证据。原脚本SHA、失败条件及未写报告事实保留在
+competition_identity_census_initial_guard_r1.json。
+
+19:34当前Oracle仍为17/18、119条已到达，原停止器与执行owner继续运行。
+未计算部分组均值或声明本轮JCT改善；条件R5仍未产生GPU注册。
