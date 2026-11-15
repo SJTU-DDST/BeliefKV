@@ -4888,3 +4888,30 @@ Full/Oracle/R5的实际任务、token、工具、到达表、容量和私有固�
 18:38同一Oracle为13/18测量完成、59条已到达，所有执行owner实际存活。
 本轮准备使完整结果可直接按同一口径收集，不替代尚未完成的JCT、
 复现收益、R5、ThunderAgent或native SGLang验收。
+
+### 剩余测量成员的有界链路检查（2026-11-15 18:49，北京时间）
+
+同一Oracle从14/18推进到15/18。inspect_remaining.py在隐藏CUDA、
+CPU0/nice19下，封存当前49871746bytes replay事件前缀，并只读取
+4186495bytes原生审计尾部和4139181bytes机会日志尾部；没有重扫
+完整GPU审计或修改服务。原始尾部、字节范围和SHA保存在
+competitive_window_r1/live_remaining_r1，观察截止取最后一个实际
+runtime snapshot的monotonic_ms，不把随后事件反投影到该快照。
+
+| 该快照中尚未结束的测量成员 | 已观察完成的模型调用 | 当前逻辑/依赖状态 |
+| --- | ---: | --- |
+| python_api_microservice008 | 195 | root为tool-paused，没有已提交模型请求 |
+| python_desktop_development021 | 134 | parent为JOIN-paused，存活child为tool-paused |
+| python_fintech_trading066 | 329 | root为ready-active，有精确当前请求的实际decode进展 |
+
+Fintech epoch46的当前request与最近一次周期记录匹配，实际decode
+样本在该快照前37.194193ms完成、观察输出delta为1；不是仅凭active
+标记推断已经计算。该次周期可恢复逻辑预算47064token，其当前owner
+完整逻辑预算125912token，但该owner已经active，不应当作待恢复对象。
+另两条的工具/JOIN尚未满足，不能因为已paused便作为ready恢复候选。
+
+该快照未观察到剩余测量成员处于ready-paused；这只说明这一时点的
+链路状态，不证明此前全程无准入长等待、没有其他背景ready候选，
+也不证明物理KV位置、GPU空闲或可消除JCT。缺失近期服务保持未知，
+不以尾部缺记录推断没有服务。没有计算15条的局部JCT均值。
+18:51同一进程组实际存活、15/18完成及69条到达，继续完整自然执行。
