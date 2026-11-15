@@ -4839,3 +4839,52 @@ closed_common_window_r1/window.json封存原固定[47.736661,1404.818443)
 仍由原停止器等待全部18条自然完成。控制检查成本下降，但共同窗口
 仍有吞吐差距，当前既不能宣称目标达到，也不能提前判定完整JCT负收益。
 保留原生服务、背景负载和完整收尾验收；goal继续active。
+
+### 完整竞争口径与匹配R5的CPU准备（2026-11-15 18:38，北京时间）
+
+上一goal turn已完成真实缺口修复、完整负结果分解及新窗口封存，属于
+有效进展。本轮再次按实际PID/start_ticks确认同一协调器3438951、
+监督器3439643、scheduler3440300、replay3442115及停止器3442189存活。
+未重新注册Oracle、改变冻结源码或另起GPU队列；goal继续active。
+
+finish_supply_comparison.py的--prepare在隐藏CUDA、CPU0/nice19下实际
+通过，输出complete_supply_preparation_r1.json。它读取原Full的
+paused CSV及compact periodic报告，不重扫Full原生审计或机会日志；
+逐项重建并匹配原共同窗口曲线及全部竞争统计。最终--run要求当前
+Oracle完整18条、原生工作、fresh drain及实际退出通过后才继续。
+两个比较跨度明确使用首个测量成员到达，而非从warmup时间0起算。
+
+| Full的固定观察跨度 | 共同吞吐窗口 | 首个测量到达至最后测量完成 |
+| --- | ---: | ---: |
+| 起止offset，秒 | 47.736661--1404.818443 | 47.736661--5842.313754 |
+| 周期控制次数 | 658 | 2829 |
+| 跨workflow逻辑竞争 | 101 | 499 |
+| 有测量成员参与 | 61 | 212 |
+| 至少两个测量workflow参与 | 28 | 74 |
+| 竞争时平均agent候选 | 4.623762 | 4.290581 |
+| 竞争时平均workflow候选 | 4.425743 | 4.090180 |
+
+完整测量跨度的Full时间加权ready/JOIN/tool-paused分别3.373433/
+13.566749/3.505395，多个ready workflow时间比例68.531535%。
+快照覆盖率98.190658%，超过1.5秒的观察间隙保留为未知，不补零或
+插值。逻辑paused不证明Host物理驻留，逻辑fit不证明即时原生fit，
+重复控制也不等于独立请求、独立收益或全部准入入口的覆盖率。
+
+prepare_matched_learned.py另完成同一acc8926a的真实R5构造函数核验。
+learned_after_oracle_r1/preflight.json确认source=learned、
+ready_wait_ms=30000、maximal_objective=benefit、额外工具边界动作关闭、
+原预测卸载开启；候选窗口、cost profile、共同2秒边界与Oracle一致。
+Full/Oracle/R5的实际任务、token、工具、到达表、容量和私有固定组
+通过原有verify_model_work_pair；forecast SHA仍为98011dddd0206299
+开头，未重新训练或修改预测参数，复用原9026项源绑定资格。
+
+新计划只做CPU准备，拟用唯一新注册名competitive_window_learned_
+20261115_r1、端口19076。实际注册文件和run目录均不存在，没有新
+监督器/等待者/GPU任务。后续必须先验证当前Oracle完整自然JCT改善
+至少1%、共同窗口输出吞吐至少Full的98%、工作守恒、fresh drain和
+真实退出，再决定是否启动R5。当前共同窗口-1.215962%符合吞吐门槛，
+但完整JCT仍未知，不能据此提前推广或启动预测实验。
+
+18:38同一Oracle为13/18测量完成、59条已到达，所有执行owner实际存活。
+本轮准备使完整结果可直接按同一口径收集，不替代尚未完成的JCT、
+复现收益、R5、ThunderAgent或native SGLang验收。
