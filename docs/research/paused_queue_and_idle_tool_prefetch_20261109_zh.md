@@ -5138,3 +5138,54 @@ queue_r3的实际等待者为3506541/start78565772。独立/proc核验确认相�
 
 当前是实际存活的CPU等待阶段，尚无新的GPU吞吐或JCT结论，整体goal
 继续active。完整Oracle未达标前，不自动运行学习参考或后续baseline。
+
+### paused竞争解释复核及容量目标服务审计（2026-11-15 21:27，北京时间）
+
+继续核对冻结d6d9aa1e的实际配置和源码，而非只按paused总数解释收益。
+AGENT_RESIDENCY_PAUSE=1，ReferenceResidencyPause保留实际FULL卸载后的
+逻辑暂停，以及工具后继Host检查；ReferenceFreeContinuation在TOOL_END
+和LLM_SUBMIT后重新索引精确ready请求。正在工具/JOIN阻塞的paused尚不能
+计算；spawn也不等于立即进入阻塞JOIN。已选中且正在恢复的请求保持active，
+不能为增加paused数量反复取消其恢复资格。没有发现足以把当前全部竞争
+缺口归因于“KV卸载但漏标paused”的新证据。
+
+复用封存的完整统计：Full测量跨度有499次跨workflow逻辑竞争，涉及219个
+不同测量请求和16/18条测量workflow；当前acc8926a有553次竞争、211次
+测量成员参与。观察长度不同，重复检查不能直接作为同单位时间机会数。
+Full另有901次ready非空但无单体能装入当前逻辑余量，说明积压和可选择
+竞争是两个问题。267次Oracle改选产生279个新增episode，均有精确后续
+原生服务；不能再用“排序完全没影响服务”解释当前-0.260764%的完整结果。
+
+capacity_accumulation_screen_r1.json中的desktop021 epoch42精确witness
+再次核对：完整逻辑预算248334token，当前余量195876，差52458；同次授予
+更长workflow的预算123153。该请求的实际提交到首次launch为584.371766s，
+Full为70.863977s。预算witness只证明当时的逻辑选择冲突，不能声称暂缓
+123153token便能立即物理恢复，或把513.5s全部视为可消除收益。已有22个
+不同测量请求/10条workflow的类似覆盖证据继续作为有界容量积累的依据。
+
+新增scripts/audit_ready_capacity_service.py为独立只读分析，不进入冻结
+服务或队列源码。它用执行树的replay_capacity_hold逐条复现实际暂缓，
+按完整request/epoch/attempt/session及固定start/deadline合并cycle，
+核对全局冷却，保留原reference与被暂缓请求。目标随后经过周期、免费、
+初次注册或JOIN入口的实际授予分别记录；只有compact native progress
+提供新launch、正模型进展和完成时钟时，才关联正服务。零进展、错误
+epoch、hold前授予、缺失服务以及JOIN未覆盖的服务都不冒充收益。
+
+后续重新准入不能替早期准入证明实际消费，跨控制边界的随后服务也不
+冒充原窗口消费。暂缓请求从hold到后来授予的观测等待不等于新增延误；
+脚本不将触发次数折算成JCT，不推导迁移、重算或全量控制CPU。
+保留compact报告的legacy完成标记，完整性使用独立fixed18执行证明、
+相同注册/cohort和completion证书SHA，不要求背景全部完成。
+
+target_service_audit_cpu_r3.xml的13项通过，零失败/错误/跳过，包括真实
+runtime产生的hold重放和篡改拒绝；r1的10项及r2的11项也保留。另用
+acc8926a完整证明实际验证legacy marker=false仍可正确绑定完成证据，
+没有重读旧机会日志或原生日志。target_service_audit_preparation_r1.json
+保存未来完整结果的只读命令、输入SHA和源码绑定；尚未执行未来结果审计。
+d6d9aa1e干净树及9081项服务资格未改变，无需为此重跑服务CPU全套或Full。
+
+21:27同一CPU等待者3506541/start78565772仍实际存活，NVML约0.5秒检查。
+外部3500085仍使用GPU；未终止该进程，未创建重复队列，下一Oracle GPU
+注册仍不存在。继续133项目/initial20/mean60/Host400GB/原固定18，工具
+预取和handoff关闭，原预测工具卸载及JOIN/EOS保留。尚无新GPU性能结果，
+整体goal保持active，不能把已实现的容量候选或审计通过当成收益验收。
