@@ -5425,3 +5425,73 @@ workflow_original133_host400_mean60_tool_path_oracle_20261115_r1、端口19078�
 存活；容量等待的NVML polls推进到6442，两个下一Oracle注册均不存在。
 新接续器当前不查询GPU空闲或抢占GPU，当前资源等待者仍只有3519214。
 整体goal保持active，固定18平均JCT约1%及吞吐98%目标尚无新实测验收。
+
+### 等待老化过度放大工作量权重的修复（2026-11-16，北京时间）
+
+用户指出较久等待的长workflow过早压过短workflow。本轮确认当前服务候选
+中的ReadyWaitPriority使用`min(1, base*(1+ready_wait_ms/30000))`，
+限制的是最终绝对权重，未限制相对原工作量权重的放大倍数。等待两分钟
+即可放大五倍；已完成的competitive-window Oracle日志中实际最大为
+20.346771倍。这与ThunderAgent的工具acting-decay是不同的机制。
+
+修复从当前冻结d6d9aa1e建立独立干净工作树
+`/home/longhao/experiment/.worktrees/beliefkv-bounded-ready-aging-20261115`，
+提交`b95dd8d8 fix: bound ready wait aging to preserve short workflow priority`。
+没有热改旧冻结工作树、现有监督器、容量等待器或条件工具路径接续器。
+设计入口为该工作树中的
+`docs/design/bounded_ready_wait_priority_20261115_zh.md`。
+
+新规则先经过可调宽限期，再把相对加成逐步增加到固定上限。下一组匹配
+Oracle/R5配置显式使用ready_wait_priority_ms=120000、
+ready_wait_priority_grace_ms=60000、ready_wait_priority_max_boost=1.25：
+前一分钟不加成，之后两分钟逐步增加，最高25%。增长时间和宽限期支持
+独立调整，倍率1保留ready计时但关闭排序加成，原0开关仍默认关闭。
+有限加成本身不保证任意持续负载下无饥饿；原长期等待逃生机制不变。
+
+周期组合准入、普通补位、原即时预测A→B消费者排序和容量累积比较共享
+该权重。每个workflow只共享一份年龄，不因sibling数量倍增加成。
+精确服务、重新工具/JOIN阻塞和终止清理历史时同步使workflow年龄缓存
+失效；新请求身份重新计时，其他sibling历史保留供下一次收集重建。
+容量累积最短等待和冷却时间独立保持原30000ms，不再隐式跟随增长参数；
+2000ms最长暂缓、JOIN保护、双优先级检查、active连续性和原生容量/锁/
+ACK权限均保留。不增加同步扫描、定时器或预测调用。
+
+同状态重放复用已完成
+workflow_original133_host400_mean60_competitive_window_oracle_20261115_r1
+的完整封存admission journal：1021983053字节，SHA256
+66419bb3c9715a46dd15d70b703cc60f9f5f6513a05cebe7fa54db9e5768fa94。
+552次真实搜索全部复现，其中213次存在老化造成的基础工作量优先级反转。
+515对workflow反转中，新规则纠正500对、改变72次选集。78对实际选择了
+较长者且较短者单独可放下、但两者不可同放的竞争见证中，52对在新规则
+下选入较短者。其余选择仍受组合收益、JOIN和资源约束影响。
+
+一个真实见证中，剩余工作量14630.27的候选只等待12488.066ms，
+旧权重便从0.000068347提高到0.000096797，压过剩余10733.74、
+刚ready的候选0.000093155；新规则恢复较短者优先。以上固定原候选窗口、
+预测、参考集合、资源、JOIN和搜索截止条件，不模拟新窗口、未来排队或
+实际服务，不能把局部改选次数或被纠正的逆序比例换算成JCT收益。
+
+工件在既有ready_capacity_accumulation_r1/bounded_aging_r1下：
+same_state_r1保留首轮分析，same_state_r2/report.json绑定最终代码及完整
+输入SHA；observed_choices.json保留这552次原始有界选择快照。
+scripts/prepare_bounded_ready_wait.py已实际生成prepared_r1中的匹配Oracle/
+learned工作量工件及配置，二者实际组合控制器构造均接受新参数。
+预测参数、成本、原始工作、工具、到达、fixed18和400GB资源未改变。
+准备入口不注册GPU、不重跑Full，也没有替换现有排队配置。
+
+最终CPU源码绑定为9126个不同测试身份及23个subtest，全部通过、无跳过。
+保留原9080个身份；原60001ms非法增长时间身份因现在支持慢增长而明确
+替换为3600001ms上界拒绝，并另有60001ms、120000ms和3600000ms合法配置
+覆盖。不把这一项语义变化隐藏为“全部9081个旧身份逐字保留”。
+
+完整首轮有4项因新工作树缺失ignored原生/历史资源而失败，9122项和23个
+subtest通过。补齐与原工作树相同的只读资源路径后，仅重跑这4项全部通过；
+生产源码、测试源码、361项外部输入和原生引擎保持不变。
+bound_cpu_r1/initial_evidence.json及pytest.log保留首轮4项失败，
+missing_assets_recheck.xml保留精确复核，evidence.json明确按相同源码合并
+这两份结果，不宣称第二次完整重跑。最终再次核对干净b95dd8d8、2768个
+源码绑定、外部输入和原生状态。
+
+本轮没有新增GPU/JCT结果。现有容量Oracle仍按原冻结d6d9aa1e等待资源，
+条件工具路径接续也保持原绑定。修复及匹配新参数可随后续相关改进合并
+验证，不把CPU逆序修正直接记作整体性能目标达成。
