@@ -4915,3 +4915,45 @@ Fintech epoch46的当前request与最近一次周期记录匹配，实际decode
 也不证明物理KV位置、GPU空闲或可消除JCT。缺失近期服务保持未知，
 不以尾部缺记录推断没有服务。没有计算15条的局部JCT均值。
 18:51同一进程组实际存活、15/18完成及69条到达，继续完整自然执行。
+
+### Oracle达标后的条件R5接续（2026-11-15 19:18，北京时间）
+
+本轮同一Oracle先后推进到16/18及17/18，没有重新启动GPU服务。
+检查未来接续代码时发现一个源码层面的等待风险：旧await_current()
+要求上一协调器不再存活才返回，而当前协调器在完成审计后会留在
+preserve_resident_owner()维护空闲显存桥。不能把这个CPU owner仍存活
+等同于原生模型尚未退出。本风险未在当前GPU运行中实际触发失败。
+
+新增coordinate_learned.py只作用于后续CPU接续，未热改运行中的
+coordinate.py、监督器或冻结acc8926a服务源码。它先等完整18条及
+已有最终审计状态，再独立验证实际原生工作、fresh drain和进程退出；
+JCT至少改善1%、共同窗口输出吞吐至少98%、背景覆盖测量尾部，
+并有改选到实际服务的完整证据，才允许接管唯一空闲显存桥并注册R5。
+完整Oracle不达标时写not_started_Oracle_did_not_meet_complete_gate，
+不接管显存桥、不终止旧CPU owner、不创建GPU注册或监督器。
+
+learned_launch_cpu_r2.xml的12项CPU检查全部通过，零失败/错误/跳过：
+保留原9项唯一watcher、非watch调用透传、pidfd私有子进程身份检查及
+旧接续拒绝条件；新增验证完整review加仍存活CPU owner可以通过等待，
+17/18、失败或身份变化拒绝，以及不达标完整结果确实不启动子进程或
+接管显存桥。该测试只证明启动协议分支，不是新GPU或性能资格。
+R1的12项通过XML仍在原路径，原源码保留在learned_launch_cpu_r1_sources。
+R2进一步将“CPU参考”与“达标后可启动”声明区分；原记录没有覆盖。
+
+learned_after_oracle_r1/conditional_learned.json只修改purpose、status
+和比较合同里的接续声明。与此前实际CPU构造通过的learned.json逐项
+核对：运行环境、模型工件、固定组、工具及到达表完全相同；预测参数、
+选集和等待保护未变。原CPU-only配置保留，新launch_plan.json明确
+要求完整promising Oracle后才能执行，未将未验证候选直接推广。
+
+19:16:43启动CPU续行等待者3463732/start77919097，19:17:53核实其实际
+argv、PID/start_ticks及存活；state为waiting_complete_fixed18_Oracle_
+review、17条测量完成、102条已到达、GPU_registration_created=false。
+拟定R5注册文件实际不存在。Oracle仍由原3438951/3439643/3440300/
+3442115/3442189执行和停止，旧owner没有提前终止，未增加GPU队列。
+
+接续复用已验收的fast监督器、唯一注册watcher拦截、精确keeper交接、
+原固定18停止器及完整工作/实际服务审计。接管后的旧CPU owner仅在
+新监督器发布精确身份后退出；模型/Host池启动及原生安全复核照旧。
+R5完成后也只发布自身结果并保留后续桥，不把三个阶段冒充全部比较；
+ThunderAgent、native SGLang和重复收益仍未完成，整体goal保持active。
