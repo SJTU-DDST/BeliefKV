@@ -5,6 +5,35 @@
 原队列 Oracle 已完成，本候选已登记独立 CPU 等待进程，尚未启动 GPU 服务，
 未声明本候选带来 JCT 或重算改善。
 
+## 独立运行验收补充
+
+2026-11-16 新增独立分析提交 `62c0cba3`，位于
+`/home/longhao/experiment/.worktrees/beliefkv-materialization-readout-20261116`。
+不改变现有物化或后继严格 Oracle 的排队源码与配置。
+完整说明为该工作树的
+`docs/research/materialization_runtime_readout_20261116_zh.md`。
+
+分析器在原完成证书、精确测量工作及实际退出的基础上，
+分别统计 held 首次 child、已有模型调用的续接 ready-paused、
+时间加权候选供给、实际旧前缀 prefill 区间、native decode 批宽及窗口控制 CPU。
+不将不同截尾的背景总量直接比较，不把 worker 区间当作 GPU 利用率。
+49 项相关 CPU 检查通过；复用已完成 Host400/60 秒 Full 的实际核对保留
+18 条、2,991 请求、362,157 输出，平均 JCT 为 1274.833468 秒。
+公共窗口时间加权 ready-paused 为 3.5691，其中已有续接为 1.8776；
+全测量生存期对应 3.3734 / 2.4238。覆盖率分别为 97.9640% / 98.1907%，
+观测缺口保持未知。这不是 Host200/55 秒新运行的供给或收益预测。
+初版分析器误把 JCT 汇总分布当作逐成员值，其无效平均值已保留并明确排除；
+最终 r2 从逐 workflow JCT 计算并严格核对原完成证书，原实验结果未修改。
+
+新的 CPU 读取进程 PID 4027078、start_ticks 88690765，
+实际状态为 `waiting_completed_control`。它使用隐藏 CUDA、CPU0、nice19，
+等待当前 `gpu_campaign_r2` 的 control/pressure 完成及真实退出后自动分析；
+不创建 GPU 服务，不阻塞后继两组 baseline 或严格 Oracle。
+状态和结果位于该分析工作树的
+`experiments/reports/subagent_materialization_20261116/gpu_campaign_runtime_readout_r1/`。
+截至该次观察 GPU 仍被其他用户占用，没有新设计或严格 Oracle 的 GPU 结果，
+后继 Oracle 至少降低 2% 平均完整 JCT 的目标保持未完成。
+
 ## 设计目的与执行顺序
 
 本设计的核心是让 agent runtime 感知 HBM 与 Host 的有效 KV 容量压力，
