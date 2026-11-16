@@ -2,7 +2,8 @@
 
 用户要求保持 subagent 原任务不变，在有效 KV 接近容量上限时，
 通过系统准入延后新增 child 的状态。现已实现独立、默认关闭的候选；
-尚未启动本候选的 GPU 实验，未声明 JCT 或重算改善。
+原队列 Oracle 已完成，本候选已登记独立 CPU 等待进程，尚未启动 GPU 服务，
+未声明本候选带来 JCT 或重算改善。
 
 ## 设计目的与执行顺序
 
@@ -15,14 +16,14 @@
 
 按用户最新指示，先保持原队列执行，验证已经排队的修复后 Oracle，
 再进行本设计的匹配 GPU 实验。
-当前原队列为
+保留的原队列为
 `workflow_original133_host400_mean60_ready_capacity_oracle_20261115_r1`，
 使用冻结 `d6d9aa1e`、133 原项目、20 初始、400 GB Host、平均 60 秒到达、
-固定 18 测量成员。监督器 PID 3546293、start_ticks 79393944
-已重新核对实际存活，状态为 `waiting_resources_full`。
-本轮不替换其注册、冻结服务源码、到达表或容量配置。
-后述 200 GB／55 秒四组配置仅为 Oracle 之后的新设计候选准备，
-尚未注册或启动，不插入当前 Oracle 验证之前。
+固定 18 测量成员。2026-11-16 已完成全部测量成员的自然尾部，
+并通过新鲜排空、完整请求工作及实际服务进程退出检查。
+其注册、冻结源码、到达表和容量均未替换；负收益保留，详见后文。
+后述 200 GB／55 秒四组配置仅在这轮 Oracle 结果验证之后排队，
+不把本候选插入原队列验证之前。
 
 ## 实现入口
 
@@ -30,7 +31,7 @@
   `/home/longhao/experiment/.worktrees/beliefkv-subagent-materialization-pressure-20261116`。
 - 实现提交：`469be6eaefa20433b00fc54c4f09efa55e8da06a`，
   `perf: defer first child KV materialization under memory pressure`。
-- 最终提交：`440a69171727f0e5f6566313c12176b67b4310c0`，
+- 服务实现修复提交：`440a69171727f0e5f6566313c12176b67b4310c0`，
   `fix: clear stale pause marks before child materialization waits`。
 - 基础：已通过 CPU 验证的严格剩余工作量优先候选 `b07de6a5`。
 - 设计文档：
@@ -113,7 +114,8 @@ GPU 验收需同时看完整 JCT、共同墙钟吞吐、有用前缀丢失、实
 首次物化服务实现仍为前述 `440a6917`；本轮增加离线分析、到达配置和对照准备，
 没有改服务运行时，也没有启动本候选的 GPU 实验。
 原 `host200_prepared_r3` 的 60 秒间隔两臂保留作历史准备；
-待原队列 Oracle 验证后，本设计的首轮候选采用 `host200_mean55_prepared_r2`。
+原队列 Oracle 验证后，本设计的首轮候选采用 `host200_mean55_prepared_r3`；
+原 r2 原生对照的固定测量停止合同缺口和修复证据保留，见后文。
 
 采用现有完整 133 原项目、20 初始、固定 18 测量成员，
 选择 **Host 200 GB、平均 55 秒持续泊松到达** 作为第一轮压力候选，
@@ -170,7 +172,7 @@ GPU 验收需同时看完整 JCT、共同墙钟吞吐、有用前缀丢失、实
 
 ### 准备和验收
 
-`host200_mean55_prepared_r2` 包含 `control.json`、`pressure.json`、
+当前 `host200_mean55_prepared_r3` 包含 `control.json`、`pressure.json`、
 `thunderagent_acting_decay.json`、`native_matched.json`。
 前两组只差本设计开关；后两组明确隔离 Full 策略，使用相同到达、工具、资源和测量成员。
 NUMA 继续只诊断，不新增均匀分配要求。
@@ -183,7 +185,7 @@ native decode 宽度、held 期间新增空闲、控制 CPU 和进展例外。
 不能用 held child 冒充恢复积压，或用 decode worker 内部速率代替墙钟吞吐。
 若减少重算却缩小执行集合、降低吞吐，仍为负结果。
 
-新增配置和诊断相关 CPU 回归 **178 项通过**，16 条警告保留，
+初版配置和诊断相关 CPU 回归 **178 项通过**，16 条警告保留，
 包含全部原物化测试、到达和 Host 几何、四组配置隔离及续接身份校验。
 此前完整 `bound_cpu_r2` 服务资格保留；它不是 55 秒新协议的 GPU 资格。
 最新产物均位于候选的 `experiments/reports/subagent_materialization_20261116/`：
@@ -191,5 +193,105 @@ native decode 宽度、held 期间新增空闲、控制 CPU 和进展例外。
 - `workload_pressure_screen_r3/screen.json`：容量和到达联合筛查及输入绑定。
 - `workload_pressure_screen_r3/figures/capacity_and_supply.{png,pdf}`：已查看的容量与状态曲线。
 - `continuation_supply_r1/{supply.json,decisions.jsonl.gz}`：精确续接供给统计与 compact 观测。
-- `host200_mean55_prepared_r2/preparation.json`：四组配置及验收合同。
-- `protocol_cpu_r3.xml`：178 项相关 CPU 回归。
+- `host200_mean55_prepared_r2/preparation.json`：历史四组准备，native 合同需修复。
+- `protocol_cpu_r3.xml`：原 178 项相关 CPU 回归。
+
+## Oracle 完整结果：未达到收益目标
+
+本轮是原队列中的容量累积及保留可放下候选修复 `d6d9aa1e`，
+仍保留 30 秒 ready-wait 优先和 2 秒容量累积设置。
+它不是后续 `b07de6a5` 严格剩余工作量候选，不把本轮结果归因给后者。
+
+两侧固定测量成员均为 2,991 个请求、362,157 个输出 token，
+逐请求的输入输出数量、哈希及原生结束原因全部一致。
+两次新鲜空闲快照、完整测量停止证书及实际注册进程退出通过；
+背景到达覆盖两侧完整测量尾部。未截去任何测量成员的长尾。
+
+| 指标 | 非排序 Full | 本轮 Oracle | 变化 |
+|---|---:|---:|---:|
+| 固定 18 条平均完整 JCT | 1274.83 s | 1281.77 s | 回退 0.54% |
+| 公共窗口总输出吞吐 | 342.21 token/s | 337.01 token/s | 下降 1.52% |
+| 公共窗口 decode 吞吐 | 339.33 token/s | 334.15 token/s | 下降 1.53% |
+
+8 条测量 workflow 改善、10 条变慢，累计 JCT 回退 124.81 秒。
+最后完成的 `desktop_development_expert_021` 贡献约 19.18 秒，
+其余 17 条合计约 105.63 秒；不能把回退全部归因于最后一条。
+本轮只有一次配对运行，不声明统计显著性或可重复性。
+
+选择器在完整记录中相对同状态的参考选集改变 331 次，
+产生 284 次周期新增准入及 4 次免费补位新增准入，全部精确匹配到实际服务；
+其中周期 263 次、免费补位 4 次在观察边界内完成了有用批次。
+这些是局部选择和后续服务证据，不是相对另一轮 Full 的因果收益。
+完整测量生存期内，Full/Oracle 的逻辑跨 workflow 集合竞争分别为 499/512 次，
+涉及测量成员为 212/238 次。公共吞吐窗口内分别为 101/97 次，
+涉及测量成员为 61/67 次。重复控制次数不等同于独立任务数。
+新增准入路径确实影响了服务，仍未转化为净 JCT 收益。
+元数据与选择部分累计线程 CPU 为 2.256 秒，
+不能当作全部控制成本，也不能据此完成回退归因。
+
+原始证据根为 `.../competitive_window_r1/ready_capacity_accumulation_r1/resumed_queue_r1/`：
+
+- `complete_comparison_r2/comparison.json`：完整工作、排空、实际退出及性能比较。
+- `complete_comparison_r2/figures/complete_JCT_and_decode.{png,pdf}`：已查看的结果图。
+- `oracle_actual_choices.json`：完整局部选择及精确服务审计。
+- `complete_diagnostics_r1.json`：复用 compact 结果的两窗口竞争与尾部拆分。
+
+保留汇总脚本 r1 的类型比较失败：新验证返回 tuple，JSON 缓存读回为 list。
+r2 仅将缓存外层数组恢复为 tuple，继续严格比较全部请求身份和五项字段；
+未修改服务、工作、结果或重新运行 GPU。
+
+## 原生停止合同与最新资格
+
+`f0564f6b` 修复了原 r2 `native_matched.json` 缺少
+`comparison_contract.native_replay_baseline=true` 的问题，
+生成新的 `host200_mean55_prepared_r3`，旧 r2 不修改。
+修复前实际失败保存在 `native_cohort_contract_before_r1.xml`；
+修复后 `native_cohort_contract_after_r1.xml` 为 179 项通过，
+`native_cohort_stop_related_r1.xml` 为额外 77 项停止器相关回归通过。
+`host200_mean55_protocol_r1.json` 对实际四组配置执行生产环境转换、preflight、
+停止器入口与共同流量检查，并确认 169 份 runtime/policy/control 源码仍与前驱相同。
+这不是新 Host 池、GPU allocator 或模型的物理资格。
+
+新增队列与协议修改沿用全部未改变的 9,267 个服务用例。
+`campaign_bound_cpu_r3/evidence.json` 汇总既有实际通过报告与新增定向报告，
+保留 9,267 个前驱身份，共 9,290 个唯一身份，并保留继承执行的 23 个 subtest。
+这是报告组合与源码绑定，未声称重新执行整套测试。
+`campaign_cpu_r3.xml` 的 16 项队列用例包括真实准备配置、
+四组隔离、完整请求比较、精确监督器跳转及多次状态心跳。
+
+## 新设计已实际排队
+
+冻结候选为 `d4716505`；服务实现仍与 `440a6917` 相同，
+新增提交仅涉及实验协议、CPU 证据绑定、排队与结果读取。
+`gpu_campaign_r2/plan.json` 登记以下顺序：
+
+1. 同代码 Full 控制，首次物化控制关闭。
+2. Full 开启 `pressure_v1`，只改变此开关。
+3. 同配置 ThunderAgent acting-decay。
+4. 同配置 native SGLang。
+
+四组均为 133 个不同原项目、20 初始、平均 55 秒持续泊松到达、
+Host 200 GB、相同固定 18 条测量成员与公共吞吐窗口。
+保留原任务、工具时长、原生采样、JOIN/EOS 和既有原生安全权限。
+复用未变的精确 token 与采样 GPU 检查，启动时仍核验实际 Host/HBM 容量、
+原生执行配置、完整测量工作、新鲜排空和真实退出。
+
+等待进程 PID 4011027、start_ticks 88345847 已通过实际进程核对，
+状态 `waiting_resources_control`；持久 NVML 每 500 ms 检查，
+空闲确认间隔 250 ms。当前 GPU 仍由其他用户占用，未终止其进程。
+等待状态文件为候选证据目录下的 `gpu_campaign_r2/state.json`，
+尚未创建第一组 GPU 服务注册；后台队列已连续更新超过 100 次心跳。
+该状态是本次核对时的观察，不是后续持续存活或 FIFO 独占保证。
+
+保留 CPU 等待进程初次启动 `gpu_campaign_r1` 的失败：
+误用只能新建文件的 evidence writer，第二次心跳退出。
+`d4716505` 改为复用原子状态更新函数，并补充多次心跳用例；
+旧状态、日志和 `CPU_waiter_failure.json` 保留。
+该失败没有创建 GPU 注册、执行测量或重复消耗 GPU 实验。
+另外保留早期 CPU 绑定时 JSON 路径未转为 `Path` 的错误，
+修复后通过完整绑定检查。
+
+本设计尚无 GPU 性能结果。验收仍须同时看到实际旧前缀重算减少、
+公共墙钟 decode 与总输出吞吐不下降，以及完整 18 条平均 JCT 不变差。
+限制新增状态时，还要核对已有续接供给、held child 等待与真实 decode 批宽，
+不能以 Host 占用降低或防死锁出口触发作为收益。
