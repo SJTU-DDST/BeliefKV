@@ -4,6 +4,32 @@
 同时核对历史 Oracle 与最新完整负结果；不更换固定测量成员、
 截去尾部、修改工具时长，或改用更有利的统计口径。
 
+## 后续 CPU 诊断：组批效率与实际重算
+
+2026-11-16 进一步复用相同已完成配对，没有重新运行 GPU。
+完整分析位于
+`/home/longhao/experiment/.worktrees/beliefkv-materialization-readout-20261116/docs/research/oracle_recompute_service_cost_20261116_zh.md`。
+
+共同窗口内，Oracle 平均 decode 批宽从 15.514 降为 15.027，
+单步 worker 区间从 26.390 ms 降为 26.036 ms，
+但每个有效 decode 输出的 worker 成本从 1.7141 ms 增为 1.7460 ms。
+时间加权 active-ready 从 17.2782 降为 16.3162，
+已有调用的续接 ready-paused 从 1.8776 增为 2.6868。
+已记录工具替换和周期控制的线程 CPU 没有增加。
+这些证据支持优先核对准入与实际组批效率，尚不是独立因果归因，
+不能把 worker 区间当作纯 CUDA 成本，或把重叠计时相加作全控制成本。
+
+新增 Host 块重访与实际 prefill 输入范围审计，27 项相关 CPU 检查通过。
+Full 的 51,364 token 均在预热或背景组；Oracle 的 55,193 token 中，
+固定测量组为单个首次调用的 5,997 token。
+该请求所属 workflow 反而改善 49.758463 秒，
+不能直接将全负载重算差归因成测量 JCT 回退。
+这不覆盖所有请求内撤回，也不排除背景重算的共享服务干扰。
+新审计保存实际 source/attempt/session/区间证据，
+后续 Host200/55 秒新设计仍需同口径区分测量与背景、首次调用与已有状态续接。
+
+排队修复版本及 2% 验收保持不变；当前仍无新 GPU 性能结果。
+
 ## 历史结果与比较范围
 
 从实际注册和完整 cohort 报告重新读取，主指标统一为
