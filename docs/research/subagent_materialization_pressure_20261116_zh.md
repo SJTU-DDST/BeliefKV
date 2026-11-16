@@ -5,6 +5,31 @@
 原队列 Oracle 已完成，本候选已登记独立 CPU 等待进程，尚未启动 GPU 服务，
 未声明本候选带来 JCT 或重算改善。
 
+## 注册空档桥接
+
+2026-11-16 复核发现原四组协调器在 FastWait 返回后才执行注册、
+冻结源码及 CPU preflight，500 ms 检查不能等同于已取得 CUDA 占用。
+已增加独立辅助提交 `37f5a477`，保留原协调器 PID 4011027 及所有计划、
+注册和服务源码。辅助进程仅在原协调器写出当前阶段的 owner.json、
+确认进入注册且 GPU 仍空闲后，复用原计划已绑定的 CUDA 桥接脚本。
+原监督器的实际 GPU 桥接或模型进程出现后立即释放临时 child。
+
+辅助工作树为
+`/home/longhao/experiment/.worktrees/beliefkv-materialization-readout-20261116`，
+设计及证据边界见其
+`docs/research/materialization_registration_gap_20261116_zh.md`。
+新增 15 项、原队列 16 项及既有快速等待 15 项 CPU 检查通过。
+初次在分析工作树运行原队列用例时缺少实际准备路径的失败保留，
+回到原工作树后完整通过；未改变准备配置或测试断言。
+
+辅助 PID 4031908、start_ticks 88801987 实际存活，
+状态为 `waiting_original_registration_control`、`CUDA_bridge_spawned=false`。
+状态和转换日志位于辅助工作树的
+`experiments/reports/subagent_materialization_20261116/runtime_readout_preparation_r1/registration_bridge_wait_r1/`。
+截至观察时仍仅其他用户的原进程占用 GPU，未启动新设计或修复 Oracle。
+这是对注册空档的补充，不构成系统级 FIFO 或排他预约；
+首次 CUDA 初始化仍需时间，实际交接尚待 GPU 空闲后验证。
+
 ## 独立运行验收补充
 
 2026-11-16 新增独立分析提交 `62c0cba3`，位于
