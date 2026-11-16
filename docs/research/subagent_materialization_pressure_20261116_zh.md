@@ -8,8 +8,10 @@
 
 - 候选工作树：
   `/home/longhao/experiment/.worktrees/beliefkv-subagent-materialization-pressure-20261116`。
-- 提交：`469be6eaefa20433b00fc54c4f09efa55e8da06a`，
+- 实现提交：`469be6eaefa20433b00fc54c4f09efa55e8da06a`，
   `perf: defer first child KV materialization under memory pressure`。
+- 最终提交：`440a69171727f0e5f6566313c12176b67b4310c0`，
+  `fix: clear stale pause marks before child materialization waits`。
 - 基础：已通过 CPU 验证的严格剩余工作量优先候选 `b07de6a5`。
 - 设计文档：
   [完整设计](../../../.worktrees/beliefkv-subagent-materialization-pressure-20261116/docs/design/subagent_materialization_pressure_20261116_zh.md)。
@@ -36,9 +38,9 @@ SPAWN、JOIN、客户端请求登记和 workflow 原到达时间保持原样。
 证据根位于候选工作树下：
 `experiments/reports/subagent_materialization_20261116/`。
 
-- `bound_cpu_r1/evidence.json`：实际通过 9,267 个唯一用例及 23 个 subtest，
+- `bound_cpu_r2/evidence.json`：实际通过 9,267 个唯一用例及 23 个 subtest，
   保留全部 9,219 个前驱身份，新增 48 个；失败、错误、跳过均为零。
-- 完整执行 238.36 秒；21 条警告保留在 `bound_cpu_r1/pytest.log`。
+- 最终完整执行 233.20 秒；21 条警告保留在 `bound_cpu_r2/pytest.log`。
 - 2,783 份源码、365 项继承外部输入及本轮 5 项配置/模型/到达/测量绑定检查通过，
   前后源码、原生引擎和输入保持一致。两组输入绑定存在重叠，不能相加当唯一数量。
 - `control` 和 `pressure` 两臂都通过生产环境 preflight、实际 runtime 构造和 cache attach。
@@ -48,9 +50,14 @@ SPAWN、JOIN、客户端请求登记和 workflow 原到达时间保持原样。
 - 保留开发用例 `focused_cpu_r2.xml` 的两次失败：
   容量准备 fixture 缺少已有 FULL-only/NUMA 声明；补齐 fixture 后
   `focused_cpu_r3.xml` 的 47 个用例通过，随后新增 JOIN 用例纳入上述完整验证。
+- 初版 `bound_cpu_r1` 也完整通过，但最终复核补充了迟到 SPAWN 遗留待暂停标记的断言。
+  `pause_mark_before.xml` 使用原 `469be6ea` 登记方法实际复现失败；
+  `440a6917` 清除未分配 KV 请求的旧标记，最终以 `bound_cpu_r2` 为准。
 
 `census_cpu_r3.json` 的标量节点替身微基准中，空闲容量快速检查中位约 3.2--3.4 us，
 1,024/8,192 节点完整普查分别约 0.396/3.078 ms。
+该微基准绑定 `469be6ea`；原始 Git blob 哈希验证通过，
+最终暂停标记修复没有改变容量观察类或普查函数的 AST，未为无关改动重复测量。
 这不是整个控制器、真实 allocator、传输或 GPU JCT 的成本。
 持续高压下完整普查采用现有 2 秒控制周期兜底，
 普通标量检查为 400 ms，真实完成/ACK 提前唤醒；不在每个 decode tick 普查。
@@ -58,7 +65,7 @@ SPAWN、JOIN、客户端请求登记和 workflow 原到达时间保持原样。
 
 ## 匹配实验准备
 
-`host200_prepared_r2/{control,pressure}.json` 保留：
+`host200_prepared_r3/{control,pressure}.json` 保留：
 
 - 133 个原项目、20 初始 workflow、平均 60 秒到达、同一固定 18 条测量成员。
 - 相同模型、HBM、运行/decode 上限、工具、输入输出、依赖和剩余工作量预测器。
