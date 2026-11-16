@@ -5578,3 +5578,86 @@ bound_cpu.xml及同SHA归档qualification_helper.py保留完整复核入口。
 服务和新队列；新参数属于消除已确认优先级扭曲的候选，不是实测最优。
 后续可合并有界老化及本轮修改做匹配Oracle/R5验证，继续检查固定18平均
 完整JCT、共同窗口吞吐、长任务等待和真实选后服务，不逐项新增GPU实验。
+
+### 恢复短优先的策略语义，关闭额外等待偏好（2026-11-16，北京时间）
+
+用户进一步指出，尾部workflow讨论后加入的老化和各种附加偏好，
+使当前Oracle偏离了要检验的短workflow优先。本轮确认这个问题：
+2026-11-15 16:52:33的05749d8a引入30秒尺度ready老化，
+19:57:06的17b31461把它传到即时A→B排序，
+20:27:59的17a7d0fa又引入主动等待容量累积。直接背景是具体请求
+出现准入长等待、离线增加等待权重会让它在更多快照中入选；
+这个局部见证不能支持把等待保护直接算作短优先的定义或均值收益。
+上一轮限幅1.25仍未恢复纯粹的短优先。本节取代上一节“继续合并有界
+老化”的下一轮推荐；旧提交、产物和实验含义仍保留。
+
+源码另有更根本的分支问题：虽然shortest_work_first_admission=true，
+cost_aware_maximal_admission=true会优先进入maximal集合分支。
+其目标是不同workflow收益之和，多个长者可以合起来超过一个短者；
+JOIN份额即使不平方，除以未完成成员数仍可压低短workflow的child。
+这有组合目标含义，但不能继续统称为严格短优先Oracle。
+
+新候选基于合格a1c7757e，独立工作树
+`/home/longhao/experiment/.worktrees/beliefkv-strict-workflow-priority-20261116`，
+提交`b07de6a5 fix: restore strict remaining-work admission semantics`。
+显式strict_remaining_work_admission模式使用现有逐项装入实现：
+先保留活体核验通过的JOIN恢复权利，再按连续剩余workflow工作量从短到长
+尝试完整资源检查；同workflow已ready sibling尽量相邻，不能等待未ready
+成员。放得下就加入，放不下则继续尝试后者，保留工作守恒的装入行为。
+不加总多个workflow来投票，不用请求成本、JOIN fanout或1%评分容差压过
+工作量大小关系。ready老化与主动容量累积均显式关闭，并拒绝与其混开。
+原2s窗口、D1工具保留/预测卸载、prepare_host、JOIN/EOS预取和安全约束保留。
+
+严格候选先对已有逻辑候选排序，再使用6/8个前缀名额，普通参考成员
+不必全部占位。未检查完整原集合时明确reference_metadata_complete=false，
+不能编造参考成本；身份/原生信息不足、必须JOIN不可放入或软截止时仍
+原样返回完整原参考集合。等长的新旧集合不再被误判为无竞争。
+超过8个参考成员仍回退并单独标记，不声称已做全局严格比较。
+只有通过_protected_join核验的成员保留强制权利，stale pending标签不够。
+
+另外确认公共ThunderAgent路由器的1800秒超时强制激活被Full继承，
+会绕过选择器直接active。它早于本次尾部优化，不是后来添加的ready
+老化；本轮只在显式严格Full/R5/Oracle候选关闭此旁路，公共论文臂继续
+默认允许。新CPU用例在同一真实runtime中验证旧行为仍会激活等待长者，
+严格模式只保留正常短优先结果及非负逻辑预算，没有撤掉原生容量权限。
+
+只读审计strict_priority_review_r1/same_state_r2/report.json复用552条
+已封存真实选择并全部精确重放。67条原搜索未完成，仅保留精确重放，
+不把旧枚举截止次数冒充新线性算法的运行截止。比较限于其余485条，
+固定实际候选、资源、原参考集合及required JOIN，替代策略不截断。
+
+可行前缀反转定义为：较短者未选，更长普通候选被选，而较短者可以与
+原必须JOIN及已选等高/更高优先级成员共同放下。原实测有96次/202对，
+关闭老化但保留平方加总有46次/95对，线性加总有46次/80对；
+严格剩余工作量排序为0次/0对。四者相对原实测改选分别0/72/90/96次。
+这表明去掉老化仍不足以恢复短优先，也不能把历史回退完全归因于老化。
+零反转是固定快照中的规则一致性，不是新服务、GPU利用率或JCT收益。
+没有模拟新窗口、积压、迁移、工具及完整完成时间。
+
+prepare_strict_workflow_priority.py已生成prepared_r1中的匹配Oracle/R5，
+保留预测fingerprint、连续尺度、成本测量、原始133项目、initial20、
+mean60、400GB和fixed18。连续Oracle拒绝切回旧三档或工具关键路径，
+R5也要求已声明连续读出；同目标审计拒绝两侧混用严格和旧策略。
+两份实际正式环境preflight、NativeAdmissionRuntime和cache attach均通过，
+检查strict=true、cost_aware_maximal=false、ready aging/capacity hold/
+timeout force均关闭、同尺度中性值和2000ms普通窗口实际生效。
+准备不改当前冻结注册，不重跑Full，不注册新的GPU工作。
+
+新增34项CPU用例覆盖逐项短优先、JOIN份额/容差不改变工作量顺序、
+8成员参考替换到实际native候选、stale JOIN、真实超时路径、精确截止回放、
+缺失前缀的完整回退和配置拒绝。一次新增的集成用例试图把sessionless
+原生选择fixture当作session-bound证书，审计正确拒绝；保留该拒绝检查，
+带session的精确回放由独立用例验证，没有放宽生产身份核对。
+完整来源绑定strict_priority_review_r1/bound_cpu_r1/evidence.json现已通过：
+干净b07de6a5上9219个不同测试及23个subtest全部成功，0失败/错误/跳过，
+完整保留上一轮9185个测试身份，新增34个。一次完整执行241.07s，
+21项warning保留原日志。2777份源码、361份外部输入、原生引擎与准备
+工件前后均不变；真实构造证据、完整XML、manifest及同SHA资格helper
+归档都保留，候选工作树保持干净。旧论文超时行为与默认旧选择日志
+继续通过回归，未通过删除旧用例来让严格候选取得资格。
+
+现阶段Oracle仍以0.01*必要新增输入+输出量作剩余模型工作量代理，
+输入完成时结算、部分输出沿用128token进度发布；本轮不另改工作量定义。
+active/chunk连续性、真实native选批、工具时长、迁移和批处理效率仍影响JCT，
+此候选不是任意抢占的理想SRPT或完整JCT理论下界。继续保留测量尾部、
+背景覆盖失败及负结果，不能靠保护或移除某个尾部成员证明短优先收益。
