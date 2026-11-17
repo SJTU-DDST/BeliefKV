@@ -124,6 +124,15 @@ CPU 候选随后以单父提交 `ea577bb1` 增加 Host-block 实际 prefill 审�
 整合时保留该分析入口，以及 `host_block_prefill_evidence_20261117_zh.md`
 中区分测量组、背景右删失和不可归因 worker 区间的约束。
 
+单父提交 `e9b53ec6` 进一步修复 D3 与简化 Oracle 的排序衔接：
+无 R5 组合选择器时，首次 child 物化原先退回登记顺序，现在复用既有
+关键路径排序；关闭排序的 Full 和原 R5 分支保留。修复前 CPU 用例已
+复现长 workflow 先获物化许可，修复后 273 项相关回归全部通过，
+包含工具时间改变路径顺序、关闭排序、实际逻辑准入与 native 可选集合。
+这是后续组合才会触发的缺口，不是刚完成的 D3-off Oracle 回退原因，
+也没有纳入当前四组 D3 冻结源码。详细失败和通过记录保留在候选的
+`oracle_D3_preintegration_cpu_20261117_zh.md`。
+
 最终需确认主开发目录 `git status --porcelain` 为空，
 整合起点之后没有新增 merge commit，文档与实际默认配置一致，
 本轮源码、必要脚本和验证结果都能从同一分支找到。
