@@ -119,3 +119,31 @@ writer 无错误、失败记录或丢失。各进程文件分开读取，原捕�
 `mechanism_summary_r1.json` 绑定完成期原生分析和阶段统计，
 `boundary_off_followup_r3/` 保存后续配置及实际 CPU 构造证明。
 完成 Oracle 的原生分析为原实验目录的 `native_runtime_oracle_r1/runtime.json`。
+
+## Host 丢失前缀的实际输入执行
+
+后续 CPU 审计已将 Host-block 丢失区间与实际原生 prefill 输入求交，
+不再只依赖重算 counter。新分析器、测试与详细记录位于独立 CPU 树
+`beliefkv-ready-service-terminal-20261117` 的
+`docs/research/host_block_prefill_evidence_20261117_zh.md`；
+218 项相关 CPU 用例实际全部通过，无错误、失败或跳过。
+
+Host400 已完成 Full/Oracle 的原 fixed18 审计均通过最终 counter 核对：
+全运行实际 Host 丢失前缀 prefill 分别为 51364/70746 token，
+其中测量组为 0/6052 token。Oracle 唯一受影响测量请求是 first-call，
+所在 workflow 的完整 JCT 仍改善约 41.05 秒；目前不能把平均回退主要
+归因于测量任务重算。背景右删失不同，累计差值不是匹配性能分母。
+完成版结果为同一 CPU 证据目录的
+`full_host_recompute_complete_r1.json` 和
+`oracle_host_recompute_complete_r1.json`。
+
+D3 对照的 `control_host_recompute_live_r2.json` 封存
+2026-11-17 10:41:37 UTC 的活体前缀：106 个正丢失请求的
+4588487 token 均实际进入 prefill，其中测量组 25 个请求为
+1272664 token。测量组 continuation 占 1213109 token，first-call
+占 59555 token；first-call 不能自动视为真实 parented child。
+这比此前 13/18 时的 2192933 counter 前缀提供了更强的输入执行证据，
+两份快照都保留，尚不能作为完成结果或 D3 收益。
+涉及 batch 的约 559.87 秒完整 worker 区间不是重算独占 GPU 时间，
+也不是可移除 JCT。待两组实际退出后，使用相同 fixed18 完成审计并
+结合 JCT、decode 吞吐、ready 供给和控制成本评估 KV 背压。
