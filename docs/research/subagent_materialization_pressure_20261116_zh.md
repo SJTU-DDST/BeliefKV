@@ -1,5 +1,62 @@
 # Child 首次 KV 物化背压：实现与 CPU 验证
 
+## 2026-11-17 13:10 UTC：匹配公共窗口的活体诊断
+
+当前 pressure 组的 watcher、server、replay 均重新通过 PID/start_ticks
+存活检查。独立封存前缀已有 10/18 个测量成员自然结束，供给观测覆盖到
+首条到达后 1970.128919 秒；它仍不是完整测量组的性能结果。
+本节只与当前 Host200/initial20/mean55 的 **Full + R5、D3 关闭**
+对照比较，不使用前述 Host400/mean60 的 Full/Oracle 数据。
+
+两臂的实际 HBM/Host 容量一致。固定公共窗口为到达后
+43.758606 至 1287.750239 秒，两臂均已完整经过；供给统计排除超过
+1.5 秒的观测间隙，覆盖率分别为 97.7076% 和 97.4799%。
+
+| 公共窗口指标 | Full + R5 | Full + R5 + D3 |
+| --- | ---: | ---: |
+| ready-paused 时间加权均值 | 4.909404 | 6.213644 |
+| continuation ready-paused 时间加权均值 | 2.817137 | 4.247634 |
+| active-ready 时间加权均值 | 18.196217 | 18.675895 |
+| JOIN-paused 时间加权均值 | 13.766088 | 14.166641 |
+| tool-paused 时间加权均值 | 2.295805 | 2.145416 |
+| 被物化背压暂缓的首次请求时间加权均值 | 0 | 0.021414 |
+| decode 平均 batch | 16.899058 | 17.241263 |
+| decode batch 数 | 21230 | 18026 |
+| decode 单批平均 worker 区间，毫秒 | 29.243691 | 30.373552 |
+
+D3 公共窗口有 40 条变化后的决策记录实际暂缓 ready child，
+涉及 4 个不同首次请求，其中 1 个属于固定测量组。独立 jq 对压缩供给
+样本重算的暂缓总量为 25.967907 agent 秒，与时间加权均值一致；
+这不是某条 workflow 的 JCT 代价。公共窗口没有观测到
+“D3 仍在暂缓请求、但 active-ready 为零”的状态；该逻辑观测也不证明
+GPU 没有空转，或任何待准入成员已经通过物理容量检查。
+
+截至封存的整个前缀，共有 11 个首次请求曾在实际候选集合中被暂缓，
+其中 2 个属于测量组；0 次观测回退、0 次 progress exception。
+最新状态为注册/开始 193/193 个首次请求、198 次许可、5 次撤销。
+许可数包含再次许可，不能当作不同 child 数；累计登记至开始等待也
+混有普通排队，不能全部计为 D3 造成的阻塞。
+公共窗口 D3 控制累计线程 CPU 增量的上下界为 1.638928/1.642530 秒，
+封存前缀累计为 3.298391 秒。不要与包含它的同步控制计数直接相加。
+
+这些证据表明当前 D3 在公共窗口主要只改变了少量 child 的首次物化，
+没有明显减少观测到的 ready 供给；但积压增加也可能来自服务变慢。
+批宽增加、批次数减少及较长上下文必须与完整吞吐、实际重算和 fixed18
+完整 JCT 一起审查，不能由此宣布 D3 获益。独立活体 Host counter 也
+不与已完成对照的全程总量直接比较。
+
+CPU 只读分析耗时约 9.36 秒，未修改运行源码或四组队列。复用原供给、
+原生 decode 和计时分析器，只扫描一次新的压力组 journal/audit 完整
+前缀；对照直接复用已完成的 readout。证据和已目视检查的公共窗口图在
+`beliefkv-ready-service-terminal-20261117/experiments/reports/terminal_service_integration_20261117/`：
+
+- `capture_materialization_pressure_prefix.py`；
+- `materialization_pressure_prefix_r1/evidence.json`；
+- `materialization_pressure_prefix_r1/pressure_supply.jsonl.gz`；
+- `materialization_pressure_prefix_r1/common_supply.png` 和同名 PDF。
+
+以下更新保留为对应时点的历史记录。
+
 2026-11-17 12:37 UTC 更新：Host200/initial20/mean55 的 **Full + R5、
 D3 关闭**对照已完成全部固定 18 条自然 JCT，平均 1851.699339 秒，
 2991 个测量请求、362157 个测量输出、fresh drain 和实际服务进程退出
