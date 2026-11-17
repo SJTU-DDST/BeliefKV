@@ -22,9 +22,50 @@ Host400/mean60 配置；D3 仍使用 Host200/mean55，不能跨配置充作同�
 [GPU 后线性整合](post_gpu_linear_integration_20261117_zh.md)。
 
 用户要求保持 subagent 原任务不变，在有效 KV 接近容量上限时，
-通过系统准入延后新增 child 的状态。现已实现独立、默认关闭的候选；
-原队列 Oracle 已完成，本候选已登记独立 CPU 等待进程，尚未启动 GPU 服务，
-未声明本候选带来 JCT 或重算改善。
+通过系统准入延后新增 child 的状态。候选独立实现且默认关闭。
+以下按日期保留最初 CPU 准备和排队记录；当前四组已运行，
+性能结论仍需等待完整配对，尚未声明 D3 带来 JCT 或重算改善。
+
+## 运行中压力与大请求等待
+
+2026-11-16 22:31 PST 保存关闭 D3 的 control 快照；
+该时刻有 113 个 workflow 已到达、15/18 个测量成员完成。
+诊断只读原日志，在 CPU0、nice19、隐藏 CUDA 环境执行。
+没有修改运行源码、工具时长、任务、到达或测量停止条件。
+后续实际停止器观察已推进到 16/18，以下数值仍只对应保存的原快照。
+
+该点有 20 个 ready-paused，分属 18 个 workflow；
+其中 11 个是同 context 已有模型调用的续接，9 个是首次调用。
+同时有 22 个 active-ready、22 个 JOIN-paused、5 个 tool-paused。
+这是逻辑状态的点采样，不是时间加权均值，也不证明这些候选都能物理装下。
+
+Host FULL 池高水位为 2,034,506 单位、200,000,077,824 bytes，
+达到本轮实际容量。原生 Host-block 遥测已累计标记 7,496,002 个 FULL
+重算单位；同 session 已服务前缀缺失代理为 6,426,353 token。
+两种口径不能相加，也不能把所有未缓存输入视为重算；
+完整结果仍须按实际 prefill 输入区间核对旧前缀重新执行，并区分测量与背景。
+快照 writer 无错误、失败或丢记录。
+
+测量成员 `python_desktop_development_expert_021` 当时仅完成
+40/369 次原生模型请求。其 root 当前 context epoch 32 的同一请求、
+attempt、session generation，在保存前缀内连续出现在 938 次周期
+ready-paused 观测中，覆盖 1,938.748 秒；这些周期没有记录恢复该 root。
+这确认它仍进入周期候选链路，不能将此长等待直接解释为 paused 漏标。
+
+它每次需要完整逻辑预算 248,445 token，记录的恢复预算中位为
+13,057 token。938 次中有 934 次预算不足，4 次预算足够；
+这 4 次另有 17--24 个 ready peer 能通过同一逻辑容量检查。
+因此，大部分观测存在直接的逻辑额度缺口；4 次未选中仍须区分
+短优先、候选窗口和物理限制，不能据此宣布全部等待的唯一原因或反事实收益。
+本筛查不覆盖所有事件准入、实际原生分配和中间状态。
+更多 ready 积压也不能直接当作更多可改变实际服务的调度竞争。
+
+完整证据保留在 D3 候选工作树的
+`experiments/reports/subagent_materialization_20261116/live_control_pressure_r1/`：
+`snapshot.json`、`native_status.json`、`runtime_state.json`、
+`latest_periodic_decision.json`、`waiting_capacity.json` 及压缩逐周期样本。
+保留原始请求/状态、来源前缀长度与 SHA-256、独立观测截止和未来工作量
+仅供离线诊断的边界；尚无开启 D3 的同窗收益，继续执行原四组及后继 Oracle。
 
 ## 注册空档桥接
 
