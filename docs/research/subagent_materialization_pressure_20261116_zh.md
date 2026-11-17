@@ -6,9 +6,15 @@ Host200、initial20/mean55、fixed18，关闭背压的 FULL 对照正在执行�
 之后依次为开启背压、ThunderAgent、native SGLang。
 原排队的启动失败保留；当前服务冻结为 `7da87367`，
 普通测量仍以 fixed18 全部自然完成为停止条件。
-按最新用户安排，Oracle 不自动接在这条队列之后；
-它另行恢复旧版关键路径短优先，见
+简化 Oracle 的 CPU 资格完成后，已另行登记只等待本四组全部完成和实际退出的
+独立后继队列；它不改变 D3 的四组顺序或正在运行的源码。
+后继恢复旧版关键路径短优先，见
 [简化 Oracle](../../../.worktrees/beliefkv-simple-path-oracle-20261117/docs/design/simple_path_oracle_20261117_zh.md)。
+后继计划为该工作树的
+`experiments/reports/simple_path_oracle_20261117/gpu_queue_r1/plan.json`，
+实际协调器 25882/start_ticks 93331322、监督器 26411/start_ticks 93335827
+均在 CPU 等待前序，尚未初始化 GPU。Oracle 使用已有匹配 Full 的
+Host400/mean60 配置；D3 仍使用 Host200/mean55，不能跨配置充作同组对照。
 以下带日期的排队状态和执行顺序保留为历史记录。
 
 用户要求保持 subagent 原任务不变，在有效 KV 接近容量上限时，

@@ -8,8 +8,34 @@
 原注册、失败和 CPU 证据保持原样；最新源码、准备与验证入口见
 [简化 Oracle](../../../.worktrees/beliefkv-simple-path-oracle-20261117/docs/design/simple_path_oracle_20261117_zh.md)。
 新方案已通过 327 项相关 CPU 回归及真实 133 项目生产构造、接口挂接检查；
-400GB/initial20/mean60/fixed18 配置已准备，未启动或登记 Oracle GPU 后继。
+400GB/initial20/mean60/fixed18 配置已完成独立后继登记，尚未启动 Oracle GPU。
 下文保留旧方案和历史实验的证据边界，不表示旧队列仍在运行。
+
+## 简化 Oracle 的实际后继队列
+
+2026-11-16 22:06 PST，简化候选 `76f78938` 已冻结登记为
+`ops/workflow_original133_host400_mean60_simple_path_oracle_20261117_r1.registration.json`。
+新入口为候选工作树的
+`experiments/reports/simple_path_oracle_20261117/gpu_queue_r1/plan.json`。
+协调器 PID 25882/start_ticks 93331322，监督器 PID 26411/start_ticks 93335827，
+均已核对实际进程存活，状态为 `waiting_existing_materialization_campaign`。
+监督器明确记录 `GPU_initialized=false`；当前 GPU 仍由 D3 对照服务使用。
+
+后继绑定正在运行的 D3 `gpu_campaign_r4` 与实际协调器
+PID 8206/start_ticks 92968341。只有 control、pressure、ThunderAgent、native
+四组均有 fixed18 完整原生工作、fresh drain 和真实退出证书，且协调器实际退出，
+才可进行资源检查和 Oracle 启动；不替换 D3 协调器，不复跑已完成的 Full。
+沿用匹配 Full 的 133 项目、Host400、initial20、mean60、fixed18，
+不同于 D3 当前的 Host200/mean55 配置。后继不自动启动尚未准备的 learned 组。
+
+`bound_cpu_r1/evidence.json` 合并 8,909 个未变化用例的继承证据及本次执行的
+327 个用例，共 9,236 个唯一身份；这不是重新执行一整套 9,236 项测试。
+原生实现不变，仅重新绑定当前候选的 canonical patch 路径。
+`queue_cpu_r1.xml` 的 10 项 CPU 检查覆盖前序身份、实际退出、四组证书、
+fresh drain、实际简化配置和 2% 阈值。原失败及所有旧资格保持原样。
+后继使用单独的非组合比较入口，按至少 2% 平均完整 JCT 降低及原公共窗口
+吞吐门槛验收，并明确排序与工具边界抢占属于合并修改。
+当前只有源码、CPU 与真实等待状态证据，没有新版 Oracle 的 GPU 收益。
 
 2026-11-16。保留正在等待 GPU 的首次物化实验队列，
 同时核对历史 Oracle 与最新完整负结果；不更换固定测量成员、
