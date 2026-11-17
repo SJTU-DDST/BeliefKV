@@ -1,5 +1,16 @@
 # Child 首次 KV 物化背压：实现与 CPU 验证
 
+当前简称统一为 **KV 背压（D3）**。新设计的 GPU 四组比较已实际启动，
+使用候选工作树的 `gpu_campaign_r4/plan.json`：133 个不同原项目、
+Host200、initial20/mean55、fixed18，关闭背压的 FULL 对照正在执行，
+之后依次为开启背压、ThunderAgent、native SGLang。
+原排队的启动失败保留；当前服务冻结为 `7da87367`，
+普通测量仍以 fixed18 全部自然完成为停止条件。
+按最新用户安排，Oracle 不自动接在这条队列之后；
+它另行恢复旧版关键路径短优先，见
+[简化 Oracle](../../../.worktrees/beliefkv-simple-path-oracle-20261117/docs/design/simple_path_oracle_20261117_zh.md)。
+以下带日期的排队状态和执行顺序保留为历史记录。
+
 用户要求保持 subagent 原任务不变，在有效 KV 接近容量上限时，
 通过系统准入延后新增 child 的状态。现已实现独立、默认关闭的候选；
 原队列 Oracle 已完成，本候选已登记独立 CPU 等待进程，尚未启动 GPU 服务，

@@ -1,5 +1,16 @@
 # Oracle 历史差异、优先级纠正与 2% 验收
 
+最新用户决定：先运行 **KV 背压（D3）**，Oracle 改回旧 83 项目的
+`global_ready_remaining_path` 与逐个装入，保留必要修复、ready sibling
+共同推进和工具边界抢占。关闭组合效用、JOIN 覆盖评分、ready 老化、
+主动容量等待和 1800 秒强制激活。此前 `b07de6a5` 严格模型工作量候选
+并非这次要求的含工具路径回退，不再作为待接续的 Oracle 方案。
+原注册、失败和 CPU 证据保持原样；最新源码、准备与验证入口见
+[简化 Oracle](../../../.worktrees/beliefkv-simple-path-oracle-20261117/docs/design/simple_path_oracle_20261117_zh.md)。
+新方案已通过 327 项相关 CPU 回归及真实 133 项目生产构造、接口挂接检查；
+400GB/initial20/mean60/fixed18 配置已准备，未启动或登记 Oracle GPU 后继。
+下文保留旧方案和历史实验的证据边界，不表示旧队列仍在运行。
+
 2026-11-16。保留正在等待 GPU 的首次物化实验队列，
 同时核对历史 Oracle 与最新完整负结果；不更换固定测量成员、
 截去尾部、修改工具时长，或改用更有利的统计口径。
