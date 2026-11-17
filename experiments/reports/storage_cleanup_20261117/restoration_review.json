@@ -1,0 +1,11 @@
+{
+  "status": "verified_restoration",
+  "observed_at": "2026-11-17T15:31:50.808373+08:00",
+  "original_path": "/home/longhao/experiment/.worktrees/beliefkv-arrival120-622c5feb",
+  "commit": "622c5feb5280e6031cf72633aa424835aa509bdf",
+  "git_tree": "4a30c89dfae9bc1ec17b1d8222c4fda926bf9212",
+  "ignored_files_restored_and_compared": 407,
+  "symbolic_links_restored": 1,
+  "complete_checkout_clean": true,
+  "probe_removed_without_force": true
+}
