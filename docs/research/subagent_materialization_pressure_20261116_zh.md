@@ -1,5 +1,41 @@
 # Child 首次 KV 物化背压：实现与 CPU 验证
 
+2026-11-17 12:37 UTC 更新：Host200/initial20/mean55 的 **Full + R5、
+D3 关闭**对照已完成全部固定 18 条自然 JCT，平均 1851.699339 秒，
+2991 个测量请求、362157 个测量输出、fresh drain 和实际服务进程退出
+均已重新核验。这不是 Host400/mean60 的 Oracle 对照结果。
+D3 开启组现已进入实际 `running_full` 回放，后续仍为 ThunderAgent、
+native；完整 D3 增量收益尚未产生。
+
+本次接续曾因完成后分析停止，原失败队列和证据全部保留：
+注册没有 Host 容量覆盖时使用 `source_capacity`，而旧需求分析器只比较
+可选的 `expected_replay_capacity`，把一致的实际容量误报为不匹配。
+`9efca1d2` 修复该缺省读取，并使协调器能在重新验证完整执行和 review 后
+复用已完成阶段；47 项相关 CPU 用例全部通过，绑定 9325 个身份。
+该提交只修改两份分析/协调脚本及对应测试，`beliefkv/` 与原 e117908e
+对照源码逐文件一致，没有加入 CPU 候选的额外服务修改。
+
+修复后的分析保留所有正常尾部和负面负载诊断：当前需求采样中，
+下一次仍需使用的旧前缀 union 最大为 HBM + Host 容量的 1.134330 倍；
+背景到达未覆盖整个测量尾部。这些不是接受结果或零重算证明，
+按用户要求保留诊断后继续原实验，不重选测量成员或重跑对照。
+Host-block 完成审计进一步确认 287 个请求的 14777860 token 丢失前缀
+实际再次进入 prefill，其中测量组 34 个请求为 2478348 token，
+包含 21 个 continuation 与 13 个 first-call。它们不等于可移除 JCT，
+也不能在 D3 开启组完成前视为背压收益。
+
+当前接续入口位于原 campaign 的
+`capacity_review_recovery_r1/continued_campaign_r2/plan.json`。
+协调器 179543/start_ticks 95661312、监督器 180073/start_ticks 95665823、
+server 180292/start_ticks 95666809、回放 181242/start_ticks 95680873、
+固定测量观察器 181243/start_ticks 95680915 已实际核实。
+新的 CPU readout 181205 跟随同一接续 plan；这些身份仅对应本次更新，
+后续仍须重新核实存活与实际服务。
+原 `control_review` 的三项已完成分析按摘要复用到恢复目录，
+仅重做失败的需求分析和其后汇总；`recovery.json`、
+`control_execution_proof.json`、原失败状态、日志和第一次恢复启动的
+参数错误均保留。没有覆盖原注册、原始工作、完整 JCT 或失败记录。
+
 2026-11-17 PST 更新：简化 Oracle 已完成原 fixed18，平均 JCT
 1276.770573 秒，对照 Full 为 1274.833468 秒，后续默认停用额外工具边界
 抢占，普通预测式工具卸载保留。D3 已实际进入
