@@ -164,6 +164,20 @@ CPU 预整合候选 e9b53ec6 另已合并执行 33 个相关模块、1279 项检
 该候选尚未纳入 9efca1d2 和 main 未提交改动，不能充作最终整合或
 新 GPU 源资格证明；最终须结合最新接续修复和主目录实际内容再核验。
 
+后续无额外抢占的 Full/Oracle 两臂也已完成 CPU 配置准备，入口为上述
+CPU 树 `terminal_service_integration_20261117/matched_boundary_off_pair_r1/`。
+两臂均为 Host400/initial20/mean60、133 条原轨迹和原 fixed18；
+生产环境展开和实际 runtime 构造分别确认关闭/开启工作量排序，
+共同保留 2000 ms 普通窗口、1800 秒独立执行兜底和 3600 秒读取超时。
+预测 artifact 仅 `remaining_work_ranking_enabled`、
+`shortest_work_first_admission` 两个开关不同，环境仅 artifact 路径和摘要不同；
+任务、token、工具时长、图、校准、到达和测量组逐项一致。
+两臂均关闭额外工具边界抢占、R5 组合选择、D3、工具预取与逐层 handoff，
+保留既有 JOIN/EOS、sibling、工具预测卸载和 active 连续性。
+这只是未注册的后续候选，不改变当前 D3/ThunderAgent/native 顺序。
+控制降本修复也会改变 Full 的执行成本，因此历史 Full 不自动成为新源码的
+匹配对照；正式执行前仍须完成主目录线性整合及当前源码资格核对。
+
 最终需确认主开发目录 `git status --porcelain` 为空，
 整合起点之后没有新增 merge commit，文档与实际默认配置一致，
 本轮源码、必要脚本和验证结果都能从同一分支找到。
