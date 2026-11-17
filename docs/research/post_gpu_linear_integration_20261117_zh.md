@@ -193,3 +193,33 @@ CPU 树 `terminal_service_integration_20261117/matched_boundary_off_pair_r1/`。
 整合起点之后没有新增 merge commit，文档与实际默认配置一致，
 本轮源码、必要脚本和验证结果都能从同一分支找到。
 提交继续使用 `fix:`、`perf:`、`docs:` 等前缀。
+
+## 包含未提交改动的只读预检
+
+2026-11-17 14:05 UTC，CPU 候选已推进到 `f3be1500`：
+只补充容量恢复后的 deferred 重试回归，6 项检查通过，服务源码仍与
+d070d314 相同；最初错误假设 R5 也会移除 held 索引的失败报告保留。
+
+本次在临时 Git 索引中纳入 main `7f534450` 的全部已跟踪修改和
+18 个尚未跟踪文件，再与完整 CPU 候选合成 Git 对象。它没有移动真实
+分支、修改真实索引或改写工作区。这个首步可自动合并；
+随后尝试再次合并整个旧 D3 分支产生 14 个重复整合冲突，原 r1 证据保留。
+不能把该失败当成尚需丢弃 Oracle、执行兜底或物化修复的接口冲突。
+
+r2 改为仅应用 `9efca1d2` 相对其父提交的四文件增量，
+并从 `770289a8` 纳入尚不存在的 readout 脚本和对应测试。最终预览树为
+`2a0db1e8829539bc6eda1d9e87be36bd11ad4b97`。
+恢复/readout 增量前后的整个 `beliefkv/` 子树完全一致，
+18 个已有未跟踪文件逐字节保留，planning-advice 的 3 处运行期挂接
+AST 均保留，124 个新增/变更 Python 文件通过语法解析。
+main 的 HEAD、工作区内容及真实索引摘要在预检前后相同。
+
+证据为 CPU 候选 `terminal_service_integration_20261117/` 下的
+`preview_dirty_main_integration.py`、
+`dirty_main_integration_preview_r1/evidence.json`、
+`preview_dirty_main_incremental.py` 和
+`dirty_main_integration_preview_r2/evidence.json`。
+这些只是私有索引和单父 Git 对象的预演，不是已经交付的 main 历史，
+语法和 AST 保留也不是完整 CPU 行为资格。正式整合仍等四组 GPU 实际
+退出后再做，并须核对当时最新工作区；所有文件预览保留不等于取消用户
+对方向探索结果使用 `.gitignore` 的原授权。
