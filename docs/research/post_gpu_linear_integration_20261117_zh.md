@@ -77,8 +77,23 @@ JOIN/sibling、工具让位、实际候选过滤、停止协议和相关 CPU 回
 运行期只读检查另见
 [简化 Oracle CPU 检查](simple_path_oracle_live_20261117_zh.md)。
 其中真实原生终结回调已复现执行兜底漏计最终服务的边界，保留原失败证据。
-整合时补精确终结请求确认及陈旧身份回归；当前正在运行和待启动的绑定源
-保持不动，不能把这项尚未合入的修复算作当前 GPU 结果的一部分。
+精确终结请求确认与陈旧身份修复已准备为 `49ce22f7`，101 项相关回归通过。
+独立 CPU 工作树 `beliefkv-ready-service-terminal-20261117` 随后将 D3
+`e117908e` 以 squash 方式预整合，解决四处文本冲突并保存为单父提交
+`1356a093`。791 项相关 CPU 用例实际通过，无失败或跳过，包含首次物化
+扣留与终结计时的跨模块检查；失败的初次报告另行保留。
+该候选内的说明为 `docs/research/oracle_D3_preintegration_cpu_20261117_zh.md`。
+这仍是主目录最终整合前的准备，未纳入 main，也没有改变正在运行或待启动
+的绑定源，不能算作当前 GPU 结果的一部分。
+
+CPU 分析脚本的后续修复 `770289a8` 位于
+`beliefkv-materialization-readout-20261116`，19 项相关检查通过。
+它使分析器识别 `stopped_preserve_*` 等真实终止状态，避免继续空等失败实验。
+原失败 D3 队列遗留的只读 observer `8209/start92968391` 已核对身份后
+用 SIGINT 终止并确认退出；旧报告、失败状态和 retirement receipt 保留。
+这不涉及当前 D3 等待进程或 GPU 服务。新的 D3 campaign plan 创建后，
+应针对 `gpu_campaign_guarded_3600/plan.json` 启动新的匹配 CPU readout，
+不再跟随旧的 `gpu_campaign_r4`。
 
 最终需确认主开发目录 `git status --porcelain` 为空，
 整合起点之后没有新增 merge commit，文档与实际默认配置一致，
