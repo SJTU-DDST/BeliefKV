@@ -9,6 +9,45 @@
 只纳入实验后的整合清单，不热改当前服务。以下旧 PID 和运行快照保留为
 对应时点的历史证据；实时存活必须重新核对。
 
+## 当前两组实验的对照口径
+
+2026-11-17 11:47:45 UTC 重新核对准备配置、注册和实际 runtime 状态：
+前述 Oracle 和当前 D3 使用各自的匹配对照，不能跨 Host 容量或到达表
+计算设计收益。当前 D3 的底座实际开启 learned R5，不是关闭工作量
+排序的 Full；此前仅写 `Full control` 的标签不够明确。
+
+| 验证项 | 对照关系 | Host pool | 到达方式 |
+| --- | --- | ---: | --- |
+| 已完成简化 Oracle | 非排序 Full 与关键路径 Oracle | 400 GB | 初始 20，平均间隔 60 秒 |
+| 当前 D3 | Full + R5 与 Full + R5 + D3 | 200 GB | 初始 20，平均间隔 55 秒 |
+
+两组均为当前已扩展的 133 条原项目 workflow 和固定 18 个测量成员。
+共同的原任务不能抵消资源与到达方式的差异，Oracle 的
+1274.833468/1276.770573 秒不进入 D3 的 JCT 收益分母。
+D3 组继续使用本组关闭物化背压的 control，随后才与 pressure 比较；
+对应 ThunderAgent/native 也使用本组的 200 GB 和同一 55 秒到达表。
+
+独立 CPU 快照逐字段比较了两份准备配置，仅发现物化策略开关及其两个
+对应说明字段不同，其他字段全部相等。control 的原生状态进一步确认
+`workflow_work_source=learned`、`remaining_work_ranking_enabled=true`、
+`workflow_shortest_work_first_admission=true` 和组合准入开启，D3 关闭。
+这是准备配置的等价性和实际 control 策略证明；pressure 尚未执行，
+不能据此宣布其实际容量、服务或收益已经验证。
+
+该快照重新验证原监督器、server 和 replay 的 PID/start_ticks 存活，
+测量完成数仍为 17/18。最后一条测量 workflow 的精确完成请求已从旧快照
+的 40/369 推进至 58/369，最近一次完成为 root epoch 35；
+epoch 36 后继在独立状态采样中 paused，提交约 480.53 秒，仍待服务。
+这表明尾部在推进，也存在较长准入等待；不是完整 JCT 结果或单一瓶颈归因。
+独立 jq 对同一封存请求前缀复核完成数和最新精确请求身份。
+
+证据位于 CPU 候选 `beliefkv-ready-service-terminal-20261117` 的
+`experiments/reports/terminal_service_integration_20261117/`：
+`capture_materialization_scope.py` 和 `materialization_scope_live_r1.json`。
+其中保存配置/注册/artifact/原工作摘要、JSONL 完整前缀长度与摘要、
+有界 runtime journal 尾部摘要及实际 owner 身份；各文件读取截止独立。
+没有热改当前四组源码、资源、排序、测量成员或停止协议。
+
 当前简称统一为 **KV 背压（D3）**。`gpu_campaign_r4/plan.json`
 的关闭背压对照在 2026-11-16 22:59 PST 因回放客户端 `ReadTimeout`
 停在 17/18，四组均未完成，不能作为完整 JCT 结果。

@@ -103,6 +103,12 @@ D3 已实际进入 `gpu_campaign_guarded_3600` 的 control 回放，
 后续仍按 pressure、ThunderAgent、native 顺序继续。
 新的 `runtime_readout_r2` 已绑定该 plan 并核实实际进程与状态心跳，
 初次未产生状态的尝试与启动收据另行保留。
+随后逐字段配置和实际 runtime 审计确认，D3 的两臂均开启 learned R5，
+因此本组对照应标为 `Full + R5` 与 `Full + R5 + D3`，不是非排序 Full。
+两臂 Host200/initial20/mean55 相同，准备配置仅物化开关和对应说明字段
+不同；不能与已完成 Host400/mean60 的非排序 Full/Oracle 跨配置算收益。
+整合后的结果入口应保留这个实际策略口径，详见
+`subagent_materialization_pressure_20261116_zh.md` 的当前对照说明和封存快照。
 
 CPU 预整合候选继续增加单父提交 `ff7eae70`，准备脚本默认关闭额外
 工具边界抢占，并把普通替换的逻辑与 donor 筛查放在排序之前，
