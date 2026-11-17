@@ -6,15 +6,18 @@
 
 ## 执行时点
 
-先完成当前 D3 四组与已排队的简化 Oracle，保留完整 fixed18 自然 JCT、
+按最新用户顺序先完成简化 Oracle，再完成修改后的 D3 四组，保留完整 fixed18 自然 JCT、
 fresh drain、实际退出及结果检查。确认相关协调器、监督器和服务 owner
 实际退出后，再整合开发源码与整理分支。运行中和待启动实验的原源码、
 注册、输入绑定及冻结目录保持当前身份。
 
-- D3：`beliefkv-subagent-materialization-pressure-20261116` 的
-  `experiments/reports/subagent_materialization_20261116/gpu_campaign_r4/plan.json`。
+- D3：`beliefkv-subagent-materialization-pressure-20261116`。
+  原 `gpu_campaign_r4` 的 control 因 `ReadTimeout` 停在 17/18，
+  原注册、冻结源码和失败保留；后续使用加入执行兜底的新匹配注册。
+  新等待计划为 `experiments/reports/subagent_materialization_20261116/guarded_3600/plan.json`，
+  完成当前 Oracle 后才创建 `gpu_campaign_guarded_3600`。
 - 简化 Oracle：`beliefkv-simple-path-oracle-20261117` 的
-  `experiments/reports/simple_path_oracle_20261117/gpu_queue_r1/plan.json`。
+  `experiments/reports/simple_path_oracle_20261117/ready_service_guard_3600/gpu_queue/plan.json`。
 - 两条队列的最新状态必须结合实际进程身份和完成证书检查，
   不能只凭状态文件、GPU 短暂空闲或某个阶段完成就开始收尾。
 
@@ -32,8 +35,13 @@ fresh drain、实际退出及结果检查。确认相关协调器、监督器和
 4. 统一配置、脚本入口、设计与结果文档，明确已验证行为、
    历史负结果、显式候选开关和证据边界。
 
-Oracle 中继续关闭 ready 老化、组合效用加总、JOIN 覆盖份额评分、
-主动积累容量和超时强制激活。整合源码不等于证明性能收益，
+Oracle 中继续关闭 ready 连续老化、组合效用加总、JOIN 覆盖份额评分、
+主动积累容量。按最新用户要求保留独立的 1800 秒连续 ready 无实际服务兜底，
+一次只提升一个精确请求，不影响门槛前正常短优先；
+保留原生物理约束，并单独记录触发与实际服务。
+客户端读取超时按用户最新要求保持 3600 秒。
+少量测量尾部未被背景到达覆盖作为诊断保留，不阻止实验继续。
+整合源码不等于证明性能收益，
 也不重新启动已经完成且严格匹配的 GPU 对照。
 
 ## 已完成的只读预检
