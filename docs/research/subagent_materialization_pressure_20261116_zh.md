@@ -1,5 +1,62 @@
 # Child 首次 KV 物化背压：实现与 CPU 验证
 
+## 2026-11-17：同窗重算增加与控制节奏缺口
+
+沿用下面已经完整经过的固定公共窗口，新增只读审计将实际 native
+prefill 输入、Host 丢失前缀区间和精确请求身份相交；不使用不同背景
+截尾的全程总量。两臂仍分别为 Host200/initial20/mean55 的
+**Full + R5** 和 **Full + R5 + D3**。
+
+| 公共窗口指标 | Full + R5 | Full + R5 + D3 |
+| --- | ---: | ---: |
+| 实际 prefill 输入 token | 5668004 | 6110237 |
+| 其中首次请求输入 token | 2978295 | 2937158 |
+| 其中 continuation 输入 token | 2689709 | 3173079 |
+| Host 丢失前缀实际再次执行 token | 645148 | 1335329 |
+| 其中固定测量成员的实际再次执行 token | 279879 | 745532 |
+| prefill 整批 worker 区间合计，秒 | 622.848736 | 696.922121 |
+| decode 整批 worker 区间合计，秒 | 620.843557 | 547.513653 |
+| 原生 decode 观测输出 token | 355850 | 308168 |
+
+因此，本窗口的 prefill 增加主要位于后继请求，不能简单解释为多处理了
+首次请求；当前 D3 也没有在此窗口降低实际 Host 丢失前缀重算。
+这不是完整测量组最终 JCT 或策略因果分解：服务顺序改变会使同窗实际
+推进的请求不同，整批 worker 区间有重叠与边界差异，不能直接分配给
+重算 token、当作纯 GPU 时间或可移除 JCT。
+另一项“以前已执行输入前缀再次计算”指标为 316358/792536 token，
+它与 Host 丢失前缀重算有重叠，不能相加。
+
+审计只接受归属和原生 attempt/session 明确、丢失/复用 probe 早于该请求
+本窗口首次 prefill 的记录；本次没有晚到 probe 或身份/几何未知的排除项。
+native audit 读到窗口结束后首条 forward 即停止，分别封存约 286 MB/
+250 MB 前缀，并与既有公共窗口 decode 批次、输出、步骤和计时逐项对齐；
+未重新扫描对照约 2.2 GB 的全程 native audit。分析耗时约 8.25 秒，
+CPU0/nice19/CUDA 隐藏，无 GPU 动作。
+
+源码还确认物化许可更新会无条件将完整工作集控制的 `next_tick` 清零。
+同窗独立控制日志中，对照完整控制为 598 次，D3 为 704 次；
+对照相邻间隔均大于 2 秒，D3 有 111 个相邻间隔短于 1 秒。
+这证明实际控制节奏发生变化，但不将全部间隔差异或性能差异都归因于
+单个通知。此前约 1.64 秒仅为 D3 自身线程 CPU，不包含其触发的其他
+完整工作集控制。
+
+CPU 候选已通过 `d070d314` 修复该耦合：有 deferred 统一控制器时，
+普通新许可只进入既有 pending/defer 路径，保留原控制 deadline 和普通
+窗口；撤销许可仍及时协调，无 deferred 的参考路径保留原即时处理。
+生产 Oracle/R5 runtime 的新增用例在旧源码上为 2 失败、2 通过；
+修复后包含窗口到期实际选批、压力撤销、JOIN/sibling、执行兜底和原生
+回调的 201 项相关用例全部通过，无失败、错误或跳过，16 条警告保留。
+它未加入当前 GPU 冻结源码，也不是 JCT 或降重算收益证明。
+
+封存证据位于 CPU 候选 `terminal_service_integration_20261117/`：
+`analyze_materialization_common_prefill.py`、
+`materialization_common_prefill_r1/evidence.json`、
+`analyze_materialization_control_cadence.py`、
+`materialization_control_cadence_r1.json` 及
+`materialization_cadence_{before,related}_r1.xml`。
+当前四组仍继续完成原固定测量成员；本修复与必要依赖在 GPU 全部退出后
+线性整合，再检查最终源码资格，不覆盖旧实验或复用旧源码绑定证明新代码。
+
 ## 2026-11-17 13:10 UTC：匹配公共窗口的活体诊断
 
 当前 pressure 组的 watcher、server、replay 均重新通过 PID/start_ticks

@@ -178,6 +178,17 @@ CPU 树 `terminal_service_integration_20261117/matched_boundary_off_pair_r1/`。
 控制降本修复也会改变 Full 的执行成本，因此历史 Full 不自动成为新源码的
 匹配对照；正式执行前仍须完成主目录线性整合及当前源码资格核对。
 
+随后 CPU 候选新增单父提交 `d070d314`，修复 D3 普通物化许可会无条件
+重启完整控制时钟的耦合。有 deferred 统一控制器时，许可更新保留既有
+普通窗口和完整控制 deadline，通过 pending/defer 路径重新参与原排序；
+撤销许可仍及时协调，无 deferred 路径保持原行为。201 项相关 CPU
+检查全部通过，修复前 Oracle/R5 各有一项失败证明提前清零 deadline。
+本修复也须在当前四组实际退出后纳入 main，不能误用 e9b53ec6 的
+1279 项执行或 9385 个身份绑定证明新源码已取得最终 GPU 资格。
+当前运行和后继 baseline 的冻结源码不变；后续 Full/Oracle 准备中的
+相同环境与开关差异证据保留，最终源资格和 `selection_strategy`、
+`workflow_resume_key` 等按实际开关分别填写的描述字段仍需重新核对。
+
 最终需确认主开发目录 `git status --porcelain` 为空，
 整合起点之后没有新增 merge commit，文档与实际默认配置一致，
 本轮源码、必要脚本和验证结果都能从同一分支找到。
