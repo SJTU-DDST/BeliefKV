@@ -326,7 +326,7 @@ def test_actual_pair_preparation_builds_only_two_full_entries(tmp_path, monkeypa
     assert campaign.stage_labels(plan) == campaign.LABELS[:2]
 
 
-def test_pressure_only_preparation_reuses_full_template_without_oracle(tmp_path, monkeypatch):
+def test_pressure_only_preparation_registers_no_control(tmp_path, monkeypatch):
     plan = prepared_queue(tmp_path, monkeypatch, pressure_only=True)
     assert list(plan["stages"]) == plan["GPU_stage_order"] == ["pressure"]
     assert "preceding_Oracle_comparison" not in plan
