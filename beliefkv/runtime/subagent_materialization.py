@@ -580,13 +580,16 @@ class SubagentMaterialization:
                 and record.key.request_id not in committed_initial
                 and self._ready(record.key)
             ]
-            # Bound ranking, rotate failed windows so a first page of held
-            # children cannot conceal the rest forever.
-            candidates = (
-                self._pressure_order(candidates) if self.include_root_entries
-                and observation.observable and available < required - reserve - outstanding
-                else self._ordered(candidates[:self.max_candidates])
-            )
+            if self.include_root_entries and observation.observable and observation.available_tokens < required:
+                # A request that cannot use the remaining budget should not
+                # crowd a feasible request out of the bounded ranking window.
+                fitting = [
+                    record for record in candidates
+                    if record.progress or self._price(record) <= available
+                ]
+                candidates = self._pressure_order(fitting or candidates)
+            else:
+                candidates = self._ordered(candidates[:self.max_candidates])
             # Native selections are already charged in outstanding. Preserve
             # their permission until native commits or cancels that selection.
             allowed = set(committed_initial)

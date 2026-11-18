@@ -304,17 +304,34 @@ def test_idle_progress_can_start_a_root_if_no_existing_work_can_advance(runtime)
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
-def test_unfittable_old_root_does_not_conceal_later_roots_beyond_the_window(runtime):
+def test_unfittable_old_root_leaves_room_for_a_fittable_root_in_the_same_check(runtime):
     oldest, _ = new_root(runtime, "older", tokens=300)
     later, _ = new_root(runtime, "later")
     gate = runtime._subagent_materialization
     gate.max_candidates = 1
     runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 202
     prepare(runtime, (oldest, later), running=[object()])
-    assert gate.last_decision["root_candidates"] == [oldest.rid]
-    assert not gate.last_decision["allowed"]
-    prepare(runtime, (oldest, later), running=[object()], now=102.)
+    assert gate.last_decision["root_candidates"] == [later.rid]
     assert gate.last_decision["allowed"] == [later.rid]
+    assert gate.last_decision["held_root_request_ids"] == [oldest.rid]
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_unfittable_join_children_leave_room_for_a_fittable_root(runtime):
+    root, _ = new_root(runtime, "arrival")
+    left, right = child(runtime, "left", tokens=300), child(runtime, "right", tokens=300)
+    runtime.on_events((
+        observed(50, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=("left", "right")),
+        observed(51, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),
+    ))
+    gate = runtime._subagent_materialization
+    gate.max_candidates = 2
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 202
+    prepare(runtime, (root, left, right), running=[object()])
+    assert gate.last_decision["root_candidates"] == [root.rid]
+    assert gate.last_decision["allowed"] == [root.rid]
+    assert set(gate.last_decision["held"]) == {left.rid, right.rid}
+    assert gate.last_decision["progress_exception"] is None
 
 
 def test_hold_is_applied_to_registration_periodic_free_sibling_and_timeout_grants(runtime):
