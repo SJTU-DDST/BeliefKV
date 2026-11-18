@@ -218,6 +218,8 @@ class SubagentMaterialization:
             and type(page) is int and page > 0
         )
 
+        from sglang.srt.environ import envs
+
         def evict_device_leaf(node_id, tracker):
             if component.is_evict_device_ongoing:
                 node = tree.node_by_id(node_id)
@@ -248,10 +250,27 @@ class SubagentMaterialization:
                     # Retain one native prefill chunk of allocation headroom to
                     # amortize decode writes, unless a smaller write avoids Host reclaim.
                     chunk_pages = (chunk + page - 1) // page * page if chunk else 0
-                    write_tokens = max(shortfall, chunk_pages)
+                    size = len(full.value)
+                    write_tokens = min(size, max(shortfall, chunk_pages))
+                    padding_saved = 0
                     if host_free >= shortfall:
                         write_tokens = min(write_tokens, host_free // page * page)
-                    size = len(full.value)
+                    elif (
+                        shortfall < write_tokens and tree.full_host_duplicates
+                        and not envs.SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM.get()
+                    ):
+                        # Native reclaims settled mirrors before sole Host copies.
+                        # If mirrors fund the shortfall, spend only that safe capacity.
+                        safe_host = host_free
+                        for mirror in islice(tree.full_host_duplicates.values(), self.max_candidates):
+                            if tree._can_reclaim_full_host_duplicate(mirror):
+                                safe_host += len(mirror.component_data[0].host_value)
+                                if safe_host >= write_tokens:
+                                    break
+                        safe_host = safe_host // page * page
+                        if shortfall <= safe_host < write_tokens:
+                            padding_saved = write_tokens - safe_host
+                            write_tokens = safe_host
                     if write_tokens < size:
                         last_access = node.last_access_time
                         split = split_device_suffix(
@@ -265,6 +284,9 @@ class SubagentMaterialization:
                             counts["subagent_materialization_writeback_split_prefix_tokens"] += (
                                 size - write_tokens
                             )
+                            if padding_saved:
+                                counts["subagent_materialization_writeback_padding_capped"] += 1
+                                counts["subagent_materialization_writeback_padding_tokens_avoided"] += padding_saved
             return native_evict(node_id, tracker)
 
         cache._evict_device_leaf = evict_device_leaf

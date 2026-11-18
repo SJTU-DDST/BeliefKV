@@ -907,6 +907,56 @@ def test_small_native_allocation_bounds_writeback_under_host_pressure(
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("mirror_size,mirror_state,device_freed,checkpoint", (
+    (3, "settled", 3, 8),
+    (2, "settled", 2, 8),
+    (4, "settled", 4, 8),
+    (1, "settled", 4, 5),
+    (3, "pinned", 4, 4),
+    (3, "reclaim_disabled", 4, 4),
+))
+def test_writeback_padding_does_not_turn_safe_duplicate_reclaim_into_live_host_loss(
+    runtime, full_native, monkeypatch, mirror_size, mirror_state, device_freed, checkpoint,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 8 + mirror_size)
+    waiting, generation = insert_session(native, list(range(8)), "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    writer, _ = insert_session(native, list(range(20, 28)), "continuation")
+    mirror, _ = insert_session(native, list(range(40, 40 + mirror_size)), "resident")
+    back_up(mirror)
+    device_lock = native.inc_lock_ref(mirror.id).to_dec_params()
+    host_lock = None
+    if mirror_state == "pinned":
+        host_lock = native.inc_host_lock_ref(mirror.id).to_dec_params()
+    if mirror_state == "reclaim_disabled":
+        monkeypatch.setenv("SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM", "1")
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    runtime._native_chunk_input_reserve = 4
+    before = allocator.available_size()
+    evict_from_tree_cache(native, before + 2)
+
+    assert allocator.available_size() - before == device_freed
+    assert writes[-1].node_id == writer.id
+    assert len(writes[-1].device_indices) == device_freed
+    assert len(mirror.component_data[0].value) == mirror_size
+    observed = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", range(9)), extra_key=None, cache_salt=None,
+    ))
+    assert observed["checkpoint_tokens"] == checkpoint
+    if host_lock is not None:
+        native.dec_host_lock_ref(mirror.id, host_lock)
+    native.dec_lock_ref(mirror.id, device_lock)
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
 def test_native_allocation_finds_sparse_backing_outside_the_bounded_heap_prefix(runtime, full_native):
     from sglang.srt.mem_cache.common import evict_from_tree_cache
     from test_beliefkv_terminal_capacity import insert_session
