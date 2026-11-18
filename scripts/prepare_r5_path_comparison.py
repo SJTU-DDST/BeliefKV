@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.predictor.workflow_work import WorkflowWorkModel
+from beliefkv.runtime.ready_service_guard import parse_ready_service_fit_after
 from beliefkv.runtime.workflow_work_oracle import COMBINATION_PATH_KIND, KIND, WorkflowWorkOracleArtifact
 from scripts.run_causal_comparison import environment, preflight_runtime
 from scripts.train_workflow_work import write
@@ -148,6 +149,12 @@ def prepare(args):
         if sha256_file(Path(binding["path"])) != binding["sha256"]:
             raise ValueError("the fixed traffic or measured members changed")
     oracle = path_oracle_artifact(model, labels, sha256_file(args.model))
+    fit_after = getattr(args, "ready_service_fit_after_s", None)
+    if fit_after is not None:
+        fit_after_s = parse_ready_service_fit_after(fit_after)
+        for prefix in ("", "BELIEFKV_"):
+            control["common_environment"][prefix + "AGENT_READY_SERVICE_FIT_AFTER_S"] = str(fit_after_s)
+        control["comparison_contract"]["ready_service_fit_after_s"] = fit_after_s
     arms = {"full": nonranking_artifact(model), "oracle": oracle, "learned": model}
     paths, configs, preflights = {}, {}, {}
     for index, (name, raw) in enumerate(arms.items()):
@@ -186,6 +193,10 @@ def prepare(args):
             ROOT / "beliefkv/runtime/workflow_oracle_admission.py",
             ROOT / "beliefkv/runtime/workflow_size_admission.py",
             ROOT / "beliefkv/runtime/workflow_combination.py",
+            ROOT / "beliefkv/runtime/ready_service_guard.py",
+            ROOT / "beliefkv/runtime/reference_thunder_admission.py",
+            ROOT / "beliefkv/runtime/sglang_v0520_runtime.py",
+            ROOT / "beliefkv/experiments/internal_comparison.py",
             ROOT / "scripts/run_causal_comparison.py",
         )
     }
@@ -206,6 +217,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("control-configuration", "model", "oracle-labels", "engine", "output-dir"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--ready-service-fit-after-s")
     args = parser.parse_args()
     fresh = not args.output_dir.exists()
     try:

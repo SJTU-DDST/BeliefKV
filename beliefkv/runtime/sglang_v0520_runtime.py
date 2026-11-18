@@ -1107,6 +1107,15 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("R5 requires workflow prediction and bounded free dispatch")
         self.workflow_combination_admission = combination == "1"
+        from beliefkv.runtime.ready_service_guard import parse_ready_service_fit_after
+
+        self.agent_ready_service_fit_after_s = parse_ready_service_fit_after(
+            os.environ.get("BELIEFKV_AGENT_READY_SERVICE_FIT_AFTER_S", "0"),
+        )
+        if self.agent_ready_service_fit_after_s and (
+            not self.agent_ready_service_timeout_s or not self.workflow_combination_admission
+        ):
+            raise ValueError("ready service fit requires the Full combination controller and service guard")
         self.workflow_work_source = os.environ.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned")
         if self.workflow_work_source not in ("learned", "oracle") or (
             self.workflow_work_source == "oracle" and not self.workflow_size_resume
@@ -2818,6 +2827,8 @@ class NativeAdmissionRuntime:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.tick(now=now_ms / 1000.)
         if self._agent_admission is not None:
+            if self.agent_ready_service_fit_after_s:
+                self._capacity_waiting_queue = waiting_queue
             self._agent_admission.tick(now=now_ms / 1000.)
 
     def _maintain_wait_predictions(self, now_ms: float) -> None:
@@ -2973,6 +2984,7 @@ class NativeAdmissionRuntime:
                 "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
                 "agent_control_interval_ms": self.agent_control_interval_ms,
                 "agent_ready_service_timeout_s": self.agent_ready_service_timeout_s,
+                "agent_ready_service_fit_after_s": self.agent_ready_service_fit_after_s,
                 "agent_residency_pause": self.agent_residency_pause,
                 "workflow_size_resume": self.workflow_size_resume,
                 "workflow_combination_admission": self.workflow_combination_admission,

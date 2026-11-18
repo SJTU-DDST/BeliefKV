@@ -396,6 +396,14 @@ def arm_environment(
     if service_timeout not in ("0", "1800"):
         raise ValueError("ready service timeout requires 0 or 1800 s")
     service_timeout = service_timeout if agent_admission == "thunderagent_reference" else "0"
+    from beliefkv.runtime.ready_service_guard import parse_ready_service_fit_after
+
+    service_fit = parse_ready_service_fit_after(common.get(
+        "BELIEFKV_AGENT_READY_SERVICE_FIT_AFTER_S", common.get("AGENT_READY_SERVICE_FIT_AFTER_S", "0"),
+    ))
+    if mode == "full" and service_fit and (service_timeout != "1800" or combination != "1"):
+        raise ValueError("ready service fit requires the Full combination controller and service guard")
+    service_fit = str(service_fit if mode == "full" else 0)
     settings = {
         **common,
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
@@ -451,6 +459,8 @@ def arm_environment(
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS": control_interval,
         "AGENT_READY_SERVICE_TIMEOUT_S": service_timeout,
         "BELIEFKV_AGENT_READY_SERVICE_TIMEOUT_S": service_timeout,
+        "AGENT_READY_SERVICE_FIT_AFTER_S": service_fit,
+        "BELIEFKV_AGENT_READY_SERVICE_FIT_AFTER_S": service_fit,
         "WORKFLOW_SIZE_RESUME": workflow_size,
         "BELIEFKV_WORKFLOW_SIZE_RESUME": workflow_size,
         "WORKFLOW_COMBINATION_ADMISSION": combination,

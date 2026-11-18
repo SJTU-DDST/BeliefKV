@@ -48,7 +48,9 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         if getattr(runtime, "agent_ready_service_timeout_s", 0):
             from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 
-            self._ready_service_guard = ReadyServiceGuard(self)
+            self._ready_service_guard = ReadyServiceGuard(
+                self, fit_after_s=getattr(runtime, "agent_ready_service_fit_after_s", 0),
+            )
         self._residency_pause = None
         if getattr(runtime, "agent_residency_pause", False):
             from beliefkv.runtime.reference_residency_pause import ReferenceResidencyPause
@@ -665,6 +667,7 @@ def validate_reference_admission(
     workflow_combination_admission=False,
     pressure_pause_policy="reference",
     residency_pause=False,
+    ready_service_fit_after_s=0,
 ):
     if any(type(value) is not bool for value in (
         join_free_admission, coadmit_join_children, free_continuation_admission,
@@ -682,6 +685,13 @@ def validate_reference_admission(
         raise ValueError("invalid bounded free dispatch declaration")
     if type(control_interval_ms) is not int or not 500 <= control_interval_ms <= 5000:
         raise ValueError("invalid reference Full control interval declaration")
+    if (
+        type(ready_service_fit_after_s) is not int or not 0 <= ready_service_fit_after_s < 1800
+        or ready_service_fit_after_s and not workflow_combination_admission
+        or not isinstance(state, dict)
+        or (state.get("ready_service_guard") or {}).get("fit_after_s", 0) != ready_service_fit_after_s
+    ):
+        raise ValueError("reference ready service fit differs from declaration")
     admission_type = ReferenceThunderAdmission
     if free_continuation_admission:
         from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission

@@ -823,6 +823,20 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             keys, [a.latest[item.identity] for item in reference],
             capacity=capacity, maximum=len(keys), source="periodic_decay_resume",
         )
+        guard = getattr(a, "_ready_service_guard", None)
+        if guard is not None and guard.fit_available:
+            groups = {}
+
+            def protected(key):
+                return (
+                    a._protected_join(key) or a.runtime._last_join_child_has_waiting_parent(key)
+                    or self._group(key, groups)[1] > 1
+                )
+
+            selected = guard.choose_fit(
+                keys, selected, now=a.policy._resume_now, decay_capacity=capacity,
+                protected=protected,
+            )
         return [a.policy.programs[key.invocation_id] for key in selected]
 
     def dispatch_keys(self, keys):

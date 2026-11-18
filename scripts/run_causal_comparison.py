@@ -81,6 +81,7 @@ SERVER_FIELDS = (
     "AGENT_FREE_DISPATCH_INTERVAL_MS",
     "AGENT_CONTROL_INTERVAL_MS",
     "AGENT_READY_SERVICE_TIMEOUT_S",
+    "AGENT_READY_SERVICE_FIT_AFTER_S",
     "WORKFLOW_SIZE_RESUME", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",
     "WORKFLOW_WORK_SOURCE",
     "DEMAND_PREFILL_PIPELINE",
@@ -407,6 +408,9 @@ def preflight_runtime(settings, model_path):
         )),
         "agent_control_interval_ms": int(settings.get("BELIEFKV_AGENT_CONTROL_INTERVAL_MS", "5000")),
         "agent_ready_service_timeout_s": int(settings.get("BELIEFKV_AGENT_READY_SERVICE_TIMEOUT_S", "0")),
+        "agent_ready_service_fit_after_s": int(settings.get(
+            "BELIEFKV_AGENT_READY_SERVICE_FIT_AFTER_S", "0",
+        )),
         "workflow_size_resume": settings.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0") == "1",
         "workflow_combination_admission": settings.get("BELIEFKV_WORKFLOW_COMBINATION_ADMISSION", "0") == "1",
         "workflow_work_source": settings.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned"),
@@ -1093,6 +1097,10 @@ def observed_configuration(plan, label, arm, *, final=False):
                     residency_pause=common.get(
                         "BELIEFKV_AGENT_RESIDENCY_PAUSE", common.get("AGENT_RESIDENCY_PAUSE", "0"),
                     ) == "1",
+                    ready_service_fit_after_s=int(common.get(
+                        "BELIEFKV_AGENT_READY_SERVICE_FIT_AFTER_S",
+                        common.get("AGENT_READY_SERVICE_FIT_AFTER_S", "0"),
+                    )),
                 )
                 if oracle:
                     artifact = load(Path(common["BELIEFKV_WORKFLOW_WORK_MODEL"]))

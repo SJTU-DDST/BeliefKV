@@ -299,6 +299,7 @@ def test_preparation_uses_standard_serving_environment_and_actual_model_path(mon
         "order": ["full"], "candidate_source_arm": "/original-source",
         "common_environment": {
             "WORKFLOW_COMBINATION_ADMISSION": "1", "MAX_RUNNING_REQUESTS": "24",
+            "AGENT_READY_SERVICE_TIMEOUT_S": "1800",
             "MODEL_PATH": "/actual-model", "TOOL_RESTORE_MODE": "speculative",
         },
         "comparison_contract": {},
@@ -310,6 +311,8 @@ def test_preparation_uses_standard_serving_environment_and_actual_model_path(mon
     def standard_environment(reference, mode, checkout, engine, arm, port, plugin, **kwargs):
         assert mode == "full"
         assert "common_environment" not in reference["arms"]["full"]
+        assert reference["arms"]["full"]["AGENT_READY_SERVICE_FIT_AFTER_S"] == "600"
+        assert reference["arms"]["full"]["BELIEFKV_AGENT_READY_SERVICE_FIT_AFTER_S"] == "600"
         assert kwargs["max_running_requests"] == 24
         assert kwargs["sampling_mode"] == "position"
         assert engine == Path("/qualified-engine")
@@ -327,6 +330,7 @@ def test_preparation_uses_standard_serving_environment_and_actual_model_path(mon
     result = module.prepare(NS(
         control_configuration=control_path, model=model_path, oracle_labels=labels_path,
         engine=Path("/qualified-engine"), output_dir=tmp_path / "prepared",
+        ready_service_fit_after_s="600",
     ))
     assert len(calls) == 3
     assert not result["GPU_registered"] and not result["performance_accepted"]
