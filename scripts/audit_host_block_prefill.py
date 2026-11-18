@@ -55,9 +55,15 @@ def _merged(intervals):
     return result
 
 
-def inspect(attributions, batches):
+def inspect(attributions, batches, *, window_ms=None):
+    if window_ms is not None and not (
+        all(type(value) in (int, float) and math.isfinite(value) for value in window_ms)
+        and window_ms[0] < window_ms[1]
+    ):
+        raise ValueError("Host-loss analysis requires a valid native service window")
     counts, cases, losses, observed, attempts = Counter(), {}, {}, {}, {}
     evictions, sample_ids, probes, namespaces, fingerprints = set(), set(), {}, {}, {}
+    observed_in_window = {}
     for row in attributions:
         if row.get("event") != "host_block_reaccess_attributed":
             continue
@@ -132,6 +138,10 @@ def inspect(attributions, batches):
         if not isinstance(sample_id, str) or not sample_id or sample_id in sample_ids:
             raise ValueError("prefill batches lack unique native sample identities")
         sample_ids.add(sample_id)
+        in_window = (
+            window_ms is not None
+            and window_ms[0] <= batch["service_start_monotonic_ms"] < window_ms[1]
+        )
         touched = set()
         for member in batch.get("request_samples", ()):
             request = member.get("request_id")
@@ -162,6 +172,8 @@ def inspect(attributions, batches):
                 if hi > lo:
                     observed[request].append((lo, hi))
                     case["sampled_lost_prefix_tokens"] += hi - lo
+                    if in_window:
+                        observed_in_window.setdefault(request, []).append((lo, hi))
                     touched.add(request)
         if touched:
             affected.append((touched, batch.get("service_elapsed_ms")))
@@ -183,6 +195,12 @@ def inspect(attributions, batches):
             attribution_probe_clocks=len(probes[request]),
             identity_and_geometry_supported=supported, status=status,
         )
+        if window_ms is not None:
+            window_intervals = observed_in_window.get(request, ())
+            case.update(
+                distinct_observed_prefill_tokens_in_window=union_tokens(window_intervals),
+                sampled_lost_prefix_tokens_in_window=sum(hi - lo for lo, hi in window_intervals),
+            )
         counts["positive_loss_requests"] += 1
         counts["attributed_tokens_including_overlaps"] += case["attributed_tokens_including_overlaps"]
         counts["distinct_attributed_tokens"] += attributed

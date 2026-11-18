@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 
 import pytest
@@ -144,6 +145,75 @@ def test_native_intervals_are_unioned_but_decode_geometry_counts_each_forward_on
     assert result["no_native_worker_interval_s"] == 0.
     assert result["decode"]["batches"] == 1
     assert result["decode"]["mean_batch"] == 2
+
+
+def test_migration_exposure_preserves_ack_uncertainty_at_both_window_boundaries():
+    def transfer(command, timestamp):
+        return {
+            "event": "transfer_telemetry", "status": "completed", "direction": "h2d",
+            "command_id": command, "complete_ts_ms": timestamp,
+            "num_tokens_by_pool": {"kv": 2}, "actual_bytes": 16,
+        }
+
+    records = [transfer(str(i), when) for i, when in enumerate((1009., 1011., 1014., 1020., 1022.))]
+    settings = dict(expected=5, bytes_per_token=8, window_ms=(1000., 1010.), offsets=(10., 12.))
+    report = readout.completed_migrations(records, **settings)
+    assert report["observed"]["h2d"]["tokens"] == 10
+    assert report["common"]["h2d"]["records"] == 1
+    assert report["ambiguous_boundary"]["h2d"]["records"] == 2
+    assert report["common"]["d2h"]["bytes"] == 0
+    with pytest.raises(ValueError, match="record count"):
+        readout.completed_migrations(records[:-1], **settings)
+    records[-1]["command_id"] = "0"
+    with pytest.raises(ValueError, match="identity"):
+        readout.completed_migrations(records, **settings)
+
+
+def test_host_loss_does_not_bill_unresolved_attribution_as_executed_prefill():
+    case = {
+        "request_id": "next", "workflow_id": "w", "invocation_id": "a", "context_id": "c",
+        "context_epoch": 1, "distinct_attributed_tokens": 8,
+        "identity_and_geometry_supported": True, "distinct_observed_prefill_tokens": 7,
+        "sampled_lost_prefix_tokens": 8, "distinct_observed_prefill_tokens_in_window": 3,
+        "sampled_lost_prefix_tokens_in_window": 4,
+    }
+    report = {"cases": [case]}
+    prefill = {"common": 40, "measured": 100, "observed": 400}
+    result = readout.host_loss_summary(report, prefill, source(), {"w"})
+    assert result["common"]["distinct_Host_loss_tokens"] == 3
+    assert result["common"]["Host_loss_prefill_fraction"] == .1
+    assert result["measured"]["executed_Host_loss_tokens"] == 8
+    case["identity_and_geometry_supported"] = False
+    result = readout.host_loss_summary(report, prefill, source(), {"w"})
+    assert result["common"]["executed_Host_loss_tokens"] == 0
+    assert result["measured"]["unresolved_attributed_tokens_before_window_assignment"] == 8
+
+
+def test_pressure_readout_requires_complete_comparable_work_and_service_window():
+    control = {
+        "registration": "control", "materialization_gate_enabled": False,
+        "complete_measured_work_fresh_drain_actual_exit_verified": True,
+        "measured_work_sha256": "work", "actual_capacity": {"host_full_tokens": 12},
+        "wall_clock_performance": {
+            "mean_complete_measured_JCT_s": 8., "common_window_output_tokens_per_second": 5.,
+            "common_window_decode_tokens_per_second": 4.,
+        },
+        "kv_pressure": {"host_loss": {
+            "common": {"executed_Host_loss_tokens": 20}, "measured": {"executed_Host_loss_tokens": 80},
+        }},
+        "native": {"common": {"window_offset_s": [1., 4.]}}, "supply": {}, "control_timing": {},
+        "prefix_work": {"supported_distinct_old_prefix_tokens_measured": 80},
+    }
+    pressure = deepcopy(control)
+    pressure.update(registration="pressure", materialization_gate_enabled=True)
+    pressure["kv_pressure"]["host_loss"]["common"]["executed_Host_loss_tokens"] = 10
+    pressure["wall_clock_performance"]["mean_complete_measured_JCT_s"] = 6.
+    pair = readout.compare_pressure_readouts(control, pressure)
+    assert pair["measured_mean_JCT_reduction_fraction"] == .25
+    assert pair["executed_Host_loss_token_changes"] == {"common": -10, "measured": 0}
+    pressure["native"]["common"]["window_offset_s"] = [1., 5.]
+    with pytest.raises(ValueError, match="common window"):
+        readout.compare_pressure_readouts(control, pressure)
 
 
 @pytest.mark.parametrize("change", ("duplicate", "backward", "missing", "domain", "duration"))

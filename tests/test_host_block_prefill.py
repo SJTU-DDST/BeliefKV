@@ -77,6 +77,24 @@ def test_retracted_or_overlapping_prefill_ranges_are_not_counted_twice():
     assert report["counts"]["supported_executed_tokens_including_repeated_ranges"] == 10
 
 
+def test_window_counts_native_forward_ranges_with_whole_execution_identity():
+    batches = [
+        {**batch("before", 2, 2), "service_start_monotonic_ms": 999.},
+        {**batch("inside", 4, 4), "service_start_monotonic_ms": 1000.},
+        {**batch("repeat", 5, 2), "service_start_monotonic_ms": 1999.},
+        {**batch("after", 8, 2), "service_start_monotonic_ms": 2000.},
+    ]
+    report = inspect([loss()], batches, window_ms=(1000., 2000.))
+    case, = report["cases"]
+    assert case["status"] == "fully_observed_Host_loss_prefill"
+    assert case["distinct_observed_prefill_tokens_in_window"] == 4
+    assert case["sampled_lost_prefix_tokens_in_window"] == 6
+
+    batches[-1]["request_samples"][0]["attempt_id"] = 2
+    case, = inspect([loss()], batches, window_ms=(1000., 2000.))["cases"]
+    assert case["status"] == "unknown_identity_or_geometry"
+
+
 def test_partial_and_unobserved_service_remain_explicit():
     missing = inspect([loss()], [])
     assert missing["cases"][0]["status"] == "unknown_identity_or_geometry"

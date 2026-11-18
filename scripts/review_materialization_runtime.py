@@ -20,6 +20,7 @@ from beliefkv.experiments.workflow_metrics import distribution
 from scripts import run_causal_comparison as causal
 from scripts.analyze_materialization_ready_supply import request_epochs
 from scripts.audit_decode_batch_efficiency import accumulate, summarize
+from scripts.audit_host_block_prefill import OWNER_FIELDS, inspect as inspect_host_loss
 from scripts.audit_previous_prefix_prefill import inspect as inspect_prefix
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.audit_synchronous_control_costs import bracket_counters, timing_counters
@@ -218,16 +219,88 @@ class NativeWindows:
         }
 
 
-def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled):
+def completed_migrations(records, *, expected, bytes_per_token, window_ms, offsets):
+    begin, end = window_ms
+    offset_low, offset_high = offsets
+    result = {
+        scope: {direction: Counter(records=0, tokens=0, bytes=0) for direction in ("h2d", "d2h")}
+        for scope in ("observed", "common", "ambiguous_boundary")
+    }
+    seen, statuses = set(), Counter()
+    for row in records:
+        if row["event"] != "transfer_telemetry":
+            raise ValueError("unexpected event in the native migration journal")
+        statuses[row["status"]] += 1
+        if row["status"] != "completed":
+            continue
+        command, direction = row["command_id"], row["direction"]
+        tokens, size = row["num_tokens_by_pool"].get("kv", 0), row["actual_bytes"]
+        complete = row["complete_ts_ms"]
+        if (
+            not isinstance(command, str) or not command or command in seen
+            or direction not in result["observed"] or type(tokens) is not int or tokens < 0
+            or type(size) is not int or size != tokens * bytes_per_token
+            or type(complete) not in (int, float) or not math.isfinite(complete)
+        ):
+            raise ValueError("invalid native migration identity, geometry or ACK time")
+        seen.add(command)
+        amounts = {"records": 1, "tokens": tokens, "bytes": size}
+        result["observed"][direction].update(amounts)
+        low, high = complete - offset_high, complete - offset_low
+        if low >= begin and high < end:
+            result["common"][direction].update(amounts)
+        elif high >= begin and low < end:
+            result["ambiguous_boundary"][direction].update(amounts)
+    if statuses.total() != expected:
+        raise ValueError("native migration record count differs from the drained writer")
+    return {**result, "status_counts": dict(statuses), "clock_offset_spread_ms": offset_high - offset_low}
+
+
+def host_loss_summary(report, prefill, expected, measured):
+    totals = {name: Counter() for name in prefill}
+    for case in report["cases"]:
+        rid = case["request_id"]
+        source = expected.get(rid)
+        if source is not None and source["llm_submit"][0] != [case[name] for name in OWNER_FIELDS]:
+            raise ValueError("Host-loss request differs from its original source identity")
+        if case["workflow_id"] in measured and source is None:
+            raise ValueError("measured Host-loss request is absent from the original source")
+        scopes = ["observed", "common"]
+        if case["workflow_id"] in measured:
+            scopes.append("measured")
+        for scope in scopes:
+            result = totals[scope]
+            if not case["identity_and_geometry_supported"]:
+                result["unresolved_attributed_tokens"] += case["distinct_attributed_tokens"]
+                continue
+            suffix = "_in_window" if scope == "common" else ""
+            result["distinct_tokens"] += case["distinct_observed_prefill_tokens" + suffix]
+            result["executed_tokens"] += case["sampled_lost_prefix_tokens" + suffix]
+    result = {}
+    for scope, total in totals.items():
+        billed = prefill[scope]
+        if not 0 <= total["distinct_tokens"] <= total["executed_tokens"] <= billed:
+            raise ValueError("executed Host-loss tokens exceed actual prefill")
+        result[scope] = {
+            "prefill_tokens": billed, "distinct_Host_loss_tokens": total["distinct_tokens"],
+            "executed_Host_loss_tokens": total["executed_tokens"],
+            "Host_loss_prefill_fraction": total["executed_tokens"] / billed if billed else None,
+            "unresolved_attributed_tokens_before_window_assignment": total["unresolved_attributed_tokens"],
+        }
+    return result
+
+
+def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled, kv_pressure=False):
     if output.exists():
         raise FileExistsError("preserve previous runtime readouts")
     registration = causal.load(registration_path)
     proof = verify_execution(registration_path, cohort_path)
     arm = replay_arm(registration)
-    writer = ROOT / "beliefkv/runtime/v0520_native_telemetry.py"
+    writer_source = "beliefkv/runtime/v0520_native_telemetry.py"
+    writer = Path(registration["execution_checkout"]) / writer_source
     if (
         registration["source_server_parameters"].get("enable_mixed_chunk") is not False
-        or registration["source_sha256"].get(str(writer.relative_to(ROOT))) != sha256_file(writer)
+        or registration["source_sha256"].get(writer_source) != sha256_file(writer)
     ):
         raise ValueError("require mixed-off service and the exact executed observation semantics")
     capacity_path = arm / "server/native_capacity_census.json"
@@ -278,8 +351,64 @@ def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled
             native.observe(row)
             yield row
 
-    prefix = inspect_prefix(reader(arm / "server/eviction_attribution.jsonl"), batches())
     measured = set(cohort["measured_workflow_ids"])
+    attribution = arm / "server/eviction_attribution.jsonl"
+    pressure = None
+    if kv_pressure:
+        window_ms = tuple(origin + offset * 1000. for offset in common)
+        probes, prefills = [], []
+        prefill = dict.fromkeys(("common", "measured", "observed"), 0)
+
+        def attributions():
+            for row in reader(attribution):
+                if row["event"] == "context_prefix_reuse_probe":
+                    probes.append(row)
+                yield row
+
+        def prefill_batches():
+            for row in batches():
+                if row.get("event") != "gpu_service_sample" or row["phase"] != "prefill":
+                    continue
+                prefills.append(row)
+                in_window = window_ms[0] <= row["service_start_monotonic_ms"] < window_ms[1]
+                for member in row["request_samples"]:
+                    tokens = member["token_delta"]
+                    if (
+                        member["token_delta_semantics"] != "prefill_extend_input_len"
+                        or type(tokens) is not int or tokens < 0
+                    ):
+                        raise ValueError("invalid native prefill input accounting")
+                    prefill["observed"] += tokens
+                    prefill["common"] += tokens if in_window else 0
+                    prefill["measured"] += tokens if member.get("workflow_id") in measured else 0
+                yield row
+
+        host_loss = inspect_host_loss(attributions(), prefill_batches(), window_ms=window_ms)
+        attributed = host_loss["counts"].get("attributed_tokens_including_overlaps", 0)
+        if attributed != status["host_block_eviction_attribution"]["recomputed_full_units"]:
+            raise ValueError("complete Host-loss records differ from the drained writer")
+        prefix = inspect_prefix(probes, prefills)
+        del prefills, probes
+        bytes_per_token, remainder = divmod(capacity["host_full_bytes"], capacity["host_full_tokens"])
+        if not bytes_per_token or remainder or not native.offsets:
+            raise ValueError("missing FULL pool byte geometry or native clocks")
+        pressure = {
+            "host_loss": host_loss_summary(host_loss, prefill, expected, measured),
+            "native_migrations": completed_migrations(
+                reader(arm / "server/transfer_telemetry.jsonl"),
+                expected=status["record_counts"].get("transfer", 0),
+                bytes_per_token=bytes_per_token, window_ms=window_ms,
+                offsets=(min(native.offsets), max(native.offsets)),
+            ),
+            "native_attributed_Host_loss_tokens_including_overlaps": attributed,
+            "last_runtime_snapshot_final": states[-1].get("final", False),
+            "materialization_counters": {
+                name: value for name, value in states[-1]["counts"].items()
+                if name.startswith("subagent_materialization_")
+            },
+        }
+    else:
+        prefix = inspect_prefix(reader(attribution), batches())
     for case in prefix["cases"]:
         case["measured_workflow"] = case["workflow_id"] in measured
     prefix["supported_distinct_old_prefix_tokens_measured"] = sum(
@@ -310,6 +439,9 @@ def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled
             "scripts/verify_measured_execution.py",
         )
     })
+    if pressure is not None:
+        helper = ROOT / "scripts/audit_host_block_prefill.py"
+        pins[str(helper)] = sha256_file(helper)
     result = {
         "registration": str(registration_path.resolve()), "inputs_sha256": pins,
         "input_jsonl_prefixes": reader.prefixes,
@@ -343,6 +475,13 @@ def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled
         ],
         "GPU_action": False, "performance_accepted": False, "goal_complete": False,
     }
+    if pressure is not None:
+        result["kv_pressure"] = pressure
+        result["limits"].extend((
+            "Common prefill work is assigned by native forward start; migration uses native completion ACK time.",
+            "Observed totals include independently censored background workflows.",
+            "Materialization counters are direct runtime actions; avoided writes do not measure avoided re-execution.",
+        ))
     output.mkdir(parents=True)
     samples_path = output / "supply_samples.jsonl.gz"
     with gzip.open(samples_path, "wt", encoding="ascii") as stream:
@@ -354,6 +493,61 @@ def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled
     }
     write(output / "runtime.json", result)
     return result
+
+
+def compare_pressure_readouts(control, pressure):
+    both = (control, pressure)
+    if any(row.get("complete_measured_work_fresh_drain_actual_exit_verified") is not True
+           for row in both):
+        raise ValueError("D3 runtime comparison requires both complete verified executions")
+    if (control.get("materialization_gate_enabled"), pressure.get("materialization_gate_enabled")) != (False, True):
+        raise ValueError("D3 runtime comparison requires control and pressure arms")
+    if not control["measured_work_sha256"] or control["measured_work_sha256"] != pressure["measured_work_sha256"]:
+        raise ValueError("D3 runtime comparison changed measured work")
+    if control["actual_capacity"] != pressure["actual_capacity"]:
+        raise ValueError("D3 runtime comparison changed actual native capacity")
+    windows = [row["native"]["common"]["window_offset_s"] for row in both]
+    if windows[0] != windows[1]:
+        raise ValueError("D3 runtime comparison changed the common window")
+    reference, candidate = (row["wall_clock_performance"] for row in both)
+    loss_before, loss_after = (row["kv_pressure"]["host_loss"] for row in both)
+    return {
+        "common_window_offset_s": windows[0],
+        "actual_native_capacity": control["actual_capacity"],
+        "same_complete_measured_work_verified": True,
+        "measured_mean_JCT_reduction_fraction": (
+            1. - candidate["mean_complete_measured_JCT_s"] / reference["mean_complete_measured_JCT_s"]
+        ),
+        "common_output_throughput_change_fraction": (
+            candidate["common_window_output_tokens_per_second"]
+            / reference["common_window_output_tokens_per_second"] - 1.
+        ),
+        "common_decode_throughput_change_fraction": (
+            candidate["common_window_decode_tokens_per_second"]
+            / reference["common_window_decode_tokens_per_second"] - 1.
+        ),
+        "executed_Host_loss_token_changes": {
+            scope: loss_after[scope]["executed_Host_loss_tokens"] - loss_before[scope]["executed_Host_loss_tokens"]
+            for scope in ("common", "measured")
+        },
+        "arms": {
+            name: {
+                "registration": row["registration"],
+                "wall_clock_performance": row["wall_clock_performance"],
+                "kv_pressure": row["kv_pressure"],
+                "same_context_old_prefix_tokens_measured": (
+                    row["prefix_work"]["supported_distinct_old_prefix_tokens_measured"]
+                ),
+                "supply": row["supply"],
+                "native": row["native"],
+                "control_timing": row["control_timing"],
+            }
+            for name, row in zip(("control", "pressure"), both, strict=True)
+        },
+        "observed_totals_include_independently_censored_background": True,
+        "performance_accepted": False,
+        "GPU_action": False,
+    }
 
 
 def watch_pair(plan_path, output):
@@ -438,11 +632,12 @@ def main():
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--gate-enabled", action="store_true")
+    parser.add_argument("--kv-pressure", action="store_true")
     args = parser.parse_args()
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999":
         raise ValueError("hide CUDA during post-run analysis")
     if args.watch_plan:
-        if any((args.registration, args.cohort, args.report, args.gate_enabled)):
+        if any((args.registration, args.cohort, args.report, args.gate_enabled, args.kv_pressure)):
             parser.error("--watch-plan chooses its original registered arms")
         return watch_pair(args.watch_plan.resolve(), args.output.resolve())
     if any(value is None for value in (args.registration, args.cohort, args.report)):
@@ -450,7 +645,7 @@ def main():
     started = time.monotonic()
     result = analyze(
         args.registration, args.cohort, args.report, args.output,
-        gate_enabled=args.gate_enabled,
+        gate_enabled=args.gate_enabled, kv_pressure=args.kv_pressure,
     )
     print(json.dumps({
         "output": str(args.output), "measured_requests": result["measured_requests"],
