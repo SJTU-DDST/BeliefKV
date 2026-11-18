@@ -1,4 +1,4 @@
-"""Queue matched child-materialization arms after a verified complete Oracle."""
+"""Queue a standalone D3 run or an explicitly matched materialization campaign."""
 
 import argparse
 from copy import deepcopy
@@ -223,7 +223,8 @@ def watch(plan_path):
         raise FileExistsError("preserve previous queue outcomes")
     owner = causal.reservation.process(os.getpid())
     state = {
-        "status": "verifying_completed_Oracle", "process": owner,
+        "status": "verifying_inputs" if labels == PRESSURE_ONLY else "verifying_completed_Oracle",
+        "process": owner,
         "GPU_stage_order": list(labels), "completed_stages": [],
         "GPU_registered_stages": [], "performance_accepted": False, "goal_complete": False,
     }
@@ -259,7 +260,8 @@ def watch(plan_path):
     proofs = {}
     try:
         verify_pins(plan["inputs_sha256"])
-        oracle_complete(load(plan["preceding_Oracle_comparison"]))
+        if labels != PRESSURE_ONLY:
+            oracle_complete(load(plan["preceding_Oracle_comparison"]))
         proofs = completed_stage_proofs(plan)
         for label, proof in proofs.items():
             path = output / (label + "_execution_proof.json")
@@ -415,19 +417,22 @@ def prepare(args):
     if args.output.exists():
         raise FileExistsError("preserve earlier campaign evidence")
     causal.fresh._require_clean(ROOT)
-    oracle_complete(load(args.oracle_comparison))
-    prepared = load(args.prepared / "preparation.json")
     labels = LABELS
     if getattr(args, "pressure_only", False):
         labels = PRESSURE_ONLY
     elif getattr(args, "pair_only", False):
         labels = LABELS[:2]
+    if labels != PRESSURE_ONLY:
+        if args.oracle_comparison is None:
+            raise ValueError("a matched materialization campaign requires --oracle-comparison")
+        oracle_complete(load(args.oracle_comparison))
+    prepared = load(args.prepared / "preparation.json")
     preparation_labels = LABELS[:2] if labels == PRESSURE_ONLY else labels
     configurations = {}
     pins = {
         str(path.resolve()): sha256_file(path)
         for path in (
-            args.prepared / "preparation.json", args.oracle_comparison,
+            args.prepared / "preparation.json",
             args.cpu_report, args.cpu_sources, args.template_plan,
             Path(__file__), ROOT / "scripts/supervise_materialization_stage.py",
             ROOT / "scripts/review_materialization_campaign.py",
@@ -435,6 +440,8 @@ def prepare(args):
             HELPER / "scripts/hold_gpu_memory_between_runs.py",
         )
     }
+    if args.oracle_comparison is not None:
+        pins[str(args.oracle_comparison.resolve())] = sha256_file(args.oracle_comparison)
     for label in preparation_labels:
         binding = prepared["artifacts"][label]
         if sha256_file(Path(binding["path"])) != binding["sha256"]:
@@ -449,7 +456,13 @@ def prepare(args):
         pins[binding["path"]] = binding["sha256"]
     causal.comparison.qualify_report(args.cpu_report, args.cpu_sources)
     template_plan = load(args.template_plan)
-    template = template_plan["stages"]["oracle"]["command"]
+    template_labels = ("full", "pressure", "oracle") if labels == PRESSURE_ONLY else ("oracle",)
+    template_stages = template_plan["stages"]
+    template = next((
+        template_stages[label]["command"] for label in template_labels if label in template_stages
+    ), None)
+    if template is None:
+        raise ValueError("the template plan has no compatible serving command")
     args.output.mkdir(parents=True)
     plugin = args.output / "prepared_plugin"
     with (args.output / "plugin_install.log").open("x") as stream:
@@ -486,7 +499,6 @@ def prepare(args):
         "GPU_stage_order": list(labels), "plugin": str(plugin),
         "fast_supervisor": str(args.fast_supervisor),
         "cohort": shared["private_analysis_cohort"]["path"],
-        "preceding_Oracle_comparison": str(args.oracle_comparison),
         "minimum_model_work_p80_p20": template_plan["minimum_model_work_p80_p20"],
         "inputs_sha256": pins,
         "initial_workflows": 20, "workflows": 133, "mean_interval_seconds": 55.,
@@ -496,6 +508,8 @@ def prepare(args):
         "no_foreign_process_termination": True, "goal_complete": False,
         "performance_accepted": False,
     }
+    if args.oracle_comparison is not None:
+        plan["preceding_Oracle_comparison"] = str(args.oracle_comparison)
     write(args.output / "plan.json", plan)
     with (args.output / "campaign.log").open("x") as stream:
         child = subprocess.Popen([
@@ -529,6 +543,8 @@ def main():
         for key, value in vars(args).items():
             if key not in ("watch", "suffix", "pair_only", "pressure_only"):
                 if value is None:
+                    if args.pressure_only and key == "oracle_comparison":
+                        continue
                     parser.error("provide all preparation, qualification and output paths")
                 setattr(args, key, value.resolve())
         if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or os.getpriority(os.PRIO_PROCESS, 0):

@@ -183,15 +183,18 @@ def test_completed_campaign_reviews_only_the_declared_methods(tmp_path, monkeypa
     oracle = tmp_path / "oracle.json"
     oracle.write_text("{}")
     plan = tmp_path / "plan.json"
-    plan.write_text(json.dumps({
-        "inputs_sha256": {}, "preceding_Oracle_comparison": str(oracle),
+    spec = {
+        "inputs_sha256": {},
         "GPU_stage_order": list(labels), "stages": dict.fromkeys(labels),
-    }))
-    calls, closed = [], []
+    }
+    if labels != campaign.PRESSURE_ONLY:
+        spec["preceding_Oracle_comparison"] = str(oracle)
+    plan.write_text(json.dumps(spec))
+    calls, closed, oracle_checks = [], [], []
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
     monkeypatch.setattr(campaign.os, "getpriority", lambda *_: 0)
     monkeypatch.setattr(campaign.signal, "signal", lambda *_: None)
-    monkeypatch.setattr(campaign, "oracle_complete", lambda _: None)
+    monkeypatch.setattr(campaign, "oracle_complete", oracle_checks.append)
     monkeypatch.setattr(campaign, "completed_stage_proofs", lambda _: dict.fromkeys(labels, {}))
     monkeypatch.setattr(campaign, "register_stage", lambda *_: pytest.fail("unexpected GPU stage"))
     monkeypatch.setattr(campaign.causal.reservation, "process", lambda pid: {
@@ -215,8 +218,10 @@ def test_completed_campaign_reviews_only_the_declared_methods(tmp_path, monkeypa
     assert not state["GPU_registered_stages"]
     if labels == campaign.PRESSURE_ONLY:
         assert not calls
+        assert not oracle_checks
     else:
         assert len(calls) == 1 and ("--baselines" in calls[0]) is (labels == campaign.LABELS)
+        assert oracle_checks == [{}]
     assert closed == ([] if labels == campaign.PRESSURE_ONLY else [True])
 
 
@@ -269,8 +274,10 @@ def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=Fals
             "oracle.json", "cpu.xml", "sources.json", "template.json", "supervisor.py",
         )
     )
-    for path in (oracle, report, sources, supervisor):
+    for path in (report, sources, supervisor):
         path.write_text("{}")
+    if not pressure_only:
+        oracle.write_text("{}")
     flags = (
         "--registration", "--run-root", "--port", "--cpu-report", "--cpu-sources",
         "--experiment-config", "--arms", "--workflow-arrivals",
@@ -278,8 +285,9 @@ def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=Fals
     command = [campaign.sys.executable, "unused.py"]
     for flag in flags:
         command.extend((flag, "unused"))
+    stage = "full" if pressure_only else "oracle"
     template.write_text(json.dumps({
-        "stages": {"oracle": {"command": command}}, "minimum_model_work_p80_p20": 2.6,
+        "stages": {stage: {"command": command}}, "minimum_model_work_p80_p20": 2.6,
     }))
     monkeypatch.setattr(campaign.causal.fresh, "_require_clean", lambda _: None)
     monkeypatch.setattr(campaign, "oracle_complete", lambda _: None)
@@ -289,7 +297,8 @@ def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=Fals
     monkeypatch.setattr(campaign.causal.reservation, "process", lambda pid: {"pid": pid, "start_ticks": "1"})
     output = tmp_path / "queue"
     campaign.prepare(SimpleNamespace(
-        output=output, prepared=PREPARED, oracle_comparison=oracle, cpu_report=report,
+        output=output, prepared=PREPARED, oracle_comparison=None if pressure_only else oracle,
+        cpu_report=report,
         cpu_sources=sources, template_plan=template, fast_supervisor=supervisor,
         suffix=tmp_path.name, pair_only=pair_only, pressure_only=pressure_only,
     ))
@@ -317,9 +326,10 @@ def test_actual_pair_preparation_builds_only_two_full_entries(tmp_path, monkeypa
     assert campaign.stage_labels(plan) == campaign.LABELS[:2]
 
 
-def test_pressure_only_preparation_registers_no_control(tmp_path, monkeypatch):
+def test_pressure_only_preparation_reuses_full_template_without_oracle(tmp_path, monkeypatch):
     plan = prepared_queue(tmp_path, monkeypatch, pressure_only=True)
     assert list(plan["stages"]) == plan["GPU_stage_order"] == ["pressure"]
+    assert "preceding_Oracle_comparison" not in plan
     stage = plan["stages"]["pressure"]
     assert campaign.load(stage["configuration"])["materialization_experiment"]["policy"] in (
         campaign.PRESSURE_POLICIES
