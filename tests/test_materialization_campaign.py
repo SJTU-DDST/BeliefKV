@@ -268,7 +268,7 @@ def test_oracle_review_must_include_complete_native_work():
         })
 
 
-def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=False):
+def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=False, shared_gpu=False):
     oracle, report, sources, template, supervisor = (
         tmp_path / name for name in (
             "oracle.json", "cpu.xml", "sources.json", "template.json", "supervisor.py",
@@ -301,6 +301,7 @@ def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=Fals
         cpu_report=report,
         cpu_sources=sources, template_plan=template, fast_supervisor=supervisor,
         suffix=tmp_path.name, pair_only=pair_only, pressure_only=pressure_only,
+        shared_gpu=shared_gpu,
     ))
     return campaign.load(output / "plan.json")
 
@@ -324,6 +325,33 @@ def test_actual_pair_preparation_builds_only_two_full_entries(tmp_path, monkeypa
     assert {row["arm"] for row in plan["stages"].values()} == {"full"}
     assert len({row["port"] for row in plan["stages"].values()}) == 2
     assert campaign.stage_labels(plan) == campaign.LABELS[:2]
+
+
+def test_shared_pair_preparation_and_registration_use_the_shared_supervisor(tmp_path, monkeypatch):
+    plan = prepared_queue(tmp_path, monkeypatch, pair_only=True, shared_gpu=True)
+    owner = {"pid": 1, "start_ticks": "1"}
+    watcher = {"pid": 2, "start_ticks": "2"}
+    frozen = tmp_path / "frozen"
+    registered = []
+    assert plan["shared_gpu"] is True
+
+    for label, stage in plan["stages"].items():
+        stage["registration"] = str(tmp_path / (label + ".registration.json"))
+        registration = Path(stage["registration"])
+
+        def register():
+            registration.write_text(json.dumps({"execution_checkout": str(frozen)}))
+            campaign.causal.subprocess.Popen([
+                campaign.sys.executable, str(frozen / "scripts/run_causal_comparison.py"),
+                "--watch", str(registration),
+            ])
+            print(json.dumps({"watcher": watcher}))
+
+        monkeypatch.setattr(campaign.causal, "main", register)
+        monkeypatch.setattr(campaign.subprocess, "Popen", lambda command, **_: registered.append(command))
+        assert campaign.register_stage(stage, plan, owner) == watcher
+        assert campaign.load(Path(stage["evidence"]) / "preparation.json")["shared_gpu"] is True
+    assert len(registered) == 2
 
 
 def test_pressure_only_preparation_registers_no_control(tmp_path, monkeypatch):

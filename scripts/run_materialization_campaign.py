@@ -47,6 +47,10 @@ def stage_labels(plan):
     return labels
 
 
+def uses_shared_gpu(plan):
+    return plan.get("shared_gpu") is True or tuple(plan.get("GPU_stage_order", ())) == PRESSURE_ONLY
+
+
 def matching_preparations(configurations):
     labels = next(
         (order for order in (LABELS, LABELS[:2]) if set(configurations) == set(order)), None,
@@ -140,7 +144,7 @@ def register_stage(stage, plan, owner):
         write(evidence / "preparation.json", {
             "registration_sha256": sha256_file(registration),
             "fast_supervisor": plan["fast_supervisor"],
-            "shared_gpu": tuple(plan.get("GPU_stage_order", ())) == PRESSURE_ONLY,
+            "shared_gpu": uses_shared_gpu(plan),
             "serving_runtime_changed_by_supervisor": False,
         })
 
@@ -217,6 +221,7 @@ def completed_stage_proofs(plan):
 def watch(plan_path):
     plan, output = load(plan_path), plan_path.parent
     labels = stage_labels(plan)
+    shared_gpu = uses_shared_gpu(plan)
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or os.getpriority(os.PRIO_PROCESS, 0):
         raise ValueError("require a CUDA-hidden nice0 CPU coordinator")
     if (output / "state.json").exists():
@@ -226,6 +231,7 @@ def watch(plan_path):
         "status": "verifying_inputs" if labels == PRESSURE_ONLY else "verifying_completed_Oracle",
         "process": owner,
         "GPU_stage_order": list(labels), "completed_stages": [],
+        "shared_gpu": shared_gpu,
         "GPU_registered_stages": [], "performance_accepted": False, "goal_complete": False,
     }
 
@@ -268,7 +274,7 @@ def watch(plan_path):
             if not path.exists():
                 write(path, proof)
         state["completed_stages"] = list(proofs)
-        if labels != PRESSURE_ONLY:
+        if not shared_gpu:
             module = helper_module()
             device = module.NvmlDevice()
         with (output / "campaign.lock").open("a+") as lock:
@@ -497,6 +503,7 @@ def prepare(args):
     plan = {
         "schema_version": 1, "operator": str(ROOT), "stages": stages,
         "GPU_stage_order": list(labels), "plugin": str(plugin),
+        "shared_gpu": getattr(args, "shared_gpu", False) or labels == PRESSURE_ONLY,
         "fast_supervisor": str(args.fast_supervisor),
         "cohort": shared["private_analysis_cohort"]["path"],
         "minimum_model_work_p80_p20": template_plan["minimum_model_work_p80_p20"],
@@ -536,12 +543,13 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--pair-only", action="store_true")
     mode.add_argument("--pressure-only", action="store_true")
+    parser.add_argument("--shared-gpu", action="store_true")
     args = parser.parse_args()
     if args.watch:
         watch(args.watch.resolve())
     else:
         for key, value in vars(args).items():
-            if key not in ("watch", "suffix", "pair_only", "pressure_only"):
+            if key not in ("watch", "suffix", "pair_only", "pressure_only", "shared_gpu"):
                 if value is None:
                     if args.pressure_only and key == "oracle_comparison":
                         continue
