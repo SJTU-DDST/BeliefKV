@@ -606,7 +606,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 a.counts["strict_remaining_work_indexed_siblings"] += len(indexed_siblings)
             else:
                 window = self._candidate_window(keys, reference, capacity, predictions)
-            if not strict and len(window) == len(reference):
+            if not window or (not strict and len(window) == len(reference)):
                 result["reason"] = "no_competing_choice"
                 return list(reference)
             if strict:

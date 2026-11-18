@@ -141,6 +141,30 @@ def strict_runtime(monkeypatch, tmp_path):
     return runtime, admission
 
 
+@pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
+@pytest.mark.parametrize("ready", (False, True))
+def test_strict_empty_shortlist_skips_native_capacity(monkeypatch, tmp_path, source, ready):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+
+    def unexpected_capacity_check(*args):
+        pytest.fail("empty shortlist should not inspect native capacity")
+
+    monkeypatch.setattr(control, "_resources", unexpected_capacity_check)
+    try:
+        keys = list(admission.latest.values()) if ready else []
+        capacity = admission.policy.buffer_tokens + 1
+        assert control.select(keys, [], capacity=capacity, maximum=4, source=source) == []
+        choice, = records
+        assert choice["decision"]["reason"] == "no_competing_choice"
+        assert choice["resources"] is None
+        assert not any(item.active for item in admission.policy.programs.values())
+    finally:
+        runtime.close()
+
+
 def test_strict_choice_changes_actual_eligibility_and_native_candidates(monkeypatch, tmp_path):
     runtime, admission = strict_runtime(monkeypatch, tmp_path)
     records = []
