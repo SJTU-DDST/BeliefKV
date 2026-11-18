@@ -45,9 +45,14 @@ class ReadyServiceGuard:
 
     def begin(self, now):
         a, current = self.admission, {}
+        gate = getattr(a.runtime, "_subagent_materialization", None)
+        held_roots = set()
         for key, _arrived in a.requests.values():
             if not self._ready(key):
-                continue
+                if gate is None or not gate.held_ready_root(key):
+                    continue
+                # A capacity hold preserves the clock but confers no admission right.
+                held_roots.add(key)
             previous = self.since.get(key.invocation_id)
             since = previous[1] if previous is not None and previous[0] == key else now
             current[key.invocation_id] = key, since
@@ -66,12 +71,13 @@ class ReadyServiceGuard:
                 a.counts["ready_service_fit_grants_invalidated"] += 1
                 self.fit_target = None
             self.fit_available = any(
-                now - since >= self.fit_after_s
+                key not in held_roots and now - since >= self.fit_after_s
                 and not a.policy.programs[key.invocation_id].active and key not in self.fit_attempted
                 for key, since in current.values()
             )
         overdue = {
             key: since for key, since in current.values() if now - since >= self.timeout_s
+            and key not in held_roots
         }
         target = self.target if self.target in overdue else min(
             overdue, key=lambda key: (overdue[key], key.request_id), default=None,
@@ -88,6 +94,10 @@ class ReadyServiceGuard:
                     "scope": "single_logical_timeout_exception;native_admission_still_required",
                 })
         self.target = target
+
+    def elapsed_service_timeout(self, key, now):
+        entry = self.since.get(key.invocation_id)
+        return entry is not None and entry[0] == key and now - entry[1] >= self.timeout_s
 
     def _growth_tokens(self, request):
         maximum = getattr(getattr(request, "sampling_params", None), "max_new_tokens", None)

@@ -253,6 +253,14 @@ class SubagentMaterialization:
         record = self.pending.get(key.request_id) if key is not None else None
         return record is None or record.key == key and (record.started or record.permitted)
 
+    def held_ready_root(self, key):
+        record = self.pending.get(key.request_id)
+        return (
+            record is not None and record.key == key and record.root_entry
+            and not record.started and not record.permitted and self._live(record)
+            and self._ready(key)
+        )
+
     def _live(self, record):
         key, req = record.key, record.request
         a, runtime = self.admission, self.runtime
@@ -510,9 +518,14 @@ class SubagentMaterialization:
         runtime.semantic_revision += 1
         # Existing periodic/free/combination selectors retain the actual grant.
         deferred = getattr(a, "_deferred_dispatch", None)
-        # New permissions follow the existing deferred window; revocations
-        # still reconcile capacity immediately.
-        if not allowed or deferred is None:
+        guard = getattr(a, "_ready_service_guard", None)
+        overdue_root_release = (
+            allowed and record.root_entry and guard is not None
+            and guard.elapsed_service_timeout(key, now)
+        )
+        # Ordinary permits follow the deferred window. Reconcile revocations
+        # and an overdue root's newly available capacity on this tick.
+        if not allowed or deferred is None or overdue_root_release:
             a.next_tick = 0.
         remember = getattr(a, "_remember_dispatch", None)
         if remember is not None:

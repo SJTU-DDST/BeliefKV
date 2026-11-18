@@ -8,6 +8,7 @@ import time
 import pytest
 
 from beliefkv.runtime.demand_prefill_pipeline import DemandPrefillPipeline
+from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
 from beliefkv.runtime.subagent_materialization import observe_materialization_headroom
 from tests.test_demand_prefill_pipeline import fixture as pipeline_fixture
@@ -110,6 +111,67 @@ def test_host_demand_reserve_does_not_replace_batch_page_overhead(runtime):
 
     assert gate.last_decision["reserved_tokens"] == 102
     assert not gate.allows(runtime.visible[req.rid])
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("wait_s", (1799., 1800.))
+def test_held_root_preserves_service_clock_until_capacity_allows_it(runtime, wait_s):
+    req, _ = new_root(runtime, "waiting-root")
+    admission, gate = runtime._agent_admission, runtime._subagent_materialization
+    guard = admission._ready_service_guard = ReadyServiceGuard(admission, fit_after_s=600)
+    key = runtime.visible[req.rid]
+    deferred = []
+    admission._deferred_dispatch = NS(defer=deferred.append)
+    running = [object()]
+    began = 100.
+
+    prepare(runtime, [req], running=running, now=began)
+    guard.begin(began)
+    assert guard.since[key.invocation_id] == (key, began)
+
+    ready_at = began + wait_s
+    guard.begin(ready_at)
+    assert not guard.fit_available
+    assert guard.target is None
+    assert not admission._timeout_force_resume_allowed(key)
+    assert gate.defer_start(req)
+
+    admission.next_tick = ready_at + 2.
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 300
+    gate.capacity_changed()
+    prepare(runtime, [req], running=running, now=ready_at)
+    assert gate.allows(key)
+    assert deferred == [key]
+    assert admission.next_tick == (0. if wait_s == guard.timeout_s else ready_at + 2.)
+    guard.begin(ready_at)
+    assert guard.since[key.invocation_id] == (key, began)
+    assert admission._timeout_force_resume_allowed(key) is (wait_s == guard.timeout_s)
+
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 0
+    gate.capacity_changed()
+    assert gate.defer_start(req)
+    assert not admission._timeout_force_resume_allowed(key)
+    guard.begin(ready_at + 1.)
+    assert guard.since[key.invocation_id] == (key, began)
+    assert guard.target is None
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("block", ("tool", "stale_request"))
+def test_held_root_wait_clock_requires_ready_and_exact_identity(runtime, block):
+    req, _ = new_root(runtime, "waiting-root")
+    admission = runtime._agent_admission
+    guard = ReadyServiceGuard(admission)
+    key = runtime.visible[req.rid]
+    guard.begin(100.)
+    assert key.invocation_id in guard.since
+    if block == "tool":
+        runtime.graph.invocations[key.invocation_id].active_tool_calls["tool"] = "execute"
+    else:
+        runtime.visible.pop(req.rid)
+    guard.begin(2000.)
+    assert key.invocation_id not in guard.since
+    assert guard.target is None
 
 
 def stage_parent_restore(runtime):
