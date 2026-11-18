@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
+from heapq import heapify, heappop, heappush
 from itertools import islice
 import os
 import time
@@ -216,47 +217,90 @@ class SubagentMaterialization:
                 if (
                     needed > 0 and full.host_value is None and full.value is not None
                     and len(full.value) > pool.available_size()
-                    and self._use_backed_device_leaves(
-                        component, tree, native_evict, tracker, needed,
-                    )
                 ):
                     counts = self.runtime.counts
-                    counts["subagent_materialization_writeback_avoided"] += 1
-                    counts["subagent_materialization_writeback_avoided_device_tokens"] += (
-                        tracker[0] - before
-                    )
-                    return None
+                    counts["subagent_materialization_writeback_pressure_checks"] += 1
+                    if self._use_backed_device_leaves(
+                        component, tree, native_evict, tracker, needed,
+                    ):
+                        counts["subagent_materialization_writeback_avoided"] += 1
+                        counts["subagent_materialization_writeback_avoided_device_tokens"] += (
+                            tracker[0] - before
+                        )
+                        return None
             return native_evict(node_id, tracker)
 
         cache._evict_device_leaf = evict_device_leaf
         self._native_device_eviction = cache, native_evict, evict_device_leaf
 
     def _use_backed_device_leaves(self, component, tree, native_evict, tracker, needed):
-        # Never demote a partial set: subsequent write-back could evict its
-        # newly created Host-only copies. Reuse native leaf eligibility and order.
-        candidates = {}
-        total = 0
-        for priority, node in islice(component._evict_device_heap, self.max_candidates):
-            if (
-                node.id in candidates or node not in tree.evictable_device_leaves
-                or tree.full_host_duplicates.get(node.id) is not node
-                or not tree._can_reclaim_full_host_duplicate(node)
-            ):
-                continue
-            data = node.component_data[0]
-            size = len(data.value)
-            if size != len(data.host_value):
-                continue
-            candidates[node.id] = (priority, node)
-            total += size
-        if total < needed:
+        # Plan the entire shortfall before demoting anything. Otherwise the
+        # ensuing write-back could evict the newly created Host-only copies.
+        plan = self._plan_backed_device_demotions(component, tree, needed)
+        if not plan:
             return False
         before = tracker[0]
-        for _, node in sorted(candidates.values()):
+        for node in plan:
+            assert node in tree.evictable_device_leaves
             native_evict(node.id, tracker)
-            if tracker[0] - before >= needed:
-                return True
-        return False
+        return tracker[0] - before >= needed
+
+    def _plan_backed_device_demotions(self, component, tree, needed):
+        duplicates = tree.full_host_duplicates
+        leaves = tree.evictable_device_leaves
+        native_heap = component._evict_device_heap
+        limit = self.max_candidates
+
+        def settled(node):
+            if not (
+                duplicates.get(node.id) is node
+                and tree._can_reclaim_full_host_duplicate(node)
+            ):
+                return False
+            data = node.component_data[0]
+            return len(data.value) == len(data.host_value)
+
+        if len(duplicates) < len(native_heap):
+            heap = [
+                (component.session_ref_eviction_strategy(node), node)
+                for node in islice(duplicates.values(), limit)
+                if node in leaves and settled(node)
+            ]
+        else:
+            heap = [
+                (priority, node) for priority, node in islice(native_heap, limit)
+                if node in leaves and settled(node)
+            ]
+        heapify(heap)
+        plan, seen, planned = [], {node.id for _, node in heap}, set()
+        remaining_edges = limit
+        total = 0
+        while heap and len(plan) < limit:
+            _, node = heappop(heap)
+            if node.id in planned:
+                continue
+            plan.append(node)
+            planned.add(node.id)
+            total += len(node.component_data[0].value)
+            if total >= needed:
+                return plan
+            parent = node.parent
+            if (
+                parent is None or parent.id in seen or not settled(parent)
+                or parent.component_data[0].lock_ref
+                or len(parent.children) > remaining_edges
+            ):
+                continue
+            # A backed ancestor becomes a native device leaf only after its
+            # last device child has been planned.
+            remaining_edges -= len(parent.children)
+            if all(
+                child.id in planned or child.component_data[0].value is None
+                for child in parent.children.values()
+            ):
+                seen.add(parent.id)
+                heappush(heap, (component.session_ref_eviction_strategy(parent), parent))
+        return ()
 
     def _restore_native_device_eviction(self):
         if self._native_device_eviction is not None:

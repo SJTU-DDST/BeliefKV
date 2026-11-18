@@ -453,28 +453,13 @@ def test_duplicate_capacity_must_be_visible_to_native_reclamation():
     assert observed.available_tokens == 0
 
 
-@pytest.mark.parametrize("runtime,host_free,donor_sizes,needed,loses_prefix", (
-    ("pressure_v1", 0, (2,), 2, True),
-    ("pressure_v2", 0, (2,), 2, False),
-    ("pressure_v2", 0, (1, 1), 2, False),
-    ("pressure_v2", 0, (2,), 3, True),
-    ("pressure_v2", 0, (), 2, True),
-    ("pressure_v2", 8, (2,), 2, False),
-), indirect=["runtime"])
-def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
-    runtime, full_native, host_free, donor_sizes, needed, loses_prefix,
-):
-    from sglang.srt.mem_cache.common import evict_from_tree_cache
+def _track_native_host_allocations(native, capacity):
     from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
-    from test_beliefkv_terminal_capacity import insert_session
 
-    native, allocator, writes, _, _ = full_native
     group = native.host_pool_group
     pool = group.entry_map["kv"].host_pool
     component = native.components[0]
-    evict_device_leaf = native._evict_device_leaf
-    pool.size = 8 + host_free
-    free_host = pool.size
+    pool.size = free_host = capacity
 
     def available():
         return free_host
@@ -501,11 +486,34 @@ def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
     component._full_kv_pool_host = pool
     controller.write = write
 
-    def back_up(node):
+    def back_up(node, *, settle=True):
         assert native._execute_and_commit_kv_backup(
             BackupKV([node.id]), no_host_reclaim=True,
         ) == len(node.component_data[0].value)
-        native.writing_check(finish_count=1)
+        if settle:
+            native.writing_check(finish_count=1)
+
+    return back_up
+
+
+@pytest.mark.parametrize("runtime,host_free,donor_sizes,needed,loses_prefix", (
+    ("pressure_v1", 0, (2,), 2, True),
+    ("pressure_v2", 0, (2,), 2, False),
+    ("pressure_v2", 0, (1, 1), 2, False),
+    ("pressure_v2", 0, (2,), 3, True),
+    ("pressure_v2", 0, (), 2, True),
+    ("pressure_v2", 8, (2,), 2, False),
+), indirect=["runtime"])
+def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
+    runtime, full_native, host_free, donor_sizes, needed, loses_prefix,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    component = native.components[0]
+    evict_device_leaf = native._evict_device_leaf
+    back_up = _track_native_host_allocations(native, 8 + host_free)
 
     waiting_tokens = list(range(8 - sum(donor_sizes)))
     waiting, generation = insert_session(native, waiting_tokens, "waiting-parent")
@@ -558,6 +566,102 @@ def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
         assert observed["checkpoint_tokens"] == len(waiting_tokens)
     gate.close()
     assert native._evict_device_leaf == evict_device_leaf
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("branch", (
+    "settled", "second_backed_child", "unbacked_child", "host_locked", "pending",
+))
+def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_children(
+    runtime, full_native, branch,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 16)
+    backed_sibling = branch == "second_backed_child"
+    waiting_tokens = list(range(8 if backed_sibling else 10))
+    waiting, generation = insert_session(native, waiting_tokens, "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    unbacked, _ = insert_session(native, list(range(20, 32)), "native-victim")
+    ancestor_tokens = list(range(40, 44))
+    ancestor, _ = insert_session(native, ancestor_tokens, "backed-path")
+    child, _ = insert_session(native, [*ancestor_tokens, 44, 45], "backed-path")
+    back_up(child)
+    donor_children = [child]
+    if branch in ("second_backed_child", "unbacked_child"):
+        sibling, _ = insert_session(native, [*ancestor_tokens, 46, 47], "other-path")
+        if backed_sibling:
+            back_up(sibling)
+            donor_children.append(sibling)
+    back_up(ancestor, settle=branch != "pending")
+    if branch == "host_locked":
+        native.inc_host_lock_ref(ancestor.id)
+
+    assert ancestor not in native.tree_core.evictable_device_leaves
+    assert all(node in native.tree_core.evictable_device_leaves for node in donor_children)
+    assert native.host_pool_group.available_size() == 0
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    before = len(writes)
+    needed = 4 + 2 * len(donor_children)
+    target = allocator.available_size() + needed
+    evict_from_tree_cache(native, target)
+    assert allocator.available_size() >= target
+
+    preserved = branch in ("settled", "second_backed_child")
+    assert (waiting.component_data[0].host_value is not None) is preserved
+    assert (unbacked.component_data[0].value is not None) is preserved
+    assert len(writes) == before + (0 if preserved else 1)
+    for node in (*donor_children, ancestor):
+        assert (node.component_data[0].value is None) is preserved
+        if preserved:
+            assert node.component_data[0].host_value is not None
+    assert runtime.counts["subagent_materialization_writeback_avoided"] == int(preserved)
+    assert runtime.counts["subagent_materialization_writeback_pressure_checks"] == 1
+    observed = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", [*waiting_tokens, 99]), extra_key=None, cache_salt=None,
+    ))
+    assert (observed is not None) is preserved
+    if preserved:
+        assert observed["checkpoint_tokens"] == len(waiting_tokens)
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_native_allocation_finds_sparse_backing_outside_the_bounded_heap_prefix(runtime, full_native):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 8)
+    waiting, _ = insert_session(native, list(range(6)), "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    victim, _ = insert_session(native, list(range(20, 28)), "native-victim")
+    others = [
+        insert_session(native, [start, start + 1], f"unbacked-{start}")[0]
+        for start in (30, 32, 34)
+    ]
+    donor, _ = insert_session(native, [40, 41], "backed-donor")
+    back_up(donor)
+    priority = native.components[0].session_ref_eviction_strategy
+    assert all(priority(victim) < priority(other) < priority(donor) for other in others)
+    assert list(native.tree_core.full_host_duplicates) == [waiting.id, donor.id]
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    runtime._subagent_materialization.max_candidates = 2
+    target = allocator.available_size() + 2
+    evict_from_tree_cache(native, target)
+    assert allocator.available_size() == target
+    assert len(writes) == 2
+    assert waiting.component_data[0].host_value is not None
+    assert victim.component_data[0].value is not None
+    assert donor.component_data[0].value is None
+    assert donor.component_data[0].host_value is not None
 
 
 def test_real_native_host_lock_blocks_ancestor_credit_until_native_eviction_can_use_it(full_native):
