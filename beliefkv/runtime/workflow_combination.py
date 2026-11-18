@@ -450,7 +450,8 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             if priority is not None and not getattr(self, "strict_remaining_work", False) else weight
         )
 
-    def _strict_candidate_window(self, keys, reference, capacity, predictions):
+    def _strict_candidate_window(self, keys, reference, capacity, predictions, *,
+                                 complete_free_siblings=False):
         a = self.admission
         required = [key for key in reference if a._protected_join(key)]
         reserve = sum(
@@ -479,10 +480,31 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             token = (key.root_workflow_id, group) if total > 1 else (key.invocation_id,)
             peers.setdefault(token, []).append(key)
         seen = set(window)
-        for group in peers.values():
+        checks_left = self.max_sibling_candidates if complete_free_siblings else 0
+        known = {key.invocation_id for key in ordered} if checks_left else set()
+        for token, group in peers.items():
             if len(window) >= limit:
                 break
             pending = [key for key in group if key not in seen]
+            if checks_left and len(token) == 2:
+                join_id = token[1]
+                # The rotating free-dispatch window can cut through a live
+                # JOIN. Check its indexed peers before pricing native prefixes.
+                for identity in sorted(groups[join_id][2] - known):
+                    if not checks_left or len(window) + len(pending) >= self.max_sibling_candidates:
+                        break
+                    checks_left -= 1
+                    peer = a.latest.get(identity)
+                    if peer is None or peer.root_workflow_id != token[0]:
+                        continue
+                    found = a._candidate(peer.request_id, peer, include_first=True)
+                    if (
+                        found is not None
+                        and found[0].tokens + a.policy.buffer_tokens <= capacity - reserve
+                        and self._group(peer, groups)[0] == join_id
+                    ):
+                        known.add(identity)
+                        pending.append(peer)
             if len(window) + len(pending) > limit and len(window) + len(pending) <= self.max_sibling_candidates:
                 limit = self.max_sibling_candidates
             for key in pending:
@@ -549,6 +571,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         }
         summaries, candidates, predictions, resources = {}, [], {}, None
         unavailable, protected_prefixes, prefix_summaries = [], set(), {}
+        indexed_siblings = ()
         private_blocked_tokens, unreferenced_tokens = None, 0
         self.cold_summary = ()
         accumulation = getattr(self, "capacity_accumulation", None)
@@ -574,7 +597,15 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 if strict:
                     result["reason"] = "strict_reference_exceeds_prefix_budget"
                 return list(reference)
-            window = self._candidate_window(keys, reference, capacity, predictions)
+            if strict and source == "undiscounted_free_dispatch":
+                window = self._strict_candidate_window(
+                    keys, reference, capacity, predictions, complete_free_siblings=True,
+                )
+                observed = set(keys) | set(reference)
+                indexed_siblings = tuple(key for key in window if key not in observed)
+                a.counts["strict_remaining_work_indexed_siblings"] += len(indexed_siblings)
+            else:
+                window = self._candidate_window(keys, reference, capacity, predictions)
             if not strict and len(window) == len(reference):
                 result["reason"] = "no_competing_choice"
                 return list(reference)
@@ -714,6 +745,8 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         } if self.shortest_work_first else {}),
                         "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
                         "decision": result, "candidates": [asdict(row) for row in candidates],
+                        **({"indexed_sibling_candidates": [asdict(key) for key in indexed_siblings]}
+                           if indexed_siblings else {}),
                         "logical_reference_window": reference_window,
                         "logical_reference_capacity_tokens": capacity,
                         "logical_reference_maximum": maximum,

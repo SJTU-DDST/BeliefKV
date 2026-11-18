@@ -30,6 +30,7 @@ from tests.test_workflow_work_oracle import source
 from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact
 from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
+from tests.test_reference_sibling_coadmission import group
 
 
 def choose(rows, reference, resources, costs, **kwargs):
@@ -159,6 +160,58 @@ def test_strict_choice_changes_actual_eligibility_and_native_candidates(monkeypa
         assert not any("b" in row["decision"].get("required_reference_members", ()) for row in choices)
         validate_selection_policy(choices, shortest_work_first=True, strict_remaining_work=True)
         assert admission.status()["workflow_public_timeout_force_resume"] is False
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("mode, capacity, blocked_peer, expected", (
+    ("all", 500, False, {"child-0", "child-1"}),
+    ("all", 499, False, {"child-0"}),
+    ("any", 500, False, {"child-0"}),
+    ("all", 500, True, {"child-0"}),
+))
+def test_free_dispatch_considers_ready_sibling_outside_rotating_window(
+    monkeypatch, tmp_path, mode, capacity, blocked_peer, expected,
+):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    try:
+        from beliefkv.runtime.join_sibling_service import JoinSiblingService
+
+        admission._siblings = JoinSiblingService(admission)
+        admission.policy.capacity_tokens = capacity
+        admission.max_continuation_checks = 1
+        admission.next_tick = float("inf")
+        admission._combination.next_dispatch = float("inf")
+        group(runtime, mode=mode, sequence=100)
+        for owner in ("child-0", "child-1"):
+            req = request(owner, owner, tokens=150, workflow="wf")
+            req.output_ids.clear()
+            runtime.register_visible_request(req)
+        if blocked_peer:
+            runtime.on_events((observed(
+                110, Kind.TOOL_START, invocation_id="child-1", context_id="child-1-context",
+                attributes={"tool_call_id": "tool"},
+            ),))
+        admission._work._predictions["wf"] = WeightedPrediction(
+            (1., 0., 0.), 0, 1, time.monotonic(), "model", .9,
+        )
+        admission._dispatch_pending.move_to_end("child-0", last=False)
+        records = []
+        runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+
+        assert admission._dispatch_free_capacity()
+        assert {item.identity for item in admission.policy.programs.values() if item.active} == expected
+        assert admission.policy.remaining_capacity() >= 0
+        choice = next(row for row in records if row["event"] == "workflow_combination_selection")
+        assert [key["invocation_id"] for key in choice.get("indexed_sibling_candidates", ())] == (
+            ["child-1"] if mode == "all" and not blocked_peer else []
+        )
+        requests = list(admission._live_requests.values())
+        plan = runtime.plan_native_prefill(requests, running_batch=NS(reqs=[]), adder=None)
+        actual = select_native_prefill_candidates(
+            requests, plan=plan, current_semantic_revision=runtime.semantic_revision,
+        )
+        assert {req.rid for req in actual.candidates} == expected
     finally:
         runtime.close()
 

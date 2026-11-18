@@ -21,25 +21,26 @@ from tests.test_paper_baseline_runtime import request
 from tests.test_reference_thunder_admission import full_runtime
 
 
-def group(live, *, waiting=True, mode="all", confidence=EventConfidence.OBSERVED_EXACT, size=2):
+def group(live, *, waiting=True, mode="all", confidence=EventConfidence.OBSERVED_EXACT, size=2,
+          sequence=0):
     members = tuple("child-" + str(index) for index in range(size))
     events = [
-        observed(0, Kind.WORKFLOW_START),
-        observed(1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="parent-context"),
+        observed(sequence, Kind.WORKFLOW_START),
+        observed(sequence + 1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="parent-context"),
     ]
     events.extend(
         observed(
-            index + 2, Kind.INVOCATION_CREATE, invocation_id=name, context_id=name + "-context",
+            sequence + index + 2, Kind.INVOCATION_CREATE, invocation_id=name, context_id=name + "-context",
             parent_invocation_id="parent", relation_type=RelationType.SPAWN,
         ) for index, name in enumerate(members)
     )
     events.append(observed(
-        size + 2, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=members,
+        sequence + size + 2, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=members,
         attributes={"mode": mode}, confidence=confidence,
     ))
     if waiting:
         events.append(observed(
-            size + 3, Kind.JOIN_WAIT, invocation_id="parent", join_id="join",
+            sequence + size + 3, Kind.JOIN_WAIT, invocation_id="parent", join_id="join",
             confidence=confidence,
         ))
     live.on_events(tuple(events))
