@@ -81,14 +81,33 @@ class Labels:
 def collect(registration, cohort_path, oracle_path, output):
     plan = json.loads(registration.read_bytes())
     proof = verify_execution(registration, cohort_path)
+    cohort = json.loads(cohort_path.read_bytes())
+    never_submitted = set()
+    certificate = None
+    if proof["protocol"] == "all_fixed_measured_workflows_completed":
+        certificate = Path(proof["certificate"])
+        never_submitted.update(json.loads(certificate.read_bytes())["never_submitted_background"])
+    observed_workflows = set(plan["workflow_ids"]) - never_submitted
+    if not set(cohort["measured_workflow_ids"]) <= observed_workflows:
+        raise ValueError("censoring includes a measured workflow")
+
     config = json.loads(Path(plan["experiment_configuration"]).read_bytes())
     base_path = Path(config["common_environment"]["WORKFLOW_WORK_MODEL"])
     oracle = WorkflowWorkOracleArtifact.load(oracle_path, sha256_file(oracle_path))
     graph, _source, evidence = source_plan(Path(plan["source_arm"]))
     oracle.validate_source(Path(plan["source_arm"]), graph, evidence)
     reader, arm, timeline, decisions = SealedRecords(), replay_arm(plan), [], []
+    owners = {}
+    owner_fields = ("workflow_id", "invocation_id", "context_id")
     for ordinal, raw in enumerate(reader(arm / "replay/runtime_events.replay.jsonl")):
         event = RuntimeEvent.from_dict(raw)
+        if event.kind is Kind.LLM_SUBMIT:
+            request = event.attributes.get("request_id")
+            item = oracle.requests.get(request)
+            owner = tuple(getattr(event, name) for name in owner_fields)
+            if item is None or request in owners or owner != tuple(item[name] for name in owner_fields):
+                raise ValueError("submitted request differs from its frozen owner")
+            owners[request] = (*owner, event.context_epoch)
         timeline.append((event.ts_ms / 1000., 0, ordinal, event))
     receipts = {}
     for raw in reader(arm / "replay/native_requests.jsonl"):
@@ -102,12 +121,21 @@ def collect(registration, cohort_path, oracle_path, output):
         timeline.append((raw["native_complete_monotonic_ms"] / 1000., 1, len(timeline), request))
     generated = Counter()
     for raw in reader(arm / "server/runtime_audit.jsonl"):
-        if raw.get("event") != "gpu_service_sample" or raw["phase"] != "decode":
+        if raw.get("event") != "gpu_service_sample" or (
+            raw["phase"] != "decode"
+            and raw.get("output_token_accounting") != "observed_output_ids_delta_all_forward_modes_v1"
+        ):
             continue
         for member in raw["request_samples"]:
             request, count = member["request_id"], member["output_tokens_after"]
-            if request not in receipts or count >= receipts[request]["output_tokens"]:
+            owner = tuple(member.get(name) for name in (*owner_fields, "context_epoch"))
+            if owners.get(request) != owner:
+                raise ValueError("native progress differs from the observed request owner")
+            if type(count) is not int or not 0 <= count <= oracle.requests[request]["output_tokens"]:
+                raise ValueError("native progress exceeds the frozen request output")
+            if count == oracle.requests[request]["output_tokens"]:
                 continue
+            # Preserve the observed progress of unfinished background calls.
             if count - generated[request] >= 128:
                 generated[request] = count
                 timeline.append((raw["complete_monotonic_ms"] / 1000., 2, len(timeline), (request, count)))
@@ -176,20 +204,30 @@ def collect(registration, cohort_path, oracle_path, output):
                 "timing": clocks[snapshot_workflow].features(now),
                 "path": labels.at(snapshot_workflow, now),
             })
-    if set(receipts) != completed or set(plan["workflow_ids"]) != set(task_text):
-        raise ValueError("require all complete workflows and original bounded task metadata")
+    if set(proof["completed_receipt_requests"]) != completed:
+        raise ValueError("collected native receipts differ from the verified execution")
+    if observed_workflows != set(task_text):
+        raise ValueError("require original bounded task metadata for each submitted workflow")
+    incomplete = submitted - completed
     dataset = {
         "rows": snapshots, "decisions": decisions, "task_text": task_text,
         "base_model": str(base_path), "base_sha256": sha256_file(base_path),
         "oracle_artifact": str(oracle_path.resolve()),
-        "registration": str(registration), "cohort": json.loads(cohort_path.read_bytes()),
+        "registration": str(registration), "cohort": cohort,
         "model_seconds_per_work_token": oracle.model_seconds_per_work_token,
         "complete_measured_requests": proof["measured_requests"],
         "complete_measured_outputs": proof["measured_output_tokens"],
+        "workload_observation": {
+            "observed_workflows": len(observed_workflows),
+            "never_submitted_background": sorted(never_submitted),
+            "submitted_requests_without_complete_receipt": len(incomplete),
+            "incomplete_requests_with_native_progress": len(incomplete & generated.keys()),
+        },
         "input_jsonl_prefixes": reader.prefixes,
         "inputs_sha256": {
             str(path.resolve()): sha256_file(path) for path in (
                 registration, cohort_path, oracle_path, base_path, Path(__file__),
+                *((certificate,) if certificate is not None else ()),
             )
         },
         "target_is_fixed_service_and_tool_DAG_not_observed_JCT": True,
