@@ -357,6 +357,47 @@ def replay_choice(
     return summary
 
 
+def periodic_service_fit(choice, selection, control, members, guard):
+    """Bind the independent ready-service fit grant to this periodic decision."""
+    actual = set(control["resumed_program_ids"])
+    ordinary = set(choice["selected"])
+    capacity, tokens = guard.get("logical_capacity_tokens"), guard.get("selected_tokens")
+    if (
+        guard.get("physical_capacity_credit") is not False
+        or guard.get("monotonic_s") != control["monotonic_s"]
+        or "displaced" not in guard
+        or any(type(value) is not int or value <= 0 for value in (capacity, tokens))
+        or not tokens <= capacity <= control["resume_capacity_tokens"]
+        or tokens != sum(members[owner]["complete_budget_tokens"] for owner in actual)
+    ):
+        raise ValueError("invalid service fit boundary or logical budget")
+
+    added = identity(guard["key"], grant=True)
+    owner = added[2]
+    if (
+        owner in ordinary or owner not in actual
+        or identity(members[owner]["key"], grant=True) != added
+    ):
+        raise ValueError("service fit changed the added request attempt")
+
+    displaced = None
+    if guard["displaced"] is not None:
+        displaced = identity(guard["displaced"], grant=True)
+        dropped = displaced[2]
+        selected_key = selection.get("keys", {}).get(dropped)
+        if (
+            not choice["selected"] or dropped != choice["selected"][-1]
+            or dropped not in members
+            or identity(members[dropped]["key"], grant=True) != displaced
+            or selected_key is not None and identity(selected_key, grant=True) != displaced
+        ):
+            raise ValueError("service fit changed the displaced request attempt")
+        ordinary.remove(dropped)
+    if ordinary | {owner} != actual:
+        raise ValueError("service fit does not explain the actual periodic grant")
+    return added, displaced
+
+
 def inspect(
     records, batches, costs, cost_identity, *, allow_feasible_resource_alternatives=False,
     plan_device_capacity=False, include_all_selected_service=False,
@@ -371,7 +412,7 @@ def inspect(
         if key in episodes:
             raise ValueError("duplicate actual periodic service episode")
         episodes[key] = episode
-    choices, pending, free_pending, last_free_associations = [], None, None, {}
+    choices, pending, fit_pending, free_pending, last_free_associations = [], None, None, None, {}
     for sequence, row in enumerate(records):
         if row.get("event") == EVENT:
             last_free_associations = {}
@@ -393,6 +434,8 @@ def inspect(
                 )
             choices.append(choice)
             if row["source"] == "periodic_decay_resume":
+                if fit_pending is not None:
+                    raise ValueError("service fit is missing its periodic grant boundary")
                 pending = choice, row
                 free_pending = None
             else:
@@ -451,6 +494,10 @@ def inspect(
             if key in last_free_associations:
                 last_free_associations[key]["separate_tool_replacement"] = True
             free_pending, last_free_associations = None, {}
+        elif row.get("event") == "ready_service_fit_granted":
+            if pending is None or fit_pending is not None:
+                raise ValueError("service fit needs one pending periodic selection")
+            fit_pending = row
         elif row.get("event") == "agent_periodic_admission_decision":
             free_pending = None
             last_free_associations = {}
@@ -458,15 +505,25 @@ def inspect(
                 continue
             choice, selection = pending
             pending = None
-            if set(row["resumed_program_ids"]) != set(choice["selected"]):
-                raise ValueError("combination and following actual periodic grant disagree")
             members = {item["invocation_id"]: item for item in row["programs"]}
+            granted = set(row["resumed_program_ids"])
+            if fit_pending is not None:
+                added, displaced = periodic_service_fit(choice, selection, row, members, fit_pending)
+                choice["periodic_ready_service_fit"] = {
+                    "key": added, "displaced": displaced,
+                    "episode": episodes.get((added, sequence)),
+                }
+                fit_pending = None
+            elif granted != set(choice["selected"]):
+                raise ValueError("combination and following actual periodic grant disagree")
             targets = (
                 choice["selected"] if include_all_selected_service
                 and choice["all_selected_metadata_complete"]
                 else choice["newly_selected_invocations"]
             )
             for owner in targets:
+                if owner not in granted:
+                    continue  # The independent fit grant displaced this member.
                 member = members[owner]
                 selected_key = identity(selection["keys"][owner], grant=True)
                 if identity(member["key"], grant=True) != selected_key:
@@ -489,6 +546,10 @@ def inspect(
             "newly_selected_free_with_bounded_useful_completion",
             "newly_selected_free_direct_dispatch_grant_verified",
             "newly_selected_free_granted_by_separate_tool_replacement",
+            "periodic_ready_service_fit_grants",
+            "periodic_ready_service_fit_followed_by_exact_service",
+            "periodic_ready_service_fit_displacements",
+            "newly_selected_periodic_displaced_by_ready_service_fit",
         )
     }), Counter(), Counter()
     for choice in choices:
@@ -501,6 +562,16 @@ def inspect(
         counts["periodic_selections_with_actual_grant_boundary"] += choice.get(
             "following_periodic_grant_verified", False,
         )
+        if (fit := choice.get("periodic_ready_service_fit")) is not None:
+            counts["periodic_ready_service_fit_grants"] += 1
+            counts["periodic_ready_service_fit_followed_by_exact_service"] += (
+                fit["episode"] is not None and fit["episode"]["following_native_service_ms"] is not None
+            )
+            if fit["displaced"] is not None:
+                counts["periodic_ready_service_fit_displacements"] += 1
+                counts["newly_selected_periodic_displaced_by_ready_service_fit"] += (
+                    fit["displaced"][2] in choice["newly_selected_invocations"]
+                )
         for service in choice["periodic_service"]:
             episode = service["episode"]
             counts["newly_selected_periodic_episodes"] += 1
@@ -546,6 +617,7 @@ def inspect(
             "reference_is_local_S0_not_a_counterfactual_whole_run": True,
             "periodic_progress_uses_exact_attempt_and_post_pressure_eligibility": True,
             "periodic_progress_bounded_by_next_control_or_observed_intervention": True,
+            "independent_ready_service_fit_grants_are_attributed_separately": True,
             "free_dispatch_selection_replayed_but_service_not_associated": not any(
                 service["actual_grant_verified"] and not service["separate_tool_replacement"]
                 for choice in choices for service in choice[

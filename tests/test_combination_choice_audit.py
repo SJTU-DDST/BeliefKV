@@ -247,6 +247,78 @@ def test_following_actual_grant_cannot_change_selection_or_attempt():
         inspect(records, batches, costs, "frozen")
 
 
+def service_fit_evidence(*, replace):
+    records, batches, costs = service_evidence()
+    selection, control, _ = records
+    control["monotonic_s"] -= .001  # The control clock is captured before the search.
+    selected = selection["decision"]["selected"]
+    displaced = selected[-1] if replace else None
+    retained = selected[:-1] if replace else selected
+    granted = [*retained, "a"]
+    budgets = {item["invocation_id"]: item["complete_budget_tokens"] for item in control["programs"]}
+    total = sum(budgets[owner] for owner in granted)
+    control.update(resumed_program_ids=granted, resume_capacity_tokens=total)
+    for item in control["programs"]:
+        item["active_after_pressure"] = item["invocation_id"] in granted
+    guard = {
+        "event": "ready_service_fit_granted", "monotonic_s": control["monotonic_s"],
+        "key": key("a"), "displaced": key(displaced) if replace else None,
+        "selected_tokens": total, "logical_capacity_tokens": total,
+        "physical_capacity_credit": False,
+    }
+    records.insert(1, guard)
+    added = service("a", 10002.)
+    added.update(launch_monotonic_ms=10001., complete_monotonic_ms=10003., phase="prefill")
+    added["request_samples"][0].update(phase="prefill", token_delta=10, output_token_delta=0)
+    return records, [*batches, added], costs
+
+
+@pytest.mark.parametrize("replace", (False, True))
+def test_periodic_fit_is_credited_separately_from_ranked_service(replace):
+    records, batches, costs = service_fit_evidence(replace=replace)
+    result = inspect(records, batches, costs, "frozen", include_all_selected_service=True)
+    choice = result["decisions"][0]
+    assert choice["following_periodic_grant_verified"]
+    guard = choice["periodic_ready_service_fit"]
+    assert guard["key"][2] == "a"
+    assert guard["episode"]["new_completion_before_next_control_or_intervention"]
+    assert result["counts"]["periodic_ready_service_fit_grants"] == 1
+    assert result["counts"]["newly_selected_periodic_displaced_by_ready_service_fit"] == int(replace)
+    assert {row["invocation_id"] for row in choice["periodic_service"]} == (
+        set(records[2]["resumed_program_ids"]) - {"a"}
+    )
+
+
+def test_service_fit_after_a_fallback_uses_the_periodic_attempt_identity():
+    records, batches, costs = service_fit_evidence(replace=True)
+    selection = records[0]
+    selected = selection["decision"]["selected"]
+    selection.update(keys={}, candidates=[], resources=None, decision={
+        "selected": selected, "reference": selected,
+        "reason": "strict_reference_exceeds_prefix_budget",
+    })
+    choice = inspect(records, batches, costs, "frozen")["decisions"][0]
+    assert choice["following_periodic_grant_verified"]
+    assert choice["periodic_ready_service_fit"]["displaced"][2] == selected[-1]
+    assert not choice["periodic_service"]
+
+
+@pytest.mark.parametrize("change", ("clock", "target_attempt", "displaced_attempt", "budget"))
+def test_inconsistent_service_fit_evidence_cannot_reconcile_a_grant(change):
+    records, batches, costs = service_fit_evidence(replace=True)
+    guard = records[1]
+    if change == "clock":
+        guard["monotonic_s"] -= 1.
+    elif change == "target_attempt":
+        guard["key"]["attempt_id"] += 1
+    elif change == "displaced_attempt":
+        guard["displaced"]["attempt_id"] += 1
+    else:
+        guard["selected_tokens"] -= 1
+    with pytest.raises(ValueError, match="service fit"):
+        inspect(records, batches, costs, "frozen")
+
+
 def test_free_dispatch_is_replayed_without_inventing_a_periodic_grant():
     records, batches, costs = service_evidence()
     records[0]["source"] = "undiscounted_free_dispatch"
