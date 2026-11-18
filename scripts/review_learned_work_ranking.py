@@ -15,7 +15,8 @@ from beliefkv.predictor.workflow_work import R5_SCHEMA, WorkflowWorkModel
 from beliefkv.runtime.workflow_work_oracle import KIND
 from scripts import run_causal_comparison as causal
 from scripts.review_matched_work_ranking import evaluate_pair_cohorts
-from scripts.review_predictive_thunder_cohort import TRAFFIC_FIELDS
+from scripts.review_predictive_thunder_cohort import matching_serving_traffic
+from scripts.stop_after_measured_cohort import replay_arm
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
@@ -237,10 +238,7 @@ def verify_learned_combination_pair(control, learned):
 
 
 def verify_learned_traffic(control, learned):
-    for name in (*TRAFFIC_FIELDS, "expected_replay_capacity", "host_capacity_experiment",
-                 "native_execution_configuration"):
-        if name not in control or control[name] != learned.get(name):
-            raise ValueError("learned comparison changed matched work or resources: " + name)
+    matching_serving_traffic(control, learned)
     if control.get("order") != ["full"] or learned.get("order") != ["full"]:
         raise ValueError("learned comparison requires two Full executions")
     if learned.get("oracle_information") is not None:
@@ -264,7 +262,11 @@ def main():
     executions = [verify_execution(path, args.cohort) for path in (args.control, args.learned)]
     if executions[0]["work"] != executions[1]["work"]:
         raise ValueError("learned comparison changed complete measured native work")
-    cohorts, decisions, paths = [], [], [args.control, args.learned, args.cohort, *artifacts]
+    capacity_paths = [replay_arm(plan) / "server/native_capacity_census.json" for plan in plans]
+    capacities = [causal.load(path)["capacity"] for path in capacity_paths]
+    if capacities[0] != capacities[1]:
+        raise ValueError("actual native capacity changed in the learned comparison")
+    cohorts, decisions, paths = [], [], [args.control, args.learned, args.cohort, *artifacts, *capacity_paths]
     for directory, execution in zip((args.control_review_dir, args.learned_review_dir), executions):
         report_paths = [directory / name for name in ("review.json", "cohort.json", "workload_decision.json")]
         review, cohort, decision = (causal.load(path) for path in report_paths)
@@ -302,6 +304,7 @@ def main():
             **causal.load(artifacts[1])["admission_cost_profile"]["costs"],
         ).selection_objective,
         complete_measured_work_fresh_drain_and_actual_exit=True,
+        actual_native_capacity=capacities[0],
         original_workload_decisions_preserved=decisions,
         single_run_statistical_significance_claimed=False,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (

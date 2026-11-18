@@ -107,3 +107,12 @@ def test_learned_execution_requires_exact_work_resources_and_no_oracle_informati
     learned["oracle_information"] = {"future": "available"}
     with pytest.raises(ValueError, match="future"):
         verify_learned_traffic(control, learned)
+
+
+def test_standard_registrations_can_both_omit_the_optional_capacity_override():
+    control = dict.fromkeys(TRAFFIC_FIELDS, "same") | {"order": ["full"]}
+    learned = deepcopy(control)
+    verify_learned_traffic(control, learned)
+    learned["expected_replay_capacity"] = {"device_full_tokens": 12}
+    with pytest.raises(ValueError, match="capacity"):
+        verify_learned_traffic(control, learned)
