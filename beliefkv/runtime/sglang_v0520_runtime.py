@@ -1024,10 +1024,13 @@ class NativeAdmissionRuntime:
         paper_policy = os.environ.get("BELIEFKV_PAPER_BASELINE", "")
         self._paper_baseline = None
         self._agent_admission = None
+        from beliefkv.runtime.subagent_materialization import PRESSURE_POLICIES
+
         materialization = os.environ.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off")
-        if materialization not in ("off", "pressure_v1"):
-            raise ValueError("subagent materialization must be off or pressure_v1")
-        self.subagent_materialization_enabled = materialization == "pressure_v1"
+        if materialization not in ("off", *PRESSURE_POLICIES):
+            raise ValueError("subagent materialization must be off, pressure_v1 or pressure_v2")
+        self.subagent_materialization_policy = materialization
+        self.subagent_materialization_enabled = materialization in PRESSURE_POLICIES
         self._subagent_materialization = None
         self._full_prefix_migration = None
         agent_policy = os.environ.get("BELIEFKV_AGENT_ADMISSION", "off")
@@ -1276,7 +1279,9 @@ class NativeAdmissionRuntime:
                 raise ValueError("subagent materialization requires Full reference agent admission")
             from beliefkv.runtime.subagent_materialization import SubagentMaterialization
 
-            self._subagent_materialization = SubagentMaterialization(self)
+            self._subagent_materialization = SubagentMaterialization(
+                self, include_root_entries=materialization == "pressure_v2",
+            )
         self.event_server = (
             RuntimeEventDatagramServer(
                 event_socket_path, self.on_events, timing=self._hotpath_timing,
@@ -3048,6 +3053,7 @@ class NativeAdmissionRuntime:
                 "background_prepare": self.enable_background_prepare,
                 "idle_host_mirror_recycle": self.idle_host_mirror_recycle,
                 "terminal_child_reclaim": self.enable_terminal_child_reclaim,
+                "subagent_materialization_policy": self.subagent_materialization_policy,
                 "subagent_materialization": (
                     self._subagent_materialization.status()
                     if self._subagent_materialization is not None else None

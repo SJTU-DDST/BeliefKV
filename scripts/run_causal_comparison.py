@@ -437,9 +437,8 @@ def preflight_runtime(settings, model_path):
         "idle_host_mirror_recycle": settings.get("BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", "0") == "1",
         "tool_offload_min_survival": float(settings.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9")),
         "host_demand_reserve_bytes": int(settings.get("BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0")),
-        "subagent_materialization_enabled": (
-            settings.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off") == "pressure_v1"
-        ),
+        "subagent_materialization_policy": settings.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off"),
+        "subagent_materialization_enabled": settings.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off") != "off",
         "layer_handoff_enabled": settings.get("BELIEFKV_LAYER_HANDOFF", "0") == "1",
         "layer_handoff_free_extent": settings.get("BELIEFKV_LAYER_HANDOFF_FREE_EXTENT", "0") == "1",
         "layer_handoff_d2h_layers": int(settings.get("BELIEFKV_LAYER_HANDOFF_D2H_LAYERS", "1")),
@@ -965,6 +964,19 @@ def observed_configuration(plan, label, arm, *, final=False):
         ) == "1"
         if state.get("idle_host_mirror_recycle", False) is not host_mirror_recycle:
             raise ValueError("effective idle Host mirror recycling differs from declaration")
+        materialization = (
+            common.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off") if mode == "full" else "off"
+        )
+        materialization_state = state.get("subagent_materialization")
+        declared = state.get("subagent_materialization_policy")
+        if declared is None:
+            # Older runtime reports predate the explicit policy field.
+            declared = "pressure_v1" if materialization_state is not None else "off"
+        if (
+            declared != materialization
+            or isinstance(materialization_state, dict) != (materialization != "off")
+        ):
+            raise ValueError("effective materialization policy differs from declaration")
         layer_handoff = mode == "full" and common.get(
             "BELIEFKV_LAYER_HANDOFF", common.get("LAYER_HANDOFF", "0"),
         ) == "1"

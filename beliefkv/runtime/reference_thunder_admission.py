@@ -184,8 +184,14 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             for event in events:
                 if event.kind is Kind.WORKFLOW_END:
                     gate.workflow_ended(event.workflow_id)
-                elif event.kind in (Kind.SPAWN, Kind.CALL):
-                    key = self.latest.get(event.target_invocation_id)
+                elif event.kind in (Kind.SPAWN, Kind.CALL) or (
+                    gate.include_root_entries and event.kind is Kind.INVOCATION_CREATE
+                ):
+                    owner = (
+                        event.invocation_id if event.kind is Kind.INVOCATION_CREATE
+                        else event.target_invocation_id
+                    )
+                    key = self.latest.get(owner)
                     req = self._live_requests.get(key.request_id) if key is not None else None
                     if req is not None:
                         gate.registered(req, key)

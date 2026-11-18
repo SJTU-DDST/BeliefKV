@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import math
 
+from beliefkv.runtime.subagent_materialization import PRESSURE_POLICIES
+
 MODES = ("full", "join_priority_only", "scheduler_only", "kv_only", "native_matched")
 ORDER = ("join_priority_only", "scheduler_only", "kv_only", "native_matched")
 SCHEDULING_ONLY = frozenset(("join_priority_only", "scheduler_only"))
@@ -386,7 +388,7 @@ def arm_environment(
     if agent_admission == "thunderagent_workflow" and scheduling != "join_priority":
         raise ValueError("workflow agent admission requires declared JOIN priority ordering")
     materialization = common.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off")
-    if materialization not in ("off", "pressure_v1") or (
+    if materialization not in ("off", *PRESSURE_POLICIES) or (
         mode == "full" and materialization != "off" and agent_admission != "thunderagent_reference"
     ):
         raise ValueError("subagent materialization requires Full reference agent admission")

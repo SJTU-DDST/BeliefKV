@@ -1,4 +1,4 @@
-"""Prepare matched child-materialization controls without launching a GPU."""
+"""Prepare matched initial KV materialization controls without launching a GPU."""
 
 import argparse
 from copy import deepcopy
@@ -14,11 +14,12 @@ from beliefkv.experiments.host_numa import expected_full_bytes
 from beliefkv.experiments.paper_baselines import environment as paper_environment
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.workflow_cohort import validate_cohort
+from beliefkv.runtime.subagent_materialization import PRESSURE_POLICIES
 from scripts.prepare_arrival_rate_followup import followup_configuration, followup_protocol
 from scripts.train_workflow_work import write
 
 
-def configurations(previous, *, host_gb=None):
+def configurations(previous, *, host_gb=None, pressure_policy="pressure_v1"):
     if previous["order"] != ["full"]:
         raise ValueError("prepare from the declared Full configuration")
     before = previous["common_environment"]
@@ -26,8 +27,10 @@ def configurations(previous, *, host_gb=None):
         raise ValueError("the base must preserve the original materialization behavior")
     if host_gb is not None and (type(host_gb) is not int or not 1 <= host_gb <= 1024):
         raise ValueError("Host capacity must be an explicit integer number of decimal GB")
+    if pressure_policy not in PRESSURE_POLICIES:
+        raise ValueError("select a supported materialization pressure policy")
     result = {}
-    for label, policy in (("control", "off"), ("pressure", "pressure_v1")):
+    for label, policy in (("control", "off"), ("pressure", pressure_policy)):
         config = deepcopy(previous)
         common = config["common_environment"]
         if host_gb is not None:
@@ -110,7 +113,8 @@ def baseline_configurations(control):
     return result
 
 
-def prepare(path, output, *, host_gb=None, mean_interval_s=None, include_baselines=False):
+def prepare(path, output, *, host_gb=None, mean_interval_s=None,
+            include_baselines=False, pressure_policy="pressure_v1"):
     if output.exists():
         raise FileExistsError("preserve earlier preparations")
     previous = json.loads(path.read_bytes())
@@ -146,7 +150,7 @@ def prepare(path, output, *, host_gb=None, mean_interval_s=None, include_baselin
             "same_original133_and_fixed18_retimed_seeded_Poisson"
         )
         arrivals, cohort = following, analysis
-    configurations_by_arm = configurations(previous, host_gb=host_gb)
+    configurations_by_arm = configurations(previous, host_gb=host_gb, pressure_policy=pressure_policy)
     if include_baselines:
         configurations_by_arm.update(baseline_configurations(configurations_by_arm["control"]))
     acceptance = {
@@ -173,7 +177,8 @@ def prepare(path, output, *, host_gb=None, mean_interval_s=None, include_baselin
         config["materialization_acceptance"] = acceptance
         write(output / (label + ".json"), config)
     report = {
-        "scope": "matched_child_materialization_CPU_preparation",
+        "scope": "matched_initial_KV_materialization_CPU_preparation",
+        "pressure_policy": pressure_policy,
         "inputs_sha256": {str(item.resolve()): sha256_file(item) for item in inputs},
         "artifacts": {
             label: {"path": str((output / (label + ".json")).resolve()),
@@ -207,11 +212,12 @@ def main():
     parser.add_argument("--host-gb", type=int)
     parser.add_argument("--mean-interval-s", type=float)
     parser.add_argument("--include-baselines", action="store_true")
+    parser.add_argument("--pressure-policy", choices=PRESSURE_POLICIES, default="pressure_v1")
     args = parser.parse_args()
     report = prepare(
         args.config, args.output_dir, host_gb=args.host_gb,
         mean_interval_s=args.mean_interval_s,
-        include_baselines=args.include_baselines,
+        include_baselines=args.include_baselines, pressure_policy=args.pressure_policy,
     )
     print(json.dumps({key: report[key] for key in (
         "workflows", "initial_workflows", "mean_interarrival_s", "Host_GB", "GPU_action",

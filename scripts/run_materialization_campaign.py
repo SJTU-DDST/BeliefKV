@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.runtime.subagent_materialization import PRESSURE_POLICIES
 from scripts import run_causal_comparison as causal
 from scripts.run_continuous_matched_campaign import command_with, verify_serving_owner, write
 from scripts.finish_model_work_oracle import verify_pins, wait_observer_publication
@@ -58,9 +59,15 @@ def matching_preparations(configurations):
         if spec["order"] != [expected_mode]:
             raise ValueError("unexpected serving arm: " + label)
         common = spec["common_environment"]
-        expected_gate = "pressure_v1" if label == "pressure" else "off"
-        if common["BELIEFKV_SUBAGENT_MATERIALIZATION"] != expected_gate:
+        allowed_policies = PRESSURE_POLICIES if label == "pressure" else ("off",)
+        if common["BELIEFKV_SUBAGENT_MATERIALIZATION"] not in allowed_policies:
             raise ValueError("materialization policy leaked across arms")
+        if label in LABELS[:2] and (
+            common["BELIEFKV_SUBAGENT_MATERIALIZATION"]
+            != spec["comparison_contract"]["subagent_materialization_policy"]
+            or common["BELIEFKV_SUBAGENT_MATERIALIZATION"] != spec["materialization_experiment"]["policy"]
+        ):
+            raise ValueError("materialization policy differs across the prepared declarations")
         identity = {
             name: spec[name] for name in (
                 "source_registration", "tool_timing_overlay",
@@ -82,7 +89,7 @@ def matching_preparations(configurations):
         spec["comparison_contract"].pop("subagent_materialization_policy")
         spec["materialization_experiment"].pop("policy")
     if before != after:
-        raise ValueError("Full pair changed more than first child materialization")
+        raise ValueError("Full pair changed more than initial KV materialization")
     return shared
 
 

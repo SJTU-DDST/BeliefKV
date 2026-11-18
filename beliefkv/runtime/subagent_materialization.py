@@ -1,12 +1,15 @@
-"""Delay first child KV materialization when useful state exhausts both tiers."""
+"""Delay initial KV materialization when useful state exhausts both tiers."""
 
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
 import time
 
-from beliefkv.control.causal_graph import InvocationState
+from beliefkv.control.causal_graph import InvocationState, JoinMode
 from beliefkv.core.events import RelationType
 from beliefkv.runtime.sglang_v0520_admission import _request_key
+
+
+PRESSURE_POLICIES = ("pressure_v1", "pressure_v2")
 
 
 @dataclass(frozen=True)
@@ -144,6 +147,7 @@ class _InitialRequest:
     key: object
     request: object
     arrived: float
+    root_entry: bool = False
     permitted: bool = False
     started: bool = False
     progress: bool = False
@@ -158,10 +162,12 @@ class SubagentMaterialization:
     max_candidates = 64
     max_dependency_depth = 64
 
-    def __init__(self, runtime):
+    def __init__(self, runtime, *, include_root_entries=False):
         self.runtime = runtime
+        self.include_root_entries = include_root_entries
         self.pending = OrderedDict()
         self.materialized = set()
+        self.started_workflows = set()
         self.progress_path = []
         self.next_check = 0.
         self.next_census = 0.
@@ -195,21 +201,48 @@ class SubagentMaterialization:
         a, runtime = self.admission, self.runtime
         invocation = runtime.graph.invocations.get(key.invocation_id)
         item = a.policy.programs[key.invocation_id]
+        child = bool(
+            invocation is not None and invocation.parent_invocation_id
+            and invocation.relation_type in (RelationType.SPAWN, RelationType.CALL)
+        )
+        existing = self.pending.get(key.request_id)
+        if existing is not None:
+            if existing.key == key and child and not existing.started:
+                existing.root_entry = False
+            return
         if (
-            key.request_id in self.pending or self._context(key) in self.materialized or item.steps != 1
-            or invocation is None or not invocation.parent_invocation_id
-            or invocation.relation_type not in (RelationType.SPAWN, RelationType.CALL)
-            or not self._untouched(req)
+            self._context(key) in self.materialized or item.steps != 1 or not self._untouched(req)
         ):
+            return
+        root_entry = False
+        if self.include_root_entries and not child and key.root_workflow_id not in self.started_workflows:
+            if invocation is not None:
+                root_entry = (
+                    invocation.workflow_id == key.root_workflow_id
+                    and invocation.context_id == key.context_id
+                    and invocation.parent_invocation_id is None
+                    and invocation.relation_type is RelationType.ROOT
+                )
+            else:
+                # Ingress can precede delivery of the matching causal event.
+                metadata = req.beliefkv_metadata
+                root_entry = (
+                    metadata.get("relation_type") == "root"
+                    and metadata.get("parent_invocation_id") is None
+                )
+        if not (child or root_entry):
             return
         self.pending[key.request_id] = _InitialRequest(
             key, req, runtime._visible_since.get(key.request_id, time.monotonic()),
+            root_entry=root_entry,
         )
         if item.active:
             a.policy._pause(item, time.monotonic())
         item.marked_for_pause = False
         runtime.semantic_revision += 1
         runtime.counts["subagent_materialization_registered"] += 1
+        if root_entry:
+            runtime.counts["subagent_materialization_root_registered"] += 1
 
     def allows(self, key):
         record = self.pending.get(key.request_id) if key is not None else None
@@ -335,6 +368,57 @@ class SubagentMaterialization:
             records,
             key=lambda record: -combination._work_weight(record.key, predictions),
         )
+
+    def _blocking_join(self, record, joins):
+        a, runtime = self.admission, self.runtime
+        identity = record.key.invocation_id
+        for join_id in sorted(runtime._join_by_invocation.get(identity, ())):
+            if join_id not in joins:
+                join = runtime.graph.joins.get(join_id)
+                joins[join_id] = (
+                    join if join is not None and join.mode is JoinMode.ALL
+                    and any(
+                        a._waiting_on_join(runtime.graph.invocations.get(waiter), join)
+                        for waiter in join.waiter_invocation_ids
+                    ) else None
+                )
+            join = joins[join_id]
+            if (
+                join is not None and join.workflow_id == record.key.root_workflow_id
+                and identity in join.member_invocation_ids and identity not in join.completed_member_ids
+            ):
+                return join_id
+        return None
+
+    def _pressure_order(self, records):
+        runtime = self.runtime
+        joins, blocking, children, roots = {}, {}, [], []
+        for record in records:
+            if record.root_entry:
+                roots.append(record)
+                continue
+            child = runtime.graph.invocations[record.key.invocation_id]
+            parent = runtime.graph.invocations.get(child.parent_invocation_id)
+            join_id = self._blocking_join(record, joins)
+            if join_id is not None or (
+                parent is not None and parent.workflow_id == child.workflow_id
+                and parent.state is InvocationState.WAIT_CHILD and not parent.active_tool_calls
+                and child.invocation_id in parent.blocking_child_ids
+            ):
+                blocking[record.key] = (record, join_id)
+            else:
+                children.append(record)
+        window = list(blocking.values())[:self.max_candidates]
+        groups = {}
+        for record in self._ordered([record for record, _ in window]):
+            join_id = blocking[record.key][1]
+            groups.setdefault((join_id, None if join_id is not None else record.key), []).append(record)
+        ordered = [record for group in groups.values() for record in group]
+        ordered.extend(self._ordered(children[:self.max_candidates - len(ordered)]))
+        # Rotate rejected windows before applying FIFO within the next window.
+        root_window = roots[:self.max_candidates - len(ordered)]
+        ordered.extend(sorted(root_window, key=lambda record: record.arrived))
+        return ordered
 
     def _progress_candidate(self, records, native_order, running_batch, adder):
         runtime = self.runtime
@@ -498,7 +582,11 @@ class SubagentMaterialization:
             ]
             # Bound ranking, rotate failed windows so a first page of held
             # children cannot conceal the rest forever.
-            candidates = self._ordered(candidates[:self.max_candidates])
+            candidates = (
+                self._pressure_order(candidates) if self.include_root_entries
+                and observation.observable and available < required - reserve - outstanding
+                else self._ordered(candidates[:self.max_candidates])
+            )
             # Native selections are already charged in outstanding. Preserve
             # their permission until native commits or cancels that selection.
             allowed = set(committed_initial)
@@ -532,7 +620,7 @@ class SubagentMaterialization:
             if not observation.observable:
                 allowed.update(
                     rid for rid, record in self.pending.items()
-                    if not record.started
+                    if not record.started and (not record.root_entry or self._ready(record.key))
                 )
             for record in self.pending.values():
                 if not record.started:
@@ -555,6 +643,13 @@ class SubagentMaterialization:
                 ],
                 "progress_exception": progress.key.request_id if progress is not None else None,
             }
+            if self.include_root_entries:
+                decision.update(
+                    root_candidates=[record.key.request_id for record in candidates if record.root_entry],
+                    held_root_request_ids=[
+                        rid for rid in decision["held"] if self.pending[rid].root_entry
+                    ],
+                )
             # Repeated checks remain counters; journal only a changed decision.
             if decision != self.last_decision:
                 self.last_decision = decision
@@ -602,14 +697,18 @@ class SubagentMaterialization:
         key = self.runtime.visible.get(getattr(req, "rid", None))
         if key is not None:
             self.materialized.add(self._context(key))
+            if self.include_root_entries:
+                self.started_workflows.add(key.root_workflow_id)
         record = self.pending.get(getattr(req, "rid", None))
         if record is None or record.started:
             return
         record.started = record.permitted = True
         self.runtime.counts["subagent_materialization_started"] += 1
-        self.runtime.counts["subagent_materialization_wait_us"] += (
-            time.monotonic() - record.arrived
-        ) * 1e6
+        wait_us = (time.monotonic() - record.arrived) * 1e6
+        self.runtime.counts["subagent_materialization_wait_us"] += wait_us
+        if record.root_entry:
+            self.runtime.counts["subagent_materialization_root_started"] += 1
+            self.runtime.counts["subagent_materialization_root_wait_us"] += wait_us
 
     def completed(self, completed_ids):
         for request_id in completed_ids:
@@ -640,6 +739,7 @@ class SubagentMaterialization:
         self.capacity_changed()
 
     def workflow_ended(self, workflow):
+        self.started_workflows.discard(workflow)
         self.materialized = {
             identity for identity in self.materialized if identity[0] != workflow
         }
@@ -647,6 +747,7 @@ class SubagentMaterialization:
     def close(self):
         self.pending.clear()
         self.materialized.clear()
+        self.started_workflows.clear()
         self.progress_path.clear()
         self._native_order = ()
         self._running_batch = None
@@ -654,11 +755,20 @@ class SubagentMaterialization:
 
     def status(self):
         return {
-            "policy": "useful_kv_first_child_materialization_v1",
+            "policy": (
+                "useful_kv_first_root_and_child_materialization_v2" if self.include_root_entries
+                else "useful_kv_first_child_materialization_v1"
+            ),
             "pending_initial_requests": len(self.pending),
             "held_request_ids": [
                 rid for rid, record in self.pending.items() if not record.started and not record.permitted
             ],
+            **({
+                "held_root_request_ids": [
+                    rid for rid, record in self.pending.items()
+                    if record.root_entry and not record.started and not record.permitted
+                ],
+            } if self.include_root_entries else {}),
             "interval_ms": self.interval_s * 1000., "max_census_nodes": self.max_nodes,
             "census_fallback_interval_ms": self.admission.control_interval_s * 1000.,
             "max_candidates": self.max_candidates, "last_decision": self.last_decision,

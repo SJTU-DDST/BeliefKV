@@ -2,8 +2,35 @@
 
 本候选保留 subagent 的原任务、SPAWN、JOIN、请求登记和 workflow 到达时间，
 在新 child 首次进入 native prefill 之前实施背压。等待时间属于原 workflow
-的完整 JCT。功能默认关闭，显式配置为
-`BELIEFKV_SUBAGENT_MATERIALIZATION=pressure_v1` 才启用。
+的完整 JCT。功能默认关闭。`BELIEFKV_SUBAGENT_MATERIALIZATION=pressure_v1`
+启用 child 首次物化控制，`pressure_v2` 将新 workflow 的 root 纳入预算。
+
+## 新 workflow 的首次准入
+
+`pressure_v2` 将新 workflow 的首次 root 请求和新 child 放入同一份
+有效 KV 预算。两者都按当前输入及 buffer 计价，已启动请求的未分配
+后缀和已经进入原生选择的请求先扣除。root 请求在首次 prefill 前接受
+实时复核，等待从原 workflow 到达时开始计入完整 JCT。
+
+出现预算竞争时，准入顺序如下。
+
+1. 优先满足真实阻塞 CALL 或 ALL-JOIN 的 child。同一个可见 ALL-JOIN
+   在有界窗口内连续分配物化额度，容量只够部分成员时允许部分推进。
+2. 再考虑其他在途 workflow 的首次 child。child 档内沿用 R5 的剩余
+   关键路径比较。
+3. 余量可以容纳新 workflow 时，在有界 root 候选窗口内按到达先后放行。
+   预算不够的候选会轮换出窗口。只剩新 workflow 可以推动系统时，
+   使用原进展例外允许一个 root 启动。
+
+已获得原生服务的 workflow 中，普通续接直接使用调度器的恢复路径。
+新 root 所需预算按实际已提交输入计算，后续出现的 child 在各自首次
+物化时纳入预算。状态记录区分 held root 和 held child，完成后的
+验收需同时检查 root 入场等待、已有 workflow 的完成时间、有效 KV
+重算、共同窗口吞吐和可执行候选供给。
+
+可用 `prepare_subagent_materialization.py --pressure-policy pressure_v2`
+生成匹配对照。首轮构造验证采用 133 个原项目、Host 200 GB、20 个初始
+workflow、平均 55 秒到达和固定 18 个测量成员。
 
 ## 目的与边界
 

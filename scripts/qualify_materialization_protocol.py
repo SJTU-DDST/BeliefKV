@@ -117,7 +117,10 @@ def qualify(prepared, inherited, native, output):
                 raise ValueError("production cohort stopper selected a different arm")
             if native_baseline_declared(registration) != (label == "native_matched"):
                 raise ValueError("native baseline stopping contract is ambiguous")
-            expected_gate = "pressure_v1" if label == "pressure" else "off"
+            expected_gate = (
+                spec["comparison_contract"]["subagent_materialization_policy"]
+                if label == "pressure" else "off"
+            )
             if settings["BELIEFKV_SUBAGENT_MATERIALIZATION"] != expected_gate:
                 raise ValueError("materialization gate leaked into another arm")
             if label == "native_matched" and preflight != {"native_runtime_not_enabled": True}:

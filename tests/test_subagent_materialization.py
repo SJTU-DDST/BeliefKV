@@ -119,12 +119,12 @@ def test_real_native_split_backup_ack_and_host_only_accounting(full_native):
 
 
 @pytest.fixture
-def runtime(monkeypatch, tmp_path):
+def runtime(monkeypatch, tmp_path, request):
     settings = arm_environment({
         "AGENT_ADMISSION": "thunderagent_reference",
         "AGENT_FREE_CONTINUATION_ADMISSION": "1", "AGENT_FREE_DISPATCH_INTERVAL_MS": "500",
         "AGENT_CONTROL_INTERVAL_MS": "2000", "EXECUTION_FRONTIER_RESTORE": "0",
-        "BELIEFKV_SUBAGENT_MATERIALIZATION": "pressure_v1",
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": getattr(request, "param", "pressure_v1"),
     }, "full")
     for key, value in settings.items():
         monkeypatch.setenv(key, value)
@@ -169,6 +169,152 @@ def prepare(live, queue, *, running=(), now=100.):
     live._subagent_materialization.prepare(
         queue, running_batch=NS(reqs=list(running)), adder=None, now=now,
     )
+
+
+def new_root(live, identity, *, tokens=100, publish=True):
+    live._test_sequence += 3
+    seq = live._test_sequence
+    live.on_events((replace(observed(seq, Kind.WORKFLOW_START), workflow_id=identity),))
+    create = replace(observed(
+        seq + 1, Kind.INVOCATION_CREATE, invocation_id=identity,
+        context_id=identity + "-context", relation_type=RelationType.ROOT,
+    ), workflow_id=identity)
+    if publish:
+        live.on_events((create,))
+    req = request(identity + "-request", identity, tokens=tokens, workflow=identity)
+    req.beliefkv_metadata["relation_type"] = "root"
+    req.output_ids.clear()
+    req.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+    req.finished = lambda: False
+    assert live.register_visible_request(req)
+    return req, create
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v1", "pressure_v2"), indirect=True)
+def test_root_hold_requires_v2_and_releases_into_the_real_native_plan(runtime):
+    req, create = new_root(runtime, "arrival")
+    gate, a = runtime._subagent_materialization, runtime._agent_admission
+    key = runtime.visible[req.rid]
+    if not gate.include_root_entries:
+        assert req.rid not in gate.pending and a.allows(key)
+        return
+
+    prepare(runtime, [req], running=[object()])
+    assert gate.status()["held_root_request_ids"] == [req.rid]
+    assert not a.allows(key) and not a._timeout_force_resume_allowed(key)
+    assert not a._can_resume(a.policy.programs[key.invocation_id])
+    assert gate.defer_start(req)
+
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 201
+    gate.capacity_changed()
+    plan = runtime.plan_native_prefill([req], running_batch=NS(reqs=[]), adder=None)
+    selection = select_native_prefill_candidates(
+        [req], plan=plan, current_semantic_revision=runtime.semantic_revision,
+    )
+    assert selection.candidates == (req,)
+    assert runtime.graph.workflows[create.workflow_id].start_ts_ms == create.ts_ms - 1
+    assert not gate.defer_start(req)
+    runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+    assert gate.pending[req.rid].started and create.workflow_id in gate.started_workflows
+    assert runtime.counts["subagent_materialization_root_started"] == 1
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("wait", ("all", "any", "not_waiting", "call"))
+def test_root_budget_prioritizes_actual_blocking_children_before_shorter_new_work(runtime, wait):
+    root, _ = new_root(runtime, "arrival", tokens=10)
+    unrelated = child(runtime, "other", tokens=100)
+    blocking = child(runtime, "blocking", tokens=100)
+    a, gate = runtime._agent_admission, runtime._subagent_materialization
+    scores = {"arrival": 1., "other": .9, "blocking": .1}
+    a._combination = NS(_work_weight=lambda key, _: scores[key.invocation_id])
+    if wait == "call":
+        runtime.on_events((observed(
+            50, Kind.CALL, invocation_id="parent", target_invocation_id="blocking",
+        ),))
+    else:
+        runtime.on_events((observed(
+            50, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=("blocking",),
+            attributes={"mode": "any" if wait == "any" else "all"},
+        ),))
+        if wait != "not_waiting":
+            runtime.on_events((observed(51, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),))
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 202
+    prepare(runtime, (root, unrelated, blocking), running=[object()])
+    expected = blocking if wait in ("all", "call") else unrelated
+    assert gate.last_decision["allowed"] == [expected.rid]
+    assert gate.last_decision["held_root_request_ids"] == [root.rid]
+    assert gate.last_decision["available_before_tokens"] == 200
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_blocking_siblings_share_budget_before_a_root_outside_the_candidate_window(runtime):
+    root, _ = new_root(runtime, "arrival", tokens=10)
+    left, right = child(runtime, "left"), child(runtime, "right")
+    runtime.on_events((
+        observed(50, Kind.JOIN_CREATE, join_id="join", member_invocation_ids=("left", "right")),
+        observed(51, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),
+    ))
+    gate = runtime._subagent_materialization
+    gate.max_candidates = 2
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 402
+    prepare(runtime, (root, left, right), running=[object()])
+    assert gate.last_decision["allowed"] == [left.rid, right.rid]
+    assert gate.last_decision["held_root_request_ids"] == [root.rid]
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_native_start_rechecks_root_permission_after_a_blocking_child_arrives(runtime):
+    root, _ = new_root(runtime, "arrival")
+    gate = runtime._subagent_materialization
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 202
+    queue = [root]
+    prepare(runtime, queue, running=[object()])
+    assert gate.allows(runtime.visible[root.rid])
+    blocking = child(runtime, "blocking")
+    runtime.on_events((observed(
+        50, Kind.CALL, invocation_id="parent", target_invocation_id="blocking",
+    ),))
+    queue.append(blocking)
+    assert gate.defer_start(root)
+    assert gate.last_decision["allowed"] == [blocking.rid]
+    assert root.kv.req_pool_idx is None and root.kv.kv_allocated_len == 0
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_root_ingress_before_matching_create_stays_held_until_ready(runtime):
+    req, create = new_root(runtime, "arrival", publish=False)
+    gate = runtime._subagent_materialization
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 1000
+    prepare(runtime, (req,), running=[object()])
+    assert gate.status()["held_root_request_ids"] == [req.rid]
+    runtime.on_events((create,))
+    prepare(runtime, (req,), running=[object()], now=101.)
+    assert gate.allows(runtime.visible[req.rid])
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_idle_progress_can_start_a_root_if_no_existing_work_can_advance(runtime):
+    oldest, _ = new_root(runtime, "older")
+    later, _ = new_root(runtime, "later")
+    gate = runtime._subagent_materialization
+    prepare(runtime, (later, oldest))
+    assert gate.last_decision["progress_exception"] == oldest.rid
+    assert gate.last_decision["held_root_request_ids"] == [later.rid]
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_unfittable_old_root_does_not_conceal_later_roots_beyond_the_window(runtime):
+    oldest, _ = new_root(runtime, "older", tokens=300)
+    later, _ = new_root(runtime, "later")
+    gate = runtime._subagent_materialization
+    gate.max_candidates = 1
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 202
+    prepare(runtime, (oldest, later), running=[object()])
+    assert gate.last_decision["root_candidates"] == [oldest.rid]
+    assert not gate.last_decision["allowed"]
+    prepare(runtime, (oldest, later), running=[object()], now=102.)
+    assert gate.last_decision["allowed"] == [later.rid]
 
 
 def test_hold_is_applied_to_registration_periodic_free_sibling_and_timeout_grants(runtime):
@@ -545,13 +691,14 @@ def test_workflow_end_releases_all_materialization_metadata(runtime):
 
 
 @pytest.mark.parametrize("mode", MODES)
-def test_explicit_candidate_never_leaks_into_other_arms(mode):
+@pytest.mark.parametrize("policy", ("pressure_v1", "pressure_v2"))
+def test_explicit_candidate_never_leaks_into_other_arms(mode, policy):
     result = arm_environment({
         "AGENT_ADMISSION": "thunderagent_reference",
-        "BELIEFKV_SUBAGENT_MATERIALIZATION": "pressure_v1",
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": policy,
     }, mode)
     assert result["BELIEFKV_SUBAGENT_MATERIALIZATION"] == (
-        "pressure_v1" if mode == "full" else "off"
+        policy if mode == "full" else "off"
     )
 
 
@@ -563,9 +710,10 @@ def test_configuration_refuses_ambiguous_materialization_policy(value):
 
 def test_default_and_paper_environment_keep_materialization_disabled():
     assert arm_environment({}, "full")["BELIEFKV_SUBAGENT_MATERIALIZATION"] == "off"
-    assert paper_environment({
-        "BELIEFKV_SUBAGENT_MATERIALIZATION": "pressure_v1",
-    }, "thunderagent_acting_decay")["BELIEFKV_SUBAGENT_MATERIALIZATION"] == "off"
+    for policy in ("pressure_v1", "pressure_v2"):
+        assert paper_environment({
+            "BELIEFKV_SUBAGENT_MATERIALIZATION": policy,
+        }, "thunderagent_acting_decay")["BELIEFKV_SUBAGENT_MATERIALIZATION"] == "off"
 
 
 @pytest.mark.parametrize("host_gb", (None, 200, 400))
