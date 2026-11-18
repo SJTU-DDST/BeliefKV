@@ -99,6 +99,30 @@ def verify_serving_owner(owner, current, registration):
     return current
 
 
+def verify_completed_observer(stage, cohort, verify_pins, alive):
+    registration = Path(stage["registration"])
+    recovery = stage.get("recovered_observer_registration")
+    path = Path(recovery) if recovery else registration.with_name(
+        registration.name.replace(".registration.json", ".cohort.registration.json")
+    )
+    if recovery:
+        declaration = load(path)
+        if (
+            declaration.get("comparison") != str(registration)
+            or declaration.get("cohort") != cohort
+            or declaration.get("analysis_output") != stage["review"]
+        ):
+            raise ValueError("recovered observer covers a different execution or cohort")
+        verify_pins(declaration["inputs_sha256"])
+
+    observed = load(path.with_suffix(".state.json"))
+    owner = observed["process"]
+    if observed["status"] != "measured_cohort_review_complete" or alive(owner) or (
+        recovery and owner.get("argv", [])[-2:] != ["--watch", str(path)]
+    ):
+        raise ValueError("reuse only an actually completed fixed-cohort review")
+
+
 def matching_work(proofs):
     if not proofs or "full" not in proofs:
         raise ValueError("Full execution proof is required")
@@ -256,6 +280,27 @@ def watch(plan_path):
         if child.returncode:
             raise RuntimeError("CPU execution review failed: " + name)
 
+    def audit_ranked_stage(label):
+        result = ranking.evaluate_pair_cohorts(
+            load(Path(plan["stages"]["full"]["review"]) / "cohort.json"),
+            load(Path(plan["stages"][label]["review"]) / "cohort.json"),
+            load(plan["stages"][label]["configuration"])["comparison_contract"],
+            minimum_jct_gain=.01,
+        )
+        write(output / (label + "_early_comparison.json"), result)
+        choice_path = output / (label + "_actual_choices.json")
+        command = [
+            Path(plan["operator"]) / "scripts/audit_workflow_combination_choices.py",
+            "--registration", plan["stages"][label]["registration"],
+            "--control", plan["stages"]["full"]["registration"], "--cohort", plan["cohort"],
+            "--complete", "--policy-kind", "oracle" if label == "oracle" else "learned",
+            "--output", choice_path,
+        ]
+        if label == "oracle":
+            command.extend(("--model-work-reference", plan["stages"]["learned"]["configuration"]))
+        cpu(label + "_actual_choices", command)
+        return result, load(choice_path)
+
     def run_stage(label):
         stage = plan["stages"][label]
         state.update(current_stage=label, measured_completed=None, observed_arrivals=None)
@@ -263,14 +308,7 @@ def watch(plan_path):
         ranking.released()
         if stage.get("reuse_completed_execution"):
             registration = Path(stage["registration"])
-            observer_path = registration.with_name(
-                registration.name.replace(".registration.json", ".cohort.registration.json")
-            ).with_suffix(".state.json")
-            observed = load(observer_path)
-            if observed["status"] != "measured_cohort_review_complete" or causal.reservation.alive(
-                observed["process"]
-            ):
-                raise ValueError("reuse only an actually completed fixed-cohort review")
+            verify_completed_observer(stage, plan["cohort"], finish.verify_pins, causal.reservation.alive)
             proof_path = output / (label + "_execution_proof.json")
             cpu(label + "_execution_proof", [
                 "-c",
@@ -450,29 +488,13 @@ def watch(plan_path):
                 "only_CPU_coordinator_replaced": plan.get("previous_coordinator_only_handoff", False),
                 "GPU_stage_order": list(LABELS),
             })
+            require_gain = plan.get("require_ranked_gain_before_following_stages")
             for label in LABELS:
                 run_stage(label)
-                if plan.get("require_ranked_gain_before_following_stages") and label in ("oracle", "learned"):
-                    result = ranking.evaluate_pair_cohorts(
-                        load(Path(plan["stages"]["full"]["review"]) / "cohort.json"),
-                        load(Path(plan["stages"][label]["review"]) / "cohort.json"),
-                        load(plan["stages"][label]["configuration"])["comparison_contract"],
-                        minimum_jct_gain=.01,
-                    )
-                    write(output / (label + "_early_comparison.json"), result)
-                    choice_path = output / (label + "_actual_choices.json")
-                    command = [
-                        Path(plan["operator"]) / "scripts/audit_workflow_combination_choices.py",
-                        "--registration", plan["stages"][label]["registration"],
-                        "--control", plan["stages"]["full"]["registration"], "--cohort", plan["cohort"],
-                        "--complete", "--policy-kind", "oracle" if label == "oracle" else "learned",
-                        "--output", choice_path,
-                    ]
-                    if label == "oracle":
-                        command.extend(("--model-work-reference", plan["stages"]["learned"]["configuration"]))
-                    cpu(label + "_actual_choices", command)
+                if require_gain and label in ("oracle", "learned"):
+                    result, choices = audit_ranked_stage(label)
                     if not stage_promising(
-                        result, load(choice_path),
+                        result, choices,
                         allow_tail_diagnostic=plan.get(
                             "workload_diagnostic_failure_retained_without_cancelling_matched_controls", False,
                         ),
@@ -492,6 +514,9 @@ def watch(plan_path):
                     return
         state.update(status="all_five_matched_executions_verified")
         pulse()
+        if plan.get("audit_ranked_choices_after_campaign") and not require_gain:
+            for label in LABELS[1:3]:
+                audit_ranked_stage(label)
         for label in LABELS[1:3]:
             from scripts.review_matched_work_ranking import evaluate_pair_cohorts
             result = evaluate_pair_cohorts(

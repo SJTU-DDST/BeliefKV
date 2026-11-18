@@ -129,6 +129,10 @@ def control_optimization_environment_changes(reference, candidate):
 
 
 def verify_learned_combination_pair(control, learned):
+    from scripts.prepare_r5_path_comparison import LEARNED_PATH_TARGET, verify_shared_path_comparison
+
+    if learned["comparison_contract"].get("workflow_work_prediction") == LEARNED_PATH_TARGET:
+        return verify_shared_path_comparison(control, learned)
     allowed = {
         prefix + name for prefix in ("", "BELIEFKV_") for name in (
             "WORKFLOW_WORK_SOURCE", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",

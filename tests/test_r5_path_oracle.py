@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import asdict, replace
 from functools import partial
+import json
 import math
 from pathlib import Path
 from types import SimpleNamespace as NS
@@ -9,6 +10,7 @@ import pytest
 
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.internal_comparison import arm_environment
+from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.workflow_shortest_frontier import choose_shortest_work_first
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
@@ -16,7 +18,9 @@ from beliefkv.runtime.reference_thunder_admission import validate_reference_admi
 from beliefkv.runtime.workflow_work_oracle import (
     COMBINATION_PATH_KIND, WorkflowWorkOracle, WorkflowWorkOracleArtifact,
 )
+from scripts.audit_workflow_combination_choices import verify_model_work_pair
 from scripts.prepare_r5_path_comparison import configuration, nonranking_artifact, path_oracle_artifact
+from scripts.review_learned_work_ranking import verify_learned_combination_pair
 from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
 from tests.test_workflow_completion_path import path_model
@@ -55,6 +59,49 @@ def test_explicit_path_oracle_preserves_work_and_uses_the_shared_strict_selector
     assert raw["admission_cost_profile"]["costs"] == model["admission_cost_profile"]["costs"]
     assert raw["admission_cost_profile"]["oracle_reference_path_s"] == 100.
     assert parsed.rank_kind == "remaining_model_tool_critical_path_seconds"
+
+
+@pytest.mark.parametrize("change", (None, "resource", "cohort", "oracle_scale", "full_ranking"))
+def test_formal_choice_audits_bind_the_actual_shared_path_arms(tmp_path, change):
+    raw = learned()
+    base = {
+        "order": ["full"],
+        "common_environment": {"WORKFLOW_COMBINATION_ADMISSION": "1", "HICACHE_SIZE_GB": "200"},
+        "comparison_contract": {},
+        "private_analysis_cohort": {"delivered_to_scheduler": False, "sha256": "fixed"},
+    }
+
+    def spec(label, artifact, provider, ranked):
+        path = tmp_path / (label + ".json")
+        path.write_text(json.dumps(artifact))
+        return configuration(base, path, sha256_file(path), source=provider, ranking=ranked), path
+
+    prediction, prediction_path = spec("learned", raw, "learned", True)
+    reference, reference_path = spec(
+        "full", raw if change == "full_ranking" else nonranking_artifact(raw), "learned", False,
+    )
+    exact = path_oracle_artifact(raw, source(), sha256_file(prediction_path))
+    if change == "oracle_scale":
+        exact["admission_cost_profile"]["oracle_reference_path_s"] *= 2
+    oracle, oracle_path = spec("oracle", exact, "oracle", True)
+    if change == "resource":
+        oracle["common_environment"]["HICACHE_SIZE_GB"] = "400"
+    elif change == "cohort":
+        oracle["private_analysis_cohort"]["sha256"] = "other"
+    if change == "full_ranking":
+        with pytest.raises(ValueError, match="ranking disabled"):
+            verify_learned_combination_pair(reference, prediction)
+    else:
+        assert verify_learned_combination_pair(reference, prediction) == [
+            reference_path, prediction_path,
+        ]
+    if change is None:
+        assert verify_model_work_pair(reference, oracle, prediction) == [
+            reference_path, prediction_path, oracle_path,
+        ]
+    else:
+        with pytest.raises(ValueError, match="changed|ranking disabled"):
+            verify_model_work_pair(reference, oracle, prediction)
 
 
 @pytest.mark.parametrize("mutation", (

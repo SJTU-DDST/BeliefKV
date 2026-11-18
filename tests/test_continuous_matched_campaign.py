@@ -74,6 +74,31 @@ def test_popen_receipt_may_precede_exec_but_start_identity_and_watch_plan_must_m
         campaign.verify_serving_owner(owner, actual, Path("/ops/different.json"))
 
 
+def test_reuse_accepts_only_the_recovered_observer_for_the_same_cohort(tmp_path):
+    recovery = tmp_path / "recovery.registration.json"
+    stage = {
+        "registration": str(tmp_path / "native.registration.json"),
+        "recovered_observer_registration": str(recovery),
+        "review": str(tmp_path / "native_review"),
+    }
+    bindings = {"source": "frozen"}
+    campaign.write(recovery, {
+        "comparison": stage["registration"], "cohort": "cohort.json",
+        "analysis_output": stage["review"], "inputs_sha256": bindings,
+    })
+    campaign.write(recovery.with_suffix(".state.json"), {
+        "status": "measured_cohort_review_complete",
+        "process": {"pid": 2, "argv": ["frozen", "--watch", str(recovery)]},
+    })
+    verified = []
+    campaign.verify_completed_observer(stage, "cohort.json", verified.append, lambda _: False)
+    assert verified == [bindings]
+    with pytest.raises(ValueError, match="different execution or cohort"):
+        campaign.verify_completed_observer(stage, "other.json", verified.append, lambda _: False)
+    with pytest.raises(ValueError, match="completed fixed-cohort review"):
+        campaign.verify_completed_observer(stage, "cohort.json", verified.append, lambda _: True)
+
+
 @pytest.mark.parametrize("mismatch", (False, True))
 def test_five_stage_handoff_reuses_full_keeps_negative_diagnostics_and_checks_work(
     tmp_path, monkeypatch, mismatch,
@@ -129,11 +154,14 @@ def test_five_stage_handoff_reuses_full_keeps_negative_diagnostics_and_checks_wo
         "operator": str(operator), "inputs_sha256": {}, "cohort": str(cohort),
         "stages": stages, "minimum_model_work_p80_p20": 2.6,
         "device_state": str(tmp_path / "device.json"),
+        "device_access_mode": "shared",
         "device_owner_file": str(tmp_path / "owner.json"),
         "previous_execution_plan": str(old / "plan.json"),
         "previous_coordinator": identity(1),
         "configurations": {label: stages[label]["configuration"] for label in campaign.LABELS[:3]},
+        "audit_ranked_choices_after_campaign": True,
     }
+    campaign.write(plan["device_state"], {"status": "released"})
     plan_path = tmp_path / "plan.json"
     campaign.write(plan_path, plan)
     alive = lambda owner: bool(owner) and owner["pid"] in living
@@ -141,7 +169,10 @@ def test_five_stage_handoff_reuses_full_keeps_negative_diagnostics_and_checks_wo
     causal = SimpleNamespace(
         reservation=reservation, qualified=SimpleNamespace(resources=lambda _: {"ready": True}),
     )
-    ranking = SimpleNamespace(released=lambda: None)
+    ranking = SimpleNamespace(
+        released=lambda: None,
+        evaluate_pair_cohorts=lambda *args, **kwargs: {"diagnostic": "negative_or_positive_retained"},
+    )
     finish = SimpleNamespace(verify_pins=lambda _: None, wait_observer_publication=lambda *args: None)
     monkeypatch.setattr(campaign, "services", lambda _: (causal, ranking, finish))
     monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
@@ -183,11 +214,16 @@ def test_five_stage_handoff_reuses_full_keeps_negative_diagnostics_and_checks_wo
                 review = Path(observer["analysis_output"])
                 review.mkdir()
                 campaign.write(review / "cohort.json", {"fixed_cohort": True})
-            elif "-c" in arguments:
+            elif arguments[7] == "-c":
                 label = Path(arguments[-1]).name.removesuffix("_execution_proof.json")
                 work = {"request": "changed" if mismatch and label == "oracle" else "same"}
                 campaign.write(Path(arguments[-1]), {"work": work})
                 events.append(("verified", label))
+            elif Path(arguments[7]).name == "audit_workflow_combination_choices.py":
+                label = arguments[arguments.index("--policy-kind") + 1]
+                output = Path(arguments[arguments.index("--output") + 1])
+                campaign.write(output, {"audited": True})
+                events.append(("audited", label))
 
         def poll(self):
             return self.returncode
@@ -204,7 +240,10 @@ def test_five_stage_handoff_reuses_full_keeps_negative_diagnostics_and_checks_wo
         assert state["completed_stages"] == ["full"]
         assert [label for kind, label in events if kind == "registered"] == ["oracle"]
     else:
-        assert state["status"] == "complete_five_method_comparison"
+        assert state["status"] == "complete_five_method_comparison", state.get("error")
         assert state["completed_stages"] == list(campaign.LABELS)
         assert [label for kind, label in events if kind == "registered"] == list(campaign.LABELS[1:])
+        assert events[-3:] == [
+            ("verified", "native_matched"), ("audited", "oracle"), ("audited", "learned"),
+        ]
         assert campaign.load(tmp_path / "coordinator_handoff.json")["Full_supervisor_preserved"] == owners["full"]

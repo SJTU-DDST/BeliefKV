@@ -569,11 +569,14 @@ def inspect(
 
 
 def verify_model_work_pair(control, oracle, learned):
-    """Bind exact-work Oracle analysis through its declared learned R5 reference."""
+    """Bind Oracle analysis through its declared learned R5 reference."""
     from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact
     from scripts.finish_model_work_oracle import verify_same_objective
+    from scripts.prepare_r5_path_comparison import ORACLE_PATH_TARGET, verify_shared_path_comparison
     from scripts.review_learned_work_ranking import verify_learned_combination_pair
 
+    if oracle["comparison_contract"].get("workflow_work_prediction") == ORACLE_PATH_TARGET:
+        return verify_shared_path_comparison(control, learned, oracle)
     paths = verify_learned_combination_pair(control, learned)
     private = control.get("private_analysis_cohort")
     if not isinstance(private, dict) or private.get("delivered_to_scheduler") is not False:
@@ -607,7 +610,7 @@ def main():
     parser.add_argument("--policy-kind", choices=("oracle", "learned"), default="oracle")
     parser.add_argument(
         "--model-work-reference", type=Path,
-        help="learned R5 configuration binding an exact remaining-model-work Oracle",
+        help="learned R5 configuration binding the Oracle's model-work or model-tool path objective",
     )
     args = parser.parse_args()
     if args.output.exists():
@@ -618,11 +621,14 @@ def main():
     candidate_path, control_path = (Path(item["experiment_configuration"]) for item in (plan, control))
     candidate = causal.load(candidate_path)
     validation_paths = []
+    exact_path = False
     if args.model_work_reference is not None:
         if args.policy_kind != "oracle":
-            raise ValueError("a model-work reference applies only to Oracle analysis")
+            raise ValueError("an exact work reference applies only to Oracle analysis")
+        from scripts.prepare_r5_path_comparison import ORACLE_PATH_TARGET
         from scripts.review_predictive_thunder_cohort import matching_serving_traffic
 
+        exact_path = candidate["comparison_contract"].get("workflow_work_prediction") == ORACLE_PATH_TARGET
         matching_serving_traffic(control, plan)
         validation_paths = [
             args.model_work_reference,
@@ -630,6 +636,7 @@ def main():
                 causal.load(control_path), candidate, causal.load(args.model_work_reference),
             ),
             ROOT / "scripts/finish_model_work_oracle.py",
+            ROOT / "scripts/prepare_r5_path_comparison.py",
             ROOT / "scripts/review_learned_work_ranking.py",
             ROOT / "beliefkv/runtime/workflow_work_oracle.py",
         ]
@@ -707,7 +714,8 @@ def main():
         ).strip(),
         registration=str(args.registration), complete_measured_execution_verified=args.complete,
         policy_kind=args.policy_kind,
-        exact_model_work_reference_verified=args.model_work_reference is not None,
+        exact_model_work_reference_verified=args.model_work_reference is not None and not exact_path,
+        exact_model_tool_path_reference_verified=exact_path,
         input_jsonl_prefixes=reader.prefixes,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             args.registration, args.control, args.cohort, candidate_path, control_path,

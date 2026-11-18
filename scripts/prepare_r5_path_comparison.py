@@ -20,6 +20,8 @@ from scripts.train_workflow_work import write
 
 
 POLICY_FIELDS = ("free_dispatch_coalescing_window_ms", "tool_retention_policy")
+LEARNED_PATH_TARGET = "predicted_remaining_model_tool_critical_path_seconds"
+ORACLE_PATH_TARGET = "exact_remaining_model_tool_critical_path_seconds"
 MODEL_FIELDS = {
     prefix + name for prefix in ("", "BELIEFKV_")
     for name in ("WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256", "WORKFLOW_WORK_SOURCE")
@@ -98,8 +100,8 @@ def configuration(control, path, digest, *, source, ranking):
     contract.update(
         workflow_work_ranking=ranking, future_information_used=source == "oracle",
         workflow_work_prediction=(
-            "exact_remaining_model_tool_critical_path_seconds" if source == "oracle" else
-            "predicted_remaining_model_tool_critical_path_seconds" if ranking else "disabled"
+            ORACLE_PATH_TARGET if source == "oracle" else
+            LEARNED_PATH_TARGET if ranking else "disabled"
         ),
         strict_remaining_work_admission=ranking,
         same_R5_selector_resources_sibling_groups_and_tool_pressure_rules=True,
@@ -130,6 +132,75 @@ def configuration(control, path, digest, *, source, ranking):
         "requires_current_pair_completion_and_linear_source_integration": True,
     }
     return result
+
+
+def verify_shared_path_comparison(control, learned, oracle=None):
+    """Bind a shared-path comparison to its exact serving settings and work providers."""
+    base = control["common_environment"]
+    shared = {name: value for name, value in base.items() if name not in MODEL_FIELDS}
+    private = control.get("private_analysis_cohort") or {}
+    if private.get("delivered_to_scheduler") is not False:
+        raise ValueError("shared path comparison requires its private fixed cohort")
+    traffic = (
+        "source_registration", "workflow_arrivals", "private_analysis_cohort",
+        "tool_timing_overlay", "stream_response_metrics", "workload_acceptance",
+    )
+    thresholds = (
+        "minimum_promising_measured_mean_JCT_reduction",
+        "common_window_output_throughput_noninferiority_fraction",
+    )
+    roles = [(control, "learned", "disabled"), (learned, "learned", LEARNED_PATH_TARGET)]
+    if oracle is not None:
+        roles.append((oracle, "oracle", ORACLE_PATH_TARGET))
+    paths, artifacts = [], []
+    for spec, source, target in roles:
+        env, contract = spec["common_environment"], spec["comparison_contract"]
+        if (
+            spec.get("order") != ["full"] or env.get("WORKFLOW_COMBINATION_ADMISSION") != "1"
+            or {name: value for name, value in env.items() if name not in MODEL_FIELDS} != shared
+            or any(env.get(name) != env.get("BELIEFKV_" + name) for name in (
+                "WORKFLOW_WORK_SOURCE", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",
+            ))
+            or env.get("WORKFLOW_WORK_SOURCE") != source
+            or any(spec.get(name) != control.get(name) for name in traffic)
+            or any(contract.get(name) != control["comparison_contract"].get(name) for name in thresholds)
+            or contract.get("same_R5_selector_resources_sibling_groups_and_tool_pressure_rules") is not True
+            or contract.get("workflow_work_prediction") != target
+            or contract.get("workflow_work_ranking") is not (target != "disabled")
+            or contract.get("future_information_used") is not (source == "oracle")
+        ):
+            raise ValueError("shared path comparison changed traffic, serving settings or work provider")
+        path = Path(env["WORKFLOW_WORK_MODEL"])
+        if sha256_file(path) != env["WORKFLOW_WORK_MODEL_SHA256"]:
+            raise ValueError("a shared path comparison artifact changed")
+        paths.append(path)
+        artifacts.append(json.loads(path.read_bytes()))
+
+    reference, raw = artifacts[:2]
+    predictor = WorkflowWorkModel(raw)
+    if (
+        predictor.completion_path is None or raw.get("remaining_work_ranking_enabled") is not True
+        or raw.get("strict_remaining_work_admission") is not True
+        or reference != nonranking_artifact(raw)
+    ):
+        raise ValueError("shared path Full must retain the learned artifact with its ranking disabled")
+    if oracle is not None:
+        truth = WorkflowWorkOracleArtifact(artifacts[2])
+        expected_profile = {
+            **raw["admission_cost_profile"],
+            "oracle_reference_path_s": predictor.completion_path.reference_s,
+        }
+        if (
+            not truth.path_combination or truth.raw["admission_cost_profile"] != expected_profile
+            or truth.model_seconds_per_work_token
+            != predictor.completion_path.raw["model_seconds_per_work_token"]
+            or truth.raw["combination_reference_source_model_sha256"]
+            != learned["common_environment"]["WORKFLOW_WORK_MODEL_SHA256"]
+            or truth.continuous_reference != predictor.continuous_readout.contract
+            or any(truth.raw.get(name) != raw.get(name) for name in POLICY_FIELDS)
+        ):
+            raise ValueError("shared path Oracle changed the selector or remaining-path calibration")
+    return paths
 
 
 def prepare(args):
