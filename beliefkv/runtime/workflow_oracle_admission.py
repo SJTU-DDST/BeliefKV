@@ -29,6 +29,16 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 self._deferred_dispatch = DeferredFreeAdmission(
                     self, window_ms=self._work.artifact.raw.get("free_dispatch_coalescing_window_ms", 0),
                 )
+                if "tool_boundary_preemption" in self._work.artifact.raw:
+                    from beliefkv.runtime.tool_boundary_preemption import ToolBoundaryPreemption
+
+                    try:
+                        self._tool_boundary_preemption = ToolBoundaryPreemption(
+                            self, self._work.artifact.raw,
+                        )
+                    except Exception:
+                        self.close()
+                        raise
 
     def attach(self, cache):
         super().attach(cache)
@@ -57,6 +67,20 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         ) != "workflow_tool_aware":
             oracle.close()
             raise ValueError("model-work pressure oracle requires the existing tool-aware pressure policy")
+        if order == "global_ready_remaining_path" and not getattr(
+            runtime, "workflow_combination_admission", False,
+        ):
+            if (
+                oracle.artifact.raw.get("ready_wait_priority_ms", 0) != 0
+                or oracle.artifact.raw.get("ready_capacity_accumulation_ms", 0) != 0
+                or oracle.artifact.raw.get("cost_aware_maximal_admission", False) is not False
+                or any(name in oracle.artifact.raw for name in (
+                    "ready_wait_priority_grace_ms", "ready_wait_priority_max_boost",
+                    "maximal_admission_objective", "pressure_work_order",
+                ))
+            ):
+                oracle.close()
+                raise ValueError("global greedy Oracle excludes aging, utility scores and capacity holds")
         self._global_priority = order == "global_ready_remaining_path"
         return oracle
 
@@ -83,6 +107,43 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
             key is not None and key.invocation_id in self.runtime._join_priority_pending
             and request is not None and self.runtime._ready_join_parent(request, key)
         )
+
+    def _timeout_force_resume_allowed(self, key):
+        if (
+            self.rank_before_category and self.remaining_work_ranking_enabled
+            and self._ready_service_guard is None
+        ):
+            return False
+        return super()._timeout_force_resume_allowed(key)
+
+    def _order_work_keys(self, keys, joins):
+        ordered = super()._order_work_keys(keys, joins)
+        if not self.rank_before_category or self._siblings is None:
+            return ordered
+        groups, membership = {}, {}
+        for key in ordered:
+            if self._protected_join(key):
+                continue
+            observed = (
+                self._siblings.join(identity)
+                for identity in self.runtime._join_by_invocation.get(key.invocation_id, ())
+            )
+            eligible = [
+                join for join in observed if join is not None
+                and self._ready_sibling(key.invocation_id, join) is not None
+            ]
+            if eligible:
+                join = min(eligible, key=lambda item: (len(item.member_invocation_ids), item.join_id))
+                identity = key.root_workflow_id, join.join_id
+                membership[key] = identity
+                groups.setdefault(identity, []).append(key)
+        result, seen = [], set()
+        for key in ordered:
+            for peer in groups.get(membership.get(key), (key,)):
+                if peer not in seen:
+                    seen.add(peer)
+                    result.append(peer)
+        return result
 
     def _logical_ready_paused(self, item):
         if not super()._logical_ready_paused(item):
@@ -181,10 +242,25 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 getattr(deferred, "window_ms", 0)
             ),
             "workflow_oracle_tool_replacement_selection": (
+                "shortest_work_first_then_actual_single_donor_pair;no_free_budget_filter"
+                if self._combination is not None and self._combination.shortest_work_first else
                 "original_order_like_learned_R5" if self._work.model_work_only else
                 "remaining_path_order_then_actual_single_donor_pair;ordinary_set_budget_not_applied"
             ),
-            "workflow_oracle_combination_only": self._work.combination_only,
+            "workflow_shortest_work_first_admission": bool(
+                self._combination is not None and self._combination.shortest_work_first
+                or self.rank_before_category and self.remaining_work_ranking_enabled
+            ),
+            **({
+                "workflow_oracle_selection": "remaining_model_tool_path_then_greedy_fit",
+                "workflow_public_timeout_force_resume": self._ready_service_guard is not None,
+                "workflow_ready_wait_changes_work_rank": False,
+            } if self.rank_before_category and self.remaining_work_ranking_enabled
+                and self._combination is None else {}),
+            "workflow_size_new_preemption": self._tool_boundary_preemption is not None,
+            "workflow_oracle_combination_only": self._work.combination_only and not bool(
+                self._combination is not None and self._combination.shortest_work_first
+            ),
             **({
                 "workflow_conditional_distribution_scope": "combination_and_mandatory_tool_band_pressure",
                 "workflow_distribution_changes_pressure_victims": True,

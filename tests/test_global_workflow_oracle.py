@@ -17,6 +17,7 @@ from tests.test_workflow_work_oracle import add_serial_graphs, oracle_file, sour
 
 def queued(
     monkeypatch, tmp_path, *, global_order, activate_first=True, window_ms=0, ranking=True,
+    service_timeout_s=0,
 ):
     raw = source()
     raw["requests"], raw["workflows"] = {}, {}
@@ -39,6 +40,7 @@ def queued(
         **settings(tmp_path), "WORKFLOW_WORK_SOURCE": "oracle",
         "WORKFLOW_WORK_MODEL": path, "WORKFLOW_WORK_MODEL_SHA256": digest,
         "AGENT_FREE_DISPATCH_INTERVAL_MS": "500",
+        "BELIEFKV_AGENT_READY_SERVICE_TIMEOUT_S": str(service_timeout_s),
     }, "full")
     for name, value in environment.items():
         monkeypatch.setenv(name, value)

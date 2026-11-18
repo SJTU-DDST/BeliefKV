@@ -96,3 +96,48 @@ def test_exact_work_audit_rejects_changed_traffic_resources_reference_or_thresho
                 oracle["common_environment"][prefix + "WORKFLOW_WORK_MODEL_SHA256"] = sha256_file(path)
     with pytest.raises(ValueError):
         verify_model_work_pair(control, oracle, learned)
+
+
+def test_exact_work_audit_rejects_new_oracle_utility_without_the_same_learned_readout(tmp_path):
+    from beliefkv.predictor.workflow_continuous_work import ADMISSION_UTILITY_KIND
+
+    control, oracle, learned = model_work_pair(tmp_path)
+    path = Path(oracle["common_environment"]["WORKFLOW_WORK_MODEL"])
+    raw = json.loads(path.read_bytes())
+    raw["combination_work_reference"]["admission_utility"] = {
+        "kind": ADMISSION_UTILITY_KIND, "reference_work": 1.,
+        "initial_class_expected_utility": [.1, .01, .001],
+        "initial_prior_uses_training_labels_only": True,
+    }
+    path.write_text(json.dumps(raw))
+    for prefix in ("", "BELIEFKV_"):
+        oracle["common_environment"][prefix + "WORKFLOW_WORK_MODEL_SHA256"] = sha256_file(path)
+    with pytest.raises(ValueError, match="utility contracts differ"):
+        verify_model_work_pair(control, oracle, learned)
+
+
+def test_oracle_new_utility_preserves_exact_remaining_work_and_native_progress(tmp_path):
+    from beliefkv.predictor.workflow_continuous_work import ADMISSION_UTILITY_KIND
+    from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracle
+    from tests.test_workflow_work_oracle import oracle_file
+
+    _control, config, _learned = model_work_pair(tmp_path)
+    raw = json.loads(Path(config["common_environment"]["WORKFLOW_WORK_MODEL"]).read_bytes())
+    raw["combination_work_reference"]["admission_utility"] = {
+        "kind": ADMISSION_UTILITY_KIND, "reference_work": 1.,
+        "initial_class_expected_utility": [.1, .01, .001],
+        "initial_prior_uses_training_labels_only": True,
+    }
+    oracle = WorkflowWorkOracle(*oracle_file(tmp_path, raw))
+    assert oracle.prediction("wf").remaining_work == 47.
+    assert oracle.prediction("wf").effective_weight == 1. / 48.
+    assert oracle.prediction("wf").reference_work == 20.
+    oracle.submit("wf", "started", "one", "child", "ctx", range(500))
+    oracle.submit("wf", "generated", "one", 17)
+    assert oracle.prediction("wf").remaining_work == 30.
+    assert oracle.prediction("wf").effective_weight == 1. / 31.
+    oracle.submit("wf", "completed", "one", "child", "ctx", range(500), range(30))
+    assert oracle.prediction("wf").remaining_work == 12.
+    assert oracle.prediction("wf").effective_weight == 1. / 13.
+    assert oracle.status()["continuous_reference_work"] == 20.
+    assert oracle.status()["continuous_admission_utility"]["reference_work"] == 1.

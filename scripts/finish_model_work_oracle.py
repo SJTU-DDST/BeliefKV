@@ -15,11 +15,14 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.workflow_combination import CombinationCosts
+from beliefkv.policy.workflow_shortest_frontier import strict_remaining_work_enabled
+from beliefkv.runtime.ready_wait_priority import ReadyWaitSettings
+from beliefkv.runtime.workflow_tool_pressure import ToolRetentionSettings
 from beliefkv.runtime.workflow_work_oracle import (
     COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
     TOOL_BAND_PRESSURE_ORDER,
 )
-from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint, remaining_work_weight
+from beliefkv.predictor.workflow_continuous_work import forecast_fingerprint, utility_reference_work
 from scripts import run_causal_comparison as causal
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.audit_workflow_combination_choices import inspect
@@ -56,6 +59,17 @@ def wait_observer_publication(path, owner, pulse, *, timeout_s=30.):
 
 
 def verify_same_objective(learned, candidate, model, truth, *, allow_tool_band_pressure=False):
+    try:
+        ready_wait = ReadyWaitSettings.from_artifact(model)
+        oracle_ready_wait = ReadyWaitSettings.from_artifact(truth)
+        tool_retention = ToolRetentionSettings.from_artifact(model)
+        oracle_tool_retention = ToolRetentionSettings.from_artifact(truth)
+        strict = strict_remaining_work_enabled(model)
+        oracle_strict = strict_remaining_work_enabled(truth)
+    except ValueError as error:
+        raise ValueError(
+            "the diagnostic differs from learned R5 beyond the declared work provider"
+        ) from error
     allowed = {
         prefix + name for prefix in ("", "BELIEFKV_")
         for name in ("WORKFLOW_WORK_SOURCE", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256")
@@ -96,6 +110,39 @@ def verify_same_objective(learned, candidate, model, truth, *, allow_tool_band_p
         or truth.get("free_dispatch_coalescing_window_ms") != model.get(
             "free_dispatch_coalescing_window_ms"
         )
+        or type(model.get("shortest_work_first_admission", False)) is not bool
+        or type(truth.get("shortest_work_first_admission", False)) is not bool
+        or truth.get("shortest_work_first_admission", False) != model.get(
+            "shortest_work_first_admission", False
+        )
+        or type(model.get("cost_aware_maximal_admission", False)) is not bool
+        or type(truth.get("cost_aware_maximal_admission", False)) is not bool
+        or truth.get("cost_aware_maximal_admission", False) != model.get(
+            "cost_aware_maximal_admission", False
+        )
+        or truth.get("maximal_admission_objective", "benefit_per_cost") != model.get(
+            "maximal_admission_objective", "benefit_per_cost"
+        )
+        or model.get("maximal_admission_objective", "benefit_per_cost") not in (
+            "benefit_per_cost", "benefit"
+        )
+        or model.get("maximal_admission_objective", "benefit_per_cost") == "benefit"
+        and not model.get("cost_aware_maximal_admission", False)
+        or ready_wait != oracle_ready_wait
+        or tool_retention != oracle_tool_retention
+        or strict != oracle_strict
+        or ready_wait.scale_ms and not model.get("cost_aware_maximal_admission", False)
+        or type(model.get("ready_capacity_accumulation_ms", 0)) is not int
+        or model.get("ready_capacity_accumulation_ms", 0) not in (0, 1000, 2000)
+        or model.get("ready_capacity_accumulation_ms", 0) != truth.get(
+            "ready_capacity_accumulation_ms", 0
+        )
+        or model.get("ready_capacity_accumulation_ms", 0) and (
+            model.get("ready_capacity_accumulation_ms") != model.get("free_dispatch_coalescing_window_ms")
+            or not model.get("ready_wait_priority_ms", 0)
+            or not model.get("cost_aware_maximal_admission", False)
+            or model.get("maximal_admission_objective") != "benefit"
+        )
     ):
         raise ValueError("the diagnostic differs from learned R5 beyond the declared work provider")
     if modes[truth["kind"]] == "continuous":
@@ -107,7 +154,13 @@ def verify_same_objective(learned, candidate, model, truth, *, allow_tool_band_p
             or truth.get("combination_reference_source_model_sha256") != old.get("WORKFLOW_WORK_MODEL_SHA256")
         ):
             raise ValueError("continuous work diagnostic differs from its retained training reference")
-        remaining_work_weight(0., reference.get("reference_work"))
+        utility_reference_work(reference)
+        learned_reference = model.get("continuous_work_readout")
+        if (
+            (learned_reference is not None or "admission_utility" in reference)
+            and learned_reference != reference
+        ):
+            raise ValueError("continuous learned and oracle admission utility contracts differ")
 
 
 def comparison_scope(truth):
@@ -117,6 +170,26 @@ def comparison_scope(truth):
         "same_R5_selector_and_declared_work_readout_verified": True,
         "same_noncombination_policy_verified": not pressure,
         "work_used_for_tool_band_pressure": pressure,
+        "work_used_for_tool_replacement": truth.get("shortest_work_first_admission", False),
+        **({"tool_retention_policy": truth["tool_retention_policy"]}
+           if "tool_retention_policy" in truth else {}),
+        "shortest_work_first_admission": truth.get("shortest_work_first_admission", False),
+        **({"strict_remaining_work_admission": True}
+           if truth.get("strict_remaining_work_admission", False) else {}),
+        "cost_aware_maximal_admission": truth.get("cost_aware_maximal_admission", False),
+        **({"maximal_admission_objective": "benefit"} if (
+            truth.get("maximal_admission_objective") == "benefit"
+        ) else {}),
+        **({
+            "ready_wait_priority_ms": truth["ready_wait_priority_ms"],
+            **{
+                name: truth[name] for name in (
+                    "ready_wait_priority_grace_ms", "ready_wait_priority_max_boost",
+                ) if name in truth
+            },
+        } if truth.get("ready_wait_priority_ms") else {}),
+        **({"ready_capacity_accumulation_ms": truth["ready_capacity_accumulation_ms"]}
+           if truth.get("ready_capacity_accumulation_ms") else {}),
         "pressure_work_order": truth.get("pressure_work_order"),
         "not_a_pure_prediction_error_comparison": truth["kind"] != COMBINATION_WORK_KIND,
     }

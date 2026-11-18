@@ -48,6 +48,13 @@ def prepare(config, model, labels, artifact_path, *, continuous_model=None, tool
         "admission_cost_profile": deepcopy(model.raw["admission_cost_profile"]),
         "free_dispatch_coalescing_window_ms": model.raw["free_dispatch_coalescing_window_ms"],
     })
+    shortest = model.raw.get("shortest_work_first_admission", False)
+    if type(shortest) is not bool:
+        raise ValueError("short-work admission must be explicitly boolean")
+    if shortest:
+        artifact["shortest_work_first_admission"] = True
+    else:
+        artifact.pop("shortest_work_first_admission", None)
     if continuous_model is not None:
         reference = continuous_model.raw.get("continuous_work_readout")
         if (
@@ -125,6 +132,13 @@ def prepare(config, model, labels, artifact_path, *, continuous_model=None, tool
         "ranking_gain_isolated": False,
         "oracle_bookkeeping_synchronous_unlike_learned_worker": True,
     })
+    if shortest:
+        contract.update(
+            shortest_work_first_admission=True,
+            oracle_future_work_used_outside_combination=True,
+            oracle_future_work_outside_combination_scope="existing_immediate_tool_donor_pair_order",
+            tool_replacement_selection="shortest_work_first_without_free_budget_filter",
+        )
     if continuous_model is not None:
         contract.update(
             workflow_work_prediction="exact_continuous_remaining_model_work",

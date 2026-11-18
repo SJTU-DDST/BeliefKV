@@ -1,5 +1,66 @@
 # V273 ThunderAgent 启动记录
 
+## 最新状态：未完成，保留失败
+
+截至北京时间 2026-10-27 14:52:48，V273 已因流式读取 `ReadTimeout`
+退出。监督状态为 `stopped_for_investigation`，driver exit code 为 1，
+owned cleanup 没有剩余进程。以下启动记录仍保留为历史证据，不能再将
+该轮描述为正在运行或完整性能结果。
+
+本次只完成 2430/3674 个请求、9/18 个 workflow，已完成请求输出
+355176 token，约为目标输出的 64.62%。这 2430 条回执与历史 V260
+逐条核对 prompt/output SHA256 和 token 数一致，不能外推未完成部分。
+没有 `replay/summary.json` 或完整比较产物。不能只取已完成的九个
+workflow 计算总体 JCT，也不能将中止时刻作为最终 makespan。
+
+### 历史结果与本轮观察
+
+| arm | 完成 workflow | 完整平均 JCT，秒 | 全程输出 token/s | 平均 decode batch | H2D，GB | D2H，GB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| V232 Full | 18 | 1316.524 | 261.508 | 5.035 | 341.792 | 220.420 |
+| V232 ThunderAgent | 18 | 1339.764 | 262.225 | 4.932 | 216.496 | 412.266 |
+| V247 Full | 18 | 1423.069 | 286.593 | 6.898 | 733.582 | 259.676 |
+| V247 ThunderAgent | 18 | 1320.207 | 259.792 | 4.926 | 242.572 | 455.416 |
+| V260 Full | 18 | 1395.546 | 284.644 | 6.919 | 677.398 | 250.124 |
+| V273 ThunderAgent，中止前 | 9 | 不可计算 | 不可计算 | 2.451 | 78.787 | 241.703 |
+
+GB 为十进制实际 ACK payload；平均 batch 按观测 decode 迭代等权，
+不是 GPU 利用率。本轮已完成请求输出除以首次 workflow 开始至最后
+replay 事件的 1837.482 秒为 193.295 token/s，这只是局部观测速率，
+不是完整工作量吞吐。不得按表内局部传输总量或局部速率给新旧方法排名。
+
+V273 保持原请求、token、依赖和容量，但工具时长与旧实验不同：
+931 次 execute 的均值由 0.636 秒变为 9.776 秒，P50 由 0.129 秒变为
+6.167 秒，超过一秒的次数由 133 变为 867。V273 还开启逐请求流式
+指标，旧实验没有。V247/V260 与 V273 共享 engine tree，但这些计时和
+HTTP 响应方式差异仍然阻止将历史 Full 当作 V273 的同配置性能对照。
+
+### 饥饿与超时配置冲突
+
+API Gateway、Web CMS 和 System Networking 的首个 root 请求一直没有
+出现在原生 `llm_submit` 服务记录中，终止时均被记录为 `stage=waiting`。
+另外两个已开始的请求因 driver 失败而取消，不能算作自然结束。
+中止前最新策略样本报告七个 active acting program、两个 active
+reasoning program、三个因容量不满足而暂停的 pending program，
+剩余逻辑容量 55293 token，最老等待 1799.648 秒。
+
+冻结的 `scripts/run_causal_gpu_replay.py` 默认 HTTP request timeout 为
+1800 秒，监督 `replay_command` 没有传入覆盖值。与此同时，冻结的
+`ThunderAgentAdapter.tick` 按公开实现保留 1800 秒 pending 后强制恢复，
+只每五秒检查一次。失败前没有 `public_timeout_force_resumed` 记录。
+客户端可在策略的下一次恢复检查前先触发读取超时，本轮符合这一配置
+冲突；这不是 180 秒工具超时，也不能据此认定模型或 GPU 崩溃。
+
+长工具下 acting program 仍计完整逻辑预算，是 batch 下降与准入饥饿的
+候选机制。该轮没有开启公开实现可选的 acting-token decay，因此不能
+把失败归结为 ThunderAgent 所有可选配置均不能处理长工具。延长客户端
+超时只允许策略继续推进，本身不解决准入等待。
+
+复核产物：
+`/home/longhao/experiment/ops/compare_v273_historical_agents_20261027.json`，
+同时保留输入 hash、全部未完成请求、失败/清理状态和历史完整结果。
+本次仅离线分析与文档更新，没有修改冻结实验或启动新 GPU 作业。
+
 用户已明确释放 GPU 预约，并要求先运行新 trace 上的 ThunderAgent，
 再修复 predictive 的容量记账与 ALL-JOIN 准入。正在运行的对照组冻结，
 后续代码修改只进入新的候选版本。

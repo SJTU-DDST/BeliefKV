@@ -85,7 +85,11 @@ class ReferenceResidencyPause:
             return False
         a, runtime = self.admission, self.admission.runtime
         item = a.policy.programs.get(key.invocation_id) if a.policy is not None else None
-        if item is None or item.pending or not runtime._agent_observed_blocked_budget_key(key):
+        boundary = getattr(a, "_tool_boundary_preemption", None)
+        selected_boundary = boundary is not None and boundary.release_authorized(key)
+        if item is None or (
+            not selected_boundary and (item.pending or not runtime._agent_observed_blocked_budget_key(key))
+        ):
             return False
         return self._pause(key, source=source, missing_tokens=freed[0])
 

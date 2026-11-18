@@ -17,6 +17,7 @@ class ReferenceToolReplacement:
         self.donor = None
         self.order = ()
         self.next_ms = 0.
+        self._shadow_misses = None
 
     @property
     def enabled(self):
@@ -88,16 +89,26 @@ class ReferenceToolReplacement:
             return None
         # A physical release may already have paused A during this same pass.
         credit = owner.tokens + agents.policy.buffer_tokens if owner.active else 0
+        boundary = self.offload._boundary_policy()
+        if boundary is not None and boundary.bounded:
+            group_credit = boundary.plan_credit(key, donor)
+            if group_credit is not None:
+                credit = group_credit
+                if not owner.active and demand[0] <= 0:
+                    return None
         return demand if demand[1] <= credit and (demand[0] > 0 or demand[1] > 0) else None
 
-    def _release_plan(self, key, *, advance=True):
+    def _release_plan(self, key, *, advance=True, max_nodes=None):
         runtime, cache = self.offload.runtime, self.offload.runtime._native_cache
+        limit = self.offload.max_nodes if max_nodes is None else max_nodes
+        if type(limit) is not int or not 1 <= limit <= 64:
+            raise ValueError("release planning requires a bounded node window")
         pending, selected, total = {}, [], 0
         nodes = tuple(runtime._pressure_candidate_groups().get(key, ()))
         start = self.offload.node_cursor % len(nodes) if nodes else 0
         if advance:
-            self.offload.node_cursor += self.offload.max_nodes
-        for node_id in islice((*nodes[start:], *nodes[:start]), self.offload.max_nodes):
+            self.offload.node_cursor += limit
+        for node_id in islice((*nodes[start:], *nodes[:start]), limit):
             try:
                 node = cache.tree_core.node_by_id(node_id)
                 full = node.component_data[0]
@@ -112,7 +123,7 @@ class ReferenceToolReplacement:
                     and len(full.value) == len(full.host_value) == len(node.key)
                     and node.id not in cache.ongoing_write_through
                     and node.write_through_pending_id is None and node.load_back_pending_id is None
-                    and len(node.children) <= self.offload.max_nodes
+                    and len(node.children) <= limit
                     and all(
                         data.lock_ref == 0 and data.session_ref <= 1
                         and (data.value is None or data.host_value is not None or component == 2)
@@ -163,6 +174,21 @@ class ReferenceToolReplacement:
                       "free_ordinary_continuation_admitted"] += 1
         agents.counts["free_dispatch_new_programs_admitted"] += item.steps == 1
         agents.counts["tool_event_replacement_grants"] += 1
+        boundary = self.offload._boundary_policy()
+        boundary_choice = bool(boundary is not None and boundary.has_release(self.donor, key))
+        boundary_donors = (
+            tuple(dict.fromkeys((
+                *boundary.active_plan.donors,
+                *(debt["donor"] for debt in boundary.preempted.values()
+                  if debt["consumer"] == key and not debt["grant_complete"]),
+            )))
+            if boundary_choice and boundary.bounded and boundary.active_plan is not None
+            else (self.donor,)
+        )
+        if boundary is not None and boundary_choice:
+            for donor in boundary_donors:
+                if boundary.has_release(donor, key):
+                    boundary.granted(donor, key)
         runtime.semantic_revision += 1
         writer = getattr(runtime, "_opportunity_writer", None)
         if writer is not None:
@@ -175,6 +201,17 @@ class ReferenceToolReplacement:
                 "coalescing_window_bypassed": True,
                 "physical_capacity_authority": "settled_private_release_then_fresh_native_budget",
                 "ordinary_restore_lease": False,
+                **({
+                    "tool_boundary_preemption": True,
+                    "tool_boundary_original_forecast_allowed": self.offload.action_detail.get(
+                        "tool_boundary_original_forecast_allowed",
+                    ) if len(boundary_donors) == 1 else None,
+                    **({
+                        "tool_boundary_policy": boundary.config["kind"],
+                        "tool_boundary_donors": [asdict(donor) for donor in boundary_donors],
+                        "tool_boundary_surrogate_gain_ms": boundary.active_plan.gain_ms,
+                    } if boundary.bounded and boundary.active_plan is not None else {}),
+                } if boundary_choice else {}),
             })
         return True
 
@@ -183,7 +220,7 @@ class ReferenceToolReplacement:
         now = time.monotonic() * 1000.
         if (
             not self.enabled or now < self.next_ms or runtime.physical_disabled
-            or not runtime.tool_wait_hints or agents.policy is None
+            or agents.policy is None
             or not agents._dispatch_pending or runtime._native_cache.tree_components != (0,)
             or not getattr(runtime._native_cache, "is_write_back", False)
             or not all(callable(getattr(runtime._native_cache, name, None)) for name in (
@@ -197,6 +234,9 @@ class ReferenceToolReplacement:
             or type(getattr(adder, "max_running_requests", None)) is not int
             or len(getattr(running_batch, "reqs", ())) >= adder.max_running_requests
         ):
+            return False
+        boundary = self.offload._boundary_policy()
+        if not runtime.tool_wait_hints and not (boundary is not None and boundary.waiting):
             return False
         rows = getattr(getattr(runtime._native_cache, "req_to_token_pool", None), "available_size", None)
         if not callable(rows) or rows() <= 0 or len(runtime._join_priority_pending) > agents.max_join_checks:
@@ -227,7 +267,7 @@ class ReferenceToolReplacement:
             return False
         for key in pending:
             agents._dispatch_pending.move_to_end(key.invocation_id)
-        self.order = tuple(agents.order_tool_replacement(keys))
+        self.order = keys
         agents.counts["tool_event_replacement_choices"] += 1
         agents.counts["free_dispatch_passes"] += 1
         saved = (
@@ -237,6 +277,7 @@ class ReferenceToolReplacement:
         self.offload._admission_adder = adder
         self.offload._dispatch_stage = "event_tool_replacement"
         runtime._capacity_waiting_queue = native_order
+        self._shadow_misses = {}
         try:
             return self._replace()
         finally:
@@ -246,16 +287,67 @@ class ReferenceToolReplacement:
             ) = saved
             self.consumer = self.donor = None
             self.order = ()
+            self._shadow_misses = None
             agents.counts["tool_event_replacement_cpu_ns"] += time.thread_time_ns() - started
 
-    def _replace(self):
-        from beliefkv.runtime.predicted_tool_offload import PredictedToolOffload
+    def _shadow_signature(self, donor, headroom):
+        runtime = self.offload.runtime
+        return (
+            id(runtime._native_cache), headroom, runtime.semantic_revision,
+            runtime.graph.graph_version, runtime._context_sessions_revision,
+            runtime.counts["parent_pressure_index_updates"],
+            runtime.physical_ledger.pending_count,
+            id(runtime.tool_wait_hints.get(donor.context_id)),
+        )
 
+    def _shadow_selection(self, donor, headroom, source):
+        runtime, agents = self.offload.runtime, self.offload.runtime._agent_admission
+        misses = self._shadow_misses
+        # A tool-boundary capture can depend on its selected consumer. Only
+        # ordinary tool-wait misses are shared inside this synchronous pass.
+        reusable = misses is not None and source == "tool_wait"
+        if reusable and misses.get(donor) == self._shadow_signature(donor, headroom):
+            runtime.shadow_candidate = None
+            agents.counts["tool_event_replacement_shadow_misses_reused"] += 1
+            return None
+        agents.counts["tool_event_replacement_shadow_probes"] += 1
+        selection = runtime._refreshed_shadow_backup_selection(
+            context_id=donor.context_id, host_full_free_tokens=headroom.host_full_free_tokens,
+            **({"source": source} if source != "tool_wait" else {}),
+        )
+        if reusable and selection is None:
+            misses[donor] = self._shadow_signature(donor, headroom)
+        return selection
+
+    def _replace(self):
         controller, runtime = self.offload, self.offload.runtime
         agents = runtime._agent_admission
-        donors = tuple(hint.key for hint in runtime.tool_wait_hints.values())
+        boundary = self.offload._boundary_policy()
+        if boundary is not None:
+            self.order = tuple(agents.order_tool_replacement(self.order))
+            if boundary.bounded:
+                from beliefkv.runtime.tool_boundary_schedule import replace_at_tool_boundary
+
+                result = replace_at_tool_boundary(self, boundary)
+                if result is not None:
+                    return result
+        donors = controller._replacement_donors()
         donor_window_checked = False
         prechecked_donor = None
+        if boundary is None:
+            # An impossible pair needs neither Oracle path queries nor a
+            # prediction worker readout. Reuse only this pass's donor check.
+            if not any(self._logical_window_can_fit(key, donors) for key in self.order):
+                agents.counts["tool_event_replacement_logical_window_skips"] += len(self.order)
+                self.order = ()
+            else:
+                prechecked_donor = self._first_candidate_donor(donors)
+                donor_window_checked = True
+                if prechecked_donor is None:
+                    agents.counts["tool_event_replacement_no_eligible_donor"] += 1
+                    self.order = ()
+                else:
+                    self.order = tuple(agents.order_tool_replacement(self.order))
         for key in self.order:
             request = agents._live_requests.get(key.request_id)
             if request is None:
@@ -284,13 +376,18 @@ class ReferenceToolReplacement:
                     prechecked_donor = None
                 if (
                     item is None
-                    or not prechecked and not PredictedToolOffload._eligible(controller, donor)
+                    or not prechecked and not controller._candidate_donor_eligible(donor)
                     or not runtime._agent_observed_blocked_budget_key(donor)
                     or not self.permits(*self.consumer, donor)
                 ):
                     continue
                 index_revision = runtime.counts["parent_pressure_index_updates"]
                 semantic_revision = runtime.semantic_revision
+                boundary = controller._boundary_policy()
+                backup_source = (
+                    "tool_boundary" if boundary is not None and boundary.donor_candidate(donor)
+                    else "tool_wait"
+                )
                 release_order, available = self._release_plan(donor, advance=False)
                 selection = None
                 if available >= max(1, demand[0]):
@@ -298,10 +395,7 @@ class ReferenceToolReplacement:
                     agents.counts["tool_event_replacement_shadow_refresh_skips"] += 1
                 else:
                     headroom = observe_static_full_mamba_headroom(runtime._native_cache)
-                    selection = runtime._refreshed_shadow_backup_selection(
-                        context_id=donor.context_id,
-                        host_full_free_tokens=headroom.host_full_free_tokens,
-                    )
+                    selection = self._shadow_selection(donor, headroom, backup_source)
                     if (
                         runtime.counts["parent_pressure_index_updates"] == index_revision
                         and runtime.semantic_revision == semantic_revision
@@ -315,6 +409,8 @@ class ReferenceToolReplacement:
                         release_order, available = self._release_plan(donor)
                     agents.counts["tool_event_replacement_shadow_refresh_fallbacks"] += 1
                 if available >= max(1, demand[0]):
+                    if self._shadow_misses is not None:
+                        self._shadow_misses.clear()
                     if not controller._evict_backed(donor, node_ids=release_order):
                         continue
                     controller.cursor += offset + 1
@@ -329,10 +425,12 @@ class ReferenceToolReplacement:
                 full = node.component_data[0]
                 if full.value is None or len(full.value) + available < max(1, demand[0]):
                     continue
+                if self._shadow_misses is not None:
+                    self._shadow_misses.clear()
                 if not controller._prepare_allowed(step, headroom):
                     continue
                 issued = runtime.issue_shadow_backup_steps(
-                    step, source="tool_wait", _selection_candidate=candidate,
+                    step, source=backup_source, _selection_candidate=candidate,
                     _authorization=lambda: controller._authorize_backup(donor, step),
                 )
                 if issued:
@@ -349,8 +447,6 @@ class ReferenceToolReplacement:
         return False
 
     def _first_candidate_donor(self, donors):
-        from beliefkv.runtime.predicted_tool_offload import PredictedToolOffload
-
         controller, runtime = self.offload, self.offload.runtime
         agents = runtime._agent_admission
         for offset in range(min(len(donors), controller.max_contexts)):
@@ -358,7 +454,7 @@ class ReferenceToolReplacement:
             agents.counts["tool_event_replacement_donor_prefilter_checks"] += 1
             if (
                 donor.invocation_id in agents.policy.programs
-                and PredictedToolOffload._eligible(controller, donor)
+                and controller._candidate_donor_eligible(donor)
                 and runtime._agent_observed_blocked_budget_key(donor)
             ):
                 return donor

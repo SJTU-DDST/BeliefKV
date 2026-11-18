@@ -180,6 +180,28 @@ def verify_learned_combination_pair(control, learned):
         raise ValueError("require the explicitly disabled-ranking Full reference")
     model = WorkflowWorkModel(artifacts[1])
     profile, contract = artifacts[1].get("admission_cost_profile", {}), learned["comparison_contract"]
+    shortest = artifacts[1].get("shortest_work_first_admission", False)
+    if type(shortest) is not bool or shortest and (
+        contract.get("shortest_work_first_admission") is not True
+        or contract.get("tool_replacement_selection")
+        != "shortest_work_first_without_free_budget_filter"
+    ):
+        raise ValueError("short-work admission and immediate replacement require explicit declarations")
+    maximal = artifacts[1].get("cost_aware_maximal_admission", False)
+    maximal_objective = artifacts[1].get("maximal_admission_objective", "benefit_per_cost")
+    if maximal_objective not in ("benefit_per_cost", "benefit") or (
+        maximal_objective == "benefit" and not maximal
+    ):
+        raise ValueError("maximal objective requires its explicit selector")
+    expected_objective = (
+        "maximal_benefit" if maximal_objective == "benefit" else "maximal_benefit_per_cost"
+    )
+    if type(maximal) is not bool or maximal and (
+        not shortest or contract.get("cost_aware_maximal_admission") is not True
+        or contract.get("competitive_set_selection_objective") != expected_objective
+        or contract.get("maximal_admission_objective", "benefit_per_cost") != maximal_objective
+    ):
+        raise ValueError("maximal cost admission requires its matching explicit contract")
     if (
         model.schema != R5_SCHEMA or model.metadata.get("decision_eligible") is not True
         or profile.get("kind") not in (

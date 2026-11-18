@@ -16,6 +16,43 @@ from tests.test_causal_replay_backend import response_payload
 from tests.test_causal_replay_tokens import source, write_source
 
 
+@pytest.mark.parametrize("timeout", (1800., 3600., 3601., 14400.))
+def test_registered_command_is_accepted_by_the_real_replay_cli(monkeypatch, tmp_path, timeout):
+    command = comparison.replay_command(
+        {"source_arm": "/source", "port": 18000, "request_timeout_s": timeout},
+        tmp_path, None,
+    )
+    observed = []
+
+    class ExecutionReached(Exception):
+        pass
+
+    async def run(args):
+        observed.append(args.request_timeout_s)
+        raise ExecutionReached
+
+    monkeypatch.setattr(runner, "run", run)
+    monkeypatch.setattr(runner.sys, "argv", command[1:])
+    with pytest.raises(ExecutionReached):
+        runner.main()
+    assert observed == [timeout]
+    assert not (tmp_path / "replay").exists()
+
+
+@pytest.mark.parametrize("value", ("0", "-1", "nan", "inf", "14401"))
+def test_replay_cli_rejects_invalid_timeout_before_execution(monkeypatch, tmp_path, value):
+    monkeypatch.setattr(runner.sys, "argv", [
+        "run_causal_gpu_replay.py", "--source-arm", "/source",
+        "--output-dir", str(tmp_path / "replay"), "--base-url", "http://127.0.0.1:18000",
+        "--request-timeout-s", value,
+    ])
+    monkeypatch.setattr(runner, "run", lambda args: pytest.fail("invalid timeout reached execution"))
+    with pytest.raises(SystemExit) as error:
+        runner.main()
+    assert error.value.code == 2
+    assert not (tmp_path / "replay").exists()
+
+
 @pytest.mark.parametrize("enabled", (None, False, True))
 def test_captured_session_replay_keeps_exact_work_and_stopping_with_optional_metrics(
     monkeypatch, tmp_path, enabled,

@@ -1,6 +1,7 @@
 """Observe tool retention once per working-set control, without KV traversal."""
 
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
+import math
 import time
 
 from beliefkv.control.causal_graph import InvocationState
@@ -9,10 +10,49 @@ from beliefkv.policy.workflow_size_resume import WorkflowToolState
 from beliefkv.runtime.sglang_v0520_admission import _request_key
 
 
+@dataclass(frozen=True)
+class ToolRetentionSettings:
+    kind: str = "relative_tool_retention_v2"
+    short_grace_ms: int = 2000
+    half_life_ms: int = 1000
+    relative_tie: float = .01
+
+    def __post_init__(self):
+        if (
+            self.kind != "relative_tool_retention_v2"
+            or type(self.short_grace_ms) is not int or not 0 <= self.short_grace_ms <= 60000
+            or type(self.half_life_ms) is not int or not 1 <= self.half_life_ms <= 60000
+            or type(self.relative_tie) not in (int, float)
+            or not math.isfinite(self.relative_tie) or not 0 <= self.relative_tie <= .1
+        ):
+            raise ValueError("invalid tool retention policy settings")
+
+    @classmethod
+    def from_artifact(cls, raw):
+        if "tool_retention_policy" not in raw:
+            return None
+        values = raw["tool_retention_policy"]
+        if not isinstance(values, dict) or set(values) != {
+            "kind", "short_grace_ms", "half_life_ms", "relative_tie",
+        }:
+            raise ValueError("tool retention policy requires all explicit independent settings")
+        return cls(**values)
+
+
 class WorkflowToolPressure:
     def __init__(self, admission):
         self.admission = admission
         self.starts = {}
+        work = getattr(admission, "_work", None)
+        provider = getattr(work, "model", None) or getattr(work, "artifact", None)
+        self.settings = ToolRetentionSettings.from_artifact(getattr(provider, "raw", {}))
+        self.short_grace_s = (
+            self.settings.short_grace_ms / 1000. if self.settings else admission.control_interval_s
+        )
+        self.half_life_s = self.settings.half_life_ms / 1000. if self.settings else 1.
+
+    def _elapsed_retention(self, age):
+        return 2. ** -(max(0., age - self.short_grace_s) / self.half_life_s)
 
     def events(self, events):
         now = time.monotonic()
@@ -126,7 +166,7 @@ class WorkflowToolPressure:
             self.starts[item.identity] = starts
             age = max(0., now - max(starts.values()))
             horizon = self._horizon_ms(item)
-            if age < a.control_interval_s:
+            if age < self.short_grace_s:
                 return WorkflowToolState(
                     True, True, source="short_tool_grace", elapsed_s=age, horizon_ms=horizon,
                 )
@@ -139,7 +179,7 @@ class WorkflowToolPressure:
                 retention = min(1., probability / (1. - runtime.tool_offload_min_survival))
                 source = "live_conditional_tool_return"
             else:
-                retention = 2. ** -max(0., age - a.control_interval_s)
+                retention = self._elapsed_retention(age)
                 source = "elapsed_tool_fallback"
             return WorkflowToolState(
                 True, True, retention, source=source, elapsed_s=age,
@@ -150,7 +190,7 @@ class WorkflowToolPressure:
         since = a.policy.acting_since.get(item.identity, now)
         age = max(0., now - since)
         return WorkflowToolState(
-            True, True, 2. ** -max(0., age - a.control_interval_s),
+            True, True, self._elapsed_retention(age),
             source="elapsed_native_gap_fallback", elapsed_s=age,
         )
 
@@ -160,9 +200,13 @@ class WorkflowToolPressure:
             "workflow_tool_pressure": True,
             "workflow_tool_pressure_same_weight_for_resume_and_pause": True,
             "workflow_tool_pressure_future_tool_durations_used": False,
-            "workflow_tool_pressure_short_grace_ms": self.admission.control_interval_s * 1000.,
+            "workflow_tool_pressure_short_grace_ms": self.short_grace_s * 1000.,
             "workflow_tool_pressure_horizon": "max_control_interval_and_cached_full_roundtrip",
-            "workflow_tool_pressure_unknown_fallback": "elapsed_wait_after_short_grace_1s_half_life",
+            "workflow_tool_pressure_unknown_fallback": (
+                "elapsed_wait_after_independent_grace_and_half_life"
+                if self.settings else "elapsed_wait_after_short_grace_1s_half_life"
+            ),
+            **({"workflow_tool_retention_policy": asdict(self.settings)} if self.settings else {}),
             "workflow_tool_pressure_update_scope": "existing_working_set_control_cached_per_boundary",
             "workflow_tool_pressure_last_states": (
                 {identity: asdict(state) for identity, state in policy._tool_states.items()}

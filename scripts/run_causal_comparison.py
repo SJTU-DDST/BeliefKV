@@ -42,7 +42,7 @@ from beliefkv.experiments.subagent_retention import (
 from beliefkv.experiments.source_provenance import git_source_state, sha256_file
 from beliefkv.experiments.native_engine_variant import COMMON_TREE, TOKENCAKE_TREE, engine_patch
 from beliefkv.experiments import gpu_startup, host_numa, native_execution
-from scripts.run_causal_gpu_replay import source_plan
+from scripts.run_causal_gpu_replay import MAX_REPLAY_REQUEST_TIMEOUT_S, source_plan
 from scripts.run_causal_source_capture import (
     comparison, engine_evidence, fresh, load, qualified, reservation, reusable_source,
     project_disjoint_workload, validated_capacity,
@@ -80,6 +80,7 @@ SERVER_FIELDS = (
     "AGENT_FREE_CONTINUATION_ADMISSION",
     "AGENT_FREE_DISPATCH_INTERVAL_MS",
     "AGENT_CONTROL_INTERVAL_MS",
+    "AGENT_READY_SERVICE_TIMEOUT_S",
     "WORKFLOW_SIZE_RESUME", "WORKFLOW_WORK_MODEL", "WORKFLOW_WORK_MODEL_SHA256",
     "WORKFLOW_WORK_SOURCE",
     "DEMAND_PREFILL_PIPELINE",
@@ -405,6 +406,7 @@ def preflight_runtime(settings, model_path):
             "BELIEFKV_AGENT_FREE_DISPATCH_INTERVAL_MS", "0",
         )),
         "agent_control_interval_ms": int(settings.get("BELIEFKV_AGENT_CONTROL_INTERVAL_MS", "5000")),
+        "agent_ready_service_timeout_s": int(settings.get("BELIEFKV_AGENT_READY_SERVICE_TIMEOUT_S", "0")),
         "workflow_size_resume": settings.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0") == "1",
         "workflow_combination_admission": settings.get("BELIEFKV_WORKFLOW_COMBINATION_ADMISSION", "0") == "1",
         "workflow_work_source": settings.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned"),
@@ -431,6 +433,9 @@ def preflight_runtime(settings, model_path):
         "idle_host_mirror_recycle": settings.get("BELIEFKV_IDLE_HOST_MIRROR_RECYCLE", "0") == "1",
         "tool_offload_min_survival": float(settings.get("BELIEFKV_TOOL_OFFLOAD_MIN_SURVIVAL", ".9")),
         "host_demand_reserve_bytes": int(settings.get("BELIEFKV_HOST_DEMAND_RESERVE_BYTES", "0")),
+        "subagent_materialization_enabled": (
+            settings.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off") == "pressure_v1"
+        ),
         "layer_handoff_enabled": settings.get("BELIEFKV_LAYER_HANDOFF", "0") == "1",
         "layer_handoff_free_extent": settings.get("BELIEFKV_LAYER_HANDOFF_FREE_EXTENT", "0") == "1",
         "layer_handoff_d2h_layers": int(settings.get("BELIEFKV_LAYER_HANDOFF_D2H_LAYERS", "1")),
@@ -831,11 +836,20 @@ def validate_response_metrics(plan, result):
             raise ValueError("streaming workflow metric boundaries differ from causal completion")
 
 
+def validate_request_timeout(timeout):
+    if (
+        type(timeout) not in (int, float) or not math.isfinite(timeout)
+        or not 0 < timeout <= MAX_REPLAY_REQUEST_TIMEOUT_S
+    ):
+        raise ValueError(
+            f"causal replay request timeout must be in (0, {MAX_REPLAY_REQUEST_TIMEOUT_S:g}] seconds"
+        )
+    return timeout
+
+
 def replay_command(plan, arm, event_socket):
-    # Keep the transport deadline beyond the author's 1800s force-resume escape.
-    timeout = plan.get("request_timeout_s", 1800.)
-    if type(timeout) not in (int, float) or not math.isfinite(timeout) or not 0 < timeout <= 3600.:
-        raise ValueError("causal replay request timeout must be in (0, 3600] seconds")
+    # Admission waiting counts against the read timeout; preserve legacy defaults.
+    timeout = validate_request_timeout(plan.get("request_timeout_s", 1800.))
     command = [
         sys.executable, str(ROOT / "scripts/run_causal_gpu_replay.py"),
         "--source-arm", plan["source_arm"], "--output-dir", str(arm / "replay"),
@@ -1446,6 +1460,9 @@ def frozen_execution_paths(revision, engine_tree, registration):
 
 
 def register(args):
+    request_timeout = validate_request_timeout(
+        getattr(args, "request_timeout_s", REPLAY_REQUEST_TIMEOUT_S),
+    )
     order = list(args.arms)
     if not order or len(order) != len(set(order)) or any(label not in ALL_CONTROLS for label in order):
         raise ValueError("select distinct supported causal controls")
@@ -1780,7 +1797,7 @@ def register(args):
         "run_root": str(args.run_root.resolve()), "port": args.port,
         "sampling_calibration": str(args.sampling_calibration.resolve()),
         "sampling_mode": args.sampling_mode,
-        "request_timeout_s": REPLAY_REQUEST_TIMEOUT_S,
+        "request_timeout_s": request_timeout,
         "tool_timing_overlay": tool_timing_overlay,
         "workflow_arrivals": arrivals,
         "workflow_arrivals_path": str(arrival_path.resolve()) if arrival_path is not None else None,
@@ -2050,7 +2067,10 @@ def watch(registration):
                     info = httpx.get(f"http://127.0.0.1:{plan['port']}/get_server_info", timeout=10.).json()
                     reservation.write_json(attempt / "server/server_info.json", info)
                     required = {
-                        **plan["source_server_parameters"],
+                        **host_numa.server_parameters(
+                            plan.get("reference_environment", {}),
+                            plan["source_server_parameters"],
+                        ),
                         "enable_beliefkv_admission": label != "native_matched",
                         "enable_custom_logit_processor": True, "enable_session_radix_cache": True,
                     }
@@ -2217,6 +2237,7 @@ def main():
     parser.add_argument("--experiment-config", type=Path)
     parser.add_argument("--tool-prefetch-priority-ms", type=float)
     parser.add_argument("--max-running-requests", type=int)
+    parser.add_argument("--request-timeout-s", type=float, default=REPLAY_REQUEST_TIMEOUT_S)
     parser.add_argument("--after-registration", type=Path)
     parser.add_argument("--sampling-mode", choices=("legacy", "position"), default="legacy")
     parser.add_argument("--stream-response-metrics", action="store_true")
@@ -2239,6 +2260,7 @@ def main():
             parser.error("registration requires source, qualifications, engine and fresh output paths")
         if not 1 <= args.port <= 65535:
             parser.error("invalid server port")
+        validate_request_timeout(args.request_timeout_s)
         register(args)
 
 

@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import asdict, replace
 
 import pytest
 
@@ -21,6 +22,35 @@ def test_actual_grants_are_bound_and_dispatch_records_are_deduplicated(monkeypat
     assert report["observed_conflict_grant_records"] == 2
     assert report["deduplicated_conflict_decisions"] == 1
     assert report["deduplicated_ready_unprotected_decisions"] == 1
+
+
+def test_join_successor_choice_uses_the_actual_grant_identity_before_native_visibility(
+    monkeypatch, tmp_path,
+):
+    live, adapter, _requests, rows = waiting(monkeypatch, tmp_path)
+    original = adapter.latest["a0"]
+    successor = replace(original, request_id="a0-successor", context_epoch=original.context_epoch + 1)
+    try:
+        assert adapter._admit_from_free_capacity(
+            (adapter.policy.programs["a0"],),
+            event="agent_join_free_capacity_admitted", join_id="join",
+            grant_keys={"a0": successor},
+        )
+        assert adapter.latest["a0"] == original
+        assert successor.request_id not in live.visible
+        assert adapter.policy.remaining_capacity() == 600
+        choice = next(row for row in rows if row["event"] == EVENT)
+        selected = next(item for item in choice["candidates"] if item["selected"])
+        assert selected["key"] == asdict(successor)
+        assert not selected["application_ready"]
+        assert not choice["ready_unprotected_competition"]
+    finally:
+        live.close()
+    report = inspect(rows)
+    assert report["instrumentation"] == "final_counters_reconciled"
+    assert report["observed_conflict_grant_records"] == 1
+    assert report["counts"]["warming_target_conflict_grant_records"] == 1
+    assert report["deduplicated_ready_unprotected_decisions"] == 0
 
 
 def test_observed_zero_is_distinct_from_uninstrumented_history(monkeypatch, tmp_path):

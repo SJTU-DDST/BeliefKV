@@ -265,8 +265,19 @@ def test_actual_constructor_and_declared_combined_policy_are_isolated(monkeypatc
         )
         with pytest.raises(ValueError):
             validate_reference_admission(adapter.status(), join_free_admission=join_free)
-        for method in ("attach", "tick", "completed", "aborted", "_refresh_streaming_progress"):
+        for method in ("attach", "completed", "aborted", "_refresh_streaming_progress"):
             assert getattr(ReferenceThunderAdmission, method) is getattr(ThunderAgentDecayAdapter, method)
+        assert adapter._ready_service_guard is None
+        calls, result = [], object()
+
+        def reference_tick(self, *, now):
+            calls.append((self, now))
+            return result
+
+        with monkeypatch.context() as patch:
+            patch.setattr(ThunderAgentDecayAdapter, "tick", reference_tick)
+            assert adapter.tick(now=123.) is result
+        assert calls == [(adapter, 123.)]
     finally:
         live.close()
     settings = arm_environment({

@@ -4,6 +4,39 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-11-12 Closed Inference Research Sources
+
+Archived 49 Python files and one supporting C++ probe from completed one-off
+inference screens, preserving every original byte and repository-relative path.
+The 422,163 source bytes became a 109,281-byte archive under
+`research_inference_sources_20261112/`. Main-tree copies and 11 generated
+bytecode files were removed only after complete member/size/SHA256 verification.
+
+The [source archive index](../../docs/archive/research_inference_sources_20261112_zh.md)
+explains selection, retained helpers and recovery. The bundle's `manifest.json`
+contains all 50 original paths and hashes; `independent_review.json` records
+an isolated restore, 49 Python syntax checks and scans of 1,995 retained Python
+files. Current sparse research's 33 provenance files remain unchanged and its
+21 focused CPU tests pass. Raw runs, research reports, serving code and frozen
+worktrees remain in place.
+
+The follow-up maintenance check reverified all 50 archived members and 49 Python
+syntax trees, scanned 1,999 retained Python files and 1,977 shell/config files,
+and rechecked all 33 provenance hashes. No archived-source references or new
+source removals were found. See `maintenance_recheck_r2.json` in the bundle;
+the first UTF-8 scan failure and corrected byte-scan log are both retained.
+
+The suffix-experiment closure check in `maintenance_recheck_r4.json` again
+verified the same 50 members, 1,999 retained Python files, 1,977 launch/config
+files and 33 original provenance hashes. It also verified the latest diagnostic's
+17 source hashes and six sealed outputs/reviewer. No additional sources were
+removed; the archive total remains 49 Python files and one C++ probe.
+
+```text
+source_snapshot.tar.gz SHA256
+b6eaaeff4186369b3593ae90973f604e22c6795e740396758328e0903a38ff88
+```
+
 ## 2026-11-01 Inactive Frozen Worktrees
 
 Retired 342 old, unreferenced, clean detached worktrees: 245 regular checkouts

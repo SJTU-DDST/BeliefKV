@@ -6,6 +6,124 @@ import time
 from beliefkv.policy.workflow_combination import _evaluate, choose_combination
 
 
+def strict_remaining_work_enabled(raw):
+    enabled = raw.get("strict_remaining_work_admission", False)
+    if type(enabled) is not bool or enabled and (
+        raw.get("shortest_work_first_admission") is not True
+        or raw.get("remaining_work_ranking_enabled", True) is not True
+        or raw.get("cost_aware_maximal_admission", False) is not False
+        or raw.get("maximal_admission_objective", "benefit_per_cost") != "benefit_per_cost"
+        or type(raw.get("ready_wait_priority_ms", 0)) is not int
+        or raw.get("ready_wait_priority_ms", 0) != 0
+        or any(name in raw for name in (
+            "ready_wait_priority_grace_ms", "ready_wait_priority_max_boost",
+            "tool_boundary_preemption", "pressure_work_order",
+        ))
+        or type(raw.get("ready_capacity_accumulation_ms", 0)) is not int
+        or raw.get("ready_capacity_accumulation_ms", 0) != 0
+    ):
+        raise ValueError("strict remaining-work admission excludes aging, utility packing and capacity holds")
+    return enabled
+
+
+def choose_shortest_work_first(
+    candidates, reference, resources, costs, *, required=(), budget_ns=500_000,
+    clock=time.perf_counter_ns, strict_remaining_work=False,
+):
+    """Fill by workflow priority, retaining JOIN rights and ready sibling adjacency."""
+    started = clock()
+    candidates, reference, required = tuple(candidates), tuple(reference), tuple(required)
+    result = {
+        "selected": reference, "reference": reference,
+        "required_reference_members": required,
+        "evaluated_candidates": 0, "search_complete": False,
+        "reason": "shortest_work_reference_fallback",
+    }
+    if strict_remaining_work:
+        result["strict_remaining_work_admission"] = True
+    try:
+        by_id = {row.identity: row for row in candidates}
+        if (
+            not 1 <= len(candidates) <= 8 or len(by_id) != len(candidates)
+            or len(set(reference)) != len(reference) or len(set(required)) != len(required)
+            or type(strict_remaining_work) is not bool
+            or not strict_remaining_work and not set(reference) <= by_id.keys()
+            or not set(required) <= set(reference) or not set(required) <= by_id.keys()
+            or any(type(owner) is not str or not owner for owner in reference)
+            or type(budget_ns) is not int or budget_ns <= 0
+            or costs.selection_objective != "benefit" or costs.decode_cost_basis != "full_batch"
+            or type(resources.cold_device_tokens) is not int or resources.cold_device_tokens < 0
+            or resources.device_capacity_tokens is not None and (
+                type(resources.device_capacity_tokens) is not int
+                or resources.device_capacity_tokens <= 0
+                or resources.device_capacity_tokens
+                < resources.device_tokens + resources.cold_device_tokens
+            )
+        ):
+            raise ValueError("invalid bounded short-work admission contract")
+        weights = {}
+        for row in candidates:
+            if (
+                row.logical_tokens <= 0 or row.category not in (0, 1, 2)
+                or not math.isfinite(row.weight) or not 0 <= row.weight <= 1
+                or row.input_tokens < 0 or row.context_tokens <= 0
+                or any(type(tokens) is not int or tokens <= 0 for _, tokens in row.missing_extents)
+                or row.workflow in weights and weights[row.workflow] != row.weight
+            ):
+                raise ValueError("invalid or inconsistent short-work candidate")
+            weights[row.workflow] = row.weight
+        complete_reference = set(reference) <= by_id.keys()
+        baseline = (
+            _evaluate([by_id[owner] for owner in reference], resources, costs)
+            if complete_reference else None
+        )
+        result["reference_evaluation"] = baseline
+        if strict_remaining_work:
+            result["reference_metadata_complete"] = complete_reference
+        selected = [by_id[owner] for owner in required]
+        if selected and _evaluate(selected, resources, costs) is None:
+            result["reason"] = "required_JOIN_resource_fallback"
+            return result
+        ordered = sorted(
+            (row for row in candidates if row.identity not in required),
+            key=lambda row: (-row.weight, row.category, row.logical_tokens, row.sequence),
+        )
+        groups = {}
+        for row in ordered:
+            groups.setdefault((row.workflow, row.group, row.category, row.weight), []).append(row)
+        seen = set(required)
+        for row in ordered:
+            for peer in groups[row.workflow, row.group, row.category, row.weight]:
+                if peer.identity in seen:
+                    continue
+                if clock() - started >= budget_ns:
+                    result["reason"] = "shortest_work_soft_deadline_reference_fallback"
+                    return result
+                seen.add(peer.identity)
+                result["evaluated_candidates"] += 1
+                if _evaluate([*selected, peer], resources, costs) is not None:
+                    selected.append(peer)
+        evaluated = _evaluate(selected, resources, costs)
+        if evaluated is None:
+            result["reason"] = "no_feasible_shortest_work_reference_fallback"
+            return result
+        result.update(
+            selected=tuple(row.identity for row in selected),
+            selected_evaluation=evaluated, search_complete=True,
+            reason=(
+                "shortest_work_set_changed"
+                if {row.identity for row in selected} != set(reference)
+                else "shortest_work_reference"
+            ),
+        )
+        return result
+    except (AttributeError, TypeError, ValueError, KeyError, OverflowError) as error:
+        result.update(reason="unsupported_summary_reference_fallback", error=str(error))
+        return result
+    finally:
+        result["wall_ns"] = clock() - started
+
+
 def choose_shortest_frontier(
     candidates, reference, resources, costs, *, required=(), budget_ns=500_000,
     clock=time.perf_counter_ns,

@@ -1,8 +1,125 @@
 # 原生需求恢复与驻留 decode 流水线
 
-2026-10-28。此候选继续处理完整 FULL 中关键请求被其他 prefill 区间覆盖
+2026-10-28 初始记录。此候选继续处理完整 FULL 中关键请求被其他 prefill 区间覆盖
 的问题。默认关闭 `BELIEFKV_DEMAND_PREFILL_PIPELINE`；CPU 实现、来源绑定
-及真实 GPU 组件验证已完成，尚未建立模型并发推进或 JCT 收益。
+及真实 GPU 组件验证在建档时已完成，当时尚未建立模型并发推进或 JCT 收益。
+
+## 2026-10-29 待尝试：prefill 预算与 mixed chunk
+
+状态：仅记录方案，尚未实现或启用新的组批策略，也未登记实验。已有的
+需求 H2D 与驻留 decode 流水线已经完成模型资格及完整 FULL R1/R2；
+ACK 准入修复版平均 JCT 为 1617.896789s，全程输出为
+238.405436token/s，详见
+[最新完整结果](../research/demand_restore_readmission_result_20261028_zh.md)。
+下文原有资格和实现记录保留其历史时点；本节提出的 prefill 计算与 decode
+组批优化不能算作已有流水线的完成项。当前剩余 baseline 的适配和资格
+顺序保持不变，本方案留待后续单独验证。
+
+### 工作负载依据
+
+参考冻结应用 `5cf3bb8b` / native tree `729aa0caa7a1` 的完整运行：
+Qwen3-Coder-30B-A3B-Instruct、FULL-only、单卡、18 个不同项目的 workflow，
+共 3674 个请求。以下结合完整报告与原始 trace 的离线复核：
+
+| 观察项 | 完整运行结果 | 对方案的启示 |
+| --- | --- | --- |
+| 完整输入长度 P50/P90 | 21010/120780 token | 历史上下文长，不能只看本轮新增 token 判断成本。 |
+| 每请求实际 prefill extend 总量 P50/P90 | 145/1329 token | 大量请求是有缓存的短续接，完整 prompt 长度不等于重做 prefill 的工作量。 |
+| 每请求输出长度 P50/P90 | 60/378 token | 短生成容易受首次准入和长 prefill 插入影响。 |
+| 单请求 prefill 批次 | 3280/3603，约 91.04% | 值得检查 ready 短续接的组批机会，但不能证明这些请求当时都可合并。 |
+| 恰好 4096 extend token 的批次 | 472 批，约占 prefill 批次的 13.10%，占 prefill worker 累计区间的 47.27% | 少量大块可能造成较长 decode 服务间隔。 |
+| 上述 4096-token 批次的 worker 区间 P50/P90 | 335.94/670.87ms | 应验证缩小单次 prefill 工作是否改善服务连续性。 |
+| 不超过 256 extend token 的批次 worker 区间 P50/P90 | 18.18/38.44ms | 缩块会增加小批与调度次数，不能只追求更短的单批。 |
+| 实际 decode 宽度 | 均值 5.88，按 worker 时间加权 8.37，最大 17；running 上限 24 | 需要区分 ready 需求、agent 资格和物理 KV 容量，不能直接上调请求上限。 |
+
+实际 extend 共 3770870 token，约为累计完整输入 145565966 token 的
+2.59%；这不是缓存命中率，不能用来断言其余输入都在 HBM。
+prefill worker 累计 372.62s，decode worker 累计 1591.37s。worker 区间
+包含运行时和依赖等待，不是纯 GPU kernel 时间，也不是可直接扣除的 JCT。
+
+当前有效配置为 `chunked_prefill_size=4096`、
+`max_prefill_tokens=16384`、`max_running_requests=24`、
+`enable_mixed_chunk=false`、`enable_dynamic_chunking=false`，
+原生 overlap schedule 已开启。decode 请求步平均历史约 55730 token，
+Device 容量为 805198 token；若 24 个上下文彼此独立且均达到该长度，
+按每 token 98304 字节估算，单 KV 就需要约 131.5GB。因此不能把
+running 上限 24 当作当前容量下一定可以维持的 decode 宽度；共享前缀、
+长度分布与增长预留仍需按真实页核算。
+
+证据入口：
+
+- [完整性能与 decode geometry 报告](../../experiments/reports/prefill_pipeline_20261028/readmission_complete/complete_review.json)。
+- [实际服务参数](../../experiments/raw/demand_prefill_ack_retry_20261028_r1/full/server/server_info.json)。
+- [逐请求长度](../../experiments/raw/demand_prefill_ack_retry_20261028_r1/full/replay/native_requests.jsonl)及
+  [原生服务样本](../../experiments/raw/demand_prefill_ack_retry_20261028_r1/full/server/runtime_audit.jsonl)；
+  长度、prefill 分块和批次区间分布来自这两份原始记录的离线统计。
+
+### 拟尝试的机制
+
+1. **在有可推进 decode 时限制单次 prefill 工作。**先比较现有 4096 与
+   2048/1024 token 的分块预算。驻留 decode 有工作时减少大块独占区间；
+   没有 decode 或算力未充分利用时允许较大 prefill。后续若需要动态预算，
+   使用实际新增输入、历史长度和观测执行成本：相同新增量在 5K 与 100K
+   历史下成本可能不同。缩块会增加 forward、CPU 选批和提交次数，必须
+   检查整轮净效果。
+2. **验证原生 mixed chunk。**评估把 running decode 成员并入 extend
+   batch，让大 prefill 期间 decode 也有实际输出。先确认 native 的
+   return-logprob、input-embedding、beam 等条件允许真实进入 mixed 路径，
+   并核对实际成员与 token 增量，不能仅以开关开启作为成功。mixed batch
+   也可能拉长 decode 步，需与分块预算分别比较。
+3. **改善已就绪短续接的组批。**只针对已经提交、agent 资格允许、
+   数据依赖就绪的请求，检查是否存在连续多个小 prefill 被拆开的情况。
+   在现有队首、JOIN、驻留、老化和 sibling 选批规则内，考虑实际输入增量
+   与恢复成本；已有 sibling 偏好继续沿用。不给尚未 ready 的请求制造
+   批次机会，不为凑批等待，也不让一个冷请求挡住可推进的驻留 decode。
+4. **扩展现有需求恢复流水线的 chunk 覆盖。**当前
+   [stage 入口](../../beliefkv/runtime/demand_prefill_pipeline.py)遇到已有
+   `chunked_req` 或 `adder.new_chunked_req` 会回退。后续研究怎样将真实
+   chunk 生命周期及 mixed batch 接入需求恢复，使 H2D 等待与可运行 decode
+   协同推进。保留 session/attempt 身份、request receipt、Host/Device
+   原生锁、ACK、逐层 fence、取消和共享前缀依赖。H2D 与计算重叠、prefill
+   与 decode 组批是两个机制，分别证明实际覆盖和消费。
+5. **按可持续容量和成本选择 decode 宽度。**维持 running/decode24
+   的共同上限，结合实际 ready 需求、上下文长度、缺失 KV、输入和 decode
+   增长，避免为加宽 batch 反复换入换出。更细的 CUDA Graph bucket 留作
+   独立的通用引擎候选：当前配置 bucket 额外行数约为真实行数的 15.21%，
+   这不是已测的浪费时间，更不等于可获得 15.21% 加速。
+
+### 验证顺序
+
+先补齐 mixed 模式的工作量与服务记账，再尝试配置。现有
+[decode 诊断脚本](../../scripts/plot_causal_decode_diagnostics.py)
+只汇总 `phase=decode` 的输出；mixed extend 中的 decode 输出需要按
+实际请求成员单列并与完整输出守恒，否则相位变化会制造吞吐差异。
+
+首轮保持 mixed 关闭，只验证较小 chunk 是否减少长 prefill 打断且不显著
+增加控制成本；依据结果选择下一档，不一次展开完整参数网格。随后在选定
+预算下单独验证 mixed 的实际执行和净收益。短续接选批、chunk 恢复接线及
+自适应预算分别登记后续候选，避免同时改变多项而无法定位原因。
+涉及新原生接线时，完成对应生命周期、真实 GPU 字节和模型正确性资格，
+再进入完整工作量比较。
+
+正式比较沿用同一完整 V230/V311 的 18 个 workflow、token、依赖、工具
+计时、种子、容量、停止方式和全部正常尾部。保留现有 agent 连续性和
+已观察 JOIN 规则，工具预取继续关闭，不增加全局 ready-agent 轮转或修改
+工作量。原始 paper baseline 及其冻结结果保持原配置；若改变通用引擎
+设置，披露差异并做相应的同设置比较，不能把通用分块/mixed/graph 调优
+本身当作 agent 调度创新或全部归因于预测传输。
+
+### 验收指标
+
+- 主指标为完整 workflow 平均 JCT 与全程输出吞吐，同时保留逐 workflow
+  分布及所有正常长尾；不以某个高压切片或单批加速替代完整结果。
+- 同时统计 decode 实际输出 / worker 区间和 decode 实际输出 / 墙钟时间，
+  包含 mixed batch 内的 decode 输出；检查 prefill、H2D 期间的实际
+  decode 进展和服务间隔尾部。
+- 统计最后一个 ready child 的等待、JOIN 解锁到 parent 首次服务，以及
+  每 workflow 的 ready-output gap，防止全局吞吐改善却拖慢关键分支。
+- 记录 CPU 选批与提交成本、实际 batch/context/chunk 形态、H2D/D2H、
+  retraction、已服务前缀重算与容量压力，区分初次冷 prefill。更多传输、
+  更宽 batch 或更多 mixed 调用均不能单独作为成功依据。
+- 保留负结果；若缩块或 mixed 增加总开销、重算或完整 JCT，则不推广。
+  本文记录不改变当前运行配置和 baseline 执行顺序。
 
 ## 实验依据
 

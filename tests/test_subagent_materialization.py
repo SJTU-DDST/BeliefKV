@@ -1,0 +1,597 @@
+from dataclasses import replace
+from types import SimpleNamespace as NS
+import pytest
+
+from beliefkv.control.causal_graph import InvocationState
+from beliefkv.core.events import ExecutionMode, RelationType, RuntimeEventKind as Kind
+from beliefkv.experiments.internal_comparison import MODES, arm_environment
+from beliefkv.experiments.paper_baselines import environment as paper_environment
+from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
+from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.subagent_materialization import observe_materialization_headroom
+from tests.test_full_only_native_lifecycle import full_native
+from tests.test_internal_comparison import observed
+from tests.test_paper_baseline_runtime import request
+from scripts.prepare_subagent_materialization import configurations
+
+
+def node(identity, size, *, device=False, refs=1, host_lock=0, pending=False):
+    return NS(
+        id=identity, component_data={0: NS(
+            value=tuple(range(size)) if device else None, host_value=tuple(range(size)),
+            session_ref=refs, host_lock_ref=host_lock, lock_ref=0,
+        )},
+        write_through_pending_id=identity if pending else None, load_back_pending_id=None,
+        children={}, parent=None,
+    )
+
+
+def cache(*nodes, host_capacity=1000, host_free=0, device_free=0):
+    pool = NS(size=host_capacity, size_per_token=64, available_size=lambda: host_free)
+    root = node(0, 0)
+    tree = NS(
+        root_node=root, _node_arena={row.id: row for row in (root, *nodes)},
+        full_host_duplicates={row.id: row for row in nodes if row.component_data[0].value is not None},
+        _can_reclaim_full_host_duplicate=lambda row: row.component_data[0].host_lock_ref == 0,
+    )
+    return NS(
+        tree_components=(0,), is_write_back=True, host_memory_mode="cache",
+        tree_core=tree, host_pool_group=NS(entry_map={"kv": NS(host_pool=pool)}),
+        token_to_kv_pool_allocator=NS(size_full=10000, available_size=lambda: device_free),
+        req_to_token_pool=NS(available_size=lambda: 24),
+    )
+
+
+def test_census_distinguishes_unique_useful_duplicate_inflight_and_untracked_slots():
+    native = cache(
+        node(1, 500), node(2, 100, refs=0), node(3, 100, device=True),
+        node(4, 80, device=True, host_lock=1), node(5, 70, device=True, pending=True),
+        host_free=50, device_free=100,
+    )
+    result = observe_materialization_headroom(native)
+    assert result.observable
+    assert result.useful_host_only_tokens == 500
+    assert result.reclaimable_host_tokens == 200
+    assert result.pinned_host_tokens == 150
+    assert result.untracked_host_tokens == 100
+    assert result.available_tokens == 350
+    assert result.inspected_nodes == 6
+    assert native.tree_core._node_arena[1].component_data[0].host_value is not None
+
+
+@pytest.mark.parametrize("change,reason", (
+    ("hybrid", "requires_full_only"), ("buffer", "requires_full_only"),
+    ("bound", "native_node_census_bound"), ("mismatch", "native_host_accounting_mismatch"),
+    ("geometry", "invalid_pool_geometry"), ("absent", "native_observation_unavailable"),
+))
+def test_partial_or_unsupported_census_is_unknown_not_zero(change, reason):
+    native = cache(node(1, 1000))
+    kwargs = {}
+    if change == "hybrid":
+        native.tree_components = (0, 2)
+    elif change == "buffer":
+        native.host_memory_mode = "buffer_only"
+    elif change == "bound":
+        kwargs["max_nodes"] = 1
+    elif change == "mismatch":
+        native.host_pool_group.entry_map["kv"].host_pool.available_size = lambda: 1
+    elif change == "geometry":
+        native.token_to_kv_pool_allocator.available_size = lambda: -1
+    else:
+        del native.tree_core._node_arena
+    result = observe_materialization_headroom(native, **kwargs)
+    assert not result.observable and result.reason.startswith(reason)
+
+
+def test_real_native_split_backup_ack_and_host_only_accounting(full_native):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, loads, commits = full_native
+    pool = native.host_pool_group.entry_map["kv"].host_pool
+    slots = {"used": 0}
+    pool.available_size = lambda: pool.size - slots["used"]
+    first, generation = insert_session(native, [1, 2, 3, 4], "parent")
+    native.prepare_beliefkv_spawn_full(session_id="parent", session_generation=generation)
+    slots["used"] = 4
+    pending = observe_materialization_headroom(native)
+    assert pending.observable and pending.pinned_host_tokens == 4
+    native.writing_check(finish_count=1)
+    settled = observe_materialization_headroom(native)
+    assert settled.observable and settled.reclaimable_host_tokens == 4
+    tail, _ = insert_session(native, list(range(1, 9)), "parent")
+    native.prepare_beliefkv_spawn_full(session_id="parent", session_generation=generation)
+    slots["used"] = 8
+    native.writing_check(finish_count=1)
+    native.beliefkv_cold_full_owner_validator = lambda _: True
+    free = allocator.available_size()
+    assert native.reclaim_beliefkv_handoff_capacity(
+        full_tokens=free + 8, mamba_slots=0,
+    ) == {0: 8}
+    observed_state = observe_materialization_headroom(native)
+    assert observed_state.observable and observed_state.useful_host_only_tokens == 8
+    assert observed_state.reclaimable_host_tokens == 0
+    assert first.component_data[0].value is tail.component_data[0].value is None
+    assert len(writes) == 2 and not loads
+    # The census only reads these native buffers.
+    before = allocator.available_size()
+    assert observe_materialization_headroom(native) == observed_state
+    assert allocator.available_size() == before
+
+
+@pytest.fixture
+def runtime(monkeypatch, tmp_path):
+    settings = arm_environment({
+        "AGENT_ADMISSION": "thunderagent_reference",
+        "AGENT_FREE_CONTINUATION_ADMISSION": "1", "AGENT_FREE_DISPATCH_INTERVAL_MS": "500",
+        "AGENT_CONTROL_INTERVAL_MS": "2000", "EXECUTION_FRONTIER_RESTORE": "0",
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": "pressure_v1",
+    }, "full")
+    for key, value in settings.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setenv("BELIEFKV_PAPER_BASELINE", "")
+    live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "materialization.sock"))
+    live.attach_native_cache(cache(node(1, 1000)))
+    live.on_events((
+        observed(0, Kind.WORKFLOW_START),
+        observed(1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="parent-context"),
+    ))
+    live._agent_admission.next_tick = float("inf")
+    live._native_running_batch = NS(reqs=[])
+    live._test_sequence = 1
+    try:
+        yield live
+    finally:
+        live.close()
+
+
+def child(live, identity="child", *, parent="parent", tokens=100, workflow="wf"):
+    live._test_sequence += 3
+    seq = live._test_sequence
+    live.on_events((
+        replace(observed(
+            seq, Kind.INVOCATION_CREATE, invocation_id=identity, context_id=identity + "-context",
+            parent_invocation_id=parent, relation_type=RelationType.SPAWN,
+        ), workflow_id=workflow),
+        replace(observed(
+            seq + 1, Kind.SPAWN, invocation_id=parent, target_invocation_id=identity,
+            execution_mode=ExecutionMode.BACKGROUND,
+        ), workflow_id=workflow),
+    ))
+    req = request(identity + "-request", identity, tokens=tokens, workflow=workflow)
+    req.output_ids.clear()
+    req.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+    req.finished = lambda: False
+    live.register_visible_request(req)
+    return req
+
+
+def prepare(live, queue, *, running=(), now=100.):
+    live._subagent_materialization.prepare(
+        queue, running_batch=NS(reqs=list(running)), adder=None, now=now,
+    )
+
+
+def test_hold_is_applied_to_registration_periodic_free_sibling_and_timeout_grants(runtime):
+    req = child(runtime)
+    gate, a = runtime._subagent_materialization, runtime._agent_admission
+    key, item = a.latest["child"], a.policy.programs["child"]
+    assert req.rid in runtime.visible and item.pending and not item.active
+    prepare(runtime, [req], running=[object()])
+    assert not gate.allows(key) and not a.allows(key)
+    assert not a._can_resume(item)
+    assert a._candidate(req.rid, key, include_first=True) is None
+    assert not a._admit_from_free_capacity(
+        [item], event="test_grant", join_id=None,
+    )
+    assert not a._timeout_force_resume_allowed(key)
+    a.next_tick = 0.
+    a.tick()
+    assert not item.active
+    plan = runtime.plan_native_prefill([req], running_batch=NS(reqs=[object()]), adder=None)
+    selected = select_native_prefill_candidates(
+        [req], plan=plan, current_semantic_revision=runtime.semantic_revision,
+    )
+    assert not selected.candidates
+    assert req.kv.req_pool_idx is None and req.kv.kv_allocated_len == 0
+    assert req.origin_input_ids == list(range(100))
+
+
+def test_ready_service_timeout_never_bypasses_first_materialization_hold(runtime):
+    from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
+
+    req = child(runtime)
+    a = runtime._agent_admission
+    prepare(runtime, [req], running=[object()])
+    key = a.latest["child"]
+    a._ready_service_guard = ReadyServiceGuard(a)
+    a._ready_service_guard.since["child"] = key, 0.
+    a._ready_service_guard.target = key
+    a._ready_service_guard.begin(1801.)
+    assert a._ready_service_guard.target is None
+    assert "child" not in a._ready_service_guard.since
+    assert not a._timeout_force_resume_allowed(key)
+    assert not a.policy.programs["child"].active
+    assert req.kv.req_pool_idx is None and req.kv.kv_allocated_len == 0
+
+
+def test_capacity_release_wakes_and_actual_native_plan_admits_the_child(runtime):
+    req = child(runtime)
+    gate, a = runtime._subagent_materialization, runtime._agent_admission
+    prepare(runtime, [req], running=[object()])
+    assert not gate.allows(a.latest["child"])
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 201
+    gate.capacity_changed()
+    plan = runtime.plan_native_prefill([req], running_batch=NS(reqs=[]), adder=None)
+    actual = select_native_prefill_candidates(
+        [req], plan=plan, current_semantic_revision=runtime.semantic_revision,
+    )
+    assert actual.candidates == (req,)
+    assert a.policy.programs["child"].active
+    assert req.kv.kv_allocated_len == 0
+    runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+    assert gate.pending[req.rid].started
+    assert ("wf", "child-context") in gate.materialized
+    assert runtime.counts["subagent_materialization_started"] == 1
+
+
+def test_terminal_service_guard_composes_with_first_materialization_permission(runtime):
+    from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
+
+    req = child(runtime)
+    gate, a = runtime._subagent_materialization, runtime._agent_admission
+    key = a.latest["child"]
+    prepare(runtime, [req], running=[object()])
+    a._ready_service_guard = guard = ReadyServiceGuard(a)
+    guard.since["child"] = key, 0.
+    guard.target = key
+    guard.begin(1801.)
+    assert guard.target is None and not a._timeout_force_resume_allowed(key)
+
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 201
+    gate.capacity_changed()
+    plan = runtime.plan_native_prefill([req], running_batch=NS(reqs=[]), adder=None)
+    selected = select_native_prefill_candidates(
+        [req], plan=plan, current_semantic_revision=runtime.semantic_revision,
+    )
+    assert selected.candidates == (req,)
+    runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+    assert gate.pending[req.rid].started
+    guard.since["child"] = key, 0.
+    guard.target = key
+    req.output_ids = [1]
+    req.finished = lambda: True
+
+    assert runtime.on_batch_completed(NS(reqs=[req])) == (req.rid,)
+    assert req.rid not in gate.pending
+    assert req.rid not in runtime.visible
+    assert guard.target is None and a.counts["ready_service_guard_served"] == 1
+    assert guard.since["child"][1] > 0.
+
+
+def test_all_pending_initial_prompts_share_one_capacity_budget(runtime):
+    first, second = child(runtime, "first"), child(runtime, "second")
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 301
+    prepare(runtime, [first, second], running=[object()])
+    gate, a = runtime._subagent_materialization, runtime._agent_admission
+    assert gate.allows(a.latest["first"])
+    assert not gate.allows(a.latest["second"])
+    assert gate.last_decision["available_before_tokens"] == 299
+
+
+def test_candidate_order_uses_current_continuous_work_not_request_cost(runtime):
+    long = child(runtime, "long", tokens=10)
+    short = child(runtime, "short", tokens=100)
+    a = runtime._agent_admission
+    a._combination = NS(
+        _work_weight=lambda key, predictions: .9 if key.invocation_id == "short" else .1,
+        defer=lambda key: None,
+    )
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 251
+    prepare(runtime, [long, short], running=[object()])
+    gate = runtime._subagent_materialization
+    assert gate.last_decision["allowed"] == [short.rid]
+    assert gate.allows(a.latest["short"]) and not gate.allows(a.latest["long"])
+    assert not a.policy.programs["short"].active
+
+
+def test_no_pressure_permits_all_without_moving_the_workflow_arrival(runtime):
+    first, second = child(runtime, "first"), child(runtime, "second")
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 1000
+    start = runtime.graph.workflows["wf"].start_ts_ms
+    prepare(runtime, [first, second], running=[object()])
+    gate = runtime._subagent_materialization
+    assert set(gate.last_decision["allowed"]) == {first.rid, second.rid}
+    assert runtime.graph.workflows["wf"].start_ts_ms == start
+    assert not runtime.physical_ledger.pending_count
+
+
+def test_first_chunk_reserves_only_unallocated_suffix_and_cannot_be_held_again(runtime):
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    prepare(runtime, [req])
+    assert gate.last_decision["progress_exception"] == req.rid
+    runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+    req.kv.kv_allocated_len = 40
+    req.kv.req_pool_idx = 1
+    assert gate._price(gate.pending[req.rid]) == 160
+    other = child(runtime, "other")
+    prepare(runtime, [req, other], now=102.)
+    assert gate.allows(runtime.visible[req.rid])
+    assert gate.last_decision["outstanding_initial_tokens"] == 160
+    gate.completed((req.rid,))
+    assert req.rid not in gate.pending
+
+
+def test_raw_free_capacity_fast_path_avoids_tree_census_and_marks_host_only_unknown():
+    native = cache(node(1, 1000), device_free=1000)
+    del native.tree_core._node_arena
+    result = observe_materialization_headroom(native, required_free_tokens=500)
+    assert result.observable and not result.census_complete
+    assert result.inspected_nodes == 0 and result.useful_host_only_tokens is None
+    assert result.reason == "raw_free_capacity_suffices"
+
+
+def test_prefetch_checkpoint_cannot_be_credited_as_reclaimable_host_capacity():
+    native = cache(node(1, 1000, device=True))
+    result = observe_materialization_headroom(native, protected_host_nodes=(1,))
+    assert result.observable and result.reclaimable_host_tokens == 0
+    assert result.pinned_host_tokens == 1000
+
+
+def test_progress_exception_skips_a_child_that_cannot_fit_its_own_logical_budget(runtime):
+    huge = child(runtime, "huge", tokens=11000)
+    small = child(runtime, "small")
+    prepare(runtime, [huge, small])
+    assert runtime._subagent_materialization.last_decision["progress_exception"] == small.rid
+
+
+def test_progress_exception_survives_the_ordinary_two_second_admission_window(runtime):
+    first, second = child(runtime, "first"), child(runtime, "second")
+    gate = runtime._subagent_materialization
+    for now in (100., 100.4, 101., 102.):
+        prepare(runtime, [first, second], now=now)
+        assert gate.allows(runtime.visible[first.rid])
+        assert not gate.allows(runtime.visible[second.rid])
+    assert runtime.counts["subagent_materialization_progress_exceptions"] == 1
+    assert gate.progress_path == ["first"]
+
+
+def test_existing_ready_request_prevents_speculative_pressure_exception(runtime):
+    req = child(runtime)
+    parent = request("parent-request", "parent", tokens=100, workflow="wf")
+    parent.output_ids.clear()
+    parent.finished = lambda: False
+    runtime.register_visible_request(parent)
+    prepare(runtime, [req, parent])
+    assert not runtime._subagent_materialization.last_decision["allowed"]
+    assert runtime._agent_admission.allows(runtime.visible[parent.rid])
+
+
+def test_nested_foreground_child_can_unblock_the_single_progress_branch(runtime):
+    first = child(runtime, "first")
+    prepare(runtime, [first])
+    gate = runtime._subagent_materialization
+    runtime.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+    gate.completed((first.rid,))
+    nested = child(runtime, "nested", parent="first")
+    outsider = child(runtime, "other")
+    runtime.on_events((observed(
+        20, Kind.CALL, invocation_id="first", target_invocation_id="nested",
+    ),))
+    prepare(runtime, [outsider, nested], now=101.)
+    assert gate.last_decision["progress_exception"] == nested.rid
+    assert gate.progress_path == ["first", "nested"]
+    assert gate.allows(runtime.visible[nested.rid])
+    assert not gate.allows(runtime.visible[outsider.rid])
+
+
+def test_progress_branch_waiting_for_real_tool_does_not_open_more_spill_slots(runtime):
+    first = child(runtime, "first")
+    prepare(runtime, [first])
+    gate = runtime._subagent_materialization
+    runtime.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+    gate.completed((first.rid,))
+    runtime.graph.invocations["first"].state = InvocationState.WAIT_TOOL
+    runtime.graph.invocations["first"].active_tool_calls["tool"] = ("execute", 0.)
+    other = child(runtime, "other")
+    prepare(runtime, [other], now=101.)
+    assert not gate.allows(runtime.visible[other.rid])
+    assert runtime.counts["subagent_materialization_progress_exceptions"] == 1
+
+
+def test_observed_all_join_progress_advances_one_child_then_its_waiting_sibling(runtime):
+    first = child(runtime, "first")
+    prepare(runtime, [first])
+    gate = runtime._subagent_materialization
+    runtime.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+    gate.completed((first.rid,))
+    nested = child(runtime, "nested", parent="first")
+    sibling = child(runtime, "sibling", parent="first")
+    outsider = child(runtime, "other")
+    runtime.on_events((
+        observed(
+            25, Kind.JOIN_CREATE, join_id="nested-join",
+            member_invocation_ids=("nested", "sibling"),
+        ),
+        observed(26, Kind.JOIN_WAIT, invocation_id="first", join_id="nested-join"),
+    ))
+    prepare(runtime, [outsider, nested, sibling], now=101.)
+    assert gate.last_decision["progress_exception"] == nested.rid
+    assert not gate.allows(runtime.visible[sibling.rid])
+    runtime.on_events((observed(27, Kind.RETURN, invocation_id="nested"),))
+    prepare(runtime, [outsider, sibling], now=102.)
+    assert gate.last_decision["progress_exception"] == sibling.rid
+    assert not gate.allows(runtime.visible[outsider.rid])
+
+
+def test_native_attempt_rebind_preserves_hold_and_rejects_stale_permission(runtime):
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    key = runtime.visible[req.rid]
+    req.cache_request_handle.attempt_id += 1
+    runtime.on_requests_requeued((req,), is_retracted=False)
+    assert gate.pending[req.rid].key.attempt_id == 1
+    assert not gate.allows(runtime.visible[req.rid])
+    assert not gate.allows(key)
+
+
+def test_terminal_child_releases_hold_and_cancellation_does_not_materialize(runtime):
+    req = child(runtime)
+    runtime.on_events((observed(
+        10, Kind.INVOCATION_CANCEL, invocation_id="child", context_id="child-context",
+    ),))
+    assert not runtime._subagent_materialization.pending
+    assert not runtime._subagent_materialization.materialized
+    assert req.kv.kv_allocated_len == 0
+
+
+def test_late_spawn_indexes_an_unstarted_first_request_without_resetting_arrival(runtime):
+    runtime.on_events((observed(
+        2, Kind.INVOCATION_CREATE, invocation_id="late", context_id="late-context",
+    ),))
+    req = request("late-request", "late", tokens=100, workflow="wf")
+    req.output_ids.clear()
+    req.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+    req.finished = lambda: False
+    runtime.register_visible_request(req)
+    original_arrival = runtime._visible_since[req.rid]
+    assert req.rid not in runtime._subagent_materialization.pending
+    runtime._agent_admission.policy.programs["late"].marked_for_pause = True
+    runtime.on_events((observed(
+        3, Kind.SPAWN, invocation_id="parent", target_invocation_id="late",
+        execution_mode=ExecutionMode.BACKGROUND,
+    ),))
+    gate = runtime._subagent_materialization
+    assert req.rid in gate.pending
+    assert gate.pending[req.rid].arrived == original_arrival
+    assert not runtime._agent_admission.policy.programs["late"].active
+    assert not runtime._agent_admission.policy.programs["late"].marked_for_pause
+
+
+def test_duplicate_registration_observation_keeps_wait_and_permission(runtime):
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    prepare(runtime, [req])
+    original = gate.pending[req.rid]
+    gate.registered(req, runtime.visible[req.rid])
+    assert gate.pending[req.rid] is original and original.permitted
+
+
+def test_expensive_census_is_shared_across_repeated_prefill_plans(runtime):
+    req = child(runtime)
+    for now in (100., 100.01, 100.1, 100.399):
+        prepare(runtime, [req], running=[object()], now=now)
+    assert runtime.counts["subagent_materialization_checks"] == 1
+    runtime._subagent_materialization.capacity_changed()
+    prepare(runtime, [req], running=[object()], now=100.399)
+    assert runtime.counts["subagent_materialization_checks"] == 2
+
+
+def test_persistent_pressure_reuses_holds_without_using_old_census_for_new_grants(runtime):
+    req = child(runtime)
+    for now in (100., 100.5, 101., 101.5):
+        prepare(runtime, [req], running=[object()], now=now)
+    assert runtime.counts["subagent_materialization_checks"] == 4
+    assert runtime.counts["subagent_materialization_complete_censuses"] == 1
+    assert runtime.counts["subagent_materialization_pressure_backoff_checks"] == 3
+    prepare(runtime, [req], running=[object()], now=102.)
+    assert runtime.counts["subagent_materialization_complete_censuses"] == 2
+
+
+def test_raw_free_release_can_open_a_hold_during_census_backoff(runtime):
+    req = child(runtime)
+    prepare(runtime, [req], running=[object()])
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 1000
+    prepare(runtime, [req], running=[object()], now=100.5)
+    assert runtime._subagent_materialization.allows(runtime.visible[req.rid])
+    assert runtime.counts["subagent_materialization_complete_censuses"] == 1
+
+
+def test_incomplete_census_preserves_original_eligibility_including_outside_window(runtime):
+    first, second = child(runtime, "first"), child(runtime, "second")
+    gate = runtime._subagent_materialization
+    gate.max_nodes = gate.max_candidates = 1
+    prepare(runtime, [first, second], running=[object()])
+    assert set(gate.last_decision["allowed"]) == {first.rid, second.rid}
+    assert not gate.last_decision["headroom"]["observable"]
+    assert runtime.counts["subagent_materialization_observation_fallbacks"] == 1
+
+
+def test_admitted_or_reused_context_is_never_reclassified_as_new(runtime):
+    req = child(runtime)
+    gate, a = runtime._subagent_materialization, runtime._agent_admission
+    prepare(runtime, [req])
+    runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+    req.finished = lambda: True
+    req.output_ids.append(7)
+    runtime.on_batch_completed(NS(reqs=[req]))
+    successor = request("next-request", "child", tokens=110, workflow="wf")
+    successor.output_ids.clear()
+    successor.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+    successor.finished = lambda: False
+    runtime.register_visible_request(successor)
+    assert successor.rid not in gate.pending
+    assert a.policy.programs["child"].steps == 2
+    assert gate.allows(runtime.visible[successor.rid])
+
+
+def test_workflow_end_releases_all_materialization_metadata(runtime):
+    req = child(runtime)
+    prepare(runtime, [req])
+    runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
+    runtime.on_events((observed(10, Kind.WORKFLOW_END),))
+    gate = runtime._subagent_materialization
+    assert not gate.pending and not gate.materialized and not gate.progress_path
+
+
+@pytest.mark.parametrize("mode", MODES)
+def test_explicit_candidate_never_leaks_into_other_arms(mode):
+    result = arm_environment({
+        "AGENT_ADMISSION": "thunderagent_reference",
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": "pressure_v1",
+    }, mode)
+    assert result["BELIEFKV_SUBAGENT_MATERIALIZATION"] == (
+        "pressure_v1" if mode == "full" else "off"
+    )
+
+
+@pytest.mark.parametrize("value", ("1", "unknown"))
+def test_configuration_refuses_ambiguous_materialization_policy(value):
+    with pytest.raises(ValueError, match="subagent materialization"):
+        arm_environment({"BELIEFKV_SUBAGENT_MATERIALIZATION": value}, "full")
+
+
+def test_default_and_paper_environment_keep_materialization_disabled():
+    assert arm_environment({}, "full")["BELIEFKV_SUBAGENT_MATERIALIZATION"] == "off"
+    assert paper_environment({
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": "pressure_v1",
+    }, "thunderagent_acting_decay")["BELIEFKV_SUBAGENT_MATERIALIZATION"] == "off"
+
+
+@pytest.mark.parametrize("host_gb", (None, 200, 400))
+def test_prepared_controls_only_change_materialization_and_match_the_same_capacity(host_gb):
+    previous = {
+        "order": ["full"], "common_environment": {
+            "AGENT_ADMISSION": "thunderagent_reference", "EXECUTION_FRONTIER_RESTORE": "0",
+            "HICACHE_SIZE_GB": "400", "HOST_NUMA_MEMORY_POLICY": "interleave",
+            "MODEL_CACHE_LAYOUT": "full_only", "HOST_NUMA_MEMORY_NODES": "0,1",
+            "HOST_NUMA_PLACEMENT_CHECK": "diagnostic",
+        },
+        "workflow_arrivals": {"unchanged": True},
+        "private_analysis_cohort": {"unchanged": True},
+    }
+    result = configurations(previous, host_gb=host_gb)
+    assert "BELIEFKV_SUBAGENT_MATERIALIZATION" not in previous["common_environment"]
+    for label, policy in (("control", "off"), ("pressure", "pressure_v1")):
+        config = result[label]
+        assert config["common_environment"]["BELIEFKV_SUBAGENT_MATERIALIZATION"] == policy
+        assert config["common_environment"]["HICACHE_SIZE_GB"] == str(host_gb or 400)
+        assert config["workflow_arrivals"] == previous["workflow_arrivals"]
+        assert config["private_analysis_cohort"] == previous["private_analysis_cohort"]
+        assert not config["gpu_execution"]["registered"]
+
+
+@pytest.mark.parametrize("host_gb", (True, 0, -1, 1025, "200"))
+def test_invalid_pressure_configuration_cannot_be_prepared(host_gb):
+    with pytest.raises(ValueError, match="Host capacity"):
+        configurations({"order": ["full"], "common_environment": {}}, host_gb=host_gb)

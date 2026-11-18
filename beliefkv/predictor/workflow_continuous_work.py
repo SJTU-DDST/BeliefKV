@@ -13,6 +13,7 @@ from beliefkv.predictor.workflow_work_training import project_task_weights
 
 KIND = "training_referenced_continuous_model_work_v2"
 SERVING_KIND = "single_pass_conditional_continuous_work_v1"
+ADMISSION_UTILITY_KIND = "soft_inverse_remaining_model_work_v1"
 
 
 def forecast_fingerprint(raw):
@@ -83,6 +84,62 @@ def normal_log_work_weight(mean, sigma, reference_work):
     return min(1., max(0., value))
 
 
+def utility_reference_work(contract):
+    """Keep admission regularization separate from the retained training scale."""
+    reference = contract.get("reference_work")
+    remaining_work_weight(0., reference)
+    utility = contract.get("admission_utility")
+    if utility is None:
+        return reference
+    if (
+        not isinstance(utility, dict)
+        or set(utility) != {
+            "kind", "reference_work", "initial_class_expected_utility",
+            "initial_prior_uses_training_labels_only",
+        }
+        or utility["kind"] != ADMISSION_UTILITY_KIND
+        or utility["initial_prior_uses_training_labels_only"] is not True
+    ):
+        raise ValueError("admission utility requires its explicit scale and training-only initial prior")
+    remaining_work_weight(0., utility["reference_work"])
+    priors = utility["initial_class_expected_utility"]
+    if (
+        not isinstance(priors, (list, tuple)) or len(priors) != 3
+        or any(type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1
+               for value in priors)
+        or list(priors) != sorted(priors, reverse=True)
+    ):
+        raise ValueError("admission utility requires three ordered finite initial class expectations")
+    return utility["reference_work"]
+
+
+def fit_admission_utility(contract, rows, *, reference_work):
+    """Reweight the same complete training executions, without refitting forecasts."""
+    import numpy as np
+
+    remaining_work_weight(0., reference_work)
+    fitted = fit_training_reference(rows, contract["work_thresholds"])
+    if "admission_utility" in contract or any(contract.get(key) != value for key, value in fitted.items()):
+        raise ValueError("admission utility must retain the exact original training reference")
+    initial = [row for row in rows if row["snapshot"] == 0]
+    weights = project_task_weights(initial, np.ones(len(initial)))
+    classes = np.searchsorted(contract["work_thresholds"], [row["total_work"] for row in initial], side="right")
+    values = np.asarray([remaining_work_weight(row["total_work"], reference_work) for row in initial])
+    result = {
+        **contract,
+        "admission_utility": {
+            "kind": ADMISSION_UTILITY_KIND, "reference_work": reference_work,
+            "initial_class_expected_utility": [
+                float(np.average(values[classes == label], weights=weights[classes == label]))
+                for label in range(3)
+            ],
+            "initial_prior_uses_training_labels_only": True,
+        },
+    }
+    utility_reference_work(result)
+    return result
+
+
 def fit_training_reference(rows, thresholds):
     """All future work here belongs to training executions, never an online query."""
     import numpy as np
@@ -151,6 +208,8 @@ class ContinuousWorkReadout:
             raise ValueError("continuous work requires its evaluated direct-work tree and fixed training prior")
         remaining_work_weight(0., contract["reference_work"])
         self.model, self.contract = model, contract
+        self.utility_reference = utility_reference_work(contract)
+        self.neutral_weight = remaining_work_weight(contract["reference_work"], self.utility_reference)
 
     def estimate(self, probabilities, *, mean=None, sigma=None, support="calibrated_distribution"):
         if (
@@ -168,7 +227,9 @@ class ContinuousWorkReadout:
             source = "training_only_initial_class_log_prior"
             utility = sum(
                 probability * value for probability, value in zip(
-                    probabilities, self.contract["initial_class_expected_utility"],
+                    probabilities, self.contract.get(
+                        "admission_utility", self.contract,
+                    )["initial_class_expected_utility"],
                 )
             )
         else:
@@ -179,7 +240,7 @@ class ContinuousWorkReadout:
                 raise ValueError("continuous work requires a finite conditional log distribution")
             log_work = mean
             source = "calibrated_continuous_tree_log_work"
-            utility = normal_log_work_weight(mean, sigma, self.contract["reference_work"])
+            utility = normal_log_work_weight(mean, sigma, self.utility_reference)
         log_work = max(0., float(log_work))
         if log_work > 700.:
             raise ValueError("continuous workflow work forecast exceeds numerical support")
@@ -189,12 +250,18 @@ class ContinuousWorkReadout:
             "log_work_sigma": sigma, "reference_work": self.contract["reference_work"],
             "point_semantics": "exponentiated_conditional_log_work_not_arithmetic_work_mean",
             "source": source, "support": support,
-            "distribution_effective_weight": float(utility) if support == "calibrated_distribution" else .5,
+            "distribution_effective_weight": (
+                float(utility) if support == "calibrated_distribution" else self.neutral_weight
+            ),
             "distribution_semantics": "calibration_log_residual_normal_or_training_initial_class_empirical_utility",
             "effective_weight": (
-                remaining_work_weight(work, self.contract["reference_work"])
-                if support == "calibrated_distribution" else .5
+                remaining_work_weight(work, self.utility_reference)
+                if support == "calibrated_distribution" else self.neutral_weight
             ),
+            **({
+                "utility_reference_work": self.utility_reference,
+                "unsupported_effective_weight": self.neutral_weight,
+            } if "admission_utility" in self.contract else {}),
         }
 
     def predict(self, projection, observed, *, probabilities, support):

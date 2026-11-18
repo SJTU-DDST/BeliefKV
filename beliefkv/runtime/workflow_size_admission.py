@@ -22,6 +22,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def __init__(self, runtime):
         self._combination = None
+        self._tool_boundary_preemption = None
         self._deferred_dispatch = None
         self._conditional_distribution = False
         combination = getattr(runtime, "workflow_combination_admission", False)
@@ -53,20 +54,20 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             self.pressure_pause_policy in ("workflow_remaining", "workflow_tool_aware")
         )
         self._tool_pressure = None
-        if self.pressure_pause_policy == "workflow_tool_aware":
-            from beliefkv.runtime.workflow_tool_pressure import WorkflowToolPressure
+        try:
+            if self.pressure_pause_policy == "workflow_tool_aware":
+                from beliefkv.runtime.workflow_tool_pressure import WorkflowToolPressure
 
-            self._tool_pressure = WorkflowToolPressure(self)
-        if combination:
-            from beliefkv.runtime.workflow_combination import WorkflowCombinationController
+                self._tool_pressure = WorkflowToolPressure(self)
+            if combination:
+                from beliefkv.runtime.workflow_combination import WorkflowCombinationController
 
-            try:
                 self._combination = WorkflowCombinationController(self)
                 self._deferred_dispatch = self._combination
-            except Exception:
-                self._work.close()
-                raise
-            self.policy_name += "_r5"
+                self.policy_name += "_r5"
+        except Exception:
+            self._work.close()
+            raise
 
     def _admit_free_continuation(self, *, preferred=None):
         if self._deferred_dispatch is not None:
@@ -96,6 +97,12 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def _supported(self, prediction):
         return prediction is not None and prediction.evidence == "model"
+
+    def _timeout_force_resume_allowed(self, key):
+        return (
+            self._ready_service_guard is not None
+            or not getattr(self._combination, "strict_remaining_work", False)
+        ) and super()._timeout_force_resume_allowed(key)
 
     def _dispatch_prediction_fields(self, prediction):
         return {}
@@ -136,6 +143,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             self.policy.pressure_preference = self._pressure_preference
         if self._tool_pressure is not None:
             self.policy.tool_pressure_state = self._tool_pressure.observe
+            if self._tool_pressure.settings is not None:
+                self.policy.tool_retention_relative_tie = self._tool_pressure.settings.relative_tie
 
     def _logical_ready_paused(self, item):
         key = self.latest.get(item.identity)
@@ -162,6 +171,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         # A donor pair must not be filtered by the pre-release free budget or
         # delayed by the ordinary admission window.
         if self._conditional_distribution:
+            if self._combination is not None and self._combination.shortest_work_first:
+                return self._combination.order_tool_replacement(keys)
             return keys
         return self._order_work_keys(keys, self.runtime._join_priority_pending)
 
@@ -249,15 +260,25 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             key.root_workflow_id, "started", key.request_id, key.invocation_id,
             key.context_id, req.origin_input_ids,
         )
+        if self._tool_boundary_preemption is not None:
+            self._tool_boundary_preemption.registered(key)
 
     def events(self, events):
         events = tuple(events)
+        priority = getattr(self._combination, "ready_wait_priority", None)
+        if priority is not None:
+            priority.events(events)
+        accumulation = getattr(self._combination, "capacity_accumulation", None)
+        if accumulation is not None:
+            accumulation.events(events)
         if self._tool_pressure is not None:
             self._tool_pressure.events(events)
             if self.policy is not None:
                 self.policy.invalidate_tool_states()
         for event in events:
             self._work.submit(event.workflow_id, "event", event)
+        if self._tool_boundary_preemption is not None:
+            self._tool_boundary_preemption.events(events)
         super().events(events)
 
     def _index_resume_groups(self):
@@ -366,6 +387,14 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def native_service(self, batch, completed_ids):
         super().native_service(batch, completed_ids)
+        priority = getattr(self._combination, "ready_wait_priority", None)
+        if priority is not None:
+            priority.serviced(batch)
+        accumulation = getattr(self._combination, "capacity_accumulation", None)
+        if accumulation is not None:
+            accumulation.serviced(batch)
+        if self._tool_boundary_preemption is not None:
+            self._tool_boundary_preemption.serviced(batch)
         completed = set(completed_ids)
         for req in getattr(batch, "reqs", ()):
             record = self.requests.get(req.rid)
@@ -385,6 +414,14 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 self._work.submit(key.root_workflow_id, "generated", req.rid, output)
 
     def forget(self, invocation, *, now=None):
+        priority = getattr(self._combination, "ready_wait_priority", None)
+        if priority is not None:
+            priority.forget(invocation)
+        accumulation = getattr(self._combination, "capacity_accumulation", None)
+        if accumulation is not None:
+            accumulation.forget(invocation)
+        if self._tool_boundary_preemption is not None:
+            self._tool_boundary_preemption.forget(invocation)
         for request, (key, _arrived) in tuple(self.requests.items()):
             if key.invocation_id == invocation:
                 self._output_observed.pop(request, None)
@@ -397,6 +434,9 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def status(self):
         dispatch = bool(self.dispatch_interval_ms)
+        shortest = bool(self._combination is not None and self._combination.shortest_work_first)
+        priority = getattr(self._combination, "ready_wait_priority", None)
+        accumulation = getattr(self._combination, "capacity_accumulation", None)
         return {
             **super().status(),
             "pressure_pause_policy": (
@@ -430,10 +470,14 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 if dispatch else "unchanged_join_and_free_continuation"
             ),
             "workflow_size_new_preemption": False,
+            "workflow_shortest_work_first_admission": shortest,
             **({
-                "workflow_conditional_distribution_scope": "shared_combination_admission_only",
+                "workflow_conditional_distribution_scope": (
+                    "shortest_work_admission_and_existing_immediate_tool_pair_order"
+                    if shortest else "shared_combination_admission_only"
+                ),
                 "workflow_distribution_changes_pressure_victims": False,
-                "workflow_distribution_changes_tool_replacement_order": False,
+                "workflow_distribution_changes_tool_replacement_order": shortest,
                 "workflow_distribution_argmax_used_for_admission": False,
             } if self._conditional_distribution else {}),
             **({
@@ -442,6 +486,35 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "decay_age_source": "observed_tool_start_monotonic_or_native_completion",
             } if self._tool_pressure is not None else {}),
             "workflow_combination_admission": self._combination is not None,
+            **({
+                "workflow_ready_wait_priority": {
+                    "enabled": True, **priority.settings.record(),
+                    "tracked_request_keys": len(priority.since),
+                    "clock": "first_observed_ready_candidate_to_actual_native_service",
+                    "native_capacity_or_active_preemption_authority": False,
+                },
+            } if priority is not None else {}),
+            **({
+                "workflow_ready_capacity_accumulation": {
+                    "enabled": True, "max_wait_ms": accumulation.max_wait_ms,
+                    "minimum_ready_wait_ms": accumulation.minimum_wait_ms,
+                    "cooldown_ms": accumulation.cooldown_ms,
+                    "max_candidates": accumulation.max_candidates,
+                    "minimum_running_requests": 2,
+                    "active_focus": asdict(accumulation.focus) if accumulation.focus else None,
+                    "deadline_monotonic_s": accumulation.deadline,
+                    "scope": "ordinary_new_logical_grants_only;JOIN_and_tool_replacement_bypass",
+                    "native_capacity_or_active_preemption_authority": False,
+                },
+            } if accumulation is not None else {}),
+            "tool_boundary_preemption": (
+                self._tool_boundary_preemption.status()
+                if self._tool_boundary_preemption is not None else {"enabled": False}
+            ),
+            **({
+                "workflow_strict_remaining_work_admission": True,
+                "workflow_public_timeout_force_resume": self._ready_service_guard is not None,
+            } if getattr(self._combination, "strict_remaining_work", False) else {}),
             **({
                 "workflow_combination_scope": "periodic_and_coalesced_first_continuation_sibling_admission",
                 "workflow_combination_join_recovery": "protected_existing_join_eos_rights_unchanged",
@@ -454,6 +527,9 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "workflow_combination_cost_identity": self._combination.cost_identity,
                 "workflow_combination_max_candidates": 8,
                 "workflow_combination_search_budget_ns": 500_000,
+                **({
+                    "workflow_join_progress": "linear_unfinished_share_v1",
+                } if self._combination.costs.join_progress == "linear" else {}),
                 "workflow_combination_eager_first_grant": False,
             } if self._combination is not None else {}),
         }

@@ -101,6 +101,32 @@ def protocol(manifest):
     return {"sha256": fingerprint(values), "values": values}
 
 
+def original_project(manifest, task_id, prompt):
+    if not isinstance(prompt, str):
+        raise ValueError("workflow has no original project identity")
+    if not prompt.startswith("SWE-bench instance: ") and "Project: " in prompt:
+        return prompt.split("Project: ", 1)[1].split("\n", 1)[0].strip()
+    path = Path(manifest.get("config", {}).get("workload_manifest", ""))
+    if not path.is_file() or sha256_file(path) != manifest.get("workload_manifest_sha256"):
+        raise ValueError("workflow has no pinned original project identity")
+    from beliefkv.experiments.original_swe_rebench import original_task, source_dataset
+
+    tasks = json.loads(path.read_bytes())
+    dataset = source_dataset(tasks)
+    matched = [row for row in tasks["workloads"] if row["instance_id"] == task_id]
+    if len(matched) != 1:
+        raise ValueError("workflow has no unique original task")
+    task = matched[0]
+    original_task(task, dataset)
+    prefix = (
+        f"SWE-bench instance: {task_id}\nRepository: {task['repo']}\n"
+        f"Base commit: {task['base_commit']}\n"
+    )
+    if not prompt.startswith(prefix) or task["problem_statement"] not in prompt:
+        raise ValueError("workflow prompt differs from its bound original task")
+    return task["repo"]
+
+
 def _paths(plan, increments, *, seconds_per_model_unit):
     nodes = {node.node_id: node for node in plan.nodes}
     paths = defaultdict(dict)
@@ -154,9 +180,7 @@ def inventory_capture(capture, *, seconds_per_model_unit, plan_loader=None):
         result_path, trajectory_path = directory / "result.json", directory / "trajectory.json"
         messages = json.loads(trajectory_path.read_bytes())
         task = next((row.get("content", "") for row in messages if row.get("type") == "human"), "")
-        if not isinstance(task, str) or "Project: " not in task:
-            raise ValueError("workflow has no original project identity")
-        project = task.split("Project: ", 1)[1].split("\n", 1)[0].strip()
+        project = original_project(manifest, directory.name, task)
         workflow_events = [
             RuntimeEvent.from_dict(json.loads(line)) for line in event_path.open()
             if json.loads(line)["kind"] == Kind.WORKFLOW_START.value

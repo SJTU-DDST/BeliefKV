@@ -79,8 +79,7 @@ def reference_capacity(reference):
     return path, validated_capacity(load(path).get("capacity"))
 
 
-def validated_workload(path, *, require_disjoint=True):
-    manifest = load(path)
+def _validated_population(manifest, *, require_disjoint):
     rows = manifest.get("workloads")
     count = manifest.get("requested_workflows")
     if (
@@ -99,14 +98,80 @@ def validated_workload(path, *, require_disjoint=True):
         or (require_disjoint and len(set(projects)) != count)
         or max(Counter(projects).values()) > manifest["max_tasks_per_project"]
         or len(set(instances)) != count
-        or any(row.get("task_kind") != "locobench_agent" for row in rows)
     ):
         raise ValueError("source workload needs distinct original tasks and bounded projects")
     return manifest
 
 
+def validated_workload(path, *, require_disjoint=True):
+    manifest = _validated_population(load(path), require_disjoint=require_disjoint)
+    rows = manifest["workloads"]
+    if manifest.get("source_dataset") is not None:
+        from beliefkv.experiments.original_swe_rebench import original_task, source_dataset
+
+        dataset = source_dataset(manifest)
+        for row in rows:
+            original_task(row, dataset)
+    elif any(row.get("task_kind") != "locobench_agent" for row in rows):
+        raise ValueError("source workload needs distinct original tasks and bounded projects")
+    return manifest
+
+
+def _composed_workload(path):
+    """Accept mixed tasks only through a hash-bound, complete replay source."""
+    from beliefkv.experiments.composite_workload import KIND, load_composed_source
+    from beliefkv.experiments.original_swe_rebench import (
+        KIND as SWE_KIND, original_task, source_dataset,
+    )
+
+    path = Path(path).resolve()
+    manifest = _validated_population(load(path), require_disjoint=True)
+    receipt = path.parent / "composite_source.json"
+    if (
+        path.name != "workload_manifest.json" or not receipt.is_file()
+        or manifest.get("purpose") != KIND
+        or manifest.get("heterogeneous_original_datasets_disclosed") is not True
+    ):
+        raise ValueError("mixed original projects require their bound composed source")
+    graph, _, _ = load_composed_source(path.parent)
+    declaration = load(receipt)
+    if (
+        declaration.get("mixed_original_datasets_explicitly_enabled") is not True
+        or declaration["artifacts_sha256"].get("workload_manifest.json") != sha256_file(path)
+        or graph.summary()["workflows"] != manifest["requested_workflows"]
+        or {(row["instance_id"], row["repo"]) for row in manifest["workloads"]}
+        != {(row["task_id"], row["project"]) for row in declaration["selected_workflows"]}
+    ):
+        raise ValueError("mixed project manifest differs from its verified original population")
+    datasets = manifest["source_datasets"]
+    if (
+        not isinstance(datasets, list) or len(datasets) != 2
+        or any(not isinstance(row, dict) for row in datasets)
+        or {row.get("kind") for row in datasets} != {"locobench_agent_archive", SWE_KIND}
+    ):
+        raise ValueError("mixed original projects need their explicit original datasets")
+    public = next(row for row in datasets if row["kind"] == SWE_KIND)
+    source_dataset({"source_dataset": public})
+    legacy = next(row for row in datasets if row["kind"] == "locobench_agent_archive")
+    digest = legacy.get("sha256")
+    if (
+        set(legacy) != {"kind", "sha256"} or not isinstance(digest, str)
+        or len(digest) != 64 or any(char not in "0123456789abcdef" for char in digest)
+    ):
+        raise ValueError("mixed original projects lack the pinned legacy archive")
+    for row in manifest["workloads"]:
+        if row.get("task_kind") == "swebench":
+            original_task(row, public)
+        elif row.get("task_kind") != "locobench_agent":
+            raise ValueError("mixed original projects contain an undeclared task kind")
+    return manifest
+
+
 def project_disjoint_workload(path, *, expected_workflows=None):
-    manifest = validated_workload(path)
+    manifest = (
+        _composed_workload(path) if "source_datasets" in load(path)
+        else validated_workload(path)
+    )
     if (
         expected_workflows is not None
         and manifest["requested_workflows"] != expected_workflows
@@ -138,9 +203,27 @@ def declared_workload_inputs(
             or proof.get("manifest_sha256") != tools["base_manifest_sha256"]
         ):
             raise ValueError("declared source tools were not qualified")
+        if manifest.get("source_dataset") is not None and (
+            proof.get("sandbox_test_env_path") != manifest.get("sandbox_test_env_path")
+        ):
+            raise ValueError("declared source tools use another project Python environment")
+        original_tasks = {
+            row["instance_id"]: row for row in load(tool_base)["workloads"]
+        } if manifest.get("source_dataset") is not None else {}
         for row in manifest["workloads"]:
             observed = proof["projects"][row["source_repo"]]
             image = row["docker_image"]
+            if manifest.get("source_dataset") is not None:
+                original = original_tasks.get(row["instance_id"], {})
+                if (
+                    observed.get("sandbox_test_env_path") != manifest["sandbox_test_env_path"]
+                    or any(original.get(name) != row.get(name) for name in (
+                        "instance_id", "repo", "base_commit", "problem_statement", "source_repo",
+                        "docker_image", "preflight_command", "task_kind", "difficulty",
+                        "task_access", "child_task_access", "repository_tool_profile",
+                    ))
+                ):
+                    raise ValueError("declared source tasks or tool settings changed after qualification")
             if (
                 observed.get("tool_execution_passed") is not True
                 or observed["source_commit"] != row["base_commit"]
@@ -196,6 +279,11 @@ def declared_workload_inputs(
                 or qualified.command(["docker", "image", "inspect", image, "--format", "{{.Id}}"]) != image
             ):
                 raise ValueError("declared source environment image changed or is unavailable")
+        if manifest.get("source_dataset") is not None:
+            from beliefkv.experiments.original_swe_rebench import task_inputs
+
+            inputs.extend(task_inputs(row, manifest["source_dataset"]))
+            continue
         context = row["frozen_repository_context"]
         provenance = row["dataset_provenance"]
         for name, expected in (
@@ -293,7 +381,12 @@ def environment(
     if source_workload is not None:
         if source_profile not in ("reusable_nested", "nested_oneshot"):
             raise ValueError("a new source workload requires an explicit natural source profile")
-        roots = str(project_disjoint_workload(target)["requested_workflows"])
+        manifest = project_disjoint_workload(target)
+        roots = str(manifest["requested_workflows"])
+        if manifest.get("source_dataset") is not None and (
+            base.get("SANDBOX_TEST_ENV") != manifest.get("sandbox_test_env_path")
+        ):
+            raise ValueError("source capture must preserve the qualified project Python environment")
     result = arm_environment(dict(base), "native_matched")
     result.update(
         PYTHONPATH=str(checkout), WORKLOAD_MANIFEST=str(target),

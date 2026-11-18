@@ -377,3 +377,29 @@ native完整退出后，CALL候选已完成24请求位置/session/native-stop及
 最终选择保存于 `final82_oracle_and_selected_native_r1/final_selection.json`：original56、初始12条、平均70秒到达；固定18条按到达序号选择并保留完整 JCT；JOIN/EOS、预测工具卸载、prepare_host 和 agent 连续性保留，工作量排序暂停，工具预取及逐层 handoff 关闭，CALL候选不推广。顺序协调器及独立汇总均已终结，真实 GPU/观察器进程已退出，没有后续 GPU 任务排队。
 
 这一阶段完成了最后一次 Oracle、选定负载的 native 对照以及一个经机会审计后实际实施的优化候选。短续接与长chunk共批仍是有边界的待验证设计，缺少等待期间物理可执行性的证据，暂不登记GPU实验。当前收益来自既有非排序 Full；吞吐提升仍较小，单次配对及背景未完全覆盖测量长尾的限制仍在，不能宣布总体“大幅提升 JCT 与吞吐”的目标已经完成。
+
+## 请求时延优势的分组证据
+
+2026-11-01补充离线核查：复现三臂相同18条测量workflow的2819个请求，
+并按真实工具/JOIN事件对同request ID逐项配对。Predictive请求TTFT
+均值/P95为0.990642/2.644043秒，native为1.468841/8.150745秒，
+Thunder为1.691813/5.558759秒；HTTP完成均值分别为5.148792、
+6.329209、5.917050秒。请求TTFT P50仍略慢于native，不宣称所有请求均受益。
+
+2606个工具后继的平均TTFT为Predictive/native/Thunder
+0.822836/1.356978/1.395708秒；75个JOIN后继为
+2.469961/3.449132/6.020184秒。119个invocation首次请求则为
+3.678846/2.565289/5.507915秒，保留相对native的首次准入退化。
+相对Thunder，约91.27%的平均HTTP差值位于首输出之前；这是均值
+恒等式分解，不是单组件因果贡献率。
+
+这些结果支持既有工作集连续性、工具感知保留与压力处理、事件空额/
+A→B准入、JOIN/EOS和原生恢复协同改善续接长尾。Full两秒与论文
+Thunder五秒控制也是尚未单独隔离的工程差异。工具预取、逐层handoff、
+普通execution-frontier restore及工作量决策排序均关闭，不能把改善
+归因于这些未启用机制。共同窗口Predictive总H2D约1.134TB，高于
+Thunder的1.055TB；因此相对Thunder也不能仅用“少传H2D”解释。
+
+完整分组、首次launch缓存几何及其时序限制见
+[请求时延归因核查](../../experiments/reports/remaining_original_projects_20261030/request_latency_attribution_20261101_r1/README.md)。
+这是同请求整体系统比较，没有新增GPU消融或改写原性能验收限制。

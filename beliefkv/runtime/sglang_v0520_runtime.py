@@ -1024,6 +1024,11 @@ class NativeAdmissionRuntime:
         paper_policy = os.environ.get("BELIEFKV_PAPER_BASELINE", "")
         self._paper_baseline = None
         self._agent_admission = None
+        materialization = os.environ.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off")
+        if materialization not in ("off", "pressure_v1"):
+            raise ValueError("subagent materialization must be off or pressure_v1")
+        self.subagent_materialization_enabled = materialization == "pressure_v1"
+        self._subagent_materialization = None
         self._full_prefix_migration = None
         agent_policy = os.environ.get("BELIEFKV_AGENT_ADMISSION", "off")
         if agent_policy not in (
@@ -1078,6 +1083,14 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("configurable control interval requires reference Full and 500..5000 ms")
         self.agent_control_interval_ms = int(control_interval)
+        service_timeout = os.environ.get("BELIEFKV_AGENT_READY_SERVICE_TIMEOUT_S", "0")
+        if service_timeout not in ("0", "1800") or (
+            service_timeout != "0" and (
+                agent_policy != "thunderagent_reference" or not self.agent_free_continuation_admission
+            )
+        ):
+            raise ValueError("ready service timeout requires Full continuation admission and 0 or 1800 s")
+        self.agent_ready_service_timeout_s = int(service_timeout)
         workflow_size = os.environ.get("BELIEFKV_WORKFLOW_SIZE_RESUME", "0")
         if workflow_size not in ("0", "1") or (
             workflow_size == "1" and (
@@ -1245,6 +1258,16 @@ class NativeAdmissionRuntime:
             getattr(self._agent_admission, "strategy", None) != "thunderagent_reference"
         ):
             raise ValueError("tool offload before admission requires reference agent eligibility")
+        if self.subagent_materialization_enabled:
+            if (
+                self.internal_comparison_mode != "full" or not self._custom_kv_management
+                or self.physical_disabled
+                or getattr(self._agent_admission, "strategy", None) != "thunderagent_reference"
+            ):
+                raise ValueError("subagent materialization requires Full reference agent admission")
+            from beliefkv.runtime.subagent_materialization import SubagentMaterialization
+
+            self._subagent_materialization = SubagentMaterialization(self)
         self.event_server = (
             RuntimeEventDatagramServer(
                 event_socket_path, self.on_events, timing=self._hotpath_timing,
@@ -1252,6 +1275,20 @@ class NativeAdmissionRuntime:
             if event_socket_path
             else None
         )
+        self._planning_advice = None
+        if advice_path := os.environ.get("BELIEFKV_PLANNING_ADVICE_FILE"):
+            from beliefkv.runtime.planning_advice import PlanningAdvicePublisher
+
+            try:
+                self._planning_advice = PlanningAdvicePublisher(
+                    advice_path,
+                    run_id=os.environ.get("BELIEFKV_PLANNING_ADVICE_RUN_ID", ""),
+                    model_path=model_path or "",
+                )
+            except (OSError, ValueError):
+                if self.event_server is not None:
+                    self.event_server.close()
+                raise
 
     @property
     def tool_wait_hint(self) -> NativeToolWaitHint | None:
@@ -1298,6 +1335,8 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if (advice := getattr(self, "_planning_advice", None)) is not None:
+            advice.close()
         if (pipeline := getattr(self, "_demand_prefill_pipeline", None)) is not None:
             pipeline.close()
         if self._full_prefix_migration is not None:
@@ -2881,6 +2920,8 @@ class NativeAdmissionRuntime:
         self, waiting_queue: Sequence[object] = (), *, now_ms: float | None = None,
     ) -> None:
         """Read diagnostics after launch; idle selection keeps the same cadence."""
+        if (advice := getattr(self, "_planning_advice", None)) is not None:
+            advice.capture(self, waiting_queue, now_ms=time.monotonic() * 1000.)
         if self._opportunity_writer is None:
             return
         if now_ms is None:
@@ -2931,6 +2972,7 @@ class NativeAdmissionRuntime:
                 "agent_free_continuation_admission": self.agent_free_continuation_admission,
                 "agent_free_dispatch_interval_ms": self.agent_free_dispatch_interval_ms,
                 "agent_control_interval_ms": self.agent_control_interval_ms,
+                "agent_ready_service_timeout_s": self.agent_ready_service_timeout_s,
                 "agent_residency_pause": self.agent_residency_pause,
                 "workflow_size_resume": self.workflow_size_resume,
                 "workflow_combination_admission": self.workflow_combination_admission,
@@ -2994,6 +3036,10 @@ class NativeAdmissionRuntime:
                 "background_prepare": self.enable_background_prepare,
                 "idle_host_mirror_recycle": self.idle_host_mirror_recycle,
                 "terminal_child_reclaim": self.enable_terminal_child_reclaim,
+                "subagent_materialization": (
+                    self._subagent_materialization.status()
+                    if self._subagent_materialization is not None else None
+                ),
                 "subagent_retention": (
                     self._subagent_retention.describe()
                     if self._subagent_retention is not None else None
@@ -7023,6 +7069,19 @@ class NativeAdmissionRuntime:
                 host_full_free_tokens=host_full_free_tokens,
                 **complete_check,
             )
+        if source == "tool_boundary":
+            key = self.context_sessions.get(context_id)
+            offload = self._predicted_tool_offload
+            if (
+                key is None or not self._live_tool_boundary_pair(key)
+                or not offload._eligible(key)
+            ):
+                return None
+            return self.capture_shadow_candidate(
+                self._native_cache, context_id=key.context_id, context_epoch=key.context_epoch,
+                include_non_actionable=True, host_full_free_tokens=host_full_free_tokens,
+                **complete_check,
+            )
         cache = self._native_cache
         key = self.context_sessions.get(context_id)
         if cache is not None and key is not None and self._critical_tool_donor(key):
@@ -7333,6 +7392,25 @@ class NativeAdmissionRuntime:
                 return True
         return False
 
+    def _live_tool_boundary_pair(self, key: PrefillCandidateKey) -> bool:
+        offload = self._predicted_tool_offload
+        pair = getattr(offload, "replacement", None)
+        boundary = getattr(self._agent_admission, "_tool_boundary_preemption", None)
+        if (
+            boundary is None or pair is None or pair.donor != key
+            or pair.consumer is None or offload.consumer != pair.consumer
+        ):
+            return False
+        request, consumer = pair.consumer
+        return bool(
+            boundary.donor_candidate(key) and offload._unprotected_wait(key)
+            and self.visible.get(consumer.request_id) == consumer
+            and self._unallocated_waiting_full_request(consumer, request)
+            and self._agent_admission._candidate(
+                consumer.request_id, consumer, include_first=True,
+            ) is not None
+        )
+
     def _live_parent_pressure_key(self, key: PrefillCandidateKey) -> bool:
         parent = self.graph.invocations.get(key.invocation_id)
         ticket = self._join_ticket
@@ -7354,8 +7432,8 @@ class NativeAdmissionRuntime:
                     )
                 )
                 and not self._terminal(key)
-                # Both long-wait paths validate this tool owner as nonterminal.
                 or parent.state is InvocationState.WAIT_TOOL and self._long_tool_wait(key)
+                or self._live_tool_boundary_pair(key)
             )
         )
 
@@ -11480,6 +11558,11 @@ class NativeAdmissionRuntime:
         This runs after the native slot test but before prefix match or running
         admission. A failed/expired step falls back to ordinary PrefillAdder.
         """
+        if (
+            self._subagent_materialization is not None
+            and self._subagent_materialization.defer_start(req)
+        ):
+            return True
         if self.physical_disabled:
             return False
         if (
@@ -11847,6 +11930,11 @@ class NativeAdmissionRuntime:
                     "issue_to_submit_ms": max(0., submitted - issued),
                 })
         self.counts["native_physical_completed"] += len(completed)
+        if (
+            self._subagent_materialization is not None
+            and getattr(commit, "status", None) == "completed"
+        ):
+            self._subagent_materialization.capacity_changed()
         return completed
 
     def register_visible_request(self, req: object) -> bool:
@@ -12432,6 +12520,10 @@ class NativeAdmissionRuntime:
     ) -> NativePrefillPlan:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             return paper.plan(native_order, running_batch=running_batch, adder=adder)
+        if self._subagent_materialization is not None:
+            self._subagent_materialization.prepare(
+                native_order, running_batch=running_batch, adder=adder,
+            )
         if self._agent_admission is not None:
             synchronize = getattr(self._agent_admission, "synchronize_residency", None)
             if synchronize is not None:
@@ -13195,6 +13287,10 @@ class NativeAdmissionRuntime:
         self, req: object, *, admitted: bool, result: str
     ) -> bool:
         """Report whether rejected admission released optional device locks."""
+        if admitted and self._subagent_materialization is not None:
+            self._subagent_materialization.admitted(req)
+        elif self._subagent_materialization is not None:
+            self._subagent_materialization.rejected(req, result)
         if admitted and self._agent_admission is not None:
             self._agent_admission.admitted(req)
         if admitted and self._full_prefix_migration is not None:

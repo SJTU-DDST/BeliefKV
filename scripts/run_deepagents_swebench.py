@@ -95,6 +95,17 @@ def parse_args() -> argparse.Namespace:
         choices=SUBAGENT_FANOUT_PROFILES,
         default="natural",
     )
+    parser.add_argument("--planning-advice-mode", choices=("off", "static", "hardware"), default="off")
+    parser.add_argument("--planning-advice-file", type=Path)
+    parser.add_argument("--planning-advice-run-id")
+    parser.add_argument("--planning-advice-model-path")
+    parser.add_argument(
+        "--delegation-concurrency-limit", type=int, default=0,
+        help=(
+            "Maximum simultaneous root task invocations per workflow; 0 disables. "
+            "Natural single-level profile only; holds a slot during child tool waits."
+        ),
+    )
     parser.add_argument("--child-work-budget-warning-calls", type=int, default=24)
     parser.add_argument("--child-work-budget-target-calls", type=int, default=32)
     parser.add_argument("--root-work-budget-warning-calls", type=int, default=0)
@@ -341,6 +352,11 @@ def main() -> int:
         early_tool_wait_shadow=args.early_tool_wait_shadow,
         tool_window_shadow_artifact=args.tool_window_shadow_artifact,
         subagent_fanout_profile=args.subagent_fanout_profile,
+        planning_advice_mode=args.planning_advice_mode,
+        planning_advice_file=args.planning_advice_file,
+        planning_advice_run_id=args.planning_advice_run_id,
+        planning_advice_model_path=args.planning_advice_model_path,
+        delegation_concurrency_limit=args.delegation_concurrency_limit,
         child_work_budget_warning_calls=args.child_work_budget_warning_calls,
         child_work_budget_target_calls=args.child_work_budget_target_calls,
         root_work_budget_warning_calls=args.root_work_budget_warning_calls,

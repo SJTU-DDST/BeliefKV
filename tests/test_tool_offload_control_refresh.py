@@ -232,13 +232,52 @@ def test_ineligible_donor_window_skips_native_consumer_inspection(
         runtime.context_sessions[hint.key.context_id] = replace(hint.key, session_generation=2)
     else:
         monkeypatch.setattr(runtime, "_agent_observed_blocked_budget_key", lambda key: False)
+    order = Mock(side_effect=AssertionError("no eligible donor needs no workflow prediction or ordering"))
+    monkeypatch.setattr(admission, "order_tool_replacement", order)
     inspect = Mock(side_effect=AssertionError("no eligible donor must not inspect a consumer prefix"))
     monkeypatch.setattr(runtime, "_read_request_reentry", inspect)
     assert not run(parts)
+    order.assert_not_called()
     inspect.assert_not_called()
     assert admission.counts["tool_event_replacement_no_eligible_donor"] == 1
     assert admission.counts["tool_event_replacement_donor_prefilter_checks"] == 1
     assert controller.cursor == controller.max_contexts
+    assert demand_runtime[4].component_data[0].value is not None
+    assert not admission.policy.programs["consumer"].active
+    assert not runtime.physical_ledger.pending_count
+
+
+def test_impossible_logical_pair_skips_both_donor_probe_and_workflow_order(demand_runtime, monkeypatch):
+    parts = pair(demand_runtime)
+    _runtime, admission, controller, _adder = parts
+    admission.policy.programs["consumer"].tokens = 100
+    order = Mock(side_effect=AssertionError("an impossible pair needs no workflow ordering"))
+    probe = Mock(side_effect=AssertionError("an impossible pair needs no donor eligibility probe"))
+    monkeypatch.setattr(admission, "order_tool_replacement", order)
+    monkeypatch.setattr(controller.replacement, "_first_candidate_donor", probe)
+    assert not run(parts)
+    order.assert_not_called()
+    probe.assert_not_called()
+    assert admission.counts["tool_event_replacement_logical_window_skips"] == 1
+    assert demand_runtime[4].component_data[0].value is not None
+    assert not admission.policy.programs["consumer"].active
+
+
+def test_tool_return_during_workflow_order_still_prevents_release(demand_runtime, monkeypatch):
+    parts = pair(demand_runtime)
+    runtime, admission, _controller, _adder = parts
+    ordered = []
+
+    def returned(keys):
+        ordered.extend(keys)
+        runtime.on_events((event(
+            10, Kind.TOOL_END, invocation_id="tool", attributes={"tool_run_id": "long"},
+        ),))
+        return keys
+
+    monkeypatch.setattr(admission, "order_tool_replacement", returned)
+    assert not run(parts)
+    assert ordered
     assert demand_runtime[4].component_data[0].value is not None
     assert not admission.policy.programs["consumer"].active
     assert not runtime.physical_ledger.pending_count

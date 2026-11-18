@@ -50,6 +50,9 @@ def _count(value):
 
 class WorkflowWorkOracleArtifact:
     def __init__(self, raw):
+        from beliefkv.policy.workflow_shortest_frontier import strict_remaining_work_enabled
+
+        self.strict_remaining_work = strict_remaining_work_enabled(raw)
         if (
             raw.get("kind") not in (
                 KIND, COST_KIND, COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
@@ -75,6 +78,8 @@ class WorkflowWorkOracleArtifact:
         self.continuous_combination = raw["kind"] in (
             CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
         )
+        if self.strict_remaining_work and not self.continuous_combination:
+            raise ValueError("strict remaining-work Oracle requires its continuous model-work provider")
         readout = "continuous" if self.continuous_combination else "three_bins"
         order = (
             "r5_combination_and_tool_band_pressure" if self.pressure_work_ranking
@@ -91,7 +96,7 @@ class WorkflowWorkOracleArtifact:
         self.continuous_reference = raw.get("combination_work_reference")
         if self.continuous_combination:
             from beliefkv.predictor.workflow_continuous_work import KIND as REFERENCE_KIND
-            from beliefkv.predictor.workflow_continuous_work import SERVING_KIND, remaining_work_weight
+            from beliefkv.predictor.workflow_continuous_work import SERVING_KIND, utility_reference_work
 
             reference = self.continuous_reference
             if (
@@ -111,7 +116,7 @@ class WorkflowWorkOracleArtifact:
                 )
             ):
                 raise ValueError("continuous work oracle requires its bound training reference")
-            remaining_work_weight(0., reference.get("reference_work"))
+            self.continuous_utility_reference = utility_reference_work(reference)
         elif any(name in raw for name in (
             "combination_work_reference", "combination_reference_source_model_sha256",
         )):
@@ -461,7 +466,7 @@ class WorkflowWorkOracle:
             prediction = ContinuousOracleWorkPrediction(
                 prediction.probabilities, prediction.bucket, prediction.revision,
                 prediction.updated_at, prediction.evidence, value, remaining, 0., 0., 0.,
-                remaining_work_weight(value, reference), reference,
+                remaining_work_weight(value, self.artifact.continuous_utility_reference), reference,
             )
         self._predictions[workflow] = prediction
 
@@ -605,8 +610,17 @@ class WorkflowWorkOracle:
             "kind": self.artifact.raw["kind"], "deployable": False,
             "future_trace_used_online": True, "scheduler_waits_for_inference": False,
             "rank": self.artifact.rank_kind,
-            "combination_only": self.combination_only,
+            "combination_only": self.combination_only and not self.artifact.raw.get(
+                "shortest_work_first_admission", False,
+            ),
+            "work_used_for_immediate_tool_pair_order": self.artifact.raw.get(
+                "shortest_work_first_admission", False,
+            ),
             "model_work_only": self.model_work_only,
+            **({
+                "strict_remaining_work_admission": True,
+                "ready_wait_changes_work_rank": False,
+            } if getattr(self.artifact, "strict_remaining_work", False) else {}),
             "pressure_work_order": (
                 TOOL_BAND_PRESSURE_ORDER if self.artifact.pressure_work_ranking else "reference"
             ),
@@ -615,6 +629,10 @@ class WorkflowWorkOracle:
                 self.artifact.continuous_reference["reference_work"]
                 if self.artifact.continuous_combination else None
             ),
+            **({
+                "continuous_admission_utility": self.artifact.continuous_reference["admission_utility"],
+            } if self.artifact.continuous_combination
+                and "admission_utility" in self.artifact.continuous_reference else {}),
             "work_definition": "0.01*necessary_input_tokens+output_tokens",
             "input_progress": "completion_only_like_learned_labels",
             "output_progress": "observed_native_output_every_128_tokens_and_completion",

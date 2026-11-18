@@ -44,6 +44,11 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.last_forced = set()
         self._capacity_snapshot = {}
         self.latest = {}
+        self._ready_service_guard = None
+        if getattr(runtime, "agent_ready_service_timeout_s", 0):
+            from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
+
+            self._ready_service_guard = ReadyServiceGuard(self)
         self._residency_pause = None
         if getattr(runtime, "agent_residency_pause", False):
             from beliefkv.runtime.reference_residency_pause import ReferenceResidencyPause
@@ -66,7 +71,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             from beliefkv.runtime.join_blocked_handoff import JoinBlockedHandoff
 
             self._join_handoff = JoinBlockedHandoff(self)
-        if self._join_handoff is not None or self._residency_pause is not None:
+        if (
+            self._join_handoff is not None or self._residency_pause is not None
+            or getattr(runtime, "subagent_materialization_enabled", False)
+        ):
             constructor = self.working_set_type
             self.working_set_type = lambda capacity: constructor(
                 capacity, resume_eligible=self._can_resume,
@@ -84,6 +92,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             raise ValueError("an agent cannot change workflow or context identity")
         super().registered(req, key)
         self.latest[key.invocation_id] = key
+        if (gate := getattr(self.runtime, "_subagent_materialization", None)) is not None:
+            gate.registered(req, key)
         if self._residency_pause is not None:
             self._residency_pause.registered(key)
         writer = getattr(self.runtime, "_opportunity_writer", None)
@@ -123,6 +133,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                 "marked_before": item.marked_for_pause,
                 "pending_before": item.pending, "acting_before": item.acting,
                 "queue_sequence_before": item.queue_sequence, "steps": item.steps,
+                "first_materialization_held": not self._materialization_allowed(key),
                 "application_ready": bool(
                     key is not None and self.requests.get(key.request_id, (None,))[0] == key
                     and self.runtime.visible.get(key.request_id) == key
@@ -157,9 +168,25 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         self.counts["admission_control_including_journal_wall_ns"] += time.perf_counter_ns() - wall
 
     def events(self, events):
-        if self._join_handoff is not None or self._siblings is not None or self._residency_pause is not None:
+        gate = getattr(self.runtime, "_subagent_materialization", None)
+        if (
+            self._join_handoff is not None or self._siblings is not None
+            or self._residency_pause is not None or self._ready_service_guard is not None
+            or gate is not None
+        ):
             events = tuple(events)
+        if self._ready_service_guard is not None:
+            self._ready_service_guard.events(events)
         super().events(events)
+        if gate is not None:
+            for event in events:
+                if event.kind is Kind.WORKFLOW_END:
+                    gate.workflow_ended(event.workflow_id)
+                elif event.kind in (Kind.SPAWN, Kind.CALL):
+                    key = self.latest.get(event.target_invocation_id)
+                    req = self._live_requests.get(key.request_id) if key is not None else None
+                    if req is not None:
+                        gate.registered(req, key)
         if self._residency_pause is not None:
             self._residency_pause.events(events)
         if self._join_handoff is not None and any(event.kind in (
@@ -185,12 +212,33 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                 self._siblings.retry()
 
     def _can_resume(self, item):
+        if not self._materialization_allowed(self.latest.get(item.identity)):
+            return False
         if self._join_handoff is not None and not self._join_handoff.can_resume(item):
             return False
         return (
             self._residency_pause is None or item.identity not in self._residency_pause.paused
             or self._residency_pause.ready(item)
         )
+
+    def _materialization_allowed(self, key):
+        gate = getattr(self.runtime, "_subagent_materialization", None)
+        return gate is None or gate.allows(key)
+
+    def tick(self, *, now=None):
+        now = time.monotonic() if now is None else now
+        if self._ready_service_guard is not None and self.policy is not None and now >= self.next_tick:
+            started = time.thread_time_ns()
+            self._ready_service_guard.begin(now)
+            self.counts["ready_service_guard_cpu_ns"] += time.thread_time_ns() - started
+        return super().tick(now=now)
+
+    def _timeout_force_resume_allowed(self, key):
+        if not self._materialization_allowed(key):
+            return False
+        if self._ready_service_guard is not None:
+            return self._ready_service_guard.allows_timeout(key)
+        return super()._timeout_force_resume_allowed(key)
 
     def full_kv_offloaded(self, key, freed, *, source):
         return self._residency_pause is not None and self._residency_pause.offloaded(
@@ -216,6 +264,11 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         grant_keys=None,
     ):
         # Extra grants can occur between the reference policy's periodic ticks.
+        if any(
+            not self._materialization_allowed(self.latest.get(item.identity))
+            for item in programs
+        ):
+            return False
         self._refresh_streaming_progress()
         remaining = self.policy.remaining_capacity()
         required = sum(item.tokens + self.policy.buffer_tokens for item in programs)
@@ -224,7 +277,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         writer = getattr(self.runtime, "_opportunity_writer", None)
         observe = getattr(self, "_observe_free_capacity_choice", None)
         choice = (
-            observe(programs, remaining, choice_keys, choice_sequence)
+            observe(programs, remaining, choice_keys, choice_sequence, grant_keys=grant_keys)
             if writer is not None and observe is not None else None
         )
         for item in programs:
@@ -307,6 +360,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         record = self.requests.get(key.request_id) if key is not None else None
         if (
             item is None or not item.pending or item.marked_for_pause
+            or not self._materialization_allowed(key)
             or key is None or key.root_workflow_id != join.workflow_id
             or record is None or record[0] != key
             or self.runtime.visible.get(key.request_id) != key
@@ -321,10 +375,16 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         return item
 
     def allows(self, key):
-        if self.policy is None or key is None:
+        if self.policy is None or key is None or not self._materialization_allowed(key):
             return False
         record = self.requests.get(key.request_id)
         item = self.policy.programs.get(key.invocation_id)
+        boundary = getattr(self, "_tool_boundary_preemption", None)
+        if (
+            boundary is not None and boundary.bounded and boundary.prepared_handover is not None
+            and boundary.holds_request(key)
+        ):
+            return False
         return bool(record is not None and record[0] == key and item is not None and item.active)
 
     def admitted(self, req):
@@ -338,6 +398,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
     def order_ready(self, ordered, keys, *, now, protected_head=False):
         if self._siblings is not None:
             self._siblings.order(ordered, keys, now=now)
+        if self._ready_service_guard is not None:
+            self._ready_service_guard.order(ordered, keys, protected_head=protected_head)
 
     def prepare_prefill(self, *, running_batch, adder):
         if self._siblings is not None:
@@ -350,6 +412,10 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             )
 
     def native_service(self, batch, completed_ids):
+        if (gate := getattr(self.runtime, "_subagent_materialization", None)) is not None:
+            gate.completed(completed_ids)
+        if self._ready_service_guard is not None:
+            self._ready_service_guard.serviced(batch, completed_ids)
         if self._residency_pause is not None:
             self._residency_pause.serviced(batch)
         if self._join_handoff is not None:
@@ -485,6 +551,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         return item is None or item.pending or self.latest.get(key.invocation_id) != key
 
     def requeued(self, requests, *, is_retracted):
+        requests = tuple(requests)
         super().requeued(requests, is_retracted=is_retracted)
         for req in requests:
             record = self.requests.get(req.rid)
@@ -492,10 +559,16 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
                 self.latest[record[0].invocation_id] = record[0]
                 if self._siblings is not None:
                     self._siblings.forget(record[0].invocation_id)
+        if (gate := getattr(self.runtime, "_subagent_materialization", None)) is not None:
+            gate.requeued(requests)
 
     def forget(self, invocation, *, now=None):
+        if (gate := getattr(self.runtime, "_subagent_materialization", None)) is not None:
+            gate.forget(invocation)
         super().forget(invocation)
         self.latest.pop(invocation, None)
+        if self._ready_service_guard is not None:
+            self._ready_service_guard.forget(invocation)
         if self._residency_pause is not None:
             self._residency_pause.forget(invocation)
         if self._siblings is not None:
@@ -508,6 +581,9 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         return {
             **super().status(),
             "strategy": self.strategy,
+            "ready_service_guard": (
+                self._ready_service_guard.status() if self._ready_service_guard is not None else None
+            ),
             "residency_pause": self._residency_pause is not None,
             "residency_pause_waits_for_actual_successor": True,
             "residency_pause_does_not_revoke_selected_restore": True,
@@ -564,6 +640,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
         }
 
     def close(self):
+        if (gate := getattr(self.runtime, "_subagent_materialization", None)) is not None:
+            gate.close()
         super().close()
         self.latest.clear()
         if self._residency_pause is not None:

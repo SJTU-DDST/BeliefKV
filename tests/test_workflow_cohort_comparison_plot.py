@@ -1,9 +1,10 @@
 from copy import deepcopy
+import json
 
 import pytest
 
 from scripts.plot_causal_decode_diagnostics import weighted_cdf
-from scripts.plot_workflow_cohort_comparison import validate_reports
+from scripts.plot_workflow_cohort_comparison import render, validate_reports
 
 
 def report():
@@ -34,6 +35,21 @@ def test_partial_last_bin_has_its_actual_time_weight():
     ])
     assert x == [10., 20.]
     assert y == [.6, 1.]
+
+
+def test_materialization_campaign_labels_render_all_four_completed_arms(tmp_path):
+    names = (
+        "Full control", "Full + materialization", "ThunderAgent acting-decay", "Native SGLang",
+    )
+    output = tmp_path / "figures"
+    render({name: report() for name in names}, [], output)
+    assert (output / "complete_JCT_and_decode.png").read_bytes().startswith(b"\x89PNG")
+    assert (output / "complete_JCT_and_decode.pdf").read_bytes().startswith(b"%PDF")
+    provenance = json.loads((output / "provenance.json").read_bytes())
+    assert set(provenance["colors"]) == set(names)
+    assert provenance["complete_fixed_cohort_JCT"]
+    assert provenance["GPU_action"] is False
+    assert len((output / "throughput_bins.csv").read_text().splitlines()) == 9
 
 
 @pytest.mark.parametrize("change", ("unfinished", "tail", "membership", "gap", "tokens", "window"))

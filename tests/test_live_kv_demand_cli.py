@@ -94,6 +94,27 @@ def test_replay_capacity_rejects_a_mismatched_registration(tmp_path):
         }, tmp_path)
 
 
+def test_replay_capacity_accepts_the_unmodified_registered_source_capacity(tmp_path):
+    (tmp_path / "server").mkdir()
+    capacity = {"device_full_tokens": 805198, "host_full_tokens": 2034506}
+    (tmp_path / "server/native_capacity_census.json").write_text(json.dumps({"capacity": capacity}))
+    ceiling, evidence = audit.replay_capacity({"source_capacity": capacity}, tmp_path)
+    assert ceiling == 2839704
+    assert evidence["capacity"] == capacity
+    assert evidence["matches_registered_expected_capacity"] is True
+
+
+def test_an_explicit_expected_capacity_cannot_fall_back_to_source_capacity(tmp_path):
+    (tmp_path / "server").mkdir()
+    actual = {"device_full_tokens": 2, "host_full_tokens": 4}
+    (tmp_path / "server/native_capacity_census.json").write_text(json.dumps({"capacity": actual}))
+    with pytest.raises(ValueError, match="differs from its registered capacity"):
+        audit.replay_capacity({
+            "source_capacity": actual,
+            "expected_replay_capacity": {"device_full_tokens": 2, "host_full_tokens": 8},
+        }, tmp_path)
+
+
 @pytest.mark.parametrize("device,host", [(0, 4), (True, 4), (2, -1), (2, 4.0)])
 def test_replay_capacity_rejects_invalid_token_counts(tmp_path, device, host):
     (tmp_path / "server").mkdir()

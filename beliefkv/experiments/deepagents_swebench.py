@@ -563,6 +563,27 @@ def prepare_workspace(
     }
 
 
+def _untracked_workspace_patch(workspace: Path, git_prefix: list[str]) -> tuple[str, list[str]]:
+    names = command_output(
+        [*git_prefix, "ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=workspace, preserve_whitespace=True,
+    )
+    paths = [name for name in names.split("\0") if name]
+    patches = []
+    for name in paths:
+        result = subprocess.run(
+            [
+                "git", "diff", "--no-index", "--no-ext-diff", "--no-textconv",
+                "--binary", "--", "/dev/null", name,
+            ],
+            cwd=workspace, capture_output=True, text=True, timeout=180.0,
+        )
+        if result.returncode not in (0, 1):
+            raise RuntimeError(f"untracked artifact diff failed for {name!r}: {result.stderr.strip()}")
+        patches.append(result.stdout)
+    return "".join(patches), paths
+
+
 def collect_workspace_artifacts(
     workspace: Path,
     *,
@@ -574,8 +595,8 @@ def collect_workspace_artifacts(
     source_repo = source_repo.expanduser().resolve()
 
     commands = (
-        ["git", "diff", "--binary", base_commit, "--"],
-        ["git", "status", "--porcelain"],
+        ["git", "--no-optional-locks", "diff", "--binary", base_commit, "--"],
+        ["git", "--no-optional-locks", "status", "--porcelain"],
     )
     try:
         head = command_output(["git", "rev-parse", "HEAD"], cwd=workspace)
@@ -584,8 +605,14 @@ def collect_workspace_artifacts(
                 f"workspace HEAD changed: expected {base_commit}, found {head}"
             )
         patch = command_output(commands[0], cwd=workspace, preserve_whitespace=True)
+        untracked_patch, untracked_paths = _untracked_workspace_patch(
+            workspace, ["git", "--no-optional-locks"],
+        )
         status = command_output(commands[1], cwd=workspace)
-        return patch, status, {"mode": "workspace_git", "errors": []}
+        return patch + untracked_patch, status, {
+            "mode": "workspace_git", "errors": [],
+            "untracked_files_in_patch": untracked_paths,
+        }
     except (OSError, RuntimeError, subprocess.SubprocessError) as primary_error:
         errors = [f"workspace_git: {type(primary_error).__name__}: {primary_error}"]
 
@@ -633,6 +660,7 @@ def collect_workspace_artifacts(
                 [*prefix, "diff", "--binary", base_commit, "--"], cwd=workspace,
                 preserve_whitespace=True,
             )
+            untracked_patch, untracked_paths = _untracked_workspace_patch(workspace, prefix)
             tracked = command_output(
                 [*prefix, "diff", "--name-status", base_commit, "--"], cwd=workspace
             )
@@ -643,9 +671,10 @@ def collect_workspace_artifacts(
             status = "\n".join(
                 item for item in (tracked, untracked) if item
             )
-            return patch, status, {
+            return patch + untracked_patch, status, {
                 "mode": "temporary_git_metadata",
                 "errors": errors,
+                "untracked_files_in_patch": untracked_paths,
             }
     except (OSError, RuntimeError, subprocess.SubprocessError) as recovery_error:
         errors.append(
@@ -1823,6 +1852,11 @@ class DeepAgentsExperimentConfig:
     early_tool_wait_shadow: bool = False
     tool_window_shadow_artifact: Path | None = None
     subagent_fanout_profile: str = "natural"
+    planning_advice_mode: str = "off"
+    planning_advice_file: Path | None = None
+    planning_advice_run_id: str | None = None
+    planning_advice_model_path: str | None = None
+    delegation_concurrency_limit: int = 0
     child_work_budget_warning_calls: int = 24
     child_work_budget_target_calls: int = 32
     root_work_budget_warning_calls: int = 0
@@ -1847,6 +1881,26 @@ class DeepAgentsExperimentConfig:
     )
 
     def __post_init__(self) -> None:
+        if type(self.delegation_concurrency_limit) is not int or self.delegation_concurrency_limit < 0:
+            raise ValueError("delegation concurrency limit must be a nonnegative integer")
+        if self.delegation_concurrency_limit and (
+            self.mode != "autonomous" or self.subagent_fanout_profile != "natural"
+        ):
+            raise ValueError("delegation concurrency control requires autonomous single-level natural planning")
+        if self.planning_advice_mode not in ("off", "static", "hardware"):
+            raise ValueError("unsupported planning advice mode")
+        if self.planning_advice_mode != "off" and self.mode != "autonomous":
+            raise ValueError("planning advice requires autonomous natural execution")
+        if self.planning_advice_mode == "hardware":
+            if not (
+                self.planning_advice_file and self.planning_advice_run_id
+                and self.planning_advice_model_path
+            ):
+                raise ValueError("hardware planning advice requires snapshot/run/model binding")
+        elif any((
+            self.planning_advice_file, self.planning_advice_run_id, self.planning_advice_model_path,
+        )):
+            raise ValueError("snapshot binding is only valid with hardware planning advice")
         if self.native_policy_baseline and self.control_socket is not None:
             raise ValueError("native policy baseline must not deliver BeliefKV control events")
         if self.native_radix_sessions and self.control_socket is None and not self.native_policy_baseline:
@@ -3928,6 +3982,16 @@ def _build_autonomous_agent(
             profile=workload.repository_tool_profile,
         ),
     ]
+    if config.planning_advice_mode != "off":
+        from beliefkv.experiments.planning_advice_middleware import middleware_for_config
+
+        middleware.insert(0, middleware_for_config(config, audit=backend.audit))
+    if config.delegation_concurrency_limit:
+        from beliefkv.experiments.delegation_execution import DelegationExecutionMiddleware
+
+        middleware.insert(0, DelegationExecutionMiddleware(
+            limit=config.delegation_concurrency_limit, audit=backend.audit,
+        ))
     dynamic = config.subagent_fanout_profile in DYNAMIC_NESTED_IN_GRAPH_PROFILES
     root_budget_enabled = delegation_enabled and config.root_work_budget_warning_calls > 0
     if root_budget_enabled:
@@ -5771,6 +5835,19 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "workload_manifest_sha256": bundle.manifest_sha256,
         "instance_ids": [item.instance_id for item in workloads],
         "dynamic_subagent_policy": config.subagent_fanout_profile,
+        "planning_advice": {
+            "mode": config.planning_advice_mode,
+            "file": str(config.planning_advice_file) if config.planning_advice_file else None,
+            "run_id": config.planning_advice_run_id,
+            "model_path": config.planning_advice_model_path,
+        },
+        "delegation_execution": {
+            "enabled": config.delegation_concurrency_limit > 0,
+            "concurrency_limit": config.delegation_concurrency_limit,
+            "scope": "root_task_invocation_per_workflow",
+            "planner_visible": False,
+            "holds_during_tool_wait": config.delegation_concurrency_limit > 0,
+        },
         "delegation_contract": delegation_contract(config.subagent_fanout_profile),
         "native_session_terminal_close": {
             "mode": (
@@ -5968,6 +6045,8 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             for item in results
         ),
         "subagent_fanout_profile": config.subagent_fanout_profile,
+        "planning_advice_mode": config.planning_advice_mode,
+        "delegation_concurrency_limit": config.delegation_concurrency_limit,
         "delegation_contract": delegation_contract(config.subagent_fanout_profile),
         "delegation_round_count": sum(
             int(item.get("trace", {}).get("delegation_round_count", 0)) for item in results

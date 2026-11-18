@@ -70,7 +70,8 @@ def replay_capacity(registration, arm):
     path = arm / "server/native_capacity_census.json"
     digest = sha256_file(path)
     capacity = json.loads(path.read_bytes())["capacity"]
-    if capacity != registration.get("expected_replay_capacity"):
+    expected = registration.get("expected_replay_capacity", registration.get("source_capacity"))
+    if capacity != expected:
         raise ValueError("observed replay capacity differs from its registered capacity")
     device, host = (capacity.get(name) for name in ("device_full_tokens", "host_full_tokens"))
     if type(device) is not int or device <= 0 or type(host) is not int or host < 0:

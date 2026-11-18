@@ -9,7 +9,9 @@ from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as comparison
 
 
-@pytest.mark.parametrize("declared,expected", ((None, 1800.), (3600., 3600.)))
+@pytest.mark.parametrize("declared,expected", (
+    (None, 1800.), (3600., 3600.), (14400., 14400.),
+))
 def test_replay_transport_timeout_preserves_old_plans_and_allows_author_force_resume(
     tmp_path, declared, expected,
 ):
@@ -22,13 +24,38 @@ def test_replay_transport_timeout_preserves_old_plans_and_allows_author_force_re
     assert "--stream-response-metrics" not in command
 
 
-@pytest.mark.parametrize("value", (True, 0., -1., float("inf"), float("nan"), 3601.))
+@pytest.mark.parametrize("value", (True, 0., -1., float("inf"), float("nan"), 14401.))
 def test_replay_transport_timeout_requires_a_bounded_finite_declaration(tmp_path, value):
     with pytest.raises(ValueError, match="request timeout"):
         comparison.replay_command(
             {"source_arm": "/source", "port": 18554, "request_timeout_s": value},
             tmp_path, None,
         )
+
+
+@pytest.mark.parametrize("declared", (None, "14400", "nan", "14401"))
+def test_registration_timeout_is_checked_before_registration_work(monkeypatch, declared):
+    arguments = [
+        "run_causal_comparison.py", *(
+            part for name in (
+                "reference", "source-arm", "gpu-smoke", "sampling-calibration", "cpu-report",
+                "cpu-sources", "engine", "engine-report", "engine-sources", "registration",
+                "run-root",
+            ) for part in ("--" + name, "/unused")
+        ),
+    ]
+    if declared is not None:
+        arguments.extend(("--request-timeout-s", declared))
+    observed = []
+    monkeypatch.setattr(comparison.sys, "argv", arguments)
+    monkeypatch.setattr(comparison, "register", lambda args: observed.append(args.request_timeout_s))
+    if declared in ("nan", "14401"):
+        with pytest.raises(ValueError, match="request timeout"):
+            comparison.main()
+        assert observed == []
+    else:
+        comparison.main()
+        assert observed == [3600. if declared is None else 14400.]
 
 
 @pytest.mark.parametrize("root_count", (16, 24, 36))
@@ -1456,7 +1483,7 @@ def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process
     None, "driver", "changed_work", "capacity", "no_tool_prefetch",
     "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown", "capture_baseline",
     "orthogonal_controls", "telemetry_drain", "busy_start", "busy_between_arms",
-    "startup_contention",
+    "startup_contention", "host_resize_200", "host_resize_400", "host_resize_mismatch",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
@@ -1466,7 +1493,14 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     captured_reference = failure == "capture_baseline"
     busy_start, busy_between = failure == "busy_start", failure == "busy_between_arms"
     startup_contention = failure == "startup_contention"
+    host_resize_mismatch = failure == "host_resize_mismatch"
+    host_resize = (
+        200 if failure in ("host_resize_200", "host_resize_mismatch")
+        else 400 if failure == "host_resize_400" else None
+    )
     if busy_start or busy_between or startup_contention:
+        failure = None
+    if host_resize and not host_resize_mismatch:
         failure = None
     order = (
         ["no_tool_prefetch"] if failure in (
@@ -1497,6 +1531,17 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         "token_source_sha256": "tokens", "workflow_ids": ["w"],
         "quality_exclusions": [], "scope": "test",
     }
+    if host_resize:
+        plan["reference_environment"] = {
+            **plan["reference_environment"],
+            "MODEL_CACHE_LAYOUT": "full_only",
+            "HOST_SPLIT": "auto",
+            "HICACHE_SIZE_GB": str(host_resize),
+            "HOST_NUMA_MEMORY_POLICY": "interleave",
+            "HOST_NUMA_MEMORY_NODES": "0,1",
+            "HOST_NUMA_PLACEMENT_CHECK": "diagnostic",
+        }
+        plan["source_server_parameters"]["hicache_size"] = 400 if host_resize == 200 else 200
     if failure == "source_slowdown":
         plan.update(
             maximum_replay_slowdown=.05,
@@ -1591,6 +1636,7 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             return NS(is_success=True)
         return NS(json=lambda: {
             **plan["source_server_parameters"],
+            **({"hicache_size": host_resize} if host_resize and not host_resize_mismatch else {}),
             "enable_beliefkv_admission": current[0] != "native_matched",
             "enable_custom_logit_processor": True, "enable_session_radix_cache": True,
         })
@@ -1705,6 +1751,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             check = json.loads((run / "native_matched/source_replay_calibration.json").read_bytes())
             assert check["accepted"] is False
             assert "slowdown tolerance" in state["error"]
+        elif host_resize_mismatch:
+            assert not any(row[0] == "driver" for row in launched)
+            assert not state["completed_arms"]
+            assert "actual server parameters differ" in state["error"]
 
 
 @pytest.mark.parametrize("sequence,expected_sleeps", (

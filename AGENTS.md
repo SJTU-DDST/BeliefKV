@@ -1,5 +1,3262 @@
 # Experiment Invariants
 
+- 2026-11-15 CPU prefill chunk/query-tile reference screen; fullgoalACTIVE.
+  NEW sourcecausalquerytilework vsmergedinput,NOTchunkparameter/continuous
+  retilingmodel/GAACnumeric/streaming rerun. All10380ranges/14498chunks/
+  12541662queries kept,1262multi/396measuredmulti;2incomplete/233queries
+  unknown. Fixedsource-shapedM128/64,N128,GQA8 BOTHsides,NOTactualallbatch
+  tileselection. Fullreferenceweightedreduction.01292/.00750%;multi
+  .01697/.00982%;measuredmulti.01782/.01002%. M128multi930equal/229fewer/
+  103more;M64939/226/97. Alignedinternalboundaries=>samequerytileendpoints
+  andsamecausalrefs;allnegative/source_absent/other preserved.
+  Independentperiodicceil-sum+ORIGINALf89BlockMN/tile_size C++standardCPU
+  execution:20760rows/41520integercomparisons exact;4722203scalarcalls
+  NOTmodel/GPUtests. 3Gitblob/officialtreeidentitychecked. Tuple/divmod/
+  CUTLASS_DEVICE CPUstandins ONLYintegerboundary,NOTCUDA/CUTLASSkernel/
+  allocator/attentionnumerics. main1.317/review1.125sOFFLINE(CPUcompile
+  .442/direct.0094),nofailure/allownedterminal.
+  DoNOTclaimNchunks=>NtimesnativeKVtraffic. TheseareLOGICALrefs/head/layer,
+  NOTHBMbytes/DRAMcachehit/timing/JCTbounds. TinyrefdifferenceNOTproof
+  allchunkmerginghasnogain;L2/weights/efficiencyunmeasured. DoNOTuseit
+  torefuteoldHoststreamingchunkreloadorcompressedreconstruction costs.
+  Noordinarychunk/KVmajor/cluster/LeanSparserolloutoroldtoyexpansion.
+  NoGPUquery/use/CUDAinit/devicecompile/module/Torch/native/model/rawaudit/
+  events/journal/profile/token/serving/queue/waiter/e926qualificationchange.
+  FullgoalACTIVE/no newmaininnovation/performanceacceptance. See
+  docs/research/prefill_chunk_tile_references_cpu_20261115_zh.md.
+- 2026-11-15 CPU cluster SplitKV-combine screen; goalACTIVE/noGPU.
+  NEW exactcombine exposure+directClusterFusion prior,NOToldKVdecode
+  sharing/DSMfixture/resource/137 rerun. f89sixGitblobs:ClusterMqueryaxis
+  gate !Split/!PagedKVNonTMA/!Varlen;globalpartial/LSE+PDLcombinealready.
+  DoNOTrelaxgateasbug or claim historynoKVreread fromGQAflag.
+  Primary2508.18850v1 realrawhref xinhao-luo/ClusterFusion; official
+  commit8755446cb495a09e8bbaaf62fdda333c82ee7ade/2026-08-08/tree50983950.
+  Actual8sourceblobspagedbatchindptr+DSMattentionreduce;FP16/H4096/HQ32
+  NOTcurrentBF16/H2048/HKV4qualification,NOTall2025paperfeatureproof.
+  Wrong2602.01150/guessedrepo rejected;initialwebderivedhrefmissedhyphen
+  assertionstoppedbeforeAPI/stats,source+planarchive/correctrawhrefonly.
+  Reuseall42922indexkernels/41664graph/48oldwidth9graphs,NO rawrescan.
+  48combine/graph mean192.944/183.085us;meanratio.8874/.8855%span;
+  geometricalexclusive192.828/158.202us(.8869/.7652%),NOTcriticalpath/
+  removabletime/GPUbusy/JCTbound/fullpartialtraffic/wholefusionlimit.
+  GraphinternalnodesNOT48Pythonlaunchsavings. SourcePDLNOTproofallold
+  overlapmechanism/build. Allotherfamilieskept;independentSQL+signed
+  endpointall48/76GitTreeobjects/14GitBlobbindings PASS,max5.46e-12us.
+  main.133/review.226sOFFLINE/fetchseparate/allownedterminal.
+  Stopgenericclusterreduceasmain;noport/flag/tile/toy expansion fromthis
+  alone. NeedNEWmechanism+mainexposure+netcost; e926etcunchanged.
+  NoGPUquery/use/CUDAinit/module/compiler/Torch/native/model/rawprofile/
+  audit/events/journal/token/serving/queue/waiter. GoalACTIVE/no newmain
+  innovation/performanceacceptance. See
+  docs/research/attention_cluster_reduce_cpu_20261115_zh.md.
+- 2026-11-15 CPU tool-completion boundary narrows prior positive guard;
+  fullgoalACTIVE/noGPU. NEW completion-vs-token execution mapping,NOT
+  marker/model/old137rerun. All119690rawD/10380terminalkept;9087/9899tool
+  completions stilloriginalopen atlaunch. CPUprogresslag(9580beforelen-2)
+  refutesinitialmostlydropfear;NOTGPUproducerproof. Existing56002guard
+  accepts only5080withterminaltarget,3314/30851closed. Five434Gitfiles/
+  sixASTmethods:wholemodel->logits->sample/copydone->reqloop->stream;
+  overlapcanlaunchbeforepriorCPUresult,NOuniversalCPUbarrierclaim.
+  NEWpreregisteredterminal-onlyadvance1ms envelope,oldselectorunchanged:
+  closedaccepted30851 free2996benefit/27855tie;originalR+1ms16benefit/
+  30580harm/255tie;allnonterminalothers+1msallharm. TheseareDECLARED
+  endpointvectors motivatedbyrejoin,NOTCUDAcost/actualschedulerbounds.
+  Oldalltarget G/Hmathvalid butrequestadvancepremiseNOTautomaticfrom
+  tokenlead. 2996finitecasebudgetmedians.25/.0909;keep27855nogainexplicit,
+  no arbitrarydelaypermission/caseresultsum/asrealperformance.
+  Independentprefix/sourceSQLfull/allstateexistingstandardCPU C++ replay
+  21924states/43848vectors/175392probes/577928WFterms,maxerror2.68e-7ms.
+  InitialASTwrong self.stream_output spellingarchived;actualqualified
+  self.output_streamer.stream_output onlyselectorfix/noenginefailure.
+  main6.31/review5.78/envelope3.84/directreview9.65sOFFLINE(allterminal).
+  Directbinary18.61MB losslessgzip.754MB withdecompressedSHAverified.
+  DoNOTimplement genericone-steppriority/phase-latch/coroutine/expert
+  readiness or expandoldtoy frompriorG/H;needsNEW fullrequestlead or
+  crossstepheadstartsurvival/realredundancy mechanism. NoGPUquery/use/
+  CUDAinit/devicecompile/Torch/native/model/rawaudit/events/journal/
+  profile/tokencorpus/serving/queue/waiter/e926qualificationchange.
+  GoalACTIVE/no newmaininnovation/performanceacceptance. See
+  docs/research/tool_completion_boundary_cpu_20261115_zh.md.
+- 2026-11-15 CPU publication-causal tool-frontier guard; fullgoalACTIVE/noGPU.
+  NEW plan-frozen G/H guard vs archived1ms advance/1ms delay, NOT actual
+  scheduler/JCT. Original111784cleanmixed kept; solepending request/no
+  tools/liveinvocations exactly declared serialALLJOIN chain/knownroot,
+  unsupportedprotocolreject. GdistinctcreditedWF/noRinWF, HdistinctRWF;
+  acceptG>H. strict56002accept=30851closed(allbenefit)/25151censoredUNKNOWN.
+  9307closed decisionstates;weaklegacy31250closed alsoallbenefit, soNO
+  strictaccuracywin/general100%claim. G/Hmedian1.75/archivedbudget2ONLY
+  conditional;nosum interventions/extrapolate arbitrarydelay/perfclaim.
+  Independentprefix reconstruction/all111784sourceSQL+marker walk/
+  hashboundpreviousC++allstateb1/newdirectsingle-requestfullDAG:6237strict
+  closedridsallpropagate1ms,credit/aggregate/priceboundviolations0.
+  PublicationtimeNOTserverapplied;result applied_by_last_launch islocalFSM
+  only. Retained42268causalevents frombounded58.6MBsource,newcompactgzip,
+  NOoldrawaudit/journal/profile/token rescan. main12.97/review18.38sOFFLINE;
+  loop25/56.6usP50/P99excludesapply/SQL/I/O NOTonlineguarantee.
+  NewprimaryDecouplingReadiness2609.10964v1 + retainedTAO/Sutradhara
+  confirmordinarypriority/tool/cache/admission/releasecontrolalreadyprior.
+  Keeponlyconditionalworkflow-progress-guidedinference-internaljoin;
+  actualfullrequestadvance/subgroupGPUcost/numerics/throughput/JCTmissing.
+  Allownedterminal/noGPUquery/use/Torch/native/model/devicecompiler/
+  serving/queue/waiterchange/e926qualificationchange. NOnewmaininnovation/
+  performanceacceptance. See
+  docs/research/tool_frontier_guard_cpu_20261115_zh.md.
+- 2026-11-15 CPU tool-emission workflow-delay envelope; fullgoalACTIVE/noGPU.
+  NEW full-DAG budget for frozen phase groups, NOT actual scheduler/JCT sim.
+  All111784cleanmixed kept:58176allmembersclosed,53608touch11censored
+  unknownNOTzero. Source59graphs/47415nodes/9267requests unchanged.
+  17989distinct member/phase/gain states, allantichain; a=1ms no clipping,
+  original lags/tool durations fixed, uniform complement delayb.
+  Per-WFmax countsfinalonce. Stateequal b=a:11576benefit/4819harm/1594tie;
+  batchweighted36938/15781/5457. FinitebudgetP501.4both/P903.333or3.5/
+  P999; noTargetGain2states/7batches explicit. Min.07143, max88988.6 reflects
+  observedslack ONLY, NOT real89spermission/mean/JCTgain. DoNOT compare to
+  old.118 as12x: differentpopulation/targets/windows. Eachcase isolated,
+  no queue/resource/admission/arrival recompute or sumasdeltapolicy.
+  FutureDAG/slack evaluationonly; cue remains launch-visiblemarkers.
+  Independent FSM/sourceSQL/reverse descendant+deadline and standardC++17
+  fullforward verify17989states/237041WFterms/71956aggregateprobes,
+  maxerror2.09e-7ms. CPUcompilerONLY/stdlibs/NO CUDA/Torch/devicecompile;
+  main18.246/review11.468s inclcompile.750/direct2.679 OFFLINE/allterminal.
+  163.43MB signatures losslesslygzip7.79MB withroundtripSHA; unchanged
+  reviewer expects gzip -dk first, archive_manifest explains.
+  Keep conditional operatorjoin/EOSpublication question, NOTnewmain/perf.
+  No GPUquery/use/model/native/rawaudit/journal/profile/queue/waiter/
+  serving/old137 changes; e926 etc qualifications unchanged.
+  See docs/research/tool_emission_dag_budget_cpu_20261115_zh.md.
+- 2026-11-15 CPU tool-emission group census; fullgoalACTIVE/noGPU.
+  NEW actual-decode launch prefix grouping, NOT old marker/model rerun/
+  lastchild extra-forward. Original116b telemetry bytes same; onlymarkers
+  <output_before decide lastopen>lastclose. No futureparser/length/tooltime/
+  RETURN in cue; length ONLY unknown-rangeguard. Same83/Host400/mean70
+  SQLite read-only all119690rawD/1310652members incl60outsidecompact.
+  Compact119630D:111784cleanmixed,6828allcue,818none,200unknowncue;
+  cue736681/noncue542006/internal31259/unknown400. MixedtargetP506/P9011,
+  logicalctxfractionP50.6092065/mean.5956175, NOT cheap1-child lane/HBM/time.
+  Allraw9898uniquecuedrequests. Retrospective54negativecueMEMBERS not
+  independentaccuracy. complete<=launch residue0 doesNOTdeny oldpostreceipt
+  observation rows/alreadylaunchedpipeline. Missing6censored kept.
+  Independent forward-prefix FSM/directSQL checks all rows/aggregates/
+  quantiles/sourcesPASS; main3.707/review5.218sOFFLINE plusseparatefetch.
+  TAO2610.37230v1/Sutradhara2601.12967v3 wholeprimary saved; ordinarytool
+  awareness/priority/streamdispatch NOTnew. Keep conditional internaljoin/
+  independentEOSpublication question, NOTnewmain/perf acceptance. Cannot
+  apply old1-2target GPUratios, subtract2510.85sCPUworker, or inferphysical
+  readiness elsewhere. No predictor/extra-forward/parser/serving change,
+  noGPUquery/use/Torch/native/model/compiler/rawaudit/journal/profile/137/
+  queue/waiter; allownedterminal/e926etcunchanged.
+  See docs/research/tool_emission_group_cpu_20261115_zh.md.
+- 2026-11-15 CPU dense-decode conditional byte-reference audit; fullgoalACTIVE.
+  NEW exact-prefix-union+minimumexpert reference, NOT old logical3.459TB/s
+  ratio or HBMcounter claim. Two historicalwidth9/24graphs each, sameinputs;
+  originalf865a705 payload Gitbytes match recorded27247aa7SHA. Current
+  scriptchanged, DO NOT use it as historicalsource. Nineinitialprompts
+  444102tokens -> maximalcrossnamespaceprefixunion441458, KV43.397087232GB;
+  only8distinctBF16expert/layer3.623878656GB (NOTactualwidth9routes).
+  Declared256MiBonchip allowance/nominalH200NVL4.8TB/s reference9.7401105ms;
+  KVonly8.9851358ms. Scenario NOT queriedcache/counter/actualclock/universal
+  lowerbound or speedup/JCT ceiling. Originalgraphspanmean21.7429/20.6780ms,
+  attnunion12.6207/12.6261ms;44.80/47.11% and~71.2% ONLYreference ratios,
+  NOT utilization/idle/removabletime. Maximal sharing grants no namespace
+  permission; exclude nonprefixalias/compression/growth/othertraffic.
+  Reuse compactSQLite all41664graphkernels/48launch no rawprofiles/audit/
+  journal rescan. Independent all-priorLCP/byteformula/SQLendpointreview PASS.
+  main.330/review.264sOFFLINE/allownedterminal/noGPUquery/use/Torch/native/
+  model/compiler/serving/queue/waiter/old137. No codec/tile/partition rollout
+  from this reference; e926/P-D/deferredLeanSparse unchanged/no maininnovation
+  or performanceacceptance. See docs/research/decode_byte_floor_cpu_20261115_zh.md.
+- 2026-11-15 CPU cross-forward MoE dispatch-layout reuse screen;
+  fullgoalACTIVE/noGPU. NEW temporal mapping census, NOT old within-up/down
+  sharing/FA3plan/l2weightpinning. Same4 opened CPUchild/48layers/31adjacent
+  transitions=5952; retained IDsmean3.7404/8 but ordered exact2(.0336%),
+  unordered sets31(.5208%). HF returned order NOT nativeGPU router identity
+  or actualbatch hitrate; no invented concurrentbatch/independence product.
+  Whole48layer exact0 is auxiliary, NOT perlayercache requirement.
+  Slot-permutation/token-exchange logical counterexamples preservehist but
+  change canonical slotowners; NOT native numericfailure. 3nativeGit434
+  snapshots matched; flattened slots bind input/currentweights/output/
+  topkreduction. Need shape/block/expertmap+exactIDs or validatedrepair,
+  stablebuffers through BOTH GEMMs, paycompare/conditional/fallback.
+  Oldsmallattribution only; .9010/.9740%alignsortduration not time/JCTbound,
+  doNOTmultiply CPUeligibility by oldwidth9cost. Stop exactmapcache premise,
+  no threshold/predictor/partialrepair/toy expansion from similarities.
+  All5952rows/NPYbytes/Counter/runs/sources independent reviewPASS;
+  main.139/review.033sOFFLINE/allownedterminal/noGPUquery/use/Torch/
+  native/model/compiler/oldprofile/audit/journal/137/serving/queue/waiter.
+  e926/P-D/deferredLeanSparse unchanged/no maininnovation/performance.
+  See docs/research/moe_dispatch_reuse_cpu_20261115_zh.md.
+- 2026-11-15 CPU attention-producer / complete-expert-cache screen;
+  fullgoalACTIVE/noGPU. New fixed FA3f89 Q+KV+transpose producer conditions:
+  page1/nonTMA all128 producer threads load/barrier, no three permanent spare
+  warps. TMAKV alone insufficient; source roles do NOT measure temporal slack.
+  POD2410.18038v1 already warp-parallel/virtualCTA prior; v0.6.18 pod.cuh
+  installed exact CTA path/TODO does NOT erase paper scope. CTA register pool
+  remains local; source role64512 NOT measured occupancy/free resources.
+  New cross-forward completeBF16expert scenario64MiB ONLYdeclared optimistic,
+  NOT H200L2/setaside query. Same4 opened child/32steps/48layers; expert9MiB,
+  selectedlayer72MiB/forward3456MiB, holds7. Staticfutureoracle logicalsource
+  credit1.4811/1.6927/1.6195/1.6764%, capacity-only7/384=1.8229%;
+  NOT HBM/cacheline/time/JCT/alltilecache bound. FA3alreadyL2swizzle/hints;
+  cg bypassesL1 NOTL2. LLaMCAT2512.00083v1 hardwarearbitration/simulation,
+  NOT turnkey software or inheritedspeed. Stop freewarp/wholeexpertpinning
+  premises; no hint/kernel/serving change or toy/capacity/sample tuning.
+  6144rows/49152assignments independentNPYuint8review PASS/11sourcehash.
+  Initial layer/step axisassertion stopped beforestats; archived, transpose
+  only, plan/sources/population/formulas unchanged. main.670/review.054s
+  OFFLINE/allownedterminal; noGPUquery/use/Torch/native/model/compiler/
+  oldprofile/audit/journal/137/queue/waiter. e926/P-D/deferredLeanSparse
+  qualification unchanged/no new maininnovation/performanceacceptance.
+  See docs/research/attention_warp_cache_cpu_20261115_zh.md.
+- 2026-11-15 CPU writer/read readiness contract; fullgoalACTIVE/noGPU.
+  NEW fusedarg-builder earlyhistoryfence,NOToldwrong-producerselector/
+  D2Hproducerfixture/copytransport/KVfusionrescue. Five native434Gitfiles+
+  previouslyboundQwen callsite;originalbuilder/getters/counter/event AST
+  onlyheaders/dependencyrecorders. Publicgetterwaits BEFOREfusedRoPEstore;
+  QKV/QKnormalreadybeforeit. wait_event ordersfutureGPUwork,NOTCPUblock.
+  Sixfixedconditions×original/conditionallease=12graphs,independentforward
+  reachability80nodepairs/declaredreadwrites no conflicts. Lease needsknown
+  freshowner/stablephysicalrange+storage/matchinggeneration/noH2Dwriteor
+  pendingD2Hreader overlap;otherwise originalfallback. Actualnativeallocator
+  doesNOTissuecertificate;fixtureonly,NOTsafeprivategetterbypass/GPUproof.
+  Inactiveconsumercontrolhistorysettled;D2Hnegative BOTHretain declared
+  independentallocationreusefence,NOTH2DimplicitlyprotectsallWAR.
+  Single-requestfixedcost idealdelta min(H,R)<=R,NOTtimedJCTsimulation.
+  Oldwidth9composite.4123/.4404% reusedSMALLreporthash/no profile/audit/
+  journalrescan;insufficientnewmainperformancedirection. DoNOTimplement
+  lease/getterchange/expandtoy/tune/rerun137 orGPU absentNEWprovenance/
+  exposure/netcost. main.770inclfetch/review.098sOFFLINE. NewPyonlynamed
+  report/allownedterminal/noGPUquery/use/compiler/module/Torch/native/model/
+  serving/workload/queue/waiter. Priorconsumer-owner/P-D/hybridtile/deferred
+  LeanSparsequalificationsunchanged/no maininnovation/performanceacceptance.
+  See docs/research/kv_writer_readiness_cpu_20261115_zh.md.
+- 2026-11-15 CPU KV-materialization fusion screen; fullgoalACTIVE/noGPU.
+  NEW nativeKVwriter route/component cost,NOToldRoPEcodec/page1adapter.
+  Eightnative434Gitfiles exact;originalgate6conditions/forward_core8Boolean
+  rows onlycallrecorders,notreachableconfigs/numericmodel/actualstorecount.
+  OrdinaryeligibleCUDA/BF16 path alreadyRoPE+store/backendsaveFalse;
+  optionalfusedQKnorm/RoPE requiresbackendwrite,doNOTequatefusionflags.
+  TwoOPENEDhistoricalwidth9profiles24grapheach:48recognizedfused_rope_store
+  pergraph;store_kvcache0. Composite97.704/98.231us/graph,
+  .4123/.4404%kernelDURATIONsum,NOTremovableKVcost/fullJCTbound/gain.
+  Keep19680unknown graphkernels/profile;absenceofnamedfamilyNOTallwriters0.
+  NEW3.338MBSqlite42922allkernel/41664modelgraph/48launch preserved;
+  usecompactindexnexttime,NOoldruntimeaudit/journalrescan. Independent
+  raw42922/SQL/otheridentifierparser/endpoint-sweep/Git/sourcewrites PASS.
+  RevieweranonymousnamespaceparserIndexError archived;R2canonicalizes,
+  no family/data/plan/main/resultchange. main2.949/review1.025sOFFLINE.
+  StopordinaryKVstorefusionasmain;donotwritekernel/flipfusednormflag/
+  rerunold137/resourcecompile/GPU. NewPyonlynamedreport/allownedterminal/
+  noGPUquery/use/compiler/module/Torch/native/model/serving/workload/queue/
+  waiterchange. P/D/hybridtile/deferredLeanSparsequalificationunchanged,
+  no new maininnovation/performanceacceptance. See
+  docs/research/kv_materialization_fusion_cpu_20261115_zh.md.
+- 2026-11-15 CPU FlashInfer-page1 interface; fullgoalACTIVE/noGPU.
+  Advance EXISTINGlowresourcecontrol,NOTnewbackend/agentinnovation.
+  Officialv0.6.18decode.py/utils.py/page.cuh/batch_decode.cu exactinstalled;
+  native434memory_pool Gitobject exact. Originalpublicgetter/plain getter/
+  run/unpack/dtype/shape AST,onlydecoratorsremoved;constructor/plan/
+  workspace/kernel RECORDERS. NoTorch/native/FlashInferimport/allocation/
+  compiler/module/devicequery. ThreefixedNHD/BF16/page1/32Q4KV128 cases,
+  two layers/6recordedcalls/32768selectedelementaddresses allsame;keep
+  layerwait[0,0,1,1]/storageoffset. NOT6GPUkernels/realTensoralias/event.
+  Multiquery/dtype/no-plan negatives rejected BEFOREkernelrecorder.
+  Independentflatindex/nativeoriginalshape/publicwait+underlyingstride
+  source PASS;nospeed/numeric/planner/allocator/graph/streamqualification.
+  LowD does NOTfix highresourceFA3P co-residency. Donotport/activatebackend
+  orrerunold137/resourcecompile/GPU solelyfromcontract. e926stillclean/
+  untouched/P/DhybridtiledeferredLeanSparsequalification unchanged.
+  main1.373/review1.381s inclfetchOFFLINE. NewPyonlynamedreport/allowned
+  terminal/noGPUquery/use/compiler/module/Torch/native/model/serving/
+  workload/queue/waiterchange. No new maininnovation/performanceacceptance.
+  See docs/research/flashinfer_page1_contract_cpu_20261115_zh.md.
+- 2026-11-15 CPU query-sharing prefix contract; fullgoalACTIVE/noGPU.
+  NEW CISA2611.03200v1 primary+mean-query dependency,NOT old OmniKV tail
+  qualityrepair/selectorretune. Fixed2historyC16/G4/k1/W0 rational witness:
+  partial3mean+1->append-7fullmean-1,threeoldlayer2Kchange despitecausalKV.
+  NOTcurrentdense/CISAimplementationfault/naturalmodelqualification.
+  Sameabsolutegrid/operator/lineage only:closedprefix reuse/openlastgroup
+  repair<=3oldrows. Three-layer12positions/13prefix/78extensions/2048all
+  partitions,independentexplicitKVweights+dirtydeps+CPUoriginalAST PASS.
+  Reject G1decode/grid/versionchange;boundedrepairNOTgeneralcacheproof.
+  Old83/Host400/mean70SQLite read-only/all10386/measure2991+censored.
+  Paper-shaped C16/G4/W128/k4096:unalignedhit7750/2214;firstgroupremote
+  >budget1299/370;both961/275allroot. ONLYdense-shape,NOTactualsparse
+  errors/opportunities/quality/GPU/JCT. Sourceabsolutegridalreadyprior;
+  genericversion/dependencycacheNOTnew maininnovation. Keepascommonsparse
+  validitygate,doNOTportCISA/tuneG/k/expandfixtures/rescanoldaudit/journal
+  orreopenoldqualityruns. main2.162inclfetch/reviewextended4.113sOFFLINE;
+  originalplan/main/resultunchanged. NewPyonlynamedreport/allownedterminal/
+  noGPUquery/use/compiler/Torch/native/model/serving/workload/queue/waiter.
+  P/D/hybridtile/deferredLeanSparsequalificationsunchanged/no new main
+  design/performanceacceptance. See
+  docs/research/query_share_prefix_contract_cpu_20261115_zh.md.
+- 2026-11-15 CPU same-model-request restart screen; fullgoalACTIVE/noGPU.
+  NEW exactrequest progress census, NOT old cross-request prefix recomputation.
+  Reuse original83/Host400/mean70 SQLite85339da6 read-only; no raw audit/
+  journal rescan. All10386served/10380complete/6censored; measured2991.
+  Before unique completion serial:positive-decode->prefill0,anypositive
+  output->prefill0,outputregression0. Keep censored/background/fullraw.
+  Postterminal9654allDecode is NOT restart or compact9651.
+  IndependentSQLwindow+native434fivefiles/sixASTcontracts PASS:
+  admissionlocks before runnableappend/FULLremovesevictioncandidate;
+  explicitcapacityretract/requeue stillpresent. SourcecontractNOTruntime
+  tree-core/allocator/GPUproof. DoNOTinferzero layerwait/crosscallH2D/
+  abortedrequest/globalretraction. Stop extra request-internal residency
+  premise; lastlayerdeadoutput only looked up old directprior,not rerun.
+  main5.712/review14.118sOFFLINE. NewPyonlynamedreport/allownedterminal/
+  noGPUquery/use/compiler/Torch/native/model/old137/serving/workload/queue/
+  waiterchange. P/D/hybridtile/deferredLeanSparsequalification unchanged;
+  no new maininnovation/performance acceptance. See
+  docs/research/request_restart_cpu_20261115_zh.md.
+- 2026-11-15 CPU dynamic-decode strong-control screen; goalACTIVE/noGPU.
+  NEW officialHPC-Ops source/control audit,NOTnew binpacker/kernel/backendport.
+  Tencent96be0af7/2026-11-10/rootfa3d0e7d explicit;13Gitblobs/164463B.
+  Existinghead/request64tile->CTA buckets/splits/causaltail;ordinary
+  length-awareattention NOTnewagentinnovation;FA3dynamicsplit remainsstrong
+  baseline. Originalhosthelper+48Bstruct exact/standardg++CPUonly/noCUDA/
+  Torchheaders/libs. ThreepredeclaredconstructedB1/9/24,lengths cyclic
+  7014/248234/32768,H132SM/528logicalCTA/q1/GQA8/head128/BF16;
+  tasks58/560/623 coverall. Nonempty55/525/528NOToccupancy/speed/realworkload.
+  TwoPythonASTentriesONLYwithmetadatarecorders/historicalSMstand-in,noTorch/
+  devicequery. Page1/64Pythonforward;originalCXXpredicate1reject/64onecheck
+  passes,NOTTorchentry/CUDA/numeric/layout/nativepage1drop-in qualification.
+  Originalfactorymaxseq262144 workspace .802/6.796/18.035MiB;entry528slot
+  FP32LSE+partial8.314/74.830/199.547MiBonlysource-shapes. Notmeasured
+  alloc/peak/48layer product/allalgorithm lowerbound. Page1rejectsbefore
+  thoseallocations;donotclaimpage1actuallyallocatesformula. Needpay/verify
+  scratch/allocatorreuse/control/numeric/netcost,notcopyvendorperf.
+  Assignerwritescounts/sentinel;constconsumerpointerNOTforever/streamsafe.
+  PlannerPythonparammtpactuallyforwardsCXXnum_seq_q;officialtestpasses1
+  forq1vsdecode_mtp0. ASTrecord0/1ONLY,noinvalidCXXindex/vendorfailureclaim.
+  Independentflatinterval intersections1241tasks/meta/sixdeclarations/
+  function/struct/13blobs/AST/CPUbinarylinkage/argumentcontractPASS.
+  Fetch11.707network/main.496CPUcompile/reviewextended.017/argument.004s
+  OFFLINE/no main-result rerun. resultb7e6e94f6407.
+  DoNOTport/changepages/tuneCTA/newsolver solelyfornoveltyclaim.
+  NewPyONLYnamedreport/allownedterminal/noGPUquery/use/CUDAcompiler/module/
+  Torch/native/model/old137/allocatorfixtures/audit/journal/serving/workload/
+  queue/waiterchange. P/D/hybridtile/deferredLeanSparsequalificationsand
+  priority unchanged;goalACTIVE/no new main innovation/GPU/JCTacceptance.
+  See docs/research/hpc_dynamic_decode_cpu_20261115_zh.md.
+- 2026-11-15 CPU single-sequence mixed-load contract; fullgoalACTIVE/noGPU.
+  Advances OLD compute-view output-merge limitation, NOT new broad decoupling
+  novelty/old7allocator fixtures/physicalcoverage guesses. Original logical
+  N128+order preserved;fullcontiguousoldhistory rectangle,fragment/newKV/tail
+  gather;noextra fullhistory/reordering/crosscall BF16 attentionoutputcast.
+  Abstract single accumulator NOT actualFA3/WGMMA/GPUreduction/numeric proof.
+  Eightfixedconstructed/34tiles/17rectangle+17gather/3912704KVwords,ordered
+  byte+causalmasks identical;9rejectclasses/KwithoutV refuses. NonNaligned
+  rectangle is NOT old4Dview/legalTMA descriptor. FA3f89sixGitblobs+
+  native434memorypoolGitobject/10contracts:compilemode/pipelinetype/
+  txbytes/producerarrivals/threads coupled;cannot swapbool. StageOwner ONLY
+  abstract dependency,notCUTLASS/CUDA/overlap/concurrency qualification.
+  Declared16Bdescriptor+4Bfallback:keeppage1table+EXTRA descriptors;
+  contiguous2304->336Bsource refs vsfragment2304->2384B,NOTphysicalreads/
+  bandwidth/speed. Classification/update/branches/regs/barriers stillunpriced.
+  R1descriptor-onlylabel ambiguous;R2separatesfallback/base,oldplan/cases/
+  byteoutputsidentical+taroriginal. Independentrowformula/order/mask/meta/
+  ownertrace/7originalASTnegativeops/Git/primary/R1R2PASS;mainR14.473/
+  R21.403/review.091sOFFLINE. Actualprimary2610.34907v1 titleWhen and Why
+  to Use TMA...NVIDIA Hopper GPUs,absmetadata=bodyH1;doNOTattributeplan
+  TMAExpresssearchlabel orinheritvendorperf. Genericadaptivecoalescing/
+  decouplingalreadyprior,nonewnoveltyacceptance. Conditionalinterfaceonly;
+  needNEWrealphysicalmapping+poolwideTMA/sharedlayout+modecompletion/
+  control/numeric/netcostbeforepriority. DoNOTexpandfixtures/changetile/
+  rescanoldmissingmaplogs/writeGPUkernel/promoteGPU. result889857c19a70.
+  NewPyONLYnamedreport/allownedterminal/noGPUquery/use/compiler/Torch/
+  native/model/old137/audit/journal/serving/workload/queue/waiterchange.
+  P/D/deferredLeanSparseunchanged;no new main innovation/GPUperformance/
+  workflowJCTacceptance. See
+  docs/research/hybrid_tile_loader_cpu_20261115_zh.md.
+- 2026-11-15 CPU low-resident progress screen; full goal ACTIVE/noGPU.
+  NEW full-residence-vs-forward-progress cost question, NOT old prefetch/
+  deferred LeanSparse implementation or old codec/sparse/selector rescue.
+  Latest completed original133/Host400/mean60,all2991matched/18wf/362157out.
+  Fixed scenario:wholeP validHost oldhistory,2layerbuffer+residentnewtail,
+  firstoutput fromprefill,each laterdecode reload48history. NOT actualprefix/
+  Hostmiss/allocation/complete latency/unconditionaltraffic lowerbound.
+  O offlineONLY;omitprefill/compute/writeback/contention/promotion;no subtract
+  oldwait toclaimJCT. Full/OraclewaitP50 .067796/.067641s;declared40GB/s
+  linkworkP502.811/P9026.262s.20/40/60belowBOTHoldwait25/103/149only
+  diagnosticcounts,NOTprofitable/admissiblepopulation oropportunityupperbound.
+  Originalepoch42 .781TB/19.522s vsFull70.864/Oracle584.372;epoch65
+  1.809TB/45.214s vsFull6.211/Oracle270.626. DonotuseweakOraclealone.
+  2622controls/12494candidates;matched595requests/2320obs/1628logical
+  refusals. NOphysicalfree/cold/lock/backingproof,nocrossclockalignment.
+  Authorllamacppfork4804b404/2026-11-10 commit/tree/README Gitblob exact;
+  genericHost/ringstreamingalreadyprior,singleserial/differentmodelengine,
+  noinstall/build/run/quantizedMTPspeedinheritance.
+  DoNOTimplementlane/elevateLeanSparse/changeparameterssamplesor usefutureO
+  torescue;needphysicalblockage,onlinepolicy,interferenceandstrongbaseline.
+  Independentbyte-difference/rawoffsets/11+9groups/3BW/controls/GitPASS.
+  Main2.932/reviewsuccess.262sOFFLINE;firstreviewexactfloatcomparison
+  failurearchived,onlyuseexistingnumeric tolerance;plan/main/CSV/resultsame.
+  result1beb4b3a86e4. NewPyONLYnamedreport/allownedterminal/noGPUquery/use/
+  Torch/native/model/compiler/oldaudit/journal/137/serving/workload/queue/
+  waiterchange. P/D/deferredLeanSparse unchanged;no new main innovation,
+  GPUqualification,throughput/JCTacceptance. See
+  docs/research/low_resident_progress_cpu_20261115_zh.md.
+- 2026-11-15 CPU extrema-location directory progress; full goal ACTIVE/noGPU.
+  NEW reference-vs-value storage premise, NOT old tree/norm/INT8/sign-only/
+  CPUplacement/codec retune. Fixed page16, first exact BF16-word occurrence,
+  min/max4bits each:128B/headpage vs512B. Same2 OPENED toolbounds x4layers
+  x12decode=96records/8banks;9273344 extrema words bit-exact reconstruction.
+  No selector/mask/attention/LRU/model run. GQA8 union/zero both; same
+  sign-aware value-directory control. Ideal word reads201.522944->
+  257.154816MB(+27.61%);32/128byte coverage6.783781/8.230545x,all96
+  no reduction. Favorable contiguous primary K coverage81.67/99.76%,
+  NOT actual HBM/PCIe/cache/latency/JCT. Locators still depend on K;
+  Host-only primary is not a free GPU input or paid by future selected loads.
+  Old4Mslot/48layer directory24->6GiB is declared arithmetic,not real
+  reclaimed HBM;primaryK/map/generation/scratch/lifetimes still required.
+  STOP fixed locator/no layout/head/page/sample/bitwidth/tie rescue orGPU
+  kernel. Not universal capacity-tradeoff impossibility or accepted
+  generic-indirection novelty.
+  Independent per-page bitmaps vs main global unique:36inputs/8tables/
+  9273344word/first-match/96GQAranges/192coverage/all summaries PASS.
+  Main40.225/review2.968s OFFLINE first pass;resulte1fc3d136250.
+  New Python only experiments/reports/key_extrema_locator_cpu_20261115_r1;
+  all owned terminal/noGPUquery/use/compiler/module/Torch/Triton/native/
+  model/old137/audit/journal/serving/workload/queue/waiter changes.
+  P/D and deferred LeanSparse unchanged; no new innovation/performance
+  acceptance. See docs/research/key_extrema_locator_cpu_20261115_zh.md.
+- 2026-11-15 CPU Host selector service screen; full goal ACTIVE/no GPU.
+  New placement/service accounting, NOT retuning hierarchy/norm/INT8/sign/
+  masks. Only original independently checked LEAF extrema from 2 OPENED
+  tool boundaries x4layers x12decode=96records/3072Qheads; no K/V capture/
+  audit rescan. Fixed FP32 Top127+last/GQA union retains all supports,
+  maxscoreerror9.7513e-5 NOT native order/ties/numerics/quality.
+  CPU32/nice19/1thread,2warm+9timed/mode,1728raw samples/16shared directory
+  versions. BF16convert+select child/root record-median P50 .675841/
+  2.346356ms; prepackedFP32 .460970/1.440152ms. Includes Q conversion,
+  score/TopK/union/results; excludes transfers/gather/DMA/update/GPU/
+  concurrency. NOT optimized-CPU/cold-DRAM/hot-LLC/full48/batch24 latency;
+  no multiplying by48 to claim service/JCT. Host400GB payload slots:
+  KVonly4069008/BF16index3829648/FP32index3616896 (-5.88/-11.11%),
+  index23.529/44.444GB; exclude reserve/allocator/scratch favorably.
+  No real allocation/24GiB GPU-waste claim/OmniKV selector mixing.
+  RetrievalAttention2409.10516v3/EarlySelectKV2611.01715v1/KARAT2608.03555v1
+  primary verified; ordinary CPU routing already prior, no vendor speed
+  inheritance. Do NOT integrate/tune threads/layout/sample/budget to rescue
+  current direct path; retained as generic heterogeneous cost control,
+  not universal CPU/PNM impossibility.
+  Independent106inputs/3primary/3476992scores/3072heads/1728raw aggregates/
+  16directories/3capacity binary searches PASS. Main4.971/review3.984s
+  OFFLINE first pass. result669800c8b4a4. New Python only named
+  experiments/reports/host_selector_service_cpu_20261115_r1; all owned
+  terminal/noGPUquery/use/compiler/module/Torch/Triton/native/model/old137/
+  serving/workload/queue/waiter changes. P/D/deferred LeanSparse unchanged;
+  no new main innovation, GPU qualification, throughput or JCT acceptance.
+  See docs/research/host_selector_service_cpu_20261115_zh.md.
+- 2026-11-15 CPU split-operator state ownership progress; full goal ACTIVE.
+  Existing e926 candidate supplement, NOT new main innovation. Git-object
+  app781a/native434+689f and three public FA3f89 source bytes checked.
+  Scoped forward partials are call-local empty; D plan separately allocated
+  but contains MUTABLE semaphore; P does not use it. Planner/fwd/combine use
+  current stream. NOT whole FA3/allocator/PDL/Graph/build qualification.
+  Execute ONLY frozen CUDAStreams AST with dependency stand-ins/noTorch:
+  two-layer normal0 conflicts/deliberate global partial6/drop main join2
+  output conflicts/submission exception finally join0. Same side still
+  serializes D plan without main join; initial unexecuted expectation
+  corrected BEFORE cases. Mutations are NOT deployed/history faults.
+  Independent forward-path review4cases/81nodes/825pairs/Git/source PASS.
+  Main successful finalize.0684/review.0333s OFFLINE excludes earlier
+  download/failures, not control cost. Preserve stable HTML redirect,
+  duplicate-comment boundary and review enumeration-order failures with
+  source archives; plan/Graph/Stream/exercise AST unchanged.
+  result0bfbf5a38cb1. New Python only
+  experiments/reports/split_attention_state_ownership_cpu_20261115_r1;
+  all owned runs terminal/noGPUquery/use/compiler/module/Torch/Triton/
+  native/model/old137/audit/journal/serving/workload/queue/waiter changes.
+  P/D real native+model/GPU acceptance still pending; deferred LeanSparse
+  unchanged, no new performance or novelty acceptance. See
+  docs/research/split_attention_state_ownership_cpu_20261115_zh.md.
+- 2026-11-15 CPU dyadic selector screen; full goal ACTIVE, no GPU.
+  Fixed chronological append-only min/max forest is a NEW source-pruning
+  hypothesis, not a retune of temporal norms, INT8 indexes, masks or head groups.
+  Same 2 OPENED tool boundaries, 4 layers, 96 query-layer records/3072 Q heads;
+  original Top127 plus mandatory last page and eight-head GQA union retained.
+  Selected masks all match. Leaf scores -24.33%, but leaf sources still92.32%;
+  logical index payload222.527488->426.774528MB(1.917851x), total scores
+  3476992->6076596(1.747659x). Free final-threshold control is IDENTICAL,
+  not a deployable oracle or universal algorithmic bound. All96 have no
+  payload decrease. Internal directory adds98.41%child/99.73%root before
+  pointers/frontier/update cost. Counts are NOT HBM/DMA/GPU/TTFT/JCT.
+  STOP this fixed hierarchy; no tree/threshold/precision/budget/sample rescue
+  or CUDA extension. HiP2406.09827v2 already hierarchical pruning; ordinary
+  tree/agent label is not novel. Resident-first partition only looked up
+  prior work, not rerun. First primary guard wrongly required HiP in TITLE;
+  before numerics, original plan/source/responses preserved, exact ID/title/
+  abstract corrected; seven numeric ASTs unchanged. Independent BF16 stride/
+  direct subtree reconstruction8banks/18064nodes/122inputs, einsum/ranked-list
+  3072searches,96prefix/no-future-pages/oracle/GQA/summaries PASS.
+  Main14.756/review17.548s OFFLINE; result2f7035716140. New Python ONLY
+  experiments/reports/hierarchical_selector_cpu_20261115_r1; all owned
+  executions terminal, noGPUquery/use/compiler/module/Torch/Triton/native/
+  model/old137/audit/journal/serving/workload/queue/waiter change.
+  P/D and deferred LeanSparse qualifications unchanged; no new main
+  innovation or performance acceptance. See
+  docs/research/hierarchical_selector_cpu_20261115_zh.md.
+- 2026-11-15 CPU direct-crossover-prior progress; fullgoalACTIVE/noGPU.
+  FlashMLAe9b67321/2025-09-30/tree269b8870/sixblob verified:2CTAs each
+  halfKVload/dequant/localBF16+registerst.asyncpeer/barrier/bothattention.
+  Sourceheadblocksx/queryy:NOTcrossqueryimplementation;FP8sparseMLA/MQA
+  NOTnativeGAACdenseGQAport. Fixedpeer maskNOTblindlyreused4CTA.
+  No vendorcycles/TFLOPSinheritance/install/compile/execution.
+  STOPgenericshareddecodeandold1producer+3consumerasnewmaininnovation;
+  directpriorandstrongerrolecontrolmissingpreviously. Donotexpandfull
+  kernel/toytraceorparameter/codec/groupaxisrescuetoclaimnovelty.
+  ParentCPU/assemblyevidenceretained/topnotecorrectsreferenceweakness.
+  Same4CTA/16q/14498rows/all18+background,onlysource-inspiredsymmetric
+  all4compute/quarterdecodeCONTROLnotimplemented4CTAFlashMLA/nosweep.
+  Recon22.763437->17.094855TB;vsindependent74.5709%vs66.1387%;
+  CTA+2.1479%vs35.7139%;activepeer50.419125vs67.225499TB/
+  full51.284566vs68.290311TB.10539fewergroups/restnotmore.
+  NOTtime-dominance/perf/newgain;metadata/regs/balance/layout/sync/
+  pipelineunmeasured. DoNOTturnbetterproxiesintoperformance.
+  Independent6blobs/commitdate/sourceorder/queryscope/14498/eightgroups/
+  parentbytesPASS;main5.3342inclfetch/review.3397sOFFLINE/firstpass.
+  result521a86a12728. NewPyONLYparentcandidate/prior_art_r1/
+  allownedterminal/noGPUquery/use/compiler/module/model/Torch/Triton/
+  native/oldprofile/audit/journal/137/protocol/serving/workload/queue/
+  waiterchange. P/DandLeanSparsequalificationunchanged/goalACTIVE/
+  noperformanceornoveltyacceptance. See
+  docs/research/cluster_decode_sharing_prior_cpu_20261115_zh.md.
+- 2026-11-15 CPU bounded decode-sharing progress; fullgoalACTIVE/noGPU.
+  NEW4CTA1producer+3consumer/16qeach/2slot/head16tokenKV8192B mapping,
+  NOTcodec/slot/selector/looporderretune. FA3f89alreadycluster/TMAprior,
+  no firstsharing/agentinnovationclaim;explicitlocalsharedcopies/no assumed
+  remoteWGMMA. Same14498complete/all18+background oldq/H/noauditrescan.
+  Hypothetical16qindependentreference:childtool/roottool/rootJOINrecon
+  -65.6651/-65.8756/-66.0204%,CTA+36.9943/+36.7784/+36.3428%.
+  Wholelogicalrecon67.225499->22.763437TB;NEWactivecopy67.225499TB/
+  all3replica68.290311TB. Notactualtraffic/latency/GPU/JCT;independentD
+  mayalreadyparallel;producer/slowreader/bandwidthcostsNOTfree.
+  Fixed3/no cluster/q/sample sweep/no66%asacceptedgain/fullkernel.
+  SameOPENED2aftertool/L11,23,35,47/K,V16files/head0first5tiles40payload;
+  CPUbytesONLY/no codec/attentionrerun. Independent32safetraces/8expected
+  copy-onlyrelease rejects/8slowreaderblocks. Copy completioncanrelease
+  source separately,notunreadDEST;coupledringnotuniversalsourcebound.
+  Newone-shot4CTA8KiBto3peer offlinePTX/CUBIN1stpass/572deps/twostrace
+  treesnoGPUdevice/driver;NVCC1.6487/PTXAS.0211s. InstructionformONLY/
+  noexecution/doublebuffermultigeneration/decoder/attention/WGMMA_layout/
+  inactive/allocatorqualification. Active-onlyvscompiledall3copyscopeskept.
+  InitialprobeGUIDEindexlacksbodyFAILBEFOREcensus;originalresponse/
+  plan/probe kept,archivedCUDA12.8.1bodyONLYnotlatest;Ring/scenariosAST
+  unchanged. Pre-censusscopeaddendum2stats+allreplicacost/nocompiler rerun.
+  Independentreview14498/eightgroups/16inputs/40traces/twosource/primary/
+  572deps/twocompilertrees/3copyPASS;CPU2.505/review2.0627sOFFLINE.
+  result6615c4d81356/build88496e8a653a. NewPy/CUDAONLYnamedevidence/
+  allownedterminal/noGPUquery/use/module/kernel/Torch/Triton/native/model/
+  old137/profile/audit/journal/serving/workload/queue/waiterchange.
+  P/DandLeanSparsequalificationsunchanged/goalACTIVE/no perf/naturalnumeric/
+  noveltyacceptance. DoNOTexpandtoytracesorsweepclustertosalvagegain.See
+  docs/research/cluster_decode_sharing_cpu_20261115_zh.md.
+- 2026-11-15 CPU GAAC decode-resource progress; fullgoalACTIVE/noGPU.
+  NEWcompiledfusionresources,NOTcodec/slot/selector/looporder/modelrepeat.
+  Officialfe445999pagedkernelblob/ASTliteral/devicebodiesexact;onlyremove
+  Torch/C10hostincludes+hostwrapper/explicitG8,D128templates/cstdint.
+  SameoldCUDAcoreNVCC/PTXAS SHA;sm90a/O3/fastmath/onecompilethread/noregcap.
+  CPUofflinePTX+CUBINONLY/noCUDAmoduleload/launch;209deps/twocompilerstrace
+  treesnoGPUdeviceaccess. StandalonebuildNOTfullTorchJITflag/backendproof.
+  Main128threads/223regs=>28544rawreg/stack0/spills0,PTXASshared17152/
+  ELFsection18176B;combine31/3968/shared8/1032. OldCUDAcore56/7168;
+  3.98xrawregsNOTtime/occupancy/bandwidth. Headermax/minctasNOTobservedlaunch.
+  14sealedrawpairs:4MoEpass/8dense+2unchangedFA3fail;NOTactualco-residency/
+  allocationgranularity/consumerindependence/numeric/perf. Donotmultiply
+  223byqorpitchgenericcompresseddecode/backendasnewmaininnovation.
+  NVCC1.4041/PTXAS.3825sfirstsuccess;postbuildprimaryguard+firstfinalizer
+  wronglyrequire2048literal,guideactual64warps;initialcase-sensitivitycause
+  withdrawn/correction+bothsourcesarchived. Zero compiler reruns/outputsame.
+  Reviewfirstabsolute//pathtextmismatcharchived/Pathnormalizationonly;
+  all209bytes/hashesstillchecked. Independentdevice/source/deps/twotraces/
+  twoentries/ELF/14pairs/oldcompilersPASS. Finalize.2058/analyze.0044/
+  review.1255sOFFLINE/notwholefailedattempttotal. Resultac130b8bfa43.
+  AllnewPynamedevidence/allownedterminal/noGPUquery/use/module/kernel/
+  Torch/Triton/native/model/oldprofile/audit/journal/137/serving/workload/
+  queue/waiterchange. OfflineCPUcompilersONLY/noGPUregistration.
+  P/DandLeanSparsequalificationunchanged/goalACTIVE/nonewmaininnovation/
+  naturalnumeric/throughput/JCTacceptance. See
+  docs/research/gaac_decode_resource_cpu_20261115_zh.md.
+- 2026-11-15 CPU compressed-slot capacity progress; fullgoalACTIVE/noGPU.
+  NEWfixedslot/rawsidepool/locatorcost,NOTcodec/attention/query/capacitytuning.
+  GAACfe445999fourGitblobs;originalBT->MT->fixedslot/rawalreadydirect,
+  noO(history)locatorpremise. Originalscalarfits127/128/129=>T/T/F,
+  NOTTriton/atomic/allocatorqualification. SameOPENED2aftertool/L11,23,35,47/
+  K,V16arrays/fullhistory6944,29168/same-arraycalibration,48base/flaghashmatch
+  priorofficialCPUencoder.72224head-kindtiles/default128BoverflowZERO/max96B.
+  NOTwholeworkload/all48/staticbasesdeployment/nooverfloweverproof.
+  No slot/calibration/sample rescue tuning/overflowpager.
+  BF16295829504B/Pageunique210303391B/minfixedslot+MT217538688B,
+  +3.4404% despitefavorableexcludedrawreservation/bases/tables/scratch/tails/
+  allocator;NOTcompletebackendwaste/actualHBMcapacity/gain/JCT.
+  Defaultrawcapacitydependsallocatedblocks+maxseq;originalAST/twoscalar
+  controlskept,notonecontextas24seqfullpool/noactualexhaustionclaim.
+  CVPR2026AdaClusteroriginalPDFAlgorithm2TensorQuestpositive/negative
+  matmulalreadyprior;notlocalpagebound/numeric/FP32equivalenceorvideospeed.
+  Wrong2604.00509RT-GSexcluded. Independentlinear-bincount/sliding-window/
+  alternateperm/weightedbitpopcount16arrays/48fields/72224counts/3groups/
+  4blobs/primaryPASS. Main7.3575inclfetch/review5.0715sOFFLINE/firstpass;
+  resultf33e3c39a6ab. AllnewPyONLYnamedevidence/allownedterminal/noGPUquery/
+  use/Torch/Triton/native/model/CUDAmodule/compiler/oldprofile/audit/journal/
+  137/serving/workload/queue/waiterchange.P/DandLeanSparsequalification
+  unchanged/goalACTIVE/nonewmaininnovationorperformanceacceptance.See
+  docs/research/compressed_slot_capacity_cpu_20261115_zh.md.
+- 2026-11-15 CPU KV-major running-state progress; fullgoalACTIVE/noGPU.
+  NEWglobalO/LSEreference+activepayload+sourcegrid, NOTclosedallHostattention/
+  loopinterchange/codec/sparsetuning. FourDirectKVd7a5495Gitblobs +seven
+  installed-path/SMPv2snapshots. KVouter/Qinneralreadyprior.
+  Same10380complete/14498chunks/12541662Q/all18+background;SQLite12071/
+  14500/12541895Q,233incompleteQretainedonlybatch/noinventedhistory.
+  Q2048state32.25MiB/state+Q48.25MiB;per64historyblock64.5MiBstaterefs
+  vs128KiBKVsource=516,NOTactualHBM/L2/DMA/time/JCT/inevitabletraffic.
+  Childtool/roottool/rootJOINqP50184/198/592,state+Q4545536/4891392/
+  14624768B;sumstaterefs/KVsource124.1711/162.9882/215.7142 NOTspeed.
+  Partialhistory/newcausal/padding/projection/concurrency/init/finalexcluded.
+  Only100guardcompatible;allshapeMASKEDhypothesis/notnativeFA3cost.
+  Originalextendrequestlocal:batchmaxmemberP5026334464B vsjoint26952064B,
+  neitheractualcache/allocpeak. SourcegridKVheads*B =>modelB1fourblocks,
+  NOTdispatch/SMutil/timeproof. Loader7args/backend11+missingnames means
+  installedselectedpathUNQUALIFIED;hidden128vs2048unresolvedONLY/no
+  deployedbug/numerictruncationclaim. Headers4enumidentifierdifferences,
+  traitsexact;firstoverstrictbyteassertfailurearchived/corrected/no
+  priorplan/formula/result/review/populationchange.
+  Independentreverse14498/ninegroups/fouraddresses/allSQLite/4blobs/
+  guard/model/primaryPASS;4.293inclfetch/.6865review/.0668scopeOFFLINE;
+  independentscope.0426s sevenblobs/tenprior/fourdiffs/AST/gridPASS.
+  resultcc2b1dac14c6/review0f3c70495650/caller0e33e719d175.
+  Retainhistoryreuse+stateworkingpayload+parallelismconstraint;FAAlgorithm1
+  alreadyKVmajor/globalstate. No newmaininnovation/GPU/JCTacceptance.
+  NewPyONLYnamedevidence/allownedterminal/noGPUquery/use/Torch/native/model/
+  CUDAmodule/compiler/old137/audit/profile/serving/workload/queue/waiter.
+  P/DandLeanSparsequalificationsunchanged/goalACTIVE. See
+  docs/research/kv_major_running_state_cpu_20261115_zh.md.
+- 2026-11-15 CPU sign-selective selector fetch progress; goalACTIVE/noGPU.
+  NEWconditionalplaneLOAD/sectorcoverage, NOT oldquantizedindex/seed/score
+  certificate/headgroup/Hostlayout retuning. 2officialGitblobs Quest01c1623
+  andSparseEnginea0a8f27 +2ASTloadcontracts; no externalkernel execution.
+  SameOPENED2toolbounds/L11,23,35,47/16Qfiles:96individualcachedDqueries
+  keptseparate +392realprefillQfixed16positiontiles=>496KVheadgroups.
+  PrefillADDRESSreuse scenario ONLY/no sparseprefill/quality/holdout/JOIN.
+  Oneheadscalar -50%,32Bcoverageonly D-.0020%/P-.0015%;GQAstrongsharing
+  scalar-9.2539%/-1.7648%,32/128Bcoverage ZERO reduction forbothphases.
+  Notactualtransactions/cache/bandwidth/GPU/JCTbound. Stopfixedbandwidth
+  kernel/nochannel/group/sample/budget/layout rescue search.
+  Insight: sourcefetch costs need real sharing domain and omittable address
+  blocks, not masked scalar counts. Generic conditional load NOT innovation.
+  Independentstdlib BF16bits+bothbyteaddresses:16files/496groups/5952fields/
+  6summaries/5controls/2blobs/2AST/officialCUDA12.8primary PASS;positive/
+  contiguoushalfcontrols really save addresses. Fixed firstchild/L11/D0/
+  KVhead0figure12.5%scalarsavingstill16/16units,PNG/PDFvisuallychecked.
+  Main2.137inclfetch/review1.422s OFFLINE/firstpass/no numeric failures.
+  resultc4e7597aef07/review3eae9f61c15a.
+  NewPy ONLY experiments/reports/selector_sign_fetch_cpu_20261115_r1/;
+  allownedterminal/noGPUquery/use/Torch/nativeimport/model/score/mask/LRU/
+  oldaudit/journal/compiler/serving/native/workload/queue/waiterchange.
+  P/D+LeanSparseoriginalqualificationsunchanged/goalACTIVE/no newGPU
+  numeric/performance/noveltyacceptance. See
+  docs/research/selector_sign_fetch_cpu_20261115_zh.md.
+- 2026-11-15 CPU cross-operation consumer progress; fullgoalACTIVE/noGPU.
+  NEWrequiredproducer-vs-global-latest, NOT oldmerged-batchownershipcensus/
+  pipeline deferredtail/ordinarysharedprefix/fan-in repeats.
+  5native==434TREE,10method/classAST; stdlib stand-ins/no native imports.
+  FULLshared16+A16 load commit, beforeACK Bbuild ONLY B16;48uniqueHostIDs.
+  Ordinary coalescing already present; do not add another data mover.
+  Complete A(slot0) then unrelated C(slot1), req onlypendingA:
+  A0ready/C0pending but originalready/resolve/counter wait selectsC1.
+  8cases preserve C-only/A+C/settledskip/unknownowner/A0pending/auxfallback.
+  Conditional eventidentity witness ONLY/notDMA/service/eligibility/frequency/
+  JCT. No fakeclock, no oldauditrescan to fill missingowner/timehistory.
+  Original3slot ring refuses live reuse;0,1,2,0 aftercompletion proves
+  max(slot)!=serialorder. Need rangegeneration/producer-serial/event-lifetime
+  for any persistent owner map; NOT implemented/qualified/newmaininnovation.
+  Frozenapp116b325669b69f67ee59593ae94b7ccb83194335/blob, defer-none+
+  bind6controls: positive stays;negative unfinished restoresowner;lockedrejects.
+  NOTdeployment/fullmatcher/staging/allocator/TP/GPUqualification.
+  Independentready/resolve reexecution+5source/AST/8cases/index/ring PASS;
+  appindependentblob/AST/6conditions PASS. Missingrank_consensus fixture
+  symbol archived, explicitrecordingdecoratoronly, originalplan/5coreASTsame.
+  main.250/review.341/app.0089/appreview.0071s OFFLINE;
+  result3e4d98c422c3/review892252bb3d8e/app22f7ec74a45b.
+  NewPy ONLY experiments/reports/inflight_restore_consumer_cpu_20261115_r1/;
+  allownedterminal/noGPUquery/use/Torch/nativeimport/model/compile/oldtests/
+  profile/serving/native/workload/queue/waiterchange. P/D+LeanSparse
+  qualificationsunchanged/goalACTIVE/no performance ornoveltyacceptance.
+  See docs/research/inflight_restore_consumer_cpu_20261115_zh.md.
+- 2026-11-15 CPU compressed multi-query resume progress; goalACTIVE/noGPU.
+  Advances deferred GAAC prefill candidate, NOT codec/hotset/selector retuning.
+  Official fe445999 three files byte-bound; unchanged _attend six symbolic
+  cases: decode direct, context-prefill full scratch. NOT actual kernel,
+  metadata builder/raw-side-pool/CUDA/allocator qualification.
+  Same OPENED two CPU tool boundaries H6952/Q69 and boundedroot H29170/Q29,
+  four layers/eight frames; official Page full16-token history + raw partial
+  tail/newKV. All reconstructed words equal; KV-major FP64 attention matches
+  dense reference main5.37e-14/review1.20e-14 and BF16-rounded zero differences.
+  Original CPU BF16 SDPA DOES differ(max .01684); no native/natural quality.
+  Tile32KiB BF16 +128KiB FP64 operands +2.30/.97MB accum/stats +newKV;
+  NOT GPU peak. Avoided logical history13.5625/56.96875MiB is hypothetical
+  compressed baseline, NOT current BF16 native/JCT saving.
+  Same10380 ranges/14498 chunks/all18/background; fixed16query-position
+  tile scenario passes childtool/roottool/rootjoin P5012/13/37; H-weighted
+  reconstruction31.2603/40.8605/53.9341x, NOT time/actualtile/allalgorithm bound.
+  Stop naive per-query compressed-decode port; preserve decoded-block reuse
+  versus accumulator-scope constraint. Generic fused/KV-major already prior,
+  NOT accepted agent innovation; no sample/tile hunt or GPU registration.
+  Independent NumPy all16 arrays/all encoder fields +full dense math +
+  14498 ranges/13 nonempty groups/6traces/3primary/source hashes PASS.
+  Initial HTML citation_title failure + wrong calibrate[T,H,D] archived;
+  corrected documented[H,T,D], old byte controls superseded, seven core ASTs/
+  plan unchanged and all three runs' eight output witnesses identical.
+  Main98.785/review18.499s OFFLINE; result255ed2bed6a3/review2243df77166f.
+  NewPy ONLY experiments/reports/compressed_resume_stream_cpu_20261115_r1/;
+  allownedterminal/noGPUquery/use/model/Torch except official CPUcodec/
+  CUDA module/compiler/serving/native/workload/queue/waiter/old137 changes.
+  e926 andLeanSparse qualifications unchanged/no performance ornovelty
+  acceptance. See docs/research/compressed_resume_stream_cpu_20261115_zh.md.
+- 2026-11-15 CPU restore-continuation order progress; fullgoalACTIVE/noGPU.
+  NEWacross-operationdeferred-tail/sourcegate,NOToldbatchownership/isolation
+  census/fillingmissinghistory/KVsplit/allocator/PDL reruns.
+  3native==434TREE+frozenapp116bfullcommit/blob. Originalstart/resume/L2/
+  can_admit FunctionDefs6cases:PipelineA0 then10msB -> unconditional
+  resumeA1..47 BEFOREnewB0..47 despite200msnotdue. Expiry-onlypollhonors
+  deadline;emptyqueue startflushesA;can_admitflushes;before-tail-enqueue
+  injectederror retainscontinuation+Bqueue/retrynoduplicatelayers.
+  EnqueueorderONLY/notDMAwait/gain/frequency/eventring/allocator/TPproof.
+  SEALEDoriginal83launchREQUESTEDcomplete;appdefaultcomplete;4gatesONLY
+  dependency+supportedpasses pipeline. CONDITIONALcaseNOToldJCTattribution;
+  requested!=independentliveappliedqualification/noPID/proc/GPUquery.
+  Consumer-frontierpriority isONLYdesignconstraint/no newpolicy/patch:
+  B-firstcouldstallactiveA;taggedprefetch!=speculation/demandhandoffkept.
+  vLLM57103directAPItrueProgrammableKVCachepublicRFC+priority/prefetch,
+  NOTthisexactmechanism/merged/default/implementation/perfproof.
+  IndependentAST/fulltrace/4gate/3TREE/appblob/APIidentitypass;
+  main1.629inclfetch/review.491sOFFLINE/bothfirstpass.
+  Oldprefillrecompute/lastlayerideaslookupONLY/noprototype.
+  NewPy namedevidence/allownedterminal/noGPUquery/use/Torch/native/
+  model/compiler/oldtests/audit/journal/serving/native/workload/queue/
+  waiterchange;P/D+LeanSparse qualificationsunchanged/goalACTIVE.
+  No newmaininnovation/DMAfrequency/throughput/JCTacceptance. See
+  docs/research/restore_continuation_order_cpu_20261115_zh.md.
+- 2026-11-15 CPU temporal-XOR packet progress; fullgoalACTIVE/noGPU.
+  NEW tokenaxis/restart-localfields,NOToldlookup/contextanchor/RoPE/GAAC
+  pointtransform/Vbyteplane/selector retuning. Fixed16anchor+presence+
+  nonzero15-bitplanes;64Bheader/12Bdirrounded64/payloadalign64/rawfallback/
+  partialtail. NOparams/sample/layerhunt. Same2OPENEDCPUtoolboundaries,
+  child6973/7021 root29170/29199 x4layers xKV=32arrays/296398848words.
+  Raw592797696 packet549622720(-7.2833%) vs officialGAAC421537777;
+  packet+30.3852%,0/32beatGAAC. Krawsaving.6861/V13.8804%stillworse.
+  Wholepacketoverhead1247264Bcannotclose128084943B gap;STOPfixedversion/
+  noGPUdecoder/no further tuning/nouniversallosslessimpossibilityclaim.
+  Actualpacketdirdecode/wordequal+unchangedofficialGAAC CPUequalall32,
+  favorablepersourcebases+allunique kernelfields counted/refonlyoffexcluded.
+  Independentpackbits all36192block+packetSHA,integerhist/permutation/
+  escape+allGAACfields,4stageprefixXOR,103actualwitnessdecodepass.
+  4stagesCPUdependencyonlyNOTGPUinstructions/speed;repeatedprefixnotnew
+  heldout/independentsamples. CacheGen direct2310.07240titleverified;
+  genericcompression/streamingnotnew/no lossy/networkgaininheritance.
+  KVmajor/querytilingprioronlylookup/no repeatprototype.
+  main103.525sCPUcodec+fetch/review21.200sOFFLINE;allfirstrunsPASS/
+  nofailure/sampleselect. Only1.6MiBwitness/no550MBrepeatdump.
+  NewPy named evidence/TorchONLYofficialCPUcodec/hardwareentryguards/
+  deniedcalls0/CUDAinitFalse;noGPUquery/use/model/native/compiler/
+  old137/audit/journal/serving/workload/queue/waiterchange.
+  Allownedterminal/P/D+LeanSparsequalificationsunchanged/goalACTIVE/
+  no newmaininnovation/GPU/perf/quality/JCTacceptance. See
+  docs/research/temporal_xor_packet_cpu_20261115_zh.md.
+- 2026-11-15 CPU K/V restore-frontier progress; fullgoalACTIVE/noGPU.
+  NEWK-ready/V-ready/fullscoreworkspace, NOTclosedV/byteplane/certificates/
+  CPUattention/causalpartition/layerstream reruns.
+  4files==434GitTREE;unchangedMHAload4recordercasesK+VsameloWercall;
+  original3layerL2enqueue copy->commonlayerevent;K/VgettersSAMEcounter.
+  NoDMAcompletion/actualJITswitch/GPU/numericproof fromstandins.
+  Same10380ranges/14498chunks/12541662Q+alllabels/cohort18 preserved;
+  h actualprefix+priorchunks,notfullprompt. Q32/KV4/D128/BF16:
+  S_FP32=128qh,KV=2048h,S/KV=q/16. Positiveh14497,S>KV14433.
+  Childtool/roottool/rootjoin S_P50 .365/2.250/6.230GiB andratio11.5/
+  12.375/37,notHostmiss/physicalpeak/universalworkspace/perfbound.
+  Singlefullscorebank+rowstats,2Swrite/readPAYLOADnotallattentionlowerbound.
+  12071samebatchsimultaneoussumscenarioONLY/notnecessaryworkspace/shared
+  dedup/realpeak. DO NOT useq1decodetorepresentmultiqueryresumeprefill.
+  Independentreverseoffset+SQLall14groups/12071batches+4TREE/contracts/
+  primarytitlehashpass. FAtilingdirectprior;stopfullscoreexecutor version,
+  NOTalltiledK/Vpipelineimpossible/newmaininnovation. Singlelayerideal
+  min(Lv,Cqk)-extra !=native48layer/JCT/no assumedbandwidth.
+  Firstrecorderio_backendmissingEXIT1BEFOREgeometry;plan/scriptarchive
+  kept/onlyfixturefieldfixed/originalplan+stats+numericalASTunchanged.
+  Main.810inclfetch/review.858sOFFLINE. NewPy named evidence/allownedended/
+  noGPUquery/use/Torch/native/model/compiler/oldaudit/journal/137/serving/
+  native/workload/queue/waiterchange;P/D+LeanSparsequalificationsunchanged.
+  GoalACTIVE/no newquality/memory/GPU/throughput/JCTacceptance. See
+  docs/research/key_value_restore_frontier_cpu_20261115_zh.md.
+- 2026-11-15 CPU MoE dispatch-control progress; fullgoalACTIVE/noGPU.
+  NEWrouter->expertcost/sourcecontract, notoldstaticCTA/PDL/routetuning.
+  7files==434GitTREE;unchangedalignFunctionDef withshape/callrecorders7cases.
+  E128top8BM16:M1/8tiny,M9/24/2048generic;invalid/cudafalsefallback.
+  Tiny64assignmentsalreadyexists/no thresholdtuning/commenttimingadoption.
+  OnealignCALLSITE;SAMEsequence up/down passsame3metadata (NOTallforward/
+  chunkpathsoneexecutionproof). OrdinaryCUDAsoftmaxTopKalreadyfusedrouter.
+  AllnamesinventoryFIRST:2oldopenedwidth9profiles each21461kernel/42names/
+  24graph;router+align+sort1152each,1.4685/1.5827%kernelDURATIONsum;
+  align+sort.9010/.9740%;NOTexclusive/removabletime/wholeworkload/JCTbound.
+  Activation7.6870/5.5862% andcombine2.3285/1.9506%SEPARATE;PDL/overlap/
+  profilerlimitskept/no oldPDLreopen. DifferentoldconfigsNOTnewABgain.
+  OfficialFlashInfertrtllmBF16APIroutingmarkers+SHAverified;API!=singlekernel
+  TopK+alignproof/localH200Qwenreplacement/perf. GenericfusionNOTinnovation.
+  IndependentSQLall42/21461/24+7branchformulas+7TREE+sourcespass.
+  Inventory.643/attributeinclfetch1.229/review.727sOFFLINE.
+  Firstfixtureempty(int)EXIT1BEFOREprofiles;originalplan/scripttarretained,
+  onlyshaperecorderfix/plan+profileASTunchanged/no native/modelfailure.
+  No newexpertscheduler/notinythresholdpositivehunt/newmaininnovation.
+  AllnewPy named evidence/allownedterminal/noGPUquery/use/Torch/native/
+  compiler/model/route/old137/audit/journal/serving/workload/queue/waiterchange.
+  P/D+sharedMoE andLeanSparse qualificationsunchanged;goalACTIVE.
+  See docs/research/moe_dispatch_control_cpu_20261115_zh.md.
+- 2026-11-15 CPU router/norm frontier progress; fullgoalACTIVE/noGPU.
+  NEW pre-norm-routing hypothesis, not oldhead/selector/MoE grouping reruns.
+  Constructed2048/128/top8, BF16-exact inputs+coeffs/gamma1/eps1e-6.
+  IdealrealRMS then explicitBF16RNE: 1->255/256,129/128->129/128;
+  expert8 -1/256->3/65536 vs expert7zero, STRICTtop8 swap7->8.
+  Notcheckpoint/naturalactivations/errorrate/nativeFP32CUDAorGEMMproof.
+  Separate[0,1]scales1,.5 weights.7310586/.6224593;ID!=weightcontract.
+  Decimal80 main/independentno-sqrt rationalsquareintervals/exact128dots.
+  Threefiles==434GitTREE;workingCUDAStreamsfinallywait_stream isGPU
+  dependency,notCPUblocking;workingidentityNOTfrozene926/deployedproof.
+  AWSNeuronEXPERIMENTALfusion commitad2f1b9/treea9e1a876/blobe0832fa3
+  API+Gitblobbound/7606B/noimportcompileexecution/H200Qwenqualification.
+  Originalplanwrongcorepath kept;actualexperimental/moe_block sidecar.
+  Aliasqueryidentifierguardsecondfailure kept;explicitroot+entriesverified.
+  BothfailuresBEFOREnumerics archived/originalplan+protectedASTunchanged.
+  main1.913/review.135sOFFLINE;no actual model/accuracy/overlap/JCTgain.
+  DoNOTimplementbypassnorm orretunewitness/asnewmaininnovation.
+  Multichunk/layermajor already prior+oldquant,lookupONLY/no repeatprototype.
+  Oneoffs named evidence/allownedterminal/noGPUquery/use/Torch/native/
+  weights/route/old137/serving/workload/queue/waiterchange.
+  P/Dattention+sharedMoE andLeanSparse originalqualificationsunchanged;
+  goalACTIVE/no newmaininnovation. See
+  docs/research/router_norm_frontier_cpu_20261115_zh.md.
+- 2026-11-15 CPU output-demand contract progress; fullgoalACTIVE/noGPU.
+  NEWlogprobflag/source-contract question,NOTclosedheadcertificate/hidden/
+  precision/acceptance/profile rerun. 7nativefiles==canonical434GitTREE.
+  Extract unchanged ForwardMode+metadatafactory+prunedstates+Samplerforward;
+  Python row/shape/operation recorders only/noTorch/native/model/numericmath.
+  10rowcases D1/D9/IDLE0 xlogprob off/on plus P[4,5,6]4requirements.
+  Decode9bothsame0..8;Poff/outputonly IDs3,8,14;inputstarts[0,5,3]8rows/
+  all0 15rows;ALLsame3samplepositions. Startsarealready-normalizedextend
+  arguments/NOHTTPnegative/defaultparserqualification/noGPUzerobatchproof.
+  NativeDgraphcapture ForwardBatch explicitreturn_logprobFalse;worker
+  forwardthenordinary/delayed sample;ModelRunner passesactualrequestflag.
+  Outputlogprobcompute underifreturn_logprob. STATICnormalpath ONLY/
+  notallcapturehooks/spec/beam/DP/PP/backendqualification.
+  8sampler traces greedy/random xlogprob xdeterministic;standardnonRL/
+  nonHIP/Ascend/nooriginaloverride/maskcapture fixed. Preprocess/math/RNG/
+  backend/TP/logprob funcs STANDINS. Offrandomstilltemperature+softmax+
+  sample;notallpostprocessingremovableobservation. No numeric/quality/gain.
+  Independentranges+branchpredicates10+8/7TREE/sourcegates/oldheadcost
+  manifestpass;main.093/review.055sOFFLINE. Original0.66-.70%graphhead
+  evidencekept/noequalruntimeclaim/nofulloutput/JCTbound/noheadreopen.
+  Append docs/research/output_head_body_cost_cpu_20261114_zh.md only;
+  oneoffs named evidence/allownedended/noGPUquery/use/CUDA/model/weights/
+  QKV/hidden/rawaudit/journal/profile/certificates/serving/native/workload/
+  queue/waiterchange/no137rerun/noe926qualificationupgrade/goalACTIVE.
+- 2026-11-15 CPU installed-prefill-binary resource progress; fullgoalACTIVE/noGPU.
+  Shared-index andlastlayeroutputideas foundoldpremise/prior;NOnewprototype.
+  NEWPREFILLcompiledmetadata beyondoldDprofile,NOTregister/shape/backendtuning.
+  Offlinecuobjdump1.1226GBflash_ops before/afterSHAfixed,explicitsm90a;
+  372ELFblocks/4642BF16-name mainloop/184exactBF16D128V128/10ELFs.
+  KeepALLflags:90M64/94M128. ELF MAX_THREADS isONLYcompilerupperbound,
+  NOTactual/requiredlaunch;REQNTIDabsent/actualthreadsUNKNOWN.
+  Fixedf89sourceNumMmaThreads+128/getblockcontract matchesALLbounds.
+  CONDITIONALM64 256*255=65280/rem256;M128384*168=64512/rem1024.
+  184*5=920conditionalpairs(4oldMoE+oldoriginalFlashInferCC7168)ALLregfail,
+  0threadfail. Not920runs/opportunities/historicaldispatch/GPUresidency.
+  StructuralQwenfamily4/M128two(spliton/off),10M128pairsallfail;NOTactual
+  runtimeselectproof. Shared1024==ELFsectionSTATICONLY/dynamicUNKNOWN.
+  QwenM128stack8B;otherstackkept,NOTactualtraffic/spilllatency.
+  InstalledwholebinarybuildcommitUNKNOWN,5fixedf89sourceHTTPbytes==local.
+  IndependentELF64sections/symtab/rawREGCOUNT2f/FRAME11/MAX_THREADS05/
+  all184/920/5groups/10ELFs/pop4642rescreen/source+tool+binaryhash pass.
+  capture5.665/inventory5.136/analysis.644/review4.214sOFFLINE inclsourcefetch.
+  Rawmetadata decodercheckedvsnamedtool,NOuniversalgeometryinference.
+  SameSMexclusionCONDITIONAL/notcrossSM/tailwaveimpossible/noPDspeedbound.
+  KeepPDattention+sharedbodycandidate,needactualGPU/wholemodelperf;noe926
+  orLeanSparsequalificationupgrade/no newmaininnovation/shapepositivehunt.
+  OneoffsONLYnamed evidence/allownedended/noGPUquery/use/moduleload/
+  Torch/native/FlashInferimport/devicecompiler/model/audit/journal/serving/
+  native/workload/queue/waiterchange/no137rerun. See
+  docs/research/fa3_prefill_binary_resource_cpu_20261115_zh.md.
+- 2026-11-15 CPU current-score writeback screen; fullgoalACTIVE/noGPU.
+  NEWDoSA-decodecommoncontrol, NOToldtemporal/INT8/certificate/support/group
+  retuning. SameOPENED2toolboundaries/4layers/96querylayer/3072heads;
+  parent'ssavedseedsexactlykept, currentFP64seedkth127/inclusivefilter.
+  Full3476992scores STILLscanned;candidate1293196/.37192953;alloriginal
+  supportequal/allstrictcutoffs. NOQKV/model/oldselector/LRUrerun.
+  Compactpairs8Bvsdense4B:10345568vs13907968B/.74385906,NOT62.8%bytes.
+  SeedGQAunion107732pages adds55158784B vs222527488scan/1.247874;
+  recomputescore1.1124305/idealreuse1.0,sourceideal1.0. Seedscore+IDs
+  1563680B EACH+24576thresholdcounts;notpeakallocation/actualHBM/PCIe/time.
+  Child40/48compactbytesWORSE/root4/48;no role/samplepositivehunt.
+  Postresultunchangedaccounting:ideal source+candidatewrite.98493289x;
+  separatepass+scratch1.22494359x;extrasource15.4836xwrite saving.
+  Singledecode/GQA8/D128/BF16:512Bindex+32Bscore,allscorewriteonly1/17
+  countedpayload;NOTselectorlatency/bandwidth/JCTbound/cachequalification.
+  2955ternarysmallrankcases inclties pass;fallback/nonfinitechecks.
+  Independentheap/ranksetsall3476992/3072CSV/96rows/7groups/99inputs/
+  11officialGitblobs/3primarypass. Main.740s/review2.814sOFFLINE.
+  Stopstandalonetwopasspriority/no seed/budget/layer/group/sampletuning;
+  DoSAprior/commonfusionmuststrongcontrol,NOTnewagentmaininnovation.
+  OneoffsONLYnamed evidence;allownedended/noGPUquery/use/model/attention/
+  engineimport/native/serving/workload/queue/waiterchange/no137rerun.
+  e926andLeanSparsequalificationsunchanged/no quality/perf/JCTacceptance.
+  See docs/research/selector_seed_writeback_cpu_20261115_zh.md.
+- 2026-11-15 CPU real-DoSA source/score-contract progress; full goal ACTIVE/noGPU.
+  Fanin-prefix candidate already FlashAgents; DO NOT rerun. OpenReview remains
+  browser verification/no bypass/new full-PDF claim. Author primary recovers
+  REAL2610.13990v1, direct title DoSA: Dots Sparse Attention; NOT old false
+  2610.32211(audio). Old rejection/numerics/plans kept; recovery sidecar only.
+  Source/API capture7.872s; pin flash-indexer d744698bb452433b16a7c7cb4a8d7094e06cdecb
+  and dosa-sglang582a8a151d5b14bd3b9d79e932a6390638d11e5a;8newGit blobs
+  verifySHA1/size/SHA256 +3cachedQuest01c1623bf9395009520874e989e29f683203b357;
+  codecapture4.840s. Not wholefork/model/hardware qualification.
+  DSA signed multi-indexer-head ReLU sum -> query-token TopK differs from
+  independent per-attention-head Quest page-box score. GQA KV sharing does
+  NOT authorize head-score sum/shared support. Strict2head witness [3,0]/
+  [0,2] selectsA/B vs sum[3,2] onlyA; not DoSA bug/model data.
+  Fixed2D q{-1,0,1},two keys{-2,-1,1,2}:2304integer cases, Questbox/sign/
+  a=[q+,q-],x=[max,min],z=a.x == ReLU(z)-ReLU(-z). In THIS2head embedding
+  firstretaineddot already fullQuest score/no omitted-head saving; NOT all
+  bounds/representations/fused selection impossible/GPU adapter/FP32 ties.
+  Sourceexact_h32_reduce(z+abs(z))/2*weights+scale; static prefillsupported
+  line803 requiresSM(10,0),FP8Q/F32w/packedindexcache; line863 rejects
+  len(rids)!=1. Specificcapturedpath only/no actual capability query.
+  Actualpaper decode retains FULLFP8 scores, recentIDs CURRENTquery scores
+  seed safe threshold, reduces selection/writeback. Captured8mostlyprefill,
+  not complete decode source audit. Preserving original perheadQuest score
+  +currentqueryseed filter is only a future common control, not our new design
+  or tested benefit. No old INT8/certificate/group/budget/sample retuning.
+  Integer/ASTanalysis.047s/review.106sOFFLINE; independent corners+all2304/
+  8+3blob/API/metadata/strictwinners/guards pass; no import/compile/execute
+  downloadedcode/model/real selector/QKV/audit/journal/token/raw/GPU work.
+  All owned jobs ended, no serving/native/queue/waiter change/e926 upgrade.
+  Scope current Quest CPUdiagnostic, not enabled sparse serving. See
+  docs/research/dosa_score_contract_cpu_20261115_zh.md.
+- 2026-11-15 CPU MoE activation-lifetime progress; full goal ACTIVE/noGPU.
+  NEW per-invocation reachable-storage question, not old graph-pool borrowing/
+  tile/counter/model rerun. Frozen core aliases gemm1_out=cache1 at615,
+  lastaliasuse625, delcache1 at807 but gemm1_out still live at downalloc809.
+  Extract original core+validation+combine-choice AST, shape/storage/weakref
+  stand-ins only; no tensor payload/native/Torch/device/library allocation.
+  In-memory AST copy adds delgemm1_out only after delcache1; native unchanged.
+  Q24/2048 x inplace x fusedSwiGLU x fusedSum =16conditions/32executions,
+  not tuning or GPU tests. Q2048 unfused separate144->96MiB/inplace136->88;
+  fusedSwiGLU96->96/88->88. Delta48MiB only unfused; no general GPU claim.
+  Source down buffer allocated even fusedSum control; no actual physical
+  waste/branch/graph qualification. Kernel-call shapes/order identical,
+  not output/numerics/stream/allocator/graph/safe-free acceptance.
+  Reuse membership SQLite85339da6 before/after; NOraw audit reread.
+  Common-window12071prefill/14500explicitmembers/12541895logicalQ;
+  Qmin5/mean1039.0104/P501091/P90/P99/max2048. Includes unfinished+background.
+  Q not actual graph bucket/padding. Conditional unfused new-payload
+  P5076.71->51.14MiB/max144->96; not actual historical memory/flags.
+  MoE temp depends current Q, not long historical H; no all-activation or
+  physical peak bound. No multiply48layers/graphs/convertfree-agent capacity.
+  Four sources==434 Git TREE/config bound; SonicMoE2512.14080v1 exact
+  title/metadata primary, backward/training savings not local inference.
+  Python3.11 del/weakref primary; generic alias/fusion engineering not new.
+  Initialprobe EXIT1 rawHTML marker after ALL numeric outputs; old source/
+  failure tar/checkpoint kept. Firstfinalize EXIT1 string Path digest;
+  old finalizer/failure kept. Corrected finalizer reuses ALL numeric/downloads,
+  zero AST reruns/unchanged plan+numeric SHA. Finalize.493s EXCLUDES earlier
+  failures/review.350s OFFLINE. Independent integer liveness/static alias/
+  32traces/16shapeformula/allSQLmembers+stats/4source/3primary/archive pass.
+  All owned jobs ended; no GPU query/use/server/waiter/queue/native change,
+  no137rerun/no performance/main-innovation acceptance/e926 change. See
+  docs/research/moe_activation_lifetime_cpu_20261115_zh.md.
+- 2026-11-15 CPU restore-partition causality progress; full goal ACTIVE/noGPU.
+  NEW multi-query symbolic contract + direct MSA prior, not reopening old
+  CPU-miss lane/restore-isolation/10sample census or adding an executor.
+  Fixed H0..5/Q1..4/all history splits:84 constructed layouts/210 Q rows,
+  NOT workload samples/error rates. Uniform scores/one-hot V/exact Fractions;
+  naive local bottom-right causal24match/60fail; historical noncausal +
+  contiguous current suffix causal84match. Must preserve original Q/K and
+  RoPE/positions; no model/FP32/BF16/CUDA numerical qualification.
+  H4/Q3/split2 witness full scalar[2,5/2,3] vs naive[4,11/4,3].
+  Gapped new suffix[4,6]/[5] also fails flag-only; absolute-position masks
+  correct. Duplicate/missing coverage reject; all6 three-part arrival orders
+  finalize only complete coverage. Partial computation != valid full output.
+  Four sources==434 Git TREE; AST existing MLA prefix causalFalse/suffixTrue,
+  not this Qwen MHA execution or new production bug. No native/Torch imports.
+  Direct primary2606.02964v1 exact metadata/body title Multi-Segment Attention:
+  Enabling Efficient KV-Cache Management for Faster Large Language Model
+  Serving/Jun1,2026; AsymCache already noncontiguous MSA/position-aware
+  recompute/adaptive chunks/agent integration. NOT arbitrary DMA/LSE merge/
+  local H2D/bitwise qualification; do not misattribute its mechanism.
+  Official FlashAttention v2.7.4.post1 README verifies public bottom-right
+  contract, not matching local wheel/binary. Independent partial-mass review
+  all layouts/query rows/4source/3primary/hash/arrival/coverage pass.
+  Main1.763s includes HTTP/review.058s OFFLINE not control/performance.
+  No runtime-audit/journal/token/weights/model reread, no old137 rerun,
+  no parameter/sample tuning/GPU query/use/native edit/server/waiter/queue.
+  Old restore307 single-context/1430 unknown and 10samples91.477ms/1183
+  demand-stage counts stay old evidence, not new coverage or gain bounds.
+  Stop generic resident-first executor investment absent measured exposure/
+  independent overlap/cost evidence; no new main innovation/JCT acceptance.
+  All owned jobs ended; e926/LeanSparse qualifications unchanged. See
+  docs/research/restore_partition_causality_cpu_20261115_zh.md.
+- 2026-11-15 CPU MoE weight/work progress; full goal ACTIVE/noGPU.
+  NEW useful-work/source-reference question, not route/model/tile tuning.
+  Same 4 opened child CPU routes, other-three equal-ordinal D; hypothetical
+  ready sets, not native concurrency/long roots/new holdouts. Fixed B16;
+  6144 D/24576 P+D layer cases, no model/weight-payload/raw-audit reread.
+  Per expert BF16 9437184B and useful GEMM 9437184FLOPs/assignment.
+  D3 mean16.680664 experts/150.125977MiB, ideal pooled1.438792F/B;
+  attention unique-KV40.710938MiB and ideal8F/B, pooled source ratio3.687608.
+  Source bytes NOT actual HBM/miss/traffic/bandwidth/overlap/time bounds.
+  P64/256/512/2048 ideal-source F/B8.022/21.837/37.717/136.273.
+  Tail B16 still equals joint Mtiles, but invocation-source accounting
+  keeps60.01/16.51/8.51/2.79% of joint's credit; at2048 tail/joint+13.44%
+  source references NOT measured extra bytes or performance. Opposite
+  fixed-Mtile reference model remains equal; cache behavior unmeasured.
+  Real04/layer0/Dstep5/P2048 witness tiles1103/1080/1080 but expert-calls
+  151/127/151; expert23 D1+P298 -> first16/remaining283, same19tiles vs
+  joint19 yet2 source invocations. Do not claim tile count proves reuse.
+  Four source files == frozen434 Git TREE; CPU AST create_weights two
+  orientations gives same payload, no tensor/native/GPU-library import.
+  Independent job queues/all cases/distributions/8routes/4sources pass;
+  analysis1.978s/review6.326s OFFLINE not online cost.
+  Newly direct-verified2510.08055v2 title From Tokens to Layers: Redefining
+  Stall-Free Scheduling for MoE Serving with Layered Prefill; Apr16,2026.
+  Sec3.1 expert traffic/4 layered/4.3 chunk combination/5.11 long context
+  already prior; generic layer/chunk/reload reduction not new innovation.
+  Direct abs metadata/body title span/version archived, search/render title
+  not binding; prior review AFTER stats, separate unchanged-stat/hash review.
+  Primary reviewer first h1 assumption EXIT1; actual title p5.1.1 smallcaps
+  span, old source tar/failure JSON kept; only parser fixed, no stats change.
+  Deprioritize ordinary small-batch overlap/tailfill executor; no positive
+  hunt/B/group/sample tuning/new main innovation/GPU/JCT acceptance.
+  All owned jobs ended, no GPU query/use/server/waiter/queue/native change.
+  e926 old qualifications/pending GPU state unchanged. See
+  docs/research/moe_weight_reuse_cpu_20261115_zh.md.
+- 2026-11-15 CPU offline FlashInfer-decode progress; fullgoalACTIVE/noGPU.
+  FollowFA3resourceconstraint withNEWoriginalstandaloneCUDAcorecontrol,
+  NOTclosedPOD/laneGPUs rerun orgenericbackendasnewmaininnovation.
+  Installed0.6.18/originalJinja/defaultvariant/BF16/head128/GQA8/fixed
+  tuple(0,2,1,8,16,8,1);explicitcompute90a PTX->sm90a cubin CPUcompile
+  ONLY/no moduleload/hostdispatch invocation/devicequery/kernel/model.
+  Cachedonlyprefill/POD(PODdecodeprefillparams),notstandalonedecode.
+  Originalgeneraldispatch16entriespreserved;NOT16experiments/minimaltuning.
+  Selected128threads/56regs=7168,stack/spill0;dynamic9216viaoriginalsource
+  CPUC++expr+independentintegers,ELF.sharedsection1024,conservativesum10240.
+  static_shared_bytesFIELDmeansELFextentNOTmeasuredCUDAstaticattribute/
+  GPUallocation. 4oldMoEpairsnotrawcapacityrejected/8dense+2unchangedFA3
+  stillrejected;onlychanging smallpartnerdoesNOTremoveFA3footprint.
+  PassNOTactualready/residency/overlap/speed/JCT/quality;ordinaryexisting
+  CUDAcorecontrolmustbaselineequally,nonewmaininnovation/perfacceptance.
+  NativehelperCPUASTdefaultBF16GQA8 TCtrue/falseoverridetofalse/true totrue,
+  oldlibrarycompathelperabsent;NOruntimeconfig/servicechanged.
+  3core==officialv0.6.18,793transitiveheaders+compilerSHArecorded,
+  NOTwholewheelupstreamqualification. NVCC4.252/PTXAS1.283sfirstboth0;
+  buildthenEXITS1ondepcolonseparatetoken. Preserveoriginalbuilder/logs/
+  PTX/CUBIN/checkpoint;finalizeONLYmanifestNOdevicecompiler rerun/
+  originalhashesunchanged. Independent793deps/16entrylogs/readelfELF/
+  Jinja/sourcegeometry/14residualcapacity/frozen434blob allpass.
+  readelfNVinfo warningskeptNOTcorruption. Analysis.415/review.281sOFFLINE
+  notcontrol;newPy/C++/generatedartifactsnamed evidenceonly/allownedended/
+  noTorch/FlashInfer/nativeimport/GPUquery/use/model/serving/workload/
+  queuechange/e926qualificationupgrade. See
+  docs/research/flashinfer_decode_resource_cpu_20261115_zh.md.
+- 2026-11-15 CPU CTA-resource progress; fullgoalACTIVE/noGPU.
+  NEWcompiled-footprintconstraint NOTVcertificate/plancache/microcostrerun.
+  Same2OPENEDwidth9profiles:each7signatures/FA31152/MoE2304/nvjet3480/
+  24graph;denseincludesoldhead/NOprojection-roleguess. FA3CTA256*255regs
+  =65280 vs savedSM65536/remaining256;smem150528vs233472/rem82944B;
+  threads256vs2048/rem1792. MoEregs4608/4864/8192exceedremainingevenwhen
+  smemfits.14counterfactualindependentUNCHANGEDkernelpairsallREGfail/
+  10SMEM/0threads.NOT14actualreadyconcurrency/source-layerdepspreserved;
+  differentprefill/splitkernelmaydiffer. PerCTAdeclared-footprintnecessary
+  constraintsNOTactualresidency/SMassignment/activeCTA/CTAend/GPUtil/
+  bandwidth/JCTbound/causeofoldtimings. SameSMexclusionNOTwholeGPUoverlap
+  absent;132gridNOT132simultaneous. Both4632positive-durationtargetevents
+  haveestactiveblocks0;keepdiagnostic/notphysicalzero/donotguesscarveout/
+  binarybug. CUPTI/Hopper/PTXperCTApool/f89warpallocverified;freedwithinCTA
+  notautomaticallyloanedotherkernel. HFuseauthorsCGO2022primaryDOI
+  10.1109/CGO53902.2022.9741270ALREADYhorizontalfusion+registerbounds;
+  ordinarycaps/streams/spatialpartition/fusionNOTnewmaininnovation/noimpl.
+  Initialarxiv2007.01277v2 HTTP404BEFOREaggregation/source+plan+4primary
+  tarpreserved/correctionseparate/authorsPDFtitle+DOIverified/noHFusenotexist
+  inference;allclassify/resource/planASTUNCHANGED. IndependentSQL14full
+  signatures/counts/firstlastwitness/residualcapacity14/savedprops/
+  5primarySHA/PDFothertextmode pass. Main1.381sEXCLUDESinitialfetchfailure+
+  PDFfetch/review1.451sOFFLINE notcontrol;newPy named evidence/allownedended/
+  noGPUquery/use/model/Torch/native/compiler/serving/workload/queuechange/
+  closedlane/modeltestsrerun/new maininnovation/perfacceptance.
+  See docs/research/cta_resource_cpu_20261115_zh.md;goalACTIVE/e926unchanged.
+- 2026-11-15 CPU V-byteplane progress; fullgoalACTIVE/noGPU.
+  NEWcurrentweightVlowbytereading NOToldscore/wholeKVomission/indexquant.
+  FixedBF16hi8+lo8/region16/twoFP32scalarresidualminmaxperKVregion.
+  AllK+Vhi+metadatacharged;FP64softmaxFREE/weight×residualrangeorder;
+  128dimsbothendssameBF16orfullfallback;GQA8Qunion. Same2OPENEDtoolbounds/
+  fourlayers/lastbefore+firstafter=16querylayer/512Q/64GQA;afterisAFTER
+  denseprefill,NOTHTTP ResumeTTFT.285headsearly butindependentQlowbytes
+  still98.71295%weighted;56groupsanyfullhead+5allpartialunionfull+3skip.
+  GQAlow99.9903%read/only14336Bsave vs579072Bmetadata;
+  baseline592814080->593378816B/1.0009526ideal sourceNOTrealHBM/latency.
+  74186752intervalcomponents0violations/guardedfixedFP64weightsNOTnative
+  FP32/BF16SDPA/qualityqualification. STOPfixedscheme/no bits/regions/
+  groups/newclipspositivehunt/no kernel;NOTallprogressiveprecisionimpossible.
+  PrimaryactualLoopKV2611.04137v1 Loop-Aware KV Cache Compression for
+  Serving Looped Transformers/Nov3 ALREADYattention-dependentVlowbitreads.
+  Lynx2607.01831v1 Progressive Speculative Quantization for accelerating
+  KV Transfer in Long-Context Inference/Jul2 networkAnchor/Residual+
+  speculativeverify NOTlocalHBMproof. BothSEARCHTITLESWRONG;firstguard
+  EXIT1BEFOREQKV;oldsource/plan/responsearchive+separatecorrectionskept,
+  noassumedversioncause. AST allnumerics/pop/parametersUNCHANGED.
+  IndependentintegerRNE65280finitewords/32639positivemidpoints+neighbors,
+  pageBLAS/total-minus-prefix vsmaineinsum/suffix/64source+16witness/
+  allstops+intervals/allrecordbytes+primarychecks pass.weightdiff0/full9.4369e-15.
+  Main11.634sEXCLUDESinitialguard+fetch/review11.298sOFFLINE/notcontrol.
+  NewPy named evidence/allownedterminal/noGPUquery/use/model/Torch/native/
+  rawaudit/journal/tokencorpus/serving/native/workload/queuechange/
+  no53/137rerun/no maininnovation/performanceacceptance. See
+  docs/research/value_byteplane_cpu_20261115_zh.md.
+- 2026-11-15 CPU decode-plan lifetime progress; fullgoalACTIVE/noGPU.
+  ClosecrossforwardFA3plan+NEWperlayercounterresetquestion. Same2OPENED
+  width9profiles/24launcheseach;planner24/88.962+89.920us/mean3.70675+
+  3.74667us/.01557+.01671%kernelSUM,NOTCPUexclusive/critical/JCTbound.
+  Replayrecomputesforward;acrosslayerreuseALREADYpresent. Planvectorsvs
+  mutableatomiccounterDIFFERENTlifetimes;membership/maxlenaloneinsufficient.
+  Fixedf89splitcombineALREADYresetcounterBEFOREdynamic<=1earlyreturn;
+  nonsplitprecomputedexplicitzeroALTERNATIVEbranch,NOassumed48extraresets.
+  Each1152combine4.630663/4.394049ms REALmerge NOTdeletablecontrol.
+  Each48GPUmemset(4B24+36B24)/40.772+40.957us;identityUNATTRIBUTED,
+  NObytes->counterguess/noallCUDA/PDLlifetimeproof. STOPgenericplancache/
+  resetfusion/noimplementation. GAACofficialoldcommitdecodealreadydirect
+  paged_attention/256/no decode_blocks;ASTonly/no53testrerun/codec/model.
+  Oldmultiquery/e926unchangedpending/no137rerun. Fivepinnedofficialf89
+  files==archive;REFisextractNOTGitcheckout/gitrevparsefailsnormal,
+  backend==434TREE/notbinaryqualification. IndependentSQLallkernel/
+  memsetcounts+durations/8eventwitnessperprofile/sevenSHA/ASTpass.
+  Main3.832sincfetch/review.888sOFFLINE notcontrol;newPy evidenceonly/
+  allownedterminal/noGPUquery/use/model/nativeimport/rawaudit/journal/
+  tokencorpus/serving/native/workload/queuechanges/no maininnovation/
+  performanceacceptance. See
+  docs/research/decode_plan_lifetime_cpu_20261115_zh.md.
+- 2026-11-15 CPU graph-workspace capacity audit progress; goalACTIVE/noGPU.
+  NEWmemorylifetimequestion,NOTindexparameterrescreen. Frozenpoolalready
+  globalsharedFull+Breakable/capturestream/outputreuse/tempborrow.
+  Enablednormalborrowexit check_pending thenreplaychecksactive_allocated
+  beforebody;long-livedKV NOTexistingborrowcontract. NotcomprehensiveCUDA/
+  crossstream/exceptionlifetimeproof/nohistoricalbugclaim. Borrowflagdefault
+  FALSE,historyenablement+inactiveextentsUNKNOWN;doNOTclaimused/freecapacity.
+  BOUNDED64KiBserver.logprefix/7startuprecords only,Nov8 Pgraphnet.61/
+  Dgraphnet.08GiB/loglabelsGB butsource /1<<30. Printedroundingcompatible
+  P.605--.610/D.080--.085. .69netNOTgrossgraphalloc/borrowable/reclaim/
+  capacitybound/JCTgain. ConfigKV805198*98304=79154184192payloadbytes,
+  no token/agentfreecapacityconversion. Stopordinarysharing/temporaryborrow
+  asnewinnovation;neednewpersistentaddress/lifetimecostbeforeimplementation.
+  IMPORTANTidentitycorrection:434c35dd...isGitTREE,NOTcommit;HEAD/basefa5cb52a
+  +canonicalpatchalreadymatchespreparedrecord. Initial"HEADchanged"judgment
+  WRONG/withdrawn. All12oldnativebindings+6targetgraphfilesunchangedfrozen;
+  noqualificationinvalidity/rawtamperinginference/no137testrerun.
+  SourceonlyGit/AST,7rawseekwitness1161B/fractionrounding/6blob+12hashreview
+  pass;main.633sincdocfetch/review.062sOFFLINE. PyTorch2.15officialnotes
+  generalONLY/notinstalledAPI/GPUqualification. NewPy named evidence/
+  allownedterminal/noTorch/nativeimport/GPUquery/use/model/attention/
+  runtimeaudit/journal/tokencorpus/serving/workload/queue/nativeedits/
+  newfixtures/no maininnovation/perfacceptance. See
+  docs/research/graph_workspace_capacity_cpu_20261115_zh.md.
+- 2026-11-15 CPU two-sided selector-membership progress; fullgoalACTIVE/noGPU.
+  NEWstrongercontrol forpreviousallcandidatefine: samecodes/intervals/
+  gamma/budget/2OPENEDbounds/96records,NOrescoring/quant/model/KVread.
+  OUT U<kthL;IN L>(k+1)thU;onlyunresolvedfine/cardinalityclosure.
+  ALL3072headsstillneedfine/no closedheads. 3476992classifications,
+  IN147959/OUT2580106/U748927;FP64strictcutoff3072/allfinalsameoriginal
+  masks/no tieshere,NOTnativeCUDA/tie/pageorder/qualityqualification.
+  TwoofficialQuest01c1623bGitblobs provecheckedattentionpathreceivesIDs/
+  no scorevalues,NOTpageorderirrelevance. Existingallcandidatefine896886->
+  748927(-16.497%)butuniqueKVsource209911->204404(-2.6235%/5507).
+  105122/147959=71.0481%certifiedINstillotherQfine-reader. Idealallreads
+  .985926x/scorecount1.215395x;child1.253980/1.398172;root.921480/
+  1.171452. Extra264Bbank51.5625%+2globalorderstats/compactionunmeasured.
+  NOTGPU/H2D/JCTgain. Stopfixeddual-directorymembershipformat/no params/
+  groups/newclipspositivehunt;NOTallindexmethods/perfectboundsimpossible.
+  GeneralcertificationNOTnewagentinnovation. SearchGPU/CAS2610.14996title
+  wrong:directactualExactTop-kSelectionfromFewEvaluations/ESnotGPU;
+  correctgeneralpriorONLY. DoSA2610.32211WRONGactualMelodyGuidanceaudio,
+  attributionREJECTED/notnonexistenceclaim. Primarybytes/rejectstatuses/
+  separatecorrectionkept/noassumedversioncause/numericchange.
+  Independentrank-countpredicatesall3476992/Pythonheap3072/support/96sets/
+  sharedsource+summary/2Gitblobs/primarycorrectionpass. Main.703sEXCLUDES
+  fetch/review2.888sOFFLINE,NOTcontrol. NewPy named evidence/allownedended/
+  noGPUquery/use/model/attention/selector/LRU/audit/journal/token/native/
+  serving/workload/queuechange/no novelty/quality/perfacceptance. See
+  docs/research/selector_membership_certificate_cpu_20261115_zh.md.
+- 2026-11-15 CPU current-query quantized-index screen progress; goalACTIVE/noGPU.
+  NEWcurrentq INT8minmaxcoarse+fine/allcandidates,NOToldtemporalnormcertificate
+  tuning;same2OPENEDtoolbounds/4layers/block16/perQ2048/127+last/8boundary+
+  88D=96records. Fixed256int8+scaleF32+maxresidF32=264Bvsoriginal512B/
+  KVheadpage;originalbankKEPT. L1q*maxresid+bothgamma256+outwardguard,
+  excludeONLYupper<kthlower. No oldq/scores/time predictor. SavedFP64
+  3476992scoresonlyvalidation,alloriginalselectedpagesretained;NOTnative
+  arithmetic/finalTopKtie/pageorder/qualityqualification.
+  IdealGQAunionread all.998596x/scorecount1.257949x;child1.294447/
+  1.525074,root.927467/1.193726. Coarse114740736+fine107474432vsold
+  222527488B =>ONLY312320B/.1404%saved,NOTGPU/H2D/JCTgain.
+  Addedcoarsebank51.5625%;oldDECLARED4194304slot48layer scenario24GiB+
+  12.375GiB=36.375GiB,NOTactualallocation/waste/poolresize. Stopthisfixed
+  allcandidatefineformat/no bitwidth/group/scale/norm/budget/samplepositive
+  hunt/no root-onlygainclaim;NOTallquantized/two-sidedcertificationimpossible.
+  Quest2406.10774v2/RaBitQ2405.12497 directprimarymetadata+SHA;generic
+  boundedquantfilterprior,NOnewagentmaininnovation. InitialHigh-dimensional/
+  High-Dimensionalcaseguardfailbeforestats/source+plan+responsearchivekept.
+  InitialstatsEXIT124external100s/84complete+7banks. Explicitresume hashes
+  allcompletewitnesses,ONLYremainingroot47/12queries,new19.052sEXCLUDESold
+  100s+sourceattempt;84rows/BANKSunchanged,ASTquant/bound/metricsunchanged.
+  IndependentBF16bitorderedextrema8banks/scalarheadscoresall3476992/
+  8originalmasks/96candidate/GQA+fullstorage+5summary/hash/84rowarchives
+  pass;maxscore5.684e-14/bound1.137e-13,review149.989sOFFLINE notcontrol.
+  No furthermodel/hidden/attention/selector/LRU/GPUquery/use/audit/journal/
+  tokencorpus/native/serving/workload/queuechange. NewPy evidenceonly/
+  allownedterminal/no quality/JCT/perfacceptance. See
+  docs/research/quantized_selector_filter_cpu_20261115_zh.md.
+- 2026-11-15 CPU speculative-support screen progress; fullgoalACTIVE/noGPU.
+  NEWquestion current-Q speculativeattention on previousselectedpages,NOT
+  old-Qoutputreuse/scoringcertificate/headpartitionrerun. SAME2OPENEDtool
+  bounds/4layers/block16/perQ2048/Top127+last;8boundary+88adjacentD=96
+  transitions,NOT96WF. P=oldhistoricalfullpages insideknownunchangedprefix/
+  excludelast;no budget/group/sampletuning. SavedA EXACTset preserved via
+  PintersectA + AminusP;NOselector/attention/model/LRU/qualityexecution.
+  Boundary/D coverage63.08/74.96%;extraQinteractions35.82/24.72%;
+  idealGQAsourceunion1.2266/1.1804x NOTactualH2D/GPU/JCTgain.
+  FP32perpageout128+LSE516B ~2MiB/query/layerhypothesis,NOTall48peak.
+  DirectPRR2606.30389v1+officialcfc2c41f ALREADYintersectionrepair/partials:
+  DO NOTpitchasnew. Initialunion-onlycharacterizationWRONG/withdrawn;
+  exactprimarybody+actualwrappernamesdifferfromsearchrender,noassumedversion
+  cause. Bothsourceguardfailures/oldsource+plan/tarsretainedBEFOREmaskstats.
+  Actualflash_attn_with_sparse_block_table_partials shared1Dtable/
+  num_splits=nblocks;all32union292--924 >C++cap256 ALL96failDIRECTsingle
+  callsourceguard,NOTallgrouped/customimplementationsimpossible.
+  Common-table predictedrectangle3.78/4.01xideal;sourceunion1.85/1.88xA.
+  IndependentPythonintsets16masks/all96ints+7summaries/primarymeta/2Gitblobs/
+  ASTpass;thirdC++blob+positiveparam/96guards+secondarchivechecked.
+  Main.170sEXCLUDES2initialdownloadfailures/review1.895/contract.550sOFFLINE.
+  No newmaininnovation/numerics/perfacceptance/noordinaryPRRintegration/
+  speculativebudget/headgroupkernelpositivehunt. NewPy evidenceonly/
+  allownedterminal/noGPUquery/use/rawaudit/journal/tokencorpus/native/
+  serving/workload/queuechange. See
+  docs/research/sparse_speculative_support_cpu_20261115_zh.md.
+- 2026-11-15 CPU fixed-service resource-DAG progress; fullgoalACTIVE/noGPU.
+  MembershipSQLite reused/NOrawauditread.316638nodes/1672698edges/
+  131763batches/1325156members;70starts/59ends/18originalmeasured/
+  10380terminal+6pending+5unservedsubmitkept. Sourcelags/eventdeps preserved,
+  arrivalabsolute;nativecalllag REPLACEDbysharedserviceprogress NOTqueue scaling.
+  Keepoverlapresidues/terminaltails. Baseline0error/mean1048.204522s FITBY
+  CONSTRUCTIONnotaccuracy.42preregisteredcostcases/phase/tailcontrols.
+  Allcost-1%hold=>conditionalmean-2.155286s/.2056%,NOTrealGPU/JCTgainbound.
+  Post-resultdiagnosticSAME42:costsave37.898536s/betweenwait+36.544207s/
+  lastendadvance1.354329s. Fixedoriginalbatch waitsforitsoriginalmembers,
+  cannotrebatch.5samecaseapp-pendingcheck:all1%wait47.945007s,36.801420s/
+  76.7576%withOTHERsubmittedunfinished,weighted8.661/max25;NOTphysical
+  eligibility/KV/slot/GPUidle/nativebug.40foreignpendingwitnessesretained.
+  11partialWFhave1049unsubmittedsourcecalls NOTmodeled. STOPusingfixedbatch
+  graphasrealgainpredictor/bound;doNOTrate/order/populationpositivehuntor
+  adduncalibratedrebatchedsimtosubstitutefullgoal. Nativecontinuousbatch
+  alreadyexists;missingmodelabilityNOTsysteminnovation.
+  Independentsource+SQLallstructure/forwardedgeevaluation42pass;
+  endpoint4.55e-10ms/spanconservation5.23e-8ms. Main19.189/review9.792/
+  readiness4.822sOFFLINE notcontrol. Finalhash/40witnessidentitychecks.
+  NewPy evidence/allownedterminal/noGPUquery/use/model/backend/rawaudit/
+  serving/native/workload/queuechanges/no newdesign/performanceacceptance.
+  See docs/research/fixed_service_resource_dag_cpu_20261115_zh.md.
+- 2026-11-15 CPU service-membership recovery progress; fullgoalACTIVE/noGPU.
+  NEWgap from priorcompactinputs resolved with reusable174497792B SQLite:
+  raw131763services/1325156members/10386rids;10380terminalreceipts/6unknown
+  retained;oldwindow131701+62outside kept. RawSHA04f7dc9c...fullyagrees.
+  DO NOT repeatfull1GBJSONextraction;reuse service_membership_index...SQLite/
+  savedrawoffsets. CurrentturnnewextractionjustifiedNEWmissingmemberquestion.
+  Frozenapp116b/native434 fivefilescurrent==gitshow/AST synchronous chain:
+  terminalreceiptinstream_output before runtimecallback/telemetrycompletion.
+  Strictinterval+explicitmember/identity/session/clock/outputcount10380unique,
+  0unmatched/ambiguous,NOTnearesttime/lastmembership/GPUproducer/DMAproof.
+  raw9654ridslatermember/window9651 preserve BOTHpopulations/NOTwaste.
+  Receipt->observationend1.105/3.626msP50/P90 NOTexclusive/GPU/JCTgain.
+  FirstguardfailedlastCSVendclip;initialsource/planarchived.131073committed
+  rowsreused;resumeparseonlytail/prefixrehash,NOTonetotalrawread.
+  Resume5.025sEXCLUDESfirst/review2.691sOFFLINE. IndependentSQL+sweepall
+  10380links+firstlast/192rawrows1887870B/5sourcehashAST/DBintegritypass,
+  no mainimport. NewPy evidence/allownedterminal/noGPUquery/use/model/
+  backend/serving/native/workload/queuechange/no novelmechanism/JCTacceptance.
+  Priorcompactinsufficiencyonlyappliestothoseoldinputs;nextcanuseindexbut
+  resourcecounterfactual/externaldependencies/costsemantics STILLUNIMPLEMENTED.
+  See docs/research/service_membership_index_cpu_20261115_zh.md.
+- 2026-11-15 CPU service-elasticity evidence progress; fullgoalACTIVE/noGPU.
+  NEWquestion smallcomputechange->queue/JCTamplification,NOTnewdesignresult.
+  Existingcompactinputs59completeWF/47415nodes/9267nativecalls;lag==actual
+  llmsubmit->nativecomplete NOTGPUcompute. Scalinglagscaleswaitingtoo.
+  Receipts10380/70WF;outsidegraphs11WF/1113calls remaincompetitors,notzero.
+  ServiceCSV131701(P12071/D119630)onlyiter/phase/bs/start/endNOmembers;
+  allreceipttoplevel/nativenofirst/lastserviceID/forwardcounterlink.
+  MissinginTHESEinputsNOTrawauditabsence;no timestampguess/no1GBaudit/
+  journalrescan/newtoyresourcegraph/JCTgaincurve. Workerinterval!=GPUduration.
+  DoNOTinterpretoldhead.7%componentaswholeWFbound ORassertqueueamplifies.
+  FaninprefillalreadyFlashAgents/notrerun. InitialEvolvingnotindexedclaim
+  false/rgfoundoldentries/usercorrected/no newcontributioncount.
+  NEWHerschel2609.40247v1 actualContinuous Optimization of Production LLM
+  Inference through On-Demand Profiling/absmeta+HTMLsaved;initialunversioned
+  Execution-Groundedtitleguardfailed/source+bodyretained,formalv1verified/
+  noassumedversioncause. Genericprofiling/asyncmetadata/preallocnotinnovation.
+  Main1.921sOFFLINE;independentjqgraph/streamreceipt+awkCSVcountsagree,
+  finalsourcehash/metadata/populationcheck. NewPy evidence/allownedterminal/
+  noGPUquery/use/model/hidden/Torch/backend/serving/native/workload/queuechange.
+  No simulator/nativecomponent/quality/novelty/JCTacceptance;see
+  docs/research/service_elasticity_evidence_cpu_20261115_zh.md.
+- 2026-11-15 CPU sparse-head partition progress; fullgoalACTIVE/noGPUquery/use.
+  Same2OPENEDtoolbounds/4layers/before+after12D/kernelrefblock16perQ2048/
+  Top127+last;16oldmaskfiles/192querylayer/768eightQgroups NOTrequests.
+  PreserveperQmask/causalpartialpage;unionONLYexecutionrectangle,NOTcommonmask.
+  ExactsubsetDP vsfixedcontiguousmin(R,8),R1/2/4/8/16/64 DECLAREDrounding
+  NOTrealGPUtiles. R2proxycells-5.5705%(765groups),R4-5.0438%(758),
+  R1/R>=8ZERO. Analyticalindependent-headlowerbound/oneunionopt limitsmodel,
+  NOTallkernelsimpossible. all8union/useful1.839--1.841child/2.582--2.605root
+  NOTactualGPUoverwork/gain. Before/afterlittlechange/noagent-specificevidence.
+  Split sourcevisitsproxy>=union,NOTL2/HBM/H2Dtraffic;uniqueKVunioninvariant.
+  NEWoriginalbitcheck:768groupsALL8differentmasks;allR2/R4optneedperQmask.
+  NVIDIAprimaryBSApackedGQAsharedmaskrequired/unpackedperQ;NOdirectpacked
+  conversionorunion-masksubstitution. NoactualcuDNNAPI/numeric/graphtest.
+  OfficialQuestCUDAperheadindex/GROUP_SIZE1comment+singlebatchlimits
+  !=evaluationrepeatkvGQA/currentQwenqualification. PageWeaver2610.11201v1
+  fixedsupportqueryregroup/union/maskedTCalready;prefill!=headbutnotnewjust
+  byobjectrename. STOPordinaryheadgroupmainline/no R/mask/budget/sampletuning.
+  Main8.030/review9.976sOFFLINE notcontrol;independentsets+all4140Bell
+  partitions4608optima/16inputmask/5sourcehashpass;finalpackedeligibility.
+  NewPy evidence/allownedterminal/no GPU/model/hidden/selector/LRU/attention/
+  backend/native/serving/workload/queuechange/noquality/novelty/JCTacceptance.
+  See docs/research/sparse_head_partition_cpu_20261115_zh.md.
+- 2026-11-15 CPU sparse Host-address/selector progress; fullgoalACTIVE/noGPU.
+  Same2OPENEDtoolbounds/fourlayers/cold+warm4x16savedmisssets;no selector/
+  LRU/attentionrerun.5existing/standardlayouts*2fixedslotmaps=160records.
+  Declared4194304slots/384GiBaddressscenario NOTactualalloc/Hostindices.
+  Exact32/128/256Bcoverage1xall;NO4xwireoverreadfrom4headadjacency.
+  Nativefull-headcopyAPIunchanged;head-specificaddressesNOTdeployedkernel.
+  RootL11warm3342336B:identity4KiBpagesPF10656/LF2664/HND16=816;
+  LF=HNDat64KiB/2MiB. AffinecounterHND13056>PF10656. NOGPUmapping/TLB/
+  PCIebytes/DMAcount/latency/JCT inference. nativepage_head!=layerpagedHND.
+  STOPpurelayoutscreen/no mask/map/page tuning/newcapture/shadow/kernel.
+  NEWrealQuestmetadataassignmentASTrecorder:shape2,L,P,H,D/BF16;
+  block16=>densepagepayload1/16.7021/29199=>43155456/179404800B;
+  declaredpool24GiB NOTcurrentwaste/allocation. CannotaddtoOmniKV:
+  differentselector/no samemember/originalplanalreadyLRU/groupindexcharged.
+  NotcompleteallnonKVmemoryaudit;ordinarymetadatatieringNOTmaininnovation.
+  PrimaryAVSG2609.37538v2 miss-onlybalance/FlashInferHND/SparseEnginegather/
+  SPIN2604.26837v1twolevel/HiSparseindexsharingstrongcontrols NOTnewclaims.
+  metadataaddressmap!=Questminmax. Source6+5hash/independentravel+inverse/
+  explicitsectors160pass;main4.400/review4.901/shape.123sOFFLINE notcontrol.
+  HTTP403twice/initialwrongcause/archivepatherror retained;HiSparseoldprimary
+  reusedwithhash. NewPy evidence/allownedterminal/no model/hidden/GPUquery/
+  use/native/serving/queue/workloadchange/no quality/novelty/JCTacceptance.
+  See docs/research/sparse_host_layout_and_selector_cpu_20261115_zh.md.
+- 2026-11-15 CPU sparse-score certificate progress; goalACTIVE/noGPUquery/use.
+  NEWscalarpageL2 exclusion afterfulloldscorerefresh onSAME2OPENEDtool
+  boundaries/layers11/23/35/47/block16/perQ2048/Top127+last/originalmasks.
+  8boundary+88Dcontrols=96qtransitions/3072headNOT96workflows.
+  f(q)support/LipschitzdeltaL2*maxabsKL2/gamma256FP32referenceclass,
+  notCUDA/TopKtie/naturalsparsequalification. Recomputeoldselected+dirty
+  seeds;pruneONLYstrictupper<T127lower. NoH2Dsavings fromfixedsupport.
+  3476992scores->2excluded(.0000575%);boundary289536 ZERO/control3187456 TWO,
+  childlayer47step10->11only.NOT2physicalKVpages/GQAotherQmayselect.
+  95/96noskip/390920seedsspent. Extraanchorpayload70.832--71.408KBchild/
+  270.704--270.992KBroot/layerNOTactualHBM. Eachonestepassumescomplete
+  freshanchor/freewarmstart,NOTcontinuouspolicy. STOPcurrentscalarnorm
+  certificate/no norm/group/budget/precision/newcapturepositivehunt.
+  8boundaryminU-T86.878--341.231score NOTprobability/quality;2Dcos.99995
+  algebraexampleonly,nofreshworkload/generalimpossibility.
+  InitialCPUreferenceSIGINT130atconcat/CPUobserved>=415s;51witnessretained
+  SHA andallnorm/threshold/maskidenticalaftermetadatareorder. Newmain
+  503.570s excludesinitial;review182.325sOFFLINE notcontrol/performance.
+  Independentbatchedeinsum+blockextrema/sort all3476992FP64diff0/56hash/
+  96witness/old51/seed/bound/countagree,no mainimport.
+  ReTopK2607.27692v1formalRecallBeforeYouRank.../primaryabsHTMLverified.
+  Initialnickname-titleassertfailurearchived. AIR2611.01429+2611.03222
+  WRONGprimaryIDs(latterCERBO);attributionWITHDRAWN,body/sourcepreserved.
+  GVR2602.22162wrongalsoexcluded;NOagent-aware-refreshpriorclaimaccepted.
+  AllnewPy evidence/allownedterminal/noGPUquery/use/Torch/model/hidden/
+  native/serving/workload/queuechange/JCT/noveltyacceptance. See
+  docs/research/sparse_score_certificate_cpu_20261115_zh.md.
+- 2026-11-15 CPU compressedexpert bank progress; goalACTIVE/noGPUquery/use.
+  NEWfixedweights layers0/15/31/47 experts0/63/127 threeproj36/108MiB;
+  common7exp/3bit+originalsignmant8+esc8/header128/streamalign128/rawfallback
+  DIAGNOSTIC CPUcodec NOTofficial.113246208->79874304B/.70531548/
+  saved29.468%;56623104words exact.12expert ratios.698622--.755602
+  NOTfullmodelcompression/GPU/numerics/quality. DO NOTexpand/tuneforpositive.
+  Uniformr.6875/.75bankstreamscenarios+3header384/index128perexpert;
+  54GiB6144objects borrow9GiB=>rawslots895/511vsHostpager5120.
+  Same4OPENEDchild32Dpast-Pfreq/LRU:ideal.6875 expansions3823--4926
+  vsoldHostloads58--128;4D26424vs266 HYPOTHETICALnotobservedconcurrency.
+  Localread+rawwrite60.884--78.450GBvsHost.547--1.208GB/matchedratio
+  64.94--111.23x. Isolatedpayload/assumedHost40GB/s equalitylocal2.60--
+  4.45TB/s NOT measuredBW/breakeven/JCT/overlapimpossibility.
+  Borrow18GiBbothbankitselfnotfit LIMITEDformatmodel,nouniversalclaim.
+  WarmcacheinitialexpansionEXCLUDEDfavoursbank;allrawscratchcharged.
+  PrimaryNeuZip2410.20650v1/ZipServ2603.17435v1/ZipMoE2601.21198v2
+  abs+HTML+officialrepo/README/commit stored. ZipServFUSEDdecompGEMMstrong
+  control NOTthisbankLRU;ZipMoEedgeUMA notlocalHBM. Initial404repoexcluded.
+  Deprioritizeordinarydualcopybank/no genericcodec/GPU pagerimplementation/
+  nofusedintegrationasinnovation. Needindependentagentvalue/netcostfirst.
+  Independentbitdecoder36matrix/indexheader/timestampLRU20feasible+10notfit
+  pass;storage1.470/cap1.495/review6.213sOFFLINE. Initialheaderprefix/
+  HTMLwhitespace/revieweruint8failuresarchived/source+reason;dataunchanged.
+  NewPy evidence/allownedterminal/noGPUquery/use/Torch/model/hidden/native/
+  serving/workload/queuechanges/JCT/noveltyacceptance. See
+  docs/research/compressed_expert_bank_cpu_20261115_zh.md.
+- 2026-11-14 CPU LM-head bodycost progress; goalACTIVE/noGPUquery/use.
+  NEWcostattribution on2OLDOPENEDwidth9/BF16/FA3 modelprofiles,notnewdata/
+  heldout/fullworkload. Exactruntimecorrelation48graphs;each48FAmain/
+  48combine/96MoE;onefixednode terminalNVJet denseGEMM/source
+  model->logits_processor(self.lm_head). NoCUPTIMNK/nativearithmeticproof.
+  Headmean156.636/156.856us;graphkernelsum23.695/22.303ms/span21.743/
+  20.678ms;head/sum.6611/.7033%,head/span.7204/.7586%.
+  NotJCT/fullworkloadbound/nopayload->latencyconversion/pairedgainclaim.
+  Historicalprobeslogprobs NOTcertificateconfigqualified. Deprioritizehead
+  certificateasmaincurrentperfline;mathretained/no9stateacceptancetuning/
+  hidden/model/noisecapture/GPUqueue. Needdifferentheadcostregimefirst.
+  Initialsame-stream-disjointassertfailed/source+failurearchived;recorded
+  kerneloverlapmax2, sum/union/span/exclusive separated,NOTPDLproof/useful
+  parallelism/freeSM/removabletime. NVIDIAofficialcorrelation/PDLprimary
+  saved. IndependentSQL+endpoint-sweepall48graphs/hash/order/statsagree.
+  Main.885/review.869sOFFLINE/noTorch/nativeimport/oldGPUprofilerrerun.
+  AllnewPy evidence/allownedterminal/noGPUquery/use/model/hidden/native/
+  serving/workload/queuechanges/JCT/noveltyacceptance. See
+  docs/research/output_head_body_cost_cpu_20261114_zh.md.
+- 2026-11-14 CPU JOIN consumption progress; goalACTIVE/noGPUquery/use.
+  Sameactual278/measured78. NEWfixed64KiBsuffix from295knownstageoffsets,
+  union291ranges/19236084B ONLY; no467MBjournal/1GBaudit rescan.125exactready
+  records cover123/34lastprefirststage members;146/40UNKNOWN/no widening.
+  Measuredmatched34 ready->HTTPfirstoutput132.104/302.337/max684.463ms,
+  NOT representative:matched/unmatchedclientTTFTP901492.677/2429.176ms.
+  Complete78TTFT607.457/2429.176/max10298.946ms/sum90.320s;other4paths
+  retainedinclmax. staged74 firststage->output442.522/1146.038msNOTwait.
+  30/5repeatedstage members NOTsameKVreload/no nodeIDownership guesses.
+  NEWregisteredfixed-durationDAGscenario:78alloriginalcriticalpathtargets,
+  zeroWHOLElocalJOINclientTTFT/othernodedurationsfixed ->meanJCTdirect
+  improvement<=5.017786s/1048.204522=.478703%. NOTglobalprefetch/cache/
+  throughput/interference gainbound ornewphysicaltimeline. Deprioritize
+  JOINlocalTTFTalone aslargegainmainline;no newcontroller.
+  current=frozen stage7154f202/backendffd0398d/metrics78e90049;clientclock
+  boot+namespace verified/actualLLMSUBMIT==metrics submit278,first<=native
+  complete. readyCPUfinish-observation NOTDMA/GPUlaunch. No common GPU
+  timeline->NO migrationinterferenceclaim fromworker/wallcoincidence.
+  Separate noimport boundaryoccupancy/raw125/278receipts+submits/78path/
+  Decimal50pass;main.685/envelope.360/review1.082sOFFLINE.
+  CacheFlow2604.25080v2 primarytitle/hash token/layer/GPU axes;batchaware
+  separate. Oldrestoreisolation request-axis wording correction appended,
+  olddataunchanged. Alloneoffs evidence/allownedterminal/no model/hidden/
+  GPUquery/use/native/serving/queuechange/JCT/noveltyacceptance. See
+  docs/research/join_restore_consumption_cpu_20261114_zh.md.
+- 2026-11-14 CPU JOIN cache-origin progress; goalACTIVE/noGPUquery/use.
+  NEW actual278JOIN successors/measured78: firstlaunchHostpositive9/4,
+  HostzeroBUTexactdemandstaging269/74. on_launch cache snapshot uses old
+  submit ts_ms; NOT submission/preJOIN residency or zeroH2D proof.
+  All10380complete Device+Host==actualfirstPprefix;6extra firstlaunches
+  remain incomplete. One467434731B opportunity scan SHAa609c6bd, compact
+  2045579B/1183offsetlines now available; DO NOT repeat fullscan/1GBaudit.
+  Existing exact inspector matches1183untaggedcompletednativeKV batches/
+  1990members/4.528629TB PROCESSpopulation. JOIN singlemember218/61batches
+  1.418594TB/371.172GB; shared77/17total459.869/99.378GB UNALLOCATED,
+  membershipoverlaps/repeatedtraffic/counterpayload NOT additive coverage.
+  Measure singlecopy P50/P90 3.839/18.255GB, stream185.321/852.316ms,
+  sum18.118s NOTpurePCIe/removableJCT;singletraffic/inputratioP5068.68%.
+  Separate noimportreview1183offsets/rawACK+10380identities/allstats pass,
+  main3.765/reviewR2 1.948sOFFLINE. Initialwrongfirstlaunch10383assert
+  stoppedBEFOREextract;actual10386/10380complete/source+failure preserved.
+  CacheScout2608.14624v1 primarytitle/hash alreadyagenttransition/retention/
+  backgroundprefetch;vLLM57103directAPIopenRFC NOTmerged/perf. No newmain
+  innovation accepted/no ordinaryprefetch/floor/existinghandoff rename.
+  Alloneoffs evidence/allownedterminal/no model/hidden/native/serving/
+  queuechange/JCTgain. See
+  docs/research/join_resume_cache_origin_cpu_20261114_zh.md.
+- 2026-11-14 CPU JOIN-frontier capacity progress; goalACTIVE/noGPUquery/use.
+  Existingconsumerinput/growthguardsalready/current=frozen116bSHA c4e78034,
+  NOTnewability/nooldfixturesrerun. NEWsource83/12743requests/342realALLJOIN;
+  measure18=78. Branchproxy=sumpercontextmaxI+OthroughmemberRETURN incl
+  descendants/oldpossiblyreclaimed/sharedprefixNOTdiscounted. ParentnextI>
+  allbranch334/342+76/78;>lastreturngroup342/342+78/78. Uniquecontinuations/
+  samecontext/memberretired342each. MeasuregapP5034514token~3.16GiB
+  BF1648layerequivalent,NOTactualprivatefree/HBMshortfall/H2D/JCT.
+  Actual278satisfiedJOIN+receipt272positive;measure78completewithinwindow.
+  NEWregisteredstrictparentfloor usesONLYactualcompleted+publishedpreWAIT
+  oldinputI;286waits/278satisfied+8censored/0unknown/sameparentoverlapmax.
+  Same3819.416sallwarm+background:mean1205667/peak2127117vs805198logical
+  contextbudget;over83.24%3179.403s/peak2.642x;meanparents11.901/peak21.
+  NOTphysicalallocation/sharingdiscount/newadmissiontimeline/perfgain/
+  universalreservationimpossibility. Fullfloorrequiresdifferentadmission;
+  childhandoffaloneusuallynotlogicalpayloadenough. No newcontroller.
+  Independentparentchain342/contextmax+10380actualidentity/work+midpoint
+  565segments/286causalintervalpass;2.810/2.300/4.646sOFFLINE.
+  Maestro2606.12950actualtitleWorkload-AwareCross-Cluster.../primary7d454d4f
+  constrainsgenericrole-memoryprediction;3wronglookupIDs2604.02395/
+  2604.04002/2605.11715excluded/retained;DONOTciteunverifiedKAIROS.
+  PNG/PDFviewed/r2movesoverlappinglabelonly/r1source+figurespreserved.
+  Finalhash/figurearchive/primarymetadata/doclinks/ASTsourceguardschecked,
+  noempiricalrerun/nativeexecution.
+  AllnewPy evidence/allownedterminal/no1GBaudit/tokenrescan/newfixtures/
+  Torch/model/hidden/GPU/native/serving/queuechange/novelty/JCTacceptance.
+  See docs/research/join_frontier_capacity_cpu_20261114_zh.md.
+- 2026-11-14 CPU sparse-miss attention progress; goalACTIVE/noGPUquery/use.
+  NEWmiss-onlyNOTclosedwholehistoryCPUlane. SAME2openedtoolbounds/
+  layer11/23/35/47firstafterD/originalQuestkernelref16/2048perQ masks.
+  Cold+old12D-LRU4xcapacity2048headpages=16scenarios;skipsdense-Pretention,
+  NOTactualsparsemiss/16workflows. CPUflashBF16+FP32LSE/4KVgroup8Qrows/
+  perQmask;1/4threadsCPU32--35differentphysicalcores/pkg1/7round16calls,
+  prepacked/gather+compute separately/noQOtransfer/merge/syncinbenchmark.
+  FourCPUwarmchild.164--.434MB/.092--.136ms,warmroot.745--3.342MB/
+  .155--.447ms;assumed40GB/s.004--.011/.019--.084msNOTactualPCIe/JCT/
+  slowdown. Coldchild7.102--7.864MB/.627--.683ms/root8.073--12.988MB/
+  .699--1.038ms. Warmpad1.27--2.8x/cold1.04--1.12x;NOTallCPUimpossible.
+  CPUreplacescopy+GPUmiss/mayhidebehindGPUwork;barecopycomparisonnotgainbound.
+  FP64splitmax5.773e-15;CPUbf16partialmerge366--1413of4096wordsdifferent/
+  maxabs.03125NOTnativeCUDA/token/qualityfailure. IndependenttimestampLRU/
+  58inputSHA/16sets+bytes/512headF64+sameCPUworddiff/timingmedian+formula
+  allagree/no_probeimport/no timingrerun;6.188sprobe/6.116sreviewNOTonlinecost.
+  Scout2603.27138officialmetadata+fullHTML33bee99f/3.1HGCA+3.3recall,
+  NEO2411.01142alreadyheterogeneouspipeline;genericplacement/mergeNOTnew.
+  DeprioritizedirectPyTorchpath/noextraCPUcores/masks/layout/sampletuning
+  forpositives. Alloneoffs evidence/allownedterminal/noGPU/model/hidden/
+  native/serving/queuechanges/JCT/quality/noveltyacceptance. See
+  docs/research/sparse_miss_attention_cpu_20261114_zh.md.
+- 2026-11-14 CPU top-p masspartition progress; goalACTIVE/noGPUquery/use.
+  SAME9openedchildh/oldintervalSHA/64noiseeach/rowINT8/b+1/gamma2048/
+  T.7K20P.8repetition1.05. RewriteA<=p(A+B) as(1-p)A<=pB/disjointmass,
+  unchangedexp16eps/reductiongamma/outwardcomplement/products/oldcertunion.
+  553accept23fallback->569/7;all576finalequalSAMEnoisefull;nontriv105/128->
+  121/128;headlogicalpayload.542609->.514831includesbank/refine/fallback,
+  extra312.38MBbankcharged.NOT98.78%WFcoverage/native/GPU/JCTproof.
+  Independentscalarfsumall9support/576choice+cost/explicitcomplementsagree,
+  Decimal65sixfamilies892assignments1053acceptedcomparisons+3masswitness.
+  R1reviewerwronglyequalledoldcoarsecandidateswithrefinedminimalset/source
+  tar+failurepreserved;R2containment/allcertreconstruction/mainunchanged.
+  Remaining7drawtwooppositeboxcornersdifferentwinners/fixedsupport,
+  NOTproofbothnativearithmeticrealisations. Stopacceptanceratetuningon9h/
+  nofreshhidden/model/nointervalprecisionnoisechangeforpositives.
+  Same119630sealedDhist/checkCSVhash,assumedp7/576IIDweightedany12.37%/
+  bank+fullpayload.62563BEFORErefine;corrfree1.215--13.311%;B24IID25.43%/
+  .75627.NOTobservedconcurrency/latency/workloadcoverage. CPUprepareP50
+  7.30msNOTonlinecost/oldtimingcomparable. Row-onlyfullGEMMstillfullW.
+  NativeCUDA/FlashInferseed/graph/logprobprocessorqualificationstillmissing;
+  algebra/Gumbelalreadypriorart/noagentnoveltyorperformanceacceptance.
+  FinalindependentDecimal14cornermargins/sameRNG/shapeformula+hash/ASTpass.
+  Keepconditionalcandidateonly/alloneoffs evidence/allownedterminal/
+  noTorch/GPUquery/use/serving/native/queuechange. See
+  docs/research/output_mass_partition_cpu_20261114_zh.md.
+- 2026-11-14 CPU directHost attention screen progress; goalACTIVE/noGPUquery/use.
+  NEWGPUcompute+Hostreads,NOTclosedCPUattention lane. OfficialDirectKVd7a5495b
+  clean/12Gitblobs/sourceonly;NOinstall/import/JIT/scripts. ActualKVouterHost
+  block->GQA/queryinner ALREADYreusesremoteKV;doNOTassignhypotheticalqueryouter
+  amplificationtoit/claimloopinterchangeinnovation. O_run/LSEglobalstateNOT
+  measuredHBM. READMEGH200C2CscopeNOTH200gain/publicationverification.
+  Sealedgeometry51290481320ctx*98304=5.042059PBconditionaldecode reads.
+  No-cross-queryremotecache atassumed20/40/60GB/s252103/126051/84034s=
+  originalwindow66/33/22x.NOTPCIemeasure/JCT/universalimpossibility.
+  Readweightedremote budget1.515/3.030/4.545%NOTfreedHBMfraction;keepingALL
+  oldH2Dextra scenario1.402/2.917/4.432%,D2Hnotsubtractedreversebudget.
+  Actualreceipt10380ranges->10377closed/3laterunknown;10376initialH.
+  R=Nchunks+O-1 min19/P5060/P90321/R<=16ZERO. Originalprefixonce33.611TB
+  vsremote4.885633PB145.3566x=twodeclaredlogicalscenariosNOTactualH2D/
+  speed. FutureOONLYretrospective/notselector/notwholeagentlifetime.
+  14498chunk12541662Q534879593H522496710543pairreproduced/no1GBrescan;
+  q<=16only64/774Q;officialq/H64align100/14498shapeONLYnotrealfastpath.
+  NativeQwenQKnorm/radixoff/contiguouspoolcontractsnotqualified. Static
+  24*262144*98304Host618.475GB/576GiBnotactualalloc/orallpoolimpossible.
+  Independentjqshape+receipt/Decimal/sourcehierarchy12bloballagree.
+  Noallremoteexecutor/kernel/newmodel/hidden/GPUquery/use/nativeengine/
+  serving/waiter/queuechange/JCT/novelty. Keepboundedtemporaryremote+
+  sustainedresident questionONLY,needrealcapacity/cost/numerics/novelty.
+  Alloneoffs evidence/allownedterminal;see
+  docs/research/host_direct_attention_cpu_20261114_zh.md.
+- 2026-11-14 CPU restoreowner + exactvector screens progress; goalACTIVE/noGPU.
+  NEWrestoreisolation32.53MBtransfer/sameSHA/guard1737H2D5.695495TB;
+  657multinode2.696073TBNOT657agents.5259childcommandIDs EXACTphysicalACK
+  publishednodes/poolbytes/bytes+wholebatchcoverage:307batches695.709GB
+  fullySINGLEcontext(incl238multinode);1430/4.999786TB incl419multi UNKNOWN,
+  NOzero-all-crossagentclaim. Independentjqfullrawtransfer+ACKjoinagrees.
+  Frozenmerge/start_loading/L2layercallbackconfirmbatchready,NOTindependent
+  readysmallconsumerloss. Old10wait91.477ms/1183stagednotnew/extrapolated.
+  CacheFlow2604.25080actualtitleEfficientLLMServingviaAutomated3D-Parallel
+  KVCacheRestoration. SearchCacheFlow-3DtitleWRONG->reviewerreject;archive
+  source/query/HTTP+failureJSON;review_r2citationmetadatafix/dataunchanged.
+  Noexecutor/newidentityfixtures/1GBauditreread.
+  NEWexactcomplete-vectorKVdictionaryreuses4OPENEDwholechild/40KVfiles,
+  NOToldXOR/tokenpredictor. Fixedsamplecausalprefixexclude0/3/513/515,
+  27726->26695positions.128BF16wordhead/512allheads,uint32index64Bheader/
+  align. Layers11/23/35/47:32headgroups*26695=854240rowsZEROgroupduplicates;
+  allheadsformatZEROtoo. Primarydictionary/raw1.01564/1.00391;evenfree
+  indicesNOsaving. Layer0control.54216/.53043NOTalllayer/JCT/newmain.
+  Independentarrayprefix/sortednp.unique50groups/wordroundtrip/40SHA/cost
+  agree;NO50servingtests/newheldout/root/all48nativeproof. Stopcomplete
+  vectordictionary/nofragment/indexpositivehunt/modelcapture. Alloneoffs
+  named evidence/allownedended/noTorch/model/GPUquery/use/nativeengine/
+  serving/waiter/queuechange/JCT/noveltyacceptance. See
+  docs/research/restore_batch_isolation_cpu_20261114_zh.md and
+  docs/research/exact_kv_vector_dedup_cpu_20261114_zh.md.
+- 2026-11-14 CPU native-headshape + sampledecision is progress; goalACTIVE/noGPU.
+  Actualfrozen_compute_lm_headAST ordinaryBF16CPU/4cores9oldh/originalweights:
+  full1367424words=old;batch9=same;45oracle-labelledTopK/reverse/64rowblock
+  groups13233words=full. OfflineTopKNOTselector/universal/GPUproof. Independent
+  savedIDs/words/sourceAST/plan/capturehashallagree,noreprojection.
+  NEWweakerGumbelwinnercertificate SAMErowINT8/b+1/gamma2048/T.7/K20/P.8/
+  repetition1.05output-only;bounddefinite/possiblejointsupport,acceptstrict
+  lower+noise>allpossibleupper+noise;fallbackSAMEnoise/no redrawing.
+  9OPENEDh*64=576noisetrials553accept23fallback/allfinal=matchedfullreference;
+  readpayload.542609includescoarse/refine/full/extra312.38MBbankcharged.
+  Sevenstatesactual1support;twoactual2support105/128accept.NOT96%WFcoverage/
+  576independentstates/FlashInferseed/nativeCUDAarithmetic/GPU/JCTgain.
+  Old18logits15single3double isdiagnosticONLY/rootstill0h/norecapture.
+  Independenteinsumallcoarse0diff/scalarfsum9support/576choices+costagree;
+  6smallfamilies892assignments/1053accepted-noisecomparisonsNOTservingtests.
+  CPUprepare29--33ms/RNG1.3ms/certP99.113msNOTonlinecostomit/benefit.
+  Hypotheticaliidf23/576B24anyfallback62.39%=>coarse+wholebatch1.12589
+  BEFORErefine,NOTobservedbatch/gain;row-onlyfallbackSTILLfullWpayload,
+  onlyreducesFLOPs/output. Same sealedCSV131701/119630Dshapes hypothetical
+  iidweightedany34.64%/payload.84840,correlationfreeunion3.99--43.74%;
+  NOconcurrentcoverage/latencyestimate. Nativegraphincludesfullhead,
+  masks/penalty/observer/logprobs/customprocessorcontractunqualified;
+  replaypost-real-sampleIDoverridecannotfeedselector/skiphead.
+  873rowunion9sequentialstatesNOTobserved9concurrent. A*1411.0030bounded
+  Gumbel/FlashHead2603.14591approxhead/FlashSampling2603.15854exactsampling
+  fusionalreadyprior;MIDX2501.08563training/vLLM54333RFCnotmergedassumption.
+  Primaryidentities/HTML/APIhashsaved. Novelty/agent-specificvalueNOTaccepted.
+  DoNOTtuneerrors/precision/noisenumsorcollecthidden/model/retryrootforpositive;
+  needactualnativecontract+rowfallbackcostnext. Oneoffs evidenceonly/allowned
+  ended/noGPUquery/use/waiter/server/serving/experimentqueuechange. See
+  docs/research/output_head_sample_certificate_cpu_20261114_zh.md.
+- 2026-11-14 CPU outputprecision screen is progress; goalACTIVE/noGPUquery/use.
+  NEWfixedrowINT8+intervalfineBF16,NOTclosedtemporalnorm/Ktuning. Realhead
+  151936x2048/622.33MB+norm mapped;extra312.38MBbankcharged.18OPENEDlogits
+  conditionalRMS/e0-e1Top20upperP50164.5/334NOTactualkernel/nativebound.
+  E0mass18decidable/4ties;initialreadproxy.72579omittedspentfine,
+  independentcorrect.72631. Positivegate->sameinputsCPUhcollection4cores/
+  600s:18867tensors/30532122624parambitwise load;7021child9statesallold
+  logitwordsequal;29199root600.02sPtimeout/0states/noautoretry/truncation,
+  finalallcheckpointposthashNOTdone. NOT18actualh/heldoutvalidation.
+  Ninehrealquantdiff<=b/BF16vsrealmax.10601;gamma2048FP32dot->BF16round
+  referencecontractNOTnativeCUDAqualification. Greedy9IDmatches;QwenT.7/
+  K20/P.8/repetition1.05same-requestoutputs-only all9fallback(6roundnonunique/
+  3ranktie). Logicalreadgreedy.50196/joint1.50268includescoarse/fine/full;
+  NOgreedypolicyreplacement/serving/GPU/JCTgain. Independent5scalarwitness/
+  72candidate/18mass/18decisionsagree,NOT113native tests. R1NaNtablewarning
+  source/resulttar;R2filtersbeforecast/decisionsunchanged. Rootfailurekept.
+  FlashAgentsofficialwebPDF/local403;2512.18126formalincrementalP/Dpriorart;
+  RaBitQ2405.12497boundquantprior/SpecVocab2602.13836draftscope. Nickname
+  titlemismatchesmanuallyqualified;2601.15230actualDafnyREJECTED.
+  DoNOTcollectmorehidden/model/retryroot/tuneerrorprecisiononopeneddata;
+  neednativearithmetic+costreasonfirst. Alloneoffsevidence/allownedended,
+  noGPUquery/use/native/serving/server/waiter/queuechange/noveltyacceptance.
+  See docs/research/output_head_precision_screen_cpu_20261114_zh.md.
+- 2026-11-14 CPU expert/KV capacity screen is progress; goalACTIVE/noGPUquery/use.
+  FourOPENEDchildroutes reused/noCPUmodelrun;16shardHEADERSonly/18432matrices
+  expert9MiB/all54GiB. Fixedborrow512/1024/2048slots=4.5/9/18GiB=KV49152/
+  98304/196608payloadtokens,NOTactualallocatorrelease. Single32D2094--2531
+  of6144expert;hypothetical4distinctchildren3333NOTobservedconcurrency/
+  root/resume/generalnativewidth. WholeP5971--5999;wholeBF16paging bound
+  max(0,U-C)perDISJOINTintervalwithidealwarmstart. Borrow9GiB fourwholeP
+  average>=8.199GBreload;2048slicesNOTactualchunkedmodelroutes/globalestimate.
+  Past-PfreqtopC+plainboundedLRU/currentlayerpin/noextraGPUstaging/futureD:
+  borrow4.5GiB single32D.094--.349GB/4D.793GB;9GiB.547--1.208/2.510GB;
+  18GiB1.765--3.643/7.201GB. StaticcoverageNOTmiss(04/4.5GiB31vs37).
+  Independent205bitmaskintervals+Counter/arraytimestamp20LRUcasesagree,
+  NOT225serving/GPUtests. WiSPalreadyjointallocation;nofreshmaininnovation.
+  NEWsealedphaseCSV131701/oldSHA:7222D-runs median11/P9036/worker260.548/
+  767.748ms;32Dstarts21751/18.1819%,<=4Dforwards12434/10.3937%,
+  32all<=4starts6672/5.5772%. Overlappingstarts/trailingcensor/retrospective,
+  NOonlinepermission/pendingPabsence/5.58%gainbound/4routes->nativehistory.
+  IndependentCSVbreakerdifferencechecksall;reusecompactNOTsame1GBrescan.
+  Keeprevocableprefetchvsactivecapacitycontract/phase/return-deadlinequestion;
+  defergenericpager/nativew13w2wholeParameters+fixedKVpoolnotphysicalresize.
+  NO9--24Dduplication/extrapolation/parameterpositivehunt/newshortclips.
+  Oneoffsonlyevidence/allownedended/noTorch/native/model/GPU/server/waiter/
+  servingchange/JCTacceptance. See
+  docs/research/moe_kv_capacity_cpu_20261114_zh.md.
+- 2026-11-14 CPU Hostbackup conservation is progress; goalACTIVE/noGPUquery/use.
+  Same3819.416s/131701service/12541895Pquery+1310346Drows(terminalincluded).
+  InitialALLHBM+Host479.154GB+all73outside-censuscounterIDs*16384query
+  reserve117.575GB =>uniqueproductionupper1.958460TB. Nativecounter1increment/
+  internal0gaps/fullmembers/laterlaunchbeyondend/frozen116bclockfields checked.
+  Guard5ms/clockspread.008545ms:41577D2H3.227701TB/1737H2D5.695495TB;
+  repeatedexportLOWER1.269241TB/39.3234%,NOTavoidable/prepareloop/causality.
+  Independentjqfullrawcensus+arithmeticagrees;NOphysicalmappinginference.
+  Native2passduplicateHostreclaim+sessionawareHostleafalreadyexist;keep
+  roundtrip-costquestionONLY/nogenericpolicyimplementation. D2Hstream78.256s/
+  H2D275.176sNOTcriticalpath/removableJCT/nobyteproportionaltimeinference.
+  DirectprimaryDualPace2610.33501/WiSP2606.21868/EvolvingInfra2611.12304
+  identity+HTMLhashsaved,NOTlocalperformance. WiSP2512.25426=404/
+  2512.10935=Any4DREJECTED. Auditorinitialdummyslot/jqargerrorskept;
+  r1two-guessed-boundaryforward42.8663%SUPERSEDEDbyallprocesscounterr2,
+  source/resulttarretained. Oneoffs onlyevidence/allownedended/noTorch/model/
+  nativeengine/serving/GPUwaiter/newmaininnovation/performanceacceptance.
+  DoNOTrepeatoldnode-IDmatchingoraddfixturesformissingcausalidentity.
+  See docs/research/host_backup_conservation_cpu_20261114_zh.md.
+- 2026-11-14 CPU HostlayerNUMA resonance is progress; goalACTIVE/noGPUquery/use.
+  Realnativeprefault+CPU NUMApolicy/own48MiB512token/12288physicalpages query,
+  N0=N1=6144/strictinterleave100%;policyrestored/pagesstable/mapclosed.
+  page_first K/Vtoken49152B=12OSpages aliases2nodephase:24alllocal/24remote/
+  firstlocal0%inOWNmapping. Native layer_first/page_head eachlayer50%;
+  globalXOR4flipsphaseonly/rowXOR4balancesCONTIGUOUSsample/payloadsame.
+  NOarbitraryfragmentindices/historicalpoolperlayerclaim/CUDApinqualification.
+  Historical400GBrecord208.200/191.800GB/N0fraction52.0501%AGGREGATEonly.
+  Fivewordroundtrips+wrongplainnegative;independentinversecensus/nativepure
+  dimensionswithallocrecorderpass,NOTnativeallocator/GPU/kernel/modeltests.
+  LinuxinterleavepageoffsetmoduloKNOWN;existinglayoutsstrongcontrols/
+  ordinaryNUMAswitchNOTnewinnovation. Keepoperation-localityinsight/defer
+  customXOR/Hostshadow. BalancedNOTall-local;needactualregistered-source
+  GPUlocal/mixedtime+CPUstage/RAMbudget/lifecycle,NOCPUmemcpy->DMAgain.
+  CPU1.31sNOTcontrol/performance;PNG/PDFviewed/oneoffs evidenceonly/allowned
+  ended/noGPUwaiter/torch/model/nativeimport/servingchange.
+  See docs/research/host_layer_numa_resonance_cpu_20261114_zh.md.
+- 2026-11-14 CPU temporaloutputhead screen is progress; goalACTIVE/noGPUquery/use.
+  TwoOPENEDdenseCPUclips8step+prefill=18vectors/16transitions;real151936x2048
+  BF16head622329856B mmap/shardprepostSHA/NOtorch/fullmodelrun.
+  PrevtopK256/1024/4096greedycoverage8/10/11of16;singlebounde0leaves0/1/1,
+  fixedobservationalerrore1leaves2/2/2.NOTqualifiednative/GPUroundingbounds.
+  Openedfollowupfixed16rowspan+maxsingleboundrejectsall96conditionalcases,
+  movementlowerP50e0/e1=69.14/64.20NOTmeasuredhidden/onlinefeature.
+  Futurelogits/oracleincumbentOFFLINEfavorable-rejectiononly/nofuturepolicy.
+  Struct/fsum+actualweightrowwitnessesall96verified/minfailmargin27.94,
+  NOTwrongwordactualscorehigher. T1categoricalremovedmassmean50.006/37.500/
+  31.250%NOTreplayconfig/generalTopK/Pimpossibility. NativeASTonly.
+  Deferplaintemporalnormfastpath/nofullhiddencapture/Ktuneonopenedclips;
+  noall-head/whole-workload/JCTboundclaim. BanditMIPS/DVPpriorartidentitysaved.
+  R1reviewerforgotmaxsingle/spanfailed/source+errorarchived,r2correct/main
+  dataunchanged. Oneoffs evidenceonly/allownedended/noGPUwaiter/servingchange.
+  See docs/research/output_head_temporal_certificate_cpu_20261114_zh.md.
+- 2026-11-14 CPU realMoE routes/tailfill is progress; goalACTIVE/noGPUquery/use.
+  Four OPENED wholechild27726P+128greedyD/48layers/10695936assignments;
+  18867tensors/30532122624params bitwise+16shards pre/post hash/firstgreedy
+  all4originalCPU agree.562.84sOFFLINE/notcontrol;CUDAuninit/availabilitystub1.
+  Newnarrow2wave:readyPassignmentsfillDtile-slack,restPsecond;fixedBtotaltiles
+  equaljoint/firstwaveDtilesunchangedNOTlatency/FLOPs/traffic/freeGPUproof.
+  73728layercounterfactuals/6144perBq;P64/256/512/2048suffix,DOTHER3samples
+  equalordinal.NOTobservedconcurrency/independentexperiments/multilayersim.
+  B16tiledecrease15.851/7.463/4.514/1.375%;completeProws.5445/.0376/
+  .0215/.0060%;zerocausalprefix99.512/99.951/99.577/99.837%.
+  FirstfitmorecompletedscatteredrowsNOTfrontier;B32/64zerofrontierunchanged.
+  Keepboundedcandidateonly/nofullexecutor/newnovelty/performanceacceptance;
+  QLLM/BatchGenprimaryqueues/coroutines/rowreadinessalreadypriorart.
+  No3D->9/18/24D/longrootgeneralization/duplicateD/tuningBqpositivehunt.
+  Independentexpertqueuesallcaseschecked;PNG/PDFviewed;oneoffs evidenceonly.
+  R1pre-modelDynamo callablecollisionfailed/source+errorarchived;r2unique
+  guardscomplete. Allownedended/noGPUwaiter/native/serving/workloadchanges.
+  See docs/research/moe_tile_tailfill_cpu_20261114_zh.md.
+- 2026-11-14 CPU pagegranularity/resume boundary screen is progress; goalACTIVE.
+  NO GPU query/use. Same10380ranges/12541662Q/9887same-session resumption;
+  initialprefixroundingONCEperrequest/notperchunk. Currentpage1hasNOsuchloss.
+  FixedP128coarseextra636229Q/5.073%;+promptendpoint453656/3.617%;
+  +priorinput+output-1decodeendpoint32552/.260%;+lastremainder24125/.192%.
+  Causalpairfractions4.009/2.956/.170/.151%NOHBM/FLOPs/time. Shortresume
+  5563Q<=256group+85.06%coarseNOTglobal. Intervaloverstrongendpoint savesonly
+  8427Q/.0672%allQ/.0191%pairs;deprioritizecomplexcapsule. Candidatecoarse+
+  decoderesumeboundaryONLYcommonbaselinependingqualification/notnewmain/
+  provenpage1speedup. Grossallcompletiontail64.98GBNOTaddedD2H/peak;physical
+  producer/Hostdurability/COW/slot/GPUqualificationabsent. Noactualnativealloc.
+  Nativepagealigned/finishedtailfree/unfinishedprivatetailcontractschecked.
+  PrimaryvLLMBlockPool/FullAttentionManagerpartialdocsAST/identitysaved;
+  helperEAGLEP/normalP-1,NOrepo-wideabsenceclaimaboutdecodeboundaries.
+  PromptPmodelstrongconstructedcontrolNOTvLLMreproduction. R1reviewer wrongly
+  assertedunconditionalP-1;archive/errorkept,review_r2checksconditional/data;
+  mainresultunchanged. Independent10380position-sums/4residuecounts/9887
+  priorcompletionchecksNOTnewservingtests. No newmappingfixtures/logrescan,
+  allPyinevidence/allownedended/noGPU/native/e926/serving/runqueuechange.
+  See docs/research/page_granularity_resume_cpu_20261114_zh.md.
+- 2026-11-14 CPU fullDAG decodelead sensitivity is progress; goalACTIVE/noGPU.
+  Source83/observed70/closed59/censored11/measured18 separate. 47415nodes/
+  9267requests/2991measured;18JCT1048.204522mean independentlymatched.
+  ObservedlagsFITBYCONSTRUCTION/no predictiveaccuracyclaim/no1GBrescan.
+  Root2065allzero-slack,child/internal5903of7202=81.96%,all85.98%;
+  measuredroot715all/1835of2276child. 8546tool-start/endlag edges preserved,
+  futuretoolsstartlaterwhenresponseislate,NOTautomaticdelayabsorption.
+  405isolatedsnapshots/201allmembersclosed:equalTadvance/Cdelay1ms201harm,
+  b/a break-evenP50.1176/P90.2/P99.2857;100mssamequantiles/2targetclips.
+  NOTGPUcost/actualJCT/fullpolicysim;NOsummingoverlappingsnapshotdeltas/
+  zeroingcensoredWFcosts. 18projection10benefit/336harm/59tieNOTall-WFresult.
+  Newcausaldiagnosticroot+everyancestorobservedsolependingALL-JOIN(incl1,
+  noancestortool),published-event-only. 3992knownflagoccurrencesallzero,
+  2117uniqueRIDs/59WF,NOT3992independentpredictions/domain100%;524zero
+  unflagged=UNKNOWNnotdelaypermission. Flagctx-sumP5094.07%/mean92.19%
+  NOHBM/timefraction. Protectingjusttop2lastbranchesmissesotherobligatory
+  work. Noonlinepolicy/permissionchange.
+  Fullforwardvsantichain30658scalarmax1.491e-8ms;independentlatestdeadline
+  9267slackagrees,NOTnewservingtests. ParrotprimaryHTMLidentity/hashsaved;
+  application-DAG-awarenessNOTnewclaim. PNG/PDFviewed/allnewPyinevidence,
+  allownedended/noGPUquery/use/servingchange/performance/noveltyacceptance.
+  See docs/research/resident_decode_dag_price_cpu_20261114_zh.md.
+- 2026-11-14 CPU residentdecode lead screen is progress; goalACTIVE/noGPUquery/use.
+  Preserveactive/KV;fixedcausalALL-JOINtargetmax2,alternateextraT/full,
+  cap8extraT;notimplementedinserving. Newfull1.068GBauditSHArecheck/
+  136219raw/131763service/119630decode;oldfrontier56985/73923agrees.
+  Targetcontext-sumshareP50/90/99=6.26/14.89/33.13%,NOHBM/timeproof.
+  Firstqualifyingtarget-IDtuple405snapshots/352uniqueTrequests,
+  only148snapshotswithmeasuredT;notindependent/cohort-onlypopulation.
+  Affinemodelrho0/.25/.5/.75NOTfitGPU/fixedcostNOTmeasuredMoE. Sameoutputs/
+  logicalctxreads,drainDelta=rho*extraLaunch. rho.5snapshot-equalmeanratios:
+  Tremainingresponse-3.76%,C+2.83%,all+2.31%,drain+.73%;rho0all-.15%/
+  drainequal. NOTactualGPU/JCT/provedWFregression;nonewarrivals/P/tools/
+  descendants. FullDAGeffectsrequired;don'tcallrequestmeanourWFobjective.
+  Independentclosedform8100scalarcomparisons/maxdiff4.774e-15,NOTnewtests.
+  2*8growthBF16FULL1.5MiBformulaNOTphysicalpermit. 3nativeAST/hashchecked,
+  copy()result-snapshotomitsseq_lens/orig_seq_lens/input_ids/sampling_info;
+  NOTqualifiedfilter-and-forwardclone. Noactualnative/modelexecution.
+  PrimaryOrcaOSDI22/BatchGen2606.21712currentabsidentitychecked:iteration/
+  coroutineNOTnewclaim. DoNOTtunelead/rhoonthiscorpusaspseudo-newperformance.
+  Keepnarrowexecutionentry/costtradeoff;doNOTacceptsimpleextra-forward
+  version/novelty/performance. Oneoffs evidenceonly/allownedended.
+  See docs/research/resident_decode_lead_cpu_20261114_zh.md.
+- 2026-11-14 CPU toolphase/prefix screen is progress; goalACTIVE/noGPUquery/use.
+  Same10380complete/70observedWF(NOTdirectory83):10356ordinary+24internal.
+  r2separatesinvocationcompletion/KVretirement:427ordinaryterminal(368retired/
+  59retainedroot),9911continue/18censored+24internal. r1narrowlabelsource/
+  outputskept;NOonlineguardchange. MarkerXparser9846/55/53/402,NOT9899of9901
+  match. All53missingopenparsedhavefunctionsyntax(read41/ls11/grep1);all55
+  unparsedopenatpenultimate(53terminal/2continue/50retired). Actualstreaming
+  sourceallowsfunctionprefix;NOcompleteparserreproduction. Currentruntime
+  alreadyinvalidatesreportonmarker;NOT55historicalinvalidations/JCTloss.
+  Parsed+markerfirstzeroordinalP50/90/99=16/42/460,remaining39/79/839;
+  all9886parsed-singlecloseleaves1token,NOTms/gain. Noopenfirst4:8110ofwhich
+  7653laterparsedtools. Even457no-toolresponsesinclude30continuations.
+  Onefixed16token/2048charTFIDFlogistic/workflow38/14/18trainvaltest:
+  requiredvalprecision95%+20hintsFAIL/thresholdNone;best20supported24TP/
+  9FP72.73%,recall27.27%diagnosticonly. TestAUC.98663/AP.70556NOTaccuracy/
+  acceptedhighprecision;NOTtestretuning. CPUscoreP99120.42usNOTservingcost,
+  CUDAuninitialized/guardcalls0. PrimaryTAO2610.37230/Sutradhara2601.12967v3
+  abstractidentitieschecked,tool-aware/streamdispatchNOTnewclaim. No policy/
+  dispatch/native/model/JCTchange;newlexicalreview108mismatches/hashchecked.
+  Oneoffs evidenceonly/allownedended. DoNOTretrain/tunethisopenedtestasnew
+  heldoutprooforusemarkerabsence/no-tooloutputasKVreleasepermission.
+  See docs/research/tool_phase_signal_cpu_20261114_zh.md.
+- 2026-11-14 CPU MoE affinity scope screen is progress; goalACTIVE/noGPUquery/use.
+  HistoricalserverTP=DP=EP=1/offload0+3nativefiles rehashed:wholecallgate/topk/
+  experts+expertalign. Fixedreadytokens/routes:agentpermutationpreservesexpert
+  set;splitlogicalfootprint/fixedBsumceiltiles>=joint. NOTphysicalHBM/time/
+  nativeoptimality;differentmembers/workers/configsoutsidethisbound.
+  4validtop8algebraexamples DeltaT=[8,0,0,8]:full expert overlap aloneNOT
+  tilegain;tile slack matters. OnlyP/Dcosthypothesisrefinement/noonlinepolicy.
+  PrimaryELDR2607.00466/Gimbal2606.15177abstractidentitiesdownloaded/hashed,
+  decoder-affinity/DP-expertplacement priorart,NOTlocallyreproducedperformance.
+  Deferordinarysamebatchroleclustering/routertraining;noactualalllayerexpert
+  IDs,don'tsubstituteoldsyntheticuniform/hot16orlaunchgrid. stdlibCPUonly,
+  noTorch/GPU/model/newpytest/servingchanges/allownedended. Evidence-only.
+  See docs/research/moe_affinity_scope_20261114_zh.md.
+- 2026-11-14 CPU computeview contract audit is progress; goalACTIVE/noGPUquery/use.
+  Sixsealedfiles154701records/122557939bytes inventoried;5jsonl154700lines+
+  census1. IndexLEN/node+creationtime/generatedtokenIDsNOTphysicalslotmapping.
+  FrozenserviceemitteralsoNOcompleteslots;no1GBrescan/noallmachineclaim.
+  Reusedsamecontiguous_restore/noNEWgeometry:priorFP64error8.32667e-16
+  preserved;roundpartitionoutBF16thenmerge changes21816/69632words/maxabs
+  .00048828125/relL2.2760%. NOTnativeGPUmismatch/token/qualityfailure.
+  OriginalwrapperAST2recordedopcalls retains4returns. BF16outCANNOTFP32out;
+  FP32scratchreturnedBUTvarlendynamicsplit1writesnormalout,staticcap2NOT
+  validpartialguarantee. Twopartcap2/Q2048partial128MiB+LSE1MiBformulaONLY,
+  notactualpeak/requirement/perlayer-sum/JCT. RemoteC++APIhashmatchespinned.
+  Deferdirect2BF16callroute;needactualcoverage/validpartials/cost BEFOREkernel.
+  R1wrongdecoratorassumptionfailedCPUextraction/sourcearchived;R2identitydebug/
+  GPUoprecorder,NOactualkernel. Allownedended/oneoffs evidenceonly/noGPU.
+  DoNOTrepeatclosedlogs/constructmorefixturesforuncapturedphysicalmapping.
+  See docs/research/kv_compute_view_contract_20261114_zh.md.
+- 2026-11-14 CPU computeview prototype is progress; goalACTIVE/noGPUquery/use.
+  NativeTokenallocatorclassCPU/7constructedhistories:BF16word/addresscoverage
+  exact;FP64partitionattentionmaxabs1.19349e-15,wrongnewtailmasknegative.012734,
+  3invalidslotinputsreject. Independentmaximalrunreviewall7. NOTworkloadphysical
+  coverage/GPU/modelqualification. OriginalFA3hostpredicate24CPUconfigs:
+  q17causalpage128eligible/noncausal128NO/176YES;maxq<=16allNOinthesecases.
+  Zero-copyPOOLviews only;CPUreferencegathersDOallocate. NoactualTMA/GPU/serving/
+  throughput/JCT/newnovelty. Needactualrunmetadata/deviceplan/merge/lifetimes;
+  doNOTexpandmoreconstructedfixturesbeforeactualcoverageevidence.
+  PRIMARYcorrection:GraniKV2608.15584v2WITHDRAWN2026-08-23,throughputmethoderror;
+  oldv1-onlyreviewmissedstatus. NOperformanceevidencereliance;publicmechanism
+  remainspriorart,withdrawalNOTnewnovelty. vAttentionalreadydecouplesmemory/
+  attention;AnchorKV2611.00117v1alreadyexactresidualanchorreconstruction.
+  Existing5discretelayersNOTadjacentlayerentropytest;noCPUmodelrerun/codec.
+  3primarypages/hashsaved;oneoffs evidenceonly/allownedended.
+  See docs/research/kv_compute_view_cpu_20261114_zh.md.
+- 2026-11-14 CPU prefilltile screen is progress; goalACTIVE/noGPUquery/use.
+  Same10380complete/14498chunks/12541662Q;233partialQstillunclassified.
+  q<=128:4688chunks/32.3355%,1.9078%Q/1.4802%q*h; q>512:92.9032%Q/
+  93.9419%q*h. Independentjqpositionaccumulationagrees. q*hNOTnewQtriangle/
+  physicalHBM/cache/SplitKV/time/JCTbound. NativealreadyGQApack/dynamic
+  splitting/tile;oldprefill1584mainFA3/3276.060127ms=66.2187%kernelSUM,
+  nohardwarecounters. Downprioritizeordinarytileasnewdesign,noprovedzero.
+  Fresh e926CPUimport/parallelhookpasses,23boundsourcehashesunchanged/cleanapp;
+  CPUdetectionstubs,7driverloads+1GPUpropertyattemptBLOCKED/CUDAuninitialized.
+  r1overstrongassert/r2wrongmissingdriverexceptionfailurespreserved,oldPy
+  archived;r3OSErrorretainsCPUfallbackwithoutdeviceaccess. NotGPUqualification/
+  newtests/model/perf/nativeedits. RemainingP/Drealcheckise926nativecomponents
+  plusmedium/long4arm;respectCPU-only/noGPUwaiter. DoNOTrepeatscreen/137checks.
+  See docs/research/prefill_tile_dispatch_review_20261114_zh.md.
+- 2026-11-14 newCPU prefillprovenance audit is progress; goalACTIVE/noGPUquery/use.
+  Same sealed83/Oracle10380complete/12541662Q,measured2991/3685459Q.
+  9887consecutive same-session turns have0identicalold-inputprefixrequery;
+  only657queries matchprioroutput(NOTprovedwaste/producerready).
+  469firstmodelcalls(epoch0)/5959066Q=47.5142%;measured147/44.77%. NOTallcold.
+  24sessionchangesseparatelychecked,oldinputrequery0. Initialr1erroneously
+  requiredequalmodel epoch/excluded9911;source incrementspercall,r1archive
+  kept,r2requiresconsecutiveepoch+unchangednamespace/native-session;NOonline
+  guardchange. Globalprior-completed-inputnamespace reference finds124/
+  87644Q(.6988%),measured53/30819(.8362%),allfirstcalls;tool/JOINextra0.
+  Referenceexcludesgenerated-only/laterqueue/unfinished/externalKV,
+  NOTfulloracle/physicalcache/JCTorallpolicygainbound. Independentrawdelta/
+  byteLCP/fixed64tokentrie checksall10380/9851baseedges+60reconstructedpairs,
+  24sessionboundaries/nativeN-1contract/frozenpayloadreturn_logprobFalse.
+  21uniquetests(17+4)pass;oneoffs evidenceonly,epochr1archived,no serving/
+  model/quality/perfchange. DoNOTrepeatcensus/retentionfixturesforthissmall
+  premise;necessarynewQcost andactualmigration/admissionremaindistinct.
+  See docs/research/resume_prefill_recomputation_screen_20261114_zh.md.
+- 2026-11-14 newCPU prior-art/indexscreen is progress; goalACTIVE/noGPUquery/use.
+  DirectGithubAPI42701mergedOct22 coverssameovershoot-tailD2Hrace;44800merged
+  Oct17writebackordering.40576/47650/50469publishedwatermark/reserve/devicewait,
+  all3unmergedatfetch. DoNOTpitchgenericproducer/async-evictasnewmain;prior
+  lifecycleproofisfrozenbranchqualificationgap,NOhistoricalcorruptionclaim.
+  Initialweb8820/25402attributionswrong(actualAPIunrelated)/comment404;
+  attributionwithdrawn,originalresponses/sourcearchivekept. Verifyidentities
+  beforecitingsearchhits. Penelope2611.00391v1actualtitleRethinking KV Cache
+  Eviction for Agentic LLM Serving/citation2026-10-30/headfirst+phantom.
+  Newmetadatahypothesis:exactoldwidth9modelprofiles21461kernels/24graphs each,
+  indexkernel24each/182.373+182.592us/mean7.599+7.608us,0.03191+0.03393%kernel
+  sums,NOTcurrentworkload/JCTbound. Broadmetadata/schedulermatchincorrectly
+  includesactualFA3attention;rejecteddiagnostics+7uniqueCPUchecks retained,
+  independentSQLrawcounts/7sourcehash+5PRidentitieschecked. ExistingFA3
+  cache_batch_idx API NOT pagednumerical/graphqualification. No serving/native
+  changes/newmaininnovation/performance;oneoffs evidenceonly. See
+  docs/research/async_eviction_and_metadata_screen_20261114_zh.md.
+- 2026-11-14 native FULL producer lifecycle CPU followup is progress; goalACTIVE.
+  ActualReq/allocator/cache_finished_req/radixsplit/Hostalloc/prepare/merge/L2/
+  ACK nowexecuted;onlydevice/events/copykernel standins,rawCPUconfig published
+  withoutmodelresolution. Samecanonical434c35dd/16nativefiles,3layerFP16/LF
+  fixtureNOT48layerBF16/pagefirstCUDA/HTTP. FineWAR2of10constructedcases ACK
+  stale tailbytes;correctproducer waits fixbytes,segmentedprefixACK earlier.
+  Reviewer checks23complete nodepayloads. NEWlimit:tailbackupancestorlocks
+  stillpinACKedprefix;actualwritebackevict atsynthetic11waitsto71,bothpaths.
+  Incrementalsecondwalkofffrees0/on5slots,NOTmilliseconds/JCTgain/historyrate.
+  15uniquetests(13lifecycle+2evict)pass;noearlycapacitygainproved. DoNOTpitch
+  splitcopy/earlyACKasacceptedmaininnovation;needproducer/Hostdurable/legal
+  reclaimfrontiers+nativeinvariants andactualconsumerbenefit,strongcorrect
+  controls. Source/eventtrackingservingfixNOTimplemented;historicalfineWAR/
+  producerprovenanceNOTcaptured,NOhistoricalcorruptionclaim. Initialmissing
+  config/downloadinterrupt/timestampcallerandrecorderSyntaxError preserved
+  inartifacts/archives,NOTsystemfailures. Oneoffs evidenceonly,noGPUquery/use.
+  See docs/research/kv_producer_lifecycle_cpu_20261114_zh.md.
+- 2026-11-14 new CPU EOS/producer screen is progress; full goal ACTIVE.
+  Same sealed83/Oracle:9651terminal-zero-output rows/1310346decode rows
+  (0.7365%,context proxy0.6435%),all launched BEFORE CPU finish,one/request.
+  8823direct rawbase/suffix proofs retain complete stop151645prefix and next
+  native prefill starts beyond it;NOT physical producer provenance.
+  Only25all-terminal batches/83.306msworker,NOT savings;do not implement
+  generic EOS suppression as a new main contribution (SGLang42720 already).
+  NEW conditional dependency issue: default IN_REPLAY metadata marker precedes
+  model KV writes;fineWAR protects metadata,not necessarily D2H producer.
+  Extracted real WAR/L2 CPU case ACKs stale in-flight-tail bytes;coarse/scoped
+  producer waits preserve bytes,settledprefix stays early.27tests(19+8)pass.
+  Fullnative radix insertion->backup path NOT exercised;actual fineWAR/external
+  event/historicalD2H provenance NOT captured;producer tracking NOT implemented.
+  NOT historical GPU corruption proof or performance/novelty acceptance.
+  Next meaningful CPU work:actual FULL node/pending-writer/backup lifecycle,
+  not more old timestamp proxies. Oneoffs evidence-only,r1list/tuple verifier
+  caller error preserved+r2 corrected. No GPU query/use;all owned jobs ended.
+  See docs/research/overlap_terminal_kv_frontier_screen_20261114_zh.md.
+- 2026-11-14 America/Los_Angeles: user authorizes NEW CPU-only systems research.
+  No GPU query/use this turn; old GPU-phase blocker does not block independent
+  CPU hypotheses. Two local prototypes completed: allocation-origin free-prefix
+  fence certificates (26 tests incl4800 random steps and delayed-writer negative)
+  and pitched KV-copy byte plans (19 tests incl400 random maps). Native exact
+  canonical434c35dd + independent raw counts verified. Same1743H2D have NO
+  destination-origin/fence evidence; actual benefit UNKNOWN,71.412s residual NOT
+  fence/JCT saving. CE/2D/layout selection already FlexKV/vLLM prior art; native
+  CUDA JIT quota2CTAs is source default,NOT measured occupancy/runtime selection.
+  First is conditional small optimization,neither accepted paper contribution.
+  All oneoffs in named report directories; r1 sources/results preserved,r2 adds
+  actual import-path guard.45 unique tests,not rerun sum; all owned jobs ended.
+  No serving/GPU/model/JCT change. Do not keep expanding these fixtures or old
+  proxies; continue genuinely new CPU hypotheses within unchanged systems goal.
+  See docs/research/kv_reuse_and_copy_transport_screen_20261114_zh.md.
+- Latest 2026-11-13 18:13:22Shanghai: realGPU/model validation stillrequires
+  external resource change. Same2185461 observed live acrossTHREE consecutive
+  resumedgoalturns;nowH200136778MiBused/6381free/util100/PIDelapsed5649s.
+  Prior2turns advanced sealedgate/lifecyclestudies;thisturn actualsocket
+  mechanismrepro completed. RelevantindependentCPUworkforcurrentcandidates
+  done;historical14needsNEWdecision/applied-eventcaptures,notmoreoldproxyfits.
+  NoownedGPU/server/waiter/CPU session. Blockedaudit threshold satisfied,
+  NOT completion. Preservefullsystemsobjective;resumee926 actualcomponent/
+  medium+long onlyafterfreshhold/source/resources. DoNOTresumeplanning.
+  See docs/research/control_ingress_race_mechanism_20261113_zh.md section6.
+- 2026-11-13 control-ingress mechanism CPU repro passed 3actual cases.
+  Frozen116b/e071 realReplayEventDelivery/Queued/Unixsocket/CausalGraph/
+  candidate/freecapacitygrant/Deferred methods:controlfirst grantsnow;
+  requestfirst graph12/header13 application_readyTRUE butcandidateFALSE,
+  afteractualeventapply candidateTRUE yet2swindowdefers;window0 grants
+  onfollowup. Controlled12/12.01/14clock NOT realwait/JCTgain.
+  Minimalrequest stand-in,constructorbypass,NOT HTTP/nativeallocator/
+  fullOracle/model qualification. Samepublishedbeforefields inracecases.
+  All3queues/sockets closed;probe7.3msNOTservingcost. Actual9modules frozen
+  pathchecked+hashed. Historical14causes STILLUNKNOWN:13nonzeroepochs merely
+  compatible,epoch0 NOTexplained. Oldjournal lacks per-eventappliedtime and
+  completepredicate state;doNOTkeepmatchingproxies or relaxsafetychecks.
+  Next requires newrealdiagnostics and e926GPU/model;noGPU/novelty/gain.
+  See docs/research/control_ingress_race_mechanism_20261113_zh.md.
+- 2026-11-13 P/D completion-to-release systems screen advanced, noGPU/JCTgain.
+  Same sealed83/oracle:10380calls/469invocations,9911continue;measured2991/
+  147invocations/2844continue. ThisdoesNOTmeanKVstaysHBM. 8306explicitrelease
+  records linked;missingrecordisNOTzerofree. Acceptedreportstages281bindunique:
+  222lastnormal/58latercall/1censored,NOTguaranteedimmediateRETURN.
+  780distinctconsumer-shortfalls/209measured;546haveknownstage+outputseen+
+  unfinishedcall(NOTnative-runningproof). Futureterminal100msreleasecovers
+  originaldeficit250times,245consumersalreadylaunchbeforethat;measured68/66.
+  Actualfirstconsumerlaunch P50/P90329.552/1583.245ms;452/546within1s.
+  Downprioritizecapacity-release-drivenreportdecode,NOTallP/Dacceleration.
+  Nativeaudit1.069GB/131763servicerecords rehashed;7CPUchecks+independentjq
+  lifecyclecounts pass. follow_consumers r1 pathvariable shadowfailure kept;
+  r2sourcefixed/reparsed/no data orGPUfailure. PrimaryNexusv1/BulletASPLOS26/
+  DuetServeICML26 saved+hashed;dynamicSM/on-demandP/Dnotnew. Oneoffs inreport.
+  At17:49:49Shanghai GPU136778used/6381free/util100/samelive2185461;
+  noownedGPU/server/waiter. NextGPUstill e926native+medium/long,not planning.
+  FullgoalACTIVE. See docs/research/pd_completion_release_screen_20261113_zh.md.
+- 2026-11-13 systems-only followup produced new sealed gate-causality evidence.
+  In original83/tool-band-pressure/ORACLE journal, coalescing2000/freefallbackfalse,
+  1879periodics/2547ready-field-paused-occurrences/47individual-raw-fits.
+  Resolve THROUGH residual dispatch:20sameboundarygranted,13otheractualgrants
+  consumebudget,14distinctchildrequests remainoutsideactualcandidatewindows with
+  insufficientfilterreasons. Do NOT call47missedgrants or1160inactivepairsGPUidle.
+  539dedup sampledwaits union352.403s;worker-gapintersection0/common-gap0,
+  NOTkernelutilizationproof. JournalSHAa609c6bd unchanged;6CPUchecks pass+
+  independentjq1879/2547/47/47. Oneoffs stayin reportfolder,not root scripts/tests.
+  FullgoalACTIVE;noGPU/model/JCTgain. At17:15:59Shanghai Nov13 GPU136778used/
+  6381free/util100,sameliveexternal-to-this-turn2185461;noownedGPU/waiter.
+  Keep14samples bounded;next realGPU priority e926 nativeP/D+medium/long
+  qualification,NOT hardwareplanning. See
+  docs/research/admission_gate_causality_screen_20261113_zh.md.
+- 2026-11-13 Asia/Shanghai: user redirects research back to serving/inference
+  systems. Hardware-aware changes to parent planning, child count and task/context
+  division are no longer the current main direction; keep existing default-off
+  prototypes and negative/unfinished evidence, but do not resume their prepared
+  natural-planning GPU campaign by default. Preserve task logic, prompt, tools
+  and dependencies for the current systems search. Workflow metadata may expose
+  existing dependencies; optimization must change execution/resource management.
+  Parrot requires Semantic Variable integration, but its reported mechanisms
+  optimize dataflow execution, scheduling and context sharing, not parent task
+  replanning. No new candidate, novelty or gain accepted in this boundary review.
+  See docs/research/system_research_boundary_20261113_zh.md. Earlier hardware
+  planning launch/blocker notes below remain historical, not the next-run order.
+- Hardware-planning next real validation requires an external resource change.
+  The same external GPU1928680 blocks the real component across at least three
+  consecutive goal turns; CPU-only quality/control/launch/collection preparation
+  is now complete for this candidate. Fresh16:20:33PST Nov12 observation still
+  H200141793MiBused/util100/sameexternalcontext. No owned model/waiter/runfolder.
+  Preserve full research objective; do not invent incidental audits to avoid the
+  GPU blocker or infer gains from more fixtures. Resume actual paired component
+  only after fresh hold/source/resource checks permit it. This is not completion.
+- Hardware-planning paired-native launch/collector CPU preparation advanced.
+  Current plan_r2 binds cleanapp116b3256/nativecanonical434c35dd,805198/24/
+  BF16FA3/chunk2048/exact1--24+breakable/MoE9425a7d4,Host/admissionoff.
+  Prepared_r2 unchanged0f22b125;fullinputs/namespace/64outputs/strictgreedy kept.
+  Explicit prepare/preflight/run,no automaticwaiter;resource-unavailable fails
+  beforePopen,runrequiresnice0;clientnice19/CPU32/CUDAhidden. Nativeimportprobe
+  actually selects frozenengine;historyreferenceenv pointers NOT oldrun bug.
+  CPUJUnit13pass.68s binds3currentPyhashes;127startupinputs plus14preparedsource
+  entries(overlap),config/index only NOT newallweighthash. CPUliveTCPchild verifies
+  PID/start/session/listener andexits. GPUlistener/scheduler/MoElog/drain/cleanup
+  paths written,butNOTrealGPUstartupqualified. Collector actualbatchonce,
+  outputordinalconservation/warmupsplit;2memberfixture14ms not28+separate7mswarm,
+  duplicate/missing/unknown/crossgroup/gap reject,NOTCUDA/JCTtime.
+  plan_r1sourceonly superseded,oldPy tarcomparethenarchive. Actual16:09:45PST
+  preflight sources+CPU/port/diskpass,external1928680/free1366MiB/util100/owned0;
+  16:13:29sameGPU. No gpu_run_r1 directory/model/waiter,allownedCPUended.
+  Source/script/inputqualification only;servicecostfalse/quality+naturalJCT
+  pending/LeanSparsedeferred/nextGPUvalidationblocked. See
+  docs/research/hardware_planning_native_launch_20261112_zh.md.
+- Hardware-planning ordinary invocation-concurrency control now DEFAULT OFF.
+  --delegation-concurrency-limit0 unchanged;positive only autonomous/natural,
+  root task only/perworkflow/singledepth;wholechild incltoolwait,NOT GPU/KV
+  grant/adaptivecontroller/newcontribution. No prompt/args/report edits,original
+  ALLJOIN retained;sync+async shared FIFO/future cancel-grant cleanup/no polling.
+  Complete SYNC realharness CPUfixture caps0/1/2 yieldspeak2/1/2,4modelcalls
+  each/sameinitialmessages+tasks+reports/completed2JOIN. AsyncLangChaintoolgraph
+  similarly2/1/2;NOT completeasync qualification. Existing fullasync fails
+  EmptyReasoningRecovery.awrap_model_call beforeLLM atcap0and1;matchederrors
+  kept,notnewgatebug/performance. Firstbasetemp-parent6setuperrors ours,retained.
+  15focusedpass2.43s includedin284relatedpass/1oldDocker skip21.77s.
+  6000free-slotCPU samples:auditedsyncP50/P9925.980/31.308us,max639.817us;
+  async55.167/61.589us;4000auditrows,notqueue/service/JCT costs.
+  benchmark/source/JUnit/raw-observation hashes retained,r2oldsource tarcompare
+  thenarchived,no scattered obsoletePy. No naturalmodel/quality/GPU/JCTgain;
+  servicecostfalse/LeanSparsedeferred/goalACTIVE. See
+  docs/research/hardware_planning_execution_control_20261112_zh.md.
+- Hardware-planning payment quality/complete artifact collection advanced.
+  Fixed original three-session payment008 kept; full preserved41files evaluated,
+  not tracked patch alone:6new Python sources and7bytecode omitted there.
+  Original image/deps/source/raw unchanged. Normal baseline+submission imports
+  retain original async_sessionmaker/service_layer/APIRouter issues; inherited
+  importlib.walk_packages is NOT a new regression. Isolated actual model/repo/
+  schema with real SQLite proves add-commit survives later external rollback
+  (1row),sameID read/list/currencyhook/amount validation work. Package initializers
+  bypassed and FK-only Invoice fixture; NOT production service/API/fulltask pass.
+  Source APPROVED/DRAFT placeholders and absent BaseService binding recorded,
+  no runtime NameError claimed through earlier import failures;12witnesses.
+  Future collector now includes untracked binary/empty/symlink/special-name
+  patches in normal/fallback paths,does not change originalindex/HEAD/status.
+  Real oldsubmission reconstructed41hashes/13newfiles/75974B new evidence patch;
+  old model.patch kept. Initial index-refresh failure and fixture errors retained.
+  Existing natural profile realharness off/static/hardware allows0delegations/
+  1scriptedcall/no retries;single-depth/noncheckpoint NEWcommonexperiment setting,
+  not oldprotocol equivalence;runtime-concurrency-only control stillmissing.
+  Related269pass/1skip21.45s includes5collector+3natural,notnewmodel/quality/GPU/
+  JCTgain. AllownedCPU/temp/containersended,noGPU/waiter;costsupportfalse/
+  LeanSparsedeferred/goalACTIVE. See
+  docs/research/hardware_planning_payments_submission_20261112_zh.md.
+- Hardware-planning actual historical security submission evaluated,not JCTgain.
+  PreviousJSsource/answer turn was progress. Same fixed security028 task,
+  original15files/submission18incloldbytecode/HEAD53e4147 kept;actual
+  workspacegitdiff bitmatches recordedmodel.patch,allbeforeafterhash/
+  statusunchanged. Original3c5ba4d6 andcommonrepaired73e9b6a7 images kept.
+  4code/environmentcontrols:originalimage baseline+submission bothlack
+  typer/watchfiles,recordseparate. Samecommonimage actualbaseline
+  Orchestrator.__init__ succeeds,submissionraisesAttributeError
+  self.command_bus atmain277beforeassignment;normalCLIconstructssameclass.
+  Actualprotoc succeedsall4;submissionScanSchedule missingtarget_id,
+  cron_expression exists,ListScanSchedules.server_streamingfalse,
+  wrappertypesrecorded. Donotrejectinheritedservicenamemismatchalone.
+  Actuallocalset/list+two-targetoverwrite works,NOTfullgRPCqualification.
+  Isolatedoriginalmethods bypassconstructor+useexternalScheduler/bus:
+  interval/minutes1/sample-service actualcommand;diagnosticNOTnormalstartup.
+  Sameunchangednewtestpasses feature-absentbaseline+submission inboth
+  images;1unique test/4executions,CommandBus+callback+commandtestlocal.
+  Rootmount/provenanceIndexError r1preserved asOURprobeerror;testonly
+  nonrootmountfollowupsolved,notproject/model failure;no mainreruns.
+  Main16.659s/testonly13.813s/assessment11sourcehash+8witness+JUnit+
+  workspacestates checked;sourceobserver/evalNOTindependenthuman.
+  Historicaloutcomecompleted/correctnessnotgraded/finalclaimsallmet;
+  actualsubmissionNOTacceptedfulltask,positivepartsretained.
+  NegativecaseNOTgenericfuturepositivevalidator/rate/partitioncausality/
+  newnaturalmodel/novelty/performance. Oldfixedtokenservingintact.
+  Paymentactualworkspacefound,untrackednewsource meanspatchonly
+  insufficient;fullpaymentqualitypending. Alloneoffs evidenceonly.
+  All8ownedcontainers/temp/CPUended,noGPU/waiter/source/image/prodedit.
+  14:52:15PST H200141793used/1366free/100%,notfutureavailability.
+  mainc1ada5243065/testc1a3cbfe7ca1/assessment049d68790ee1.
+  GoalACTIVE/LeanSparsedeferred/servicecostfalse/newnaturalJCTpending.
+  See docs/research/hardware_planning_security_submission_20261112_zh.md.
+- Hardware-planning original JS comprehension/source evaluation advanced.
+  Previous paired-context/client turn was progress. Same fixed media056
+  pilot task,original33files/Gitclean/image50fbe7c65f5a unchanged.
+  OriginalNode20.19.0/read-onlyCPU32/1CPU/2GiB/networknone VM executes
+  unchanged main/preload/recovery;Electron/UI/IPC controlled,FSreal.
+  4observations completed. Mainready3handles(app:get-env/app:quit/theme:
+  get-native)+settings:update event,no specified preference handlers,
+  emptyuserplugins. Preloadboardroom invokesprefs:get/set,mismatchedmain.
+  Recoveryrealgzip snapshot roundtrip;initreadsbutdoesNOTemit
+  SESSION_RESTORED;explicitREQUEST_SESSION_RESTORE does. NOTfullElectron/
+  React/DockerWorkspaceBackend chain or genericpreferencepersistence.
+  Privateevaluator4originalquestions/18exactsourcewitnesses,semantic
+  reviewrequired/notkeywordscore/no referenceinmodelprompt.
+  Oldfinalrequest01a19437-4f7b-7510-b40c-de9d51a2a5b0:680tokensinclEOS,
+  callback3323chars/validparser/stop/RETURNcompleted. CorrectUI/gap
+  findings retained;unsupportedsettings:save->settings:update and
+  "persistssettingcorrectly",startupinitialization onlypartial.
+  CodexsourcejudgmentNOTindependenthuman:oldanswerNOTacceptedcomplete.
+  ALL33filebodies in frozencontext+actualfinalprompt;notmissinginput
+  explanation. Singlepreselectedanswer,NOqualityrate/partitioncausality/
+  newmodel/JCT/performance/noveltyclaim;oldfixedtokenservingintact.
+  Probe.409s/capture10.419s/reference.006s/review9.748s/15sourcehash/
+  33promptfiles/18witness/4quotes/image+ownedcontainerabsent verified.
+  ArtifactreviewNOTsecondsemanticvote. OfficialElectron29IPCdocs saved,
+  APIreferenceonly,notloadedElectron. Oneoffs evidenceonly,no prodedit.
+  AllownedCPU/temp/containerended,noGPU/waiter;14:23:19PST H200141793used/
+  1366free/100%,notfutureavailability. GoalACTIVE/LeanSparsedeferred;
+  costs+other2quality+newnaturalJCTpending. result64930c72f96a/
+  referencece478eac7068/judgmentaa1d188dc618/reviewd5c451d54284.
+  See docs/research/hardware_planning_comprehension_quality_20261112_zh.md.
+- Hardware-planning paired-service contexts/client CPUqualified,not GPU/JCTgain.
+  Previous actual-read grounding turn was progress. Same sealed83/Host400/
+  mean70/oracle measured18,first wait-time fanout2/3/4 JOINs,40realprefixes.
+  Parent43915/237319/74107;childsum13862/20769/27960. Actual first other-
+  workflow backgrounds8=717410tokens/20=537054,NOTmonotone pressure/count.
+  Same contexts once/64greedy outputs each;all/pairs/serial,BGoncefirststage.
+  Finite fixedwork component,NOTcontinuousBG/naturalstop/taskquality;
+  parent is separate contextcost,NOTequivalentchildplan/savings subtraction.
+  Coldflush/warm1unmeasuredtoken,recordactualcachehits,notassumedfullwarm.
+  18scenarios/17eligible/32plans percachemode perrepeat;805198pool/24rows/
+  2048inputreserve/64growth,undiscountedgeometryNOTphysicalallocatorproof.
+  fan3/bg8 parent957353tokens rejected+retained. Fullinputlasttoken kept.
+  r1prepared/sources retained+r2preservesextra_key/cache_salt;all40source
+  namespaces actuallyNone,so NOTfix of observed namespace/caching behavior.
+  Oldcontrolledartifact ownonlinefalse/prefillP95relativeerror3.12966/
+  pool871700/sourcecontractdifferent;new7widthmulticontextcomparison has
+  different vectors,NOTpairedfanoutcost. servicecostfalse remains.
+  Final19CPUcases.83s inclhttpxMockTransport four-plan loop;NOTrealHTTP/
+  GPU/model. r2prepare9.409s/review13.143s/40prefix+namespace/rawfirstBG/
+  32equalworkplans/14sourcehash/archive verified,nopreparerimport.
+  Clientvisibleconfigchecks doNOTreplaceactualsource/MoE/resource/PID/
+  workertelemetry qualification. Firstliveerror/supportscreen mayexplicitly
+  use repeats1;no source freeze or GPU launcher/run this round.
+  AllownedCPUended,noGPU/waiter,oneoffs evidenceonly;13:56:08PST H200
+  141793used/1366free/100%,notfutureavailability;oldraw/operatorunchanged.
+  prepared0f22b125bfbb/reviewed52b505b9f2. GoalACTIVE/LeanSparsedeferred,
+  no naturalquality/JCT/throughput/noveltyaccepted.
+  See docs/research/hardware_planning_service_pairs_20261112_zh.md.
+- Hardware-planning actual successful-read/input grounding completed,not JCTgain.
+  Same sealed83/Host400/mean70/oracle,measured18/19multiJOIN/46branches/343reads.
+  r1 302exact/41unmatched retained;r2 339exact,all326success+13error,
+  4error unknown. Frozen child_work_budget source d453aa103ede exactly
+  explains37postcallback suffixes(36success/1error),no fuzzy trimming.
+  15groups/51group-path-bodykeys/59extra first-per-branch payloadcopies,
+  267933B/74394actualwhole tokens,allnew;successfulbodies468828tokens;
+  measured2991newinput3685459,extra2.0186%.NOTremovablework/equalKV/
+  GPUtime/JCTbound. Contextdivision+servicecapacity remains candidate;
+  mergingduplicate reads alone haslimited measured input opportunity.
+  ByteLevel actualtoken framing/ambiguity rejection+sourceexact notice
+  12CPUcases pass4.84s. Main13.470s/review9.468s/raw callbacks+nextcall/
+  lineartokenbounds/originalchunkranges+SQL+18sourcehash pass;review
+  reusescodec/notice,NOTanothermodel/toolrun. Fullcorpus12743requests/
+  447001434prompttokens/sourcehashd348a97aa91f preserved.
+  Initialimport/return_dict/emptyspan errors/JUnit kept;3obsolete source
+  snapshots tarcomparepassedthenarchived,notmodel/datafailures.
+  AllownedCPUended,noGPU/waiter/naturaltask/servingedit;13:21:11PST
+  H200141793used/1366free/100%,not futureavailability.
+  Oneoffs evidenceonly,result1653c7e8b54d/review92d4c9a60cfe.
+  GoalACTIVE/LeanSparsedeferred/servicecostfalse/quality+naturalJCTpending.
+  See docs/research/hardware_planning_result_grounding_20261112_zh.md.
+- Hardware-planning sibling requested-path screen and isolated quality repair done.
+  Same sealed83/Host400/mean70/oracle, measured18, all19 multi JOINs/46branches.
+  Frozen native parser343read requests/calls;15groups share requested paths,
+  only5exact declared overlap,16complete declarations. Branch-path175,
+  group-path124,repeatedincidence51;179calls on shared paths.
+  Chunk64review343same,15groups/116calls share recorded path-offset-limit.
+  NOTsuccessful reads/equal content/real ranges/removable work/KV/JCT savings.
+  Need actual tool-result/input grounding before cost or merging claim;
+  don't feed future observed paths online. KVComm2510.12872v1 approximate
+  cross-context offsets,TOPAS2608.25523v1 joint prefix residency/admission
+  already exist; primary title/hash saved,not reproduced/noveltyaccepted.
+  Security main.py has separate startup bus from core bus. Original3direct
+  production checks2pass1typerfail; new SAME3 allpass,not5uniquecases.
+  New common candidate image tag beliefkv/hardware-planning-security-env:
+  20261112-r4,ID73e9b6a76416612ee8539f8134d875399a7892e9e18a7a6118f813817d8fc3b6.
+  Original183package versions unchanged,6missing additions,official wheel
+  hashes+offline build; old images/project/raw untouched. Actual main/config
+  imports pass; bundledsuite still8pass1viewmodelfail/fallback problem.
+  Actual DockerWorkspaceBackend start/preflight/execute/close passed3.443s,
+  default180s/cleanup completed/container absent/76sourcefiles Gitclean.
+  No scheduled-scan implementation/task-quality/full3pilot/performance pass.
+  r1missingrich/r2FROMrawID/r3missingfindlinks failures/source/logs retained,
+  finalr4 files under env_variant_r3,not overwritten success at old tag.
+  Context3.804s/review3.695s;env9.360s/review.133s,notnewmodelreruns.
+  contexta40cec8df68a/review9dd564b4f021/env475dde253ebf/newimage73e9b6a76416.
+  AllownedCPU/build/download/containers ended,no GPU/waiter;12:46:45PST
+  H200141793used/1366free/100%,not future availability. Oneoffs evidenceonly.
+  GoalACTIVE/LeanSparse deferred;next quality/input grounding and service
+  calibration,not snapshot-only planner success.
+  See docs/research/hardware_planning_context_overlap_and_quality_20261112_zh.md.
+- Hardware-planning load/pilot readiness checked, not natural task/GPU/JCT gain.
+  Same sealed83/Host400/mean70/oracle, measured18/root delegate82.
+  Source-visible LLM_SUBMIT->callback outstanding demand, excluding own call:
+  boundary absolute delta P50/P90 2/4, MAE2.012; past2/5/10s MAE
+  2.192/2.190/2.148. Some threshold24 consistency improves; no universal
+  dominance claim. Raw10385 submits/10377callbacks/8censored retained.
+  NOT native queue/rows/freeKV/utilization or calibrated branch count.
+  Keep simple feedback control; no evidence for extra smoothing predictor.
+  gpu_service_sample is worker wall, not CUDA pure cost; cached prefetch
+  budget fields have no proven fresh observation time. Cost support false.
+  Same3 original tasks/imageIDs/harness env/support readonly probes:
+  all3generic preflight pass. Initial bare-image failures were probe error,
+  old r1 result/source kept; r2 actual environment supersedes.
+  Security actualbus import passes,config watchfiles missing; five bus tests
+  confirmed test-local fallback, suite8pass1viewmodel fail on this run.
+  Payments async_sessionmaker mismatch and absent ledgerlink.service_layer.
+  JS local jest/electron/react resolution absent, not global tool verdict.
+  Evaluator-only quality_contract retains original obligations,all qualityfalse;
+  no task swap/quality/JCT claim. Original76 files/hash/Gitclean preserved.
+  Mainload.688s/project8.401s/review1.540s independent164counts/246integrals/
+  4features/JUnit/provenance/3preflights,ownedprobecontainers0. No prod edits.
+  load769c88b12d80/project22b4bcf6e299. 12:02:57PST GPU141793used/
+  1366free/100%,not future availability. AllownedCPU/containers exited,
+  no GPU/waiter,oneoffs only evidence. GoalACTIVE/LeanSparse deferred.
+  See docs/research/hardware_planning_load_and_pilot_20261112_zh.md.
+- Hardware-planning signal-age screen completed; no new-plan/GPU/JCT result.
+  Same sealed83/Host400/mean70/oracle, measured18, root delegate82.
+  Execute-entry->native-complete P50/P90 8.275/19.989s,81/82>2s.
+  Accepted SPAWN declarations78, rejectedcalls4 retained; declaration!=toolrun.
+  r1 found no delegation tool_start; result/source retained, r2 uses SPAWN.
+  This is unchanged-duration/zero-initial-age sensitivity, NOT new-policy
+  stale rate, load correlation or exact HTTP-send timing. Reader2s is only
+  input freshness; do not solve model generation delay by increasing TTL.
+  on_llm_end/_prepare_tasks declares children+JOIN before task callbacks;
+  any future late grouping must move/finalize declarations coherently.
+  Current default-off middleware observes only, does not change group/DAG.
+  Stable service-cost/context planning is candidate, not calibrated.
+  InfraMind2606.11440v2 covers cost/telemetry staleness and reports tolerance
+  to1/5/10s delays; age alone does not prove failure. Context length cap is
+  NOT context-aware task partition; overly broad review metadata corrected
+  by literature_scope_correction.json, old file kept. Novelty not accepted.
+  HTML e5972ffb74ae.
+  Main.459s/review.993s, independent raw82/78/4,2distributions,4sourcepairs;
+  result75ef11e6dbf5/reviewe5f2787c9345. No production edits this followup.
+  11:31:53PST H200141793used/1366free/100%,not current availability.
+  All owned CPU/download sessions exited, no GPU/waiter, oneoffs in evidence.
+  GoalACTIVE/LeanSparse deferred;natural quality/full JCT still required.
+  See docs/research/hardware_planning_boundary_design_20261112_zh.md.
+- Hardware-planning feedback producer/consumer now implemented DEFAULT OFF.
+  New runtime/planning_advice and experiments/planning_advice_middleware,
+  explicit clientoff/static/hardware+run/model/file metadata. Only FULL-only
+  observablepools;realrows distinct from rowlessprefetch frontier,free/evict/
+  onebatchallowance separate. Native sample_runtime_observations covers
+  deferredpostlaunch/idle;500ms/latest-onlybackgroundfile/2sage/8KiB/closed.
+  Root initial/complete-toolgroup before_model appendsonce,ordinarytools noIO,
+  sync/async reports kept,no extraplanner call or nativeadmission change.
+  Unknownhardware body=static,never0capacity. Submit records age,notgrant.
+  service_cost_supported ALWAYSfalse:calibrated usefulparallelism and
+  naturalmodel response/quality/GPU/JCT stillunqualified.
+  Final20focused includedin612relatedpass/1oldDocker skip9.47s;
+  separateCPUprocess/nativehook/file/reader/realGraph1pass4.99s.
+  Scriptedmodel,CPUcounterrows8->0/freeFULL200000both,2modelcalls,
+  allreportsbeforeparent. Producer1953848 exited0/PIDgone/closedfile.
+  Local1000samplehook+JSONLauditwall46.161/53.339usP50/P99;
+  async128=109.666/258.570us;collectoractualobserver/standins7.628/11.342us,
+  max601.034retained;nondue.928/2.542us. Bodies178hw/111static tokens,
+  NOTnativewire/modeltime. Writer1.445msCPUonlybenchmark.
+  Review.037s/14current+snapshot/16128raw+85stats/JUnit+chain,notmodelrerun.
+  bench91ab61292d09/reviewddab508e5741/chaina610fdd1cfa7.
+  11:24:01PST external1928680/H200141793used/1366free/100%,notcurrent.
+  AllownedCPU/downloadended,noGPU/waiter. Newoneoffs onlyevidence,
+  persistentproductionmodules/tests kept. Needfreshfreeze/actualGPU/source/
+  taskquality/strongcontrols/fullJCT;oldregisteredoperators/rawunchanged.
+  GoalACTIVE/LeanSparsedeferred/no novelty/performanceaccepted.
+  See docs/research/hardware_planning_feedback_control_20261112_zh.md.
+- Hardware-planning root-action screen complete,NOT new-plan/task/GPU gain.
+  Same18/2991complete/2550actualpath requests.715root allonpath,
+  output102537/contextoperands10143136757. Delegate82/20428output/
+  19.92%rootoutput;mean submit-launch10.372s/launch-complete41.487s.
+  Read389/context22.13%root;mean51.333/54.328s. Shared intervals,NOT
+  exclusiveGPU/removableJCT;do not treat all root61.67% as movable reads.
+  Firstcandidate reusesexistingroot,no independentplanner call;static
+  contextdivision and concurrency-only controls stillrequired.
+  Initialoneshot53missingouteropener differences retained withsource/log;
+  frozenstreamingoriginalmethod resolves allnames onfulltextonechunk,
+  NOT HTTPchunkreproduction/schema/toolfailure/servingfix.
+  5CPUtests.68s includesold4/main14.065s/review7.612s;independentraw+SQL
+  3raw/8source/roles/actions/280aggregates/pathconservation,no modelrun.
+  Pilot firstlexicographic percategory in old18:jsmedia056 comprehension,
+  security028feature,microservice008multisession,3originalprojects.
+  Fulltask/source preserved,reference separate,jq/hash verified,.024s,
+  NOTfeedbackproducer/quality/GPUqualified;no register/waiter/autostart.
+  SmoothAgent2607.00151v1 lookahead splitprefill alreadyexists,primaryHTML
+  title/hashkept,not localreproduction/semanticplanningproof.
+  10:25:22PST external1928680/H200128093MiBused/15066free/100%,notcurrent.
+  CUDAhidden/nice19/CPU32single,allownedCPU/downloadexited,newPythononly
+  evidence. result41b8f8970672/review6d64f5bc021d/prepd88d592aefcd.
+  GoalACTIVE/LeanSparsedeferred/no quality/performance/noveltyaccepted.
+  See docs/research/hardware_planning_root_action_screen_20261112_zh.md.
+- User now explicitly authorizes hardware-aware agent planning/decomposition.
+  Preserve original tasks/quality and old registered traces; changed DAG/tokens
+  require separately declared natural execution,not fixed-replay gain claims.
+  Sealed83/Host400/mean70/oracle CPU screen:18measured/2991requests,
+  78JOIN=59single/14two/2three/3four,105distinct directleaf.
+  All19multi have same-batch siblings and all first-served before firstRETURN;
+  firstservice spread P50.170/P90.272/max3.625s. Not evidence of generally
+  serialized startup or a gain from lowering fanout. Conditional multi-service
+  fraction P5045.84% does not prove capacity shortage. ChildinitialP506938,
+  groupinitialsum13867,parentorigin66856;not actualprefill/physicalKV.
+  All-window role operands match oldgeometry:root24.54%decode steps/
+  61.67%context operands,meancontext4.95xchild,NOTGPUtraffic/time/speedup.
+  Candidate:bounded service advice+context-aware task division at semantic
+  boundaries,revalidate native admission,no dropped obligations/tickreplanning.
+  InfraMind2606.11440v1 directly overlaps generalinfra-aware planning/count/
+  roles;runtime topology revision listedfuture does not proveour novelty.
+  GRAFT2608.02353v1 is quality/budget localworkflow revision,not a verified
+  hardwareparallelismdesign;earliercommentary corrected.PrimaryHTMLhash kept.
+  4CPUtests.76s/main10.472s/review7.230s;raw independent measured78/105/
+  2991/firstservice/samebatch plus3raw+5sourcehash,not another experiment.
+  NewPythononly evidence/CUDAhidden/nice19/CPU32single,allownedexited,noGPU/
+  waiter/servingchange. result8062b4af84de/reviewd41a99f45253.
+  Sparse zerooutputprefixpreparation complete only,no model job;direction
+  set aside for newuserrequest,LeanSparsestilldeferred,goalACTIVE.
+  No newplan/quality/performance/noveltyaccepted.
+  See docs/research/hardware_aware_agent_planning_20261112_zh.md.
+- Opened-root natural tool completion CPU diagnostic complete; NOTtask/GPU/gain.
+  Same30533prompt+27recordedprefix,zeroadditionalforcing,singlequeryshape.
+  Fixed4/7full,2048support/8sink/128recent,no suffixrepair orparameter tuning.
+  All3EOS before64step cap;dense29natural/28cached,4and7each41/40;
+  110fullforwards inclseed+1control,1169.689s. Densecomplete56tokens=recording.
+  Allread_file/samepath/offset100;Periodic4 adds limit200,Nearby7limit300,
+  each12extraoutputtokens. NOTjusttokenization,NOTobservedtool/taskfailure.
+  Default/toolreturn/filelength effects untested;do not assertqualityloss rate,
+  tasksuccess,formalworkloadchange,throughput/JCT from thisknownpoint.
+  Nativeparser incompletefallback exists;strictsimpletag checks allvalid,
+  schema-lessnumericparameters remain strings,notbusiness/schema validation.
+  Original48BF16/16shardbeforeafterhash/18867tensor30532122624parambitwise;
+  seed48layerprefix/old3x24+1control73stepswords/masks/tokens exact,
+  prefix/cache/registry kept,CUDAuninitialized.
+  6CPUtests1.49s;review.568s independent109argmax/5232supports/73oldsteps/
+  21current+12old+9preparationsourcehash,5strictselfchecks NOTnewpytest.
+  New followup selection frozen while active:original12eligible excluding
+  openedworkflows,firsteachrole:16193childdataanalytics/30978rootwebdashboard.
+  FulloriginalpromptONLY,zerooutputprefix,fixedprofiles,max256cached diagnostic,
+  originalstopcontract;NOTexecuted/qualitypassed. jq+reviewselection verified.
+  CUDAhidden/nice19/CPU32-35fouror32single;allownedexited,noGPU/runtime/waiter.
+  09:32:35PST resource98689MiBused/44470free/100%,not current availability.
+  NewPythononlyevidence,old49Python+1CPParchivekept.
+  capture6bcc200a6002/review86d5459f5275/followup3caa089b3bd4.
+  GoalACTIVE,LeanSparsedeferred;commonquality/offload/incrementalgainunqualified.
+  See docs/research/omnikv_tool_completion_screen_20261112_zh.md.
+- Bounded sparse suffix replay CPU diagnostic complete; NOT quality/performance.
+  Same opened root30533+27seed,23prior naturalcachedsteps,targetstep23.
+  Fixedk1/2/4/8/16/24 includescurrentinput,replacesk-1oldKV;no future forcing.
+  Original48BF16/16shardbeforeafterhash/18867tensor30532122624parambitwise;
+  90forwards1469.947s,oldbaselinewords/masks/tokens,k1oldfallback all exact.
+  Eachk has SAME-SHAPE densecontrol. Densegreedys522/522/522/27/27/27;
+  k8/24 tie27/522,k16P27=.67918. Do NOT attribute all changes to sparseKV,
+  floating-point-only or a kernel;blockshape/reencoding not separately isolated.
+  Densecurrent49152KVwords:k>1 firstdifferentlayer1,47layersdiffer,layer0same.
+  Periodic4greedys27/522/522/27/522/27;Nearby7all27. k<24 prefix2/48equal,
+  tail differs; k24 prefix48/48,logits+1179648tailwordsbitexactmatchedcontrol.
+  Originaltoken/matcheddense/cacheidentity are distinct;no latertext/tool/task
+  observed,no productionwindowselected,no monotonicrepair or GPUequivalence.
+  Fullhistory4xreferencefetch1.89994/1.77117GiB constantallk,2.393/2.140x
+  old24stepfetch;1/2/4/6x48cases. LocalnewKVnotHost,croppedtailresident;
+  full-layerresidencyassumed,priorplacement/sharedstagingunknown,NOTDMA/JCT.
+  ReSA2506.04108v1 alreadybatchesrecentdense reencoding+blockmetadatarefresh;
+  localOmniKVselector/HFSDPA NOTReSAreproduction/newcontribution.
+  5pipeline+4analysisCPUtests pass; independent36distributions/6densecurrent/
+  5406720tailwords/2040layersteps/48cost/17current+12oldsourcehashverified.
+  Mainanalysis.440s/shape.110s/cost70.854s/review28.714s,notGPUservingtime.
+  CUDAhidden/nice19/CPU32-35fouror32single;allownedexited,noGPU/runtimechange.
+  NewPythononlyevidence. Archive maintenance_r4:50members/49syntax/
+  1999retainedPython/1977config/33oldprovenance+17currenthash pass,no removals.
+  Existing49Python+1CPPbundle preserved,not another49files archived this round.
+  capturee6271d4925e5/analysis64ea908db502/shape7d1b530cb799/
+  costf179bd1d5a23/review24b3d7397d23.
+  GoalACTIVE,LeanSparsedeferred;smalltailrepair notqualifiedcommonquality.
+  See docs/research/omnikv_tail_repair_screen_20261112_zh.md.
+- Sparse admission geometry CPU screen complete; no performance qualification.
+  Same sealed83/Host400/mean70/oracle Full, not latest100/actual sparse serving.
+  Fixed9 prior pool plans:rows8/24/48,selected2048/cache8192/full1/4/7,
+  Host400e9,GPUreference79154184192B. Profiles unqualified, never select by fit.
+  104325journal/1869periodic/59990program-boundary;all registered history
+  includes inactive/nonpending,no shared discount. Preserve old active pending
+  row demand;source rows vs min(rows,native24) separate. No allocator/physical
+  upper bound/grants/counterfactual schedule or future-growth proof.
+  Historyproxy P502187924/P902834298/max3020614;oldactivepending rows
+  P5012/P9020/max25,17>24 include unadmitted demand,NOTbatch violations.
+  1415candidate boundaries.24rows full4/7:all1869historyfit,1408joint additions.
+  Full7 rows24->48:slots3667118->2593444,native24fit1408->948.
+  Scalar805198undiscounted proxy415blocks all;409jointfit,NOTactual weighted
+  decay rejection/new grant/JCT. All counts repeated boundary incidences.
+  Current dense805198 remains actual capacity;do NOT simply change to4M.
+  Qualify common sparse quality/offload/lifecycle/growth/scratch/graph first;
+  historyfit is not sparse GPU residency or absence of Host traffic.
+  Spin2604.26837v1 primary title/bytes verified;dynamic per-request cache,
+  concurrency/hit tradeoff and working-set metadata already exist,not novelty.
+  4CPUcases pass.37s;independentSQL16821cases/8177witness/22distributions/
+  all boundaries and62Gitblob+SHA+size sources match. Main4.627s/review4.879s.
+  CUDAhidden/nice19/CPU32single;all owned compute/download exited.
+  08:22:24PST GPU136047MiB/7112free/81%;no GPU/waiter/serving change.
+  New Python/plot only evidence,old49Python+1CPP archive kept;PNG/PDF viewed.
+  resultd99ef91d7983/recheck8777f649a749/reviewaa7e6af493b6/
+  figure71e39dca5614. LeanSparse deferred;goal ACTIVE,
+  no quality/novelty/throughput/JCT acceptance.
+  See docs/research/sparse_admission_geometry_screen_20261112_zh.md.
+- Resume-prefill eligibility landmark screen complete; no performance claim.
+  Same sealed83/Host400/mean70/oracle Full, not latest100/new learned run.
+  104325journal rows/179866landmarks;fixed1ms ambiguity guard,old active before
+  current queue unbound to current request stays unknown (marked completion).
+  11frozen modules/7direct active=True sites mapped to registration/periodic/
+  grant journals, not formal whole-program or physical-readiness proof.
+  0ms1174pair incidences:1160 inactive partner/5active evidence/9unknown;
+  after slot proxy1157/5/7=1169.22workflow overlaps all inactive;5active
+  all cross-workflow,2share partner.0/1/2/5ms same;10ms5active,20ms22,
+  50ms53;21/396partners already source-launched separately excluded.
+  1513member-incidence next-true gaps P50580.181/P902479.851/P998707.791ms
+  include repeated members, not request wait/JCT savings or online policy input.
+  Own launch7964 no inactive counterexample;6430old-unbound/1534current-active
+  observations do NOT prove all states exact.5CPUtests pass.37s;independent
+  SQL14windows/1174details/all journal/landmarks/delays verified.
+  Reviewer initial missing source-index KeyError and snapshot/log preserved;
+  source hash list completed, no main output change or relaxed checks.
+  Main6.001s/review6.097s,CUDAhidden/nice19/CPU32single;all owned exited.
+  08:01:56PST GPU136047MiB/7112free/100%;no GPU/waiter/serving changes.
+  New one-offs only evidence, old49Python+1CPP archive kept.
+  resultbb159b08ccdb/contract03620da39e53/review849ffb27adb3.
+  Deprioritize fixed short prefill wait;queue visibility is not active/KV ready.
+  Inactive alone proves neither broken admission nor full HBM nor tick benefit.
+  Common sparse quality/actual offload/logical-vs-physical budget remain needed;
+  ordinary capacity accounting is not novelty. External lookup no useful primary.
+  LeanSparse deferred;goal ACTIVE,no quality/novelty/throughput/JCT acceptance.
+  See docs/research/resume_prefill_gate_screen_20261112_zh.md.
+- Resume-prefill burst CPU/source screen complete; no new performance claim.
+  Same sealed original83/Host400/mean70/oracle Full: 12071 prefill,119630 decode.
+  Preserve packets;6929 single-chunk packets/7964 requests pass source shape.
+  Client submitted_monotonic_ms is execute-entry BEFORE corpus/payload/HTTP,
+  not HTTP send or server readiness. Original r1 outputs/hashes retained;
+  server_definition/result separately correct the timing interpretation.
+  Native on_enqueue timestamp predates HiCache/queue append, not active/KV ready
+  or timely event delivery.131701 wall-minus-mono samples span .008545ms;
+  fixed .1ms guard gives definite/possible queue intervals, not formal sync.
+  0/1/2/5ms all1174 qualified pair incidences,0new,22workflow-overlap,402greedy;
+  10ms1192--1201,20ms1399--1404,50ms1813--1815/639--641new/53workflow-overlap.
+  Pairs overlap; greedy witnesses are not eliminated batches or actual admission.
+  Old-known-begun lifetime slot proxy preserves old work;6929 anchors consistent,
+  only5 pairs rejected at0--5ms and4 at50ms. Not actual running/HBM simulation.
+  Eligible-only execute->API P5017.017--17.226ms;dispatch->scheduler P5012.199/
+  P9036.976/P99253.812ms, includes processing waits, not exclusive CPU/JCT loss.
+  LAPS2601.11589 current abstract vs PLA-Serve v1 names differ;generic short
+  prefill waiting already exists. SLOWeave actual2609.07883v1. Wrong downloads
+  isolated; TideKV prior index title erratum recorded without rewriting hashes.
+  8CPUcases pass; independent raw-source21sweeps/14slot/6distributions/
+  3definitions/6929packets/7964requests/131701clocks verified.
+  Main10.886s/server13.729s/slot6.875s/review8.676s,CUDAhidden/nice19/CPU32single.
+  All owned calculation/download sessions exited; no GPU/waiter/serving change.
+  Archive recheck50members/49Python/1999retained/1977config/33provenance passed;
+  UTF8 scan failure snapshot/log kept, corrected byte scan passed,no new removal.
+  New one-offs only in evidence;old49Python+1CPP archive intact.
+  client825bfbfcd584/server105975cd5347/slotc7d9574f41bc/reviewb372c764af9c.
+  Do not prioritize workflow-specific fixed short waiting on this evidence.
+  LeanSparse deferred;goal ACTIVE,no quality/novelty/throughput/JCT acceptance.
+  See docs/research/resume_prefill_burst_screen_20261112_zh.md.
+- Sparse prefill materialization CPU/source screen complete;NOTnewgain/novelty.
+  Same sealedoriginal83native10380completeinputs/14498requestchunks/12071batches;
+  measured18=2991/4193/396multi. Full1262multi includes1zero-prefix;old1261
+  positive-prefixmulti remainsvalid. ActualH+chunks,NOTnewSparseEngineexecution.
+  FixedmanagerAST5methods,direct/prefetch×1/2/3chunks6SYMBOLICGPUdatacases:
+  eachsparse-layer/chunkfullhistoryread,currentnewKVfromGPU;oldLRUdirectory
+  retained/plannedcleared,prefillnotwarmingselectedLRUintestedmethods.
+  NOTactualKV/Triton/DMA/allocator/streamtiming/allresumescold.
+  N*H+earlier-newhistoryoperands;44/41sparselayerlistsstructural/unqualified.
+  Full534879593tokenops=342020677onceH+61983592repeatH+130875324earliernew.
+  Conditional44.91--48.20TBpayloadNOTnativeH2D;12.16%multi→42.99%operands,
+  repeat36.06%;measured18=13.24/48.77/40.45%. ExactsourceID+4identity match:
+  9865toolJOIN(2831measured),repeat13.03%/20.09%,NOTJCTgain.469sourceabsent/
+  46other/0identitymismatch;doNOTcallabsentinitial/cold/tool-JOINopportunity.
+  Noactualplacement/shared-dedup/BW/overlap/admissioncounterfactual.
+  TideKV2610.24499v1layer-majorprefillandvLLMHiSparsedesignresident-first/
+  lazyunpin/device-residencyreusealreadypublished;HTMLhashkept,notlocalGPU
+  reproduction/Qwencompatibility. Includeasstrongcommoncontrols,notnewdesign.
+  Initialfixturemissingslot_mapping1fail8passsnapshot/XMLkept;final9pass.40s
+  overlap,notsummed. Independentreverseweighted10380/14498/12071/10groups/
+  10decomp/6symbolictracesverified;analyze.783s/review.371sCPUoffline.
+  CUDAhidden/nice19/CPU32single;allownedexited,noGPU/waiter/servingchanges.
+  06:41:50PST GPU136047MiB/100%;newPythononlyinevidence,oldarchivekept.
+  resultd014a02732ae/contracta8539c6545af/decomp52396e32e09c/reviewcf89ab8e404a.
+  Needrealprefillplacement/exposedwaitwithstrongcachebeforeworkflowpolicy.
+  Noquality/performance/noveltyacceptance,LeanSparsedeferred,goalACTIVE.
+  See docs/research/sparse_prefill_materialization_screen_20261112_zh.md.
+- Current-step dense boundary fallback CPU counterfactual completed;deprioritize.
+  Same openedroot30533+27seed,knownfailureNOTonlineprediction/holdout.
+  Original48BF16/16shardbeforeafterhash/18867tensor30532122624parambitwise.
+  52forwards=1prefill1densecontrol48sparsebaseline2full-currentstep.
+  Seed/control/eacharm24logitwords+masks+metadata+greedysbitexacttoprior.
+  Atstep23copyallpre-stepKV,usefullattentionONLYcurrenttoken,oldKVnot
+  recomputed/replaced;botholdprefix/copy/originalstatekept,registryrestored.
+  BOTHstillchoose"<"vsdense"</"p.77730. 4fullpclose.18243->.14805/KL
+  .83706->.99019;7full.06009->.22270/KL1.66924->.69325,NOTgreedyrepair.
+  Noaftercontinuation/fullcall/taskfailure/layercausequalification.
+  Empty-referencecache1/2/4/6x,currentKVnotHost,denselayersassumedresident.
+  4xfullcurrent1.89994/1.77117GiB,extra1.89027/1.76042GiB;2.393/2.140x
+  original24queryfetch. Sharedstaging/priorprefixcacheUNKNOWN,NOTphysical
+  lowerbound/DMA/PCIe/JCT. Compactbuffersdonotfit30584fullquery;original
+  selecteddecode/prefillstagingaredistinctpaths,NOTGPUfallbackqualification.
+  Causaltextsuffix48inputsrootstep11/23twoevents,child0;notproductionparser/
+  falsepositive/hybridpolicycost. PrimaryAgentKV2609.14872v1phaseKVretention/
+  compactionandAIR2611.01429v1agent-eventindexrefreshalreadyexist,savedHTML.
+  New7CPUcases3pipeline4analysispass,not+old12/10. Independent4distributions/
+  2304layersteps/8timestampcache/48inputs2events,14current+18foundationhash.
+  Offlinecap1025.959s/cost15.270s/census.655s/analyze.115s/review13.962s.
+  CUDAhidden/nice19/CPU32–35fourthreadsor32single;allownedexited,noGPU/
+  waiter/servingchanges. FreshGPUexternal1824144/136024MiB/100%,notold1712120.
+  NewPythononlyinevidence,old49Python+1CPParchivekept. cap9acce9e5b838/
+  analysis1074cafd5e74/costad6fa2f511af/review1ecd9448f385.
+  Stopprioritizingthissingle-stepfullfallback,NOTallhybrid/sparsepolicies.
+  Quality/actualoffload/gainstillunqualified;LeanSparsedeferred,goalACTIVE.
+  See docs/research/sparse_control_boundary_materialization_20261112_zh.md.
+- Semantic-checkpoint OmniKV CPU screen completed;NOTtask/GPU/performance.
+  Completeoriginalprompt+exactrecordedoutputprefixinsidevalue,thenownnatural
+  greedy24cachedsteps;NOTunconditionedagentrollout/notool/forcing/newprompt.
+  Fixedselection523metadata519child4root,12eligible8child4root;15399+29child
+  newworkflow,30533+27rootpreviouslyopenedtask,NOTindependentholdout.
+  Original48BF16/16shardbeforeafterhash/18867tensor30532122624parambitwise.
+  Frozen4/7full+2048support,148forwards=2prefill48densecached2control96sparse.
+  Fullsupportbitexact,seedKVkept,CPUscore+HFSDPA NOTGPUequivalence.
+  Selectedbody62/62same(child24each/root7each);child91newcharsunclosed,
+  root28newcharspathcomplete/offset100same. Logicalsupportchild20.4918/
+  25.9128%,root14.4739/20.3053%,NOTHBM/DMA. BOTHsparserootgeneratedindex24
+  choose"<"vsdense"</",sameinputprefix;ownp.81757/.93991 NOTlowconfidence.
+  Fullcallsincomplete/nofollowingcontinuation;NOTcosmetic/actualtaskfailure.
+  Frozen0/1/2/4/6xreferencecacheinitialEMPTYatdiagnosticcheckpoint,previous
+  27/29output/prefillcacheUNKNOWN,currentnewKVnotHostfetch,NOTnativeLRU/DMA.
+  At4xrevisitsharechild.0676/.0372%,root1.6258/4.2497%;6xallrevisit0.
+  MostlatermissesFIRSTOBSERVEDin24queries,NOTlifelongcompulsory/coldresume/
+  thrashing/PCIebottleneck. Unboundedreferenceconditionalonemptyinitialstate.
+  ReviewerEOFnewlinebugr1snapshot/logkept;maincapture/analysisunchanged.
+  Final12CPUtests=5parser1pipeline6analysis,prior5analysisoverlap;not+old10.
+  Independent18tensor-mask/7008layersteps/96distributions/20400cacheevents.
+  Offlinecapture1467.946s/analyze29.962s/attribution1.611s/review20.585s;
+  CUDAhidden/nice19/CPU32–35fourthreadsor32single,allownedexited,noGPU/waiter/
+  servingchanges. NewPythononlyinevidence;old49Python+1CPParchivehashrechecked.
+  cap824d082b4ee6/analysis30c841769b7e/attributionbf60add1c4cd.
+  Parser-statecommonattentionboundaryfallbackonlyUNTESTEDhypothesis;old
+  sparseKVdrift/fullhistorymaterializationcostneedchecks,noclaimednovelty.
+  Commonsparsequality/actualoffload/gainstillpending;LeanSparsedeferred,
+  goalACTIVE. See docs/research/omnikv_semantic_checkpoint_screen_20261112_zh.md.
+- Full-model OmniKV CPU natural-decode screen completed;NOTtaskquality/GPU/gain.
+  Original48BF16/16shardbeforeafterhash/18867tensor30532122624parambitwise.
+  Existingopened7021child/29199root,eachfreshcomplete denseprefill,NOTold
+  cachedtool/croplifecycle. Priorfirstgreedysamebutlogitwordsdifferent;
+  donotcallshapeidentical. 52fullforwards=2prefill+16densecached+2fullsupport
+  control+32sparsecached,ownnaturalgreedytokens,noforcing. Fullsupportbitexact
+  tocurrentdense;originalcacheprefixeskept. PinnedCPUscore/selection+HF SDPA,
+  FP32GQArawQKcastBF16score,NOTGPUkernelnumericalqualification.
+  Fixed4full/7full,total2048=8sink1912history128recent,unqualified structural
+  probes,notnearbycheckpointqualitytransfer. CPUlogicalsupports child
+  35.055/39.483%,root14.762/20.573%;all32newgreedysame. Mostlyopening/tool
+  format,NOTsemantic/taskqualityorHBM/DMA/JCT;keepconfigsfrozen.
+  Originalmode18cases:OmniKV+denseprefillradixonly,explicitchainrejected;
+  omnikv_prefillallowschainbutisanotherunqualifiedapproximation.
+  GenericchainrowretentiondoesNOTapplydirectly. Originallogicalindex:
+  active2ndwriterrejected,finishkeepsseq,rootappendpasses,child21token
+  rollbackrejectsat6952. NOTphysicalcache/DMAlifecyclequalification.
+  All12174sourceturnskept;measured18sourcechildtool95/2147,roottool22/606,
+  rootJOIN16/78needcomputedtailrollback. NOTexecutedwindow/failurecounts;
+  rollbackdoesNOTinvalidateentiresafeprefix. Keepcheckpoint/radixidentity.
+  ASTdataclassdecoratorbugr1sixfailpreserved;r2nineoverlapsfinaltenpass3.91s.
+  Capture1030.664s/analyze.565s/lifecycle.574s/review.954sCPUofflinecosts;
+  independent18tensor-mask/2400layersteps/32distributions/12174turns/12groups.
+  CUDAhidden/nice19/CPU32–35fourthreadsor32single;allownedexited,noGPU/
+  waiter/servingchanges,newPythononlyinevidence,oldarchivekept.
+  cap11cd4e8c56bb/analysis aefb0128210c/lifecycle06c013d278e8/
+  reviewdef09921a8d7. Continuecommonsparsequality/actualoffloadqualification;
+  noacceptednewdesign/performance,LeanSparsedeferred,goalACTIVE. See
+  docs/research/omnikv_natural_decode_lifecycle_20261112_zh.md.
+- Common sparse foundation source screen completed;NOTGPU/quality/performance.
+  SparseEngine a0a8f27ce30ec46382638d8aa10fa1ef2b0087f4,READMEpaper2609.39068;
+  41+21officialfilesGitblob/SHAverified,noinstall/engine replacement.
+  ExecutedreviewedASTCPUQuestallocator/indexmethods16cases,notfullKVpayload:
+  budget1024/2048doesnotshrinkactivefullhistory;decodeappendsfullKV,
+  Hostprefixpromoteshistory. DonotdenywholeQuestGQA/possibleoffload.
+  OmniKVoffloadhasfullHostsparsehistory,selectedGPU/LRU,single shared
+  denseprefillstaging,andlayerprefetch;theseareexistingbaseline mechanisms.
+  Originalpoolplanner180structuralscenarios,independentGPU/Hostrounding/
+  nextslotfrontierreview. Main24rows/2048selected/8192cache/4full/400e9Host
+  yields4194304logicalslots,58.088GiBGPUofwhich8GiBprefill,Hostestimate352GiB;
+  NOTactualnativecapacity/pinnedallocation/masks/miss/DMA/JCT.
+  Fulllayerlistsunqualifiedsensitivity,notqualityselectedparameters.
+  CurrentQwen3-Coderauto full-layerprofilemissing;nearbyQwen3-30B-2507
+  profiledoesNOTtransferquality. free_seqinvalidatesrowLRUbutchainmayretain
+  row;donotclaimalltoolresumescold. ExclusivechainisNOTsharedbranchDAG.
+  NineCPUcasespass1.63s,main.725s/review.019s,CUDAhidden/nice19/CPU32singlethread;
+  allownedCPU/downloadsessionsgone,noGPU/waiter/native/servingchange.
+  FreshGPUexternaluserPID1712120/106106MiB/100%;notprior1680051.
+  NewPythononlyinevidence;old49Python+1CPParchivekept.
+  result874f8ebc474f/review7586359fa048/sources654ac1814b2d+fa6b2d6d7326.
+  KeepOmniKVcommonfoundationcandidate;nextcurrentcheckpointnaturalquality,
+  multi-token/forklifecycleandactualmiss/DMA. Noacceptednewdesign/gain;
+  LeanSparsedeferred,goalACTIVE. See
+  docs/research/sparse_backend_source_qualification_20261112_zh.md.
+- Quest pinned-source selector screen completed;NOTdeployedGQAoffload/quality.
+  Official01c1623bf9395009520874e989e29f683203b357,12Gitblob+SHAverified
+  files+3frozennative. READMEalreadymarksGQAsupported;donotdenywholeproject.
+  ExecutedreviewedFP32CPUscore/maskfragmentsonthefixed7Kchild/29Kroot,
+  old/resumed12actualcachedqueries,4nonlayer0samples;120inputfilesverified.
+  EvalTopKandkernelCPUreference(lastpagemandatory)areDISTINCTpolicies;
+  384scorecrosschecks,64records/16summary/128packedmasksretained.
+  Main2048/16kernelafterperKVunion53.44%child/18.03%root,wholepages
+  76.69/37.26%;nominalperQbudgetNOTperKVphysicalbudget. Main2xperKV
+  fits3/4childand0/4root;6xwholepageonly3/4root,neverdropselectedpages.
+  Priorglobalcapacity63.58GiBremainsconditionalonSHAREDperKVbudget,
+  NOTevidenceheadwiseQuestactuallyfits. LocalrelativeL2kernel4.31/11.83%
+  isNOTtaskerror;noGPUhalf/BF16/naturalsparseQtrajectoryqualification.
+  Sourceq_len>1delegatesdenseprefill/fullKVindices,KVpoolfullmaxcontext
+  onprovideddevice;tokenbudgetdoesnotcreateHostoffload. CPUcacheclass
+  smallallocationcheckonly. Allsource11771tool+342JOINsuffixes>1;
+  fixed18childtool2147/roottool606/rootJOIN78suffixP50150/143.5/635.
+  SourcecensusisNOTtheexecutedwindoworallbackendchunkq_len.
+  CachehistorydiagnosticSKIPSdenseprefill,NOTactualmiss/DMA/ResumeTTFT:
+  kernel4xrecentcoverage96.33/83.34%,butseed+miss+11.59/+23.19%vscold.
+  NinemainCPUcasespass,prior8overlap;independentheapLRU640cachechecks,
+  allmasks+64firstafterqueries/2048headoutputsverified. Main333.369s/
+  review19.844s/CUDAhidden/nice19/CPU32singlethread;allownedexited,noGPU/
+  waiter/native/servingchange. NewPythononlyinevidencedirectories,
+  nooneoffmainscripts. resultc47c8b94a13c/review051a05302c20/
+  census23efd264de4c/sourcesbfc45db06ec8. Nextqualifycommonsparse
+  multi-tokenresume/GQAphysicalunion/Hostlifecyclebeforemorepolicy.
+  LeanSparsecandidate deferred,goalACTIVE. See
+  docs/research/quest_resume_selector_screen_20261112_zh.md.
+- Sparse global payload screen completed on the sealed83-source oracle window,
+  NOT an actual sparse run/new predictor/latest100 comparison. 3819.416s,
+  70arrived/59workflow_end,10385submits/10377publishedresults/10380receipts;
+  sixof10391rawsubmitsafterendpoint,threeHTTPcompletionsafterendpoint.
+  Fiveunreceipted:twofullprefill+200decodeeach,threeunserved;donotdropthem.
+  Contextepochsnotnewbuffers;explicitretirementonly. Peak66live/30pending/
+  33tool-or-JOINblocked. Sixtyfixedk/r/denselayersscenarios,36BWscenarios.
+  Original805198tokenallocatablepayload73.718GiB,one98304Bsentinelexcluded;
+  preserveinitialguardfailure9603f5b...andcorrection,notservingbug.
+  Main2048/6x/all48sparse stablepeak62.538GiB;conservativefull-outputgrowth
+  upper63.581stillfits. 2xwithdenseprefill+globalgrowthupper61.919GiBalsofits.
+  4/8dense-layer mainstableovercapacity1.976--3.206%/35.135--35.658%,
+  withprefill8.737--10.233%/40.489--41.017%;thesearehypotheticalpayload
+  times,NOTJCT/allocator/bandwidth/qualityproof. Futureactualoutputmaxima
+  onlyintheofflinegrowthguard,noonlinepolicyorpredictionusesit.
+  Atassumed40GB/s+10%miss2048batchP505.536msserialization;NOTmeasured
+  miss/bandwidth/stall. Do not inflate cache/dense layers to manufacture pressure.
+  Deprioritize unconditional global offloader;qualify common sparse selector,
+  actual dense-layer/quality requirement and real miss/stalls before more policy.
+  11CPUcasespass,prior10overlap;independentdifferencearray20762intervals/
+  240summaries/57086CSVrows/36BWcasesmatch. Main17.776s/review16.892s,
+  CUDAhidden/nice19/CPU32/singlethread;allownedexited,noGPU/waiter/native/
+  servingchange. result255adac1fbaf/review03ee57b91aa3/growth34c713e13d03.
+  LeanSparse candidate deferred,goalACTIVE,noacceptedgain/novelty. See
+  docs/research/sparse_global_capacity_screen_20261112_zh.md.
+- User requests timely cleanup/archive of obsolete exploration Python files.
+  At candidate closure, check imports, literal launch paths and current sealed
+  provenance before archiving one-off scripts with their tests. Retain shared
+  helpers/current dependencies; do not remove raw evidence or production code.
+  Preserve original relative paths and per-file hashes in a verified archive
+  before removing main-tree copies; document recovery and historical paths.
+  2026-11-12 cleanup archived49Python+1CPP/422163B into109281B, removed11pyc.
+  Fifty-file isolated restore/hash and49syntax checks pass;1995retained Python
+  files have no import/path references to archived files. Current33provenance
+  files unchanged;21sparseCPUtests pass. Closed scripts' historical source
+  checks now require archive restoration; do not rewrite old evidence hashes.
+  Archive b6eaaeff4186/manifest34c3e0e086ba; current research stays ACTIVE.
+  See docs/archive/research_inference_sources_20261112_zh.md.
+- Actual cached-decode phase screen now supersedes last-query-only evidence.
+  Two unmodified tool boundaries: child6952+69 and root29170+29; root chosen
+  lexicographically from5eligible measured roots,not by masks/JCT. Full48BF16,
+  16shard before/after hashes and18867tensor/30532122624parameter word checks.
+  52actual full forwards include48individual cached single-token calls with
+  recorded tokens,NOT natural sparse generation/nativeGPU. Thirtyframes/
+  120files;all48cache lengths and sampled K/V prefixes retained.
+  Frozen same-selector/same-seed/same-capacity LRU vs prefill-only old-last/
+  frequent12 pins;1x safe fallback,1/2/4/5/6x all retained. Main2048/16:
+  child2x combined misses+1.723/+0.971%;root2x+4.096/-.306%,root4x
+  -.718/-.631%;main5/6x identical. Other small configs have up to3.645%
+  byte savings;root1024/16/5x slight regressions,all6x summaries identical.
+  Do not infer latency/JCT or dismiss all phase/global policies. Deprioritize
+  these two local pinning prototypes;next evidence needs real sparse global
+  HBM/Host contention,strong shared-cache controls,longroot/JOIN and quality.
+  Final21CPUcases=14new+7old,not additive with prior5/18/19. Independent
+  list-cache replay verified32input/source hashes,120files,600policy rows/
+  36600query conservation checks/40summary rows;shared diagnostic selector.
+  Capture1070.301s/4threads,analysis44.145s/review100.670s/singlethread,
+  CUDAhidden/nice19/CPU32--35or32;all owned sessions exited,noGPU/waiter/
+  native/serving changes. cap a453578e8189/result7c76a62ab060/
+  review87ba93db0737. LeanSparse deferred;goal ACTIVE. See
+  docs/research/sparse_resume_decode_phase_screen_20261112_zh.md.
+- Recent-history control now measured on the same two actual CPU tool boundaries.
+  Full48BF16/checkpoint word checks retained;80oldQ/K/V/O files bitexact,
+  10new files hold12causal teacher-forced old-output positions,NOT12native decodes.
+  Same selector/capacity; include old private-tail competition before cropping.
+  2048/16 primary8pairlayers:2x first-query68.09%->91.87%,resident-seed misses
+  -19.35%,but prefetched seed+miss bytes+9.76%.1xidentical;4xbudget8192 exceeds
+  these~7Kprefixes,notlongroot evidence. All12configs/360byte-conservation rows
+  kept;48oldbaseline fields reproduced.19CPUcases=9new+10relatedold,not+4prior.
+  Capture329.637s/CUDAhidden/nice19/CPUs32--35;analysis9.337s/CPU32. Owners exited,
+  noGPU/waiter/native/serving changes. Capture5ffbc4790122/result2657464490c5.
+  Continue fixed-global-budget phase residency and actual post-resume decode/
+  longroot/JOIN evidence; do not promote larger hotset prefetch or claim quality/
+  JCT/novelty. LeanSparse deferred candidate;goal ACTIVE. See
+  docs/research/sparse_resume_history_control_20261112_zh.md.
+- User resumed the persistent research goal and deferred LeanSparse streaming as
+  a candidate,not the current implementation priority. Continue common-sparse
+  event-conditioned resume/residency/bandwidth hypotheses. First strengthen the
+  last-query-only control with12causal old-output-position queries under the same
+  cache capacity; these are teacher-forced dense CPU queries,not12native decode
+  steps or sparse-model quality. Preserve prior captures/audits and all active
+  other-session experiments. Goal is ACTIVE; prior PAUSED below is historical.
+- Explicit LeanSparse prefill-streaming request completed as CPU/research only;
+  automatic research goal was PAUSED during that audit. No native/serving/GPU change.
+  Qwen48/GQA4/BF16 has2048B/token/layer. Measured18 source transitions:
+  child-tool2147/root-tool606/root-JOIN78; all-history+new payload P50
+  1.521/6.850/5.800GiB versus two-history-buffer+allnew107.145/368.373/326.076MiB.
+  These are payload scenarios,not actual HBM/JCT gains. HiCache already overlaps
+  layer loads but reserves all-layer destinations. Current dense decode still
+  needs full residency unless separately changed; multi-chunk reload costs count.
+  Assume40GB/s only for serialization scenarios,not measured bandwidth. Main fit
+  is sparse decode with transient prefill admission pressure. Nine focused CPU
+  checks pass; result04e79c181f41,primary HTMLs retained. No accepted novelty or
+  performance; generic mechanism already LeanSparse/SparseServe. See
+  docs/research/layer_prefill_streaming_feasibility_20261112_zh.md.
+- New common-sparsity direction is permitted for ALL comparison arms; do not
+  apply the earlier strict dense-output omission rejection to this request.
+  Research/CPU only, no serving/native/GPU patch or accepted quality/JCT/novelty.
+  Frozen HiSparse hook requires DSA/V4+radixoff; docs PD-decode-only; generic
+  Quest factory is not an initialized GQA offload path and coordinator has
+  TODOs. HiSparse paper nevertheless studies Quest/Qwen3; distinguish scopes.
+  SPIN/HiSparse/SparseEngine/OasisKV/PageWeaver/Vortex already cover generic
+  retrieval/offload/index persistence/prefetch/query grouping; agent labels
+  alone are not novelty. Six v1 HTML snapshots+manifest retained.
+  Actual opened 2 child inputs6886/6911,20 CPU QKVframes,16 primary non-layer0;
+  fixed16/64 logical blocks+1024/2048 budgets,not nativepage1 changes.
+  Full-score mass selection is diagnostic/nondeployable,not a quality oracle.
+  2048/16 perQ29.61% -> perKVunion63.55% -> wholepage allKVheads88.82%
+  payload scenarios,NOT DMA/allocator/time/allworkload bounds. Different
+  head-sharing masks trade local output error and must be common across arms.
+  One-step hotset overlap81.16% for sharedKV,NOT tool/JOIN prediction quality.
+  CPU result62a1ab69dfc2,6focused tests pass,4.99s/CUDAhidden/nice19/CPU32.
+  Three UNPROVEN candidates: event-conditioned sparse resume, phase-aware
+  extra residency, HBM+Host-bandwidth nonpreemptive paused-ready admission.
+  Preserve exact common sparse selection; do not drop selected pages to cap IO.
+  Sparse may remove admission competition or create recurrent PCIe pressure.
+  Need natural sparse quality separately from forced-token replay; no new
+  GPU run/waiter, all owned CPU/download sessions exited, goal stays active.
+  See docs/research/agent_sparse_kv_feasibility_20261112_zh.md.
+- Prefill completion screen,no acceptednewdesign/GPUgain. Last-layer
+  output-subsetalreadyinllama.cppQwen3moe602369...get_rowsbeforefinalMoE;
+  FlashAttentionencoderhasmixer_subset,lastlayer_subset,NOTqualifiedQwen
+  cached/RoPEkernel. PreservealllastlayerKVwrites;logprob/hidden/verify
+  canneedmorerows. 10380completeinputs/12541662Q/14498requestchunksare
+  row-countscenarios,notFLOPs/time/JCT. Source7908d8afa0e5.
+  Newsiblingprefillcensusall12071P/119630D/131701frames;10391submits,
+  10380completeinputs/11incompletecounted,233unknownreceiptQretained.
+  NearestobservedWAIT_ALLonly,distinctdirectbranches,nofuturepathlabels
+  inassignment. Dispatchfrontier447Pbatch/459JOINbatchhits(309single,
+  150multibranch)/70JOIN;nativealreadycobatches. Priorstartedpeerwith
+  remaininginputassignment0consistentwithsinglechunkowner,NOTnoflight
+  orHBMsaturation. Globalfrontier1045P/4979D;164.870/118.298worker_s.
+  Measuredpathpendingmeans1.892718P+1.387383D=3.280101s;ownPonly.360806
+  omittedunrelatedwait. NOTJCTgain/bound,clientsubmitNOTphysicalready.
+  Independentintervalreviewfirstfailed563!=459:completionvdispatch
+  boundary,NOTservingbug. Preservefailure r1/r2;dual-boundaryr3matches
+  all10380intervals/131701frames. Widercompletion545Pbatch,means
+  2.008845P+1.440221D;98extraPincludealreadydispatchedfinalchunks,not
+  extraassignablework. Completionisworkerboundary,NOTCUDAtimestamp.
+  16new+15old=31CPUcasespass;29/30oldreportsnotadditive. Ten source/
+  tests/native snapshots,JUnithash/447frontierrows/459hitsreviewed.
+  audit2aadb815bcda/review2c81a7be6ddd/provenance0c32e404862f.
+  Stopprioritizingmulti-chunkownerforthiscoverage,no policy/native/GPU
+  change;goalactive.13:46:31Asia/Shanghai2026-11-12 other-session1680051/
+  136070MiB/96%/free6317,allownedCPUexited,noGPU/waiter. See
+  docs/research/inference_prefill_completion_screen_20261112_zh.md.
+- Token-ready MoE candidate screened,no acceptednewdesign/performance.
+  Native top8 down->[M,8,D]combine->wholelayer/sample/copy_done remains;
+  sourceonly,nopatch. Constructed512/256requiredoutput-tile dependencies
+  BN32/64arenotdistinctCTAcounts/recordedroutes. Firstexpert/columnready
+  doesnotimplycompleterow;outerkernelintervalcannotidentifyinternaltiming.
+  Twopinnedoldwidth9profiles each24graphs/48chainspergraph;groupbylaunch
+  correlationandsamepid/device/context/stream/graph,notgraphIDalone.
+  LastdownP5047.473/46.497usvsgraph21768.260/20678.158us;
+  start-lastdown->graphend221.315/218.915us. .2188/.2241%and1.0166/1.0609%
+  aretimestampgeometry,NOTremovablelatency/JCTbound;oldreturnlogprobTrue.
+  OfficialCohere67d0b9...pinned3Gitblobs has topk-rowblockwait+column/
+  splitKtarget butfinegrainmacroconditional/wholelayerfallback;enabledJIT
+  unqualified,normalpostcombineffn_target=batch,modelNMCnotQwen.
+  BatchGencoroutinemodules/perexpertmemorydiscussion,QLLMexpertpriority,
+  distributedtile-signalingalreadycovergenericmechanisms;workflowlabel
+  alonedoesnotestablishnovelty. Stopgenericintegration,doNOTclaimall
+  finegrainedworkinvalid. Noactualtokenready/routing/numeric/GPU/JCTproof.
+  Preservepartialr1HTMLmarkerfail,r2/r3complete,r4identitychecks;
+  8new+8oldCPUcases=16pass,independent24hash/medianchecksnotpytest.
+  result0821ff8d3165/review6263c67c0d5e,native/serving/operatorsunchanged.
+  2026-11-12 13:10Asia/Shanghai other-sessionlonghao1680051sglang::scheduler/
+  135692MiB/100%/free6689;notold1645841or1513187,noownedrun/waiter.
+  Goalactive. See
+  docs/research/inference_moe_token_readiness_screen_20261112_zh.md.
+- MoE launch-capacity candidate CPU/source screened,no newmain design. Three
+  sourcefiles identical tohistoricalfa5cbbase;actualASTcapacity/grid/guardCPU.
+  M9top8 nativealready72MblocksforBM16/32/64,not128experts*unboundedpadding.
+  GuardafterPDLwait,beforeweightload/dot;capacityisnot executedpaddedGEMM.
+  Twooldwidth9 GPUprofiles each24graphs/2304MoEkernels,grids3456/4608 vs
+  1728/2304 consistentwithNtilechange,NOT activeexpert counts. Constructed
+  valid8shared/72distinctexpert routes yield8/72activeMsame72capacity;
+  donotcallthis observedrouting or inferemptyCTA/timefromgrid.
+  Valid-onlybound includescountperexpert<=M;504bounded-countDPchecks(notpytest).
+  Whole119630decodebatches M>=17=19415(16.2292%);fixedBM16/32/64 tighten
+  .2988/.4250/.3865%Mtile launchcapacityonly,NOTactualtuning/traffic/time/JCT.
+  CUTLASSalready persistent/device-only grouped scheduling,CUDA PD independent
+  prologue;ordinaryintegrationnotagentnovelty. Dynamicrouteawarecaseunmeasured,
+  needsactualroute/timing/strongcontrols. No native/operatorpatch/GPU.
+  resultfcce9ec78e6d/review07910a33a3e5/modelbind6326f2c7bfc6 preserves
+  sources/profile/journal/AST/officialdocs.07:42:01PST external1513187/
+  141572MiB/100%/free1564,noownedGPU/waiter,goalactive. See
+  docs/research/inference_moe_launch_capacity_screen_20261111_zh.md.
+- ActualCPU Q capture and conservative omission screen completed,not newgain.
+  Twoopenedtargetchildren6886/6911/full48BF16,16shardbeforeafterhash,
+  18867tensor/30532122624params bitwiseequal;2phases*5layers=20Q/KV/Oframes,
+  60newfiles348160B. OriginalKVprefixes/firstgreedy40 match. CPU313.134s/
+  CPUs32--35/4threads/nice19/NUMA1/CUDAhidden;PID1580287exited,noCPUwaiter.
+  Fixed16/64/256logicalregions(nativepage1unchanged),box/sphere+Vhull+FP64guard
+  intervalscreen. Primary16frames/512Qheads:metadataearlypass0all;exactmass
+  oracle133/19/0,butGQA32Q/4KV unionreadsall. All64KVgroups haveadensehead.
+  rawKVproxy226066432B,metadataadds15.6852/3.9258/.9815%byte scenarios,
+  NOT GPUtraffic/time/allworkloadbounds. Stopthisfixedfamily GPUinvestment,
+  noqueryretuning/errorrelaxation. QuestKextrema/SpargeAttnsoftmaxprior;no
+  noveltyacceptance. IdealFP64 isNOTnativebitexact:decode10framesreproduce0diff;
+  prefillq1diff33words,sameQlen/maskbothlayouts10framesreproduce0diff.
+  NumPy/Torchdouble<=2.3981e-14,BF16round0diff;idealvsSDPAprimary12267/65536
+  wordsdiffer,maxrelL2.1885%(nottaskerrorrate). Keepnumericqualificationlimits.
+  Preserve11/17/18overlappingCPU passes,notadditive. cap e7e178d5f679/
+  audit2fcb62c5b487/review3a1808e4ed47/prefillshape b58f85535d15,sources/
+  tensorhash/primaryHTML.07:03:58PST external1513187/141572MiB/100%/free1564,
+  noownedGPU/waiter,native/serving/operatorsunchanged,goalactive. See
+  docs/research/inference_attention_omission_screen_20261111_zh.md.
+- RoPE inverse-surrogate+exactcorrection prototype rejected;not actualpreRoPE
+  capture. Reuse4openedCPUchildren2cal/2heldout/sourceboundHF5.12.1.
+  Fourprimary K GAAC40172305B,inversesurrogate40230001B(alreadylarger),
+  plus5587264Bcorrection=45817265B(+14.0519%),excludesrotary/decodercost.
+  Uncorrected3122250/28256256words differ(11.0498%);correctedbitexact.
+  Samepromptbasesalsolose. Donotretune/startGPUforthisfixedprototype.
+  Actualofficialsame-shapezeroK/V noescapefloor matchesindependentfieldformula
+  9956648B/kind/layer. FourprimaryK+V80389984B versusfloor79653184B:
+  anyfreepointtransform retainingthisGAACallocation canatmostsave736800B/
+  .9165%inthisCPU population(Konly.8606%). NOT informationtheoretic/othercodec/
+  crossagent/whole48layer/traffic/JCTbound;zerotensorsonlycheckformatallocation.
+  Deprioritizesameformatpointtransforms. KVQuant2401.18079v1§3.2already
+  preRoPEkeyquant/onflyRoPE. Nativeoptional fusednorm+RoPE keepsFP32untilstore;
+  sourcecheckonly,noenabledpath/GPU/numericalproof. Preserveactual6source/
+  40tensor/20sample-layerwordchecks,no newpytest. result0181c935d76c/
+  reviewbd135c6896b4/floorext55bc67a0d0b4. 06:19:15PST external1513187/
+  141568MiB/100%,readyfalse,noownedGPU/waiter,native/serving/operatorsunchanged,
+  goalactive. See docs/research/inference_rope_representation_screen_20261111_zh.md.
+- Fixed64token cross-contextual XOR candidate screened,not a new contribution.
+  Reuse alreadyopened4CPUchildren2cal/2heldout,not blind/nativeGPU. Remove
+  commonprefix,exacttextmatches4864/6883 and6208/6396;anchorsselectedbytokens
+  only,targetprefill fullyretained. Fourprimarylayer K+V GAAC77407819B vs
+  bitplaneZstd residual+locator71928960B(-7.0779%) BEFORE anyreference read.
+  Unique requiredGAAC16token reference tile readonce+residual110588759B
+  (+42.8651% byte scenario,NOT measuredtraffic/time). DirectexistingGAAC
+  residual format evenbeforereferences88809905B(+14.7299%). Donotpromote
+  fixedprototype/kernel orretune on theseopenedtargets. Generalcontextualanchor
+  already KVCOMM2510.12872v1;exactstorage/read differenceunqualified.
+  Preserve r1warning/r2copyfix+costs and80tensorhash/selector/source/cost95
+  assertions (NOT95newpytest);savedprimaryHTML/README. r1 55cefd7485fb/
+  r2 e4d66f1368c5/review fc61a7ece69c. 05:58:00PST external1513187/
+  141568MiB/100%,readyfalse,noownedGPU/waiter. Native/serving/operators
+  unchanged,goalactive. See
+  docs/research/inference_cross_context_residual_screen_20261111_zh.md.
+- Namespace-induced physical duplicate candidate rejected for this workload.
+  Full registered12743requests/83workflows have one [null,null] namespace;
+  593session IDs/generationthrough183 are NOT593namespaces or necessarilyagents.
+  Sourcejournal d348a97a... matches sealedcorpus,prompt/output identities exact.
+  Frozen434c35...AST+actualpure streamingpredicate CPUchecks false/false/false/
+  true show radix-native top-levelsession_id doesnotcreate privatesession.
+  Native source already emits overlappingprefix FreeDeviceKV andcanonical row
+  rebind;NOT a residentduplicate runtime census or allraces/nonprefix proof.
+  OfficialvLLM document distinguishesv0 postcompute merge/free fromv1 appendonly
+  retainedduplicates;genericmerge is priorwork. Earlier256batch1.720301%prefix
+  proxy is sampleonly,notHBM/JCTbound. Noallocator/native/serving/GPUchange.
+  census d4119d6fe32d/review e59d406bb37c savedsource/hash/AST checks.
+  05:29:22PST external1513187/141568MiB/100%,readyfalse,noownedrun/waiter;
+  goalactive. See docs/research/inference_namespace_dedup_screen_20261111_zh.md.
+- Current static single-token bitmajority/XOR/bitplane-Zstd prototype is now
+  rejected for further kernel/GPU investment. Do NOT auto-launch old d888
+  capture solely for this candidate;no GPU waiter was ever queued. Latest
+  user still wants other ideas;do not automatically revive old P/D priority.
+  Actual full48-layer HF5.12.1/Torch2.13 CPU reference completed four whole
+  natural-child prompts(7014/6886/6915/6911),2cal/2heldout,all original BF16
+  weights:16fullshard hashes before/after,18867source tensors/30532122624params
+  bitwiseequal. Capture40K/Vfiles at0/11/23/35/47=283914240B;NOT native GPU.
+  Four primary layers' V GAACstatic40217679B;256/1024/effective1188 candidates
+  42610880/45498432/46082944B(+5.9506/13.1304/14.5838%). Even payload before
+  books exceeds GAAC in every primary layer/budget;no repeated-probe amortized
+  win under observed profiles. Global samecodec41446208B is also smaller.
+  Original4096order restricted to1188CPUcal-supported IDs,no heldout fitting;
+  full heldout child inputs evaluated. Layer0 V saves80.36%vsraw but iscontrol,
+  not all48layer gain. Do not retune on these now-unblinded heldout cases.
+  Preserve106pass r1 and r2's1JSON-setfail/106pass;strict empty loading record
+  fix gives107pass r3. Actual CPU result rejected by nativeGPUloader;GPUdefault
+  remains4cal/4heldout. Independent13source/40tensor/header/counts/argv checks.
+  CPU1543562/start43772421 finished539.28s and exited;8observedthreads allnice19/
+  CPUs32--35. d888/native/serving unchanged;external1513187/141568MiB/100%
+  at04:40:18PST,readyfalse. No nativeGPU/kernel/JCT/novelty qualification;
+  goalactive. See docs/research/inference_cpu_deep_token_predictor_result_20261111_zh.md.
+- Full native-window dictionary exposure CPU census now reproduces119630D/
+  12071P/1310346requeststeps/51290481320logicalcontext reads,9651nonpositive
+  members/1boundarybatch. All10382observedrequests/70workflows retained;
+  4calibration and66unseen workflows reported separately,no eval deletion.
+  Fixed256/1024/4096 calibration-prefix dictionaries cover unseen logical reads
+  54.2516/67.6370/81.6899%;positive-only54.2525/67.6354/81.6869%.
+  Full4096 root/child/internal coverage80.3958/84.4621/74.4291%.
+  90%covered-read offline hotrows133/425/1371 are not measuredL2hits or
+  an online vocabulary. Corpusidentity/hash+nativevisible-prefix/role/source
+  partitions verified;count no future output. Histcounts avoid materializing
+  51Bcontext visits. New3counterexamples+21existing=24CPUcases allpass;
+  save10source snapshots/result c9135e2c8f76/verification8352c54428b3/JUnit.
+  Coverage doesnotprove deepKV prediction,compression,HBMtraffic,cachehit,
+  kernel/JCT improvement or novelty. Do not infer capacity/traffic/performance
+  from this proxy;next candidate evidence still actualdeepKV and fullcosts.
+  03:55:49PST external1513187/141568MiB/100%,readyfalse,noownedrun/waiter.
+  d888/native/serving unchanged,goalactive. See
+  docs/research/inference_token_dictionary_exposure_20261111_zh.md.
+- Conditional-V followup retains4096primary and fixed256/1024 controls from
+  original calibration frequency prefixes;same pertoken predictions/global
+  fallback,no heldout winner. Real source order/hash unchanged. Perlayer books
+  are264256/1053760/4211776B;planned2048rowVprobe2097152B means4096book alone
+  exceeds raw,not a measured compression failure. New96CPUcases allpass,
+  officialGAAC unchanged;readinessr3 snapshots15sources/2official/4JUnit.
+  Preserve readinessr1, incomplete r2 literalHTMLmarker failure and 403 retry;
+  r3 uses parsed current author HTML,two primary snapshots,all hashes checked.
+  FergusFinn Speculative KV coding already covers predictor+exactcorrection;
+  current note discusses decoder bandwidth/deterministic CDF requirements,
+  not measured local GPU/JCT. TREBE officialtitle is "Efficient and
+  Hardware-Friendly Lossless Compression for KV Cache of Large Language
+  Models";old title in r1 was wrong,preserve manifest+erratum.
+  FlashAgents primaryPDF section4.2 already covers fan-in incremental prefill;
+  do not implement parent-partial-prefill as a new standalone contribution.
+  Web primary verified;local PDF download403 is not a local method reproduction.
+  03:31:11PST externalPID1513187/141568MiB/100%,readyfalse,noownedrun/waiter.
+  No actual deepKV/compression/GPUkernel/JCT,newnovelty accepted. d888/native/
+  serving unchanged,goalactive. See
+  docs/research/inference_prediction_prior_and_budget_screen_20261111_zh.md.
+- New conditional-V CPU comparator is ready,not a compression/serving result.
+  TCB1 calibration-only token/channel bitmajority+global fallback;TCI1uint32
+  rowindices;TCZ1same64token bitplane/Zstd3/rawfallback/64bytealign for raw,
+  globalXOR and tokenXOR. Count fullbooks/IDs/headers/padding;preserveK in
+  unchangedofficialGAACfe445999d58f,bothstatic/perpromptK/V and uniquebuffers.
+  CPUwordroundtrip includesall65536patterns/NaNpayloads,unknownIDs/partialtiles;
+  independentpackets reconstruct2,0,1,2 withoutpriorKV,but noGPUdecoder implied.
+  CLIrequires completedhashednativeGPUcapture/eightcoldHTTPpairs/fullsource/
+  drain/cleanup/fileverification and rehashesactualtensorreads;refusesCPUstandins.
+  Syntheticlayer23integration isonlycorrectness. Preservefirst5fail/86pass
+  missinglegacyGAAC_SOURCE_CHECKOUT,r2=92pass,r3=93passzeroerrors/skips.
+  readiness.json snapshots15sources+2officialfiles+all3JUnit;notafreeze.
+  KVComp2509.00579v1 section3.1.3 explicitlydropsLorenzo forreconstruction
+  dependence/fusedGPUdecode;tokenlookupmayremove thatpredictiondependency,
+  notentropydecodecost or priorart(DCKV/AlignPred/TREBE). No novelty accepted.
+  2026-11-11 03:14:34PST externalPID1513187/127760MiB/100%,readyfalse,
+  noownedrun/waiter. Native d888 unchanged;analyzeronlymain. NodeepKV/GPU/
+  allocator/model/JCTqualification;goalactive. See token-conditioned gate doc.
+- Native deep-KV diagnostic is now CPU-implemented,not GPU-qualified.
+  Default import installs no hook;explicit process entry wraps frozen
+  ModelRunner.forward,checks realrids/fulltokenchunks/absolute positions/native
+  write locations,commits only returned chunks,and verifies full request mapping
+  before reading five-layer BF16 bits. RejectCPU/quantized/transfer-busy pools
+  in GPU mode and check actual pool implementation source. Copies/sync are
+  diagnostic,not performance. Driver plans cold control/capture pairs with one
+  non-replay-forced greedy output,hold polling,cancellation/owned cleanup/two
+  fresh idle drains;none executed on GPU. Preservee05367cases/nativeCPUentry.
+  Currentclean operator d888c703ff16f9e43d65e730afdc5846ae07f38c requires explicit
+  --prepared-sha256 2c5d29040db800ae8397f107f90846b85042b6f07381025f8cd6b9388703fbf7;
+  changed/missing source pin fails before native bootstrap. Actualclean69cases
+  pass retaining29sourcechecks;actualnative import/hook/CLI staysCUDAuninitialized.
+  Independent10source/4native/JUnit/entry/hash audit passes;mainHEAD/index and
+  e926/native/serving untouched. Source-binding refinement is not an observed
+  serving fault. No newKV,model/numerical/kernel/compression/JCT qualification,
+  GPU/waiter;goalactive. Use deep_kv_capture_frozen_entry_audit_r2.json command
+  only after freshhold/exclusive/nice0 checks. See
+  docs/research/inference_token_conditioned_kv_gate_20261111_zh.md.
+- Latest user steering rejects low-feasibility/low-novelty directions; do not
+  automatically restore historical P/D priority. New CPU token-conditional
+  screen establishes gates,not a contribution: DCKV2610.36950v1 already has
+  token-embedding conditional coding;lossy stored-cache restoration is distinct
+  from,but does not establish novelty of,bit-exact online attention. Dense full
+  vocabulary V predictor costs7.471786808GB with listed IDs;4096costs204563768B,
+  805198-slot scenario is not observed residency. Against declared11.4bit
+  scenario,8/10bit residual needs predictor cachehit>78.75/91.25%;not measured
+  GAAC/traffic/time. Source role correction preserves119630D/12071P/1310346steps/
+  51290481320context proxy:<=4096's21requests are runtime context-summary
+  from one workflow,not natural children;natural child minimum5121.
+  Keep internal work and historical files. Eight disjoint workflow fixtures
+  stratify root/child and declaredPython/JS,calibration/heldout;4096vocabulary
+  covers heldout full prompts84.6425%,not KV predictability. Layers0/11/23/35/47
+  have30125planned fitting/33914capture positions,347279360B scenario;NO KV
+  acquired and native collector/binding/GPU qualification still unfinished.
+  29relatedCPUcases pass,artifact/auditor/dependency hashes match;retain r1/r2.
+  No serving/native/cleane926 change or GPU/waiter;goalactive. See
+  docs/research/inference_token_conditioned_kv_gate_20261111_zh.md.
+- The user explicitly starts a continuous inference-system idea and feasibility
+  goal on 2026-11-10. Keep agent protocols, prompts, tools, causal dependencies
+  and evaluated work fixed; application-level evidence sharing, selective JOIN
+  and context rewriting are outside this goal. Iterate over primary literature,
+  sealed-trace checks, bounded components and matched full comparisons, retaining
+  negative results and separating opportunity/proxies from actual gains. Do not
+  force a contribution count or present ordinary engine integration as novelty.
+  The shared hold records an explicit GPU release on 2026-11-08 21:22 Asia/Shanghai;
+  old pause descriptions are historical. Always recheck the actual shared hold,
+  pause and exclusive resources before GPU work. Initial new-goal inspection
+  found an existing GPU process at 100% utilization; do not disturb it.
+  See docs/research/inference_idea_search_20261110_zh.md.
+- New FA3 policy CPU screen verifies CMake's f89bc2306632 archiveSHA418b5681,
+  executes unmodified host functions and extracted final dynamic scalar;
+  <=24positive-request warp sums are CPU inputs,not GPU/CUB qualification.
+  22sealed geometries*132/112/20SM=66scenarios,not workload frequencies.
+  Query-tile cap changes32/66static,28/66dynamic;132SM11/22and10/22.
+  Do not equate smaller cap/split with speed:8D example largest piece proxy
+  178->424isnot latency. Dynamic-preserving cap changes30/66,132SM9/22;
+  scalar plans match,but only<=2.3936MiB/call scratch scenario and samplepeak
+  stays6.3776MiB. No allocator/traffic/math/JCT or installedbinary proof.
+  Native already packsGQA and uses varlen dynamic scheduling/sorting.
+  Currente926planner/forward bothsm_margin0consistent;futureSM budgets need
+  matching planner/forward,not just restricted launches;no physicalisolation
+  implied. Preserve r1(52tests)/r2(54tests),12source/savedartifact hashes.
+  CPU executable noCUDA link/compute;cleane926/native/servingunchanged,
+  noGPU/waiter,P/Dmodelpriority,goalactive.
+  See docs/research/inference_fa3_split_policy_screen_20261110_zh.md.
+- Host CPU follow-up uses NUMA1 physicalCPU32--35,nice19,sameBF16values,
+  alternating1/2/4threads and7reused/rotating rounds. Four-thread speedup
+  3.27--3.79x,but critical1.306--3.526/1.864--4.723ms;shortest
+  .526--1.121/.688--1.516ms. Old wholeGPU.200--.396ms is noncontemporaneous
+  scale,not heterogeneous/JCT bound. Deprioritize this <=4core PyTorch lane,
+  not all CPU kernels,morecores or work hidden by other GPU stages.
+  24dispatch/36member references and identical old/new input hashes pass;
+  25relatedCPUtests after preserving first1fail/24pass test-budget refusal.
+  Actualworkers stay in declaredcores;CPU profiler hidden-enumerationcode100
+  is not CUDA init/compute. NEO officialclean33e4a0f76326 is read-only:
+  CPUFP16/at::Half is not currentBF16/Qwen qualification;no NEO execution.
+  Prior work bounds genericheterogeneity novelty;verify actual abstract/code,
+  not inconsistent searchtitle/ID. Sixsourcehashes/savedauditor match.
+  Cleane926/native/serving unchanged,noGPU/waiter,goalactive,P/Dpriority.
+  See docs/research/inference_host_attention_thread_scaling_20261110_zh.md.
+- Old width9 MoE PDL audit reuses2real-model profiles,each24graphs/21461kernels/
+  1152positional chains;no unmatched activations. Tuned activation duration sum
+  30.060ms,but exclusive recorded interval.829ms/.1668%kernel union.
+  Neither is removable cost or a fusion/JCT bound. Source-informed same
+  pid/device/context/stream/graph chain tails:activationP50both1.280us,
+  reduceP501.855/1.920us;not an extracted CUDA DAG or actual instruction timing.
+  Frozen code has PDL wait/trigger and a default-off fused SwiGLU path;
+  path presence is not execution,model/performance qualification or novelty.
+  Historical probesreturn_logprob=True;current qualifierFalse;do not extrapolate.
+  Deprioritize custom generic activation fusion;21relatedCPUcases pass.
+  Preserve profile/source hashes;cleane926/native/serving unchanged,noGPU/waiter.
+  See docs/research/inference_moe_pdl_screen_20261110_zh.md.
+- Full-window Host-candidate audit reproduces119630D/12071P,1310346steps/
+  51290481320context-token proxy;positive1300695/50960421170,9651zero-output
+  records and1cross-boundary batch explicit. No<=2048Dsteps;minimumchild2316/
+  root28435.<=4096is15883positive steps(1.2211%)/.1100%context proxy.
+  All21suchrequests are invocation-first child calls.<=8192is94499steps/
+  1.1575%context proxy;after399firstrequests/54743steps,897latercalls/
+  39756steps remain(3.0565%allpositive). First/later attribution uses original
+  causal source,not online future input or Host-copy proof. First can still
+  share/warm KV;later does not imply tool/JOIN. Shared worker intervals,
+  logicalcontext and frequencies are not actual traffic/freedHBM/JCT bounds.
+  New12CPUcases pass;preserve r1/r2;no serving/GPU/cleane926/native change.
+  See docs/research/inference_host_attention_envelope_20261110_zh.md.
+- New CPU Host-attention lane screen keeps4sealed GPU-component shapes and
+  equal-cardinality critical/shortest selections. CPU32/GPU-localNUMA1/
+  nice19/1thread,real fused CPU SDPA,FP32 reference,7alternating reused/rotating
+  rounds. Critical groups4.537--12.230/7.201--16.884ms;shortest1.767--3.838/
+  2.745--5.550ms.Historical whole12--23member GPU graph.200--.396ms is only
+  noncontemporaneous component scale,not heterogeneous speed/JCT/all-layer
+  bound. Shortest logicalcontext share.99--4.30%is not freed HBM. Deprioritize
+  this single-thread implementation,not all multithread/otherhardware schemes.
+  Preserve first failed fast-path check:inference_mode hides inner op from
+  Python dispatch,actual CPU profiler confirms fused inall4diagnostic cases.
+  CPU-only profiler device-enumeration code100 is not GPU computation;
+  noCUDA init.Final33relatedcases pass. Evolving Infra(arxiv2611.12304,
+  submitted2026-11-09)already covers agent branch/version/end-aware KV;
+  ScoutAttention covers CPU/GPU collaboration.No local reproduction/novelty.
+  NoGPU/waiter,cleane926/native unchanged,P/Dmodel priority,goal active.
+  See docs/research/inference_host_attention_screen_20261110_zh.md.
+- Split decode now reuses native scheduler metadata per batch across layers,
+  matching forward page-table bounds without D2H max;native disable/API guards,
+  refresh invalidation and side-stream lifetime retained. Model evidence now
+  requires nonempty precomputed metadata. This is generic cost correction,
+  not novelty or a measured kernel/time/JCT saving. Preserve before6fail/4pass
+  and fixture duplicate-keyword collection failure. New clean operator
+  e926039f3015307a44defe12629868d600b90c1f has137CPUcases retaining all130,
+  6native shapes,medium/long4armCLI/tokens,3real CPU native bootstraps and
+  exact installed/native scheduler-wrapper bytes. MainHEAD/index,oldf6db,
+  native and formal serving unchanged. Use new source-bound GPU/model checks;
+  old evidence is not new qualification. Steady component timings exclude
+  per-batch metadata creation. Generic lossless-weight/decode-compute is
+  already covered by NF12/NeuZip;no local reproduction or novelty claim.
+  NoCUDA/GPU/waiter;goal active. See
+  docs/research/inference_split_schedule_qualification_20261110_zh.md.
+- New lossless-KV screen uses8lexical root prompts/last512absolute positions
+  and7684352bytes real first-layer weights. CPU unfused K/V is not actual GPU
+  cache or all48layers;all8samples are JavaScript. Fixed physical formats save
+  22.57--24.43%,but128elements/128byte alignment grows1.5869%. Correct official
+  GAAC repo is Intelligent-Microsystems-Lab/GAAC,clean fe445999d58f;old wrong
+  path404doesnotmean unavailable. UnmodifiedCPUcodec fits4workflows/evals4:
+  kernel buffers including sharedbases/guards save28.6967%,bitexact.
+  Official512token slot formula including tail/escape reserves saves23.13--23.32%;
+  none is native allocator capacity,GPUtime or JCT. Stop prioritizing custom
+  generic codec;existing compression is not our novelty. GAAC's contextual
+  prefill expandsBF16scratch;direct compressedmultiquery stays low-cost
+  candidate,not proved new.10380complete ranges/14498chunks yield534879593
+  oldcontext-token,1.095TB one-layer full-expansion scenario,only1.0428%of
+  decode logicalcontext-readproxy. No actual decompression/traffic/time bound
+  or tool/JOIN attribution. Final53CPUcases pass;retain first alias assertion
+  failure/correction. NoGPU/waiter,cleanf6db/native unchanged,P/Dmodel priority.
+  See docs/research/inference_lossless_kv_screen_20261110_zh.md.
+- Continuous-input audit rebuilds10380complete ranges;233queries lacking terminal
+  receipts stay explicit. At d9 the6808observed canonical single-request subset
+  needs7632->7638Pchunks;all ranges as isolated components14216->14234,
+  body-row proxy+0.1152%. Do not charge one isolated tail per original chunk,
+  interpret isolated baseline counts as source batches,or infer GPU/JCT gains.
+  New model harness adds long suffixes8192/32768,requires repeated graph/live
+  mixed service and full contiguous input coverage,and drains native writer
+  before final strict JSONL validation. New clean operator
+  f6db424e5d5bc0a09b662315bdb7eb862f4bc2ef has130passing related CPU cases,
+  native6shapes,medium/long4armCLI+tokens,and3real CPU native bootstraps.
+  Sixd/c8e3 remain historical;f6db qualified this revision. The next follow-up
+  uses the source-bound e926 operator described above.
+  No new GPU/model/graph/workload qualification,waiter or novelty claim.
+  See docs/research/inference_continuous_chunk_qualification_20261110_zh.md.
+- Full-window P/D follow-up reproduces11918closed shapes and all18path accounts:
+  medium query covers23.2024%of prefill worker intervals,large69.3732%.
+  Native mixed shifts prefill queries; isolated deferred-tail rows are only a
+  conservation proxy,not the real continuous re-chunk schedule. A new CPU-only
+  partial-decode filler keeps original P queries/chunk/body and compares equal
+  slots.7502proxy opportunities include3424subset choices;frontier-first changes
+  976sets but measured-path steps14739->14727 and exposure52.331289->52.279014s.
+  Completed-snapshot1619subset also has negative0.031282s proxy. Not JCT change
+  or physical ready/admission proof. Do not prioritize this dependency rule;
+  partial mixed/graph packing remain generic strong controls. Related44CPU
+  checks pass,old r1 preserved,no new GPU/model/workload gain or novelty claim.
+  Exact arXiv2606.21712v1 title is BatchGen: An Architecture for Scalable and
+  Efficient Batch Inference; historical Portable title is incorrect.
+  See docs/research/inference_mixed_coverage_and_partial_decode_20261110_zh.md.
+- Follow-up graph/cost screens execute native bucket methods and observe2.9102%
+  extra prefill rows. A536576-byte real-weight first-layer CPU reference checks
+  the native input_ids ZERO declaration, nonzero padded residual and repeated
+  top8 routing; this is not GPU/model qualification or a layerwise time bound.
+  P/D controls must use captured body sizes:25+9 becomes48rows versus28+9
+  separately, while693+9 remains704. Preserve deferred chunk work and common
+  MoE tuning. Strict recorded2/4/8-step decode blocks cover80.3828/69.4007/
+  51.3985%of119630batches, but old tuned width9profile has only0.9311%recorded
+  device-idle time inside its kernel envelope. This is neither current workload
+  idle time nor a JCT bound; ordinary multi-step stays a nonpriority control.
+  Related CPU checks34pass. No new GPU run, model/JCT gain or novelty claim.
+  Clean6d1123f3operator remains unchanged. See
+  docs/research/inference_padding_and_decode_screen_20261110_zh.md.
+- Follow-up native graph counterexamples supersede c8e3's entry readiness:
+  BCG load_batch normalizes MIXED to EXTEND, so the old mode-only hook silently
+  falls back. Preserve c8e3 and both before-fix failures. Current CPU-qualified
+  hook carries only fresh raw-MIXED geometry through native metadata refresh;
+  ordinary EXTEND, changed geometry and refresh failures cannot inherit it.
+  Model qualification now requires normalized EXTEND/raw-MIXED enqueue evidence
+  plus actual completed mixed service and unforced IDs. Related CPU checks125
+  pass; no GPU/model/graph/performance qualification is implied.
+  Replacement clean operator6d1123f3dd34d0226a4c4b067b0a9913915c9ab1 now
+  reruns125tests/native6shapes/model4armCLI and real CPU native bootstrap;
+  split_origin_frozen_entry_r1 independently rechecks prepared bytes/JUnit/
+  CLI/bootstrap/hold/resources. Old c8e3 stays frozen, no GPU followup running.
+  Shared-prefix exact-token screen of256/119630decode batches finds1.7203%
+  repeated logical context reads,1.0327%same-workflow,maximum22.0568%retained.
+  Not HBM traffic/JCT bound; Hydragen already covers the generic mechanism.
+  Do not prioritize this integration as a new contribution. Preserve input
+  namespaces, visible-length clipping and explicit zero-progress exclusions.
+  See docs/research/inference_followup_20261110_zh.md.
+- Native P/D qualification now has a default-off process-scoped backend hook
+  preserving the original forward_extend code object and native KV writes;
+  frozen native sources remain unchanged. Its 107-case related CPU report and
+  actual CPU-only CLI parse are not GPU/model/graph/performance qualification.
+  Native mixed excludes return-logprob requests; require actual greedy IDs,
+  completed mixed service and candidate enqueue evidence. PrefillAdder already
+  deducts decode tokens from the 2048 chunk, so old synthetic 2048+9/2048+2
+  shapes must not be called native admission shapes. New fixtures use 2039+9
+  and 2046+2, retaining old evidence and the MoE tuning confound. The prepared
+  four-arm model fixture retains HBM805198/running24/graph/MoE but disables Host
+  cache; it does not qualify migration or workload performance. Preserve its
+  observed-graph CLI failure and correction. Application is now independently
+  frozen at c8e3ace9ecb31a8234971a46b04f2d26cb8373f4; clean entry rechecks all
+  prepared script/native bytes, real CLI, and 107 passing CPU cases from that
+  checkout. Main HEAD/index remain unchanged. Native GPU and model checks are
+  still pending; no new GPU job or waiter is running. See
+  docs/research/inference_native_split_qualification_20261110_zh.md.
+- For future interactivity comparisons, report E2E normalized interactivity
+  only: invert the P90 of complete request seconds per output token. The
+  user's former 50 token/s example is not an SLO or acceptance requirement.
+  Keep legacy reports intact. Distinguish measured KV-pool occupancy and
+  non-evictable state from useful active-KV utilization; neither proves the
+  latter. Publication figures must state their populations/windows and avoid
+  confidence intervals inferred from a single run per method.
+  Do not include near-saturated physical KV-pool occupancy as a headline
+  comparison figure; retain it as diagnostic data. Keep method colors
+  consistent across plots, using a documented scientific qualitative palette.
+  Reconfirmed by the user on 2026-11-04 after checking the latest official
+  AgentX Pareto metric documentation and implementation. Decode-only per-user
+  throughput is a separate metric. See
+  docs/research/interactivity_metric_definition_20261104_zh.md.
 - Keep experiment, configuration and analysis identities separate. Historical
   `vNNN` references remain immutable, but new CPU checks, progress observations,
   plots and result analyses belong to their parent experiment's named evidence

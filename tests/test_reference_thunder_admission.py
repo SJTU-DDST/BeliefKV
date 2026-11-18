@@ -313,7 +313,8 @@ def test_production_preflight_constructs_the_reference_full_candidate(monkeypatc
 
 
 def test_scheduling_and_native_lifecycle_methods_are_the_reference_implementations():
-    for name in ("attach", "tick", "completed", "aborted", "_refresh_streaming_progress"):
+    # Full wraps the periodic tick only to observe the opt-in late-service guard.
+    for name in ("attach", "completed", "aborted", "_refresh_streaming_progress"):
         assert getattr(ReferenceThunderAdmission, name) is getattr(ThunderAgentDecayAdapter, name)
 
 

@@ -32,6 +32,32 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def check_device_access(plan, alive, *, now=None):
+    mode = plan.get("device_access_mode", "protected")
+    if mode not in ("protected", "shared"):
+        raise ValueError("device access must explicitly be protected or shared")
+    lease = load(plan["device_state"])
+    if mode == "shared":
+        if lease.get("status") != "released" or (
+            lease.get("guard") and alive(lease["guard"])
+        ):
+            raise RuntimeError("shared access requires the old protection to remain released")
+        return mode
+    if lease["status"] != "held" or not alive(lease["guard"]):
+        raise RuntimeError("continuous GPU access guard is not held by a live process")
+    if (time.time() if now is None else now) - datetime.fromisoformat(
+        lease["checked_at"]
+    ).timestamp() > 15:
+        raise RuntimeError("continuous GPU access guard heartbeat is stale")
+    anchor = plan.get("held_reservation_anchor")
+    if anchor and (
+        not alive(anchor)
+        or any(lease["owner"].get(name) != anchor[name] for name in ("pid", "start_ticks"))
+    ):
+        raise RuntimeError("the existing held reservation anchor changed")
+    return mode
+
+
 def command_with(command, replacements):
     result = list(command)
     for flag, value in replacements.items():
@@ -79,6 +105,21 @@ def matching_work(proofs):
     for label, proof in proofs.items():
         if proof["work"] != proofs["full"]["work"]:
             raise ValueError("complete measured native work changed: " + label)
+
+
+def stage_promising(comparison, choices, *, allow_tail_diagnostic=False):
+    checks = comparison["checks"]
+    if not checks["fixed_measured_mean_JCT_gain"] or not checks["common_window_output_throughput_noninferior"]:
+        return False
+    if not checks["background_covers_both_measured_tails"] and not allow_tail_diagnostic:
+        return False
+    counts = choices["counts"]
+    return (
+        choices.get("complete_measured_execution_verified") is True
+        and counts["selected_set_changes"] > 0
+        and counts["newly_selected_periodic_followed_by_exact_service"]
+        + counts["newly_selected_free_followed_by_exact_service"] > 0
+    )
 
 
 def services(operator):
@@ -156,6 +197,7 @@ def register(args):
         "previous_coordinator_only_handoff": replacing_controller,
         "device_state": str(args.device_state.resolve()),
         "device_owner_file": str(args.device_owner_file.resolve()),
+        "device_access_mode": getattr(args, "device_access_mode", "protected"),
         "registered_at": datetime.now(timezone.utc).isoformat(),
         "all_five_methods_explicitly_requested": True,
         "workload_diagnostic_failure_retained_without_cancelling_matched_controls": True,
@@ -185,6 +227,8 @@ def watch(plan_path):
         "status": "taking_over_coordinator", "process": causal.reservation.process(os.getpid()),
         "GPU_stage_order": list(LABELS), "GPU_registered_stages": [],
         "completed_stages": [], "goal_complete": False, "performance_accepted": False,
+        "device_access_mode": plan.get("device_access_mode", "protected"),
+        "exclusive_device_access": plan.get("device_access_mode", "protected") == "protected",
     }
     proofs = {}
 
@@ -194,11 +238,7 @@ def watch(plan_path):
 
     def wait():
         ranking.released()
-        lease = load(plan["device_state"])
-        if lease["status"] != "held" or not causal.reservation.alive(lease["guard"]):
-            raise RuntimeError("continuous GPU access guard is not held by a live process")
-        if time.time() - datetime.fromisoformat(lease["checked_at"]).timestamp() > 15:
-            raise RuntimeError("continuous GPU access guard heartbeat is stale")
+        check_device_access(plan, causal.reservation.alive)
         pulse()
         time.sleep(2)
 
@@ -221,6 +261,36 @@ def watch(plan_path):
         state.update(current_stage=label, measured_completed=None, observed_arrivals=None)
         finish.verify_pins(plan["inputs_sha256"])
         ranking.released()
+        if stage.get("reuse_completed_execution"):
+            registration = Path(stage["registration"])
+            observer_path = registration.with_name(
+                registration.name.replace(".registration.json", ".cohort.registration.json")
+            ).with_suffix(".state.json")
+            observed = load(observer_path)
+            if observed["status"] != "measured_cohort_review_complete" or causal.reservation.alive(
+                observed["process"]
+            ):
+                raise ValueError("reuse only an actually completed fixed-cohort review")
+            proof_path = output / (label + "_execution_proof.json")
+            cpu(label + "_execution_proof", [
+                "-c",
+                "from pathlib import Path\n"
+                "import sys\n"
+                "from scripts.verify_measured_execution import verify_execution, review_matches_execution\n"
+                "from scripts.run_causal_comparison import load\n"
+                "from scripts.train_workflow_work import write\n"
+                "proof=verify_execution(Path(sys.argv[1]),Path(sys.argv[2]))\n"
+                "review_matches_execution(load(Path(sys.argv[3])),proof)\n"
+                "write(Path(sys.argv[4]),proof)\n",
+                registration, plan["cohort"], Path(stage["review"]) / "review.json", proof_path,
+            ])
+            proofs[label] = load(proof_path)
+            matching_work(proofs)
+            state["completed_stages"].append(label)
+            state.setdefault("reused_completed_stages", []).append(label)
+            state.update(status="reused_complete_" + label)
+            pulse()
+            return
         owner = stage.get("existing_watcher")
         if owner is None:
             state["status"] = "waiting_resources_" + label
@@ -341,10 +411,26 @@ def watch(plan_path):
     signal.signal(signal.SIGINT, terminate)
     try:
         finish.verify_pins(plan["inputs_sha256"])
-        write(plan["device_owner_file"], state["process"])
+        check_device_access(plan, causal.reservation.alive)
+        anchor = plan.get("held_reservation_anchor")
+        if anchor:
+            lease = load(plan["device_state"])
+            actual = causal.reservation.process(anchor["pid"])
+            owner_changed = plan.get("device_access_mode", "protected") != "shared" and any(
+                lease["owner"].get(name) != anchor[name] for name in ("pid", "start_ticks")
+            )
+            if (
+                not causal.reservation.alive(anchor) or actual.get("state") not in ("T", "t")
+                or any(actual.get(name) != anchor[name] for name in ("pid", "start_ticks"))
+                or owner_changed
+            ):
+                raise ValueError("keep only the exact already suspended reservation anchor")
+            state["held_reservation_anchor"] = anchor
+        else:
+            write(plan["device_owner_file"], state["process"])
         pulse()
         old = plan["previous_coordinator"]
-        if causal.reservation.alive(old):
+        if not anchor and causal.reservation.alive(old):
             # A replacement must not run the old controller's serving-abort handler.
             handoff_signal = signal.SIGKILL if plan.get("previous_coordinator_only_handoff") else signal.SIGTERM
             os.kill(old["pid"], handoff_signal)
@@ -353,16 +439,57 @@ def watch(plan_path):
                 if time.monotonic() > deadline:
                     raise RuntimeError("previous coordinator did not exit")
                 wait()
-        with (Path(plan["previous_execution_plan"]).parent / "coordinator.lock").open("a+") as lock:
+        lock_root = output if anchor else Path(plan["previous_execution_plan"]).parent
+        with (lock_root / "coordinator.lock").open("a+") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             write(output / "coordinator_handoff.json", {
-                "old_coordinator_exited": True, "old_owner": old, "new_owner": state["process"],
+                "old_coordinator_exited": not causal.reservation.alive(old),
+                "old_owner": old, "new_owner": state["process"],
+                "existing_suspended_reservation_anchor_preserved": bool(anchor),
                 "Full_supervisor_preserved": plan["stages"]["full"]["existing_watcher"],
                 "only_CPU_coordinator_replaced": plan.get("previous_coordinator_only_handoff", False),
                 "GPU_stage_order": list(LABELS),
             })
             for label in LABELS:
                 run_stage(label)
+                if plan.get("require_ranked_gain_before_following_stages") and label in ("oracle", "learned"):
+                    result = ranking.evaluate_pair_cohorts(
+                        load(Path(plan["stages"]["full"]["review"]) / "cohort.json"),
+                        load(Path(plan["stages"][label]["review"]) / "cohort.json"),
+                        load(plan["stages"][label]["configuration"])["comparison_contract"],
+                        minimum_jct_gain=.01,
+                    )
+                    write(output / (label + "_early_comparison.json"), result)
+                    choice_path = output / (label + "_actual_choices.json")
+                    command = [
+                        Path(plan["operator"]) / "scripts/audit_workflow_combination_choices.py",
+                        "--registration", plan["stages"][label]["registration"],
+                        "--control", plan["stages"]["full"]["registration"], "--cohort", plan["cohort"],
+                        "--complete", "--policy-kind", "oracle" if label == "oracle" else "learned",
+                        "--output", choice_path,
+                    ]
+                    if label == "oracle":
+                        command.extend(("--model-work-reference", plan["stages"]["learned"]["configuration"]))
+                    cpu(label + "_actual_choices", command)
+                    if not stage_promising(
+                        result, load(choice_path),
+                        allow_tail_diagnostic=plan.get(
+                            "workload_diagnostic_failure_retained_without_cancelling_matched_controls", False,
+                        ),
+                    ):
+                        state.update(
+                            status=label + "_complete_no_promising_gain",
+                            performance_accepted=False, goal_complete=False,
+                        )
+                        return
+                if label == "oracle" and load(
+                    plan["stages"]["oracle"]["configuration"]
+                )["comparison_contract"].get("tool_boundary_oracle_only_followup"):
+                    state.update(
+                        status="oracle_complete_separate_learned_preparation_required",
+                        performance_accepted=False, goal_complete=False,
+                    )
+                    return
         state.update(status="all_five_matched_executions_verified")
         pulse()
         for label in LABELS[1:3]:
@@ -419,6 +546,7 @@ def main():
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--device-state", type=Path)
     parser.add_argument("--device-owner-file", type=Path)
+    parser.add_argument("--device-access-mode", choices=("protected", "shared"), default="protected")
     parser.add_argument("--replace-coordinator-state", type=Path)
     args = parser.parse_args()
     if args.watch:

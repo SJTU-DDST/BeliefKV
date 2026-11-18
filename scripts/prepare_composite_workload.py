@@ -136,9 +136,12 @@ def select_declared_projects(rows, declaration):
     ]
 
 
-def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engine_variants=False):
+def serving_artifacts(
+    by_source, proofs, selected, *, allow_reviewed_native_engine_variants=False,
+    allow_mixed_original_datasets=False, replay_capacity=None,
+):
     """Retain common serving resources while disclosing heterogeneous prompts."""
-    common, plans, originals = None, [], {}
+    common, plans, originals, capacities = None, [], {}, {}
     for source in by_source:
         arm = Path(source)
         paths = (arm / "server/server_info.json", arm / "server/native_capacity_census.json",
@@ -146,15 +149,31 @@ def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engi
         info, capacity, plan = (json.loads(path.read_bytes()) for path in paths)
         values = ({name: info[name] for name in SERVING_FIELDS}, capacity["capacity"], plan["engine_tree"])
         if common is not None and (
-            values[:2] != common[:2]
+            values[0] != common[0]
+            or replay_capacity is None and values[1] != common[1]
             or not allow_reviewed_native_engine_variants and values[2] != common[2]
         ):
             raise ValueError("composed traces need the same model and declared native resources")
         if plans and plan["hold_file"] != plans[0]["hold_file"]:
             raise ValueError("composed sources have different resource authorization files")
         common = values
+        capacities[str(arm.resolve())] = capacity["capacity"]
         plans.append(plan)
         originals.update({str(path.resolve()): sha256_file(path) for path in paths})
+    capacity_projection = None
+    if replay_capacity is not None:
+        from beliefkv.experiments.composite_workload import capture_capacity_contract
+
+        reference = Path(replay_capacity).resolve()
+        target = json.loads(reference.read_bytes())["capacity"]
+        if common[0]["enable_beliefkv_admission"] is not False:
+            raise ValueError("capture capacity projection requires native source captures")
+        capacity_projection = {
+            **capture_capacity_contract(capacities, target, common[0]["page_size"]),
+            "reference_path": str(reference), "reference_sha256": sha256_file(reference),
+        }
+        originals[str(reference)] = capacity_projection["reference_sha256"]
+        common = (common[0], target, common[2])
     engine_tree, compatibility = common[2], None
     trees = {plan["engine_tree"] for plan in plans}
     if len(trees) > 1:
@@ -168,18 +187,32 @@ def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engi
         ):
             raise ValueError("reviewed mixed-engine composition requires FULL-only native captures")
         engine_tree = compatibility["replay_engine_tree"]
-    tasks = {}
+    if type(allow_mixed_original_datasets) is not bool:
+        raise ValueError("mixed original datasets require an explicit boolean declaration")
+    tasks, datasets = {}, []
     manifest = None
     for proof in proofs:
         path = Path(proof["workload"])
         source = json.loads(path.read_bytes())
         manifest = source if manifest is None else manifest
-        if source["archive_sha256"] != manifest["archive_sha256"]:
+        if source.get("source_dataset") is not None:
+            from beliefkv.experiments.original_swe_rebench import source_dataset
+
+            dataset = source_dataset(source)
+        else:
+            dataset = {"kind": "locobench_agent_archive", "sha256": source["archive_sha256"]}
+        if datasets and dataset != datasets[0] and not allow_mixed_original_datasets:
             raise ValueError("original projects must come from the same pinned dataset")
+        if dataset not in datasets:
+            datasets.append(dataset)
         capture = str(Path(proof["client_manifest"]).resolve().parent.parent)
         for task in source["workloads"]:
             tasks[capture, task["instance_id"]] = task
         originals[str(path.resolve())] = sha256_file(path)
+        for name, digest in proof.get("source_inputs_sha256", {}).items():
+            if sha256_file(Path(name)) != digest:
+                raise ValueError("original public task or repository provenance changed")
+            originals[name] = digest
     combined = deepcopy(manifest)
     for key in ("environment_qualification", "tool_environment_qualification"):
         combined.pop(key, None)
@@ -190,9 +223,16 @@ def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engi
         source_capture_protocols=sorted({row["protocol_sha256"] for row in selected}),
         selection_policy="first complete original project representative across declared sources",
     )
+    if len(datasets) > 1:
+        for key in ("archive", "archive_sha256", "source_dataset"):
+            combined.pop(key, None)
+        combined.update(
+            source_datasets=datasets, heterogeneous_original_datasets_disclosed=True,
+        )
     combined["selected_projects"] = [row["project"].split("/", 1)[1] for row in selected]
     combined["selected_scenarios"] = [
-        task["dataset_provenance"]["original_scenario"] for task in combined["workloads"]
+        task["dataset_provenance"].get("original_scenario", task["instance_id"])
+        for task in combined["workloads"]
     ]
     return {
         "server/server_info.json": common[0],
@@ -203,6 +243,7 @@ def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engi
             "original_capture_plans": [str(Path(source).parent / "capture_plan.json") for source in by_source],
             "hold_file": plans[0]["hold_file"],
             **({"engine_variant_compatibility": compatibility} if compatibility else {}),
+            **({"capture_capacity_contract": capacity_projection} if capacity_projection else {}),
         },
     }, originals
 
@@ -210,10 +251,12 @@ def serving_artifacts(by_source, proofs, selected, *, allow_reviewed_native_engi
 def prepare(
     inventories, output, *, inventory_paths=(), seconds_per_model_unit=None, audit_shape=False,
     minimum_work_ratio=None, minimum_projects=36, allow_reviewed_native_engine_variants=False,
-    population_plan=None,
+    population_plan=None, allow_mixed_original_datasets=False, replay_capacity=None,
 ):
     if output.exists():
         raise FileExistsError("preserve every composed workload preparation")
+    if type(allow_mixed_original_datasets) is not bool:
+        raise ValueError("mixed original datasets require an explicit boolean declaration")
     refreshed = {}
     if seconds_per_model_unit is not None:
         for inventory in inventories:
@@ -298,11 +341,15 @@ def prepare(
             "protocol_sha256": sorted({row["protocol_sha256"] for row in workflows}),
         })
     graph = merge_plans(plans)
-    supporting, supporting_inputs = (
-        serving_artifacts(
-            by_source, proofs, selected, allow_reviewed_native_engine_variants=True,
-        ) if allow_reviewed_native_engine_variants
-        else serving_artifacts(by_source, proofs, selected)
+    serving_options = {
+        name: value for name, value in {
+            "allow_reviewed_native_engine_variants": allow_reviewed_native_engine_variants,
+            "allow_mixed_original_datasets": allow_mixed_original_datasets,
+            "replay_capacity": replay_capacity,
+        }.items() if value
+    }
+    supporting, supporting_inputs = serving_artifacts(
+        by_source, proofs, selected, **serving_options,
     )
     originals.update(supporting_inputs)
     for index, inventory in enumerate(refreshed.values()):
@@ -362,6 +409,7 @@ def prepare(
         "population": population_summary(selected), "plan_summary": graph.summary(),
         "protocols": sorted({row["protocol_sha256"] for row in selected}),
         "heterogeneous_capture_protocols_disclosed": True,
+        **({"mixed_original_datasets_explicitly_enabled": True} if allow_mixed_original_datasets else {}),
         "common_model_seconds_per_work_unit": common_coefficient,
         "original_inputs_sha256": originals,
         "artifacts_sha256": {
@@ -389,6 +437,11 @@ def main():
     parser.add_argument("--minimum-work-ratio", type=float)
     parser.add_argument("--minimum-projects", type=int, default=36)
     parser.add_argument("--allow-reviewed-native-engine-variants", action="store_true")
+    parser.add_argument("--allow-mixed-original-datasets", action="store_true")
+    parser.add_argument(
+        "--replay-capacity", type=Path,
+        help="bind an existing FULL-only census; source GPU capacity may exceed it by one page",
+    )
     parser.add_argument("--population-plan", type=Path)
     args = parser.parse_args()
     print(prepare(
@@ -397,6 +450,8 @@ def main():
         audit_shape=args.audit_shape,
         minimum_work_ratio=args.minimum_work_ratio, minimum_projects=args.minimum_projects,
         allow_reviewed_native_engine_variants=args.allow_reviewed_native_engine_variants,
+        allow_mixed_original_datasets=args.allow_mixed_original_datasets,
+        replay_capacity=args.replay_capacity,
         population_plan=args.population_plan,
     ))
 

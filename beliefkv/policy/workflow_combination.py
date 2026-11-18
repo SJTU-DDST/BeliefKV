@@ -51,11 +51,12 @@ class CombinationCosts:
     prefill_ms_per_token_by_context: tuple = ()
     decode_cost_basis: str = "incremental"
     selection_objective: str = "benefit_per_cost"
+    join_progress: str = "quadratic"
 
     def __post_init__(self):
         if (
             not self.decode_ms_by_width
-            or any(not math.isfinite(value) or value <= 0 for value in (
+            or any(type(value) not in (int, float) or not math.isfinite(value) or value <= 0 for value in (
                 self.prefill_ms_per_token, self.h2d_ms_per_token,
                 self.reference_context_tokens, self.epsilon_ms, *self.decode_ms_by_width,
             ))
@@ -63,9 +64,11 @@ class CombinationCosts:
                 self.decode_ms_by_width, self.decode_ms_by_width[1:],
             ))
             or type(self.decode_steps) is not int or not 1 <= self.decode_steps <= 128
+            or type(self.relative_tie) not in (int, float)
             or not math.isfinite(self.relative_tie) or not 0 <= self.relative_tie < 1
             or self.decode_cost_basis not in ("incremental", "full_batch")
             or self.selection_objective not in ("benefit_per_cost", "benefit")
+            or self.join_progress not in ("quadratic", "linear")
         ):
             raise ValueError("invalid frozen combination cost profile")
         previous_bound, previous_rate = 0, 0.
@@ -167,7 +170,10 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=
     for (workflow, _group), (total, active, selected) in groups.items():
         if not 0 <= active < active + selected <= total:
             raise ValueError("invalid unfinished ALL-JOIN coverage")
-        coverage[workflow] += ((active + selected) ** 2 - active ** 2) / total ** 2
+        coverage[workflow] += (
+            selected / total if costs.join_progress == "linear"
+            else ((active + selected) ** 2 - active ** 2) / total ** 2
+        )
     benefit = sum(weights[workflow] * min(1., fraction) for workflow, fraction in coverage.items())
     before = (
         costs.decode_cost(resources.active_width, resources.active_context_tokens)
@@ -199,6 +205,8 @@ def _evaluate(rows, resources, costs, *, active_decode_cost=None, prefill_costs=
     }
     if costs.selection_objective == "benefit":
         result.update(selection_objective="benefit", cost_normalized_score=density)
+    if costs.join_progress == "linear":
+        result["join_progress"] = "linear_unfinished_share_v1"
     if costs.decode_cost_basis == "full_batch":
         result.update(
             decode_cost_basis="full_batch", active_decode_cost_ms=before,

@@ -128,6 +128,23 @@ def original_source_proof(inventory):
         raise ValueError("captured original task manifest changed")
     workload = json.loads(workload_path.read_bytes())
     tasks = {row["instance_id"]: row for row in workload["workloads"]}
+    if workload.get("source_dataset") is not None:
+        from beliefkv.experiments.original_swe_rebench import source_dataset, task_inputs
+
+        dataset = source_dataset(workload)
+        inputs = {}
+        for row in inventory["workflows"]:
+            task = tasks[row["task_id"]]
+            if task["repo"] != row["project"]:
+                raise ValueError("inventory project differs from its original task")
+            for path in task_inputs(task, dataset):
+                inputs[str(path.resolve())] = sha256_file(path)
+        return {
+            "client_manifest": str(manifests[0]), "client_manifest_sha256": sha256_file(manifests[0]),
+            "workload": str(workload_path), "workload_sha256": sha256_file(workload_path),
+            "complete_original_task_prompts_verified": True, "source_dataset": dataset,
+            "source_inputs_sha256": inputs,
+        }
     with zipfile.ZipFile(workload["archive"]) as archive:
         for row in inventory["workflows"]:
             task = tasks[row["task_id"]]

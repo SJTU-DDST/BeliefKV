@@ -1,6 +1,6 @@
-# BeliefKV 历史文档索引
+# BeliefKV 历史文档与源码索引
 
-更新日期：2026-09-15
+更新日期：2026-11-12
 
 本目录中的内容只用于追溯，不代表当前实现、实验门禁或论文主张。当前入口见
 `docs/README_zh.md`。
@@ -36,6 +36,23 @@
 
 `technical_archive_2026-07-10.md` 是最早期技术讨论，包含已经否定的 flat
 next-action predictor、静态工作流假设和旧元数据设计。
+
+## research sources
+
+[推理方向探索源码归档（2026-11-12）](research_inference_sources_20261112_zh.md)：
+49 个 Python 文件及 1 个配套 C++ 探针，覆盖已结束的一次性算子、
+压缩、Host attention 和候选筛查；包含原路径、逐文件哈希及恢复说明。
+当前稀疏方向的脚本、共享依赖和研究结论继续保留。
+
+## presentations
+
+- [TokenCake PPT 制作过程归档（2026-11-01）](presentations/20261101/tokencake_ppt_build_20261101.tar.gz)：
+  150 个制作脚本、中间素材、旧版说明、预览及验证文件，保留原仓库相对路径。
+- [TokenCake 原 16 页版备份（2026-11-02）](presentations/20261102/tokencake_flowann_16pages_before_expansion.tar.gz)
+  与 [18 页版制作记录](presentations/20261102/tokencake_flowann_18pages_build.tar.gz)：
+  增加实验配置和敏感性分析两页，保存增页脚本、原始素材与验证记录。
+- 成品、论文原文、最新备注和恢复方法见
+  [论文分享文件入口](../reports/2026-10/tokencake_paper_share/README.md)。
 
 ## 使用规则
 

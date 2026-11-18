@@ -292,7 +292,10 @@ class WorkflowWorkWorker:
                 if continuous is not None:
                     prediction = ContinuousDistributionWorkPrediction(
                         **prediction.__dict__,
-                        effective_weight=continuous["distribution_effective_weight"] if supported else .5,
+                        effective_weight=(
+                            continuous["distribution_effective_weight"] if supported
+                            else continuous.get("unsupported_effective_weight", .5)
+                        ),
                         log1p_remaining_work=continuous["log1p_remaining_work"],
                         log_work_sigma=continuous["log_work_sigma"],
                         reference_work=continuous["reference_work"], work_source=continuous["source"],
@@ -377,6 +380,10 @@ class WorkflowWorkWorker:
                     "expected_training_referenced_continuous_work_utility"
                     if self.model.continuous_readout is not None else "three_class_probability_utility"
                 ),
+                **({
+                    "continuous_admission_utility": self.model.continuous_readout.contract["admission_utility"],
+                } if self.model.continuous_readout is not None
+                    and "admission_utility" in self.model.continuous_readout.contract else {}),
             } if self._r5 else {}),
         }
 

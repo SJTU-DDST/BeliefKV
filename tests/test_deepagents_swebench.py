@@ -661,6 +661,59 @@ def test_collected_patch_preserves_trailing_context_and_parses_as_a_real_diff(tm
     assert parsed.stdout.strip() == "1\t1\tmodule.py"
 
 
+@pytest.mark.parametrize("damaged_head", [False, True])
+def test_collected_patch_reconstructs_new_files_without_changing_workspace_index(tmp_path, damaged_head):
+    source = tmp_path / "source"
+    source.mkdir()
+    subprocess.run(["git", "init", "--quiet"], cwd=source, check=True)
+    (source / "module.py").write_text("VALUE = 1\n")
+    (source / ".gitignore").write_text("ignored.tmp\n")
+    subprocess.run(["git", "add", "."], cwd=source, check=True)
+    subprocess.run([
+        "git", "-c", "user.name=BeliefKV Test", "-c", "user.email=beliefkv@example.invalid",
+        "commit", "--quiet", "-m", "fixture",
+    ], cwd=source, check=True)
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=source, text=True).strip()
+    workspace = tmp_path / "workspace"
+    subprocess.run(["git", "clone", "--quiet", str(source), str(workspace)], check=True)
+    (workspace / "module.py").write_text("VALUE = 2\n")
+    subprocess.run(["git", "add", "module.py"], cwd=workspace, check=True)
+    (workspace / "module.py").write_text("VALUE = 3\n")
+    added = {
+        "new service.py": b"def service():\n    return 42",
+        "empty.py": b"",
+        "new\nschema.py": b"SCHEMA = 'new'\n",
+        "binary.dat": b"\x00\xff\x01\x02",
+    }
+    for name, body in added.items():
+        (workspace / name).write_bytes(body)
+    (workspace / "service-link").symlink_to("new service.py")
+    (workspace / "ignored.tmp").write_bytes(b"ignored")
+    index_before = (workspace / ".git/index").read_bytes()
+    if damaged_head:
+        (workspace / ".git/HEAD").write_text("ref: refs/heads/missing\n")
+    head_before = (workspace / ".git/HEAD").read_bytes()
+    patch, status, collection = collect_workspace_artifacts(
+        workspace, source_repo=source, base_commit=commit,
+    )
+    assert collection["mode"] == ("temporary_git_metadata" if damaged_head else "workspace_git")
+    assert set(collection["untracked_files_in_patch"]) == {*added, "service-link"}
+    assert "module.py" in status and "ignored.tmp" not in patch
+    assert (workspace / ".git/index").read_bytes() == index_before
+    assert (workspace / ".git/HEAD").read_bytes() == head_before
+    restored = tmp_path / "restored"
+    subprocess.run(["git", "clone", "--quiet", str(source), str(restored)], check=True)
+    subprocess.run(["git", "apply", "--check", "-"], input=patch, text=True, cwd=restored, check=True)
+    subprocess.run(["git", "apply", "-"], input=patch, text=True, cwd=restored, check=True)
+    assert (restored / "module.py").read_text() == "VALUE = 3\n"
+    for name, body in added.items():
+        assert (restored / name).read_bytes() == body
+        assert (workspace / name).read_bytes() == body
+    assert (restored / "service-link").is_symlink()
+    assert (restored / "service-link").readlink() == Path("new service.py")
+    assert not (restored / "ignored.tmp").exists()
+
+
 def test_docker_backend_hashes_commands_and_truncates_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

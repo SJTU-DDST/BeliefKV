@@ -112,6 +112,9 @@ class ThunderAgentAdapter:
                 self.policy.generated(key.invocation_id, tokens)
                 self.counts["streaming_progress_checks"] += 1
 
+    def _timeout_force_resume_allowed(self, key):
+        return True
+
     def tick(self, *, now=None):
         if self.policy is None:
             return
@@ -130,7 +133,10 @@ class ThunderAgentAdapter:
         # Match the public router's 1800 second pending-request timeout.
         for request, (key, arrived) in self.requests.items():
             item = self.policy.programs.get(key.invocation_id)
-            if item is not None and not item.active and now - arrived >= 1800.:
+            if (
+                item is not None and not item.active and now - arrived >= 1800.
+                and self._timeout_force_resume_allowed(key)
+            ):
                 item.active = True
                 self.last_forced.add(request)
                 self.counts["public_timeout_force_resumed"] += 1

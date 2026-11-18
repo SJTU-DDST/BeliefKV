@@ -4,6 +4,7 @@ from dataclasses import asdict, replace
 from itertools import islice
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 
@@ -51,16 +52,79 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         self.allow_feasible_resource_alternatives = profile["kind"] in kinds[3:]
         self.plan_device_capacity = profile["kind"] in kinds[5:]
         self.costs = CombinationCosts(**profile["costs"])
+        from beliefkv.policy.workflow_shortest_frontier import strict_remaining_work_enabled
+
+        self.strict_remaining_work = strict_remaining_work_enabled(raw)
+        self.shortest_work_first = raw.get("shortest_work_first_admission", False)
+        if type(self.shortest_work_first) is not bool or self.shortest_work_first and (
+            profile["kind"] != kinds[6] or not ranking
+        ):
+            raise ValueError("short-work admission requires the explicit enabled benefit profile")
+        self.cost_aware_maximal = raw.get("cost_aware_maximal_admission", False)
+        if type(self.cost_aware_maximal) is not bool or self.cost_aware_maximal and not self.shortest_work_first:
+            raise ValueError("maximal cost selection requires explicit enabled short-work admission")
+        self.maximal_objective = raw.get("maximal_admission_objective", "benefit_per_cost")
+        if self.maximal_objective not in ("benefit_per_cost", "benefit") or (
+            self.maximal_objective != "benefit_per_cost" and not self.cost_aware_maximal
+        ):
+            raise ValueError("maximal admission objective requires its explicit maximal selector")
+        from beliefkv.runtime.ready_wait_priority import ReadyWaitPriority, ReadyWaitSettings
+
+        ready_wait = ReadyWaitSettings.from_artifact(raw)
+        ready_wait_ms = ready_wait.scale_ms
+        if ready_wait_ms and not (self.shortest_work_first and self.cost_aware_maximal):
+            raise ValueError("ready wait priority requires explicit bounded maximal short-work admission")
+        self.ready_wait_priority = None
+        if ready_wait_ms:
+            self.ready_wait_priority = ReadyWaitPriority(
+                admission, ready_wait_ms,
+                grace_ms=ready_wait.grace_ms, max_boost=ready_wait.max_boost,
+            )
+        accumulation_ms = raw.get("ready_capacity_accumulation_ms", 0)
+        if type(accumulation_ms) is not int or accumulation_ms not in (0, 1000, 2000) or (
+            accumulation_ms and (
+                accumulation_ms != self.window_ms or not ready_wait_ms
+                or not self.cost_aware_maximal or self.maximal_objective != "benefit"
+            )
+        ):
+            raise ValueError("capacity accumulation requires one ordinary window and maximal wait priority")
+        self.capacity_accumulation = None
+        if accumulation_ms:
+            from beliefkv.runtime.workflow_capacity_accumulation import ReadyCapacityAccumulation
+
+            self.capacity_accumulation = ReadyCapacityAccumulation(self, accumulation_ms)
         if (self.costs.decode_cost_basis == "full_batch") != (profile["kind"] in kinds[4:]):
             raise ValueError("full-batch cost requires its explicit v5/v6/v7 admission profile")
         if (self.costs.selection_objective == "benefit") != (profile["kind"] == kinds[6]):
             raise ValueError("benefit selection requires its explicit v7 admission profile")
+        self.neutral_work_weight = .5
+        self.continuous_work_weights = False
+        reference = raw.get("continuous_work_readout") or raw.get("combination_work_reference")
+        if isinstance(reference, dict):
+            self.continuous_work_weights = (
+                reference.get("kind") == "training_referenced_continuous_model_work_v2"
+                or "admission_utility" in reference
+            )
+        if self.strict_remaining_work and not self.continuous_work_weights:
+            raise ValueError("strict remaining-work admission requires a declared continuous work readout")
+        if isinstance(reference, dict) and "admission_utility" in reference:
+            from beliefkv.predictor.workflow_continuous_work import (
+                remaining_work_weight, utility_reference_work,
+            )
+
+            self.neutral_work_weight = remaining_work_weight(
+                reference["reference_work"], utility_reference_work(reference),
+            )
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
         if type(self.oracle_reference_path_s) not in (int, float) or not 0 < self.oracle_reference_path_s < float("inf"):
             raise ValueError("invalid fixed oracle path normalization")
         self.cold_summary = ()
         self._prefix_protected_anchors = ()
+        if "tool_boundary_preemption" in raw:
+            from beliefkv.runtime.tool_boundary_preemption import ToolBoundaryPreemption
+
+            admission._tool_boundary_preemption = ToolBoundaryPreemption(admission, raw)
 
     def _resources(self, capacity, maximum):
         a, runtime = self.admission, self.admission.runtime
@@ -332,6 +396,110 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             return identity, total, active
         return "single:" + key.invocation_id, 1, 0
 
+    def _supported_work(self, prediction):
+        if not self.admission._supported(prediction):
+            return False
+        if not getattr(self, "continuous_work_weights", False):
+            return True
+        weight = getattr(prediction, "effective_weight", None)
+        return type(weight) in (int, float) and math.isfinite(weight) and 0 <= weight <= 1.
+
+    def _work_weight(self, key, predictions):
+        a = self.admission
+        if key.root_workflow_id not in predictions:
+            predictions[key.root_workflow_id] = self.prediction(key.root_workflow_id)
+        prediction = predictions[key.root_workflow_id]
+        if not self._supported_work(prediction):
+            return getattr(self, "neutral_work_weight", .5)
+        if prediction.evidence == "oracle" and not getattr(
+            a._work, "model_work_only", getattr(a._work, "combination_only", False),
+        ):
+            weight = 1. / (1. + prediction.remaining_path_s / self.oracle_reference_path_s)
+        else:
+            weight = prediction_weight(prediction)
+        priority = getattr(self, "ready_wait_priority", None)
+        return (
+            priority.weight(key.root_workflow_id, weight)
+            if priority is not None and not getattr(self, "strict_remaining_work", False) else weight
+        )
+
+    def _strict_candidate_window(self, keys, reference, capacity, predictions):
+        a = self.admission
+        required = [key for key in reference if a._protected_join(key)]
+        reserve = sum(
+            a.policy.programs[key.invocation_id].tokens + a.policy.buffer_tokens for key in required
+        )
+        ordered = [
+            key for key in dict.fromkeys((*keys, *reference))
+            if key in required or (
+                (item := a.policy.programs.get(key.invocation_id)) is not None
+                and item.tokens + a.policy.buffer_tokens <= capacity - reserve
+            )
+        ]
+        priorities = {
+            key: (0 if a._protected_join(key) else 1, -self._work_weight(key, predictions))
+            for key in ordered
+        }
+        ordered.sort(key=priorities.__getitem__)
+        window = list(required)
+        limit = (
+            self.max_sibling_candidates if len(reference) >= self.max_candidates
+            else self.max_candidates
+        )
+        for key in ordered:
+            if len(window) >= limit:
+                break
+            if key not in window:
+                window.append(key)
+        a.counts["strict_remaining_work_window_keys"] += len(ordered)
+        a.counts["strict_remaining_work_window_reference_replacements"] += len(set(reference) - set(window))
+        return window
+
+    def _candidate_window(self, keys, reference, capacity, predictions):
+        if getattr(self, "strict_remaining_work", False):
+            return self._strict_candidate_window(keys, reference, capacity, predictions)
+        a = self.admission
+        window = list(reference)
+        limit = self.max_candidates
+        if len(window) >= self.max_sibling_candidates or (
+            len(window) >= limit and not self.shortest_work_first
+        ):
+            return window
+        if self.shortest_work_first:
+            # Rank the already collected logical candidates before spending the
+            # bounded prefix-check window. Native feasibility is checked later.
+            keys = [
+                key for key in keys
+                if (item := a.policy.programs.get(key.invocation_id)) is not None
+                and item.tokens + a.policy.buffer_tokens <= capacity
+            ]
+            if len(window) >= limit and not any(key not in window for key in keys):
+                return window
+            priorities = {
+                key: (0 if a._protected_join(key) else 1, -self._work_weight(key, predictions))
+                for key in keys
+            }
+            keys.sort(key=priorities.__getitem__)
+            a.counts["shortest_work_window_priority_passes"] += 1
+            a.counts["shortest_work_window_priority_keys"] += len(keys)
+            if len(window) >= limit:
+                retained = [priorities[key] for key in window if key in priorities]
+                worst = max(retained) if retained else None
+                if worst is None or not any(
+                    key not in window and priorities[key] < worst for key in keys
+                ):
+                    return window
+                # A full reference is still the fallback. Spend at most the
+                # existing eight-member bound to compare a better visible peer.
+                limit = self.max_sibling_candidates
+                a.counts["shortest_work_competitive_window_expansions"] += 1
+        for key in islice(keys, self.max_sibling_candidates):
+            if len(window) >= limit:
+                break
+            if key not in window:
+                window.append(key)
+        return window
+
     def select(self, keys, reference, *, capacity, maximum, source):
         a, runtime = self.admission, self.admission.runtime
         started, cpu = time.perf_counter_ns(), time.thread_time_ns()
@@ -344,21 +512,37 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         unavailable, protected_prefixes, prefix_summaries = [], set(), {}
         private_blocked_tokens, unreferenced_tokens = None, 0
         self.cold_summary = ()
+        accumulation = getattr(self, "capacity_accumulation", None)
+        if accumulation is not None:
+            accumulation.last = None
         try:
+            if (priority := getattr(self, "ready_wait_priority", None)) is not None:
+                priority.begin(keys, time.monotonic())
             if not getattr(a, "remaining_work_ranking_enabled", True):
                 result["reason"] = "remaining_work_ranking_disabled_reference"
                 return list(reference)
-            if not reference or len(reference) > self.max_sibling_candidates:
+            if accumulation is not None:
+                held = accumulation.consider(keys, reference, capacity, predictions, source)
+                if held is not None:
+                    result.update(
+                        selected=tuple(key.invocation_id for key in held),
+                        reason="ready_capacity_accumulation",
+                    )
+                    summaries.update({key.invocation_id: key for key in reference})
+                    return held
+            strict = getattr(self, "strict_remaining_work", False)
+            if (not reference and not strict) or len(reference) > self.max_sibling_candidates:
+                if strict:
+                    result["reason"] = "strict_reference_exceeds_prefix_budget"
                 return list(reference)
-            window = list(reference)
-            for key in islice(keys, self.max_sibling_candidates):
-                if len(window) >= self.max_candidates:
-                    break
-                if key not in window:
-                    window.append(key)
-            if len(window) == len(reference):
+            window = self._candidate_window(keys, reference, capacity, predictions)
+            if not strict and len(window) == len(reference):
                 result["reason"] = "no_competing_choice"
                 return list(reference)
+            if strict:
+                # Retain the complete fallback without spending prefix checks
+                # on lower-priority reference members outside the shortlist.
+                summaries.update({key.invocation_id: key for key in reference})
             groups = {}
             # Complete a visible sibling window without scanning the queue or graph.
             for key in tuple(window):
@@ -402,20 +586,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                     continue
                 if self._prefix_summary_detail is not None:
                     prefix_summaries[key.invocation_id] = self._prefix_summary_detail
-                if key.root_workflow_id not in predictions:
-                    predictions[key.root_workflow_id] = self.prediction(key.root_workflow_id)
-                prediction = predictions[key.root_workflow_id]
-                if a._supported(prediction):
-                    weight = (
-                        1. / (1. + prediction.remaining_path_s / self.oracle_reference_path_s)
-                        if prediction.evidence == "oracle"
-                        and not getattr(
-                            a._work, "model_work_only", getattr(a._work, "combination_only", False),
-                        )
-                        else prediction_weight(prediction)
-                    )
-                else:
-                    weight = .5
+                weight = self._work_weight(key, predictions)
                 group, total, active = self._group(key, groups)
                 candidate = CombinationCandidate(
                     key.invocation_id, key.root_workflow_id, item.tokens + a.policy.buffer_tokens,
@@ -424,7 +595,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 )
                 candidates.append(candidate)
                 summaries[key.invocation_id] = key
-            if not any(a._supported(value) for value in predictions.values()):
+            if not any(self._supported_work(value) for value in predictions.values()):
                 result["reason"] = "predictions_unavailable_reference_fallback"
                 return list(reference)
             if self.include_unreferenced_capacity:
@@ -438,14 +609,35 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 resources = replace(
                     resources, cold_device_tokens=sum(row[2] for row in self.cold_summary),
                 )
-            result = choose_combination(
+            arguments = (
                 candidates, [key.invocation_id for key in reference], resources, self.costs,
-                required=[
-                    key.invocation_id for key in reference
-                    if key.invocation_id in runtime._join_priority_pending
-                ],
-                allow_feasible_resource_alternatives=self.allow_feasible_resource_alternatives,
             )
+            required = [
+                key.invocation_id for key in reference
+                if (
+                    a._protected_join(key) if strict
+                    else key.invocation_id in runtime._join_priority_pending
+                )
+            ]
+            if getattr(self, "cost_aware_maximal", False):
+                from beliefkv.policy.workflow_maximal_admission import choose_maximal_admission
+
+                result = choose_maximal_admission(
+                    *arguments, required=required,
+                    selection_objective=getattr(self, "maximal_objective", "benefit_per_cost"),
+                )
+            elif self.shortest_work_first:
+                from beliefkv.policy.workflow_shortest_frontier import choose_shortest_work_first
+
+                result = choose_shortest_work_first(
+                    *arguments, required=required,
+                    **({"strict_remaining_work": True} if strict else {}),
+                )
+            else:
+                result = choose_combination(
+                    *arguments, required=required,
+                    allow_feasible_resource_alternatives=self.allow_feasible_resource_alternatives,
+                )
             return [summaries[identity] for identity in result["selected"]]
         except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError) as error:
             result.update(reason="invalid_metadata_reference_fallback", error=str(error))
@@ -454,6 +646,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             try:
                 writer = getattr(runtime, "_opportunity_writer", None)
                 if writer is not None:
+                    candidate_workflows = {row.workflow for row in candidates}
                     reference_window = None
                     if source == "undiscounted_free_dispatch":
                         reference_window = [
@@ -469,6 +662,17 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         ]
                     writer.record({
                         "event": "workflow_combination_selection", "source": source,
+                        **({
+                            "selection_policy": (
+                                "strict_remaining_work" if getattr(self, "strict_remaining_work", False) else
+                                (
+                                    "maximal_benefit" if getattr(self, "maximal_objective", "benefit_per_cost") == "benefit"
+                                    else "maximal_cost_aware"
+                                ) if getattr(self, "cost_aware_maximal", False)
+                                else "shortest_work_first"
+                            ),
+                            "candidate_window_order": "protected_join_then_work_before_prefix_checks",
+                        } if self.shortest_work_first else {}),
                         "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
                         "decision": result, "candidates": [asdict(row) for row in candidates],
                         "logical_reference_window": reference_window,
@@ -478,7 +682,15 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         "predictions": {
                             workflow: asdict(value) if value is not None else None
                             for workflow, value in predictions.items()
+                            if not self.shortest_work_first or workflow in candidate_workflows
                         },
+                        **({
+                            "ready_wait_priority": self.ready_wait_priority.record(candidate_workflows),
+                        } if getattr(self, "ready_wait_priority", None) is not None else {}),
+                        **({
+                            "ready_capacity_accumulation_ms": accumulation.max_wait_ms,
+                            "capacity_accumulation": accumulation.last,
+                        } if accumulation is not None else {}),
                         "cost_identity": self.cost_identity,
                         "resource_fallback_selection_enabled": self.allow_feasible_resource_alternatives,
                         "device_fit_scope": (
@@ -506,6 +718,61 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 a.counts["workflow_combination_" + result["reason"]] += 1
                 a.counts["workflow_combination_total_cpu_ns"] += time.thread_time_ns() - cpu
                 a.counts["workflow_combination_total_wall_ns"] += time.perf_counter_ns() - started
+
+    def order_tool_replacement(self, keys):
+        """Rank the existing donor-pair window without applying a pre-release budget."""
+        a, runtime = self.admission, self.admission.runtime
+        if not self.shortest_work_first or len(keys) < 2:
+            return keys
+        started = time.thread_time_ns()
+        predictions, weights, priorities = {}, {}, {}
+        a.counts["shortest_work_tool_replacement_rank_passes"] += 1
+        try:
+            priority = getattr(self, "ready_wait_priority", None)
+            if priority is not None:
+                priority.begin(keys, time.monotonic())
+            for index, key in enumerate(keys):
+                if key.root_workflow_id not in predictions:
+                    predictions[key.root_workflow_id] = self.prediction(key.root_workflow_id)
+                prediction = predictions[key.root_workflow_id]
+                weight = (
+                    prediction_weight(prediction) if self._supported_work(prediction)
+                    else getattr(self, "neutral_work_weight", .5)
+                )
+                if (
+                    priority is not None and self._supported_work(prediction)
+                    and not getattr(self, "strict_remaining_work", False)
+                ):
+                    weight = priority.weight(key.root_workflow_id, weight)
+                weights[key] = weight
+                priorities[key] = (0 if a._protected_join(key) else 1, -weight, index)
+            supported = any(self._supported_work(value) for value in predictions.values())
+            ordered = sorted(keys, key=priorities.__getitem__) if supported else keys
+        except (AttributeError, KeyError, RuntimeError, TypeError, ValueError, OverflowError):
+            a.counts["shortest_work_tool_replacement_metadata_fallbacks"] += 1
+            return keys
+        finally:
+            a.counts["shortest_work_tool_replacement_cpu_ns"] += time.thread_time_ns() - started
+        a.counts["shortest_work_tool_replacement_order_changes"] += ordered != keys
+        writer = getattr(runtime, "_opportunity_writer", None)
+        if ordered != keys and writer is not None:
+            writer.record({
+                "event": "shortest_work_tool_replacement_order",
+                "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
+                "original_order": [asdict(key) for key in keys],
+                "ordered": [
+                    {"key": asdict(key), "weight": weights[key], "protected_JOIN": priorities[key][0] == 0}
+                    for key in ordered
+                ],
+                "scope": "same_bounded_donor_pair_candidates;no_free_budget_filter;no_window_wait",
+                **({
+                    "ready_wait_priority": priority.record(
+                        {key.root_workflow_id for key in keys}
+                    ),
+                } if priority is not None else {}),
+                "physical_capacity_credit": False,
+            })
+        return ordered
 
     def periodic(self, ordered, reference, capacity):
         a = self.admission

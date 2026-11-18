@@ -24,6 +24,55 @@ SERVING_FIELDS = (
 )
 
 
+def capture_capacity_contract(capacities, target, page_size):
+    """Allow an explicitly bound replay ceiling below at most one source page."""
+    varying = {"device_full_tokens", "device_full_bytes", "device_total_bytes"}
+    zero_fields = (
+        "device_mamba_slots", "device_mamba_bytes", "host_mamba_slots", "host_mamba_bytes",
+    )
+    required = varying | set(zero_fields) | {
+        "pool_layout", "host_full_tokens", "host_full_bytes", "host_total_bytes",
+    }
+    if (
+        type(page_size) is not int or page_size <= 0 or set(target) != required
+        or target.get("pool_layout") != "static_full_only"
+        or any(type(target[name]) is not int or target[name] < 0 for name in required - {"pool_layout"})
+        or any(target[name] != 0 for name in zero_fields)
+        or target["device_full_tokens"] <= 0 or target["device_full_tokens"] % page_size
+        or target["device_total_bytes"] != target["device_full_bytes"]
+        or target["host_total_bytes"] != target["host_full_bytes"]
+    ):
+        raise ValueError("explicit replay capacity requires valid FULL-only page geometry")
+    physical_tokens = target["device_full_tokens"] + page_size
+    bytes_per_token, remainder = divmod(target["device_full_bytes"], physical_tokens)
+    if remainder or bytes_per_token <= 0:
+        raise ValueError("explicit replay capacity has inconsistent device bytes")
+    slacks = {}
+    for source, capacity in capacities.items():
+        if (
+            set(capacity) != required
+            or any(type(capacity[name]) is not int for name in required - {"pool_layout"})
+            or any(capacity[name] != target[name] for name in required - varying)
+        ):
+            raise ValueError("capture capacity projection cannot change Host or pool resources")
+        slack = capacity["device_full_tokens"] - target["device_full_tokens"]
+        if (
+            slack not in (0, page_size)
+            or capacity["device_full_bytes"] != target["device_full_bytes"] + slack * bytes_per_token
+            or capacity["device_total_bytes"] != capacity["device_full_bytes"]
+        ):
+            raise ValueError("capture capacity must cover the explicit replay ceiling within one page")
+        slacks[source] = slack
+    if not capacities or 0 not in slacks.values():
+        raise ValueError("explicit replay ceiling must match an original capture")
+    return {
+        "kind": "full_only_capture_one_page_slack_v1", "page_size": page_size,
+        "bytes_per_token": bytes_per_token, "replay_capacity": target,
+        "source_device_token_slack": slacks,
+        "matched_natural_native_baseline_available": False,
+    }
+
+
 def registered_source_arm(source):
     if source.get("source_kind") == KIND:
         return Path(source["source_arm"])
@@ -51,7 +100,8 @@ def verify_serving_engine_sources(arm, declaration):
         return
     serving = json.loads(path.read_bytes())
     compatibility = serving.get("engine_variant_compatibility")
-    if compatibility is None:
+    capacity_contract = serving.get("capture_capacity_contract")
+    if compatibility is None and capacity_contract is None:
         return
     paths = [Path(name).resolve() for name in serving["original_capture_plans"]]
     expected_paths = {
@@ -61,16 +111,22 @@ def verify_serving_engine_sources(arm, declaration):
     if len(paths) != len(expected_paths) or set(paths) != expected_paths:
         raise ValueError("reviewed engine composition changed its original capture plans")
     plans = [json.loads(item.read_bytes()) for item in paths]
-    expected = reviewed_capture_composition({plan["engine_tree"] for plan in plans})
     info = json.loads((arm / "server/server_info.json").read_bytes())
     capacity = json.loads((arm / "server/native_capacity_census.json").read_bytes())["capacity"]
+    trees = {plan["engine_tree"] for plan in plans}
+    if compatibility is not None:
+        expected = reviewed_capture_composition(trees)
+        if compatibility != expected or serving["engine_tree"] != expected["replay_engine_tree"]:
+            raise ValueError("invalid reviewed FULL-only native engine composition")
+    elif trees != {serving["engine_tree"]}:
+        raise ValueError("capture capacity projection cannot change the native engine")
     if (
-        compatibility != expected or serving["engine_tree"] != expected["replay_engine_tree"]
-        or info["enable_beliefkv_admission"] is not False
+        info["enable_beliefkv_admission"] is not False
         or capacity.get("pool_layout") != "static_full_only"
         or any(capacity.get(name) != 0 for name in ("device_mamba_slots", "host_mamba_slots"))
     ):
         raise ValueError("invalid reviewed FULL-only native engine composition")
+    source_capacities = {}
     for item in paths:
         original_info = item.parent / "native_capture/server/server_info.json"
         original_capacity = item.parent / "native_capture/server/native_capacity_census.json"
@@ -83,8 +139,26 @@ def verify_serving_engine_sources(arm, declaration):
             raise ValueError("reviewed original capture resource binding changed")
         source_info = json.loads(original_info.read_bytes())
         source_capacity = json.loads(original_capacity.read_bytes())["capacity"]
-        if {name: source_info[name] for name in SERVING_FIELDS} != info or source_capacity != capacity:
+        source_capacities[str(item.parent / "native_capture")] = source_capacity
+        if {name: source_info[name] for name in SERVING_FIELDS} != info or (
+            capacity_contract is None and source_capacity != capacity
+        ):
             raise ValueError("reviewed original captures changed common serving resources")
+    if capacity_contract is not None:
+        reference = Path(capacity_contract["reference_path"])
+        if (
+            declaration["original_inputs_sha256"].get(str(reference))
+            != capacity_contract["reference_sha256"]
+            or sha256_file(reference) != capacity_contract["reference_sha256"]
+            or json.loads(reference.read_bytes())["capacity"] != capacity
+        ):
+            raise ValueError("explicit replay capacity reference binding changed")
+        expected = capture_capacity_contract(source_capacities, capacity, info["page_size"])
+        if capacity_contract != {
+            **expected, "reference_path": str(reference),
+            "reference_sha256": sha256_file(reference),
+        }:
+            raise ValueError("capture capacity projection changed its original resource contract")
 
 
 def verify_composed_registration(source):

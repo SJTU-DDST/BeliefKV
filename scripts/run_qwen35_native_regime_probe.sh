@@ -411,6 +411,7 @@ setsid "$PYTHON" "$ROOT/scripts/run_deepagents_swebench.py" \
   --sampling-seed "$SAMPLING_SEED" --sampling-profile "$SAMPLING_PROFILE" \
   --recursion-limit "$AGENT_RECURSION_LIMIT" \
   --sandbox-command-timeout 180 \
+  --sandbox-test-env "${SANDBOX_TEST_ENV:-/opt/miniconda3/envs/testbed}" \
   --activation-wall-clock-seconds "${ACTIVATION_WALL_CLOCK_SECONDS:-14400}" \
   --stream-completion-shadow --child-stream-content-shadow \
   --child-finish-chunk-shadow --stream-http-timing-shadow \

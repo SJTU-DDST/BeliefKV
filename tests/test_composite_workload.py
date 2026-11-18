@@ -13,6 +13,7 @@ from beliefkv.runtime.replay_token_capture import capture_record
 from scripts import prepare_composite_workload as prep
 from scripts.run_causal_gpu_replay import source_plan
 from tests.test_causal_replay import Trace
+from tests.test_original_swe_rebench import original
 
 
 def trace(workflow, offset=0.):
@@ -237,3 +238,84 @@ def test_natural_capture_timing_remains_explicit_for_original_source_controls(ma
     assert result["replay_duration_ms"] == 1500.
     assert result["mean_jct_ms"] == (None if matched is None else 250.)
     assert result["timing_comparable_to_replay"] is (matched is not None)
+
+
+@pytest.fixture
+def mixed_source_manifest(original, tmp_path, monkeypatch):
+    from beliefkv.experiments.composite_workload import KIND
+
+    swe_manifest, _path, _task = original
+    swe_task = swe_manifest["workloads"][0]
+    inventories = [make_capture(tmp_path, "legacy"), make_capture(tmp_path, "swe")]
+    row = inventories[1]["workflows"][0]
+    old_directory = tmp_path / "swe/client_1/workflows" / row["task_id"]
+    old_directory.rename(old_directory.with_name(swe_task["instance_id"]))
+    row.update(task_id=swe_task["instance_id"], project=swe_task["repo"])
+    manifest = {
+        "purpose": KIND, "requested_workflows": 2, "max_tasks_per_project": 1,
+        "heterogeneous_original_datasets_disclosed": True,
+        "source_datasets": [
+            {"kind": "locobench_agent_archive", "sha256": "a" * 64},
+            swe_manifest["source_dataset"],
+        ],
+        "workloads": [
+            {"instance_id": "task-legacy", "repo": "locobench/legacy", "task_kind": "locobench_agent"},
+            swe_task,
+        ],
+    }
+    monkeypatch.setattr(prep, "original_source_proof", lambda _inventory: {})
+    monkeypatch.setattr(prep, "serving_artifacts", lambda *_args, **_kwargs: ({
+        "workload_manifest.json": manifest, "serving_source.json": {"engine_tree": "tree"},
+    }, {}))
+    arm = tmp_path / "mixed"
+    prep.prepare(inventories, arm, allow_mixed_original_datasets=True)
+    return arm / "workload_manifest.json"
+
+
+def test_position_and_comparison_accept_only_bound_mixed_original_projects(mixed_source_manifest):
+    from scripts import run_causal_source_capture as capture
+    from scripts import run_position_replay_calibration as calibration
+    from scripts import run_causal_comparison as comparison
+
+    manifest = mixed_source_manifest
+    for verify in (calibration.capture.project_disjoint_workload, comparison.project_disjoint_workload):
+        assert len(verify(manifest, expected_workflows=2)["workloads"]) == 2
+        with pytest.raises(ValueError, match="population"):
+            verify(manifest, expected_workflows=3)
+    with pytest.raises(ValueError):
+        capture.validated_workload(manifest)
+
+
+@pytest.mark.parametrize("change", (
+    "unbound", "missing_optin", "changed_public_problem", "unknown_dataset",
+    "duplicate_project", "task_identity", "missing_dataset",
+))
+def test_mixed_replay_validation_retains_source_identity_and_public_problem_checks(
+    mixed_source_manifest, change,
+):
+    from scripts.run_causal_source_capture import project_disjoint_workload
+
+    path = mixed_source_manifest
+    manifest = json.loads(path.read_bytes())
+    receipt = path.parent / "composite_source.json"
+    declaration = json.loads(receipt.read_bytes())
+    if change == "unbound":
+        declaration["artifacts_sha256"].pop("workload_manifest.json")
+    elif change == "missing_optin":
+        declaration.pop("mixed_original_datasets_explicitly_enabled")
+    else:
+        if change == "changed_public_problem":
+            manifest["workloads"][1]["problem_statement"] = "A shorter derived task."
+        elif change == "unknown_dataset":
+            manifest["source_datasets"][1]["kind"] = "unknown"
+        elif change == "duplicate_project":
+            manifest["workloads"][1]["repo"] = "locobench/legacy"
+        elif change == "task_identity":
+            manifest["workloads"][1]["instance_id"] = "another-task"
+        else:
+            manifest["source_datasets"].pop()
+        path.write_text(json.dumps(manifest))
+        declaration["artifacts_sha256"]["workload_manifest.json"] = sha256_file(path)
+    receipt.write_text(json.dumps(declaration))
+    with pytest.raises(ValueError):
+        project_disjoint_workload(path, expected_workflows=2)

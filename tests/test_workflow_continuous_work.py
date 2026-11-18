@@ -11,7 +11,8 @@ from beliefkv.policy.workflow_combination import (
 )
 from beliefkv.predictor.workflow_conditional_tree import KIND as TREE_KIND
 from beliefkv.predictor.workflow_continuous_work import (
-    ContinuousWorkReadout, fit_training_reference, log_work_weight, normal_log_work_weight, remaining_work_weight,
+    ContinuousWorkReadout, fit_admission_utility, fit_training_reference, forecast_fingerprint,
+    log_work_weight, normal_log_work_weight, remaining_work_weight, utility_reference_work,
 )
 from beliefkv.predictor.workflow_progress_tree import FEATURES
 from beliefkv.predictor.workflow_work import R5_FEATURES, WorkflowWorkModel
@@ -115,6 +116,59 @@ def test_initial_distribution_utility_uses_training_class_work_instead_of_fixed_
     assert initial["distribution_effective_weight"] == pytest.approx(expected)
     assert fitted["initial_class_expected_utility"] != [1., .5, .25]
     assert initial["distribution_effective_weight"] != initial["effective_weight"]
+
+
+def test_explicit_admission_scale_preserves_forecasts_training_reference_and_uncertainty():
+    serving, original = model(), contract()
+    before = deepcopy((serving.raw, original))
+    adjusted = fit_admission_utility(original, training_rows(), reference_work=1.)
+    readouts = [ContinuousWorkReadout(serving, value) for value in (original, adjusted)]
+    estimates = [
+        readout.estimate((0., 0., 1.), mean=math.log1p(24000.), sigma=.7)
+        for readout in readouts
+    ]
+    for name in ("log1p_remaining_work", "remaining_work_point", "log_work_sigma", "reference_work", "source"):
+        assert estimates[0][name] == estimates[1][name]
+    assert estimates[1]["distribution_effective_weight"] == pytest.approx(
+        normal_log_work_weight(math.log1p(24000.), .7, 1.),
+    )
+    assert estimates[1]["distribution_effective_weight"] != pytest.approx(1. / 24001.)
+    assert {name: value for name, value in adjusted.items() if name != "admission_utility"} == original
+    assert (serving.raw, original) == before
+    assert forecast_fingerprint({**serving.raw, "continuous_work_readout": adjusted}) == forecast_fingerprint(serving.raw)
+
+
+def test_admission_initial_prior_reweights_the_same_empirical_training_distribution():
+    adjusted = fit_admission_utility(contract(), training_rows(), reference_work=1.)
+    readout = ContinuousWorkReadout(model(), adjusted)
+    value = readout.estimate((0., 0., 1.))
+    assert value["distribution_effective_weight"] == pytest.approx((1. / 24001. + 1. / 230001.) / 2.)
+    assert value["log1p_remaining_work"] == contract()["initial_class_mean_log_work"][2]
+    assert value["distribution_effective_weight"] != pytest.approx(value["effective_weight"])
+    unsupported = readout.estimate((0., 0., 1.), support="outside_training_support")
+    assert unsupported["effective_weight"] == unsupported["distribution_effective_weight"] == 1. / 1201.
+    assert unsupported["unsupported_effective_weight"] < 1. / 201.
+    for rows in (training_rows()[:-1], [{**row, "total_work": row["total_work"] + 1} for row in training_rows()]):
+        with pytest.raises(ValueError):
+            fit_admission_utility(contract(), rows, reference_work=1.)
+
+
+@pytest.mark.parametrize("mutation", (
+    lambda value: value["admission_utility"].update(reference_work=0.),
+    lambda value: value["admission_utility"].update(reference_work=True),
+    lambda value: value["admission_utility"].update(initial_prior_uses_training_labels_only=False),
+    lambda value: value["admission_utility"].update(initial_class_expected_utility=[.1, .2, .3]),
+    lambda value: value["admission_utility"].update(initial_class_expected_utility=[.1, math.nan, .01]),
+    lambda value: value["admission_utility"].update(kind="unknown"),
+    lambda value: value["admission_utility"].update(extra_future_labels=True),
+))
+def test_admission_utility_rejects_invalid_scale_or_initial_prior(mutation):
+    adjusted = fit_admission_utility(contract(), training_rows(), reference_work=1.)
+    mutation(adjusted)
+    with pytest.raises(ValueError):
+        utility_reference_work(adjusted)
+    with pytest.raises(ValueError):
+        ContinuousWorkReadout(model(), adjusted)
 
 
 def test_continuous_readout_recovers_distinct_work_hidden_by_equal_long_weights():

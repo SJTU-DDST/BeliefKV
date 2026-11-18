@@ -50,9 +50,18 @@ def intervention(record, sequence, interventions, *, replacement_consumer_alread
             raise ValueError("actual pressure pause requires an observed agent")
         interventions[owner].append((when * 1000., sequence))
         return
+    donors = record.get("tool_boundary_donors", [record.get("donor")])
+    if name == "agent_predicted_tool_replacement" and "tool_boundary_donors" in record:
+        owner_keys = [identity(key, grant=True) for key in donors]
+        if (
+            not 1 <= len(owner_keys) <= 2 or len({key[2] for key in owner_keys}) != len(owner_keys)
+            or identity(record["donor"], grant=True) not in owner_keys
+            or identity(record["consumer"], grant=True)[2] in {key[2] for key in owner_keys}
+        ):
+            raise ValueError("replacement must name one or two distinct actual donors")
     members = (
-        ([{"key": record["donor"]}] if replacement_consumer_already_granted else
-         [{"key": record["consumer"]}, {"key": record["donor"]}])
+        ([{"key": key} for key in donors] if replacement_consumer_already_granted else
+         [{"key": record["consumer"]}, *({"key": key} for key in donors)])
         if name == "agent_predicted_tool_replacement" else
         [{"key": record["key"]}]
         if name in ("agent_initial_registration_decision", "agent_full_offload_paused")

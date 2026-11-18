@@ -48,6 +48,7 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
         self.observe_pressure_candidates = False
         self.last_pressure = []
         self.tool_pressure_state = None
+        self.tool_retention_relative_tie = None
         self._tool_states = {}
         self._tool_states_at = None
 
@@ -295,16 +296,20 @@ class WorkflowSizeWorkingSet(ThunderActingDecayWorkingSet):
                     and state.pause_safe and not state.protected
                 ]
                 if blocked:
-                    # Compare work within coarse retention bands; small forecast
-                    # changes must not dominate every remaining-work decision.
-                    bands = {
-                        item.identity: int(4 * self.tool_state(item, timestamp).weight)
-                        for item in blocked
+                    weights = {
+                        item.identity: self.tool_state(item, timestamp).weight for item in blocked
                     }
-                    band = min(bands.values())
-                    ordered, predicted = order([
-                        item for item in blocked if bands[item.identity] == band
-                    ])
+                    if self.tool_retention_relative_tie is None:
+                        band = min(int(4 * value) for value in weights.values())
+                        comparable = [
+                            item for item in blocked if int(4 * weights[item.identity]) == band
+                        ]
+                    else:
+                        ceiling = min(weights.values()) * (1. + self.tool_retention_relative_tie)
+                        comparable = [
+                            item for item in blocked if weights[item.identity] <= ceiling
+                        ]
+                    ordered, predicted = order(comparable)
                     selected = ordered[0]
                     reference = min(
                         (item for item in active if item.acting), key=lambda item: item.tokens,

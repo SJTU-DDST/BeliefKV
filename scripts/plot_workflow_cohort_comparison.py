@@ -30,6 +30,10 @@ COLORS = {
     "ThunderAgent": "#D55E00",
     "Ratio first": "#009E73",
     "Ratio confirmation": "#E69F00",
+    "Full control": "#0072B2",
+    "Full + materialization": "#CC79A7",
+    "ThunderAgent acting-decay": "#D55E00",
+    "Native SGLang": "#999999",
 }
 
 

@@ -36,6 +36,8 @@ from beliefkv.runtime.event_channel import (
 from beliefkv.runtime.replay_token_capture import native_request_expectations
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
+MAX_REPLAY_REQUEST_TIMEOUT_S = 14400.
+
 
 def source_plan(arm: Path):
     if (arm / "composite_source.json").exists():
@@ -252,8 +254,8 @@ def main():
     parser.add_argument("--tool-duration-overlay", type=Path)
     parser.add_argument("--workflow-arrivals", type=Path)
     args = parser.parse_args()
-    if not 0 < args.request_timeout_s <= 3600.:
-        parser.error("request timeout must be in (0, 3600] seconds")
+    if not 0 < args.request_timeout_s <= MAX_REPLAY_REQUEST_TIMEOUT_S:
+        parser.error(f"request timeout must be in (0, {MAX_REPLAY_REQUEST_TIMEOUT_S:g}] seconds")
     if (args.agentx_prepared is None) != (args.agentx_token_dir is None):
         parser.error("AgentX replay requires both its prepared plan and offline token bundle")
     if args.tool_duration_overlay is not None:

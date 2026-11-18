@@ -77,10 +77,14 @@ class PredictedToolOffload:
             or not self._prediction_allows(key)
         ):
             return False
+        return self._unprotected_wait(key)
+
+    def _unprotected_wait(self, key, *, allow_pending_boundary=False):
+        runtime = self.runtime
         agents = runtime._agent_admission
         if agents is not None:
             if getattr(agents, "strategy", None) == "thunderagent_reference":
-                if agents.tool_offload_protected(key):
+                if agents.tool_offload_protected(key) and not allow_pending_boundary:
                     return False
             else:
                 item = agents.policy.agents.get(key.invocation_id)
@@ -460,7 +464,34 @@ class DemandAwareToolOffload(PredictedToolOffload):
         return self._demand(request, key, donor)
 
     def _eligible(self, key):
-        return super()._eligible(key) and self._live_consumer(key) is not None
+        return self._candidate_donor_eligible(key) and self._live_consumer(key) is not None
+
+    def _boundary_policy(self):
+        return getattr(getattr(self.runtime, "_agent_admission", None), "_tool_boundary_preemption", None)
+
+    def _unprotected_wait(self, key, *, allow_pending_boundary=False):
+        boundary = self._boundary_policy()
+        return super()._unprotected_wait(
+            key, allow_pending_boundary=bool(
+                boundary is not None and boundary.bounded and boundary.returned_candidate(key)
+            ),
+        )
+
+    def _candidate_donor_eligible(self, key):
+        if PredictedToolOffload._eligible(self, key):
+            return True
+        boundary = self._boundary_policy()
+        return bool(
+            boundary is not None and boundary.donor_candidate(key)
+            and self._unprotected_wait(key)
+        )
+
+    def _replacement_donors(self):
+        original = tuple(hint.key for hint in self.runtime.tool_wait_hints.values())
+        boundary = self._boundary_policy()
+        return original if boundary is None or boundary.bounded else tuple(
+            dict.fromkeys((*boundary.donor_keys(), *original))
+        )
 
     def _service_ms(self, size_bytes, direction):
         if not size_bytes:
@@ -482,7 +513,8 @@ class DemandAwareToolOffload(PredictedToolOffload):
         if consumer is None:
             return False
         hint = self.runtime._live_tool_hint(key)
-        if hint is None:
+        boundary = self._boundary_policy()
+        if hint is None and boundary is None:
             return False
         unit = self.runtime._residency_pool_bytes
         if unit is None:
@@ -506,23 +538,50 @@ class DemandAwareToolOffload(PredictedToolOffload):
                 backup is None or backup.enqueue_to_submit_p90_ms is None
             )
         )
+        backup_service = self._service_ms(backup_tokens * unit[0], "d2h")
+        consumer_service = self._service_ms(consumer_bytes, "h2d")
+        restore_service = self._service_ms(restore_tokens * unit[0], "h2d")
         threshold = (
-            self._service_ms(backup_tokens * unit[0], "d2h")
-            + self._service_ms(consumer_bytes, "h2d")
-            + self._service_ms(restore_tokens * unit[0], "h2d")
-            + self.control_cost_margin_ms
-            + logical_handover_ms
+            backup_service + consumer_service + restore_service
+            + self.control_cost_margin_ms + logical_handover_ms
         )
         if cold:
             threshold = max(1000., threshold)
         now_ms = time.monotonic() * 1000.
-        probability = hint.release_probability_within(threshold, now_ms=now_ms)
+        probability = (
+            hint.release_probability_within(threshold, now_ms=now_ms) if hint is not None else None
+        )
         min_survival = self.runtime.tool_offload_min_survival
-        remaining = self.runtime._tool_offload_remaining(hint, now_ms=now_ms)
-        allowed = (
+        remaining = (
+            self.runtime._tool_offload_remaining(hint, now_ms=now_ms) if hint is not None else None
+        )
+        allowed = hint is not None and (
             probability <= 1. - min_survival + 1e-12 if probability is not None
             else remaining is not None and remaining >= threshold
         )
+        if (
+            boundary is not None and self.replacement.consumer == self.consumer
+            and self.replacement.donor == key and self._dispatch_stage == "event_tool_replacement"
+        ):
+            detail = boundary.evaluate(
+                key, self.consumer[1],
+                backup_ms=backup_service, consumer_restore_ms=consumer_service,
+                donor_restore_ms=restore_service,
+                original_forecast_allowed=bool(
+                    allowed and PredictedToolOffload._eligible(self, key)
+                ),
+            )
+            if detail is not None:
+                self.action_detail = {
+                    **detail, "backup_tokens_budgeted": backup_tokens,
+                    "restore_tokens_budgeted": restore_tokens,
+                    "beneficiary_restore_bytes_budgeted": consumer_bytes,
+                    "beneficiary_request_id": self.consumer[1].request_id,
+                    "beneficiary_context_id": self.consumer[1].context_id,
+                }
+                return True
+        if hint is None:
+            return False
         self.runtime.counts["tool_offload_threshold_us_last"] = int(threshold * 1000)
         self.runtime.counts["tool_offload_cost_rejected"] += not allowed
         self.action_detail = {
@@ -545,6 +604,13 @@ class DemandAwareToolOffload(PredictedToolOffload):
 
     def _after_eviction(self, key, freed):
         super()._after_eviction(key, freed)
+        boundary = self._boundary_policy()
+        if (
+            boundary is not None and freed.get(0, 0) > 0
+            and self.action_detail.get("tool_boundary_preemption")
+            and self.replacement.donor == key and self.replacement.consumer == self.consumer
+        ):
+            boundary.released(key, self.consumer[1], tokens=freed.get(0, 0))
         self.evicted_tokens[key] = self.evicted_tokens.get(key, 0) + freed.get(0, 0)
         self.evicted_tokens.move_to_end(key)
         while len(self.evicted_tokens) > 256:

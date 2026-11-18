@@ -118,3 +118,31 @@ def test_choice_for_another_grant_cannot_bridge_the_records(monkeypatch, tmp_pat
     rows[position - 1]["grant_monotonic_s"] -= 1.
     tracker, _changes = track(rows)
     assert not tracker.links and tracker.unlinked_replacements == 1
+
+
+def test_group_marker_closes_both_donor_windows_without_reclosing_consumer(monkeypatch, tmp_path):
+    _choices, rows, _batches = progress_evidence(monkeypatch, tmp_path)
+    _position, marker = append_replacement(rows)
+    other = {
+        **marker["donor"], "request_id": "other-donor", "invocation_id": "other-owner",
+        "context_id": "other-context", "session_id": "other-session",
+    }
+    marker["tool_boundary_donors"] = [marker["donor"], other]
+    tracker, changes = track(rows)
+    assert len(tracker.links) == 1
+    assert len(changes["donor"]) == len(changes["other-owner"]) == 1
+
+
+@pytest.mark.parametrize("reason", ("duplicate", "consumer", "missing_last", "too_many"))
+def test_invalid_group_cannot_hide_an_intervention(monkeypatch, tmp_path, reason):
+    _choices, rows, _batches = progress_evidence(monkeypatch, tmp_path)
+    _position, marker = append_replacement(rows)
+    other = {**marker["donor"], "invocation_id": "other", "request_id": "other"}
+    marker["tool_boundary_donors"] = {
+        "duplicate": [marker["donor"], marker["donor"]],
+        "consumer": [marker["donor"], marker["consumer"]],
+        "missing_last": [other],
+        "too_many": [marker["donor"], other, {**other, "invocation_id": "third"}],
+    }[reason]
+    with pytest.raises(ValueError, match="distinct actual donors"):
+        track(rows)

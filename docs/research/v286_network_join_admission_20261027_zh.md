@@ -1,6 +1,116 @@
 # V286 匹配的 ThunderAgent 与 Full
 
-## 完整默认对照与 Full 交接
+## 后续强对照 V295
+
+V295 已于北京时间 2026-10-27 17:37:57 完整结束，在完全相同工作量、
+V269 计时表、流式指标、engine、容量和 seed 下启用作者可选的
+ACTING decay。平均 JCT 1700.062 秒、全程吞吐 236.450 token/s，
+P95 JCT 2292.546 秒。相对本轮 Full，其平均 JCT 高 1.8432%，但
+吞吐高 24.8816%，P95 低 6.1392%。因此，下述 Full 相对默认策略
+的改善仍成立，但不支持已超过这一更强配置的吞吐结论。
+
+V295 H2D/D2H 分别为 2440.873/2033.621 GB，平均 decode batch
+5.023；更多迁移没有阻止它更早完成全部工作。完整三组比较见
+`docs/research/thunderagent_acting_decay_20261027_zh.md` 和
+`/home/longhao/experiment/ops/compare_v295_complete_20261027.json`。
+三组均保留全部任务与尾部，仍是单次结果，最终性能验收待定。
+
+## 最新完整对比
+
+两组均已完整结束。监督器于北京时间 2026-10-27 16:55:47 记录
+`collected_performance_review_pending`，两个 arm exit code 均为零，
+新鲜 idle telemetry、零丢失/错误和 owned cleanup 均验证。每组全部
+18 个 workflow、3674 次请求、145565966 输入 token、549671 输出
+token 完成；逐请求 prompt/output SHA256、token 数与原生结束原因
+相等。使用同一 V269 网络工具计时表、流式开关、共同 engine 参数、
+容量、seed21 和 3600 秒客户端超时，保留全部正常等待与尾部。
+
+| 完整系统指标 | 默认 ThunderAgent | Full predictive | Full 相对变化 |
+| --- | ---: | ---: | ---: |
+| 平均 workflow JCT，秒 | 1876.335 | 1669.294 | -11.03% |
+| P50 workflow JCT，秒 | 1649.153 | 1669.635 | +1.24% |
+| P95 workflow JCT，秒 | 2937.667 | 2442.497 | -16.86% |
+| workflow event makespan，秒 | 3138.105 | 2903.095 | -7.49% |
+| 全程输出吞吐，token/s | 175.160 | 189.340 | +8.10% |
+| 平均 decode batch | 2.280 | 3.143 | +37.85% |
+| worker 区间加权 decode batch | 2.861 | 4.295 | +50.11% |
+| H2D，十进制 GB | 291.851 | 698.516 | +139.34% |
+| D2H，十进制 GB | 445.433 | 258.999 | -41.85% |
+
+平均 JCT 与全程吞吐在本轮同时改善，但只有平均 JCT 达到预设 10%
+门槛；吞吐未达到 10%，没有三次重复比较，`performance_accepted`
+仍为 false。本表比较公开实现默认策略；另行声明的 acting-token
+decay arm 不在这次两组结果中，不能推广为优于所有可选配置。
+
+11/18 个 workflow 更快，七个更慢。Fintech Trading 从 2634.086 秒
+降至 1077.245 秒，System Security 从 2627.508 秒降至 1681.372 秒；
+API Microservice 从 685.602 秒增至 1338.075 秒，增加 95.17%，Data
+Analytics 增加 46.08%。不能因均值改善而忽略个别任务服务分配的回退。
+
+### 迁移与真实预取
+
+Full 698.516 GB H2D 包含 531.388 GB 原生需求恢复和 167.128 GB
+JOIN-tagged 恢复。967 条节点命令合并为 27 个物理 H2D batch，
+不是 967 次独立 JOIN。966 条命令、167.110 GB 具有首次 FULL
+复用证明；另一条 18.28 MB 未通过身份复用证明，不能将其直接
+认定为物理未使用。
+
+严格按完成边界前启动且后继请求确认复用统计，覆盖 14 个独立
+JOIN wait episode、92.867 GB FULL；不能把全部 JOIN-tagged 字节
+计为提前预取，也不声称这些字节在 JOIN 完成前全部传完。
+生命周期审计关联到 68 个 JOIN episode，原始完整 JOIN 为 72；
+独立 reentry 审计覆盖全部 72 个，不补造缺失的预取归因。
+剩余已复用的约 74.243 GB 在完成后启动，工具预测 H2D 为零。
+
+Full native demand H2D 约为默认对照的 1.82 倍，全部 H2D 约为
+2.39 倍。因此本轮吞吐收益没有依赖更少的 H2D。实际平均 decode
+batch 从 2.280 增至 3.143，decode worker 区间累计从 2124.328 秒
+降至 1876.615 秒，符合准入和并发利用改善的观察，但这些 worker
+区间包含 runtime、等待与交错处理，不是 CUDA kernel 时间，不能
+直接从 JCT 扣除，也不能独立归因给某个策略模块。
+
+两侧旧的同上下文已服务输入前缀丢失代理量均为零。这不代表任意
+额外 prefill 或其他 GPU 工作均不存在，也不支持“大量避免重算”
+作为本轮主要收益解释。
+
+### 工具路径与服务分配
+
+工具等待 PREPARE 有 583 个独立已知工具决策、实际备份 5.847 GB，
+其中实际剩余时间超过一秒的比例为 95.03%。这是选中决策的精确率，
+不是全部工具的覆盖率。580 个有预测的决策中，剩余时间 P50 点估计
+的绝对误差中位数为 2.945 秒、P90 为 18.010 秒。
+
+实际工具 HBM demotion 仅 28 个节点事件、0.180 GB FULL，JOIN wait
+释放累计为 282.777 GB。节点释放累计不能当作独占容量峰值或完整
+agent 卸载次数。较长工具计时尚未使工具卸载与预测恢复路径充分
+发挥作用，不能因为长等待分类精确率高而宣称返回时刻已准确。
+
+全部 72 个 JOIN 后继的 native queue 到首次服务，P50 从 16.793 ms
+变为 20.504 ms，P90 从 16.209 秒变为 26.404 秒，最大值从 648.525
+秒降至 188.856 秒。极端等待缩短不等于每个分位数都改善。
+workflow 初始 TTFT P90 从 1843.843 秒降至 683.235 秒，但 Full
+仍存在较长初始等待；其首次输出后最大 ready 输出间隙的总体最大值
+为 1003.287 秒，对照为 649.003 秒。单请求生成交互速率 P50 从
+88.706 降至 61.305 token/s，反映工作流吞吐与个体响应速率的取舍。
+
+### 完整审计
+
+汇总：
+`/home/longhao/experiment/ops/compare_v286_complete_20261027.json`，
+绑定原始比较、逐请求回执、共同参数、容量、工具计时、drain 和
+cleanup 的实际 hash。详细报告：
+
+- `ops/v286_complete_decode_20261027.json`
+- `ops/v286_complete_restore_churn_20261027.json`
+- `ops/v286_complete_full_h2d_sources_20261027.json`
+- `ops/v286_complete_full_prefetch_lifecycle_20261027.json`
+- `ops/v286_complete_full_wait_offload_20261027.json`
+- `ops/v286_complete_join_reentry_20261027.json`
+
+这些是完整同工作量系统观察，不是模块消融、自然 shell 时长结果或
+重复性验收。本次只分析和更新现有文档，不改写冻结的实验产物。
+
+## 历史：默认对照结束与 Full 交接
 
 默认 ThunderAgent 已在 2026-10-27 16:04 Asia/Shanghai 完整结束，
 退出码零、全部 18 个 workflow 和 3674 次请求均完成。输入

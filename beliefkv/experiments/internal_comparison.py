@@ -385,9 +385,21 @@ def arm_environment(
         raise ValueError("retained agent admission uses native ordinary demand recovery")
     if agent_admission == "thunderagent_workflow" and scheduling != "join_priority":
         raise ValueError("workflow agent admission requires declared JOIN priority ordering")
+    materialization = common.get("BELIEFKV_SUBAGENT_MATERIALIZATION", "off")
+    if materialization not in ("off", "pressure_v1") or (
+        mode == "full" and materialization != "off" and agent_admission != "thunderagent_reference"
+    ):
+        raise ValueError("subagent materialization requires Full reference agent admission")
+    service_timeout = common.get(
+        "BELIEFKV_AGENT_READY_SERVICE_TIMEOUT_S", common.get("AGENT_READY_SERVICE_TIMEOUT_S", "0"),
+    )
+    if service_timeout not in ("0", "1800"):
+        raise ValueError("ready service timeout requires 0 or 1800 s")
+    service_timeout = service_timeout if agent_admission == "thunderagent_reference" else "0"
     settings = {
         **common,
         "BELIEFKV_INTERNAL_COMPARISON_MODE": mode,
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": materialization if mode == "full" else "off",
         "WORKFLOW_COMPUTE_SERVICE_CONFIG": compute_path,
         "BELIEFKV_WORKFLOW_COMPUTE_SERVICE_CONFIG": compute_path,
         "WORKFLOW_COMPUTE_SERVICE_CONFIG_SHA256": compute_sha,
@@ -437,6 +449,8 @@ def arm_environment(
         "BELIEFKV_AGENT_RESIDENCY_PAUSE": residency_pause,
         "AGENT_CONTROL_INTERVAL_MS": control_interval,
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS": control_interval,
+        "AGENT_READY_SERVICE_TIMEOUT_S": service_timeout,
+        "BELIEFKV_AGENT_READY_SERVICE_TIMEOUT_S": service_timeout,
         "WORKFLOW_SIZE_RESUME": workflow_size,
         "BELIEFKV_WORKFLOW_SIZE_RESUME": workflow_size,
         "WORKFLOW_COMBINATION_ADMISSION": combination,

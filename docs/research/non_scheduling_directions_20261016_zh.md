@@ -1,5 +1,12 @@
 # 动态多 Agent 的系统层研究筛选与最新 Trace 证据
 
+**2026-11-14 文献状态更正。**下文 R93/GraniKV 的历史判断只检查了 v1。
+当前原始 arXiv 页面确认 v2 已于 **2026-08-23** 撤稿，作者说明吞吐测量
+方法存在错误、论文细节作废。后续不采用其吞吐数字或已验证效果作为证据；
+公开机制继续作为已有设计记录，撤稿不自动建立同类方案的新颖性。
+原 v1 材料及历史记录保留，详见
+[直接页面核对与 CPU 原型](kv_compute_view_cpu_20261114_zh.md)。
+
 2026-10-21 用户重新要求论证当前三个机制及 OSDI/EuroSys 定位，见
 [最新设计复核](design_review_osdi_eurosys_20261021_zh.md)。以下记录仍保留
 各自的历史证据和撤下结论，不作为自动恢复全部旧方向的指令。
@@ -7822,6 +7829,8 @@ agent 相关草稿长度控制；其生成吞吐结果不能直接当本项目 J
   with Long Shared Prefix，arXiv:2608.15584v1；4.117保存原HTML并核对§3、
   limitations及附录B.10。布局/attention结果不外推成本地迁移收益，
   也不因其没有在线promotion就宣称新机制成立。
+  2026-11-14更正：v2已于2026-08-23因吞吐测量方法错误撤稿；
+  不再依赖其性能结果，v1仅保留为公开机制及历史记录。
   `https://arxiv.org/html/2608.15584v1`
 - [R94] RelayCaching: Accelerating LLM Collaboration via Decoding KV Cache
   Reuse，arXiv:2603.13289v1；4.117保存原HTML并核对decode-to-prefill、

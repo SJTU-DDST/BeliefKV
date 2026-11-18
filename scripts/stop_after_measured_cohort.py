@@ -83,6 +83,15 @@ def tail_records(path, offset):
     return rows, offset
 
 
+def observation_deadline(plan, now):
+    limit = plan.get("maximum_observation_seconds")
+    if limit is None:
+        return None
+    if type(limit) not in (int, float) or not math.isfinite(limit) or limit <= 0:
+        raise ValueError("maximum_observation_seconds must be a finite positive number")
+    return now + limit
+
+
 def send(identity, sig):
     if not capture.reservation.alive(identity):
         raise RuntimeError("registered process exited or its PID identity changed")
@@ -380,7 +389,8 @@ def watch(registration):
     allowed = {row["workflow_id"] for row in arrivals["arrival_schedule"]}
     events_path = arm / "replay/runtime_events.replay.jsonl"
     try:
-        deadline = time.monotonic() + 4 * 3600
+        deadline = observation_deadline(plan, time.monotonic())
+        state["maximum_observation_seconds"] = plan.get("maximum_observation_seconds")
         published = time.monotonic()
         while True:
             current = causal.load(Path(plan["comparison"]).with_suffix(".state.json"))
@@ -396,8 +406,13 @@ def watch(registration):
                 break
             if not current["status"].startswith(("running_", "starting_", "waiting_")):
                 raise ValueError("comparison exited before the measured-cohort stop: " + current["status"])
-            if time.monotonic() >= deadline:
-                raise TimeoutError("measured cohort did not finish within four hours")
+            if not all(
+                current.get(name) and capture.reservation.alive(current[name])
+                for name in ("watcher", "driver", "server")
+            ):
+                raise RuntimeError("comparison owner exited before measured-cohort completion")
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError("measured cohort exceeded its declared observation limit")
             time.sleep(plan["poll_seconds"])
         state.update(status="stopping_nonmeasured_background")
         publish()

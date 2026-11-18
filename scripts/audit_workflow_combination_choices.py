@@ -15,6 +15,11 @@ from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.policy.workflow_combination import (
     CombinationCandidate, CombinationCosts, CombinationResources, choose_combination,
 )
+from beliefkv.policy.workflow_shortest_frontier import choose_shortest_work_first
+from beliefkv.policy.workflow_maximal_admission import choose_maximal_admission
+from beliefkv.policy.workflow_capacity_hold import CapacityHoldCandidate, choose_capacity_hold
+from beliefkv.runtime.ready_wait_priority import ReadyWaitSettings
+from beliefkv.runtime.workflow_capacity_accumulation import ReadyCapacityAccumulation
 from scripts import run_causal_comparison as causal
 from scripts.audit_free_dispatch_service import identity
 from scripts.audit_native_system_costs import distribution, finite_number
@@ -34,7 +39,127 @@ UNSEARCHED_REFERENCE_REASONS = frozenset((
     "reference_candidate_summary_unavailable",
     "predictions_unavailable_reference_fallback",
     "invalid_metadata_reference_fallback",
+    "strict_reference_exceeds_prefix_budget",
 ))
+
+
+def validate_selection_policy(
+    records, *, shortest_work_first=False, cost_aware_maximal=False,
+    maximal_objective="benefit_per_cost", ready_wait_priority_ms=0,
+    ready_capacity_accumulation_ms=0,
+    ready_wait_priority_grace_ms=None, ready_wait_priority_max_boost=None,
+    strict_remaining_work=False,
+):
+    if type(shortest_work_first) is not bool or type(cost_aware_maximal) is not bool or (
+        cost_aware_maximal and not shortest_work_first
+    ):
+        raise ValueError("selection policy declaration must be boolean")
+    if type(strict_remaining_work) is not bool or strict_remaining_work and (
+        not shortest_work_first or cost_aware_maximal or ready_wait_priority_ms
+        or ready_capacity_accumulation_ms
+    ):
+        raise ValueError("strict remaining-work policy cannot use utility packing or wait priority")
+    if maximal_objective not in ("benefit_per_cost", "benefit") or (
+        maximal_objective != "benefit_per_cost" and not cost_aware_maximal
+    ):
+        raise ValueError("maximal objective requires its explicitly declared selector")
+    settings = ReadyWaitSettings(
+        ready_wait_priority_ms,
+        60000 if ready_wait_priority_grace_ms is None else ready_wait_priority_grace_ms,
+        1.25 if ready_wait_priority_max_boost is None else ready_wait_priority_max_boost,
+    )
+    explicit_tuning = (
+        ready_wait_priority_grace_ms is not None or ready_wait_priority_max_boost is not None
+    )
+    if (
+        settings.scale_ms and not cost_aware_maximal
+        or explicit_tuning and not settings.scale_ms
+    ):
+        raise ValueError("ready wait priority requires its explicit maximal selector")
+    if type(ready_capacity_accumulation_ms) is not int or ready_capacity_accumulation_ms not in (
+        0, 1000, 2000,
+    ) or ready_capacity_accumulation_ms and (
+        not ready_wait_priority_ms or not cost_aware_maximal or maximal_objective != "benefit"
+    ):
+        raise ValueError("capacity accumulation requires its registered bounded wait policy")
+    expected = (
+        "strict_remaining_work" if strict_remaining_work else
+        ("maximal_benefit" if maximal_objective == "benefit" else "maximal_cost_aware")
+        if cost_aware_maximal else
+        "shortest_work_first" if shortest_work_first else None
+    )
+    for row in records:
+        if row.get("event") == EVENT and row.get("selection_policy") != expected:
+            raise ValueError("recorded selection policy differs from the registered artifact")
+        if row.get("event") == EVENT:
+            priority = row.get("ready_wait_priority", {})
+            if not isinstance(priority, dict) or priority.get("scale_ms", 0) != ready_wait_priority_ms:
+                raise ValueError("recorded ready wait priority differs from the registered artifact")
+            if "kind" in priority:
+                observed = ReadyWaitSettings(
+                    priority.get("scale_ms"), priority.get("grace_ms"), priority.get("max_boost"),
+                )
+                if (
+                    not settings.scale_ms or observed != settings
+                    or priority["kind"] != settings.record()["kind"]
+                ):
+                    raise ValueError("recorded ready wait priority tuning differs from the registered artifact")
+            elif explicit_tuning:
+                raise ValueError("legacy ready wait priority cannot attest bounded tuning")
+            if row.get("ready_capacity_accumulation_ms", 0) != ready_capacity_accumulation_ms:
+                raise ValueError("recorded capacity accumulation differs from the registered artifact")
+
+
+def replay_capacity_hold(row):
+    hold = row.get("capacity_accumulation")
+    priority = row.get("ready_wait_priority", {})
+    minimum_wait = (
+        ReadyCapacityAccumulation.minimum_wait_ms if priority.get("kind") == "bounded_relative_ready_wait_v2"
+        else priority.get("scale_ms")
+    )
+    cooldown = (
+        ReadyCapacityAccumulation.cooldown_ms if priority.get("kind") == "bounded_relative_ready_wait_v2"
+        else minimum_wait
+    )
+    if not isinstance(hold, dict) or (
+        hold.get("max_wait_ms") not in (1000, 2000)
+        or row.get("ready_capacity_accumulation_ms") != hold["max_wait_ms"]
+        or hold.get("physical_capacity_credit") is not False
+        or hold.get("minimum_ready_wait_ms") != minimum_wait
+        or hold.get("cooldown_ms") != cooldown
+        or not all(finite_number(hold.get(name)) for name in (
+            "decision_monotonic_s", "started_monotonic_s", "deadline_monotonic_s",
+        ))
+        or not hold["started_monotonic_s"] <= hold["decision_monotonic_s"] < hold["deadline_monotonic_s"]
+        or abs(
+            hold["deadline_monotonic_s"] - hold["started_monotonic_s"]
+            - hold["max_wait_ms"] / 1000.
+        ) > 1e-9
+        or hold["decision_monotonic_s"] > row["monotonic_s"]
+    ):
+        raise ValueError("invalid exact bounded capacity hold")
+    decision = hold["decision"]
+    if not decision["continuing_existing_hold"] and row["source"] != "periodic_decay_resume":
+        raise ValueError("only a periodic boundary may start capacity accumulation")
+    candidates = [CapacityHoldCandidate(**value) for value in hold["candidates"]]
+    for value in candidates:
+        key = identity(hold["keys"][value.identity], grant=True)
+        if key[2] != value.identity or key[1] != value.workflow:
+            raise ValueError("capacity hold changed an exact candidate owner")
+    replayed = choose_capacity_hold(
+        candidates, hold["reference"], capacity=hold["logical_capacity_tokens"],
+        pool_capacity=hold["pool_capacity_tokens"],
+        minimum_wait_ms=hold["minimum_ready_wait_ms"], running_width=hold["running_width"],
+        relative_tie=hold["relative_tie"],
+        focus=decision["focus"] if decision["continuing_existing_hold"] else None,
+    )
+    if replayed is None or canonical(replayed) != canonical(decision) or (
+        list(row["decision"]["selected"]) != list(replayed["selected"])
+        or list(row["decision"]["reference"]) != list(hold["reference"])
+        or row["logical_reference_capacity_tokens"] != hold["logical_capacity_tokens"]
+    ):
+        raise ValueError("capacity hold does not reproduce its exact new-grant deferral")
+    return replayed
 
 
 def canonical(decision):
@@ -64,6 +189,13 @@ def replay_choice(
     ):
         raise ValueError("combination needs its exact source, clock, cost profile and measured overhead")
     observed = row["decision"]
+    strategy = row.get("selection_policy")
+    if strategy not in (
+        None, "shortest_work_first", "maximal_cost_aware", "maximal_benefit", "strict_remaining_work",
+    ):
+        raise ValueError("unknown explicitly recorded selection policy")
+    maximal_strategy = strategy in ("maximal_cost_aware", "maximal_benefit")
+    shortest = strategy in ("shortest_work_first", "strict_remaining_work") and "evaluated_candidates" in observed
     selected = observed.get("selected")
     if (
         not isinstance(selected, (list, tuple))
@@ -79,7 +211,17 @@ def replay_choice(
         "metadata_and_selection_cpu_ns": row["metadata_and_selection_cpu_ns"],
         "metadata_and_selection_wall_ns": row["metadata_and_selection_wall_ns"],
     }
-    if "evaluated_subsets" not in observed:
+    if observed["reason"] == "ready_capacity_accumulation":
+        if not maximal_strategy or strategy != "maximal_benefit":
+            raise ValueError("capacity hold requires its explicit maximal benefit selector")
+        hold = replay_capacity_hold(row)
+        summary.update(
+            reference=list(observed["reference"]), selected_set_changed=bool(hold["held_reference"]),
+            capacity_hold_replayed=True, capacity_hold_focus=hold["focus"],
+            capacity_hold_removed_members=list(hold["held_reference"]),
+        )
+        return summary
+    if "evaluated_subsets" not in observed and not shortest:
         if any(name in observed for name in (
             "search_complete", "required_reference_members",
             "reference_evaluation", "selected_evaluation",
@@ -100,8 +242,9 @@ def replay_choice(
                 fallback_reference=list(reference), fallback_reference_preserved=True,
             )
         return summary
+    count_field = "evaluated_candidates" if shortest else "evaluated_subsets"
     if type(observed.get("search_complete")) is not bool or (
-        type(observed["evaluated_subsets"]) is not int or observed["evaluated_subsets"] < 0
+        type(observed[count_field]) is not int or observed[count_field] < 0
     ):
         raise ValueError("combination search lacks its actual completion and enumeration count")
     candidates = []
@@ -127,9 +270,25 @@ def replay_choice(
         raise ValueError("device fit scope differs from the frozen profile")
     reference = observed["reference"]
     required = observed["required_reference_members"]
+    if strategy == "strict_remaining_work":
+        for invocation in reference:
+            if identity(keys[invocation], grant=True)[2] != invocation:
+                raise ValueError("strict fallback changed its exact request identity")
     expected = canonical(observed)
 
     def run(clock):
+        if maximal_strategy:
+            return choose_maximal_admission(
+                candidates, reference, resources, costs, required=required,
+                budget_ns=500_000, clock=clock,
+                selection_objective="benefit" if strategy == "maximal_benefit" else "benefit_per_cost",
+            )
+        if shortest:
+            return choose_shortest_work_first(
+                candidates, reference, resources, costs, required=required,
+                budget_ns=500_000, clock=clock,
+                **({"strict_remaining_work": True} if strategy == "strict_remaining_work" else {}),
+            )
         return choose_combination(
             candidates, reference, resources, costs, required=required,
             budget_ns=500_000, clock=clock,
@@ -137,7 +296,31 @@ def replay_choice(
         )
 
     actual = run(lambda: 0)
-    if canonical(actual) != expected and observed["reason"].startswith("soft_deadline_"):
+    if canonical(actual) != expected and maximal_strategy and (
+        observed["reason"] == "soft_deadline_maximal_reference_fallback"
+    ):
+        calls = -1
+
+        def maximal_clock():
+            nonlocal calls
+            calls += 1
+            return 500_000 if calls >= observed["deadline_checks"] else 0
+
+        actual = run(maximal_clock)
+    if canonical(actual) != expected and shortest and (
+        observed["reason"] == "shortest_work_soft_deadline_reference_fallback"
+    ):
+        calls = -1
+
+        def clock():
+            nonlocal calls
+            calls += 1
+            return 500_000 if calls > observed["evaluated_candidates"] else 0
+
+        actual = run(clock)
+    if canonical(actual) != expected and not shortest and not maximal_strategy and (
+        observed["reason"].startswith("soft_deadline_")
+    ):
         required_mask = sum(
             1 << index for index, candidate in enumerate(candidates)
             if candidate.identity in required
@@ -166,7 +349,7 @@ def replay_choice(
         selected_set_changed=set(selected) != set(reference),
         newly_selected_invocations=[owner for owner in selected if owner not in reference],
         search_complete=observed["search_complete"],
-        evaluated_subsets=observed["evaluated_subsets"],
+        **{count_field: observed[count_field]},
     )
     return summary
 
@@ -474,10 +657,33 @@ def main():
     artifact_path = Path(candidate["common_environment"]["WORKFLOW_WORK_MODEL"])
     if sha256_file(artifact_path) != candidate["common_environment"]["WORKFLOW_WORK_MODEL_SHA256"]:
         raise ValueError("combination artifact changed")
-    profile = causal.load(artifact_path)["admission_cost_profile"]
+    artifact = causal.load(artifact_path)
+    profile = artifact["admission_cost_profile"]
+    shortest = artifact.get("shortest_work_first_admission", False)
+    maximal = artifact.get("cost_aware_maximal_admission", False)
+    if shortest:
+        name = "beliefkv/policy/workflow_shortest_frontier.py"
+        if sha256_file(ROOT / name) != plan["source_sha256"].get(name):
+            raise ValueError("short-work policy differs from the actual serving source")
+        validation_paths.append(ROOT / name)
+    if maximal:
+        name = "beliefkv/policy/workflow_maximal_admission.py"
+        if sha256_file(ROOT / name) != plan["source_sha256"].get(name):
+            raise ValueError("maximal packing differs from the actual serving source")
+        validation_paths.append(ROOT / name)
     arm, reader = Path(plan["run_root"]) / "full", SealedRecords()
+    records = list(reader(arm / "opportunities/admission_opportunities.jsonl"))
+    validate_selection_policy(
+        records, shortest_work_first=shortest, cost_aware_maximal=maximal,
+        maximal_objective=artifact.get("maximal_admission_objective", "benefit_per_cost"),
+        ready_wait_priority_ms=artifact.get("ready_wait_priority_ms", 0),
+        ready_capacity_accumulation_ms=artifact.get("ready_capacity_accumulation_ms", 0),
+        ready_wait_priority_grace_ms=artifact.get("ready_wait_priority_grace_ms"),
+        ready_wait_priority_max_boost=artifact.get("ready_wait_priority_max_boost"),
+        strict_remaining_work=artifact.get("strict_remaining_work_admission", False),
+    )
     result = inspect(
-        list(reader(arm / "opportunities/admission_opportunities.jsonl")),
+        records,
         reader(arm / "server/runtime_audit.jsonl"),
         CombinationCosts(**profile["costs"]), profile["identity"],
         allow_feasible_resource_alternatives=(

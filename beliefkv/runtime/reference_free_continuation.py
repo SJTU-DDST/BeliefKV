@@ -26,15 +26,18 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
         self._dispatch_pending = OrderedDict()
         self._next_dispatch = 0.
 
-    def _candidate(self, request_id, key, *, include_first=False):
+    def _candidate(
+        self, request_id, key, *, include_first=False, include_active=False, include_marked=False,
+    ):
         item = self.policy.programs.get(key.invocation_id)
         invocation = self.runtime.graph.invocations.get(key.invocation_id)
         context = self.runtime.graph.contexts.get(key.context_id)
         req = self._live_requests.get(request_id)
         if (
-            item is None or item.active or not item.pending
+            item is None or item.active and not include_active or not item.pending
+            or not self._materialization_allowed(key)
             or item.steps <= 1 and not self.dispatch_interval_ms and not include_first
-            or item.marked_for_pause or self.latest.get(key.invocation_id) != key
+            or item.marked_for_pause and not include_marked or self.latest.get(key.invocation_id) != key
             or self.runtime.visible.get(request_id) != key
             or self.requests.get(request_id, (None,))[0] != key or req is None
             or invocation is None or invocation.workflow_id != key.root_workflow_id
@@ -111,12 +114,14 @@ class ReferenceFreeContinuationAdmission(ReferenceThunderAdmission):
     def order_tool_replacement(self, keys):
         return self._order_dispatch_keys(keys, self.runtime._join_priority_pending)
 
-    def _observe_free_capacity_choice(self, programs, remaining, keys, sequence):
+    def _observe_free_capacity_choice(self, programs, remaining, keys, sequence, *, grant_keys=None):
         selected = {item.identity for item in programs}
         scope = "actual_dispatch_window" if keys is not None else "bounded_pending_index"
         if keys is None:
             keys = tuple(islice(self._dispatch_pending.values(), self.max_continuation_checks))
-        selected_keys = [self.latest[item.identity] for item in programs]
+        selected_keys = [
+            (grant_keys or {}).get(item.identity, self.latest[item.identity]) for item in programs
+        ]
         self.counts["free_choice_observed_grants"] += 1
         if len({key.root_workflow_id for key in (*selected_keys, *keys)}) < 2:
             self.counts["free_choice_single_workflow_key_windows"] += 1
