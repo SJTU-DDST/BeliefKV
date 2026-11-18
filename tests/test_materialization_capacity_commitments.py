@@ -625,9 +625,91 @@ def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_childr
         session_id="waiting-parent", session_generation=generation,
         origin_input_ids=array("q", [*waiting_tokens, 99]), extra_key=None, cache_salt=None,
     ))
-    assert (observed is not None) is preserved
-    if preserved:
-        assert observed["checkpoint_tokens"] == len(waiting_tokens)
+    # In the unbacked-child case the whole-device demotion plan fails, but
+    # native frees six duplicate units before trimming the live Host leaf.
+    expected_checkpoint = len(waiting_tokens) if preserved else 4 if branch == "unbacked_child" else 0
+    assert (observed["checkpoint_tokens"] if observed else 0) == expected_checkpoint
+
+
+@pytest.mark.parametrize("runtime,shortfall,referenced,retained", (
+    ("pressure_v1", 3, True, 0),
+    ("pressure_v2", 3, True, 5),
+    ("pressure_v2", 8, True, 0),
+    ("pressure_v2", 3, False, 0),
+), indirect=["runtime"])
+def test_host_pressure_evicts_only_the_needed_suffix_of_a_live_prefix(
+    runtime, full_native, shortfall, referenced, retained,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    tree, component = native.tree_core, native.components[0]
+    evict_host = component.drive_host_eviction
+    evict_leaf = tree._evict_host_leaf
+    back_up = _track_native_host_allocations(native, 8)
+    waiting_tokens = list(range(8))
+    waiting, generation = insert_session(native, waiting_tokens, "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    if not referenced:
+        native.release_radix_session("waiting-parent")
+    writer, _ = insert_session(native, list(range(20, 20 + shortfall)), "native-victim")
+    assert waiting in tree.evictable_host_leaves
+    assert native.host_pool_group.available_size() == 0
+    last_access = waiting.last_access_time
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    target = allocator.available_size() + shortfall
+    try:
+        evict_from_tree_cache(native, target)
+
+        assert allocator.available_size() == target
+        assert len(writes) == 2
+        assert writes[-1].node_id == writer.id
+        assert native.host_pool_group.available_size() == 8 - shortfall - retained
+        assert tree._evict_host_leaf == evict_leaf
+        assert runtime.counts["subagent_materialization_host_eviction_retained_tokens"] == retained
+        if referenced:
+            observed = native.inspect_beliefkv_reentry(NS(
+                session_id="waiting-parent", session_generation=generation,
+                origin_input_ids=array("q", [*waiting_tokens, 99]), extra_key=None,
+                cache_salt=None,
+            ))
+            assert (observed["checkpoint_tokens"] if observed else 0) == retained
+            if retained:
+                assert waiting.parent.component_data[0].session_ref == 1
+                assert waiting.parent.last_access_time == last_access
+    finally:
+        runtime._subagent_materialization.close()
+    assert component.drive_host_eviction == evict_host
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_host_pressure_trims_after_accounting_for_existing_duplicate_reclaims(
+    runtime, full_native,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, _, _, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 10)
+    waiting, _ = insert_session(native, list(range(8)), "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    mirror, _ = insert_session(native, [10, 11], "device-mirror")
+    back_up(mirror)
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+
+    assert native.evict_host(5) == 5
+    assert native.host_pool_group.available_size() == 5
+    assert len(mirror.component_data[0].value) == 2
+    assert mirror.component_data[0].host_value is None
+    assert len(waiting.parent.component_data[0].host_value) == 5
+    assert runtime.counts["subagent_materialization_host_eviction_trimmed_nodes"] == 1
+    assert runtime.counts["subagent_materialization_host_eviction_retained_tokens"] == 5
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)

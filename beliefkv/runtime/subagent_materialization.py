@@ -183,11 +183,12 @@ class SubagentMaterialization:
         self._running_batch = None
         self._adder = None
         self._native_device_eviction = None
+        self._native_host_eviction = None
         self.last_observation = MaterializationHeadroom(False, "not_sampled")
         self.last_decision = {}
 
     def attach(self, cache):
-        self._restore_native_device_eviction()
+        self._restore_native_eviction()
         if (
             not self.include_root_entries
             or getattr(cache, "tree_components", ()) != (0,)
@@ -232,6 +233,55 @@ class SubagentMaterialization:
 
         cache._evict_device_leaf = evict_device_leaf
         self._native_device_eviction = cache, native_evict, evict_device_leaf
+        self._attach_host_eviction_trimming(cache, tree, component)
+
+    def _attach_host_eviction_trimming(self, cache, tree, component):
+        drive_native = getattr(component, "drive_host_eviction", None)
+        split_host_prefix = getattr(tree, "split_host_only_full_prefix", None)
+        apply_actions = getattr(cache, "_apply_cache_actions", None)
+        page = getattr(tree, "page_size", None)
+        if not (
+            callable(drive_native) and callable(split_host_prefix) and callable(apply_actions)
+            and callable(getattr(tree, "_evict_host_leaf", None))
+            and type(page) is int and page > 0
+        ):
+            return
+
+        def drive_host_eviction(num_tokens, tracker, device_frees, host_frees):
+            if tracker[0] >= num_tokens:
+                return drive_native(num_tokens, tracker, device_frees, host_frees)
+            evict_leaf = tree._evict_host_leaf
+
+            def evict_host_leaf(node, leaf_tracker, device_frees, host_frees):
+                full = node.component_data[0]
+                if leaf_tracker is tracker and full.session_ref > 0 and full.host_value is not None:
+                    # Native has already credited duplicate copies and earlier
+                    # victims. Keep the referenced prefix of the final leaf.
+                    remaining = num_tokens - tracker[0]
+                    evicted = (remaining + page - 1) // page * page
+                    retained = len(full.host_value) - evicted
+                    if remaining > 0 and retained > 0:
+                        last_access = node.last_access_time
+                        split = split_host_prefix(node.id, node.creation_time, retained)
+                        if split is not None:
+                            prefix_id, actions = split
+                            # A capacity trim is not a cache access.
+                            tree.node_by_id(prefix_id).last_access_time = last_access
+                            apply_actions(actions)
+                            counts = self.runtime.counts
+                            counts["subagent_materialization_host_eviction_trimmed_nodes"] += 1
+                            counts["subagent_materialization_host_eviction_retained_tokens"] += retained
+                # A native split preserves the selected node ID for the suffix.
+                return evict_leaf(node, leaf_tracker, device_frees, host_frees)
+
+            tree._evict_host_leaf = evict_host_leaf
+            try:
+                return drive_native(num_tokens, tracker, device_frees, host_frees)
+            finally:
+                tree._evict_host_leaf = evict_leaf
+
+        component.drive_host_eviction = drive_host_eviction
+        self._native_host_eviction = component, drive_native, drive_host_eviction
 
     def _use_backed_device_leaves(self, component, tree, native_evict, tracker, needed):
         # Plan the entire shortfall before demoting anything. Otherwise the
@@ -302,12 +352,17 @@ class SubagentMaterialization:
                 heappush(heap, (component.session_ref_eviction_strategy(parent), parent))
         return ()
 
-    def _restore_native_device_eviction(self):
+    def _restore_native_eviction(self):
         if self._native_device_eviction is not None:
             cache, native_evict, evict_device_leaf = self._native_device_eviction
             if cache._evict_device_leaf is evict_device_leaf:
                 cache._evict_device_leaf = native_evict
             self._native_device_eviction = None
+        if self._native_host_eviction is not None:
+            component, drive_native, drive_host_eviction = self._native_host_eviction
+            if component.drive_host_eviction is drive_host_eviction:
+                component.drive_host_eviction = drive_native
+            self._native_host_eviction = None
 
     @property
     def admission(self):
@@ -904,7 +959,7 @@ class SubagentMaterialization:
         }
 
     def close(self):
-        self._restore_native_device_eviction()
+        self._restore_native_eviction()
         self.pending.clear()
         self.materialized.clear()
         self.started_workflows.clear()
@@ -925,6 +980,7 @@ class SubagentMaterialization:
             ],
             **({
                 "native_host_pressure_aware_write_back": self._native_device_eviction is not None,
+                "native_host_eviction_prefix_trimming": self._native_host_eviction is not None,
                 "decode_growth_clip_tokens": self.decode_growth_clip_tokens,
                 "held_root_request_ids": [
                     rid for rid, record in self.pending.items()
