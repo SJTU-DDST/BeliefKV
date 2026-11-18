@@ -116,9 +116,13 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 reference["reference_work"], utility_reference_work(reference),
             )
         self.completion_path_profile = raw.get("completion_path_readout")
+        self.completion_path_oracle = getattr(
+            getattr(getattr(admission, "_work", None), "artifact", None), "path_combination", False,
+        )
         if self.completion_path_profile is not None:
             if not self.strict_remaining_work:
                 raise ValueError("completion-path admission requires strict shortest-work selection")
+        if self.completion_path_profile is not None or self.completion_path_oracle:
             self.neutral_work_weight = .5
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
@@ -729,7 +733,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         "cost_identity": self.cost_identity,
                         "ranking_objective": (
                             "remaining_model_tool_critical_path_seconds"
-                            if getattr(self, "completion_path_profile", None) is not None else
+                            if (
+                                getattr(self, "completion_path_profile", None) is not None
+                                or getattr(self, "completion_path_oracle", False)
+                            ) else
                             "expected_work_utility"
                         ),
                         "resource_fallback_selection_enabled": self.allow_feasible_resource_alternatives,

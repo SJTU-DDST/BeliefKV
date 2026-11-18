@@ -21,6 +21,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         super().__init__(runtime)
         if self._work.artifact.pressure_work_ranking:
             self.rank_kind = self._work.artifact.rank_kind
+        elif self._work.artifact.path_combination:
+            self.rank_kind = "oracle_remaining_model_tool_critical_path_seconds"
         if self.rank_before_category:
             if not self.dispatch_interval_ms:
                 self.close()
@@ -59,7 +61,9 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         ):
             oracle.close()
             raise ValueError("unsupported explicit oracle admission order")
-        if oracle.model_work_only and not getattr(runtime, "workflow_combination_admission", False):
+        if (oracle.model_work_only or oracle.artifact.path_combination) and not getattr(
+            runtime, "workflow_combination_admission", False,
+        ):
             oracle.close()
             raise ValueError("model-work oracle requires the R5 combination selector")
         if oracle.artifact.pressure_work_ranking and getattr(
@@ -148,7 +152,7 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
     def _logical_ready_paused(self, item):
         if not super()._logical_ready_paused(item):
             return False
-        if self._work.model_work_only:
+        if self._work.model_work_only or self._work.artifact.path_combination:
             return True
         deferred = self._deferred_dispatch
         if deferred is None or not getattr(deferred, "window_ms", 0):
@@ -179,7 +183,7 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         return result
 
     def _priority(self, prediction):
-        if self._work.model_work_only:
+        if self._conditional_distribution:
             return 1
         if prediction is None or prediction.evidence != "oracle":
             raise ValueError("oracle ranking requires its exact bound workflow prediction")

@@ -46,6 +46,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self._conditional_distribution = (
             getattr(getattr(self._work, "model", None), "schema", None) == R5_SCHEMA
             or getattr(self._work, "model_work_only", getattr(self._work, "combination_only", False))
+            or getattr(getattr(self._work, "artifact", None), "path_combination", False)
         )
         if self._conditional_distribution:
             self.rank_kind = "conditional_work_distribution_combination_only"
@@ -125,7 +126,10 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def _pressure_preference(self, item, now):
         if self._conditional_distribution:
-            if getattr(self._combination, "completion_path_profile", None) is not None:
+            if (
+                getattr(self._combination, "completion_path_profile", None) is not None
+                or getattr(self._combination, "completion_path_oracle", False)
+            ):
                 prediction = self._prediction(item.identity)
                 key = self.latest.get(item.identity)
                 if key is not None and self._supported(prediction):
@@ -446,6 +450,10 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def status(self):
         dispatch = bool(self.dispatch_interval_ms)
         shortest = bool(self._combination is not None and self._combination.shortest_work_first)
+        path_priority = bool(
+            getattr(self._combination, "completion_path_profile", None) is not None
+            or getattr(self._combination, "completion_path_oracle", False)
+        )
         priority = getattr(self._combination, "ready_wait_priority", None)
         accumulation = getattr(self._combination, "capacity_accumulation", None)
         return {
@@ -484,10 +492,14 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             "workflow_shortest_work_first_admission": shortest,
             **({
                 "workflow_conditional_distribution_scope": (
+                    "shortest_path_admission_and_existing_tool_pair_and_pressure_order"
+                    if path_priority and self.workflow_pressure_pause else
                     "shortest_work_admission_and_existing_immediate_tool_pair_order"
                     if shortest else "shared_combination_admission_only"
                 ),
-                "workflow_distribution_changes_pressure_victims": False,
+                "workflow_distribution_changes_pressure_victims": (
+                    path_priority and self.workflow_pressure_pause
+                ),
                 "workflow_distribution_changes_tool_replacement_order": shortest,
                 "workflow_distribution_argmax_used_for_admission": False,
             } if self._conditional_distribution else {}),
@@ -539,8 +551,13 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 "workflow_combination_max_candidates": 8,
                 "workflow_combination_search_budget_ns": 500_000,
                 **({
-                    "workflow_join_progress": "linear_unfinished_share_v1",
-                } if self._combination.costs.join_progress == "linear" else {}),
+                    "workflow_join_progress": (
+                        "observed_ready_sibling_group_if_fits"
+                        if getattr(self._combination, "strict_remaining_work", False)
+                        else "linear_unfinished_share_v1"
+                    ),
+                } if self._combination.costs.join_progress == "linear"
+                    or getattr(self._combination, "strict_remaining_work", False) else {}),
                 "workflow_combination_eager_first_grant": False,
             } if self._combination is not None else {}),
         }

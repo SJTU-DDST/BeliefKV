@@ -18,6 +18,7 @@ COST_KIND = "workflow_model_tool_calibrated_cost_oracle_v2"
 COMBINATION_WORK_KIND = "workflow_model_work_combination_oracle_v1"
 CONTINUOUS_COMBINATION_WORK_KIND = "workflow_continuous_model_work_combination_oracle_v1"
 CONTINUOUS_PRESSURE_WORK_KIND = "workflow_continuous_model_work_pressure_oracle_v1"
+COMBINATION_PATH_KIND = "workflow_model_tool_path_combination_oracle_v1"
 TOOL_BAND_PRESSURE_ORDER = "remaining_model_work_within_tool_retention_bands_v1"
 
 
@@ -56,7 +57,7 @@ class WorkflowWorkOracleArtifact:
         if (
             raw.get("kind") not in (
                 KIND, COST_KIND, COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND,
-                CONTINUOUS_PRESSURE_WORK_KIND,
+                CONTINUOUS_PRESSURE_WORK_KIND, COMBINATION_PATH_KIND,
             )
             or raw.get("future_information_used") is not True
             or raw.get("deployable") is not False or raw.get("prefill_token_weight") != .01
@@ -68,15 +69,18 @@ class WorkflowWorkOracleArtifact:
         self.model_work_only = raw["kind"] in (
             COMBINATION_WORK_KIND, CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
         )
+        self.path_combination = raw["kind"] == COMBINATION_PATH_KIND
         self.pressure_work_ranking = raw["kind"] == CONTINUOUS_PRESSURE_WORK_KIND
-        self.combination_only = self.model_work_only and not self.pressure_work_ranking
+        self.combination_only = self.path_combination or (
+            self.model_work_only and not self.pressure_work_ranking
+        )
         if self.pressure_work_ranking:
             if raw.get("pressure_work_order") != TOOL_BAND_PRESSURE_ORDER:
                 raise ValueError("pressure oracle requires its explicit tool-retention-band scope")
         elif "pressure_work_order" in raw:
             raise ValueError("pressure work order requires its separate oracle kind")
         self.continuous_combination = raw["kind"] in (
-            CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND,
+            CONTINUOUS_COMBINATION_WORK_KIND, CONTINUOUS_PRESSURE_WORK_KIND, COMBINATION_PATH_KIND,
         )
         if self.strict_remaining_work and not self.continuous_combination:
             raise ValueError("strict remaining-work Oracle requires its continuous model-work provider")
@@ -85,7 +89,7 @@ class WorkflowWorkOracleArtifact:
             "r5_combination_and_tool_band_pressure" if self.pressure_work_ranking
             else "r5_combination_only"
         )
-        if self.model_work_only and (
+        if (self.model_work_only or self.path_combination) and (
             raw.get("admission_order") != order
             or raw.get("combination_work_readout") != readout
             or raw.get("remaining_work_ranking_enabled") is not True
@@ -93,6 +97,14 @@ class WorkflowWorkOracleArtifact:
             != "r5_frozen_batch_cost_proxy_capacity_v7"
         ):
             raise ValueError("model-work oracle requires its explicit R5-only combination readout")
+        if self.path_combination:
+            reference = raw["admission_cost_profile"].get("oracle_reference_path_s")
+            if (
+                not self.strict_remaining_work or "completion_path_readout" in raw
+                or type(reference) not in (int, float)
+                or not math.isfinite(reference) or reference <= 0
+            ):
+                raise ValueError("path combination Oracle requires strict admission and its seconds reference")
         self.continuous_reference = raw.get("combination_work_reference")
         if self.continuous_combination:
             from beliefkv.predictor.workflow_continuous_work import KIND as REFERENCE_KIND
@@ -121,7 +133,7 @@ class WorkflowWorkOracleArtifact:
             "combination_work_reference", "combination_reference_source_model_sha256",
         )):
             raise ValueError("continuous work reference requires its separate oracle kind")
-        if not self.model_work_only and (
+        if not (self.model_work_only or self.path_combination) and (
             "combination_work_readout" in raw
             or raw.get("admission_order") in (
                 "r5_combination_only", "r5_combination_and_tool_band_pressure",
@@ -140,7 +152,7 @@ class WorkflowWorkOracleArtifact:
             raise ValueError("v2 oracle requires finite prefill cost and observed progress semantics")
         window = raw.get("free_dispatch_coalescing_window_ms", 0)
         if type(window) is not int or window not in (0, 1000, 2000) or (
-            window and not self.model_work_only
+            window and not (self.model_work_only or self.path_combination)
             and raw.get("admission_order") != "global_ready_remaining_path"
         ):
             raise ValueError("timed coalescing requires a global oracle and 0, 1000 or 2000 ms")
@@ -244,6 +256,8 @@ class WorkflowWorkOracleArtifact:
 
     @property
     def rank_kind(self):
+        if self.path_combination:
+            return "remaining_model_tool_critical_path_seconds"
         if self.pressure_work_ranking:
             return "remaining_model_work_continuous_combination_and_tool_band_pressure"
         if self.continuous_combination:
@@ -597,12 +611,24 @@ class WorkflowWorkOracle:
                 **self._path_cost_parameters,
             )
             self.counts["path_future_clock_fallbacks"] += 1
-        self.counts["path_thread_cpu_us"] += (time.thread_time() - started) * 1e6
-        return OracleWorkPrediction(
+        result = OracleWorkPrediction(
             prediction.probabilities, prediction.bucket, prediction.revision, now, "oracle",
             prediction.remaining_work, prediction.remaining_work_units,
             *values,
         )
+        if self.artifact.path_combination:
+            from beliefkv.predictor.workflow_continuous_work import remaining_work_weight
+
+            result = ContinuousOracleWorkPrediction(
+                result.probabilities, result.bucket, result.revision, now, result.evidence,
+                result.remaining_work, result.remaining_work_units, *values,
+                remaining_work_weight(
+                    result.remaining_path_s,
+                    self.artifact.raw["admission_cost_profile"]["oracle_reference_path_s"],
+                ), self.artifact.continuous_reference["reference_work"],
+            )
+        self.counts["path_thread_cpu_us"] += (time.thread_time() - started) * 1e6
+        return result
 
     def status(self):
         return {
@@ -618,6 +644,12 @@ class WorkflowWorkOracle:
             ),
             "model_work_only": self.model_work_only,
             **({
+                "shared_R5_path_order": True,
+                "admission_path_reference_s": self.artifact.raw["admission_cost_profile"][
+                    "oracle_reference_path_s"
+                ],
+            } if self.artifact.path_combination else {}),
+            **({
                 "strict_remaining_work_admission": True,
                 "ready_wait_changes_work_rank": False,
             } if getattr(self.artifact, "strict_remaining_work", False) else {}),
@@ -631,7 +663,7 @@ class WorkflowWorkOracle:
             ),
             **({
                 "continuous_admission_utility": self.artifact.continuous_reference["admission_utility"],
-            } if self.artifact.continuous_combination
+            } if self.artifact.continuous_combination and not self.artifact.path_combination
                 and "admission_utility" in self.artifact.continuous_reference else {}),
             "work_definition": "0.01*necessary_input_tokens+output_tokens",
             "input_progress": "completion_only_like_learned_labels",

@@ -1829,12 +1829,25 @@ def register(args):
             "same_actual_capacity_required_across_arms": True,
         }
     if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
+        path_pressure = (
+            getattr(oracle_artifact, "path_combination", False)
+            and oracle_common.get(
+                "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY",
+                oracle_common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
+            ) in ("workflow_remaining", "workflow_tool_aware")
+        )
         plan["oracle_information"] = {
             "deployable": False, "future_model_token_work_used": True,
             "future_tool_durations_used": not oracle_artifact.model_work_only,
             "future_dependency_graph_used_for_rank_only": not oracle_artifact.model_work_only,
             "rank": oracle_artifact.rank_kind,
-            "future_model_work_used_for_pressure": oracle_artifact.pressure_work_ranking,
+            "future_model_work_used_for_pressure": (
+                oracle_artifact.pressure_work_ranking or path_pressure
+            ),
+            **({
+                "future_model_tool_path_used_for_pressure": path_pressure,
+                "shared_R5_path_selector": True,
+            } if getattr(oracle_artifact, "path_combination", False) else {}),
             "source_bound_artifact_sha256": oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
             "model_service_seconds": "predeclared_context_and_batch_averaged_proxy",
             "optimal_JCT_bound": False,
