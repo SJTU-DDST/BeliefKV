@@ -2209,9 +2209,11 @@ def test_host_block_eviction_is_attributed_to_later_full_and_mamba_access(
         cache_salt="salt-a",
         is_bigram=False,
     )
-    node = SimpleNamespace(id=8, parent=root, key=key)
+    full_state = SimpleNamespace(value=None, session_ref=2)
+    node = SimpleNamespace(id=8, parent=root, key=key, component_data={0: full_state})
     audit.on_native_host_block_eviction(node, 0, 4)
     audit.on_native_host_block_eviction(node, 2, 2)
+    full_state.session_ref = 0
 
     request = SimpleNamespace(
         rid="req-revisit",
@@ -2244,6 +2246,12 @@ def test_host_block_eviction_is_attributed_to_later_full_and_mamba_access(
     audit.close()
 
     rows = _read(tmp_path / "server/eviction_attribution.jsonl")
+    released_full = next(
+        row for row in rows if row["event"] == "host_block_evicted" and row["pool"] == "full"
+    )
+    assert released_full["native_full_state"] == {
+        "device_value_present_at_callback": False, "session_ref_at_callback": 2,
+    }
     attributed = [
         row for row in rows if row["event"] == "host_block_reaccess_attributed"
     ]

@@ -1,5 +1,6 @@
 """New child state cannot spend capacity committed to an existing native input."""
 
+from array import array
 from copy import copy
 from dataclasses import replace
 from types import SimpleNamespace as NS
@@ -450,6 +451,113 @@ def test_duplicate_capacity_must_be_visible_to_native_reclamation():
     assert observed.observable
     assert observed.reclaimable_host_tokens == 0
     assert observed.available_tokens == 0
+
+
+@pytest.mark.parametrize("runtime,host_free,donor_sizes,needed,loses_prefix", (
+    ("pressure_v1", 0, (2,), 2, True),
+    ("pressure_v2", 0, (2,), 2, False),
+    ("pressure_v2", 0, (1, 1), 2, False),
+    ("pressure_v2", 0, (2,), 3, True),
+    ("pressure_v2", 0, (), 2, True),
+    ("pressure_v2", 8, (2,), 2, False),
+), indirect=["runtime"])
+def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
+    runtime, full_native, host_free, donor_sizes, needed, loses_prefix,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    group = native.host_pool_group
+    pool = group.entry_map["kv"].host_pool
+    component = native.components[0]
+    evict_device_leaf = native._evict_device_leaf
+    pool.size = 8 + host_free
+    free_host = pool.size
+
+    def available():
+        return free_host
+
+    def free(indices, **kwargs):
+        nonlocal free_host
+        free_host += len(indices)
+        assert free_host <= pool.size
+
+    controller = native.cache_controller
+    native_write = controller.write
+
+    def write(indices, *, beliefkv_defer_writing=False, **kwargs):
+        nonlocal free_host
+        assert len(indices) <= free_host
+        reserved = native_write(indices, beliefkv_defer_writing=True, **kwargs)
+        free_host -= len(reserved)
+        if not beliefkv_defer_writing:
+            controller.start_writing()
+        return reserved
+
+    pool.available_size = group.available_size = available
+    group.free = free
+    component._full_kv_pool_host = pool
+    controller.write = write
+
+    def back_up(node):
+        assert native._execute_and_commit_kv_backup(
+            BackupKV([node.id]), no_host_reclaim=True,
+        ) == len(node.component_data[0].value)
+        native.writing_check(finish_count=1)
+
+    waiting_tokens = list(range(8 - sum(donor_sizes)))
+    waiting, generation = insert_session(native, waiting_tokens, "waiting-parent")
+    back_up(waiting)
+    assert waiting.component_data[0].host_value is not None
+    native._demote(waiting.id, {0: 0})
+    assert waiting in native.tree_core.evictable_host_leaves
+    unbacked, _ = insert_session(native, list(range(20, 28)), "existing-continuation")
+    donors = []
+    for index, size in enumerate(donor_sizes):
+        start = 40 + index * 8
+        donor, _ = insert_session(native, list(range(start, start + size)), f"donor-{index}")
+        back_up(donor)
+        assert donor in native.tree_core.evictable_device_leaves
+        assert component.session_ref_eviction_strategy(unbacked) < component.session_ref_eviction_strategy(donor)
+        donors.append(donor)
+
+    # Replace the setup fixture's synthetic cache before any request is registered.
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    gate = runtime._subagent_materialization
+    assert gate.status().get("native_host_pressure_aware_write_back", False) is gate.include_root_entries
+    device_target = allocator.available_size() + needed
+    writes_before = len(writes)
+    evict_from_tree_cache(native, device_target)
+    assert allocator.available_size() >= device_target
+    assert (waiting.component_data[0].host_value is None) is loses_prefix
+
+    used_settled_donors = gate.include_root_entries and sum(donor_sizes) >= needed and not host_free
+    if used_settled_donors:
+        assert all(donor.component_data[0].value is None for donor in donors)
+        assert all(donor.component_data[0].host_value is not None for donor in donors)
+        assert unbacked.component_data[0].value is not None
+        assert len(writes) == writes_before
+        assert runtime.counts["subagent_materialization_writeback_avoided"] == 1
+        assert runtime.counts["subagent_materialization_writeback_avoided_device_tokens"] == needed
+    else:
+        assert all(donor.component_data[0].value is not None for donor in donors)
+        assert unbacked.component_data[0].value is None
+        assert writes[-1].node_id == unbacked.id
+        assert len(writes) == writes_before + 1
+        assert runtime.counts["subagent_materialization_writeback_avoided"] == 0
+
+    observed = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", [*waiting_tokens, 99]), extra_key=None, cache_salt=None,
+    ))
+    assert (observed is None) is loses_prefix
+    if observed is not None:
+        assert observed["checkpoint_tokens"] == len(waiting_tokens)
+    gate.close()
+    assert native._evict_device_leaf == evict_device_leaf
 
 
 def test_real_native_host_lock_blocks_ancestor_credit_until_native_eviction_can_use_it(full_native):

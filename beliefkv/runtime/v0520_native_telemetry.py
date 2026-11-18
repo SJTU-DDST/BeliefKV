@@ -523,6 +523,16 @@ class NativeReactiveTelemetry:
                 "reason": "node_path_identity_unavailable",
             })
             return
+        full_state = {}
+        if pool == "full":
+            try:
+                full = node.component_data[0]
+                full_state["native_full_state"] = {
+                    "device_value_present_at_callback": full.value is not None,
+                    "session_ref_at_callback": int(full.session_ref),
+                }
+            except (AttributeError, IndexError, KeyError, TypeError, ValueError):
+                pass
         self._emit("eviction_attribution", {
             "_internal_event": "host_block_eviction",
             "ts_ms": time.time() * 1000.0,
@@ -532,6 +542,7 @@ class NativeReactiveTelemetry:
             "extra_key": getattr(path[-1], "extra_key", None),
             "cache_salt": getattr(path[-1], "cache_salt", None),
             "key_path": path,
+            **full_state,
         })
 
     def _queue_block_reaccess_probe(
@@ -921,6 +932,7 @@ class NativeReactiveTelemetry:
             "identity_confidence": (
                 "exact_namespaced_token_prefix_hmac_blake2b128"
             ),
+            **({"native_full_state": record["native_full_state"]} if "native_full_state" in record else {}),
         }) + "\n")
         while len(self._pending_block_evictions) > self._block_eviction_index_limit:
             expired_identity, expired = self._pending_block_evictions.popitem(

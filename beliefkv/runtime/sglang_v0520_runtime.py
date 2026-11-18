@@ -1395,6 +1395,8 @@ class NativeAdmissionRuntime:
             self._record_runtime_state(final=True)
             self._opportunity_writer.close()
             self._opportunity_writer = None
+        if (materialization := getattr(self, "_subagent_materialization", None)) is not None:
+            materialization.close()
         if self._model_worker is not None:
             self._model_worker.close()
             self._model_worker = None
@@ -1552,6 +1554,8 @@ class NativeAdmissionRuntime:
             self._agent_admission.attach(cache)
         if self._full_prefix_migration is not None:
             self._full_prefix_migration.attach(cache)
+        if self._subagent_materialization is not None:
+            self._subagent_materialization.attach(cache)
 
     def attach_native_scheduler(self, scheduler: object) -> None:
         paper = getattr(self, "_paper_baseline", None)

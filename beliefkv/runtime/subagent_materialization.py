@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
+from itertools import islice
 import os
 import time
 
@@ -180,8 +181,89 @@ class SubagentMaterialization:
         self._native_order = ()
         self._running_batch = None
         self._adder = None
+        self._native_device_eviction = None
         self.last_observation = MaterializationHeadroom(False, "not_sampled")
         self.last_decision = {}
+
+    def attach(self, cache):
+        self._restore_native_device_eviction()
+        if (
+            not self.include_root_entries
+            or getattr(cache, "tree_components", ()) != (0,)
+            or not getattr(cache, "is_write_back", False)
+            or getattr(cache, "host_memory_mode", None) != "cache"
+            or getattr(cache, "buffer_pipeline", None) is not None
+        ):
+            return
+        component = getattr(cache, "components", {}).get(0)
+        native_evict = getattr(cache, "_evict_device_leaf", None)
+        tree = getattr(cache, "tree_core", None)
+        if not (
+            callable(native_evict) and hasattr(component, "is_evict_device_ongoing")
+            and hasattr(tree, "full_host_duplicates")
+        ):
+            return
+        pools = getattr(getattr(cache, "host_pool_group", None), "entry_map", {})
+        pool = getattr(pools.get("kv"), "host_pool", None)
+        if not callable(getattr(pool, "available_size", None)):
+            return
+
+        def evict_device_leaf(node_id, tracker):
+            if component.is_evict_device_ongoing and tree.full_host_duplicates:
+                full = tree.node_by_id(node_id).component_data[0]
+                before = tracker[0]
+                needed = component._evict_device_request_cnt - before
+                if (
+                    needed > 0 and full.host_value is None and full.value is not None
+                    and len(full.value) > pool.available_size()
+                    and self._use_backed_device_leaves(
+                        component, tree, native_evict, tracker, needed,
+                    )
+                ):
+                    counts = self.runtime.counts
+                    counts["subagent_materialization_writeback_avoided"] += 1
+                    counts["subagent_materialization_writeback_avoided_device_tokens"] += (
+                        tracker[0] - before
+                    )
+                    return None
+            return native_evict(node_id, tracker)
+
+        cache._evict_device_leaf = evict_device_leaf
+        self._native_device_eviction = cache, native_evict, evict_device_leaf
+
+    def _use_backed_device_leaves(self, component, tree, native_evict, tracker, needed):
+        # Never demote a partial set: subsequent write-back could evict its
+        # newly created Host-only copies. Reuse native leaf eligibility and order.
+        candidates = {}
+        total = 0
+        for priority, node in islice(component._evict_device_heap, self.max_candidates):
+            if (
+                node.id in candidates or node not in tree.evictable_device_leaves
+                or tree.full_host_duplicates.get(node.id) is not node
+                or not tree._can_reclaim_full_host_duplicate(node)
+            ):
+                continue
+            data = node.component_data[0]
+            size = len(data.value)
+            if size != len(data.host_value):
+                continue
+            candidates[node.id] = (priority, node)
+            total += size
+        if total < needed:
+            return False
+        before = tracker[0]
+        for _, node in sorted(candidates.values()):
+            native_evict(node.id, tracker)
+            if tracker[0] - before >= needed:
+                return True
+        return False
+
+    def _restore_native_device_eviction(self):
+        if self._native_device_eviction is not None:
+            cache, native_evict, evict_device_leaf = self._native_device_eviction
+            if cache._evict_device_leaf is evict_device_leaf:
+                cache._evict_device_leaf = native_evict
+            self._native_device_eviction = None
 
     @property
     def admission(self):
@@ -778,6 +860,7 @@ class SubagentMaterialization:
         }
 
     def close(self):
+        self._restore_native_device_eviction()
         self.pending.clear()
         self.materialized.clear()
         self.started_workflows.clear()
@@ -797,6 +880,7 @@ class SubagentMaterialization:
                 rid for rid, record in self.pending.items() if not record.started and not record.permitted
             ],
             **({
+                "native_host_pressure_aware_write_back": self._native_device_eviction is not None,
                 "decode_growth_clip_tokens": self.decode_growth_clip_tokens,
                 "held_root_request_ids": [
                     rid for rid, record in self.pending.items()
