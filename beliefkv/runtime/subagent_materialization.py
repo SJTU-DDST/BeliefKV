@@ -209,19 +209,27 @@ class SubagentMaterialization:
         pool = getattr(pools.get("kv"), "host_pool", None)
         if not callable(getattr(pool, "available_size", None)):
             return
+        split_device_suffix = getattr(tree, "split_idle_device_full_suffix", None)
+        apply_actions = getattr(cache, "_apply_cache_actions", None)
+        page = getattr(tree, "page_size", None)
+        can_split = (
+            callable(split_device_suffix) and callable(apply_actions)
+            and type(page) is int and page > 0
+        )
 
         def evict_device_leaf(node_id, tracker):
-            if component.is_evict_device_ongoing and tree.full_host_duplicates:
-                full = tree.node_by_id(node_id).component_data[0]
+            if component.is_evict_device_ongoing:
+                node = tree.node_by_id(node_id)
+                full = node.component_data[0]
                 before = tracker[0]
                 needed = component._evict_device_request_cnt - before
-                if (
-                    needed > 0 and full.host_value is None and full.value is not None
-                    and len(full.value) > pool.available_size()
-                ):
+                if needed > 0 and full.host_value is None and full.value is not None:
+                    host_free = pool.available_size()
+                    if len(full.value) <= host_free:
+                        return native_evict(node_id, tracker)
                     counts = self.runtime.counts
                     counts["subagent_materialization_writeback_pressure_checks"] += 1
-                    if self._use_backed_device_leaves(
+                    if tree.full_host_duplicates and self._use_backed_device_leaves(
                         component, tree, native_evict, tracker, needed,
                     ):
                         counts["subagent_materialization_writeback_avoided"] += 1
@@ -229,6 +237,33 @@ class SubagentMaterialization:
                             tracker[0] - before
                         )
                         return None
+                    if not can_split or full.lock_ref or node not in tree.evictable_device_leaves:
+                        return native_evict(node_id, tracker)
+                    needed = component._evict_device_request_cnt - tracker[0]
+                    shortfall = (needed + page - 1) // page * page
+                    chunk = self.runtime._native_chunk_input_reserve
+                    if needed <= 0 or (chunk is None and host_free < shortfall):
+                        return native_evict(node_id, tracker)
+                    # Retain one native prefill chunk of allocation headroom to
+                    # amortize decode writes, unless a smaller write avoids Host reclaim.
+                    chunk_pages = (chunk + page - 1) // page * page if chunk else 0
+                    write_tokens = max(shortfall, chunk_pages)
+                    if host_free >= shortfall:
+                        write_tokens = min(write_tokens, host_free // page * page)
+                    size = len(full.value)
+                    if write_tokens < size:
+                        last_access = node.last_access_time
+                        split = split_device_suffix(
+                            node_id, node.creation_time, write_tokens, read_only_backup=True,
+                        )
+                        if split is not None:
+                            node.parent.last_access_time = last_access
+                            node.last_access_time = last_access
+                            apply_actions(split[1])
+                            counts["subagent_materialization_writeback_split_nodes"] += 1
+                            counts["subagent_materialization_writeback_split_prefix_tokens"] += (
+                                size - write_tokens
+                            )
             return native_evict(node_id, tracker)
 
         cache._evict_device_leaf = evict_device_leaf
@@ -504,12 +539,12 @@ class SubagentMaterialization:
                 committed[key.request_id] = member.request
         return committed
 
-    def _outstanding_inputs(self, running_batch, committed):
+    def _outstanding_inputs(self, running_batch, committed, queued, *, refresh):
         runtime, a = self.runtime, self.admission
         running = {
             getattr(req, "rid", None) for req in getattr(running_batch, "reqs", ())
         }
-        outstanding = initial = 0
+        outstanding = initial = ready_continuations = 0
         for rid, req in a._live_requests.items():
             key = runtime.visible.get(rid)
             if (
@@ -528,6 +563,18 @@ class SubagentMaterialization:
                 or getattr(kv, "req_pool_idx", None) is not None
                 or type(allocated) is int and allocated > 0
             ):
+                if (
+                    self.include_root_entries and record is None and queued.get(rid) is req
+                    and self._context(key) in self.materialized and a.allows(key)
+                    and self._ready(key)
+                ):
+                    # A logically admitted continuation can still be waiting for
+                    # the next native batch. Its reusable prefix is already in the census.
+                    reentry = runtime._read_request_reentry(req, key=key, refresh=refresh)
+                    prefix = reentry.get("checkpoint_tokens", 0) if reentry is not None else 0
+                    if type(prefix) is not int or not 0 <= prefix < len(req.origin_input_ids):
+                        prefix = 0
+                    ready_continuations += self._input_price(req, prefix)
                 continue
             # Staged H2D retains the native selection after clearing the adder.
             # Both selections hold their prefix before allocating new slots.
@@ -537,7 +584,7 @@ class SubagentMaterialization:
             outstanding += price
             if record is not None and record.started:
                 initial += price
-        return outstanding, initial
+        return outstanding + ready_continuations, initial, ready_continuations
 
     def _reserve(self, running_batch, adder):
         runtime, cache = self.runtime, self.runtime._native_cache
@@ -749,7 +796,10 @@ class SubagentMaterialization:
                 rid for rid, record in self.pending.items()
                 if not record.started and committed.get(rid) is record.request
             }
-            outstanding, initial = self._outstanding_inputs(running_batch, committed)
+            queued = {getattr(req, "rid", None): req for req in native_order}
+            outstanding, initial, ready_continuations = self._outstanding_inputs(
+                running_batch, committed, queued, refresh=_starting,
+            )
             required = reserve + outstanding + sum(
                 self._price(record) for rid, record in self.pending.items()
                 if not record.started and rid not in committed_initial
@@ -784,10 +834,9 @@ class SubagentMaterialization:
             # silently treating unobserved Host state as zero or deadlocking.
             reserve = reserve if observation.observable else 0
             available = observation.available_tokens - reserve - outstanding
-            queue_ids = {getattr(req, "rid", None) for req in native_order}
             candidates = [
                 record for record in self.pending.values()
-                if not record.started and record.key.request_id in queue_ids
+                if not record.started and record.key.request_id in queued
                 and record.key.request_id not in committed_initial
                 and self._ready(record.key)
             ]
@@ -859,6 +908,7 @@ class SubagentMaterialization:
             }
             if self.include_root_entries:
                 decision.update(
+                    ready_continuation_tokens=ready_continuations,
                     root_candidates=[record.key.request_id for record in candidates if record.root_entry],
                     held_root_request_ids=[
                         rid for rid in decision["held"] if self.pending[rid].root_entry

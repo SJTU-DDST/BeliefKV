@@ -72,6 +72,49 @@ def test_ordinary_continuation_inflight_suffix_is_reserved_too(runtime):
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v1", "pressure_v2"), indirect=True)
+@pytest.mark.parametrize("state,expected", (
+    ("ready_with_checkpoint", 200),
+    ("ready_without_checkpoint", 700),
+    ("paused", 0),
+    ("not_in_native_queue", 0),
+    ("selected", 200),
+))
+def test_ready_continuation_reserves_growth_before_new_state(runtime, monkeypatch, state, expected):
+    first = parent_request(runtime, allocated=500, tokens=500)
+    runtime.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+    first.finished = lambda: True
+    runtime.on_batch_completed(NS(reqs=[first]))
+    parent = parent_request(runtime, identity="parent-next", allocated=0)
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    item = runtime._agent_admission.policy.programs["parent"]
+    item.active = state != "paused"
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 850
+    reads = []
+
+    def inspect(request, *, key, refresh):
+        assert request is parent and key == runtime.visible[parent.rid]
+        reads.append(refresh)
+        return None if state == "ready_without_checkpoint" else {"checkpoint_tokens": 500}
+
+    monkeypatch.setattr(runtime, "_read_request_reentry", inspect)
+    adder = NS(can_run_list=[])
+    if state == "selected":
+        parent.prefix_indices = range(500)
+        adder.can_run_list.append(parent)
+    queue = [req] if state == "not_in_native_queue" else [parent, req]
+    gate.prepare(queue, running_batch=NS(reqs=[]), adder=adder, now=100., _starting=True)
+
+    ready = expected if gate.include_root_entries and state != "selected" else 0
+    assert gate.last_decision.get("ready_continuation_tokens", 0) == ready
+    assert gate.last_decision["outstanding_input_tokens"] == (
+        ready + (expected if state == "selected" else 0)
+    )
+    assert reads == ([True] if ready else [])
+    assert gate.allows(runtime.visible[req.rid]) is (ready != 700)
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v1", "pressure_v2"), indirect=True)
 def test_running_decode_growth_is_reserved_before_first_materialization(runtime):
     parent = parent_request(runtime, allocated=620)
     parent.output_ids[:] = [1] * 20
@@ -534,13 +577,13 @@ def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
     # Replace the setup fixture's synthetic cache before any request is registered.
     runtime._agent_admission.policy = None
     runtime.attach_native_cache(native)
+    runtime._native_chunk_input_reserve = needed
     gate = runtime._subagent_materialization
     assert gate.status().get("native_host_pressure_aware_write_back", False) is gate.include_root_entries
     device_target = allocator.available_size() + needed
     writes_before = len(writes)
     evict_from_tree_cache(native, device_target)
     assert allocator.available_size() >= device_target
-    assert (waiting.component_data[0].host_value is None) is loses_prefix
 
     used_settled_donors = gate.include_root_entries and sum(donor_sizes) >= needed and not host_free
     if used_settled_donors:
@@ -561,9 +604,12 @@ def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
         session_id="waiting-parent", session_generation=generation,
         origin_input_ids=array("q", [*waiting_tokens, 99]), extra_key=None, cache_salt=None,
     ))
-    assert (observed is None) is loses_prefix
-    if observed is not None:
-        assert observed["checkpoint_tokens"] == len(waiting_tokens)
+    checkpoint = observed["checkpoint_tokens"] if observed else 0
+    assert (checkpoint < len(waiting_tokens)) is loses_prefix
+    if loses_prefix and gate.include_root_entries:
+        assert checkpoint == len(waiting_tokens) - (needed - sum(donor_sizes))
+    elif loses_prefix:
+        assert checkpoint == 0
     gate.close()
     assert native._evict_device_leaf == evict_device_leaf
 
@@ -607,12 +653,12 @@ def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_childr
     runtime.attach_native_cache(native)
     before = len(writes)
     needed = 4 + 2 * len(donor_children)
+    runtime._native_chunk_input_reserve = needed
     target = allocator.available_size() + needed
     evict_from_tree_cache(native, target)
     assert allocator.available_size() >= target
 
     preserved = branch in ("settled", "second_backed_child")
-    assert (waiting.component_data[0].host_value is not None) is preserved
     assert (unbacked.component_data[0].value is not None) is preserved
     assert len(writes) == before + (0 if preserved else 1)
     for node in (*donor_children, ancestor):
@@ -625,9 +671,9 @@ def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_childr
         session_id="waiting-parent", session_generation=generation,
         origin_input_ids=array("q", [*waiting_tokens, 99]), extra_key=None, cache_salt=None,
     ))
-    # In the unbacked-child case the whole-device demotion plan fails, but
-    # native frees six duplicate units before trimming the live Host leaf.
-    expected_checkpoint = len(waiting_tokens) if preserved else 4 if branch == "unbacked_child" else 0
+    # Six reclaimable duplicate slots cover the split write in the
+    # unbacked-child case. A locked or pending ancestor leaves only two.
+    expected_checkpoint = len(waiting_tokens) if preserved or branch == "unbacked_child" else 6
     assert (observed["checkpoint_tokens"] if observed else 0) == expected_checkpoint
 
 
@@ -710,6 +756,58 @@ def test_host_pressure_trims_after_accounting_for_existing_duplicate_reclaims(
     assert len(waiting.parent.component_data[0].host_value) == 5
     assert runtime.counts["subagent_materialization_host_eviction_trimmed_nodes"] == 1
     assert runtime.counts["subagent_materialization_host_eviction_retained_tokens"] == 5
+
+
+@pytest.mark.parametrize("runtime,host_free,chunk,checkpoint,device_freed", (
+    ("pressure_v1", 2, None, 0, 8),
+    ("pressure_v2", 0, None, 0, 8),
+    ("pressure_v2", 2, None, 8, 2),
+    ("pressure_v2", 8, None, 8, 8),
+    ("pressure_v2", 0, 4, 4, 4),
+    ("pressure_v2", 2, 4, 8, 2),
+    ("pressure_v2", 4, 4, 8, 4),
+), indirect=["runtime"])
+def test_small_native_allocation_bounds_writeback_under_host_pressure(
+    runtime, full_native, host_free, chunk, checkpoint, device_freed,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 8 + host_free)
+    waiting_tokens = list(range(8))
+    waiting, generation = insert_session(native, waiting_tokens, "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    writer_tokens = list(range(20, 28))
+    writer, writer_generation = insert_session(native, writer_tokens, "continuation")
+    last_access = writer.last_access_time
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    runtime._native_chunk_input_reserve = chunk
+    before = allocator.available_size()
+    evict_from_tree_cache(native, before + 2)
+
+    assert allocator.available_size() - before == device_freed
+    assert len(writes) == 2
+    assert writes[-1].node_id == writer.id
+    assert len(writes[-1].device_indices) == device_freed
+    assert writer.component_data[0].value is None
+    split = device_freed < len(writer_tokens)
+    assert runtime.counts["subagent_materialization_writeback_split_nodes"] == int(split)
+    if split:
+        assert len(writer.parent.component_data[0].value) == len(writer_tokens) - device_freed
+        assert writer.parent.last_access_time == last_access
+    for owner, owner_generation, tokens, expected in (
+        ("waiting-parent", generation, waiting_tokens, checkpoint),
+        ("continuation", writer_generation, writer_tokens, len(writer_tokens)),
+    ):
+        observed = native.inspect_beliefkv_reentry(NS(
+            session_id=owner, session_generation=owner_generation,
+            origin_input_ids=array("q", [*tokens, 99]), extra_key=None, cache_salt=None,
+        ))
+        assert (observed["checkpoint_tokens"] if observed else 0) == expected
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
