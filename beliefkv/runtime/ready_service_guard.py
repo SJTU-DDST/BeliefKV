@@ -71,12 +71,12 @@ class ReadyServiceGuard:
                 a.counts["ready_service_fit_grants_invalidated"] += 1
                 self.fit_target = None
             self.fit_available = any(
-                key not in held_roots and now - since >= self.fit_after_s
+                key not in held_roots and now >= since + self.fit_after_s
                 and not a.policy.programs[key.invocation_id].active and key not in self.fit_attempted
                 for key, since in current.values()
             )
         overdue = {
-            key: since for key, since in current.values() if now - since >= self.timeout_s
+            key: since for key, since in current.values() if now >= since + self.timeout_s
             and key not in held_roots
         }
         target = self.target if self.target in overdue else min(
@@ -97,7 +97,7 @@ class ReadyServiceGuard:
 
     def elapsed_service_timeout(self, key, now):
         entry = self.since.get(key.invocation_id)
-        return entry is not None and entry[0] == key and now - entry[1] >= self.timeout_s
+        return entry is not None and entry[0] == key and now >= entry[1] + self.timeout_s
 
     def _growth_tokens(self, request):
         maximum = getattr(getattr(request, "sampling_params", None), "max_new_tokens", None)
@@ -227,7 +227,7 @@ class ReadyServiceGuard:
             entry = self.since.get(key.invocation_id)
             if (
                 key in chosen or key in self.fit_attempted or entry is None or entry[0] != key
-                or now - entry[1] < self.fit_after_s or sizes[key] > limit
+                or now < entry[1] + self.fit_after_s or sizes[key] > limit
                 or protected(key)
             ):
                 continue

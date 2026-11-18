@@ -1,4 +1,5 @@
 from dataclasses import replace
+from math import inf, nextafter
 from types import SimpleNamespace as NS
 import time
 
@@ -86,10 +87,16 @@ def test_only_actual_service_resets_the_workflow_clock_and_releases_exception(mo
     runtime, a = guarded(monkeypatch, tmp_path)
     try:
         guard = a._ready_service_guard
-        now = time.monotonic()
+        now = nextafter(131000., inf)
+        deadline = now + guard.timeout_s
+        key = a.latest["long"]
         guard.begin(now)
-        guard.begin(now + 1800.)
-        assert guard.target == a.latest["long"]
+        guard.begin(nextafter(deadline, -inf))
+        assert guard.target is None
+        assert not guard.elapsed_service_timeout(key, nextafter(deadline, -inf))
+        guard.begin(deadline)
+        assert guard.elapsed_service_timeout(key, deadline)
+        assert guard.target == key
         a.policy.programs["long"].active = True
         # Logical admission leaves the clock and sticky exception intact.
         guard.begin(now + 1801.)
