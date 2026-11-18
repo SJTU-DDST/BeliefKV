@@ -13,7 +13,7 @@ from beliefkv.runtime.subagent_materialization import observe_materialization_he
 from tests.test_demand_prefill_pipeline import fixture as pipeline_fixture
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_paper_baseline_runtime import request
-from tests.test_subagent_materialization import cache, child, node, prepare, runtime
+from tests.test_subagent_materialization import cache, child, new_root, node, prepare, runtime
 
 
 def parent_request(
@@ -66,6 +66,49 @@ def test_ordinary_continuation_inflight_suffix_is_reserved_too(runtime):
     gate = runtime._subagent_materialization
     assert gate.last_decision["outstanding_initial_tokens"] == 0
     assert gate.last_decision["outstanding_input_tokens"] == 600
+    assert not gate.allows(runtime.visible[req.rid])
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v1", "pressure_v2"), indirect=True)
+def test_running_decode_growth_is_reserved_before_first_materialization(runtime):
+    parent = parent_request(runtime, allocated=620)
+    parent.output_ids[:] = [1] * 20
+    parent.sampling_params = NS(max_new_tokens=500)
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 450
+
+    prepare(runtime, [req], running=[parent])
+
+    assert gate.last_decision["outstanding_input_tokens"] == (480 if gate.include_root_entries else 80)
+    assert gate.allows(runtime.visible[req.rid]) is not gate.include_root_entries
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_first_root_and_child_share_a_budget_including_clipped_generation(runtime):
+    root, _ = new_root(runtime, "arrival")
+    req = child(runtime)
+    root.sampling_params = req.sampling_params = NS(max_new_tokens=16384)
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 8000
+    gate = runtime._subagent_materialization
+
+    prepare(runtime, [root, req], running=[object()])
+
+    assert gate.last_decision["allowed"] == [req.rid]
+    assert gate.last_decision["held_root_request_ids"] == [root.rid]
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_host_demand_reserve_does_not_replace_batch_page_overhead(runtime):
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    unit = runtime._native_cache.host_pool_group.entry_map["kv"].host_pool.size_per_token
+    runtime._host_demand_capacity = NS(reserve=lambda: 100 * unit)
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 301
+
+    prepare(runtime, [req], running=[object()])
+
+    assert gate.last_decision["reserved_tokens"] == 102
     assert not gate.allows(runtime.visible[req.rid])
 
 

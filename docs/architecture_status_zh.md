@@ -1,5 +1,13 @@
 # BeliefKV 当前架构与实现状态
 
+2026-11-18 D3 首次 KV 物化：`pressure_v2` 用同一份有效 KV 预算控制
+新 workflow 的 root 和新 child。压力下先推进真实阻塞 CALL 或 ALL-JOIN
+的 child，再考虑其他 child，最后用剩余容量启动新 workflow。已提交请求
+按原生生成上限预留 KV 增长，并分别扣除 Host 需求预留和批次页开销。
+关闭 R5 工作量排序的诊断组已开始回放，容量修复版通过 1,409 项 CPU
+回归。GPU 验收采用固定 18 条完整 JCT、共同窗口 decode 吞吐和实际重算。
+[D3 设计与验收](design/subagent_materialization_pressure_20261116_zh.md#新-workflow-的首次准入)。
+
 2026-11-18 长等待保护：周期控制可在当前逻辑与原生容量允许时，提前
 准入一条长期 ready 且未获 workflow 服务的请求，最多替换一个尚未授予的
 普通候选。JOIN、sibling 和 active 连续性受现有保护，1,800 秒兜底独立
@@ -12,7 +20,7 @@ control 的全部 4,620 个目标调用与真实工具计时逐一匹配。`021`
 JCT 为 9,069.680 秒，其中三次大 KV root 后继等待约 1,801 秒才触发
 服务兜底。免费补位记录中均因当时逻辑额度不足未进入评估候选。
 按用户最新决定保留该测量成员、排查容量协调；后续暂不安排 native
-SGLang 对比。当前 D3 配对继续，证据及边界见
+SGLang 对比。当时的配置及进展见
 [工具时长与 021 长等待](research/workload_tool_timing_and_021_wait_20261118_zh.md)。
 
 2026-11-17（美国西部；UTC 11-18）R5 匹配实验入口：新增显式精确

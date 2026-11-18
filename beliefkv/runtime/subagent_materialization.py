@@ -2,6 +2,7 @@
 
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
+import os
 import time
 
 from beliefkv.control.causal_graph import InvocationState, JoinMode
@@ -165,6 +166,10 @@ class SubagentMaterialization:
     def __init__(self, runtime, *, include_root_entries=False):
         self.runtime = runtime
         self.include_root_entries = include_root_entries
+        self.decode_growth_clip_tokens = (
+            max(0, int(os.environ.get("SGLANG_CLIP_MAX_NEW_TOKENS_ESTIMATION", "4096")))
+            if include_root_entries else 0
+        )
         self.pending = OrderedDict()
         self.materialized = set()
         self.started_workflows = set()
@@ -279,7 +284,16 @@ class SubagentMaterialization:
 
     def _input_price(self, req, allocated):
         page = self.runtime._native_page_size
-        tokens = len(req.origin_input_ids) + self.admission.policy.buffer_tokens
+        buffer = self.admission.policy.buffer_tokens
+        if self.include_root_entries:
+            generated = len(req.output_ids)
+            maximum = getattr(getattr(req, "sampling_params", None), "max_new_tokens", None)
+            growth = (
+                min(max(0, maximum - generated), self.decode_growth_clip_tokens)
+                if type(maximum) is int else 0
+            )
+            buffer = max(buffer, generated + growth)
+        tokens = len(req.origin_input_ids) + buffer
         if type(allocated) is int and allocated >= 0:
             tokens = max(0, tokens - allocated)
         return (tokens + page - 1) // page * page
@@ -344,7 +358,8 @@ class SubagentMaterialization:
         demand = getattr(runtime, "_host_demand_capacity", None)
         if demand is not None:
             unit = cache.host_pool_group.entry_map["kv"].host_pool.size_per_token
-            reserve = max(reserve, (demand.reserve() + unit - 1) // unit)
+            host_reserve = (demand.reserve() + unit - 1) // unit
+            reserve = reserve + host_reserve if self.include_root_entries else max(reserve, host_reserve)
         return reserve
 
     def _ordered(self, records):
@@ -767,6 +782,7 @@ class SubagentMaterialization:
                 rid for rid, record in self.pending.items() if not record.started and not record.permitted
             ],
             **({
+                "decode_growth_clip_tokens": self.decode_growth_clip_tokens,
                 "held_root_request_ids": [
                     rid for rid, record in self.pending.items()
                     if record.root_entry and not record.started and not record.permitted
