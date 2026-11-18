@@ -258,7 +258,8 @@ def test_path_choice_changes_real_native_eligibility(monkeypatch, tmp_path):
         runtime.close()
 
 
-def test_path_artifact_loads_through_the_real_shared_runtime_constructor(monkeypatch, tmp_path):
+@pytest.mark.parametrize("head_kind", ("legacy", "work_prior", "work_residual"))
+def test_path_artifact_loads_through_the_real_shared_runtime_constructor(monkeypatch, tmp_path, head_kind):
     import hashlib
     import json
     from pathlib import Path
@@ -269,7 +270,15 @@ def test_path_artifact_loads_through_the_real_shared_runtime_constructor(monkeyp
     profile = json.loads(path.read_bytes())["admission_cost_profile"]
     profile["kind"] = "r5_frozen_batch_cost_proxy_capacity_v7"
     profile["costs"].update(decode_cost_basis="full_batch", selection_objective="benefit")
-    raw = deepcopy(path_model().raw)
+    if head_kind == "legacy":
+        raw = deepcopy(path_model().raw)
+    else:
+        from beliefkv.predictor.workflow_completion_path import RESIDUAL_KIND
+        from tests.test_r5_joint_prediction import model_with_work_prior
+
+        raw = deepcopy(model_with_work_prior().raw)
+        if head_kind == "work_residual":
+            raw["completion_path_readout"]["kind"] = RESIDUAL_KIND
     raw.update(
         admission_cost_profile=profile, shortest_work_first_admission=True,
         strict_remaining_work_admission=True,

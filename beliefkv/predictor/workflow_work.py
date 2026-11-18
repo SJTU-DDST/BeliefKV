@@ -681,6 +681,7 @@ class WorkflowWorkModel:
                 if with_path:
                     continuous.update(self.completion_path.estimate(
                         features, tree_projection.task_structure, hidden, path_timing,
+                        work_forecast=continuous,
                     ))
                 return probabilities, continuous
             probabilities = self.conditional_tree.combine(
