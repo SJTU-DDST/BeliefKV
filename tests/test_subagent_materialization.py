@@ -670,6 +670,38 @@ def test_raw_free_release_can_open_a_hold_during_census_backoff(runtime):
     assert runtime.counts["subagent_materialization_complete_censuses"] == 1
 
 
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("wake", ("running", "idle", "raw_free", "starting"))
+def test_v2_coalesces_capacity_event_censuses_only_while_running(runtime, wake):
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    key = runtime.visible[req.rid]
+    prepare(runtime, [req], running=[object()])
+    assert not gate.allows(key)
+
+    # A finished backup becomes reclaimable while raw free remains at zero.
+    tree = runtime._native_cache.tree_core
+    duplicate = tree._node_arena[1]
+    full = duplicate.component_data[0]
+    full.value = full.host_value
+    tree.full_host_duplicates[duplicate.id] = duplicate
+    if wake == "raw_free":
+        runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 1000
+    gate.capacity_changed()
+    gate.prepare(
+        [req], running_batch=NS(reqs=[] if wake == "idle" else [object()]),
+        adder=None, now=100.01, _starting=wake == "starting",
+    )
+    if wake == "running":
+        assert not gate.allows(key)
+        assert runtime.counts["subagent_materialization_complete_censuses"] == 1
+        prepare(runtime, [req], running=[object()], now=100.4)
+    assert gate.allows(key)
+    assert runtime.counts["subagent_materialization_complete_censuses"] == (
+        1 if wake == "raw_free" else 2
+    )
+
+
 def test_incomplete_census_preserves_original_eligibility_including_outside_window(runtime):
     first, second = child(runtime, "first"), child(runtime, "second")
     gate = runtime._subagent_materialization

@@ -176,6 +176,7 @@ class SubagentMaterialization:
         self.progress_path = []
         self.next_check = 0.
         self.next_census = 0.
+        self.next_running_census = 0.
         self._native_order = ()
         self._running_batch = None
         self._adder = None
@@ -575,15 +576,15 @@ class SubagentMaterialization:
             raw = observe_materialization_headroom(
                 runtime._native_cache, max_nodes=0, required_free_tokens=required,
             )
-            if (
-                raw.reason == "native_node_census_bound" and now < self.next_census
-                and not _starting
-            ):
-                # Keep existing promises and newly registered holds. Do not
-                # authorize new children from an old census or rescan the tree
-                # each decode tick while waiting for a real release event.
-                counts["subagent_materialization_pressure_backoff_checks"] += 1
-                return
+            if raw.reason == "native_node_census_bound" and not _starting:
+                census_due = self.next_census
+                if self.include_root_entries and getattr(running_batch, "reqs", ()):
+                    # Capacity events can rearm the free-page check on every tick.
+                    census_due = max(census_due, self.next_running_census)
+                if now < census_due:
+                    self.next_check = min(self.next_check, census_due)
+                    counts["subagent_materialization_pressure_backoff_checks"] += 1
+                    return
             self.last_observation = observation = (
                 observe_materialization_headroom(
                     runtime._native_cache, max_nodes=self.max_nodes,
@@ -595,6 +596,7 @@ class SubagentMaterialization:
             )
             if observation.census_complete:
                 self.next_census = now + self.admission.control_interval_s
+                self.next_running_census = now + self.interval_s
             counts["subagent_materialization_complete_censuses"] += observation.census_complete
             counts["subagent_materialization_census_nodes"] += observation.inspected_nodes
             # Unknown geometry preserves the original scheduler rather than
