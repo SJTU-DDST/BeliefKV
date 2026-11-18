@@ -11,8 +11,13 @@ import pytest
 from beliefkv.runtime.demand_prefill_pipeline import DemandPrefillPipeline
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
-from beliefkv.runtime.subagent_materialization import observe_materialization_headroom
+from beliefkv.runtime.subagent_materialization import (
+    SubagentMaterialization,
+    observe_materialization_headroom,
+)
 from tests.test_demand_prefill_pipeline import fixture as pipeline_fixture
+from tests.test_demand_prefill_pipeline_native import staged_native
+from tests.test_demand_prefill_pipeline_scheduler import BatchConstructionReached, native_scheduler
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_paper_baseline_runtime import request
 from tests.test_subagent_materialization import cache, child, new_root, node, prepare, runtime
@@ -496,13 +501,14 @@ def test_duplicate_capacity_must_be_visible_to_native_reclamation():
     assert observed.available_tokens == 0
 
 
-def _track_native_host_allocations(native, capacity):
+def _track_native_host_allocations(native, capacity, *, occupied=0):
     from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
 
     group = native.host_pool_group
     pool = group.entry_map["kv"].host_pool
     component = native.components[0]
-    pool.size = free_host = capacity
+    pool.size = capacity
+    free_host = capacity - occupied
 
     def available():
         return free_host
@@ -537,6 +543,96 @@ def _track_native_host_allocations(native, capacity):
             native.writing_check(finish_count=1)
 
     return back_up
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 2, "select": False},), indirect=True)
+@pytest.mark.parametrize("case", (
+    "pressure", "free_host", "join_priority", "service_deadline", "no_decode", "host_pin",
+))
+def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, case):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    native, allocator = f.cache, f.allocator
+    free_host = 4 if case == "free_host" else 0
+    back_up = _track_native_host_allocations(native, 24 + free_host, occupied=16)
+    waiting, generation = insert_session(native, list(range(100, 108)), "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    insert_session(native, list(range(200, 252)), "unbacked")
+    assert allocator.available_size() == 12
+    load = native.init_load_back
+    f.runtime._native_chunk_input_reserve = 4
+    gate = SubagentMaterialization(f.runtime, include_root_entries=True)
+    gate.attach(native)
+    scheduler, construction, invoke = native_scheduler(f, enabled=True)
+
+    def candidates(running, adder):
+        gate.prepare(scheduler.waiting_queue, running_batch=running, adder=adder)
+        return tuple(scheduler.waiting_queue)
+
+    scheduler._beliefkv_prefill_candidates = candidates
+    if case == "join_priority":
+        f.runtime._join_priority_promoted = f.members[1].rid
+    if case == "service_deadline":
+        f.runtime._agent_admission._ready_service_guard = NS(
+            elapsed_service_timeout=lambda key, now: key == f.runtime.visible[f.members[1].rid],
+        )
+    if case == "host_pin":
+        host_lock = native.inc_host_lock_ref(f.leaf.id).to_dec_params()
+    if case == "no_decode":
+        f.running.reqs.clear()
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [tuple(f.members)]
+        assert len(f.loads) == 2
+        assert f.pipeline.pending is None
+        native.ready_to_load_host_cache()
+    else:
+        assert invoke() == (None, f.running)
+        assert not construction
+        selected = [entry.request for entry in f.pipeline.pending.members]
+        if case == "pressure":
+            assert selected == f.members[:1]
+            assert len(f.loads) == 1
+            assert f.leaves[1].component_data[0].host_lock_ref == 0
+            assert f.leaves[1].load_back_pending_id is None
+            assert native.host_pool_group.available_size() == 0
+            assert invoke() == (None, f.running)
+            assert len(f.loads) == 1
+        else:
+            assert selected == f.members
+            assert len(f.loads) == 2
+
+    f.complete.ready = True
+    native.loading_check(finish_count=1)
+    if case == "pressure":
+        assert native.tree_core.full_host_duplicates[f.leaves[0].id] is f.leaves[0]
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [tuple(f.members)]
+        assert len(f.loads) == 2
+        native.loading_check(finish_count=1)
+    elif case != "no_decode":
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+    assert not native.ongoing_load_back
+    if case == "host_pin":
+        assert f.leaf.component_data[0].host_lock_ref == 1
+        native.dec_host_lock_ref(f.leaf.id, host_lock)
+
+    observed = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", range(100, 109)), extra_key=None, cache_salt=None,
+    ))
+    assert observed["checkpoint_tokens"] == (8 if case in ("pressure", "free_host") else 4)
+    assert f.runtime.counts["subagent_materialization_restore_pressure_deferrals"] == (
+        case == "pressure"
+    )
+    for member in f.members:
+        native.dec_lock_ref(member.last_node, member.lock_receipt)
+    gate.close()
+    assert native.init_load_back == load
 
 
 @pytest.mark.parametrize("runtime,host_free,donor_sizes,needed,loses_prefix", (

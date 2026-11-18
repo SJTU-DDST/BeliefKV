@@ -184,6 +184,7 @@ class SubagentMaterialization:
         self._adder = None
         self._native_device_eviction = None
         self._native_host_eviction = None
+        self._native_demand_restore = None
         self.last_observation = MaterializationHeadroom(False, "not_sampled")
         self.last_decision = {}
 
@@ -269,6 +270,115 @@ class SubagentMaterialization:
         cache._evict_device_leaf = evict_device_leaf
         self._native_device_eviction = cache, native_evict, evict_device_leaf
         self._attach_host_eviction_trimming(cache, tree, component)
+        self._attach_demand_restore_pressure(cache)
+
+    def _attach_demand_restore_pressure(self, cache):
+        native_load = getattr(cache, "init_load_back", None)
+        if (
+            not getattr(self.runtime, "demand_prefill_pipeline_enabled", False)
+            or not callable(native_load)
+            or getattr(cache, "tp_world_size", None) != 1
+            or getattr(cache, "pp_size", None) != 1
+        ):
+            return
+        from sglang.srt.environ import envs
+
+        if envs.SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM.get():
+            return
+
+        def init_load_back(params):
+            if self._defer_demand_restore(cache, params):
+                # Native OTHER ends this selection pass and submits its selected
+                # loads. Returning an empty hit here would start recomputation.
+                return None
+            return native_load(params)
+
+        cache.init_load_back = init_load_back
+        self._native_demand_restore = cache, native_load, init_load_back
+
+    def _defer_demand_restore(self, cache, params):
+        queue = cache.cache_controller.load_queue
+        selected = getattr(self._adder, "can_run_list", ())
+        hit = params.host_hit_length
+        if (
+            not queue or not selected or len(queue) > self.max_candidates
+            or hit < max(1, cache.load_back_threshold)
+            or params.mem_quota is not None
+            or cache.token_to_kv_pool_allocator.available_size() >= hit
+        ):
+            return False
+        pipeline = getattr(self.runtime, "_demand_prefill_pipeline", None)
+        if (
+            pipeline is None or pipeline.pending is not None
+            or not pipeline.has_decode_work(self._running_batch)
+        ):
+            return False
+        req_id = params.req.rid
+        key = self.runtime.visible.get(req_id)
+        if key is None or req_id in (
+            getattr(self.runtime, "_join_priority_promoted", None),
+            getattr(self.runtime, "_join_last_child_priority_promoted", None),
+            getattr(self.runtime, "_final_priority_promoted", None),
+        ):
+            return False
+        guard = getattr(self.admission, "_ready_service_guard", None)
+        if guard is not None and guard.elapsed_service_timeout(key, time.monotonic()):
+            return False
+
+        tree = cache.tree_core
+        selected_anchors = {req.last_node for req in selected}
+        # Count only native load sources whose last Host lock clears at ACK.
+        credit, remaining = 0, self.max_candidates
+        for op in queue:
+            if (
+                op.beliefkv_command_id is not None or len(op.node_ids) != 1
+                or (anchor := op.node_ids[0]) not in selected_anchors
+                or anchor not in cache.ongoing_load_back
+            ):
+                return False
+            node = tree.node_by_id(anchor)
+            while node is not tree.root_node and node.load_back_pending_id == anchor:
+                if remaining == 0:
+                    return False
+                remaining -= 1
+                full = node.component_data[0]
+                if (
+                    node.write_through_pending_id is None
+                    and full.host_lock_ref == int(node.id == anchor)
+                    and full.value is not None and full.host_value is not None
+                    and len(full.value) == len(full.host_value)
+                ):
+                    credit += len(full.host_value)
+                node = node.parent
+        if not credit:
+            return False
+
+        counts = self.runtime.counts
+        cpu = time.thread_time_ns()
+        headroom = observe_materialization_headroom(
+            cache, max_nodes=self.max_nodes, required_free_tokens=hit,
+        )
+        counts["subagent_materialization_restore_pressure_checks"] += 1
+        counts["subagent_materialization_restore_pressure_check_cpu_ns"] += (
+            time.thread_time_ns() - cpu
+        )
+        shortfall = hit - headroom.available_tokens
+        if not headroom.census_complete or not 0 < shortfall <= credit:
+            return False
+        counts["subagent_materialization_restore_pressure_deferrals"] += 1
+        counts["subagent_materialization_restore_pressure_shortfall_tokens"] += shortfall
+        writer = getattr(self.runtime, "_opportunity_writer", None)
+        if writer is not None:
+            writer.record({
+                "event": "subagent_materialization_restore_pressure_deferred",
+                "ts_ms": time.time() * 1000.,
+                "key": asdict(key),
+                "native_node_ids": [op.node_ids[0] for op in queue],
+                "requested_restore_tokens": hit,
+                "unfunded_restore_tokens": shortfall,
+                "reclaimable_after_ack_tokens": credit,
+            })
+        return True
 
     def _attach_host_eviction_trimming(self, cache, tree, component):
         drive_native = getattr(component, "drive_host_eviction", None)
@@ -388,6 +498,11 @@ class SubagentMaterialization:
         return ()
 
     def _restore_native_eviction(self):
+        if self._native_demand_restore is not None:
+            cache, native_load, init_load_back = self._native_demand_restore
+            if cache.init_load_back is init_load_back:
+                cache.init_load_back = native_load
+            self._native_demand_restore = None
         if self._native_device_eviction is not None:
             cache, native_evict, evict_device_leaf = self._native_device_eviction
             if cache._evict_device_leaf is evict_device_leaf:
