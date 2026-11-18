@@ -26,6 +26,7 @@ from scripts.finish_model_work_oracle import verify_pins, wait_observer_publicat
 from scripts.review_predictive_thunder_cohort import matching_serving_traffic
 
 LABELS = ("control", "pressure", "thunderagent_acting_decay", "native_matched")
+PRESSURE_ONLY = ("pressure",)
 HELPER = Path("/home/longhao/experiment/.worktrees/beliefkv-fast-resource-wait-20261115")
 
 
@@ -39,10 +40,10 @@ def canonical_work(work):
 
 def stage_labels(plan):
     labels = tuple(plan.get("GPU_stage_order", LABELS))
-    if labels not in (LABELS, LABELS[:2]) or (
+    if labels not in (LABELS, LABELS[:2], PRESSURE_ONLY) or (
         "GPU_stage_order" in plan and set(plan["stages"]) != set(labels)
     ):
-        raise ValueError("select the complete four-arm campaign or the matched Full pair")
+        raise ValueError("select the four-arm campaign, matched Full pair, or pressure arm only")
     return labels
 
 
@@ -132,8 +133,19 @@ class WatcherRouter:
 def register_stage(stage, plan, owner):
     evidence, registration = Path(stage["evidence"]), Path(stage["registration"])
     evidence.mkdir()
-    (evidence / "prepared_plugin").symlink_to(Path(plan["plugin"]), target_is_directory=True)
     write(evidence / "owner.json", owner)
+    if tuple(plan.get("GPU_stage_order", ())) == PRESSURE_ONLY:
+        # A single run needs no memory bridge between successive arms.
+        result = subprocess.run(
+            stage["command"], cwd=ROOT, capture_output=True, text=True, timeout=240,
+        )
+        write(evidence / "registration_result.json", {
+            "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr,
+        })
+        result.check_returncode()
+        return json.loads(result.stdout)["watcher"]
+
+    (evidence / "prepared_plugin").symlink_to(Path(plan["plugin"]), target_is_directory=True)
 
     def prepared():
         write(evidence / "preparation.json", {
@@ -295,6 +307,8 @@ def watch(plan_path):
                         if all(bridge["owner"].get(key) == owner[key] for key in ("pid", "start_ticks")):
                             write(path, {**bridge, "release": True})
                 verify_pins(plan["inputs_sha256"])
+                state["status"] = "registering_" + label
+                pulse()
                 supervisor = register_stage(stage, plan, owner)
                 state.update(serving_watcher=supervisor, status="waiting_actual_replay_" + label)
                 state["GPU_registered_stages"].append(label)
@@ -363,9 +377,10 @@ def watch(plan_path):
                     registration, plan["cohort"], Path(stage["review"]) / "review.json", proof_path,
                 ])
                 proofs[label] = load(proof_path)
-                if canonical_work(proofs[label]["work"]) != canonical_work(proofs["control"]["work"]):
-                    raise ValueError("complete measured native work changed")
-                matching_serving_traffic(load(plan["stages"]["control"]["registration"]), serving)
+                if labels != PRESSURE_ONLY:
+                    if canonical_work(proofs[label]["work"]) != canonical_work(proofs["control"]["work"]):
+                        raise ValueError("complete measured native work changed")
+                    matching_serving_traffic(load(plan["stages"]["control"]["registration"]), serving)
                 state["completed_stages"].append(label)
                 state.update(status="complete_" + label, measured_completed=18)
                 pulse()
@@ -380,12 +395,14 @@ def watch(plan_path):
                     "--plan", plan_path, "--output", output / "all_four_comparisons", "--baselines",
                 ])
                 state.update(status="complete_four_matched_arms", measured_completed=18)
-            else:
+            elif labels == LABELS[:2]:
                 cpu("materialization_comparison", [
                     ROOT / "scripts/review_materialization_campaign.py",
                     "--plan", plan_path, "--output", output / "materialization_comparison",
                 ])
                 state.update(status="complete_materialization_pair", measured_completed=18)
+            else:
+                state.update(status="complete_materialization_pressure", measured_completed=18)
     except BaseException as error:
         state.update(status="stopped_preserve_materialization_campaign", error=repr(error))
         supervisor = state.get("serving_watcher")
@@ -404,7 +421,12 @@ def prepare(args):
     causal.fresh._require_clean(ROOT)
     oracle_complete(load(args.oracle_comparison))
     prepared = load(args.prepared / "preparation.json")
-    labels = LABELS[:2] if getattr(args, "pair_only", False) else LABELS
+    labels = LABELS
+    if getattr(args, "pressure_only", False):
+        labels = PRESSURE_ONLY
+    elif getattr(args, "pair_only", False):
+        labels = LABELS[:2]
+    preparation_labels = LABELS[:2] if labels == PRESSURE_ONLY else labels
     configurations = {}
     pins = {
         str(path.resolve()): sha256_file(path)
@@ -417,7 +439,7 @@ def prepare(args):
             HELPER / "scripts/hold_gpu_memory_between_runs.py",
         )
     }
-    for label in labels:
+    for label in preparation_labels:
         binding = prepared["artifacts"][label]
         if sha256_file(Path(binding["path"])) != binding["sha256"]:
             raise ValueError("prepared configuration changed")
@@ -501,13 +523,15 @@ def main():
     ):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--suffix", default="20261116_r1")
-    parser.add_argument("--pair-only", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--pair-only", action="store_true")
+    mode.add_argument("--pressure-only", action="store_true")
     args = parser.parse_args()
     if args.watch:
         watch(args.watch.resolve())
     else:
         for key, value in vars(args).items():
-            if key not in ("watch", "suffix", "pair_only"):
+            if key not in ("watch", "suffix", "pair_only", "pressure_only"):
                 if value is None:
                     parser.error("provide all preparation, qualification and output paths")
                 setattr(args, key, value.resolve())

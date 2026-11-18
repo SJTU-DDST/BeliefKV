@@ -33,7 +33,7 @@ def test_pair_only_preparation_keeps_the_same_shared_work_and_resources():
         campaign.matching_preparations(pair)
 
 
-@pytest.mark.parametrize("labels", (campaign.LABELS, campaign.LABELS[:2]))
+@pytest.mark.parametrize("labels", (campaign.LABELS, campaign.LABELS[:2], campaign.PRESSURE_ONLY))
 def test_declared_stage_order_accepts_only_its_complete_stage_map(labels):
     plan = {"GPU_stage_order": list(labels), "stages": dict.fromkeys(labels)}
     assert campaign.stage_labels(plan) == labels
@@ -178,7 +178,7 @@ def test_watch_preserves_multiple_wait_heartbeats_without_registering_gpu(tmp_pa
     assert calls == ["closed"]
 
 
-@pytest.mark.parametrize("labels", (campaign.LABELS, campaign.LABELS[:2]))
+@pytest.mark.parametrize("labels", (campaign.LABELS, campaign.LABELS[:2], campaign.PRESSURE_ONLY))
 def test_completed_campaign_reviews_only_the_declared_methods(tmp_path, monkeypatch, labels):
     oracle = tmp_path / "oracle.json"
     oracle.write_text("{}")
@@ -205,14 +205,18 @@ def test_completed_campaign_reviews_only_the_declared_methods(tmp_path, monkeypa
     ))
     campaign.watch(plan)
     state = campaign.load(tmp_path / "state.json")
-    pair_only = labels == campaign.LABELS[:2]
-    assert state["status"] == (
-        "complete_materialization_pair" if pair_only else "complete_four_matched_arms"
-    )
+    assert state["status"] == {
+        campaign.LABELS: "complete_four_matched_arms",
+        campaign.LABELS[:2]: "complete_materialization_pair",
+        campaign.PRESSURE_ONLY: "complete_materialization_pressure",
+    }[labels]
     assert state["GPU_stage_order"] == list(labels)
     assert state["completed_stages"] == list(labels)
     assert not state["GPU_registered_stages"]
-    assert len(calls) == 1 and ("--baselines" in calls[0]) is (not pair_only)
+    if labels == campaign.PRESSURE_ONLY:
+        assert not calls
+    else:
+        assert len(calls) == 1 and ("--baselines" in calls[0]) is (labels == campaign.LABELS)
     assert closed == [True]
 
 
@@ -259,7 +263,7 @@ def test_oracle_review_must_include_complete_native_work():
         })
 
 
-def prepared_queue(tmp_path, monkeypatch, *, pair_only=False):
+def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=False):
     oracle, report, sources, template, supervisor = (
         tmp_path / name for name in (
             "oracle.json", "cpu.xml", "sources.json", "template.json", "supervisor.py",
@@ -287,7 +291,7 @@ def prepared_queue(tmp_path, monkeypatch, *, pair_only=False):
     campaign.prepare(SimpleNamespace(
         output=output, prepared=PREPARED, oracle_comparison=oracle, cpu_report=report,
         cpu_sources=sources, template_plan=template, fast_supervisor=supervisor,
-        suffix=tmp_path.name, pair_only=pair_only,
+        suffix=tmp_path.name, pair_only=pair_only, pressure_only=pressure_only,
     ))
     return campaign.load(output / "plan.json")
 
@@ -311,3 +315,33 @@ def test_actual_pair_preparation_builds_only_two_full_entries(tmp_path, monkeypa
     assert {row["arm"] for row in plan["stages"].values()} == {"full"}
     assert len({row["port"] for row in plan["stages"].values()}) == 2
     assert campaign.stage_labels(plan) == campaign.LABELS[:2]
+
+
+def test_pressure_only_preparation_registers_no_control(tmp_path, monkeypatch):
+    plan = prepared_queue(tmp_path, monkeypatch, pressure_only=True)
+    assert list(plan["stages"]) == plan["GPU_stage_order"] == ["pressure"]
+    stage = plan["stages"]["pressure"]
+    assert campaign.load(stage["configuration"])["materialization_experiment"]["policy"] in (
+        campaign.PRESSURE_POLICIES
+    )
+    assert campaign.stage_labels(plan) == campaign.PRESSURE_ONLY
+
+
+def test_pressure_only_registers_the_normal_supervisor(tmp_path, monkeypatch):
+    owner = {"pid": 1, "start_ticks": "1"}
+    watcher = {"pid": 2, "start_ticks": "2"}
+    command = [campaign.sys.executable, "run_causal_comparison.py"]
+    stage = {
+        "command": command, "registration": str(tmp_path / "registration.json"),
+        "evidence": str(tmp_path / "evidence"),
+    }
+    calls = []
+
+    def run(actual, **_kwargs):
+        calls.append(actual)
+        return campaign.subprocess.CompletedProcess(actual, 0, json.dumps({"watcher": watcher}), "")
+
+    monkeypatch.setattr(campaign.subprocess, "run", run)
+    assert campaign.register_stage(stage, {"GPU_stage_order": ["pressure"]}, owner) == watcher
+    assert calls == [command]
+    assert not (tmp_path / "evidence/prepared_plugin").exists()
