@@ -134,23 +134,13 @@ def register_stage(stage, plan, owner):
     evidence, registration = Path(stage["evidence"]), Path(stage["registration"])
     evidence.mkdir()
     write(evidence / "owner.json", owner)
-    if tuple(plan.get("GPU_stage_order", ())) == PRESSURE_ONLY:
-        # A single run needs no memory bridge between successive arms.
-        result = subprocess.run(
-            stage["command"], cwd=ROOT, capture_output=True, text=True, timeout=240,
-        )
-        write(evidence / "registration_result.json", {
-            "returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr,
-        })
-        result.check_returncode()
-        return json.loads(result.stdout)["watcher"]
-
     (evidence / "prepared_plugin").symlink_to(Path(plan["plugin"]), target_is_directory=True)
 
     def prepared():
         write(evidence / "preparation.json", {
             "registration_sha256": sha256_file(registration),
             "fast_supervisor": plan["fast_supervisor"],
+            "shared_gpu": tuple(plan.get("GPU_stage_order", ())) == PRESSURE_ONLY,
             "serving_runtime_changed_by_supervisor": False,
         })
 
@@ -265,7 +255,7 @@ def watch(plan_path):
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
-    module, device = helper_module(), None
+    device = None
     proofs = {}
     try:
         verify_pins(plan["inputs_sha256"])
@@ -276,7 +266,9 @@ def watch(plan_path):
             if not path.exists():
                 write(path, proof)
         state["completed_stages"] = list(proofs)
-        device = module.NvmlDevice()
+        if labels != PRESSURE_ONLY:
+            module = helper_module()
+            device = module.NvmlDevice()
         with (output / "campaign.lock").open("a+") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             for label in labels:
@@ -285,27 +277,28 @@ def watch(plan_path):
                 stage = plan["stages"][label]
                 state.update(status="waiting_resources_" + label, current_stage=label,
                              measured_completed=None, observed_arrivals=None)
-                ignored = set()
-                for previous in plan["stages"].values():
-                    for path in Path(previous["evidence"]).glob("bridge_*.state.json"):
-                        bridge = load(path)
-                        if bridge.get("status") == "holding" and (
-                            all(bridge["owner"].get(key) == owner[key] for key in ("pid", "start_ticks"))
-                            and causal.reservation.alive(bridge["process"])
-                        ):
-                            ignored.add(bridge["process"]["pid"])
-                wait = module.FastWait(
-                    device.snapshot,
-                    lambda port: module.machine_resources(port, ROOT, causal.reservation.owned_runs),
-                    ignored=lambda: ignored,
-                )
-                wait(stage, state, pulse=pulse)
-                # Release only this campaign's preceding bridges after a fresh free-device check.
-                for previous in plan["stages"].values():
-                    for path in Path(previous["evidence"]).glob("bridge_*.control.json"):
-                        bridge = load(path)
-                        if all(bridge["owner"].get(key) == owner[key] for key in ("pid", "start_ticks")):
-                            write(path, {**bridge, "release": True})
+                if device is not None:
+                    ignored = set()
+                    for previous in plan["stages"].values():
+                        for path in Path(previous["evidence"]).glob("bridge_*.state.json"):
+                            bridge = load(path)
+                            if bridge.get("status") == "holding" and (
+                                all(bridge["owner"].get(key) == owner[key] for key in ("pid", "start_ticks"))
+                                and causal.reservation.alive(bridge["process"])
+                            ):
+                                ignored.add(bridge["process"]["pid"])
+                    wait = module.FastWait(
+                        device.snapshot,
+                        lambda port: module.machine_resources(port, ROOT, causal.reservation.owned_runs),
+                        ignored=lambda: ignored,
+                    )
+                    wait(stage, state, pulse=pulse)
+                    # Release only this campaign's preceding bridges after a fresh free-device check.
+                    for previous in plan["stages"].values():
+                        for path in Path(previous["evidence"]).glob("bridge_*.control.json"):
+                            bridge = load(path)
+                            if all(bridge["owner"].get(key) == owner[key] for key in ("pid", "start_ticks")):
+                                write(path, {**bridge, "release": True})
                 verify_pins(plan["inputs_sha256"])
                 state["status"] = "registering_" + label
                 pulse()
@@ -323,6 +316,9 @@ def watch(plan_path):
                         supervisor = verify_serving_owner(
                             supervisor, observed.get("watcher", {}), registration,
                         )
+                        for name in ("resources", "fast_resource_wait"):
+                            if name in observed:
+                                state[name] = observed[name]
                     if observed.get("status") == "running_" + stage["arm"] and all(
                         observed.get(key) and causal.reservation.alive(observed[key])
                         for key in ("watcher", "server", "driver")

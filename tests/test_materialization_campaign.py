@@ -217,7 +217,7 @@ def test_completed_campaign_reviews_only_the_declared_methods(tmp_path, monkeypa
         assert not calls
     else:
         assert len(calls) == 1 and ("--baselines" in calls[0]) is (labels == campaign.LABELS)
-    assert closed == [True]
+    assert closed == ([] if labels == campaign.PRESSURE_ONLY else [True])
 
 
 def test_router_redirects_exact_watcher_once(tmp_path):
@@ -327,21 +327,55 @@ def test_pressure_only_preparation_registers_no_control(tmp_path, monkeypatch):
     assert campaign.stage_labels(plan) == campaign.PRESSURE_ONLY
 
 
-def test_pressure_only_registers_the_normal_supervisor(tmp_path, monkeypatch):
+def test_pressure_only_registers_the_shared_supervisor(tmp_path, monkeypatch):
     owner = {"pid": 1, "start_ticks": "1"}
     watcher = {"pid": 2, "start_ticks": "2"}
-    command = [campaign.sys.executable, "run_causal_comparison.py"]
+    root = tmp_path / "frozen"
+    registration = tmp_path / "registration.json"
     stage = {
-        "command": command, "registration": str(tmp_path / "registration.json"),
+        "command": [campaign.sys.executable, "run_causal_comparison.py"],
+        "registration": str(registration),
         "evidence": str(tmp_path / "evidence"),
     }
+    plan = {"GPU_stage_order": ["pressure"], "plugin": "plugin", "fast_supervisor": "supervisor"}
     calls = []
 
-    def run(actual, **_kwargs):
-        calls.append(actual)
-        return campaign.subprocess.CompletedProcess(actual, 0, json.dumps({"watcher": watcher}), "")
+    def register():
+        registration.write_text(json.dumps({"execution_checkout": str(root)}))
+        campaign.causal.subprocess.Popen([
+            campaign.sys.executable, str(root / "scripts/run_causal_comparison.py"),
+            "--watch", str(registration),
+        ])
+        print(json.dumps({"watcher": watcher}))
 
-    monkeypatch.setattr(campaign.subprocess, "run", run)
-    assert campaign.register_stage(stage, {"GPU_stage_order": ["pressure"]}, owner) == watcher
-    assert calls == [command]
-    assert not (tmp_path / "evidence/prepared_plugin").exists()
+    monkeypatch.setattr(campaign.causal, "main", register)
+    monkeypatch.setattr(campaign.subprocess, "Popen", lambda command, **_: calls.append(command))
+    assert campaign.register_stage(stage, plan, owner) == watcher
+    assert len(calls) == 1 and calls[0][1] == str(root / "scripts/supervise_materialization_stage.py")
+    assert campaign.load(tmp_path / "evidence/preparation.json")["shared_gpu"] is True
+
+
+def test_shared_supervisor_reuses_fast_wait_without_a_bridge(tmp_path, monkeypatch):
+    from scripts import supervise_materialization_stage as supervision
+
+    registration = tmp_path / "registration.json"
+    registration.write_text(json.dumps({"execution_checkout": str(campaign.ROOT)}))
+    accelerated_wait = object()
+    calls = []
+    original_wait = campaign.causal.wait_for_resources
+
+    def watch(path):
+        assert path == registration
+        assert campaign.causal.wait_for_resources is accelerated_wait
+        calls.append("watch")
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
+    monkeypatch.setattr(supervision.sys, "path", supervision.sys.path.copy())
+    monkeypatch.setattr(campaign.causal, "watch", watch)
+    monkeypatch.setattr(supervision, "load_module", lambda name, _: SimpleNamespace(
+        NvmlDevice=lambda: SimpleNamespace(snapshot=None, close=lambda: calls.append("close")),
+        FastWait=lambda gpu, machine: accelerated_wait,
+    ) if name == "materialization_fast_wait" else pytest.fail("shared run requested the bridge"))
+    supervision.watch_shared(registration, campaign.sha256_file(registration))
+    assert calls == ["watch", "close"]
+    assert campaign.causal.wait_for_resources is original_wait
