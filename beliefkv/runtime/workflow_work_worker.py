@@ -41,6 +41,13 @@ class ContinuousDistributionWorkPrediction(DistributionWorkPrediction):
     work_source: str
 
 
+@dataclass(frozen=True)
+class CompletionPathPrediction(ContinuousDistributionWorkPrediction):
+    remaining_path_s: float
+    path_reference_s: float
+    path_source: str
+
+
 class WorkflowWorkWorker:
     interval_s = .2
     queue_limit = 4096
@@ -52,6 +59,10 @@ class WorkflowWorkWorker:
     ):
         self.model = model if model is not None else WorkflowWorkModel.load(path, digest)
         self._r5 = self.model.schema == R5_SCHEMA
+        self._structural_events = (
+            STRUCTURAL_EVENTS | {Kind.TOOL_START, Kind.TOOL_END}
+            if getattr(self.model, "completion_path", None) is not None else STRUCTURAL_EVENTS
+        )
         self.task_prefix = self.model.task_input_prefix(execution_environment)
         self.digest = digest
         self.tokenizer_path = tokenizer_path
@@ -61,6 +72,7 @@ class WorkflowWorkWorker:
         self._predictions = {}
         self._closed_workflows = set()
         self._progress = {}
+        self._tool_clocks = {}
         self._projections = {}
         self._projection_texts = {}
         self._task_coverage = {}
@@ -91,7 +103,7 @@ class WorkflowWorkWorker:
             ):
                 self.counts["unobserved_event_ignored"] += 1
                 return
-            if self._r5 and action == "event" and args[0].kind in STRUCTURAL_EVENTS:
+            if self._r5 and action == "event" and args[0].kind in self._structural_events:
                 self._structural_submitted[workflow] += 1
                 self._predictions.pop(workflow, None)
             if action == "event" and args[0].kind is Kind.WORKFLOW_END:
@@ -102,9 +114,10 @@ class WorkflowWorkWorker:
                 self._predictions.clear()
                 self.counts["overflow_abstentions"] += 1
                 return
-            self._queue.append((workflow, action, args))
+            observed_at = time.monotonic()
+            self._queue.append((workflow, action, args, observed_at))
             self._submitted_revisions[workflow] += 1
-            self._pending_since.setdefault(workflow, time.monotonic())
+            self._pending_since.setdefault(workflow, observed_at)
             self.counts["submitted"] += 1
             self._condition.notify()
 
@@ -121,8 +134,8 @@ class WorkflowWorkWorker:
         return prediction
 
     def _revalidate_unchanged(self, workflow, prediction, now):
-        # R5's inputs contain no elapsed time: without new observations, an
-        # equivalent inference would produce the same remaining-work distribution.
+        # Active tool clocks remain dirty until refreshed; only time-independent
+        # inputs can extend validity without another inference.
         if not self._condition.acquire(blocking=False):
             return None
         try:
@@ -152,9 +165,10 @@ class WorkflowWorkWorker:
         return 1 if prediction is None else prediction.bucket
 
     def _consume(self, rows):
-        for workflow, action, args in rows:
+        for workflow, action, args, observed_at in rows:
             if action == "event" and args[0].kind is Kind.WORKFLOW_END:
                 self._progress.pop(workflow, None)
+                self._tool_clocks.pop(workflow, None)
                 self._projections.pop(workflow, None)
                 self._projection_texts.pop(workflow, None)
                 self._task_coverage.pop(workflow, None)
@@ -173,10 +187,16 @@ class WorkflowWorkWorker:
                 continue
             if workflow not in self._progress:
                 self._progress[workflow] = DistributionProgress() if self._r5 else WorkflowProgress()
+                if getattr(self.model, "completion_path", None) is not None:
+                    from beliefkv.predictor.workflow_completion_path import ObservedToolClock
+
+                    self._tool_clocks[workflow] = ObservedToolClock()
             progress = self._progress[workflow]
             if action == "event":
                 progress.event(args[0])
-                if self._r5 and args[0].kind in STRUCTURAL_EVENTS:
+                if workflow in self._tool_clocks:
+                    self._tool_clocks[workflow].event(args[0], observed_at)
+                if self._r5 and args[0].kind in self._structural_events:
                     self._structural_consumed[workflow] += 1
                 if args[0].kind is Kind.WORKFLOW_START and not self._r5:
                     text = args[0].attributes.get("workflow_task_instructions", "")
@@ -261,7 +281,13 @@ class WorkflowWorkWorker:
             features = progress.features(feature_schema=self.model.schema)
             continuous = None
             if self.model.continuous_readout is not None:
-                probabilities, continuous = self.model.predict(projection, features, with_work=True)
+                path_arguments = (
+                    {"path_timing": self._tool_clocks[workflow].features(now)}
+                    if workflow in self._tool_clocks else {}
+                )
+                probabilities, continuous = self.model.predict(
+                    projection, features, with_work=True, **path_arguments,
+                )
             else:
                 probabilities = self.model.predict(projection, features)
             best = max(range(3), key=lambda index: probabilities[index])
@@ -300,6 +326,17 @@ class WorkflowWorkWorker:
                         log_work_sigma=continuous["log_work_sigma"],
                         reference_work=continuous["reference_work"], work_source=continuous["source"],
                     )
+                    if workflow in self._tool_clocks:
+                        status = continuous.get("completion_path_support", "unavailable_completion_path")
+                        self.counts["completion_path_" + status] += 1
+                        if supported and status == "calibrated_completion_path":
+                            prediction = CompletionPathPrediction(
+                                **prediction.__dict__, remaining_path_s=continuous["remaining_path_s"],
+                                path_reference_s=continuous["path_reference_s"],
+                                path_source=continuous["path_source"],
+                            )
+                        if self._tool_clocks[workflow].started:
+                            self._dirty.add(workflow)
                 self._next_inference[workflow] = published + self.model.distribution_contract["minimum_refresh_s"]
                 self.counts["distribution_" + support] += 1
             self.counts["inferences"] += 1
@@ -377,6 +414,8 @@ class WorkflowWorkWorker:
                 "unchanged_input_cache_validation": "nonblocking_revision_and_live_producer",
                 "inference_timestamp_preserved_on_validity_refresh": True,
                 "admission_work_weight": (
+                    "remaining_model_tool_critical_path_seconds"
+                    if getattr(self.model, "completion_path", None) is not None else
                     "expected_training_referenced_continuous_work_utility"
                     if self.model.continuous_readout is not None else "three_class_probability_utility"
                 ),
@@ -394,4 +433,5 @@ class WorkflowWorkWorker:
         if self._thread is not None:
             self._thread.join(timeout=2.)
         self._predictions.clear()
+        self._tool_clocks.clear()
         self._queue.clear()

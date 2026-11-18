@@ -115,6 +115,11 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             self.neutral_work_weight = remaining_work_weight(
                 reference["reference_work"], utility_reference_work(reference),
             )
+        self.completion_path_profile = raw.get("completion_path_readout")
+        if self.completion_path_profile is not None:
+            if not self.strict_remaining_work:
+                raise ValueError("completion-path admission requires strict shortest-work selection")
+            self.neutral_work_weight = .5
         self.cost_identity = profile["identity"]
         self.oracle_reference_path_s = profile.get("oracle_reference_path_s", 600.)
         if type(self.oracle_reference_path_s) not in (int, float) or not 0 < self.oracle_reference_path_s < float("inf"):
@@ -373,9 +378,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         return tuple(extents), len(req.origin_input_ids) - checkpoint
 
     def _group(self, key, groups):
-        a, runtime = self.admission, self.admission.runtime
+        a = self.admission
         choices = []
-        if a._siblings is not None:
+        if getattr(a, "_siblings", None) is not None:
+            runtime = a.runtime
             for join_id in islice(runtime._join_by_invocation.get(key.invocation_id, ()), 8):
                 if join_id not in groups:
                     join = a._siblings.join(join_id)
@@ -411,7 +417,24 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         prediction = predictions[key.root_workflow_id]
         if not self._supported_work(prediction):
             return getattr(self, "neutral_work_weight", .5)
-        if prediction.evidence == "oracle" and not getattr(
+        profile = getattr(self, "completion_path_profile", None)
+        path = getattr(prediction, "remaining_path_s", None)
+        if profile is not None:
+            if (
+                getattr(prediction, "path_source", None) == profile["target"]
+                and type(path) in (int, float) and math.isfinite(path) and path >= 0
+            ):
+                weight = 1. / (1. + path / profile["reference_path_s"])
+            else:
+                from beliefkv.predictor.workflow_continuous_work import log_work_weight
+
+                # Missing path support retains a declared model-time fallback;
+                # work units are never compared directly with seconds.
+                weight = log_work_weight(
+                    prediction.log1p_remaining_work,
+                    profile["reference_path_s"] / profile["model_seconds_per_work_token"],
+                )
+        elif getattr(prediction, "evidence", None) == "oracle" and not getattr(
             a._work, "model_work_only", getattr(a._work, "combination_only", False),
         ):
             weight = 1. / (1. + prediction.remaining_path_s / self.oracle_reference_path_s)
@@ -446,11 +469,23 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             self.max_sibling_candidates if len(reference) >= self.max_candidates
             else self.max_candidates
         )
+        groups, peers = {}, {}
         for key in ordered:
+            group, total, _active = self._group(key, groups)
+            token = (key.root_workflow_id, group) if total > 1 else (key.invocation_id,)
+            peers.setdefault(token, []).append(key)
+        seen = set(window)
+        for group in peers.values():
             if len(window) >= limit:
                 break
-            if key not in window:
+            pending = [key for key in group if key not in seen]
+            if len(window) + len(pending) > limit and len(window) + len(pending) <= self.max_sibling_candidates:
+                limit = self.max_sibling_candidates
+            for key in pending:
+                if len(window) >= limit:
+                    break
                 window.append(key)
+                seen.add(key)
         a.counts["strict_remaining_work_window_keys"] += len(ordered)
         a.counts["strict_remaining_work_window_reference_replacements"] += len(set(reference) - set(window))
         return window
@@ -692,6 +727,11 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                             "capacity_accumulation": accumulation.last,
                         } if accumulation is not None else {}),
                         "cost_identity": self.cost_identity,
+                        "ranking_objective": (
+                            "remaining_model_tool_critical_path_seconds"
+                            if getattr(self, "completion_path_profile", None) is not None else
+                            "expected_work_utility"
+                        ),
                         "resource_fallback_selection_enabled": self.allow_feasible_resource_alternatives,
                         "device_fit_scope": (
                             "planned_pool_geometry" if self.plan_device_capacity
@@ -732,18 +772,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             if priority is not None:
                 priority.begin(keys, time.monotonic())
             for index, key in enumerate(keys):
-                if key.root_workflow_id not in predictions:
-                    predictions[key.root_workflow_id] = self.prediction(key.root_workflow_id)
-                prediction = predictions[key.root_workflow_id]
-                weight = (
-                    prediction_weight(prediction) if self._supported_work(prediction)
-                    else getattr(self, "neutral_work_weight", .5)
-                )
-                if (
-                    priority is not None and self._supported_work(prediction)
-                    and not getattr(self, "strict_remaining_work", False)
-                ):
-                    weight = priority.weight(key.root_workflow_id, weight)
+                weight = self._work_weight(key, predictions)
                 weights[key] = weight
                 priorities[key] = (0 if a._protected_join(key) else 1, -weight, index)
             supported = any(self._supported_work(value) for value in predictions.values())

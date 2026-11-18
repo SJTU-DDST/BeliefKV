@@ -287,6 +287,7 @@ def replay_choice(
             return choose_shortest_work_first(
                 candidates, reference, resources, costs, required=required,
                 budget_ns=500_000, clock=clock,
+                group_ready_siblings=observed.get("group_ready_siblings", False),
                 **({"strict_remaining_work": True} if strategy == "strict_remaining_work" else {}),
             )
         return choose_combination(
@@ -315,6 +316,8 @@ def replay_choice(
         def clock():
             nonlocal calls
             calls += 1
+            if observed.get("group_ready_siblings", False):
+                return 500_000 if calls >= observed["deadline_checks"] else 0
             return 500_000 if calls > observed["evaluated_candidates"] else 0
 
         actual = run(clock)

@@ -28,7 +28,7 @@ def strict_remaining_work_enabled(raw):
 
 def choose_shortest_work_first(
     candidates, reference, resources, costs, *, required=(), budget_ns=500_000,
-    clock=time.perf_counter_ns, strict_remaining_work=False,
+    clock=time.perf_counter_ns, strict_remaining_work=False, group_ready_siblings=True,
 ):
     """Fill by workflow priority, retaining JOIN rights and ready sibling adjacency."""
     started = clock()
@@ -41,12 +41,21 @@ def choose_shortest_work_first(
     }
     if strict_remaining_work:
         result["strict_remaining_work_admission"] = True
+    if group_ready_siblings:
+        result.update(group_ready_siblings=True, deadline_checks=0)
+
+    def expired():
+        if group_ready_siblings:
+            result["deadline_checks"] += 1
+        return clock() - started >= budget_ns
+
     try:
         by_id = {row.identity: row for row in candidates}
         if (
             not 1 <= len(candidates) <= 8 or len(by_id) != len(candidates)
             or len(set(reference)) != len(reference) or len(set(required)) != len(required)
             or type(strict_remaining_work) is not bool
+            or type(group_ready_siblings) is not bool
             or not strict_remaining_work and not set(reference) <= by_id.keys()
             or not set(required) <= set(reference) or not set(required) <= by_id.keys()
             or any(type(owner) is not str or not owner for owner in reference)
@@ -89,14 +98,31 @@ def choose_shortest_work_first(
             key=lambda row: (-row.weight, row.category, row.logical_tokens, row.sequence),
         )
         groups = {}
+        def group_key(row):
+            return row.workflow, row.group, row.weight, None if group_ready_siblings else row.category
+
         for row in ordered:
-            groups.setdefault((row.workflow, row.group, row.category, row.weight), []).append(row)
+            groups.setdefault(group_key(row), []).append(row)
         seen = set(required)
         for row in ordered:
-            for peer in groups[row.workflow, row.group, row.category, row.weight]:
+            peers = [
+                peer for peer in groups[group_key(row)] if peer.identity not in seen
+            ]
+            if not peers:
+                continue
+            if group_ready_siblings and len(peers) > 1:
+                if expired():
+                    result["reason"] = "shortest_work_soft_deadline_reference_fallback"
+                    return result
+                if _evaluate([*selected, *peers], resources, costs) is not None:
+                    selected.extend(peers)
+                    seen.update(peer.identity for peer in peers)
+                    result["evaluated_candidates"] += len(peers)
+                    continue
+            for peer in peers:
                 if peer.identity in seen:
                     continue
-                if clock() - started >= budget_ns:
+                if expired():
                     result["reason"] = "shortest_work_soft_deadline_reference_fallback"
                     return result
                 seen.add(peer.identity)

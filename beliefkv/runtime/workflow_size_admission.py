@@ -49,6 +49,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         )
         if self._conditional_distribution:
             self.rank_kind = "conditional_work_distribution_combination_only"
+            if getattr(getattr(self._work, "model", None), "completion_path", None) is not None:
+                self.rank_kind = "conditional_remaining_completion_path_seconds"
         self.pressure_pause_policy = getattr(runtime, "agent_pressure_pause_policy", "reference")
         self.workflow_pressure_pause = (
             self.pressure_pause_policy in ("workflow_remaining", "workflow_tool_aware")
@@ -123,6 +125,15 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
 
     def _pressure_preference(self, item, now):
         if self._conditional_distribution:
+            if getattr(self._combination, "completion_path_profile", None) is not None:
+                prediction = self._prediction(item.identity)
+                key = self.latest.get(item.identity)
+                if key is not None and self._supported(prediction):
+                    if self._protected_join(key):
+                        return -1.
+                    return -self._combination._work_weight(
+                        key, {key.root_workflow_id: prediction},
+                    )
             return None
         prediction = self._prediction(item.identity)
         if not self._supported(prediction):

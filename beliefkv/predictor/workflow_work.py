@@ -510,6 +510,11 @@ class WorkflowWorkModel:
             ):
                 raise ValueError("continuous workflow work requires its source-bound forecast contract")
             self.continuous_readout = ContinuousWorkReadout(self, continuous)
+        self.completion_path = None
+        if "completion_path_readout" in raw:
+            from beliefkv.predictor.workflow_completion_path import CompletionPathReadout
+
+            self.completion_path = CompletionPathReadout(raw["completion_path_readout"], self)
 
     @classmethod
     def load(cls, path, digest):
@@ -576,11 +581,14 @@ class WorkflowWorkModel:
             raise ValueError("workflow work model and runtime execution controls differ")
         return execution_control_text(controls)
 
-    def predict(self, projection, features, *, with_work=False):
+    def predict(self, projection, features, *, with_work=False, path_timing=None):
         import numpy as np
 
         if with_work and self.continuous_readout is None:
             raise ValueError("continuous inference requires an explicit continuous-work artifact")
+        with_path = with_work and self.completion_path is not None
+        if with_path and path_timing is None:
+            raise ValueError("completion-path inference requires current observed tool timing")
         tree_projection = None
         if self.conditional_tree is not None:
             from beliefkv.predictor.workflow_progress_tree import TreeProjection
@@ -619,7 +627,7 @@ class WorkflowWorkModel:
                 initial_probabilities = self.initial_head.predict(
                     initial_projection.initial_projection, features,
                 )
-                if self.initial_blend == 1.:
+                if self.initial_blend == 1. and not with_path:
                     return (
                         (initial_probabilities, self.continuous_readout.estimate(initial_probabilities))
                         if with_work else initial_probabilities
@@ -659,14 +667,22 @@ class WorkflowWorkModel:
         )
         if tree_projection is not None:
             if with_work:
-                probabilities, distribution = self.conditional_tree.forecast(
-                    probabilities, features, tree_projection.task_structure, hidden, self.thresholds,
-                )
-                return probabilities, self.continuous_readout.estimate(
+                if initial_probabilities is not None and self.initial_blend == 1.:
+                    distribution = None
+                else:
+                    probabilities, distribution = self.conditional_tree.forecast(
+                        probabilities, features, tree_projection.task_structure, hidden, self.thresholds,
+                    )
+                continuous = self.continuous_readout.estimate(
                     probabilities, **(
                         {"mean": distribution[0], "sigma": distribution[1]} if distribution is not None else {}
                     ),
                 )
+                if with_path:
+                    continuous.update(self.completion_path.estimate(
+                        features, tree_projection.task_structure, hidden, path_timing,
+                    ))
+                return probabilities, continuous
             probabilities = self.conditional_tree.combine(
                 probabilities, features, tree_projection.task_structure, hidden, self.thresholds,
             )
