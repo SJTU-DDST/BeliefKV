@@ -85,21 +85,21 @@ class ProgressTreeHead:
         width = max(len(tree) for tree in raw["trees"])
         if not 1 <= width <= 127:
             raise ValueError("progress tree exceeds the shallow-node budget")
-        shape = len(raw["trees"]), width
-        self.feature = np.full(shape, -1, dtype=np.int64)
-        self.threshold = np.zeros(shape)
-        self.left = np.zeros(shape, dtype=np.int64)
-        self.right = np.zeros(shape, dtype=np.int64)
-        self.value = np.zeros(shape)
-        for index, tree in enumerate(raw["trees"]):
+        roots, packed = [], []
+        traversal_depth = 0
+        for tree in raw["trees"]:
             if not isinstance(tree, list) or not tree:
                 raise ValueError("empty progress tree")
-            reached, stack = set(), [(0, 0)]
+            root = len(packed)
+            roots.append(root)
+            packed.append(None)
+            reached, stack = set(), [(0, 0, root)]
             while stack:
-                node, depth = stack.pop()
+                node, depth, slot = stack.pop()
                 if node in reached or not 0 <= node < len(tree) or depth > self.depth:
                     raise ValueError("cyclic, disconnected, or overly deep progress tree")
                 reached.add(node)
+                traversal_depth = max(traversal_depth, depth)
                 row = tree[node]
                 if not isinstance(row, list) or len(row) != 5:
                     raise ValueError("invalid progress tree node")
@@ -114,14 +114,23 @@ class ProgressTreeHead:
                 if feature == -1:
                     if left != -1 or right != -1:
                         raise ValueError("progress tree leaves cannot reference children")
+                    # Finite inputs always follow the leaf's self-edge.
+                    feature, threshold, first_child = 0, math.inf, slot
                 else:
-                    stack.extend(((left, depth + 1), (right, depth + 1)))
-                self.feature[index, node], self.threshold[index, node] = feature, threshold
-                self.left[index, node], self.right[index, node] = left, right
-                self.value[index, node] = value
+                    # Consecutive child slots let the split choose an index by addition.
+                    first_child = len(packed)
+                    packed.extend((None, None))
+                    stack.extend(((left, depth + 1, first_child), (right, depth + 1, first_child + 1)))
+                packed[slot] = (feature, threshold, first_child, value)
             if len(reached) != len(tree):
                 raise ValueError("unreachable progress tree nodes")
-        self.tree_index = np.arange(shape[0])
+        features, thresholds, first_children, values = zip(*packed)
+        self._roots = np.asarray(roots, dtype=np.intp)
+        self._feature = np.asarray(features, dtype=np.intp)
+        self._threshold = np.asarray(thresholds, dtype=float)
+        self._first_child = np.asarray(first_children, dtype=np.intp)
+        self._value = np.asarray(values, dtype=float)
+        self._traversal_depth = traversal_depth
 
     def score(self, values):
         """Traverse all trees together; work is bounded by the declared depth."""
@@ -130,20 +139,13 @@ class ProgressTreeHead:
         values = np.asarray(values, dtype=float)
         if values.shape != (self.feature_count,) or not np.isfinite(values).all():
             raise ValueError("invalid progress tree input")
-        nodes = np.zeros(len(self.tree_index), dtype=np.int64)
-        for _step in range(self.depth):
-            split = self.feature[self.tree_index, nodes]
-            active = split >= 0
-            if not active.any():
-                break
-            go_left = values[np.maximum(split, 0)] <= self.threshold[self.tree_index, nodes]
-            following = np.where(
-                go_left, self.left[self.tree_index, nodes], self.right[self.tree_index, nodes],
-            )
-            nodes = np.where(active, following, nodes)
-        if (self.feature[self.tree_index, nodes] >= 0).any():
+        nodes = self._roots
+        for _step in range(self._traversal_depth):
+            go_right = values[self._feature[nodes]] > self._threshold[nodes]
+            nodes = self._first_child[nodes] + go_right
+        if (self._threshold[nodes] != math.inf).any():
             raise ValueError("progress tree traversal did not reach its leaves")
-        leaves = self.value[self.tree_index, nodes]
+        leaves = self._value[nodes]
         return leaves.reshape(-1, 3).sum(0) if self.objective == "multiclass" else float(leaves.sum())
 
     def probabilities(self, values, thresholds):

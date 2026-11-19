@@ -42,6 +42,42 @@ def test_portable_tree_prediction_and_probability_blend_match_manual_results():
     assert head.score(vector).tolist() == [-1., 0., 0.]
 
 
+@pytest.mark.parametrize("objective", ("log_remaining_work", "multiclass"))
+def test_tree_scores_preserve_threshold_ties_and_original_reduction_order(objective):
+    import numpy as np
+
+    def leaf(value):
+        return [-1, 0., -1, -1, value]
+
+    uneven = [
+        [0, 1., 4, 2, 0.], leaf(11.), leaf(-3.), leaf(7.), [1, -1., 3, 1, 0.],
+    ]
+    large = 2. ** 54
+    trees = [[leaf(large)], [leaf(-large)], uneven]
+    if objective == "multiclass":
+        trees = [
+            [leaf(large)], [leaf(9.)], [leaf(-1.)],
+            [leaf(-large)], [leaf(-3.)], [leaf(2.)],
+            uneven, [leaf(0.)], [leaf(-2.)],
+        ]
+    head = ProgressTreeHead(dict(raw_head(), objective=objective, trees=trees, maximum_depth=4))
+    vector = np.zeros(len(FEATURES))
+    for first, second, expected in (
+        (1., -1., 7.),
+        (1., np.nextafter(-1., np.inf), 11.),
+        (np.nextafter(1., np.inf), -1., -3.),
+    ):
+        vector[:2] = first, second
+        score = head.score(vector)
+        if objective == "multiclass":
+            np.testing.assert_array_equal(score, [expected, 6., -1.])
+        else:
+            assert score == expected
+    vector[0] = np.nan
+    with pytest.raises(ValueError, match="invalid progress tree input"):
+        head.score(vector)
+
+
 @pytest.mark.parametrize("mutation", ("cycle", "nan", "extra_node", "deep", "feature", "incomplete_round"))
 def test_malformed_tree_artifacts_fail_closed(mutation):
     raw = raw_head()
