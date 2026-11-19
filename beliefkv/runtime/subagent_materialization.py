@@ -403,6 +403,8 @@ class SubagentMaterialization:
         cpu = time.thread_time_ns()
         headroom = observe_materialization_headroom(
             cache, max_nodes=self.max_nodes, required_free_tokens=hit,
+            # Native pins this anchor before reclaiming. It cannot fund its own load.
+            protected_host_nodes=(params.best_match_node,),
         )
         counts["subagent_materialization_restore_pressure_checks"] += 1
         counts["subagent_materialization_restore_pressure_check_cpu_ns"] += (

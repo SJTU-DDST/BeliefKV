@@ -553,7 +553,7 @@ def _track_native_host_allocations(native, capacity, *, occupied=0):
         pytest.param({"members": 2, "select": False}, case, id=case)
         for case in (
             "pressure", "free_host", "join_priority", "service_deadline", "no_decode",
-            "host_pin", "bounded_credit",
+            "host_pin", "bounded_credit", "unreferenced_consumer",
         )
     ] + [
         pytest.param(
@@ -587,6 +587,9 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
     f.runtime._native_chunk_input_reserve = 4
     gate = SubagentMaterialization(f.runtime, include_root_entries=True)
     gate.attach(native)
+    if case == "unreferenced_consumer":
+        native.release_radix_session(f.members[1].session_id)
+        assert f.leaves[1].component_data[0].session_ref == 0
     if case == "bounded_credit":
         _, actions = native.tree_core.split_host_only_full_prefix(
             f.leaf.id, f.leaf.creation_time, 4,
@@ -608,7 +611,7 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
         )
     if case == "host_pin":
         host_lock = native.inc_host_lock_ref(f.leaf.id).to_dec_params()
-    deferred = case in ("pressure", "partial_credit", "bounded_credit")
+    deferred = case in ("pressure", "partial_credit", "bounded_credit", "unreferenced_consumer")
     if case == "no_decode":
         f.running.reqs.clear()
         with pytest.raises(BatchConstructionReached):
@@ -656,7 +659,7 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
     ))
     expected = {
         "pressure": 8, "free_host": 8, "bounded_credit": 8,
-        "partial_credit": 6, "small_credit": 2,
+        "partial_credit": 6, "small_credit": 2, "unreferenced_consumer": 8,
     }
     assert observed["checkpoint_tokens"] == expected.get(case, 4)
     assert f.runtime.counts["subagent_materialization_restore_pressure_deferrals"] == deferred
