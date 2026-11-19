@@ -349,11 +349,16 @@ class SubagentMaterialization:
                 acks and callable(loading_check)
                 and hit >= max(1, cache.load_back_threshold)
                 and cache.token_to_kv_pool_allocator.available_size() < hit
-                and acks[0].finish_event.query()
             ):
-                # A load may finish between the scheduler poll and this allocation.
-                loading_check(finish_count=1)
-                self.runtime.counts["subagent_materialization_restore_acks_reaped"] += 1
+                # Only native ACKs already complete since the last poll can fund this allocation.
+                ready = 0
+                for ack in islice(acks, self.max_candidates):
+                    if not ack.finish_event.query():
+                        break
+                    ready += 1
+                if ready:
+                    loading_check(finish_count=ready)
+                    self.runtime.counts["subagent_materialization_restore_acks_reaped"] += ready
             if self._defer_demand_restore(cache, params):
                 # Native OTHER ends this selection pass and submits its selected
                 # loads. Returning an empty hit here would start recomputation.
@@ -548,6 +553,7 @@ class SubagentMaterialization:
             ]
         heapify(heap)
         plan, seen, planned = [], {node.id for _, node in heap}, set()
+        unplanned_children = {}
         remaining_edges = limit
         total = 0
         while heap and len(plan) < limit:
@@ -563,16 +569,23 @@ class SubagentMaterialization:
             if (
                 parent is None or parent.id in seen or not settled(parent)
                 or parent.component_data[0].lock_ref
-                or len(parent.children) > remaining_edges
             ):
                 continue
-            # A backed ancestor becomes a native device leaf only after its
-            # last device child has been planned.
-            remaining_edges -= len(parent.children)
-            if all(
-                child.id in planned or child.component_data[0].value is None
-                for child in parent.children.values()
-            ):
+            remaining = unplanned_children.get(parent.id)
+            if remaining is None:
+                child_count = len(parent.children)
+                if child_count > remaining_edges:
+                    continue
+                remaining_edges -= child_count
+                remaining = sum(
+                    child.id not in planned and child.component_data[0].value is not None
+                    for child in parent.children.values()
+                )
+            else:
+                remaining -= 1
+            if remaining:
+                unplanned_children[parent.id] = remaining
+            else:
                 seen.add(parent.id)
                 heappush(heap, (component.session_ref_eviction_strategy(parent), parent))
         return ()

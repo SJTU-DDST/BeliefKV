@@ -719,6 +719,58 @@ def test_d3_reaps_completed_restore_before_reclaiming_host(staged_native, comple
     assert observed["checkpoint_tokens"] == (8 if completed else 4)
 
 
+@pytest.mark.parametrize(
+    "staged_native", ({"members": 3, "select": False, "prefix_sizes": (3, 5, 8)},),
+    indirect=True,
+)
+@pytest.mark.parametrize(("ready", "limit", "reaped"), (
+    ((True, True), 64, 2),
+    ((True, True), 1, 1),
+    ((True, False), 64, 1),
+    ((False, True), 64, 0),
+))
+def test_d3_reaps_bounded_fifo_prefix_before_reclaim(staged_native, ready, limit, reaped):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    native, allocator = f.cache, f.allocator
+    back_up = _track_native_host_allocations(native, 24, occupied=16)
+    waiting, generation = insert_session(native, list(range(100, 108)), "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    insert_session(native, list(range(200, 200 + allocator.size - 8)), "unbacked")
+    f.runtime._native_chunk_input_reserve = 8
+    gate = SubagentMaterialization(f.runtime, include_root_entries=True)
+    gate.max_candidates = limit
+    gate.attach(native)
+
+    acks = []
+    for member, completed in zip(f.members, ready):
+        member.init_next_round_input(native)
+        f.first.add_one_req(member, has_chunked_req=False, truncation_align_size=None)
+        assert native.ready_to_load_host_cache() >= 0
+        ack = native.cache_controller.ack_load_queue[-1]
+        ack.finish_event.query = lambda completed=completed: completed
+        acks.append(ack)
+    assert allocator.available_size() == 0
+
+    consumer = f.members[-1]
+    consumer.init_next_round_input(native)
+    adder = f.adder()
+    adder.add_one_req(consumer, has_chunked_req=False, truncation_align_size=None)
+    assert adder.can_run_list == [consumer]
+    assert native.cache_controller.ack_load_queue == acks[reaped:]
+    assert [ack.finish_event.synchronize.call_count for ack in acks] == [
+        int(index < reaped) for index in range(len(acks))
+    ]
+    assert f.runtime.counts["subagent_materialization_restore_acks_reaped"] == reaped
+    observed = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", range(100, 109)), extra_key=None, cache_salt=None,
+    ))
+    assert (observed or {}).get("checkpoint_tokens", 0) == (0, 3, 8)[reaped]
+
+
 @pytest.mark.parametrize("runtime,host_free,donor_sizes,needed,loses_prefix", (
     ("pressure_v1", 0, (2,), 2, True),
     ("pressure_v2", 0, (2,), 2, False),
@@ -796,7 +848,7 @@ def test_native_allocation_uses_settled_backing_before_host_pressure_write_back(
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
 @pytest.mark.parametrize("branch", (
-    "settled", "second_backed_child", "unbacked_child", "host_locked", "pending",
+    "settled", "second_backed_child", "wide_settled", "unbacked_child", "host_locked", "pending",
 ))
 def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_children(
     runtime, full_native, branch,
@@ -805,9 +857,10 @@ def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_childr
     from test_beliefkv_terminal_capacity import insert_session
 
     native, allocator, writes, _, _ = full_native
-    back_up = _track_native_host_allocations(native, 16)
     backed_sibling = branch == "second_backed_child"
-    waiting_tokens = list(range(8 if backed_sibling else 10))
+    wide = branch == "wide_settled"
+    waiting_tokens = list(range(8 if backed_sibling or wide else 10))
+    back_up = _track_native_host_allocations(native, 30 if wide else 16)
     waiting, generation = insert_session(native, waiting_tokens, "waiting-parent")
     back_up(waiting)
     native._demote(waiting.id, {0: 0})
@@ -820,6 +873,13 @@ def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_childr
     if branch in ("second_backed_child", "unbacked_child"):
         sibling, _ = insert_session(native, [*ancestor_tokens, 46, 47], "other-path")
         if backed_sibling:
+            back_up(sibling)
+            donor_children.append(sibling)
+    if wide:
+        for index, start in enumerate(range(46, 62, 2)):
+            sibling, _ = insert_session(
+                native, [*ancestor_tokens, start, start + 1], f"backed-sibling-{index}",
+            )
             back_up(sibling)
             donor_children.append(sibling)
     back_up(ancestor, settle=branch != "pending")
@@ -838,7 +898,7 @@ def test_native_allocation_can_demote_a_settled_ancestor_after_its_device_childr
     evict_from_tree_cache(native, target)
     assert allocator.available_size() >= target
 
-    preserved = branch in ("settled", "second_backed_child")
+    preserved = branch in ("settled", "second_backed_child", "wide_settled")
     assert (unbacked.component_data[0].value is not None) is preserved
     assert len(writes) == before + (0 if preserved else 1)
     for node in (*donor_children, ancestor):
