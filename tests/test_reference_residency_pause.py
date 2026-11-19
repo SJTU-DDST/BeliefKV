@@ -101,6 +101,52 @@ def test_only_a_real_current_full_release_of_a_blocked_owner_revokes_eligibility
     assert not admission.counts["residency_pauses"]
 
 
+@pytest.mark.parametrize(("new_input", "keeps_active"), ((4, True), (5, False)))
+def test_native_pressure_tool_tail_defers_pause_until_successor_is_known(
+    demand_runtime, monkeypatch, new_input, keeps_active,
+):
+    runtime, admission, _controller = install(demand_runtime)
+    _, _, cache, _, donor, _, _ = demand_runtime
+    runtime._native_chunk_input_reserve = 8
+    key = admission.latest["tool"]
+    cache._demote(donor.id, {})
+    _, actions = cache.tree_core.split_host_only_full_prefix(donor.id, donor.creation_time, 28)
+    cache._apply_cache_actions(actions)
+    assert cache.load_back(donor.id)
+    assert cache.ready_to_load_host_cache() >= 0
+    cache.loading_check(finish_count=1)
+    runtime._remember_parent_pressure_node(donor.id, key, donor.creation_time)
+
+    remaining = admission.policy.remaining_capacity()
+    freed = {}
+    cache._demote(donor.id, freed)
+    assert freed == {0: 4}
+    runtime._on_parent_pressure_parked(donor.id, freed)
+    assert admission.policy.programs["tool"].active
+    assert admission.policy.remaining_capacity() == remaining
+    assert key.invocation_id not in admission._residency_pause.paused
+    assert admission.counts["residency_tool_tail_pause_deferred"] == 1
+
+    runtime.on_events((event(
+        10, Kind.TOOL_END, invocation_id="tool", attributes={"tool_run_id": "long"},
+    ),))
+    following = req("tool")
+    following.rid = "tool-following"
+    following.origin_input_ids = array("q", range(1, 33 + new_input))
+    following.output_ids = array("q")
+    following.session_id = key.session_id
+    following.session_generation = key.session_generation
+    following.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+    matching = cache.inspect_beliefkv_reentry(following)
+    assert matching["device_checkpoint_tokens"] == 28
+    assert matching["missing_full_tokens"] == 4
+    monkeypatch.setattr(admission, "_admit_free_continuation", lambda **_kwargs: False)
+
+    assert runtime.register_visible_request(following)
+    assert admission.policy.programs["tool"].active is keeps_active
+    assert admission.counts["residency_pauses"] == int(not keeps_active)
+
+
 def test_returned_offloaded_tool_requires_a_real_request_and_then_competes_again(demand_runtime):
     runtime, admission, controller = install(demand_runtime)
     controller.dispatch()

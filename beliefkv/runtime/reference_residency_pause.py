@@ -3,6 +3,7 @@
 from dataclasses import asdict
 import time
 
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.core.events import RuntimeEventKind as Kind
 
 
@@ -91,6 +92,17 @@ class ReferenceResidencyPause:
             not selected_boundary and (item.pending or not runtime._agent_observed_blocked_budget_key(key))
         ):
             return False
+        if source == "native_parent_pressure" and item.active and not selected_boundary:
+            invocation = runtime.graph.invocations.get(key.invocation_id)
+            chunk = runtime._native_chunk_input_reserve
+            if (
+                invocation is not None and invocation.state is InvocationState.WAIT_TOOL
+                and getattr(runtime._native_cache, "tree_components", ()) == (0,)
+                and type(chunk) is int and 0 < freed[0] < min(chunk, item.tokens)
+            ):
+                # Inspect the total restore and input when the successor binds.
+                a.counts["residency_tool_tail_pause_deferred"] += 1
+                return False
         return self._pause(key, source=source, missing_tokens=freed[0])
 
     def _fits_continuation_chunk(self, req, observed, missing):
