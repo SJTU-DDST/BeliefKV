@@ -533,6 +533,9 @@ class NativeReactiveTelemetry:
                 }
             except (AttributeError, IndexError, KeyError, TypeError, ValueError):
                 pass
+            restore_request_id = getattr(self._cache, "_beliefkv_demand_restore_request_id", None)
+            if isinstance(restore_request_id, str) and restore_request_id:
+                full_state["demand_restore_request_id"] = restore_request_id
         self._emit("eviction_attribution", {
             "_internal_event": "host_block_eviction",
             "ts_ms": time.time() * 1000.0,
@@ -933,6 +936,8 @@ class NativeReactiveTelemetry:
                 "exact_namespaced_token_prefix_hmac_blake2b128"
             ),
             **({"native_full_state": record["native_full_state"]} if "native_full_state" in record else {}),
+            **({"demand_restore_request_id": record["demand_restore_request_id"]}
+               if "demand_restore_request_id" in record else {}),
         }) + "\n")
         while len(self._pending_block_evictions) > self._block_eviction_index_limit:
             expired_identity, expired = self._pending_block_evictions.popitem(

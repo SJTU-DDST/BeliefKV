@@ -345,7 +345,12 @@ class SubagentMaterialization:
                 # Native OTHER ends this selection pass and submits its selected
                 # loads. Returning an empty hit here would start recomputation.
                 return None
-            return native_load(params)
+            previous = getattr(cache, "_beliefkv_demand_restore_request_id", None)
+            cache._beliefkv_demand_restore_request_id = getattr(params.req, "rid", None)
+            try:
+                return native_load(params)
+            finally:
+                cache._beliefkv_demand_restore_request_id = previous
 
         cache.init_load_back = init_load_back
         self._native_demand_restore = cache, native_load, init_load_back

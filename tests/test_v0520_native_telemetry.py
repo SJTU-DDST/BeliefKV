@@ -2211,7 +2211,9 @@ def test_host_block_eviction_is_attributed_to_later_full_and_mamba_access(
     )
     full_state = SimpleNamespace(value=None, session_ref=2)
     node = SimpleNamespace(id=8, parent=root, key=key, component_data={0: full_state})
+    audit._cache = SimpleNamespace(_beliefkv_demand_restore_request_id="restoring-request")
     audit.on_native_host_block_eviction(node, 0, 4)
+    audit._cache = None
     audit.on_native_host_block_eviction(node, 2, 2)
     full_state.session_ref = 0
 
@@ -2252,6 +2254,7 @@ def test_host_block_eviction_is_attributed_to_later_full_and_mamba_access(
     assert released_full["native_full_state"] == {
         "device_value_present_at_callback": False, "session_ref_at_callback": 2,
     }
+    assert released_full["demand_restore_request_id"] == "restoring-request"
     attributed = [
         row for row in rows if row["event"] == "host_block_reaccess_attributed"
     ]

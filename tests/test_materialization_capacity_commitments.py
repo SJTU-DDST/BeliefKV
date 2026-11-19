@@ -587,6 +587,12 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
     f.runtime._native_chunk_input_reserve = 4
     gate = SubagentMaterialization(f.runtime, include_root_entries=True)
     gate.attach(native)
+    evictions = []
+    native.tree_core.set_beliefkv_host_eviction_observer(
+        lambda node, _pool, _units: evictions.append((
+            node.id, native._beliefkv_demand_restore_request_id,
+        )),
+    )
     if case == "unreferenced_consumer":
         native.release_radix_session(f.members[1].session_id)
         assert f.leaves[1].component_data[0].session_ref == 0
@@ -662,6 +668,9 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
         "partial_credit": 6, "small_credit": 2, "unreferenced_consumer": 8,
     }
     assert observed["checkpoint_tokens"] == expected.get(case, 4)
+    if observed["checkpoint_tokens"] < 8:
+        assert (waiting.id, f.members[1].rid) in evictions
+    assert native._beliefkv_demand_restore_request_id is None
     assert f.runtime.counts["subagent_materialization_restore_pressure_deferrals"] == deferred
     assert f.runtime.counts["subagent_materialization_restore_pressure_covered_tokens"] == (
         4 if deferred else 0
