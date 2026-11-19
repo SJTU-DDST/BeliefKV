@@ -520,7 +520,13 @@ class SubagentMaterialization:
             return False
 
         pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
-        if params.mem_quota is not None or selected:
+        # A selected batch can share this pass only with no previous DMA pending.
+        if params.mem_quota is not None or (
+            selected and (
+                controller.load_queue or controller.ack_load_queue
+                or controller.write_queue or writes_at_trial
+            )
+        ):
             return decline("prefill_batch_already_constrained")
         if (
             self._demand_restore_chunk.pending is not None
@@ -548,6 +554,15 @@ class SubagentMaterialization:
         ) or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic())):
             return decline("protected_service")
         page = runtime._native_page_size
+        selected_slots = 0
+        for member in selected:
+            length = getattr(getattr(member, "extend_range", None), "length", None)
+            if type(length) is not int or length < 0:
+                return decline("prefill_batch_already_constrained")
+            # Native extend allocation reserves an extra page for each member.
+            selected_slots += ((length + page - 1) // page + 1) * page
+        if selected_slots > chunk:
+            return decline("prefill_batch_already_constrained")
         reserve = chunk + page * len(self._running_batch.reqs)
         protected_nodes = (
             params.best_match_node,
@@ -588,6 +603,7 @@ class SubagentMaterialization:
                 "initial_Host_hit_tokens": hit,
                 "staged_tokens": tokens, "observed_safe_tokens": safe_tokens,
                 "prefix_node_id": self._demand_restore_chunk.pending.prefix_node,
+                "selected_prefill_reserved_tokens": selected_slots,
             })
         return True
 
