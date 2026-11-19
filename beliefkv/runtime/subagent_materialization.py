@@ -11,6 +11,7 @@ from types import SimpleNamespace
 
 from beliefkv.control.causal_graph import InvocationState, JoinMode
 from beliefkv.core.events import RelationType
+from beliefkv.runtime.demand_restore_chunk import DemandRestoreChunk
 from beliefkv.runtime.sglang_v0520_admission import _request_key
 
 
@@ -269,6 +270,7 @@ class SubagentMaterialization:
         self._native_device_eviction = None
         self._native_host_eviction = None
         self._native_demand_restore = None
+        self._demand_restore_chunk = None
         self.last_observation = MaterializationHeadroom(False, "not_sampled")
         self.last_decision = {}
 
@@ -423,6 +425,7 @@ class SubagentMaterialization:
             return
 
         loading_check = getattr(cache, "loading_check", None)
+        self._demand_restore_chunk = DemandRestoreChunk(cache)
 
         def init_load_back(params):
             acks = getattr(cache.cache_controller, "ack_load_queue", ())
@@ -448,12 +451,77 @@ class SubagentMaterialization:
             previous = getattr(cache, "_beliefkv_demand_restore_request_id", None)
             cache._beliefkv_demand_restore_request_id = getattr(params.req, "rid", None)
             try:
+                if self._stage_demand_restore_chunk(cache, params):
+                    return None
                 return native_load(params)
             finally:
                 cache._beliefkv_demand_restore_request_id = previous
 
         cache.init_load_back = init_load_back
         self._native_demand_restore = cache, native_load, init_load_back
+
+    def _stage_demand_restore_chunk(self, cache, params):
+        runtime = self.runtime
+        pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
+        chunk = getattr(runtime, "_native_chunk_input_reserve", None)
+        if (
+            not chunk or params.host_hit_length < 2 * chunk or params.mem_quota is not None
+            or self._demand_restore_chunk.pending is not None
+            or getattr(self._adder, "can_run_list", ()) or pipeline is None
+            or pipeline.pending is not None or not pipeline.has_decode_work(self._running_batch)
+            or cache.cache_controller.load_queue or cache.cache_controller.ack_load_queue
+            or cache.token_to_kv_pool_allocator.available_size() >= params.host_hit_length
+        ):
+            return False
+        req = params.req
+        key = runtime.visible.get(req.rid)
+        if (
+            key is None or key.session_id is None or key.session_generation is None
+            or self._context(key) not in self.materialized
+            or _request_key(req, known_keys=runtime.visible) != key
+            or self.admission.latest.get(key.invocation_id) != key
+            or not self.admission.allows(key) or runtime._terminal(key)
+            or getattr(req, "_beliefkv_d3_staged_restore_key", None) == key
+            or req.rid in (
+                getattr(runtime, "_join_priority_promoted", None),
+                getattr(runtime, "_join_last_child_priority_promoted", None),
+                getattr(runtime, "_final_priority_promoted", None),
+            )
+        ):
+            return False
+        guard = getattr(self.admission, "_ready_service_guard", None)
+        if guard is not None and guard.elapsed_service_timeout(key, time.monotonic()):
+            return False
+        page = runtime._native_page_size
+        reserve = chunk + page * len(self._running_batch.reqs)
+        headroom = observe_materialization_headroom(
+            cache, max_nodes=self.max_nodes,
+            required_free_tokens=params.host_hit_length + reserve,
+            protected_host_nodes=(
+                params.best_match_node,
+                *(lease.node_id for lease in runtime._prefetch_service_leases.values()),
+            ),
+        )
+        safe_tokens = headroom.available_tokens - reserve
+        if not headroom.observable or safe_tokens + chunk >= params.host_hit_length:
+            return False
+        tokens = min(params.host_hit_length // 2, safe_tokens) // page * page
+        if tokens < max(chunk, cache.load_back_threshold):
+            return False
+        runtime.counts["subagent_materialization_demand_restore_chunk_trials"] += 1
+        if not self._demand_restore_chunk.start(params, key, tokens, device_reserve=reserve):
+            return False
+        runtime.counts["subagent_materialization_demand_restore_chunks"] += 1
+        runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] += tokens
+        if (writer := getattr(runtime, "_opportunity_writer", None)) is not None:
+            writer.record({
+                "event": "subagent_materialization_demand_restore_chunk",
+                "ts_ms": time.time() * 1000., "key": asdict(key),
+                "initial_Host_hit_tokens": params.host_hit_length,
+                "staged_tokens": tokens, "observed_safe_tokens": safe_tokens,
+                "prefix_node_id": self._demand_restore_chunk.pending.prefix_node,
+            })
+        return True
 
     def _defer_demand_restore(self, cache, params):
         queue = cache.cache_controller.load_queue
@@ -673,6 +741,9 @@ class SubagentMaterialization:
         return ()
 
     def _restore_native_eviction(self):
+        if self._demand_restore_chunk is not None:
+            self._demand_restore_chunk.release()
+            self._demand_restore_chunk = None
         if self._native_demand_restore is not None:
             cache, native_load, init_load_back = self._native_demand_restore
             if cache.init_load_back is init_load_back:
@@ -1121,6 +1192,20 @@ class SubagentMaterialization:
         self._native_order = native_order
         self._running_batch = running_batch
         self._adder = adder
+        if (
+            self._demand_restore_chunk is not None
+            and (restore := self._demand_restore_chunk.pending) is not None
+            and (
+                self.runtime.visible.get(restore.key.request_id) != restore.key
+                or self.admission.latest.get(restore.key.invocation_id) != restore.key
+                or _request_key(restore.request, known_keys=self.runtime.visible) != restore.key
+                or not any(req is restore.request for req in native_order)
+                or not self.admission.allows(restore.key)
+                or self.runtime._terminal(restore.key)
+                or restore.request.finished() or getattr(restore.request, "to_finish", None) is not None
+            )
+        ):
+            self._demand_restore_chunk.release()
         if not self.pending or all(record.started for record in self.pending.values()):
             return
         now = time.monotonic() if now is None else now
@@ -1279,6 +1364,8 @@ class SubagentMaterialization:
             counts["subagent_materialization_cpu_ns"] += time.thread_time_ns() - cpu
 
     def defer_start(self, req):
+        if self._demand_restore_chunk is not None and self._demand_restore_chunk.defer_until_ack(req):
+            return True
         record = self.pending.get(getattr(req, "rid", None))
         if record is None or record.started:
             return False
@@ -1346,6 +1433,12 @@ class SubagentMaterialization:
             record.retry_after = 0.
 
     def forget(self, invocation):
+        if (
+            self._demand_restore_chunk is not None
+            and (restore := self._demand_restore_chunk.pending) is not None
+            and restore.key.invocation_id == invocation
+        ):
+            self._demand_restore_chunk.release()
         self.pending = OrderedDict(
             (rid, record) for rid, record in self.pending.items()
             if record.key.invocation_id != invocation
@@ -1358,6 +1451,14 @@ class SubagentMaterialization:
         self.materialized = {
             identity for identity in self.materialized if identity[0] != workflow
         }
+
+    def abort_demand_restore(self, abort):
+        if (
+            self._demand_restore_chunk is not None
+            and (restore := self._demand_restore_chunk.pending) is not None
+            and (getattr(abort, "abort_all", False) or restore.key.request_id.startswith(abort.rid))
+        ):
+            self._demand_restore_chunk.release()
 
     def close(self):
         self._restore_native_eviction()

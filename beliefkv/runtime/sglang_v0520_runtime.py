@@ -13773,6 +13773,8 @@ class NativeAdmissionRuntime:
         return tuple(completed_ids) if completed_ids is not None else ()
 
     def on_abort_request(self, abort: object) -> None:
+        if self._subagent_materialization is not None:
+            self._subagent_materialization.abort_demand_restore(abort)
         if self._full_prefix_migration is not None:
             self._full_prefix_migration.aborted(
                 abort.rid, all_requests=getattr(abort, "abort_all", False),
