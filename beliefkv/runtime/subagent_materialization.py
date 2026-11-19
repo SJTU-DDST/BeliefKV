@@ -444,14 +444,18 @@ class SubagentMaterialization:
                 if ready:
                     loading_check(finish_count=ready)
                     self.runtime.counts["subagent_materialization_restore_acks_reaped"] += ready
-            if self._defer_demand_restore(cache, params):
+            # Carry the existing deferral observations into the chunk guard.
+            selected_h2d = (
+                {} if getattr(self.runtime, "_opportunity_writer", None) is not None else None
+            )
+            if self._defer_demand_restore(cache, params, selected_h2d):
                 # Native OTHER ends this selection pass and submits its selected
                 # loads. Returning an empty hit here would start recomputation.
                 return None
             previous = getattr(cache, "_beliefkv_demand_restore_request_id", None)
             cache._beliefkv_demand_restore_request_id = getattr(params.req, "rid", None)
             try:
-                if self._stage_demand_restore_chunk(cache, params):
+                if self._stage_demand_restore_chunk(cache, params, selected_h2d):
                     return None
                 return native_load(params)
             finally:
@@ -460,7 +464,7 @@ class SubagentMaterialization:
         cache.init_load_back = init_load_back
         self._native_demand_restore = cache, native_load, init_load_back
 
-    def _stage_demand_restore_chunk(self, cache, params):
+    def _stage_demand_restore_chunk(self, cache, params, selected_h2d=None):
         runtime = self.runtime
         chunk = getattr(runtime, "_native_chunk_input_reserve", None)
         hit = params.host_hit_length
@@ -475,6 +479,7 @@ class SubagentMaterialization:
         controller = cache.cache_controller
         writer = getattr(runtime, "_opportunity_writer", None)
         writes_at_trial = len(controller.ack_write_queue)
+        selected = getattr(self._adder, "can_run_list", ())
 
         def decline(reason, **details):
             if (
@@ -482,6 +487,30 @@ class SubagentMaterialization:
                 and getattr(req, "_beliefkv_d3_restore_decline", None) != (key, reason)
             ):
                 req._beliefkv_d3_restore_decline = key, reason
+                if reason == "prefill_batch_already_constrained":
+                    requests = []
+                    for member in selected:
+                        identity = _request_key(member, known_keys=runtime.visible)
+                        entry = (
+                            asdict(identity) if identity is not None
+                            else {"request_id": member.rid}
+                        )
+                        interval = getattr(member, "extend_range", None)
+                        length = (
+                            getattr(interval, "length", None) if interval is not None
+                            else getattr(member, "extend_input_len", None)
+                        )
+                        entry["extend_input_len"] = (
+                            length if type(length) is int and length >= 0 else None
+                        )
+                        requests.append(entry)
+                    running = getattr(self._running_batch, "reqs", None)
+                    details["selected_batch"] = {
+                        "requests": requests,
+                        "running_request_count": len(running) if running is not None else None,
+                        "chunk_input_reserve_tokens": chunk,
+                        "native_h2d": selected_h2d or None,
+                    }
                 writer.record({
                     "event": "subagent_materialization_demand_restore_chunk_declined",
                     "ts_ms": time.time() * 1000., "key": asdict(key), "reason": reason,
@@ -491,7 +520,7 @@ class SubagentMaterialization:
             return False
 
         pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
-        if params.mem_quota is not None or getattr(self._adder, "can_run_list", ()):
+        if params.mem_quota is not None or selected:
             return decline("prefill_batch_already_constrained")
         if (
             self._demand_restore_chunk.pending is not None
@@ -562,7 +591,7 @@ class SubagentMaterialization:
             })
         return True
 
-    def _defer_demand_restore(self, cache, params):
+    def _defer_demand_restore(self, cache, params, selected_h2d=None):
         queue = cache.cache_controller.load_queue
         selected = getattr(self._adder, "can_run_list", ())
         hit = params.host_hit_length
@@ -592,7 +621,8 @@ class SubagentMaterialization:
             return False
 
         tree = cache.tree_core
-        selected_anchors = {req.last_node for req in selected}
+        selected_last_nodes = [req.last_node for req in selected]
+        selected_anchors = set(selected_last_nodes)
         if any(
             op.beliefkv_command_id is not None or len(op.node_ids) != 1
             or op.node_ids[0] not in selected_anchors
@@ -618,6 +648,19 @@ class SubagentMaterialization:
                 ):
                     credit += len(full.host_value)
                 node = node.parent
+        if selected_h2d is not None:
+            native_node_ids = [op.node_ids[0] for op in queue]
+            queued_anchors = set(native_node_ids)
+            selected_h2d.update(
+                native_node_ids=native_node_ids,
+                selected_request_anchors={
+                    member.rid: anchor for member, anchor in zip(selected, selected_last_nodes)
+                    if anchor in queued_anchors
+                },
+                reclaimable_after_ack_tokens=credit,
+                unfunded_restore_tokens=None,
+                headroom_observation=None,
+            )
         if not credit:
             return False
 
@@ -633,6 +676,10 @@ class SubagentMaterialization:
             time.thread_time_ns() - cpu
         )
         shortfall = hit - headroom.available_tokens
+        if selected_h2d is not None:
+            selected_h2d["headroom_observation"] = headroom.reason
+            if headroom.observable:
+                selected_h2d["unfunded_restore_tokens"] = max(0, shortfall)
         if not headroom.observable or shortfall <= 0:
             return False
         chunk = self.runtime._native_chunk_input_reserve

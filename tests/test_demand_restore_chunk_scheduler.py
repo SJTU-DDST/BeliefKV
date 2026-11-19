@@ -11,6 +11,8 @@ import pytest
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
 from beliefkv.runtime.sglang_v0520_admission import _request_key
 from beliefkv.runtime.subagent_materialization import (
+    NODE_CENSUS_BOUND,
+    MaterializationHeadroom,
     SubagentMaterialization,
     observe_materialization_headroom,
 )
@@ -456,3 +458,92 @@ def test_d3_write_ack_retry_preserves_native_guards(pending_write_restore, guard
     case.native_load.assert_called_once()
     decline, = _restore_declines(f.runtime)
     assert decline["reason"] == guard and decline["key"] == asdict(f.key)
+
+
+@pytest.mark.parametrize(
+    "staged_native", ({"members": 3, "select": False, "prefix_sizes": (4, 8, 4)},),
+    indirect=True,
+)
+def test_d3_selected_batch_decline_reuses_existing_probes(staged_native, monkeypatch):
+    from sglang.srt.mem_cache.base_prefix_cache import InitLoadBackParams
+
+    f = staged_native
+    native, runtime = f.cache, f.runtime
+    controller, tree = native.cache_controller, native.tree_core
+    selected, target, another_target = f.members
+    selected.init_next_round_input(native)
+    f.first.add_one_req(selected, has_chunked_req=False, truncation_align_size=None)
+    assert f.first.can_run_list == [selected]
+    assert selected.extend_range.length == 1
+    root_id = tree.root_node.id
+    selected_members = [
+        selected,
+        NS(rid="legacy", last_node=root_id, extend_input_len=0),
+        NS(rid="missing", last_node=root_id),
+    ]
+    runtime._native_chunk_input_reserve = 2
+    gate = SubagentMaterialization(runtime, include_root_entries=True)
+    gate._adder = NS(can_run_list=selected_members)
+    gate._running_batch = f.running
+    params = InitLoadBackParams(best_match_node=f.leaves[1].id, host_hit_length=8, req=target)
+
+    with monkeypatch.context() as scoped:
+        native_load = Mock(return_value=object())
+        available = Mock(return_value=1)
+        node_by_id = Mock(wraps=tree.node_by_id)
+        headroom = Mock(return_value=MaterializationHeadroom(
+            True, NODE_CENSUS_BOUND, device_free_tokens=1,
+        ))
+        unexpected = Mock(side_effect=AssertionError("unexpected native probe"))
+        scoped.setattr(native, "init_load_back", native_load)
+        scoped.setattr(native, "inc_lock_ref", unexpected)
+        scoped.setattr(native, "inc_host_lock_ref", unexpected)
+        scoped.setattr(native, "evict_for_alloc", unexpected)
+        scoped.setattr(native, "loading_check", unexpected)
+        scoped.setattr(native, "writing_check", unexpected)
+        scoped.setattr(controller, "start_loading", unexpected)
+        scoped.setattr(f.allocator, "available_size", available)
+        scoped.setattr(tree, "node_by_id", node_by_id)
+        scoped.setattr("beliefkv.runtime.subagent_materialization.observe_materialization_headroom", headroom)
+        gate._attach_demand_restore_pressure(native)
+
+        assert native.init_load_back(params) is native_load.return_value
+        decline, = _restore_declines(runtime)
+        assert decline["reason"] == "prefill_batch_already_constrained"
+        assert decline["selected_batch"] == {
+            "requests": [
+                {**asdict(runtime.visible[selected.rid]), "extend_input_len": 1},
+                {"request_id": "legacy", "extend_input_len": 0},
+                {"request_id": "missing", "extend_input_len": None},
+            ],
+            "running_request_count": 1,
+            "chunk_input_reserve_tokens": 2,
+            "native_h2d": {
+                "native_node_ids": [selected.last_node],
+                "selected_request_anchors": {selected.rid: selected.last_node},
+                "reclaimable_after_ack_tokens": 4,
+                "unfunded_restore_tokens": 7,
+                "headroom_observation": NODE_CENSUS_BOUND,
+            },
+        }
+        assert native.init_load_back(params) is native_load.return_value
+        assert _restore_declines(runtime) == [decline]
+
+        scoped.setattr(controller, "load_queue", [])
+        next_params = InitLoadBackParams(
+            best_match_node=f.leaves[2].id, host_hit_length=4, req=another_target,
+        )
+        assert native.init_load_back(next_params) is native_load.return_value
+        _, without_observation = _restore_declines(runtime)
+        assert without_observation["key"]["request_id"] == another_target.rid
+        assert without_observation["selected_batch"]["native_h2d"] is None
+        assert native_load.call_args_list == [call(params), call(params), call(next_params)]
+        assert available.call_args_list == [call()] * 5
+        assert node_by_id.call_args_list == [call(selected.last_node)] * 2
+        expected_check = call(
+            native, max_nodes=gate.max_nodes, required_free_tokens=8,
+            protected_host_nodes=(f.leaves[1].id,),
+        )
+        assert headroom.call_args_list == [expected_check] * 2
+        unexpected.assert_not_called()
+        gate.close()
