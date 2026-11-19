@@ -12,6 +12,7 @@ DEFER_WRITE_ACK = "write_ack_retry_next_pass"
 class _Pending:
     request: object
     key: object
+    tokens: int
     prefix_node: int
     prefix_receipt: object
     suffix_node: int
@@ -26,7 +27,7 @@ class DemandRestoreChunk:
         self.max_source_nodes = max_source_nodes
         self.pending = None
 
-    def start(self, params, key, tokens, *, device_reserve, protected_nodes):
+    def start(self, params, key, tokens, *, device_reserve, protected_nodes, minimum_tokens=1):
         """Return a decline reason, or None after handing the slice to native."""
         cache, req = self.cache, params.req
         tree, controller = cache.tree_core, cache.cache_controller
@@ -71,6 +72,8 @@ class DemandRestoreChunk:
 
         # Attempt the native allocation once. A declined staging attempt may
         # move settled state, but may not discard any referenced checkpoint.
+        allocator = cache.token_to_kv_pool_allocator
+        free_before = allocator.available_size()
         funded = ensure_device_capacity_preserving_live_kv(
             cache, tokens + device_reserve, protected_nodes=protected_nodes,
             retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
@@ -80,7 +83,19 @@ class DemandRestoreChunk:
             return DEFER_WRITE_ACK
         req._beliefkv_d3_staged_restore_key = key
         if not funded:
-            return "device_capacity_not_funded"
+            free_after = allocator.available_size()
+            page = cache.page_size
+            smaller = (free_after - device_reserve) // page * page
+            if free_after <= free_before or not minimum_tokens <= smaller < tokens:
+                return "device_capacity_not_funded"
+            # The original source walk validated every node in the shorter slice.
+            trim = tokens - smaller
+            while trim >= prefix_tokens:
+                trim -= prefix_tokens
+                prefix = prefix.parent
+                prefix_tokens = len(prefix.key)
+            prefix_tokens -= trim
+            tokens = smaller
         prefix_id = prefix.id
         if prefix_tokens < len(prefix.key):
             split = tree.split_host_only_full_prefix(prefix.id, prefix.creation_time, prefix_tokens)
@@ -94,7 +109,9 @@ class DemandRestoreChunk:
             if not cache.load_back(prefix_id, req=req):
                 return "native_load_declined"
             prefix_receipt = cache.inc_lock_ref(prefix_id).to_dec_params()
-            self.pending = _Pending(req, key, prefix_id, prefix_receipt, suffix_id, suffix_receipt)
+            self.pending = _Pending(
+                req, key, tokens, prefix_id, prefix_receipt, suffix_id, suffix_receipt,
+            )
         finally:
             if self.pending is None:
                 cache.dec_host_lock_ref(suffix_id, suffix_receipt)

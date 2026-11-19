@@ -316,6 +316,131 @@ def _restore_declines(runtime):
     ]
 
 
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize(
+    ("free_before", "reclaimed", "threshold", "staged_tokens"),
+    (
+        pytest.param(3, 2, 1, 2, id="shortened"),
+        pytest.param(5, 0, 1, 0, id="no-progress"),
+        pytest.param(3, 1, 1, 0, id="below-chunk"),
+        pytest.param(3, 2, 3, 0, id="below-load-threshold"),
+    ),
+)
+def test_d3_uses_partial_capacity_cleanup(
+    staged_native, monkeypatch, free_before, reclaimed, threshold, staged_tokens,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, req, allocator, runtime = f.cache, f.req, f.allocator, f.runtime
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    source_slots = f.leaf.component_data[0].host_value.tolist()
+    # Four tokens would end in the leaf, but a two-token load ends inside its parent.
+    parent_id, actions = tree.split_host_only_full_prefix(f.leaf.id, f.leaf.creation_time, 3)
+    cache._apply_cache_actions(actions)
+    parent = tree.node_by_id(parent_id)
+    assert f.leaf.parent is parent
+
+    # Leave enough combined headroom for four restore and three reserve slots.
+    host_free = 7 - free_before
+    held_host = host.alloc(host.available_size() - 4 - host_free)
+    neighbor, _ = insert_session(cache, range(101, 105), "neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    neighbor_data = neighbor.component_data[0]
+    assert neighbor_data.session_ref > 0 and neighbor_data.value is None
+    if reclaimed:
+        insert_session(cache, range(111, 111 + reclaimed), "partial-donor")
+    insert_session(cache, range(201, 233), "device-victim")
+    held_device = allocator.alloc(allocator.available_size() - free_before)
+    assert (allocator.available_size(), host.available_size()) == (free_before, host_free)
+    cache.load_back_threshold = threshold
+    req.origin_input_ids = array("q", range(1, 15))
+
+    def partial_cleanup(native, target, **kwargs):
+        assert native is cache and target == 7
+        assert allocator.available_size() == free_before
+        if reclaimed:
+            assert ensure_device_capacity_preserving_live_kv(native, free_before + reclaimed, **kwargs)
+        assert allocator.available_size() == free_before + reclaimed
+        assert neighbor_data.host_value is neighbor_slots and host.slot_used[neighbor_slots].all()
+        return False
+
+    funding = Mock(side_effect=partial_cleanup)
+    monkeypatch.setattr(
+        "beliefkv.runtime.demand_restore_chunk.ensure_device_capacity_preserving_live_kv", funding,
+    )
+    native_load = Mock(wraps=cache.init_load_back)
+    monkeypatch.setattr(cache, "init_load_back", native_load)
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    try:
+        if staged_tokens:
+            assert invoke() == (None, f.running)
+            assert not construction and scheduler.waiting_queue == [req]
+            assert scheduler.chunked_req is None and req.kv.req_pool_idx is None
+            native_load.assert_not_called()
+            pending = gate._demand_restore_chunk.pending
+            assert pending.request is req and pending.tokens == staged_tokens
+            prefix = tree.node_by_id(pending.prefix_node)
+            assert tuple(prefix.key) == (1, 2) and tuple(parent.key) == (3,)
+            assert parent.parent is prefix and f.leaf.parent is parent
+            assert f.leaf.component_data[0].value is None
+            load, = f.loads
+            ack, = controller.ack_load_queue
+            assert load.host_indices.tolist() == source_slots[:staged_tokens]
+            assert ack.node_ids == [prefix.id] and ack.num_tokens_by_pool == {"kv": staged_tokens}
+            assert allocator.available_size() == 3
+            assert neighbor_data.host_value is neighbor_slots and host.slot_used[neighbor_slots].all()
+            stage, = (
+                event.args[0] for event in runtime._opportunity_writer.record.call_args_list
+                if event.args[0]["event"] == "subagent_materialization_demand_restore_chunk"
+            )
+            assert stage["key"] == asdict(f.key) and stage["prefix_node_id"] == prefix.id
+            assert (stage["proposed_tokens"], stage["staged_tokens"]) == (4, staged_tokens)
+            assert not _restore_declines(runtime)
+
+            cache.loading_check()
+            assert invoke() == (None, f.running)
+            assert f.loads == [load] and controller.ack_load_queue == [ack]
+            ack.finish_event.synchronize.assert_not_called()
+            f.complete.ready = True
+            cache.loading_check()
+            ack.finish_event.synchronize.assert_called_once_with()
+            assert not controller.ack_load_queue and not cache.ongoing_load_back
+        else:
+            f.complete.ready = True
+
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        funding.assert_called_once()
+        native_load.assert_called_once()
+        assert native_load.call_args.args[0].host_hit_length == 8 - staged_tokens
+        assert construction == [(req,)] and not scheduler.waiting_queue
+        assert scheduler.chunked_req is req and (req.extend_range.start, req.extend_range.length) == (8, 2)
+        assert gate._demand_restore_chunk.pending is None and f.pipeline.pending is None
+        assert runtime.counts["subagent_materialization_demand_restore_chunk_trials"] == 1
+        assert runtime.counts["subagent_materialization_demand_restore_chunks"] == bool(staged_tokens)
+        assert runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] == staged_tokens
+        assert [load.host_indices.tolist() for load in f.loads] == (
+            [source_slots[:staged_tokens], source_slots[staged_tokens:]]
+            if staged_tokens else [source_slots]
+        )
+        cache.loading_check()
+        cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        assert not controller.ack_load_queue and not cache.ongoing_load_back
+        if staged_tokens:
+            assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
+            assert host.slot_used[neighbor_slots].all()
+        else:
+            decline, = _restore_declines(runtime)
+            assert decline["reason"] == "device_capacity_not_funded" and decline["proposed_tokens"] == 4
+        cache.sanity_check()
+    finally:
+        gate.close()
+        allocator.free(held_device)
+        host.free(held_host)
+
+
 def _assert_write_ack_defers(case, key):
     f = case.f
     cache, req = f.cache, f.req

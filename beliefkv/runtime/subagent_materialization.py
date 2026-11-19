@@ -579,11 +579,13 @@ class SubagentMaterialization:
         if safe_tokens + chunk >= hit:
             return decline("headroom_expected_to_cover_native_restore", safe_tokens=safe_tokens)
         tokens = min(hit // 2, safe_tokens) // page * page
-        if tokens < max(chunk, cache.load_back_threshold):
+        minimum_tokens = max(chunk, cache.load_back_threshold)
+        if tokens < minimum_tokens:
             return decline("no_safe_slice", safe_tokens=safe_tokens, observation=headroom.reason)
         runtime.counts["subagent_materialization_demand_restore_chunk_trials"] += 1
         reason = self._demand_restore_chunk.start(
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
+            minimum_tokens=minimum_tokens,
         )
         if reason is not None:
             decline(
@@ -594,15 +596,16 @@ class SubagentMaterialization:
                 runtime.counts["subagent_materialization_demand_restore_ack_retries"] += 1
                 return True
             return False
+        pending = self._demand_restore_chunk.pending
         runtime.counts["subagent_materialization_demand_restore_chunks"] += 1
-        runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] += tokens
+        runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] += pending.tokens
         if writer is not None:
             writer.record({
                 "event": "subagent_materialization_demand_restore_chunk",
                 "ts_ms": time.time() * 1000., "key": asdict(key),
                 "initial_Host_hit_tokens": hit,
-                "staged_tokens": tokens, "observed_safe_tokens": safe_tokens,
-                "prefix_node_id": self._demand_restore_chunk.pending.prefix_node,
+                "proposed_tokens": tokens, "staged_tokens": pending.tokens,
+                "observed_safe_tokens": safe_tokens, "prefix_node_id": pending.prefix_node,
                 "selected_prefill_reserved_tokens": selected_slots,
             })
         return True
