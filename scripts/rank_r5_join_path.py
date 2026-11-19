@@ -20,7 +20,7 @@ from beliefkv.predictor.workflow_completion_path import WORK_PRIOR_KIND, feature
 from beliefkv.predictor.workflow_continuous_work import log_work_weight
 from beliefkv.predictor.workflow_work import R5_FEATURES, WorkflowWorkModel
 from scripts.crossvalidate_r5_join_path import (
-    cv_choices, merge_counts, summarize_cv, workflow_weights,
+    DECISION_SCORE_SCOPE, heldout_choice_review, workflow_weights,
 )
 from scripts.optimize_r5_join_path import evaluate_choices, prepared_decisions
 from scripts.train_workflow_work import write
@@ -103,6 +103,8 @@ def main():
     data = json.loads(args.dataset.read_bytes())
     crossfit = json.loads((args.crossfit_dir / "evaluation.json").read_bytes())
     plan = json.loads((args.crossfit_dir / "plan.json").read_bytes())
+    if crossfit.get("decision_score_scope") != DECISION_SCORE_SCOPE:
+        raise ValueError("rank validation requires the same per-candidate held-out crossfit baseline")
     if crossfit["inputs_sha256"].get(str(args.dataset.resolve())) != sha256_file(args.dataset):
         raise ValueError("feature cache belongs to another source dataset")
     if crossfit["inputs_sha256"].get(str(args.previous_audit.resolve())) != sha256_file(args.previous_audit):
@@ -151,6 +153,7 @@ def main():
         "relevance_is_true_remaining_model_tool_path_order": True,
         "synthetic_queries_are_training_only_not_competition_evidence": True,
         "training_weighting": args.weighting,
+        "decision_score_scope": DECISION_SCORE_SCOPE,
         "runtime_policy_and_sibling_capacity_checks_unchanged": True,
         "fixed18_used_for_selection": False, "GPU_action": False,
     })
@@ -184,10 +187,9 @@ def main():
         }
 
     for name, synthetic_count in configurations.items():
-        accumulated, raw_oof = defaultdict(Counter), np.full(count, np.nan)
+        raw_oof, decision_oof = np.full(count, np.nan), np.full(len(samples), np.nan)
         for fold in range(4):
             eligible = {wf for wf, group in assignment.items() if group != fold}
-            heldout = {wf for wf, group in assignment.items() if group == fold}
             training = events & (folds >= 0) & (folds != fold)
             validation = folds[:count] == fold
             _fitted, raw_scores, evidence = fit(eligible, synthetic_count)
@@ -202,12 +204,13 @@ def main():
             available = ((timing >= low - margin) & (timing <= high + margin)).all(axis=1)
             weights[~available] = fallback[~available]
             weights[~support] = .5
-            merge_counts(accumulated, cv_choices(choices, costs, weights, truth, offsets, heldout))
+            decision_oof[folds == fold] = weights[folds == fold]
             folds_evidence.append({
                 "variant": name, "fold": fold, "slope": slope, "intercept": intercept, **evidence,
             })
             print(json.dumps({"stage": "rank_fold", "variant": name, "fold": fold}), flush=True)
-        outcomes[name], out_of_fold[name] = summarize_cv(accumulated), raw_oof
+        outcomes[name] = heldout_choice_review(choices, costs, decision_oof, truth, offsets, assignment)
+        out_of_fold[name] = raw_oof
     baseline = crossfit["reviews"][crossfit["selected"]]
     eligible = [
         name for name, value in outcomes.items()
@@ -219,12 +222,14 @@ def main():
     )) if eligible else "keep_crossfit"
     write(args.output_dir / "selection.json", {
         "selected": selected, "outcomes": outcomes, "baseline": baseline,
+        "decision_score_scope": DECISION_SCORE_SCOPE,
         "folds": folds_evidence, "fixed18_used_for_selection": False, "GPU_action": False,
     })
     if selected == "keep_crossfit":
         write(args.output_dir / "evaluation.json", {
             "selected": selected, "outcomes": outcomes,
             "baseline": baseline, "no_ranker_promoted": True, "GPU_action": False,
+            "decision_score_scope": DECISION_SCORE_SCOPE,
             "training_weighting": args.weighting,
             "CPU_elapsed_s": time.monotonic() - started,
             "inputs_sha256": {
@@ -272,6 +277,7 @@ def main():
     }
     write(args.output_dir / "evaluation.json", {
         "selected": selected, "results": results, "outcomes": outcomes, "baseline": baseline,
+        "decision_score_scope": DECISION_SCORE_SCOPE,
         "slope": slope, "intercept": intercept, "final_training": evidence,
         "model_sha256": sha256_file(args.output_dir / "model.json"),
         "inputs_sha256": {

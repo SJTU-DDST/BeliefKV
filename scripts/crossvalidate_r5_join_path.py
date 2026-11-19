@@ -35,6 +35,7 @@ VARIANTS = {
     "prior_residual": {"kind": RESIDUAL_KIND, "rounds": 128, "leaves": 16, "depth": 5, "objective": "regression"},
     "prior_residual_l1": {"kind": RESIDUAL_KIND, "rounds": 128, "leaves": 16, "depth": 5, "objective": "regression_l1"},
 }
+DECISION_SCORE_SCOPE = "per_candidate_held_out_project"
 
 
 def fold_assignment(projects, measured, *, folds=4):
@@ -89,7 +90,6 @@ def cv_choices(items, costs, predicted, truth, offsets, validation_workflows):
     for item in items:
         if not item["competition"]:
             continue
-        wfs = set(offsets[id(item)])
         heldout = set(item["feasible_workflows"]) & validation_workflows
         if not heldout:
             continue
@@ -111,9 +111,14 @@ def cv_choices(items, costs, predicted, truth, offsets, validation_workflows):
     return per_workflow
 
 
-def merge_counts(target, source):
-    for wf, counts in source.items():
-        target[wf].update(counts)
+def heldout_choice_review(items, costs, predicted, truth, offsets, assignment):
+    for item in items:
+        if any(
+            wf not in assignment or not math.isfinite(predicted[index])
+            for wf, index in offsets[id(item)].items()
+        ):
+            raise ValueError("each competitor requires its own out-of-fold project prediction")
+    return summarize_cv(cv_choices(items, costs, predicted, truth, offsets, set(assignment)))
 
 
 def main():
@@ -153,6 +158,7 @@ def main():
         "whole_evaluation_windows_excluded_from_cross_validation": True,
         "one_count_per_heldout_workflow_per_boundary": True,
         "selection_requires_both_workflow_and_JOIN_error_noninferior_to_crossfit_baseline": True,
+        "decision_score_scope": DECISION_SCORE_SCOPE,
         "GPU_action": False,
     })
     costs = CombinationCosts(**base.raw["admission_cost_profile"]["costs"])
@@ -204,8 +210,8 @@ def main():
     reference = old.completion_path.raw["reference_path_s"]
     truth = np.asarray([log_work_weight(float(value), reference) for value in y])
     fallback = np.asarray([log_work_weight(float(value), reference) for value in model_logs])
-    per_variant = {name: defaultdict(Counter) for name in VARIANTS}
     oof = {name: np.full(row_count, np.nan) for name in VARIANTS}
+    decision_oof = {name: np.full(len(samples), np.nan) for name in VARIANTS}
     fold_reports = []
     print(json.dumps({"stage": "features_ready", "rows": len(samples), "fold_sizes": dict(Counter(assignment.values()))}), flush=True)
 
@@ -243,11 +249,10 @@ def main():
             weights = np.asarray([log_work_weight(float(max(0., value)), reference) for value in prediction])
             weights[~path_support] = fallback[~path_support]
             weights[~support] = .5
-            counts = cv_choices(cv_items, costs, weights, truth, offsets, heldout)
-            merge_counts(per_variant[name], counts)
+            # Each score in a selection must come from a fit that excluded its project.
+            decision_oof[name][assignments == fold] = weights[assignments == fold]
             fold_reports.append({
                 "fold": fold, "variant": name, "heldout_workflows": len(heldout),
-                "decision_counts": {wf: dict(value) for wf, value in counts.items()},
                 "calibration_bias_from_training_only": bias,
             })
         print(json.dumps({"stage": "fold_complete", "fold": fold}), flush=True)
@@ -256,7 +261,7 @@ def main():
     for name in VARIANTS:
         if not np.isfinite(oof[name][pooled]).all():
             raise ValueError("every nonmeasured workflow needs an out-of-fold path prediction")
-        values = summarize_cv(per_variant[name])
+        values = heldout_choice_review(cv_items, costs, decision_oof[name], truth, offsets, assignment)
         errors = defaultdict(list)
         for wf, error in zip(
             workflows[:row_count][pooled], abs(oof[name][pooled] - y[:row_count][pooled]),
@@ -266,9 +271,16 @@ def main():
             sum(errors[wf]) / len(errors[wf]) for wf in errors
         ) / len(errors)
         reviews[name] = values
+    for report in fold_reports:
+        report["decision_counts"] = {
+            wf: counts
+            for wf, counts in reviews[report["variant"]]["per_workflow"].items()
+            if assignment[wf] == report["fold"]
+        }
     selected = select_variant(reviews)
     write(args.output_dir / "selection.json", {
         "selected": selected, "reviews": reviews, "fold_reports": fold_reports,
+        "decision_score_scope": DECISION_SCORE_SCOPE,
         "fixed18_targets_used_for_selection": False, "GPU_action": False,
     })
     configuration = VARIANTS[selected]
@@ -315,6 +327,7 @@ def main():
             )
         },
         "calibration_is_whole_project_out_of_fold": True, "fixed18_targets_used_for_selection": False,
+        "decision_score_scope": DECISION_SCORE_SCOPE,
         "base_representation_and_repeated_fixed18_are_development_not_unseen_generalization": True,
         "same_snapshot_planning_not_future_service_or_JCT": True,
         "CPU_elapsed_s": time.monotonic() - started, "GPU_action": False,

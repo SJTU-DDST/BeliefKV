@@ -186,6 +186,27 @@ def test_project_folds_keep_same_project_together_and_exclude_measurement():
     assert assignment == fold_assignment(dict(reversed(list(projects.items()))), {"measured"})
 
 
+def test_crossfit_choice_rejects_a_competitor_without_its_own_project_score():
+    from scripts.crossvalidate_r5_join_path import heldout_choice_review
+
+    candidates, resources, costs = fixture()
+    candidates[1:] = [
+        replace(peer, workflow="long-a", group="join", unfinished_members=2)
+        for peer in candidates[1:]
+    ]
+    original = row(candidates, resources, ("long-a", "long-b"))
+    original["states"] = {value.workflow: {} for value in candidates}
+    items = prepared_decisions({"decisions": [original]}, costs)
+    offsets = {id(item): {wf: index for index, wf in enumerate(original["states"])} for item in items}
+    assignment = {wf: index for index, wf in enumerate(original["states"])}
+    truth = [.9, .4]
+    verified = heldout_choice_review(items, costs, truth, truth, offsets, assignment)
+    assert verified["workflow_equal_choice_error"] == 0
+    assert verified["workflow_equal_JOIN_error"] == 0
+    with pytest.raises(ValueError, match="each competitor"):
+        heldout_choice_review(items, costs, [.9, float("nan")], truth, offsets, assignment)
+
+
 def test_crossfit_selection_requires_both_workflow_and_join_noninferiority():
     from scripts.crossvalidate_r5_join_path import select_variant
 
