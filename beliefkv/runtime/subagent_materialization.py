@@ -633,11 +633,23 @@ class SubagentMaterialization:
             time.thread_time_ns() - cpu
         )
         shortfall = hit - headroom.available_tokens
-        if not headroom.census_complete or shortfall <= 0:
+        if not headroom.observable or shortfall <= 0:
             return False
         chunk = self.runtime._native_chunk_input_reserve
-        if shortfall > credit and (not chunk or credit < chunk):
+        if headroom.census_complete:
+            if shortfall > credit and (not chunk or credit < chunk):
+                return False
+        elif (
+            headroom.reason != NODE_CENSUS_BOUND
+            or shortfall > credit
+            or getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
+            or _request_key(params.req, known_keys=self.runtime.visible) != key
+        ):
             return False
+        else:
+            # Indexed headroom is a lower bound. Allow one retry when the
+            # selected batch's ACK covers the entire observed shortfall.
+            params.req._beliefkv_d3_indexed_restore_defer_key = key
         counts["subagent_materialization_restore_pressure_deferrals"] += 1
         counts["subagent_materialization_restore_pressure_shortfall_tokens"] += shortfall
         counts["subagent_materialization_restore_pressure_covered_tokens"] += min(shortfall, credit)
@@ -651,6 +663,7 @@ class SubagentMaterialization:
                 "requested_restore_tokens": hit,
                 "unfunded_restore_tokens": shortfall,
                 "reclaimable_after_ack_tokens": credit,
+                "headroom_observation": headroom.reason,
             })
         return True
 

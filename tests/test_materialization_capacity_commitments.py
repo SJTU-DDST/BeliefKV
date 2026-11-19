@@ -553,12 +553,17 @@ def _track_native_host_allocations(native, capacity, *, occupied=0):
         pytest.param({"members": 2, "select": False}, case, id=case)
         for case in (
             "pressure", "free_host", "join_priority", "service_deadline", "no_decode",
-            "host_pin", "bounded_credit", "unreferenced_consumer",
+            "host_pin", "bounded_credit", "unreferenced_consumer", "census_bound",
+            "census_retry_used",
         )
     ] + [
         pytest.param(
             {"members": 2, "select": False, "prefix_sizes": (4, 8)},
             "partial_credit", id="partial_credit",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (4, 8)},
+            "census_partial_credit", id="census_partial_credit",
         ),
         pytest.param(
             {"members": 2, "select": False, "prefix_sizes": (2, 8)},
@@ -579,13 +584,20 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
     waiting, generation = insert_session(native, list(range(100, 108)), "waiting-parent")
     back_up(waiting)
     native._demote(waiting.id, {0: 0})
-    free_after_first_load = 2 if case in ("partial_credit", "small_credit") else 4
+    free_after_first_load = 2 if case in (
+        "partial_credit", "small_credit", "census_partial_credit",
+    ) else 4
     free_before = first_hit + free_after_first_load
     insert_session(native, list(range(200, 200 + allocator.size - free_before)), "unbacked")
     assert allocator.available_size() == free_before
     load = native.init_load_back
     f.runtime._native_chunk_input_reserve = 4
     gate = SubagentMaterialization(f.runtime, include_root_entries=True)
+    if case.startswith("census_"):
+        gate.max_nodes = 1
+    if case == "census_retry_used":
+        req = f.members[1]
+        req._beliefkv_d3_indexed_restore_defer_key = f.runtime.visible[req.rid]
     gate.attach(native)
     evictions = []
     native.tree_core.set_beliefkv_host_eviction_observer(
@@ -617,7 +629,9 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
         )
     if case == "host_pin":
         host_lock = native.inc_host_lock_ref(f.leaf.id).to_dec_params()
-    deferred = case in ("pressure", "partial_credit", "bounded_credit", "unreferenced_consumer")
+    deferred = case in (
+        "pressure", "partial_credit", "bounded_credit", "unreferenced_consumer", "census_bound",
+    )
     if case == "no_decode":
         f.running.reqs.clear()
         with pytest.raises(BatchConstructionReached):
@@ -665,7 +679,8 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
     ))
     expected = {
         "pressure": 8, "free_host": 8, "bounded_credit": 8,
-        "partial_credit": 6, "small_credit": 2, "unreferenced_consumer": 8,
+        "partial_credit": 6, "small_credit": 2, "unreferenced_consumer": 8, "census_bound": 8,
+        "census_partial_credit": 2,
     }
     assert observed["checkpoint_tokens"] == expected.get(case, 4)
     if observed["checkpoint_tokens"] < 8:
