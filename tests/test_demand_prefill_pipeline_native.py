@@ -23,24 +23,28 @@ def staged_native(full_native, request):
     cache.load_back_threshold = 1
     cache.beliefkv_cold_full_owner_validator = lambda owners: True
     options = getattr(request, "param", 1)
-    count = options["members"] if isinstance(options, dict) else options
-    select = options.get("select", True) if isinstance(options, dict) else True
+    if isinstance(options, int):
+        options = {"members": options}
+    count = options["members"]
+    select = options.get("select", True)
+    prefix_sizes = options.get("prefix_sizes", (8,) * count)
+    assert len(prefix_sizes) == count
     members, leaves = [], []
-    for index in range(count):
+    for index, size in enumerate(prefix_sizes):
         begin = 1 + index * 20
         session = "parent" if index == 0 else f"parent-{index}"
-        leaf, generation = insert_session(cache, list(range(begin, begin + 8)), session)
+        leaf, generation = insert_session(cache, list(range(begin, begin + size)), session)
         assert cache.prepare_beliefkv_spawn_full(
             session_id=session, session_generation=generation,
         )["issued"]
         cache.writing_check(finish_count=1)
         free = allocator.available_size()
         assert cache.reclaim_beliefkv_handoff_capacity(
-            full_tokens=free + 8, mamba_slots=0,
-        ) == {0: 8}
+            full_tokens=free + size, mamba_slots=0,
+        ) == {0: size}
         req = Req(
             rid=f"native-b-{index}", origin_input_text="",
-            origin_input_ids=array("q", range(begin, begin + 9)),
+            origin_input_ids=array("q", range(begin, begin + size + 1)),
             sampling_params=SamplingParams(max_new_tokens=2), session_id=session,
             beliefkv_metadata={
                 "root_workflow_id": "root", "invocation_id": f"agent-b-{index}",
@@ -74,11 +78,11 @@ def staged_native(full_native, request):
 
     first = adder()
     if select:
-        for member in members:
+        for member, size in zip(members, prefix_sizes):
             member.init_next_round_input(cache)
-            assert member.host_hit_length == 8 and len(member.prefix_indices) == 0
+            assert member.host_hit_length == size and len(member.prefix_indices) == 0
             first.add_one_req(member, has_chunked_req=False, truncation_align_size=None)
-            assert member.host_loaded_length == 8
+            assert member.host_loaded_length == size
         assert first.can_run_list == members
         assert len(loads) == len(members)
         assert req.lock_receipt is not None

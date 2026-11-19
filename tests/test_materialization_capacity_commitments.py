@@ -547,26 +547,52 @@ def _track_native_host_allocations(native, capacity, *, occupied=0):
     return back_up
 
 
-@pytest.mark.parametrize("staged_native", ({"members": 2, "select": False},), indirect=True)
-@pytest.mark.parametrize("case", (
-    "pressure", "free_host", "join_priority", "service_deadline", "no_decode", "host_pin",
-))
+@pytest.mark.parametrize(
+    "staged_native,case",
+    [
+        pytest.param({"members": 2, "select": False}, case, id=case)
+        for case in (
+            "pressure", "free_host", "join_priority", "service_deadline", "no_decode",
+            "host_pin", "bounded_credit",
+        )
+    ] + [
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (4, 8)},
+            "partial_credit", id="partial_credit",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (2, 8)},
+            "small_credit", id="small_credit",
+        ),
+    ],
+    indirect=["staged_native"],
+)
 def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, case):
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
     native, allocator = f.cache, f.allocator
+    first_hit = len(f.leaf.component_data[0].host_value)
+    occupied = first_hit + len(f.leaves[1].component_data[0].host_value)
     free_host = 4 if case == "free_host" else 0
-    back_up = _track_native_host_allocations(native, 24 + free_host, occupied=16)
+    back_up = _track_native_host_allocations(native, 8 + occupied + free_host, occupied=occupied)
     waiting, generation = insert_session(native, list(range(100, 108)), "waiting-parent")
     back_up(waiting)
     native._demote(waiting.id, {0: 0})
-    insert_session(native, list(range(200, 252)), "unbacked")
-    assert allocator.available_size() == 12
+    free_after_first_load = 2 if case in ("partial_credit", "small_credit") else 4
+    free_before = first_hit + free_after_first_load
+    insert_session(native, list(range(200, 200 + allocator.size - free_before)), "unbacked")
+    assert allocator.available_size() == free_before
     load = native.init_load_back
     f.runtime._native_chunk_input_reserve = 4
     gate = SubagentMaterialization(f.runtime, include_root_entries=True)
     gate.attach(native)
+    if case == "bounded_credit":
+        _, actions = native.tree_core.split_host_only_full_prefix(
+            f.leaf.id, f.leaf.creation_time, 4,
+        )
+        native._apply_cache_actions(actions)
+        gate.max_candidates = 1
     scheduler, construction, invoke = native_scheduler(f, enabled=True)
 
     def candidates(running, adder):
@@ -582,6 +608,7 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
         )
     if case == "host_pin":
         host_lock = native.inc_host_lock_ref(f.leaf.id).to_dec_params()
+    deferred = case in ("pressure", "partial_credit", "bounded_credit")
     if case == "no_decode":
         f.running.reqs.clear()
         with pytest.raises(BatchConstructionReached):
@@ -594,7 +621,7 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
         assert invoke() == (None, f.running)
         assert not construction
         selected = [entry.request for entry in f.pipeline.pending.members]
-        if case == "pressure":
+        if deferred:
             assert selected == f.members[:1]
             assert len(f.loads) == 1
             assert f.leaves[1].component_data[0].host_lock_ref == 0
@@ -608,7 +635,7 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
 
     f.complete.ready = True
     native.loading_check(finish_count=1)
-    if case == "pressure":
+    if deferred:
         assert native.tree_core.full_host_duplicates[f.leaves[0].id] is f.leaves[0]
         with pytest.raises(BatchConstructionReached):
             invoke()
@@ -627,9 +654,14 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
         session_id="waiting-parent", session_generation=generation,
         origin_input_ids=array("q", range(100, 109)), extra_key=None, cache_salt=None,
     ))
-    assert observed["checkpoint_tokens"] == (8 if case in ("pressure", "free_host") else 4)
-    assert f.runtime.counts["subagent_materialization_restore_pressure_deferrals"] == (
-        case == "pressure"
+    expected = {
+        "pressure": 8, "free_host": 8, "bounded_credit": 8,
+        "partial_credit": 6, "small_credit": 2,
+    }
+    assert observed["checkpoint_tokens"] == expected.get(case, 4)
+    assert f.runtime.counts["subagent_materialization_restore_pressure_deferrals"] == deferred
+    assert f.runtime.counts["subagent_materialization_restore_pressure_covered_tokens"] == (
+        4 if deferred else 0
     )
     for member in f.members:
         native.dec_lock_ref(member.last_node, member.lock_receipt)
@@ -861,7 +893,7 @@ def test_host_pressure_trims_after_accounting_for_existing_duplicate_reclaims(
     ("pressure_v2", 0, None, 0, 8),
     ("pressure_v2", 2, None, 8, 2),
     ("pressure_v2", 8, None, 8, 8),
-    ("pressure_v2", 0, 4, 4, 4),
+    ("pressure_v2", 0, 4, 6, 2),
     ("pressure_v2", 2, 4, 8, 2),
     ("pressure_v2", 4, 4, 8, 4),
 ), indirect=["runtime"])
@@ -913,9 +945,9 @@ def test_small_native_allocation_bounds_writeback_under_host_pressure(
     (3, "settled", 3, 8),
     (2, "settled", 2, 8),
     (4, "settled", 4, 8),
-    (1, "settled", 4, 5),
-    (3, "pinned", 4, 4),
-    (3, "reclaim_disabled", 4, 4),
+    (1, "settled", 2, 7),
+    (3, "pinned", 2, 6),
+    (3, "reclaim_disabled", 2, 6),
 ))
 def test_writeback_padding_does_not_turn_safe_duplicate_reclaim_into_live_host_loss(
     runtime, full_native, monkeypatch, mirror_size, mirror_state, device_freed, checkpoint,
@@ -942,11 +974,16 @@ def test_writeback_padding_does_not_turn_safe_duplicate_reclaim_into_live_host_l
     runtime.attach_native_cache(native)
     runtime._native_chunk_input_reserve = 4
     before = allocator.available_size()
+    original_writer_tokens = len(writer.component_data[0].value)
     evict_from_tree_cache(native, before + 2)
 
     assert allocator.available_size() - before == device_freed
     assert writes[-1].node_id == writer.id
     assert len(writes[-1].device_indices) == device_freed
+    assert len(writer.parent.component_data[0].value) + device_freed == original_writer_tokens
+    assert runtime.counts["subagent_materialization_writeback_padding_tokens_avoided"] == (
+        4 - device_freed
+    )
     assert len(mirror.component_data[0].value) == mirror_size
     observed = native.inspect_beliefkv_reentry(NS(
         session_id="waiting-parent", session_generation=generation,
@@ -962,7 +999,7 @@ def test_writeback_padding_does_not_turn_safe_duplicate_reclaim_into_live_host_l
     "runtime,host_free,keep_reference,discarded,checkpoint",
     (
         ("pressure_v2", 0, False, True, 8),
-        ("pressure_v2", 0, True, False, 4),
+        ("pressure_v2", 0, True, False, 6),
         ("pressure_v2", 2, False, False, 8),
         ("pressure_v1", 0, False, False, 0),
     ),

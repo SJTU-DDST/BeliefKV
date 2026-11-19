@@ -277,24 +277,22 @@ class SubagentMaterialization:
                     chunk_pages = (chunk + page - 1) // page * page if chunk else 0
                     write_tokens = min(size, max(shortfall, chunk_pages))
                     padding_saved = 0
-                    if host_free >= shortfall:
-                        write_tokens = min(write_tokens, host_free // page * page)
-                    elif (
-                        shortfall < write_tokens and tree.full_host_duplicates
-                        and not envs.SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM.get()
-                    ):
-                        # Native reclaims settled mirrors before sole Host copies.
-                        # If mirrors fund the shortfall, spend only that safe capacity.
+                    if shortfall < write_tokens:
                         safe_host = host_free
-                        for mirror in islice(tree.full_host_duplicates.values(), self.max_candidates):
-                            if tree._can_reclaim_full_host_duplicate(mirror):
-                                safe_host += len(mirror.component_data[0].host_value)
-                                if safe_host >= write_tokens:
-                                    break
-                        safe_host = safe_host // page * page
-                        if shortfall <= safe_host < write_tokens:
-                            padding_saved = write_tokens - safe_host
-                            write_tokens = safe_host
+                        if (
+                            host_free < shortfall
+                            and not envs.SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM.get()
+                        ):
+                            for mirror in islice(tree.full_host_duplicates.values(), self.max_candidates):
+                                if tree._can_reclaim_full_host_duplicate(mirror):
+                                    safe_host += len(mirror.component_data[0].host_value)
+                                    if safe_host >= write_tokens:
+                                        break
+                        # Pay for required device space even under pressure.
+                        # Padding cannot spend more than free or redundant Host pages.
+                        bounded = min(write_tokens, max(shortfall, safe_host // page * page))
+                        padding_saved = write_tokens - bounded
+                        write_tokens = bounded
                     if write_tokens < size:
                         last_access = node.last_access_time
                         split = split_device_suffix(
@@ -373,19 +371,21 @@ class SubagentMaterialization:
 
         tree = cache.tree_core
         selected_anchors = {req.last_node for req in selected}
-        # Count only native load sources whose last Host lock clears at ACK.
+        if any(
+            op.beliefkv_command_id is not None or len(op.node_ids) != 1
+            or op.node_ids[0] not in selected_anchors
+            or op.node_ids[0] not in cache.ongoing_load_back
+            for op in queue
+        ):
+            return False
+        # A bounded walk gives a lower bound on settled mirrors available after ACK.
         credit, remaining = 0, self.max_candidates
         for op in queue:
-            if (
-                op.beliefkv_command_id is not None or len(op.node_ids) != 1
-                or (anchor := op.node_ids[0]) not in selected_anchors
-                or anchor not in cache.ongoing_load_back
-            ):
-                return False
+            if remaining == 0:
+                break
+            anchor = op.node_ids[0]
             node = tree.node_by_id(anchor)
-            while node is not tree.root_node and node.load_back_pending_id == anchor:
-                if remaining == 0:
-                    return False
+            while remaining and node is not tree.root_node and node.load_back_pending_id == anchor:
                 remaining -= 1
                 full = node.component_data[0]
                 if (
@@ -409,10 +409,14 @@ class SubagentMaterialization:
             time.thread_time_ns() - cpu
         )
         shortfall = hit - headroom.available_tokens
-        if not headroom.census_complete or not 0 < shortfall <= credit:
+        if not headroom.census_complete or shortfall <= 0:
+            return False
+        chunk = self.runtime._native_chunk_input_reserve
+        if shortfall > credit and (not chunk or credit < chunk):
             return False
         counts["subagent_materialization_restore_pressure_deferrals"] += 1
         counts["subagent_materialization_restore_pressure_shortfall_tokens"] += shortfall
+        counts["subagent_materialization_restore_pressure_covered_tokens"] += min(shortfall, credit)
         writer = getattr(self.runtime, "_opportunity_writer", None)
         if writer is not None:
             writer.record({
