@@ -15,10 +15,16 @@ from tests.test_paper_baseline_runtime import request
 from scripts.prepare_subagent_materialization import configurations
 
 
-def node(identity, size, *, device=False, refs=1, host_lock=0, pending=False):
-    return NS(
+class _CacheNode(NS):
+    __eq__ = object.__eq__
+    __hash__ = object.__hash__
+
+
+def node(identity, size, *, device=False, host=True, refs=1, host_lock=0, pending=False):
+    return _CacheNode(
         id=identity, component_data={0: NS(
-            value=tuple(range(size)) if device else None, host_value=tuple(range(size)),
+            value=tuple(range(size)) if device else None,
+            host_value=tuple(range(size)) if host else None,
             session_ref=refs, host_lock_ref=host_lock, lock_ref=0,
         )},
         write_through_pending_id=identity if pending else None, load_back_pending_id=None,
@@ -31,7 +37,11 @@ def cache(*nodes, host_capacity=1000, host_free=0, device_free=0):
     root = node(0, 0)
     tree = NS(
         root_node=root, _node_arena={row.id: row for row in (root, *nodes)},
-        full_host_duplicates={row.id: row for row in nodes if row.component_data[0].value is not None},
+        full_host_duplicates={
+            row.id: row for row in nodes if row.component_data[0].value is not None
+            and row.component_data[0].host_value is not None
+        },
+        evictable_host_leaves=set(),
         _can_reclaim_full_host_duplicate=lambda row: row.component_data[0].host_lock_ref == 0,
     )
     return NS(
@@ -82,27 +92,27 @@ def test_invalid_or_unsupported_census_is_unknown(change, reason):
     assert not result.observable and result.reason.startswith(reason)
 
 
-def test_census_bound_keeps_only_raw_pool_headroom():
+def test_census_bound_credits_only_native_indexed_headroom():
     native = cache(
-        node(1, 750), node(2, 200, device=True), host_free=50, device_free=100,
+        node(1, 650), node(2, 200, device=True), node(3, 60, refs=0), node(4, 40, refs=0),
+        host_free=50, device_free=100,
     )
-    arena = native.tree_core._node_arena
+    tree = native.tree_core
+    arena = tree._node_arena
+    tree.evictable_host_leaves.add(arena[3])
     for identity in range(len(arena), 8192):
-        leaf = node(identity, 2 if identity == 8191 else 1, device=True)
-        leaf.component_data[0].host_value = None
-        arena[identity] = leaf
+        arena[identity] = node(identity, 2 if identity == 8191 else 1, device=True, host=False)
 
     complete = observe_materialization_headroom(native)
     assert complete.observable and complete.census_complete
     assert complete.inspected_nodes == 8192
-    assert complete.useful_host_only_tokens == 750
-    assert complete.reclaimable_host_tokens == 200
-    assert complete.available_tokens == 350
+    assert complete.useful_host_only_tokens == 650
+    assert complete.reclaimable_host_tokens == 300
+    assert complete.available_tokens == 450
 
     # Split a device-only extent without changing either pool's free count.
     donor = arena[8191].component_data[0]
-    split = node(8192, 1, device=True)
-    split.component_data[0].host_value = None
+    split = node(8192, 1, device=True, host=False)
     split.component_data[0].value = donor.value[1:]
     donor.value = donor.value[:1]
     arena[split.id] = split
@@ -111,10 +121,109 @@ def test_census_bound_keeps_only_raw_pool_headroom():
     assert bounded.reason == "native_node_census_bound"
     assert bounded.host_capacity_tokens == 1000
     assert bounded.host_free_tokens == 50 and bounded.device_free_tokens == 100
-    assert bounded.reclaimable_host_tokens == 0
+    assert bounded.reclaimable_host_tokens == 260
     assert bounded.useful_host_only_tokens is None
-    assert bounded.available_tokens == 150
-    assert bounded.inspected_nodes == 0
+    assert bounded.available_tokens == 410
+    assert 0 < bounded.inspected_nodes <= 8192
+
+    raw = observe_materialization_headroom(native, max_nodes=0)
+    assert raw.observable and not raw.census_complete and raw.reason == bounded.reason
+    assert raw.host_free_tokens == 50 and raw.device_free_tokens == 100
+    assert raw.reclaimable_host_tokens == raw.inspected_nodes == 0
+    assert raw.available_tokens == 150
+
+
+@pytest.mark.parametrize("device", (True, False), ids=("mirror", "host-only"))
+@pytest.mark.parametrize("case", (
+    "stale", "protected", "host_lock", "device_lock", "writing", "loading", "shape",
+))
+def test_census_bound_revalidates_indexed_extents(device, case):
+    good = node(1, 17, device=device, refs=int(device))
+    suspect = node(2, 29, device=device, refs=0)
+    sibling = node(3, 1)
+    native = cache(good, suspect, sibling)
+    tree = native.tree_core
+    if not device:
+        tree.evictable_host_leaves.update((good, suspect, sibling))
+    full = suspect.component_data[0]
+    protected = ()
+    if case == "stale":
+        tree._node_arena[suspect.id] = node(suspect.id, 29, device=device, refs=0)
+    elif case == "protected":
+        protected = (suspect.id,)
+    elif case == "host_lock":
+        full.host_lock_ref = 1
+    elif case == "device_lock":
+        full.lock_ref = 1
+    elif case == "writing":
+        suspect.write_through_pending_id = suspect.id
+    elif case == "loading":
+        suspect.load_back_pending_id = suspect.id
+    elif device:
+        full.value = (0,)
+    else:
+        suspect.children[sibling.id] = sibling
+        sibling.parent = suspect
+
+    bounded = observe_materialization_headroom(native, max_nodes=3, protected_host_nodes=protected)
+    assert bounded.observable and bounded.reason == "native_node_census_bound"
+    assert bounded.reclaimable_host_tokens == (46 if device and case == "device_lock" else 17)
+
+
+@pytest.mark.parametrize("protected,expected", ((False, 32), (True, 5)))
+def test_census_bound_counts_host_parent_only_after_all_children(protected, expected):
+    parent, left, right = node(1, 20, refs=0), node(2, 5, refs=0), node(3, 7, refs=0)
+    native = cache(parent, left, right, node(4, 1, device=True, host=False))
+    parent.parent = native.tree_core.root_node
+    for leaf in (left, right):
+        parent.children[leaf.id] = leaf
+        leaf.parent = parent
+    native.tree_core.evictable_host_leaves.update((left, right))
+    dense = observe_materialization_headroom(
+        native, max_nodes=4, protected_host_nodes=(right.id,) if protected else (),
+    )
+    assert dense.reclaimable_host_tokens == expected
+    assert dense.inspected_nodes <= 4
+    limited = observe_materialization_headroom(native, max_nodes=2)
+    assert 0 < limited.reclaimable_host_tokens <= 12
+    assert limited.inspected_nodes <= 2
+
+
+def test_census_bound_shares_actual_iteration_budget_across_indexes():
+    read = []
+
+    class DuplicateIndex(dict):
+        def values(self):
+            for entry in super().values():
+                read.append(entry)
+                yield entry
+
+    class HostLeafIndex(set):
+        def __iter__(self):
+            for entry in super().__iter__():
+                read.append(entry)
+                yield entry
+
+    mirror = node(1, 11, device=True)
+    leaves = [node(identity, 7, refs=0) for identity in (2, 3, 4)]
+    native = cache(mirror, *leaves)
+    tree = native.tree_core
+    tree.full_host_duplicates = DuplicateIndex(tree.full_host_duplicates)
+    tree.evictable_host_leaves = HostLeafIndex(leaves)
+    raw = observe_materialization_headroom(native, max_nodes=0)
+    assert raw.reclaimable_host_tokens == 0 and not read
+    bounded = observe_materialization_headroom(native, max_nodes=2)
+    assert bounded.reclaimable_host_tokens == 18
+    assert bounded.inspected_nodes == len(read) == 2
+
+
+def test_census_bound_discards_credit_that_exceeds_observed_host_usage():
+    native = cache(node(1, 20, device=True), host_capacity=100, host_free=95, device_free=10)
+    bounded = observe_materialization_headroom(native, max_nodes=1)
+    assert bounded.observable and not bounded.census_complete
+    assert bounded.reason == "native_node_census_bound"
+    assert bounded.reclaimable_host_tokens == 0
+    assert bounded.available_tokens == 105
 
 
 def test_real_native_split_backup_ack_and_host_only_accounting(full_native):
@@ -154,17 +263,22 @@ def test_real_native_split_backup_ack_and_host_only_accounting(full_native):
 
 @pytest.fixture
 def runtime(monkeypatch, tmp_path, request):
+    mode = getattr(request, "param", "pressure_v1")
+    native_fixture = None
+    if isinstance(mode, tuple):
+        mode, native_fixture = mode
     settings = arm_environment({
         "AGENT_ADMISSION": "thunderagent_reference",
         "AGENT_FREE_CONTINUATION_ADMISSION": "1", "AGENT_FREE_DISPATCH_INTERVAL_MS": "500",
         "AGENT_CONTROL_INTERVAL_MS": "2000", "EXECUTION_FRONTIER_RESTORE": "0",
-        "BELIEFKV_SUBAGENT_MATERIALIZATION": getattr(request, "param", "pressure_v1"),
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": mode,
     }, "full")
     for key, value in settings.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setenv("BELIEFKV_PAPER_BASELINE", "")
     live = NativeAdmissionRuntime(event_socket_path=str(tmp_path / "materialization.sock"))
-    live.attach_native_cache(cache(node(1, 1000)))
+    native = request.getfixturevalue(native_fixture)[0] if native_fixture else cache(node(1, 1000))
+    live.attach_native_cache(native)
     live.on_events((
         observed(0, Kind.WORKFLOW_START),
         observed(1, Kind.INVOCATION_CREATE, invocation_id="parent", context_id="parent-context"),
@@ -769,6 +883,56 @@ def test_census_bound_holds_new_work_and_preserves_native_commitments(runtime):
     assert set(decision["held"]) == {first.rid, second.rid, root.rid}
     assert decision["progress_exception"] is None
     assert runtime.counts["subagent_materialization_observation_fallbacks"] == 0
+
+
+@pytest.mark.parametrize("runtime", (("pressure_v2", "full_native"),), indirect=True)
+def test_real_native_growth_keeps_indexed_credit_available_for_admission(runtime, full_native):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, loads, _ = full_native
+    pool = native.host_pool_group.entry_map["kv"].host_pool
+    pool.size = 12
+    occupied = 0
+    pool.available_size = lambda: pool.size - occupied
+    donor, generation = insert_session(native, list(range(8)), "mirror")
+    native.prepare_beliefkv_spawn_full(session_id="mirror", session_generation=generation)
+    native.writing_check(finish_count=1)
+    occupied += 8
+    cold, generation = insert_session(native, list(range(20, 24)), "cold")
+    native.prepare_beliefkv_spawn_full(session_id="cold", session_generation=generation)
+    native.writing_check(finish_count=1)
+    occupied += 4
+    native._demote(cold.id, {0: 0})
+    native.release_radix_session("cold")
+    tree = native.tree_core
+    gate = runtime._subagent_materialization
+    gate.max_nodes = 3
+    assert observe_materialization_headroom(native, max_nodes=gate.max_nodes).census_complete
+    for start in (100, 200, 300, 400):
+        insert_session(native, list(range(start, start + 14)), f"device-{start}")
+    assert len(tree._node_arena) > gate.max_nodes
+    assert allocator.available_size() == 0
+    assert tree.full_host_duplicates[donor.id] is donor
+    assert cold in tree.evictable_host_leaves and cold.component_data[0].session_ref == 0
+    full = donor.component_data[0]
+    host_value, device_value = full.host_value, full.value
+    cold_host = cold.component_data[0].host_value
+    arena = dict(tree._node_arena)
+    mirrors = dict(tree.full_host_duplicates)
+
+    runtime._agent_admission.policy.buffer_tokens = 1
+    req, _ = new_root(runtime, "arrival", tokens=8)
+    prepare(runtime, [req], running=[object()])
+    assert not gate.last_observation.census_complete
+    assert gate.last_observation.reclaimable_host_tokens == 12
+    assert gate.last_decision["progress_exception"] is None
+    assert gate.allows(runtime.visible[req.rid])
+    assert full.host_value is host_value and full.value is device_value
+    assert cold.component_data[0].host_value is cold_host and cold.component_data[0].value is None
+    assert tree._node_arena == arena and tree.full_host_duplicates == mirrors
+    assert allocator.available_size() == pool.available_size() == 0
+    assert req.kv.req_pool_idx is None and req.kv.kv_allocated_len == 0
+    assert len(writes) == 2 and not loads
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)

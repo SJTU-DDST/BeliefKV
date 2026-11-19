@@ -42,10 +42,70 @@ class MaterializationHeadroom:
         )
 
 
+def _indexed_host_headroom(tree, nodes, protected, *, limit, used, needed):
+    """Count a bounded subset of reclaimable Host slots from native indexes."""
+    inspected = reclaimable = 0
+    counted = set()
+
+    def live(node):
+        return (
+            node is not tree.root_node and nodes.get(node.id) is node
+            and node.id not in protected and node.id not in counted
+            and node.write_through_pending_id is None and node.load_back_pending_id is None
+        )
+
+    for node in islice(tree.full_host_duplicates.values(), limit):
+        inspected += 1
+        if not live(node) or not tree._can_reclaim_full_host_duplicate(node):
+            continue
+        full = node.component_data[0]
+        if (
+            full.host_lock_ref == 0 and full.host_value is not None
+            and full.value is not None and len(full.value) == len(full.host_value)
+        ):
+            counted.add(node.id)
+            reclaimable += len(full.host_value)
+            if reclaimable >= needed:
+                break
+
+    children_left = {}
+    leaves = iter(getattr(tree, "evictable_host_leaves", ()))
+    while inspected < limit and reclaimable < needed:
+        leaf = next(leaves, None)
+        if leaf is None:
+            break
+        if leaf.children:
+            inspected += 1
+            continue
+        node = leaf
+        while node is not None and inspected < limit and reclaimable < needed:
+            inspected += 1
+            if not live(node):
+                break
+            full = node.component_data[0]
+            if (
+                full.value is not None or full.host_value is None
+                or full.session_ref != 0 or full.host_lock_ref != 0 or full.lock_ref != 0
+            ):
+                break
+            counted.add(node.id)
+            reclaimable += len(full.host_value)
+            # Removing every child makes an otherwise eligible Host-only parent a leaf.
+            parent = node.parent
+            if parent is None or parent is tree.root_node:
+                break
+            left = children_left.get(parent.id, len(parent.children)) - 1
+            children_left[parent.id] = left
+            if left:
+                break
+            node = parent
+    return (reclaimable if reclaimable <= used else 0), inspected
+
+
 def observe_materialization_headroom(
     cache, *, max_nodes=8192, required_free_tokens=None, protected_host_nodes=(),
 ):
-    """Count reclaimable native extents, or use only observed free slots at the scan bound."""
+    """Census native extents or bound capacity using the native reclaim indexes."""
     try:
         if (
             getattr(cache, "tree_components", ()) != (0,)
@@ -76,9 +136,25 @@ def observe_materialization_headroom(
         if type(nodes) is not dict:
             return MaterializationHeadroom(False, "invalid_native_node_census")
         if len(nodes) > max_nodes:
+            reclaimable = inspected = 0
+            if max_nodes > 0:
+                needed = (
+                    required_free_tokens - free - device_free
+                    if type(required_free_tokens) is int and required_free_tokens >= 0
+                    else capacity - free
+                )
+                try:
+                    reclaimable, inspected = _indexed_host_headroom(
+                        tree, nodes, set(protected_host_nodes), limit=max_nodes,
+                        used=capacity - free, needed=needed,
+                    )
+                except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
+                    # Free-slot observations remain usable if an index is unavailable.
+                    pass
             return MaterializationHeadroom(
                 True, NODE_CENSUS_BOUND, host_capacity_tokens=capacity,
                 host_free_tokens=free, device_free_tokens=device_free,
+                reclaimable_host_tokens=reclaimable, inspected_nodes=inspected,
             )
         protected = set(protected_host_nodes)
         useful = reclaimable = pinned = tracked = 0
