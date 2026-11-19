@@ -173,6 +173,43 @@ def test_queue_time_native_loss_is_detected_and_a_chosen_restore_is_not_paused_a
     assert admission.counts["residency_pauses"] == 1
 
 
+@pytest.mark.parametrize(("new_input", "keeps_active"), ((4, True), (5, False)))
+def test_partial_host_tail_preserves_admission_within_one_prefill_chunk(
+    demand_runtime, monkeypatch, new_input, keeps_active,
+):
+    runtime, admission, _controller = install(demand_runtime)
+    _, _, cache, _, donor, consumer, _ = demand_runtime
+    runtime._native_chunk_input_reserve = 8
+    cache._demote(donor.id, {})
+    anchors = cache.inspect_beliefkv_reentry(consumer)
+    (leaf_id, created), = dict(anchors["component_leaves"])[0]
+    device_prefix, actions = cache.tree_core.split_host_only_full_prefix(leaf_id, created, 12)
+    cache._apply_cache_actions(actions)
+    assert cache.load_back(device_prefix)
+    assert cache.ready_to_load_host_cache() >= 0
+    cache.loading_check(finish_count=1)
+
+    admission.completed(NS(reqs=[consumer]), (consumer.rid,))
+    following = copy(consumer)
+    following.rid = "consumer-following"
+    following.origin_input_ids = array("q", range(101, 117 + new_input))
+    following.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
+    matching = cache.inspect_beliefkv_reentry(following)
+    assert matching["device_checkpoint_tokens"] == 12
+    assert matching["missing_full_tokens"] == 4
+    assert len(following.origin_input_ids) - matching["checkpoint_tokens"] == new_input
+    monkeypatch.setattr(admission, "_admit_free_continuation", lambda **_kwargs: False)
+    runtime.register_visible_request(following)
+    assert admission.policy.programs["consumer"].active is keeps_active
+
+    if keeps_active:
+        cache._demote(device_prefix, {})
+        admission._residency_pause.next_check = 0.
+        admission.synchronize_residency([following])
+        assert not admission.policy.programs["consumer"].active
+    assert admission.counts["residency_pauses"] == 1
+
+
 @pytest.mark.parametrize("mode", MODES)
 def test_residency_coupling_is_an_explicit_full_only_contract(mode):
     configured = arm_environment(settings(), mode)

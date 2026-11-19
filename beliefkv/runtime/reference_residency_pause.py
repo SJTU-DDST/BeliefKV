@@ -93,6 +93,28 @@ class ReferenceResidencyPause:
             return False
         return self._pause(key, source=source, missing_tokens=freed[0])
 
+    def _fits_continuation_chunk(self, req, observed, missing):
+        runtime = self.admission.runtime
+        chunk = runtime._native_chunk_input_reserve
+        if (
+            type(chunk) is not int or chunk <= 0
+            or getattr(runtime._native_cache, "tree_components", ()) != (0,)
+            or observed.get("missing_mamba_slots") != 0
+        ):
+            return False
+        resident = observed.get("device_checkpoint_tokens")
+        checkpoint = observed.get("checkpoint_tokens")
+        prompt = len(req.origin_input_ids)
+        if (
+            type(resident) is not int or type(checkpoint) is not int
+            or not 0 < resident < checkpoint < prompt or resident + missing != checkpoint
+        ):
+            return False
+        page = runtime._native_page_size
+        tail_pages = (missing + page - 1) // page
+        input_pages = (prompt - checkpoint + page - 1) // page
+        return (tail_pages + input_pages) * page <= chunk
+
     def inspect(self, key, *, cheap_first=False):
         a, runtime = self.admission, self.admission.runtime
         item = a.policy.programs.get(key.invocation_id) if a.policy is not None else None
@@ -117,6 +139,10 @@ class ReferenceResidencyPause:
             return False
         missing = observed.get("missing_full_tokens")
         if type(missing) is not int or missing <= 0:
+            return False
+        # Keep the already charged admission for a normal-sized continuation.
+        if self._fits_continuation_chunk(req, observed, missing):
+            a.counts["residency_continuation_small_tail_checks"] += 1
             return False
         return self._pause(key, source="native_successor_host_checkpoint", missing_tokens=missing)
 
