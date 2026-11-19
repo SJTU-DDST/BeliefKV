@@ -8,6 +8,7 @@ import time
 
 import pytest
 
+from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.runtime.demand_prefill_pipeline import DemandPrefillPipeline
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
@@ -19,6 +20,7 @@ from tests.test_demand_prefill_pipeline import fixture as pipeline_fixture
 from tests.test_demand_prefill_pipeline_native import staged_native
 from tests.test_demand_prefill_pipeline_scheduler import BatchConstructionReached, native_scheduler
 from tests.test_full_only_native_lifecycle import full_native
+from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
 from tests.test_subagent_materialization import cache, child, new_root, node, prepare, runtime
 
@@ -954,6 +956,157 @@ def test_writeback_padding_does_not_turn_safe_duplicate_reclaim_into_live_host_l
     if host_lock is not None:
         native.dec_host_lock_ref(mirror.id, host_lock)
     native.dec_lock_ref(mirror.id, device_lock)
+
+
+@pytest.mark.parametrize(
+    "runtime,host_free,keep_reference,discarded,checkpoint",
+    (
+        ("pressure_v2", 0, False, True, 8),
+        ("pressure_v2", 0, True, False, 4),
+        ("pressure_v2", 2, False, False, 8),
+        ("pressure_v1", 0, False, False, 0),
+    ),
+    indirect=["runtime"],
+)
+def test_cold_device_leaf_needs_no_backup_at_the_expense_of_live_host(
+    runtime, full_native, host_free, keep_reference, discarded, checkpoint,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 8 + host_free)
+    waiting, generation = insert_session(native, list(range(8)), "join-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    cold, _ = insert_session(native, list(range(20, 28)), "other")
+    if not keep_reference:
+        native.release_radix_session("other")
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    runtime._native_chunk_input_reserve = 4
+    before = allocator.available_size()
+    evict_from_tree_cache(native, before + 2)
+
+    assert allocator.available_size() >= before + 2
+    assert len(writes) == (1 if discarded else 2)
+    assert (cold.id not in native.tree_core._node_arena) is discarded
+    assert runtime.counts["subagent_materialization_cold_device_discarded_tokens"] == (
+        8 if discarded else 0
+    )
+    prefix = native.inspect_beliefkv_reentry(NS(
+        session_id="join-parent", session_generation=generation,
+        origin_input_ids=array("q", range(9)), extra_key=None, cache_salt=None,
+    ))
+    assert (prefix["checkpoint_tokens"] if prefix else 0) == checkpoint
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_writeback_keeps_an_unreferenced_device_boundary_over_a_host_child(
+    runtime, full_native,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 12)
+    waiting, _ = insert_session(native, list(range(8)), "join-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    child, _ = insert_session(native, [20, 21, 22, 23, 24, 25], "old-child")
+    insert_session(native, [20, 21, 22, 23], "old-parent")
+    back_up(child)
+    native._demote(child.id, {0: 0})
+    native.release_radix_session("old-parent")
+    native.release_radix_session("old-child")
+    parent = child.parent
+    assert parent.component_data[0].session_ref == 0
+    assert parent in native.tree_core.evictable_device_leaves
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    runtime._native_chunk_input_reserve = 4
+    before = allocator.available_size()
+    evict_from_tree_cache(native, before + 4)
+
+    assert allocator.available_size() == before + 4
+    assert len(writes) == 3
+    assert writes[-1].node_id == parent.id
+    assert not runtime.counts["subagent_materialization_cold_device_discarded_tokens"]
+
+
+@pytest.mark.parametrize(
+    "runtime,case,rebound_tokens",
+    (
+        ("pressure_v2", "matching", 8),
+        ("pressure_v2", "partial", 4),
+        ("pressure_v2", "different_namespace", 0),
+        ("pressure_v2", "old_session_open", 0),
+        ("pressure_v2", "stale_generation", 0),
+        ("pressure_v1", "matching", 0),
+    ),
+    indirect=["runtime"],
+)
+def test_compacted_continuation_references_only_a_matching_native_prefix(
+    runtime, full_native, case, rebound_tokens,
+):
+    from sglang.srt.managers.schedule_batch import Req
+    from sglang.srt.sampling.sampling_params import SamplingParams
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, _, writes, loads, _ = full_native
+    back_up = _track_native_host_allocations(native, 12)
+    previous, _ = insert_session(native, list(range(8)), "before-compact")
+    back_up(previous)
+    native._demote(previous.id, {0: 0})
+    cold, _ = insert_session(native, list(range(20, 24)), "cold")
+    back_up(cold)
+    native._demote(cold.id, {0: 0})
+    native.release_radix_session("cold")
+
+    runtime._agent_admission.policy = None
+    runtime.attach_native_cache(native)
+    first = parent_request(runtime, allocated=8, tokens=8, session_id="before-compact")
+    runtime.on_prefill_candidate_result(first, admitted=True, result="CONTINUE")
+    first.finished = lambda: True
+    runtime.on_batch_completed(NS(reqs=[first]))
+    runtime.on_events((replace(
+        observed(2, Kind.CONTEXT_COMPACT, invocation_id="parent", context_id="parent-context"),
+        context_epoch=1, attributes={"previous_context_epoch": 0},
+    ),))
+    if case != "old_session_open":
+        native.release_radix_session("before-compact")
+
+    ids = array("q", range(9))
+    if case == "partial":
+        ids[4:] = array("q", [30, 31, 32, 33, 34])
+    req = Req(
+        rid="compacted", origin_input_text="", origin_input_ids=ids,
+        sampling_params=SamplingParams(max_new_tokens=2), session_id="after-compact",
+        extra_key="different" if case == "different_namespace" else None,
+        beliefkv_metadata={
+            "root_workflow_id": "wf", "invocation_id": "parent",
+            "context_id": "parent-context", "context_epoch": 1,
+        },
+    )
+    req.session_generation = native.ensure_session_generation(req.session_id)
+    if case == "stale_generation":
+        req.session_generation += 1
+    initial_node = req.last_node
+    assert runtime.register_visible_request(req)
+
+    assert runtime.counts["subagent_materialization_rebound_prefix_tokens"] == rebound_tokens
+    if case == "matching" and rebound_tokens:
+        assert native.evict_host(2) == 4  # The unrelated, unreferenced leaf.
+        assert native.inspect_beliefkv_reentry(req)["checkpoint_tokens"] == 8
+        assert native.release_radix_session(req.session_id) == 0
+        assert previous.component_data[0].session_ref == 0
+    elif case == "partial":
+        assert previous.component_data[0].session_ref == 0
+        assert previous.parent.component_data[0].session_ref == 1
+    assert req.last_node == initial_node
+    assert len(writes) == 2 and not loads
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)

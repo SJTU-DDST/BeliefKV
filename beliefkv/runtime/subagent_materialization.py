@@ -1,11 +1,13 @@
 """Delay initial KV materialization when useful state exhausts both tiers."""
 
+from array import array
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
 from heapq import heapify, heappop, heappush
 from itertools import islice
 import os
 import time
+from types import SimpleNamespace
 
 from beliefkv.control.causal_graph import InvocationState, JoinMode
 from beliefkv.core.events import RelationType
@@ -217,6 +219,13 @@ class SubagentMaterialization:
             callable(split_device_suffix) and callable(apply_actions)
             and type(page) is int and page > 0
         )
+        discard_leaf = getattr(tree, "discard_terminated_leaf", None)
+        can_discard_cold = (
+            getattr(cache, "enable_session_radix_cache", False) is True
+            and callable(discard_leaf)
+            and callable(getattr(cache, "_free_values", None))
+            and callable(getattr(cache, "_accumulate_tracker", None))
+        )
 
         from sglang.srt.environ import envs
 
@@ -228,10 +237,26 @@ class SubagentMaterialization:
                 needed = component._evict_device_request_cnt - before
                 if needed > 0 and full.host_value is None and full.value is not None:
                     host_free = pool.available_size()
-                    if len(full.value) <= host_free:
+                    size = len(full.value)
+                    if size <= host_free:
                         return native_evict(node_id, tracker)
                     counts = self.runtime.counts
                     counts["subagent_materialization_writeback_pressure_checks"] += 1
+                    if (
+                        can_discard_cold and full.session_ref == 0 and not node.children
+                        and host_free < min(size, needed)
+                        and node in tree.evictable_device_leaves
+                    ):
+                        # The native leaf check also validates identity, locks and DMA.
+                        result = discard_leaf(node_id, node.creation_time)
+                        if result.is_dropped:
+                            cache._free_values(result.device_frees, result.host_frees)
+                            cache._accumulate_tracker(tracker, result.tracker)
+                            counts["subagent_materialization_cold_device_discarded_nodes"] += 1
+                            counts["subagent_materialization_cold_device_discarded_tokens"] += (
+                                tracker[0] - before
+                            )
+                            return None
                     if tree.full_host_duplicates and self._use_backed_device_leaves(
                         component, tree, native_evict, tracker, needed,
                     ):
@@ -250,7 +275,6 @@ class SubagentMaterialization:
                     # Retain one native prefill chunk of allocation headroom to
                     # amortize decode writes, unless a smaller write avoids Host reclaim.
                     chunk_pages = (chunk + page - 1) // page * page if chunk else 0
-                    size = len(full.value)
                     write_tokens = min(size, max(shortfall, chunk_pages))
                     padding_saved = 0
                     if host_free >= shortfall:
@@ -555,6 +579,67 @@ class SubagentMaterialization:
             and not getattr(req, "retracted_stain", False)
             and callable(getattr(req, "finished", None)) and not req.finished()
         )
+
+    def retain_rebound_prefix(self, req, key, previous):
+        """Carry a verified prefix into the first request of a new session."""
+        if (
+            self._native_device_eviction is None
+            or previous.session_id is None or key.session_id is None
+            or previous.context_epoch >= key.context_epoch
+            or (previous.root_workflow_id, previous.context_id) != self._context(key)
+            or not self._untouched(req)
+            or getattr(req, "positional_embed_overrides", None) is not None
+        ):
+            return
+        context = self.runtime.graph.contexts.get(key.context_id)
+        if context is None or context.epoch != key.context_epoch:
+            return
+        ids = req.origin_input_ids
+        prefix_limit = getattr(req, "_compute_max_prefix_len", None)
+        if not isinstance(ids, array) or ids.typecode != "q" or not callable(prefix_limit):
+            return
+        cache = self.runtime._native_cache
+        tracker = getattr(cache, "session_refs", None)
+        if (
+            tracker is None or cache.tree_core.is_eagle
+            or cache.tp_world_size != 1 or cache.pp_size != 1 or cache.linker is not None
+        ):
+            return
+        released = tracker.snapshot_released_session_leaf_anchors(
+            previous.session_id, previous.session_generation,
+        )
+        if not released or not any(leaves for _, leaves in released):
+            return
+        target = tracker.snapshot_session_leaf_anchors(key.session_id, key.session_generation)
+        if target is None or any(leaves for _, leaves in target):
+            return
+
+        from sglang.srt.environ import envs
+        from sglang.srt.mem_cache.base_prefix_cache import MatchPrefixParams
+        from sglang.srt.mem_cache.radix_cache import RadixKey
+
+        if (
+            envs.SGLANG_RADIX_FORCE_MISS.get()
+            or getattr(getattr(req, "session", None), "streaming", False)
+        ):
+            return
+        limit = prefix_limit(len(ids))
+        if not limit:
+            return
+        match = cache.match_prefix(MatchPrefixParams(
+            key=RadixKey(
+                ids, extra_key=req.extra_key, cache_salt=req.cache_salt, limit=limit,
+            ),
+        ))
+        tokens = len(match.device_indices) + match.host_hit_length
+        if tokens:
+            # Reuse the native session's eviction priority without pinning any pages.
+            tracker.register_session_ref(SimpleNamespace(
+                session_id=key.session_id, session_generation=key.session_generation,
+                session=None, last_node=match.best_match_node,
+                beliefkv_metadata=req.beliefkv_metadata,
+            ))
+            self.runtime.counts["subagent_materialization_rebound_prefix_tokens"] += tokens
 
     def registered(self, req, key):
         a, runtime = self.admission, self.runtime

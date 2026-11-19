@@ -11995,6 +11995,12 @@ class NativeAdmissionRuntime:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             paper.registered(req, key)
         if self._agent_admission is not None:
+            if (
+                (gate := self._subagent_materialization) is not None
+                and (prior_key := self._agent_admission.latest.get(key.invocation_id)) is not None
+                and key.session_id != prior_key.session_id
+            ):
+                gate.retain_rebound_prefix(req, key, prior_key)
             self._agent_admission.registered(req, key)
         if self._full_prefix_migration is not None:
             self._full_prefix_migration.registered(req, key)
