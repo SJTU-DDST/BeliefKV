@@ -340,7 +340,20 @@ class SubagentMaterialization:
         if envs.SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM.get():
             return
 
+        loading_check = getattr(cache, "loading_check", None)
+
         def init_load_back(params):
+            acks = getattr(cache.cache_controller, "ack_load_queue", ())
+            hit = params.host_hit_length
+            if (
+                acks and callable(loading_check)
+                and hit >= max(1, cache.load_back_threshold)
+                and cache.token_to_kv_pool_allocator.available_size() < hit
+                and acks[0].finish_event.query()
+            ):
+                # A load may finish between the scheduler poll and this allocation.
+                loading_check(finish_count=1)
+                self.runtime.counts["subagent_materialization_restore_acks_reaped"] += 1
             if self._defer_demand_restore(cache, params):
                 # Native OTHER ends this selection pass and submits its selected
                 # loads. Returning an empty hit here would start recomputation.

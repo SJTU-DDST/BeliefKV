@@ -681,6 +681,44 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
     assert native.init_load_back == load
 
 
+@pytest.mark.parametrize("staged_native", ({"members": 2, "select": False},), indirect=True)
+@pytest.mark.parametrize("completed", (False, True))
+def test_d3_reaps_completed_restore_before_reclaiming_host(staged_native, completed):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    native, allocator = f.cache, f.allocator
+    back_up = _track_native_host_allocations(native, 24, occupied=16)
+    waiting, generation = insert_session(native, list(range(100, 108)), "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    insert_session(native, list(range(200, 252)), "unbacked")
+    f.runtime._native_chunk_input_reserve = 4
+    gate = SubagentMaterialization(f.runtime, include_root_entries=True)
+    gate.attach(native)
+
+    for member in f.members:
+        member.init_next_round_input(native)
+    f.first.add_one_req(f.members[0], has_chunked_req=False, truncation_align_size=None)
+    assert native.ready_to_load_host_cache() >= 0
+    ack = native.cache_controller.ack_load_queue[0]
+    assert not ack.finish_event.query()
+    assert allocator.available_size() == 4
+    f.complete.ready = completed
+
+    second = f.adder()
+    second.add_one_req(f.members[1], has_chunked_req=False, truncation_align_size=None)
+
+    assert second.can_run_list == f.members[1:]
+    assert ack.finish_event.synchronize.call_count == int(completed)
+    assert (f.leaf.id in native.ongoing_load_back) is not completed
+    observed = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", range(100, 109)), extra_key=None, cache_salt=None,
+    ))
+    assert observed["checkpoint_tokens"] == (8 if completed else 4)
+
+
 @pytest.mark.parametrize("runtime,host_free,donor_sizes,needed,loses_prefix", (
     ("pressure_v1", 0, (2,), 2, True),
     ("pressure_v2", 0, (2,), 2, False),
