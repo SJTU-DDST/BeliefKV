@@ -196,7 +196,7 @@ class ReadyServiceGuard:
         }
 
     def choose_fit(self, keys, selected, *, now, decay_capacity, protected):
-        """Replace at most the last ordinary grant using current full logical budget."""
+        """Fit one overdue request, replacing at most one proposed ordinary grant."""
         if not self.fit_available or self.target is not None or self.fit_target is not None:
             return selected
         a = self.admission
@@ -215,11 +215,21 @@ class ReadyServiceGuard:
             for key in keys
         ):
             return selected
-        last = selected[-1] if selected else None
-        limit = capacity - ordinary_tokens
-        can_replace_last = last is not None and not protected(last)
-        if can_replace_last:
-            limit += sizes[last]
+        spare = capacity - ordinary_tokens
+        runtime = a.runtime
+        replaceable = []
+        for key in reversed(selected):
+            if protected(key):
+                continue
+            stage = runtime._final_request_stages.get(key.request_id)
+            if (
+                stage is not None and not stage.semantic_only
+                and stage.child_id == key.invocation_id and stage.child_epoch == key.context_epoch
+                and runtime._live_final_stage(stage)
+            ):
+                continue
+            replaceable.append(key)
+        limit = spare + max((sizes[key] for key in replaceable), default=0)
         if limit <= a.policy.buffer_tokens:
             return selected
         oldest = None
@@ -240,7 +250,13 @@ class ReadyServiceGuard:
         found = a._candidate(fit.request_id, fit, include_first=True)
         if found is None or not a._can_resume(found[0]):
             return selected
+        deficit = sizes[fit] - spare
+        displaced = (
+            next(key for key in replaceable if sizes[key] >= deficit) if deficit > 0 else None
+        )
         a.counts["ready_service_fit_native_checks"] += 1
+        if displaced is not None and displaced != selected[-1]:
+            a.counts["ready_service_fit_earlier_grant_native_checks"] += 1
         started = time.thread_time_ns()
         try:
             native = self._native_fit(fit, found[1])
@@ -249,14 +265,13 @@ class ReadyServiceGuard:
         if native is None:
             a.counts["ready_service_fit_native_skips"] += 1
             return selected
-        displaced = last if ordinary_tokens + sizes[fit] > capacity else None
-        retained = selected[:-1] if displaced is not None else selected
+        retained = [key for key in selected if key != displaced] if displaced is not None else selected
         self.fit_target = fit
         self.fit_service_seen = False
         self.fit_attempted.add(fit)
         a.counts["ready_service_fit_grants"] += 1
         a.counts["ready_service_fit_displaced_grants"] += displaced is not None
-        writer = getattr(a.runtime, "_opportunity_writer", None)
+        writer = getattr(runtime, "_opportunity_writer", None)
         if writer is not None:
             writer.record({
                 "event": "ready_service_fit_granted",

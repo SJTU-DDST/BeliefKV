@@ -6,6 +6,7 @@ import time
 import pytest
 
 from beliefkv.control.causal_graph import InvocationState
+from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.internal_comparison import arm_environment
 from beliefkv.runtime import ready_service_guard
 from beliefkv.runtime.reference_thunder_admission import validate_reference_admission
@@ -85,6 +86,8 @@ def test_one_overdue_request_uses_current_fit_and_reaches_native_admission(queue
     assert not runtime.physical_ledger.pending_count
     assert not a.counts["public_timeout_force_resumed"]
     assert guard.fit_target == keys["a"]
+    assert a.counts["ready_service_fit_native_checks"] == 1
+    assert not a.counts["ready_service_fit_earlier_grant_native_checks"]
     assert a.counts["ready_service_fit_grants"] == a.counts["ready_service_fit_displaced_grants"] == 1
     grant = next(row for row in records if row["event"] == "ready_service_fit_granted")
     assert grant["displaced"]["request_id"] == "b-request"
@@ -182,6 +185,84 @@ def test_preserve_normal_short_selection_when_any_fit_condition_fails(queue, mon
     assert a.policy.last_selection["selected_in_priority_order"] == expected
     assert not a.policy.programs["a"].active
     assert not a.counts["ready_service_fit_grants"]
+    if change in ("raw_capacity", "two_replacements"):
+        assert not a.counts["ready_service_fit_native_checks"]
+
+
+@pytest.mark.parametrize(("change", "displaced", "probes"), (
+    ("fits", "b", 1),
+    ("two_qualifying", "d", 1),
+    ("native_veto", None, 1),
+    ("join_parent", None, 0),
+    ("join_sibling", None, 0),
+    ("last_join_child", None, 0),
+    ("final_stage", None, 0),
+    ("logical_alone", None, 0),
+))
+def test_fit_can_replace_an_earlier_ordinary_grant(queue, monkeypatch, change, displaced, probes):
+    runtime, a, guard, keys, _env, _now, headroom, _prefix, records = queue
+    for index, (identity, tokens) in enumerate((("d", 30), ("e", 20), ("f", 30)), start=3):
+        runtime.on_events((
+            replace(fixtures.observed(2 * index, Kind.WORKFLOW_START), workflow_id=identity),
+            replace(fixtures.observed(
+                2 * index + 1, Kind.INVOCATION_CREATE,
+                invocation_id=identity, context_id=identity + "-context",
+            ), workflow_id=identity),
+        ))
+        req = fixtures.request(identity + "-request", identity, tokens=tokens, workflow=identity)
+        req.output_ids.clear()
+        assert runtime.register_visible_request(req)
+        runtime.graph.invocations[identity].state = InvocationState.RUNNING_LLM
+        runtime.context_sessions[keys[identity].context_id] = keys[identity]
+        runtime._capacity_waiting_queue.append(req)
+
+    ordinary = ("b", "d", "e")
+    monkeypatch.setattr(a._combination, "select", lambda *args, **kw: [keys[i] for i in ordinary])
+    now = time.monotonic()
+    guard.fit_after_s = 600
+    guard.since["a"] = keys["a"], now - 601.
+    # Raw headroom is 650: the 400-token aged grant is 250 over with all three
+    # ordinary grants. The last costs 120, the preceding grants cost 130 and 250.
+    a.policy.capacity_tokens = 900
+    if change == "fits":
+        monkeypatch.setattr(runtime, "_last_join_child_has_waiting_parent", lambda key: key == keys["d"])
+    elif change == "two_qualifying":
+        a.policy.capacity_tokens = 1025  # A 125-token deficit also allows replacing d.
+    elif change == "native_veto":
+        headroom.device_full_free_tokens = 502  # Strict full-input gate at equality.
+        guard.since["f"] = keys["f"], now - 600.  # A second candidate could pass native fit.
+    elif change == "join_parent":
+        monkeypatch.setattr(a, "_protected_join", lambda key: key == keys["b"])
+    elif change == "join_sibling":
+        monkeypatch.setattr(a._combination, "_group", lambda key, groups: (
+            "join", 2 if key == keys["b"] else 1, 0,
+        ))
+    elif change == "last_join_child":
+        monkeypatch.setattr(runtime, "_last_join_child_has_waiting_parent", lambda key: key == keys["b"])
+    elif change == "final_stage":
+        stage = NS(semantic_only=False, child_id="b", child_epoch=keys["b"].context_epoch)
+        runtime._final_request_stages[keys["b"].request_id] = stage
+        monkeypatch.setattr(runtime, "_live_final_stage", lambda candidate: candidate is stage)
+    elif change == "logical_alone":
+        a.policy.programs["a"].tokens = 551
+
+    a.tick(now=now)
+    expected = tuple(i for i in ordinary if i != displaced) + (("a",) if displaced else ())
+    assert a.policy.last_selection["selected_in_priority_order"] == expected
+    assert {item.identity for item in a.policy.programs.values() if item.active} == {*expected, "c"}
+    assert a.counts["ready_service_fit_native_checks"] == probes
+    assert a.counts["ready_service_fit_earlier_grant_native_checks"] == probes
+    assert a.counts["ready_service_fit_native_skips"] == (change == "native_veto")
+    assert a.counts["ready_service_fit_displaced_grants"] == bool(displaced)
+    assert guard.fit_target == (keys["a"] if displaced else None)
+    assert guard.fit_attempted == ({keys["a"]} if displaced else set())
+    assert not runtime.physical_ledger.pending_count
+    grants = [row for row in records if row["event"] == "ready_service_fit_granted"]
+    assert len(grants) == bool(displaced)
+    if displaced:
+        assert grants[0]["displaced"]["request_id"] == keys[displaced].request_id
+        assert grants[0]["selected_tokens"] <= grants[0]["logical_capacity_tokens"]
+        assert a.policy.remaining_capacity() >= 0
 
 
 def test_fit_adds_to_existing_grants_when_raw_capacity_allows(queue):
