@@ -346,6 +346,67 @@ def test_guarded_d3_cold_device_leaf(constrained_cache, monkeypatch, pinned_mirr
     cache.sanity_check()
 
 
+@pytest.mark.parametrize(
+    ("constrained_cache", "case"),
+    ((12, "cold"), (12, "parent"), (12, "leaf"), (16, "live-sibling"), (16, "cold-sibling")),
+    indirect=("constrained_cache",),
+)
+def test_guarded_d3_reclaims_cold_host_prefix_after_leaf(constrained_cache, case):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, pool, writes, commits = constrained_cache
+    parent, _ = insert_session(cache, range(1, 5), "retired-parent")
+    leaf, _ = insert_session(cache, range(1, 9), "retired-leaf")
+    cold_path = [parent, leaf]
+    if case.endswith("-sibling"):
+        sibling, _ = insert_session(cache, (*range(1, 5), *range(10, 14)), "sibling")
+        _backup(cache, sibling, demote=True)
+        assert sibling.parent is parent
+        if case == "cold-sibling":
+            cache.release_radix_session("sibling")
+            cold_path.append(sibling)
+    _backup(cache, leaf, demote=True)
+    _backup(cache, parent, demote=True)
+    cache.release_radix_session("retired-leaf")
+    cache.release_radix_session("retired-parent")
+    neighbor, _ = insert_session(cache, range(20, 24), "live-neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    needed = 12 if case.endswith("-sibling") else 8
+    donor, _ = insert_session(cache, range(40, 40 + needed), "donor")
+    tree = cache.tree_core
+    assert leaf.parent is parent and leaf in tree.evictable_host_leaves
+    assert parent not in tree.evictable_host_leaves
+    assert pool.available_size() == 0
+    before, writes_before = allocator.available_size(), len(writes)
+    protected_nodes = {"parent": (parent.id,), "leaf": (leaf.id,)}.get(case, ())
+    runtime = SimpleNamespace(counts=Counter(), _native_chunk_input_reserve=4)
+    gate = SubagentMaterialization(runtime, include_root_entries=True)
+    gate.attach(cache)
+    try:
+        restored = ensure_device_capacity_preserving_live_kv(
+            cache, before + needed, protected_nodes=protected_nodes,
+        )
+        assert restored is (case in ("cold", "cold-sibling"))
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert pool.slot_used[neighbor_slots].all() and pool.available_size() == 0
+        if restored:
+            assert allocator.available_size() == before + needed and len(writes) == writes_before + 1
+            assert commits[-1].node_ids == (donor.id,)
+            assert donor.component_data[0].host_value is not None
+            for node in cold_path:
+                with pytest.raises(KeyError):
+                    tree.node_by_id(node.id)
+        else:
+            assert allocator.available_size() == before and len(writes) == writes_before
+            assert tree.node_by_id(parent.id) is parent and tree.node_by_id(leaf.id) is leaf
+            if case == "live-sibling":
+                assert tree.node_by_id(sibling.id) is sibling
+                assert sibling.component_data[0].session_ref > 0
+    finally:
+        gate.close()
+    cache.sanity_check()
+
+
 def test_d3_failed_backup_preserves_live_host_descendant(constrained_cache, monkeypatch):
     from test_beliefkv_terminal_capacity import insert_session
 

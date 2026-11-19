@@ -1,6 +1,7 @@
 """Capacity checks for a synchronous FULL demand restore."""
 
 from contextlib import contextmanager
+from heapq import heapify, heappop, heappush
 from itertools import islice
 
 
@@ -29,11 +30,10 @@ def _override_hook(owner, name, hook):
             setattr(owner, name, previous)
 
 
-def _is_unreferenced_leaf(tree, node):
+def _is_unreferenced_node(tree, node):
     data = node.component_data[0]
     if (
-        node is tree.root_node or node.children
-        or data.session_ref or data.lock_ref or data.host_lock_ref
+        node is tree.root_node or data.session_ref or data.lock_ref or data.host_lock_ref
         or node.write_through_pending_id is not None or node.load_back_pending_id is not None
     ):
         return False
@@ -46,21 +46,53 @@ def _is_unreferenced_leaf(tree, node):
 def _cold_device_leaf_slots(tree, node):
     data = node.component_data[0]
     if (
-        node in tree.evictable_device_leaves and data.value is not None
-        and data.host_value is None and _is_unreferenced_leaf(tree, node)
+        node in tree.evictable_device_leaves and not node.children and data.value is not None
+        and data.host_value is None and _is_unreferenced_node(tree, node)
     ):
         return len(data.value)
     return 0
 
 
-def _cold_host_leaf_slots(tree, node):
+def _cold_host_slots(tree, node):
     data = node.component_data[0]
-    if (
-        node in tree.evictable_host_leaves and data.value is None
-        and data.host_value is not None and _is_unreferenced_leaf(tree, node)
-    ):
+    if data.value is None and data.host_value is not None and _is_unreferenced_node(tree, node):
         return len(data.host_value)
     return 0
+
+
+def _cold_host_leaf_slots(tree, node):
+    if node in tree.evictable_host_leaves and not node.children:
+        return _cold_host_slots(tree, node)
+    return 0
+
+
+def _cold_host_reclaim_plan(tree, protected, needed):
+    leaves, ancestors, children_left = [], set(), {}
+    capacity = 0
+    for node in islice(tree.evictable_host_leaves, _MAX_PREFLIGHT_LEAVES):
+        if node.id in protected or not (slots := _cold_host_leaf_slots(tree, node)):
+            continue
+        leaves.append(node)
+        capacity += slots
+    # Keep the original bounded leaf census. Inspect cold parents only when
+    # the leaf capacity alone cannot fund the requested backup.
+    remaining = _MAX_PREFLIGHT_LEAVES
+    for node in leaves:
+        if capacity >= needed or not remaining:
+            break
+        parent = node.parent
+        while remaining and capacity < needed and parent is not None and parent is not tree.root_node:
+            remaining -= 1
+            children_left[parent.id] = children_left.get(parent.id, len(parent.children)) - 1
+            if (
+                children_left[parent.id] != 0 or parent.id in protected
+                or not (slots := _cold_host_slots(tree, parent))
+            ):
+                break
+            ancestors.add(parent)
+            capacity += slots
+            parent = parent.parent
+    return leaves, ancestors, capacity
 
 
 def ensure_device_capacity_preserving_live_kv(
@@ -125,14 +157,12 @@ def ensure_device_capacity_preserving_live_kv(
     protected = frozenset(protected_nodes)
     possible_slots = controller.mem_pool_host.available_size()
     mirrors = tree.full_host_duplicates
-    cold_host_leaves = []
+    cold_host_leaves, cold_host_ancestors = (), set()
     if can_discard_cold and possible_slots < shortfall:
-        cold_host_leaves = [
-            (node, slots)
-            for node in islice(tree.evictable_host_leaves, _MAX_PREFLIGHT_LEAVES)
-            if node.id not in protected and (slots := _cold_host_leaf_slots(tree, node))
-        ]
-        possible_slots += sum(slots for _, slots in cold_host_leaves)
+        cold_host_leaves, cold_host_ancestors, cold_host_slots = _cold_host_reclaim_plan(
+            tree, protected, shortfall - possible_slots,
+        )
+        possible_slots += cold_host_slots
     if possible_slots < shortfall and len(mirrors) <= _MAX_PREFLIGHT_LEAVES:
         # Each dual slot can either fund a device demotion or be reused for
         # a fresh backup. Count both pinned and usable mirrors as an upper bound.
@@ -158,23 +188,24 @@ def ensure_device_capacity_preserving_live_kv(
     native_evict_leaf = cache._evict_device_leaf
     native_release = tree._release_all_component_layers
     selected_leaf = None
-    host_leaves_ordered = False
+    host_heap = None
 
     def reclaim_cold_host(num_tokens, tracker, device_frees, host_frees):
-        nonlocal host_leaves_ordered
+        nonlocal host_heap
         if not cold_host_leaves or tracker[0] >= num_tokens:
             return
-        if not host_leaves_ordered:
-            cold_host_leaves.sort(
-                key=lambda entry: full.session_ref_eviction_strategy(entry[0]),
-                reverse=True,
-            )
-            host_leaves_ordered = True
+        if host_heap is None:
+            host_heap = [(full.session_ref_eviction_strategy(node), node) for node in cold_host_leaves]
+            heapify(host_heap)
         # Native has already tried its dual-resident copies for this backup.
-        while cold_host_leaves and tracker[0] < num_tokens:
-            node, _ = cold_host_leaves.pop()
+        while host_heap and tracker[0] < num_tokens:
+            _, node = heappop(host_heap)
             if _cold_host_leaf_slots(tree, node):
+                parent = node.parent
                 tree._evict_host_leaf(node, tracker, device_frees, host_frees)
+                if parent in cold_host_ancestors and _cold_host_leaf_slots(tree, parent):
+                    cold_host_ancestors.remove(parent)
+                    heappush(host_heap, (full.session_ref_eviction_strategy(parent), parent))
 
     def evict_leaf(node_id, tracker):
         nonlocal selected_leaf
