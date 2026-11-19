@@ -203,25 +203,44 @@ def test_crossfit_choice_rejects_a_competitor_without_its_own_project_score():
     verified = heldout_choice_review(items, costs, truth, truth, offsets, assignment)
     assert verified["workflow_equal_choice_error"] == 0
     assert verified["workflow_equal_JOIN_error"] == 0
+    assert verified["common"]["workflow_equal_JOIN_error"] is None
+    items[0]["in_common_window"] = True
+    common = heldout_choice_review(items, costs, truth, truth, offsets, assignment)["common"]
+    assert common == {key: value for key, value in verified.items() if key != "common"}
     with pytest.raises(ValueError, match="each competitor"):
         heldout_choice_review(items, costs, [.9, float("nan")], truth, offsets, assignment)
 
 
 def test_crossfit_selection_requires_both_workflow_and_join_noninferiority():
-    from scripts.crossvalidate_r5_join_path import select_variant
+    from scripts.crossvalidate_r5_join_path import choice_noninferior, select_variant
 
-    def review(choice, join):
+    def metrics(choice, join):
         return {
+            "validated_workflows": 4,
+            "validated_JOIN_workflows": 3,
             "workflow_equal_choice_error": choice, "workflow_equal_JOIN_error": join,
-            "workflow_equal_absolute_log_error": 1.,
+        }
+
+    def review(choice, join, *, common=None):
+        return {
+            **metrics(choice, join), "workflow_equal_absolute_log_error": 1.,
+            "common": metrics(*(common or (choice, join))),
         }
 
     reviews = {
         "original_absolute": review(.3, .2),
         "short_only_regression": review(.1, .3),
         "joint_only_regression": review(.4, .1),
+        "common_workflow_regression": review(.1, .1, common=(.4, .1)),
+        "common_JOIN_regression": review(.1, .1, common=(.1, .3)),
         "both_improve": review(.2, .1),
     }
+    missing_common = review(.1, .1)
+    missing_common["common"]["validated_JOIN_workflows"] = 0
+    missing_common["common"]["workflow_equal_JOIN_error"] = None
+    assert not choice_noninferior(missing_common, reviews["original_absolute"])
+    assert not choice_noninferior(reviews["both_improve"], missing_common)
+    reviews["unverified_common"] = missing_common
     assert select_variant(reviews) == "both_improve"
     reviews.pop("both_improve")
     assert select_variant(reviews) == "original_absolute"

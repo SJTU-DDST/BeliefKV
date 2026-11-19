@@ -20,7 +20,8 @@ from beliefkv.predictor.workflow_completion_path import WORK_PRIOR_KIND, feature
 from beliefkv.predictor.workflow_continuous_work import log_work_weight
 from beliefkv.predictor.workflow_work import R5_FEATURES, WorkflowWorkModel
 from scripts.crossvalidate_r5_join_path import (
-    DECISION_SCORE_SCOPE, heldout_choice_review, workflow_weights,
+    CHOICE_SELECTION_SCOPE, DECISION_SCORE_SCOPE, choice_noninferior, compact_review,
+    heldout_choice_review, workflow_weights,
 )
 from scripts.optimize_r5_join_path import evaluate_choices, prepared_decisions
 from scripts.train_workflow_work import write
@@ -131,7 +132,7 @@ def main():
         for wf, state in item["raw"]["states"].items():
             offsets[id(item)][wf] = len(samples)
             samples.append({"workflow": wf, **state})
-        item["in_common_window"] = common[0] <= item["raw"]["monotonic_s"] <= common[1]
+        item["in_common_window"] = common[0] <= item["raw"]["monotonic_s"] < common[1]
     if len(samples) != len(x):
         raise ValueError("cached states changed their exact decision order")
     workflows = np.asarray([row["workflow"] for row in samples])
@@ -154,6 +155,7 @@ def main():
         "synthetic_queries_are_training_only_not_competition_evidence": True,
         "training_weighting": args.weighting,
         "decision_score_scope": DECISION_SCORE_SCOPE,
+        "choice_selection_scope": CHOICE_SELECTION_SCOPE,
         "runtime_policy_and_sibling_capacity_checks_unchanged": True,
         "fixed18_used_for_selection": False, "GPU_action": False,
     })
@@ -212,17 +214,14 @@ def main():
         outcomes[name] = heldout_choice_review(choices, costs, decision_oof, truth, offsets, assignment)
         out_of_fold[name] = raw_oof
     baseline = crossfit["reviews"][crossfit["selected"]]
-    eligible = [
-        name for name, value in outcomes.items()
-        if value["workflow_equal_choice_error"] <= baseline["workflow_equal_choice_error"]
-        and value["workflow_equal_JOIN_error"] <= baseline["workflow_equal_JOIN_error"]
-    ]
+    eligible = [name for name, value in outcomes.items() if choice_noninferior(value, baseline)]
     selected = min(eligible, key=lambda name: (
         outcomes[name]["workflow_equal_JOIN_error"], outcomes[name]["workflow_equal_choice_error"],
     )) if eligible else "keep_crossfit"
     write(args.output_dir / "selection.json", {
         "selected": selected, "outcomes": outcomes, "baseline": baseline,
         "decision_score_scope": DECISION_SCORE_SCOPE,
+        "choice_selection_scope": CHOICE_SELECTION_SCOPE,
         "folds": folds_evidence, "fixed18_used_for_selection": False, "GPU_action": False,
     })
     if selected == "keep_crossfit":
@@ -230,6 +229,7 @@ def main():
             "selected": selected, "outcomes": outcomes,
             "baseline": baseline, "no_ranker_promoted": True, "GPU_action": False,
             "decision_score_scope": DECISION_SCORE_SCOPE,
+            "choice_selection_scope": CHOICE_SELECTION_SCOPE,
             "training_weighting": args.weighting,
             "CPU_elapsed_s": time.monotonic() - started,
             "inputs_sha256": {
@@ -241,7 +241,7 @@ def main():
         })
         print(json.dumps({
             "selected": selected, "outcomes": {
-                name: {key: value for key, value in values.items() if key != "per_workflow"}
+                name: compact_review(values)
                 for name, values in outcomes.items()
             },
         }), flush=True)
@@ -278,6 +278,7 @@ def main():
     write(args.output_dir / "evaluation.json", {
         "selected": selected, "results": results, "outcomes": outcomes, "baseline": baseline,
         "decision_score_scope": DECISION_SCORE_SCOPE,
+        "choice_selection_scope": CHOICE_SELECTION_SCOPE,
         "slope": slope, "intercept": intercept, "final_training": evidence,
         "model_sha256": sha256_file(args.output_dir / "model.json"),
         "inputs_sha256": {

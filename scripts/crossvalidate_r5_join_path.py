@@ -36,6 +36,7 @@ VARIANTS = {
     "prior_residual_l1": {"kind": RESIDUAL_KIND, "rounds": 128, "leaves": 16, "depth": 5, "objective": "regression_l1"},
 }
 DECISION_SCORE_SCOPE = "per_candidate_held_out_project"
+CHOICE_SELECTION_SCOPE = "all_and_common_window_without_fixed18_candidates"
 
 
 def fold_assignment(projects, measured, *, folds=4):
@@ -55,30 +56,47 @@ def workflow_weights(workflows):
     return result * len(result) / result.sum()
 
 
-def summarize_cv(per_workflow):
+def summarize_cv(per_workflow, *, require_evidence=True):
     choice, joint = [], []
     for counts in per_workflow.values():
         if counts["choice_opportunities"]:
             choice.append(counts["choice_errors"] / counts["choice_opportunities"])
         if counts["JOIN_opportunities"]:
             joint.append(counts["JOIN_errors"] / counts["JOIN_opportunities"])
-    if not choice or not joint:
+    if require_evidence and (not choice or not joint):
         raise ValueError("cross-validation needs held-out workflow and JOIN choices")
     return {
         "validated_workflows": len(choice), "validated_JOIN_workflows": len(joint),
-        "workflow_equal_choice_error": sum(choice) / len(choice),
-        "workflow_equal_JOIN_error": sum(joint) / len(joint),
+        "workflow_equal_choice_error": sum(choice) / len(choice) if choice else None,
+        "workflow_equal_JOIN_error": sum(joint) / len(joint) if joint else None,
         "per_workflow": {wf: dict(counts) for wf, counts in per_workflow.items()},
     }
 
 
+def choice_noninferior(candidate, baseline):
+    """Require comparable workflow and blocking JOIN evidence in both windows."""
+    for actual, reference in ((candidate, baseline), (candidate.get("common"), baseline.get("common"))):
+        if actual is None or reference is None:
+            return False
+        for count, rate in (
+            ("validated_workflows", "workflow_equal_choice_error"),
+            ("validated_JOIN_workflows", "workflow_equal_JOIN_error"),
+        ):
+            if (
+                not reference.get(count) or actual.get(count) != reference[count]
+                or actual.get(rate) is None or reference.get(rate) is None
+                or not actual[rate] <= reference[rate]
+            ):
+                return False
+    return True
+
+
 def select_variant(reviews):
     baseline = reviews["original_absolute"]
-    eligible = [
+    eligible = ["original_absolute", *(
         name for name, values in reviews.items()
-        if values["workflow_equal_choice_error"] <= baseline["workflow_equal_choice_error"]
-        and values["workflow_equal_JOIN_error"] <= baseline["workflow_equal_JOIN_error"]
-    ]
+        if name != "original_absolute" and choice_noninferior(values, baseline)
+    )]
     return min(eligible, key=lambda name: (
         reviews[name]["workflow_equal_JOIN_error"], reviews[name]["workflow_equal_choice_error"],
         reviews[name]["workflow_equal_absolute_log_error"],
@@ -118,7 +136,22 @@ def heldout_choice_review(items, costs, predicted, truth, offsets, assignment):
             for wf, index in offsets[id(item)].items()
         ):
             raise ValueError("each competitor requires its own out-of-fold project prediction")
-    return summarize_cv(cv_choices(items, costs, predicted, truth, offsets, set(assignment)))
+    heldout = set(assignment)
+    review = summarize_cv(cv_choices(items, costs, predicted, truth, offsets, heldout))
+    common = cv_choices(
+        (item for item in items if item.get("in_common_window")),
+        costs, predicted, truth, offsets, heldout,
+    )
+    review["common"] = summarize_cv(common, require_evidence=False)
+    return review
+
+
+def compact_review(review):
+    """Keep the selection metrics and their denominators in summary reports."""
+    return {
+        **{key: value for key, value in review.items() if key not in ("per_workflow", "common")},
+        "common": {key: value for key, value in review["common"].items() if key != "per_workflow"},
+    }
 
 
 def main():
@@ -157,7 +190,7 @@ def main():
         "fixed18_targets_used_for_selection": False,
         "whole_evaluation_windows_excluded_from_cross_validation": True,
         "one_count_per_heldout_workflow_per_boundary": True,
-        "selection_requires_both_workflow_and_JOIN_error_noninferior_to_crossfit_baseline": True,
+        "choice_selection_scope": CHOICE_SELECTION_SCOPE,
         "decision_score_scope": DECISION_SCORE_SCOPE,
         "GPU_action": False,
     })
@@ -173,7 +206,7 @@ def main():
             samples.append({"workflow": wf, **state})
         offsets[id(item)] = mapping
         common = audit["windows"]["common_throughput"]
-        item["in_common_window"] = common[0] <= item["raw"]["monotonic_s"] <= common[1]
+        item["in_common_window"] = common[0] <= item["raw"]["monotonic_s"] < common[1]
     x, model_logs, support, timing = [], [], [], []
     for state in samples:
         projection, coverage = projections[state["workflow"]]
@@ -281,6 +314,7 @@ def main():
     write(args.output_dir / "selection.json", {
         "selected": selected, "reviews": reviews, "fold_reports": fold_reports,
         "decision_score_scope": DECISION_SCORE_SCOPE,
+        "choice_selection_scope": CHOICE_SELECTION_SCOPE,
         "fixed18_targets_used_for_selection": False, "GPU_action": False,
     })
     configuration = VARIANTS[selected]
@@ -317,8 +351,7 @@ def main():
     }
     write(args.output_dir / "evaluation.json", {
         "selected": selected, "results": results, "model_sha256": sha256_file(args.output_dir / "model.json"),
-        "reviews": {name: {key: value for key, value in values.items() if key != "per_workflow"}
-                    for name, values in reviews.items()},
+        "reviews": {name: compact_review(values) for name, values in reviews.items()},
         "inputs_sha256": {
             str(path.resolve()): sha256_file(path) for path in (
                 args.dataset, args.previous_model, args.previous_evaluation, args.previous_audit,
@@ -328,15 +361,13 @@ def main():
         },
         "calibration_is_whole_project_out_of_fold": True, "fixed18_targets_used_for_selection": False,
         "decision_score_scope": DECISION_SCORE_SCOPE,
+        "choice_selection_scope": CHOICE_SELECTION_SCOPE,
         "base_representation_and_repeated_fixed18_are_development_not_unseen_generalization": True,
         "same_snapshot_planning_not_future_service_or_JCT": True,
         "CPU_elapsed_s": time.monotonic() - started, "GPU_action": False,
     })
     print(json.dumps({
-        "selected": selected, "reviews": {
-            name: {key: value for key, value in values.items() if key != "per_workflow"}
-            for name, values in reviews.items()
-        },
+        "selected": selected, "reviews": {name: compact_review(values) for name, values in reviews.items()},
         "results": {name: {key: value for key, value in values.items() if key != "decisions"}
                     for name, values in results.items()},
         "CPU_elapsed_s": time.monotonic() - started,
