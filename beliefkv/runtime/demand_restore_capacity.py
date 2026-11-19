@@ -63,12 +63,15 @@ def _cold_host_leaf_slots(tree, node):
     return 0
 
 
-def ensure_device_capacity_preserving_live_kv(cache, tokens: int, *, protected_nodes=()) -> bool:
+def ensure_device_capacity_preserving_live_kv(
+    cache, tokens: int, *, protected_nodes=(), retry_pending_write=False,
+) -> bool | None:
     """Try to make ``tokens`` absolute FULL slots free on the scheduler thread.
 
     This supports single-rank native write-back ownership. A failed attempt may
     leave completed backups, demotions, reclaimed mirrors, radix splits, and
     discarded unreferenced leaves in place. The caller allocates the available slots.
+    Return None without mutation when a single unfinished ACK can be retried.
     """
     controller = getattr(cache, "cache_controller", None)
     if (
@@ -98,11 +101,10 @@ def ensure_device_capacity_preserving_live_kv(cache, tokens: int, *, protected_n
         if len(acks) != 1 or len(cache.ongoing_write_through) != 1:
             return False
         ack = acks[0]
-        if (
-            len(ack.node_ids) != 1 or ack.node_ids[0] not in cache.ongoing_write_through
-            or not ack.finish_event.query()
-        ):
+        if len(ack.node_ids) != 1 or ack.node_ids[0] not in cache.ongoing_write_through:
             return False
+        if not ack.finish_event.query():
+            return None if retry_pending_write else False
         # Publish the completed backup before testing which device pages can move.
         cache.writing_check(finish_count=1)
         shortfall = tokens - allocator.available_size()

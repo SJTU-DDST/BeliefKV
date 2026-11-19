@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
 
 
+DEFER_WRITE_ACK = "write_ack_retry_next_pass"
+
+
 @dataclass
 class _Pending:
     request: object
@@ -68,10 +71,15 @@ class DemandRestoreChunk:
 
         # Attempt the native allocation once. A declined staging attempt may
         # move settled state, but may not discard any referenced checkpoint.
-        req._beliefkv_d3_staged_restore_key = key
-        if not ensure_device_capacity_preserving_live_kv(
+        funded = ensure_device_capacity_preserving_live_kv(
             cache, tokens + device_reserve, protected_nodes=protected_nodes,
-        ):
+            retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
+        )
+        if funded is None:
+            req._beliefkv_d3_write_ack_retry_key = key
+            return DEFER_WRITE_ACK
+        req._beliefkv_d3_staged_restore_key = key
+        if not funded:
             return "device_capacity_not_funded"
         prefix_id = prefix.id
         if prefix_tokens < len(prefix.key):

@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 from beliefkv.control.causal_graph import InvocationState, JoinMode
 from beliefkv.core.events import RelationType
-from beliefkv.runtime.demand_restore_chunk import DemandRestoreChunk
+from beliefkv.runtime.demand_restore_chunk import DEFER_WRITE_ACK, DemandRestoreChunk
 from beliefkv.runtime.sglang_v0520_admission import _request_key
 
 
@@ -542,10 +542,14 @@ class SubagentMaterialization:
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
         )
         if reason is not None:
-            return decline(
+            decline(
                 reason, proposed_tokens=tokens, device_reserve_tokens=reserve,
                 headroom=asdict(headroom),
             )
+            if reason == DEFER_WRITE_ACK:
+                runtime.counts["subagent_materialization_demand_restore_ack_retries"] += 1
+                return True
+            return False
         runtime.counts["subagent_materialization_demand_restore_chunks"] += 1
         runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] += tokens
         if writer is not None:
