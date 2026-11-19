@@ -15,6 +15,7 @@ from beliefkv.runtime.sglang_v0520_admission import _request_key
 
 
 PRESSURE_POLICIES = ("pressure_v1", "pressure_v2")
+NODE_CENSUS_BOUND = "native_node_census_bound"
 
 
 @dataclass(frozen=True)
@@ -44,7 +45,7 @@ class MaterializationHeadroom:
 def observe_materialization_headroom(
     cache, *, max_nodes=8192, required_free_tokens=None, protected_host_nodes=(),
 ):
-    """Census unique native extents once; an incomplete census grants no claim."""
+    """Count reclaimable native extents, or use only observed free slots at the scan bound."""
     try:
         if (
             getattr(cache, "tree_components", ()) != (0,)
@@ -72,8 +73,13 @@ def observe_materialization_headroom(
                 host_free_tokens=free, device_free_tokens=device_free,
             )
         nodes = tree._node_arena
-        if type(nodes) is not dict or len(nodes) > max_nodes:
-            return MaterializationHeadroom(False, "native_node_census_bound")
+        if type(nodes) is not dict:
+            return MaterializationHeadroom(False, "invalid_native_node_census")
+        if len(nodes) > max_nodes:
+            return MaterializationHeadroom(
+                True, NODE_CENSUS_BOUND, host_capacity_tokens=capacity,
+                host_free_tokens=free, device_free_tokens=device_free,
+            )
         protected = set(protected_host_nodes)
         useful = reclaimable = pinned = tracked = 0
         discardable = {}
@@ -1076,7 +1082,7 @@ class SubagentMaterialization:
             raw = observe_materialization_headroom(
                 runtime._native_cache, max_nodes=0, required_free_tokens=required,
             )
-            if raw.reason == "native_node_census_bound" and not _starting:
+            if raw.reason == NODE_CENSUS_BOUND and not _starting:
                 census_due = self.next_census
                 if self.include_root_entries and getattr(running_batch, "reqs", ()):
                     # Capacity events can rearm the free-page check on every tick.
@@ -1092,9 +1098,9 @@ class SubagentMaterialization:
                     protected_host_nodes=(
                         lease.node_id for lease in runtime._prefetch_service_leases.values()
                     ),
-                ) if raw.reason == "native_node_census_bound" else raw
+                ) if raw.reason == NODE_CENSUS_BOUND else raw
             )
-            if observation.census_complete:
+            if observation.census_complete or observation.reason == NODE_CENSUS_BOUND:
                 self.next_census = now + self.admission.control_interval_s
                 self.next_running_census = now + self.interval_s
             counts["subagent_materialization_complete_censuses"] += observation.census_complete

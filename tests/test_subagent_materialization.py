@@ -61,26 +61,60 @@ def test_census_distinguishes_unique_useful_duplicate_inflight_and_untracked_slo
 
 @pytest.mark.parametrize("change,reason", (
     ("hybrid", "requires_full_only"), ("buffer", "requires_full_only"),
-    ("bound", "native_node_census_bound"), ("mismatch", "native_host_accounting_mismatch"),
-    ("geometry", "invalid_pool_geometry"), ("absent", "native_observation_unavailable"),
+    ("mismatch", "native_host_accounting_mismatch"), ("geometry", "invalid_pool_geometry"),
+    ("arena", "invalid_native_node_census"), ("absent", "native_observation_unavailable"),
 ))
-def test_partial_or_unsupported_census_is_unknown_not_zero(change, reason):
+def test_invalid_or_unsupported_census_is_unknown(change, reason):
     native = cache(node(1, 1000))
-    kwargs = {}
     if change == "hybrid":
         native.tree_components = (0, 2)
     elif change == "buffer":
         native.host_memory_mode = "buffer_only"
-    elif change == "bound":
-        kwargs["max_nodes"] = 1
     elif change == "mismatch":
         native.host_pool_group.entry_map["kv"].host_pool.available_size = lambda: 1
     elif change == "geometry":
         native.token_to_kv_pool_allocator.available_size = lambda: -1
+    elif change == "arena":
+        native.tree_core._node_arena = list(native.tree_core._node_arena.values())
     else:
         del native.tree_core._node_arena
-    result = observe_materialization_headroom(native, **kwargs)
+    result = observe_materialization_headroom(native)
     assert not result.observable and result.reason.startswith(reason)
+
+
+def test_census_bound_keeps_only_raw_pool_headroom():
+    native = cache(
+        node(1, 750), node(2, 200, device=True), host_free=50, device_free=100,
+    )
+    arena = native.tree_core._node_arena
+    for identity in range(len(arena), 8192):
+        leaf = node(identity, 2 if identity == 8191 else 1, device=True)
+        leaf.component_data[0].host_value = None
+        arena[identity] = leaf
+
+    complete = observe_materialization_headroom(native)
+    assert complete.observable and complete.census_complete
+    assert complete.inspected_nodes == 8192
+    assert complete.useful_host_only_tokens == 750
+    assert complete.reclaimable_host_tokens == 200
+    assert complete.available_tokens == 350
+
+    # Split a device-only extent without changing either pool's free count.
+    donor = arena[8191].component_data[0]
+    split = node(8192, 1, device=True)
+    split.component_data[0].host_value = None
+    split.component_data[0].value = donor.value[1:]
+    donor.value = donor.value[:1]
+    arena[split.id] = split
+    bounded = observe_materialization_headroom(native)
+    assert bounded.observable and not bounded.census_complete
+    assert bounded.reason == "native_node_census_bound"
+    assert bounded.host_capacity_tokens == 1000
+    assert bounded.host_free_tokens == 50 and bounded.device_free_tokens == 100
+    assert bounded.reclaimable_host_tokens == 0
+    assert bounded.useful_host_only_tokens is None
+    assert bounded.available_tokens == 150
+    assert bounded.inspected_nodes == 0
 
 
 def test_real_native_split_backup_ack_and_host_only_accounting(full_native):
@@ -294,13 +328,19 @@ def test_root_ingress_before_matching_create_stays_held_until_ready(runtime):
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
-def test_idle_progress_can_start_a_root_if_no_existing_work_can_advance(runtime):
+@pytest.mark.parametrize("max_nodes", (8192, 1), ids=("complete-census", "census-bound"))
+def test_idle_progress_can_start_a_root_if_no_existing_work_can_advance(runtime, max_nodes):
     oldest, _ = new_root(runtime, "older")
     later, _ = new_root(runtime, "later")
     gate = runtime._subagent_materialization
+    gate.max_nodes = max_nodes
     prepare(runtime, (later, oldest))
     assert gate.last_decision["progress_exception"] == oldest.rid
     assert gate.last_decision["held_root_request_ids"] == [later.rid]
+    prepare(runtime, (later, oldest), now=102.)
+    assert gate.last_decision["allowed"] == [oldest.rid]
+    assert gate.last_decision["progress_exception"] is None
+    assert runtime.counts["subagent_materialization_progress_exceptions"] == 1
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
@@ -702,13 +742,51 @@ def test_v2_coalesces_capacity_event_censuses_only_while_running(runtime, wake):
     )
 
 
-def test_incomplete_census_preserves_original_eligibility_including_outside_window(runtime):
-    first, second = child(runtime, "first"), child(runtime, "second")
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_census_bound_holds_new_work_and_preserves_native_commitments(runtime):
+    selected = child(runtime, "selected")
+    native = runtime._native_cache
     gate = runtime._subagent_materialization
     gate.max_nodes = gate.max_candidates = 1
-    prepare(runtime, [first, second], running=[object()])
-    assert set(gate.last_decision["allowed"]) == {first.rid, second.rid}
-    assert not gate.last_decision["headroom"]["observable"]
+    native.token_to_kv_pool_allocator.available_size = lambda: 1000
+    prepare(runtime, [selected], running=[object()])
+    assert gate.allows(runtime.visible[selected.rid])
+
+    first, second = child(runtime, "first"), child(runtime, "second")
+    root, _ = new_root(runtime, "arrival")
+    native.token_to_kv_pool_allocator.available_size = lambda: 0
+    gate.prepare(
+        [first, second, root], running_batch=NS(reqs=[]),
+        adder=NS(can_run_list=[selected]), now=101.,
+    )
+    decision = gate.last_decision
+    assert gate.last_observation.reason == "native_node_census_bound"
+    assert gate.last_observation.available_tokens == 0
+    assert [record["request_id"] for record in decision["candidates"]] == [first.rid]
+    assert decision["committed_initial_request_ids"] == [selected.rid]
+    assert decision["outstanding_input_tokens"] > 0
+    assert decision["allowed"] == [selected.rid]
+    assert set(decision["held"]) == {first.rid, second.rid, root.rid}
+    assert decision["progress_exception"] is None
+    assert runtime.counts["subagent_materialization_observation_fallbacks"] == 0
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("reason", ("invalid_pool_geometry", "native_host_accounting_mismatch"))
+def test_unknown_headroom_preserves_original_eligibility_including_outside_window(runtime, reason):
+    first, second = child(runtime, "first"), child(runtime, "second")
+    root, _ = new_root(runtime, "arrival")
+    native = runtime._native_cache
+    gate = runtime._subagent_materialization
+    gate.max_candidates = 1
+    if reason == "invalid_pool_geometry":
+        native.token_to_kv_pool_allocator.available_size = lambda: -1
+    else:
+        native.host_pool_group.entry_map["kv"].host_pool.available_size = lambda: 1
+    prepare(runtime, [first, second, root], running=[object()])
+    assert len(gate.last_decision["candidates"]) == 1
+    assert set(gate.last_decision["allowed"]) == {first.rid, second.rid, root.rid}
+    assert not gate.last_observation.observable and gate.last_observation.reason == reason
     assert runtime.counts["subagent_materialization_observation_fallbacks"] == 1
 
 
