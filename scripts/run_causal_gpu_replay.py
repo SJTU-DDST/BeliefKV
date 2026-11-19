@@ -37,6 +37,7 @@ from beliefkv.runtime.replay_token_capture import native_request_expectations
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 MAX_REPLAY_REQUEST_TIMEOUT_S = 14400.
+REPLAY_EVENT_ACK_TIMEOUT_S = 10.
 
 
 def source_plan(arm: Path):
@@ -124,7 +125,9 @@ async def run(args) -> dict:
         ))
         delivery = stack.enter_context(ReplayEventDelivery(
             log.emit_batch,
-            (lambda _workflow: UnixDatagramRuntimeEventSink(args.event_socket))
+            (lambda _workflow: UnixDatagramRuntimeEventSink(
+                args.event_socket, ack_timeout_s=REPLAY_EVENT_ACK_TIMEOUT_S,
+            ))
             if args.event_socket is not None else None,
         ))
         requests = stack.enter_context(

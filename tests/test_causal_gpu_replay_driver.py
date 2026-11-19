@@ -1,7 +1,9 @@
 import asyncio
 import json
 from pathlib import Path
+from select import select
 import sys
+from threading import Event, Thread
 from types import SimpleNamespace as NS
 
 import httpx
@@ -9,6 +11,7 @@ import pytest
 
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.tool_timing_overlay import load_overlay
+from beliefkv.runtime.event_channel import RuntimeEventDatagramServer
 from beliefkv.runtime.replay_token_capture import capture_record, native_request_expectations
 from scripts import run_causal_gpu_replay as driver
 from tests.test_causal_replay import sequential_trace
@@ -105,6 +108,48 @@ def test_driver_executes_the_complete_causal_population_with_current_native_rece
     assert "duration_ms" not in tools[0]["attributes"]
     assert tools[1]["attributes"]["duration_ms"] >= 10.
     assert [path for path, _ in calls] == ["/generate", "/generate", "/close_session"]
+
+
+def test_driver_tolerates_delayed_scheduler_event_ack(tmp_path, monkeypatch):
+    arm, expected = prepare(tmp_path)
+    output = tmp_path / "delayed_ack"
+    original_client = httpx.AsyncClient
+    seen = []
+    stopped = Event()
+
+    with (
+        CapturedTokenCorpus(arm / "server/request_tokens.jsonl", expected) as corpus,
+        RuntimeEventDatagramServer(tmp_path / "events.sock", seen.extend) as server,
+    ):
+        async def handler(request):
+            body = json.loads(request.content)
+            return httpx.Response(200, json=(
+                response_payload(corpus.get(body["rid"]))
+                if request.url.path == "/generate" else {"accepted": True}
+            ))
+
+        def drain_after_pause():
+            if select((server,), (), (), 5.)[0] and not stopped.wait(3.25):
+                while not stopped.is_set():
+                    if select((server,), (), (), .01)[0]:
+                        server.drain()
+
+        monkeypatch.setattr(
+            driver.httpx, "AsyncClient",
+            lambda **kwargs: original_client(transport=httpx.MockTransport(handler), **kwargs),
+        )
+        worker = Thread(target=drain_after_pause)
+        worker.start()
+        try:
+            result = asyncio.run(driver.run(NS(
+                source_arm=arm, output_dir=output, base_url="http://127.0.0.1:18546",
+                event_socket=server.path, request_timeout_s=3600.,
+            )))
+        finally:
+            stopped.set()
+            worker.join()
+    assert result["completed_requests"] == 2 and result["exact_tokens_verified"]
+    assert seen and len({item.event_id for item in seen}) == len(seen)
 
 
 @pytest.mark.parametrize("change", ("unfinished", "missing_summary", "duplicate_summary", "population"))
