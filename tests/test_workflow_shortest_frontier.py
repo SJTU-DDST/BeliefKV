@@ -1,10 +1,11 @@
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import asdict, replace
 
 import pytest
 
 from beliefkv.policy.workflow_combination import _evaluate, choose_combination
 from beliefkv.policy.workflow_shortest_frontier import choose_shortest_frontier
+from scripts.audit_r5_shortest_contract import inspect_choice
 from tests.test_combination_device_planning import resource, rows
 from tests.test_combination_full_batch_costs import costs
 
@@ -76,6 +77,39 @@ def test_unready_sibling_is_not_required_and_an_oversized_group_can_make_partial
     result = select([first, second, *candidates[1:]], resources, profile)
     assert result["shortest_frontier_members"] == ("s1",)
     assert result["selected"] == ("s1",)
+
+
+@pytest.mark.parametrize(("other_category", "slots", "feasible_split"), (
+    (0, 3, False),
+    (0, 4, True),
+    (2, 3, True),
+))
+def test_sibling_split_audit_charges_earlier_equal_weight_winners(
+    other_category, slots, feasible_split,
+):
+    candidates, resources, profile = fixture()
+    base = replace(candidates[0], weight=.5, logical_tokens=40)
+    other = replace(
+        base, identity="other", workflow="other", group="other",
+        category=other_category, sequence=4,
+    )
+    siblings = [
+        replace(
+            base, identity=f"s{index}", group="join", unfinished_members=3,
+            category=1, sequence=index,
+        )
+        for index in range(1, 4)
+    ]
+    recorded = ["other", "s1", "s2"]
+    audit = inspect_choice({
+        "monotonic_s": 100.,
+        "source": "periodic_decay_resume",
+        "candidates": [asdict(value) for value in [other, *siblings]],
+        "resources": asdict(replace(resources, slots=slots)),
+        "decision": {"selected": recorded, "reference": recorded, "reason": "shortest_work_reference"},
+    }, profile)
+    assert bool(audit["feasible_incomplete_sibling_groups"]) is feasible_split
+    assert audit["unlimited_CPU_choice_changed"] is feasible_split
 
 
 def test_unfitting_short_candidate_is_skipped_without_claiming_capacity():

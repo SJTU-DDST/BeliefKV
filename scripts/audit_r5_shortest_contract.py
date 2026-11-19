@@ -2,7 +2,6 @@
 
 import argparse
 from collections import Counter, defaultdict
-from dataclasses import replace
 import json
 import math
 import os
@@ -68,16 +67,25 @@ def inspect_choice(row, costs):
     for value in rows:
         if value.unfinished_members > 1:
             groups[value.workflow, value.group].append(value)
+    ordered = sorted(
+        (value for value in rows if value.identity not in required),
+        key=lambda value: (-value.weight, value.category, value.logical_tokens, value.sequence),
+    )
+    group_order = {}
+    for index, value in enumerate(ordered):
+        group_order.setdefault((value.workflow, value.group), index)
     for (workflow, group), peers in groups.items():
         omitted = [peer.identity for peer in peers if peer.identity not in selected]
         if not omitted or not any(peer.identity in selected for peer in peers):
             continue
         if len({peer.category for peer in peers}) > 1:
             result["class_split_sibling_groups"].append(group)
+        position = group_order[workflow, group]
+        # The group's first ordinary member sets its turn in the ranked order.
         anchors = [
-            peer for peer in rows if peer.identity in selected and (
-                peer.identity in required or peer.weight > peers[0].weight
-            ) and peer not in peers
+            peer for peer in rows if peer.identity in selected
+            and (peer.workflow, peer.group) != (workflow, group)
+            and (peer.identity in required or group_order[peer.workflow, peer.group] < position)
         ]
         if _evaluate([*anchors, *peers], resources, costs) is not None:
             result["feasible_incomplete_sibling_groups"].append({
