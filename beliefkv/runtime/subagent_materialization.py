@@ -212,6 +212,8 @@ class SubagentMaterialization:
         pool = getattr(pools.get("kv"), "host_pool", None)
         if not callable(getattr(pool, "available_size", None)):
             return
+        host_bytes_per_token = getattr(pool, "size_per_token", None)
+        demand = getattr(self.runtime, "_host_demand_capacity", None)
         split_device_suffix = getattr(tree, "split_idle_device_full_suffix", None)
         apply_actions = getattr(cache, "_apply_cache_actions", None)
         page = getattr(tree, "page_size", None)
@@ -238,7 +240,15 @@ class SubagentMaterialization:
                 if needed > 0 and full.host_value is None and full.value is not None:
                     host_free = pool.available_size()
                     size = len(full.value)
-                    if size <= host_free:
+                    fits_host = size <= host_free
+                    available_for_padding = host_free
+                    if (
+                        size > needed and can_split and demand is not None
+                        and type(host_bytes_per_token) is int and host_bytes_per_token > 0
+                    ):
+                        unit = host_bytes_per_token
+                        available_for_padding -= (demand.reserve() + unit - 1) // unit
+                    if fits_host and (size <= needed or size <= available_for_padding):
                         return native_evict(node_id, tracker)
                     counts = self.runtime.counts
                     counts["subagent_materialization_writeback_pressure_checks"] += 1
@@ -257,7 +267,7 @@ class SubagentMaterialization:
                                 tracker[0] - before
                             )
                             return None
-                    if tree.full_host_duplicates and self._use_backed_device_leaves(
+                    if not fits_host and tree.full_host_duplicates and self._use_backed_device_leaves(
                         component, tree, native_evict, tracker, needed,
                     ):
                         counts["subagent_materialization_writeback_avoided"] += 1
@@ -276,9 +286,9 @@ class SubagentMaterialization:
                     # amortize decode writes, unless a smaller write avoids Host reclaim.
                     chunk_pages = (chunk + page - 1) // page * page if chunk else 0
                     write_tokens = min(size, max(shortfall, chunk_pages))
-                    padding_saved = 0
+                    padding_saved = size - write_tokens if fits_host else 0
                     if shortfall < write_tokens:
-                        safe_host = host_free
+                        safe_host = available_for_padding
                         if (
                             host_free < shortfall
                             and not envs.SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM.get()
@@ -289,9 +299,9 @@ class SubagentMaterialization:
                                     if safe_host >= write_tokens:
                                         break
                         # Pay for required device space even under pressure.
-                        # Padding cannot spend more than free or redundant Host pages.
+                        # Additional padding cannot use the Host demand reserve.
                         bounded = min(write_tokens, max(shortfall, safe_host // page * page))
-                        padding_saved = write_tokens - bounded
+                        padding_saved += write_tokens - bounded
                         write_tokens = bounded
                     if write_tokens < size:
                         last_access = node.last_access_time

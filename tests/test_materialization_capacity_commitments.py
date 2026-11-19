@@ -944,6 +944,39 @@ def test_small_native_allocation_bounds_writeback_under_host_pressure(
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("host_free", (4, 8))
+def test_optional_writeback_preserves_host_space_for_following_demand(
+    runtime, full_native, host_free,
+):
+    from sglang.srt.mem_cache.common import evict_from_tree_cache
+    from test_beliefkv_terminal_capacity import insert_session
+
+    native, allocator, writes, _, _ = full_native
+    back_up = _track_native_host_allocations(native, 8 + host_free)
+    waiting, generation = insert_session(native, list(range(8)), "waiting-parent")
+    back_up(waiting)
+    native._demote(waiting.id, {0: 0})
+    insert_session(native, list(range(20, 28)), "first-writer")
+    insert_session(native, list(range(40, 40 + host_free - 2)), "second-writer")
+
+    runtime._agent_admission.policy = None
+    runtime._host_demand_capacity = NS(
+        reserve=lambda: (host_free - 2) * native.host_pool_group.size_per_token,
+    )
+    runtime.attach_native_cache(native)
+    runtime._native_chunk_input_reserve = 4
+    evict_from_tree_cache(native, allocator.available_size() + 2)
+    evict_from_tree_cache(native, allocator.available_size() + host_free - 2)
+
+    observed = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", range(9)), extra_key=None, cache_salt=None,
+    ))
+    assert [len(write.device_indices) for write in writes] == [8, 2, host_free - 2]
+    assert observed["checkpoint_tokens"] == 8
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
 @pytest.mark.parametrize("mirror_size,mirror_state,device_freed,checkpoint", (
     (3, "settled", 3, 8),
     (2, "settled", 2, 8),
