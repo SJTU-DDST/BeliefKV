@@ -91,9 +91,25 @@ def ensure_device_capacity_preserving_live_kv(cache, tokens: int, *, protected_n
         return True
     tree = cache.tree_core
     full = cache.components[0]
+    if not tree.is_write_back or full.is_evict_device_ongoing or controller.write_queue:
+        return False
+    acks = controller.ack_write_queue
+    if acks:
+        if len(acks) != 1 or len(cache.ongoing_write_through) != 1:
+            return False
+        ack = acks[0]
+        if (
+            len(ack.node_ids) != 1 or ack.node_ids[0] not in cache.ongoing_write_through
+            or not ack.finish_event.query()
+        ):
+            return False
+        # Publish the completed backup before testing which device pages can move.
+        cache.writing_check(finish_count=1)
+        shortfall = tokens - allocator.available_size()
+        if shortfall <= 0:
+            return True
     if (
-        not tree.is_write_back or full.is_evict_device_ongoing
-        or controller.write_queue or controller.ack_write_queue
+        controller.write_queue or controller.ack_write_queue
         or cache.ongoing_write_through
         or shortfall > cache.full_evictable_size()
     ):

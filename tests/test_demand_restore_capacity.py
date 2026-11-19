@@ -3,7 +3,7 @@
 from collections import Counter
 from threading import RLock
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -75,6 +75,131 @@ def test_available_capacity_uses_absolute_device_slots(constrained_cache, monkey
     assert ensure_device_capacity_preserving_live_kv(cache, allocator.available_size())
     assert not ensure_device_capacity_preserving_live_kv(cache, allocator.size + 1)
     evict.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("ready", "released_on_ack"),
+    ((True, 0), (False, 0), (True, 2)),
+    ids=("completed", "in-flight", "completed-recheck-shortfall"),
+)
+def test_single_pending_write_ack(constrained_cache, monkeypatch, ready, released_on_ack):
+    from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, pool, writes, commits = constrained_cache
+    neighbor, _ = insert_session(cache, range(1, 5), "neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    donor, _ = insert_session(cache, range(10, 14), "donor")
+    data = donor.component_data[0]
+    device_slots = data.value
+    assert cache._execute_and_commit_kv_backup(
+        BackupKV([donor.id]), write_back=False, no_host_reclaim=True,
+    ) == 4
+    donor_slots = data.host_value
+    controller = cache.cache_controller
+    ack, = controller.ack_write_queue
+    pending = cache.ongoing_write_through[donor.id]
+    donor_lock = data.lock_ref
+    assert ack.node_ids == [donor.id] and donor.write_through_pending_id == donor.id
+    assert donor_lock > 0 and cache.full_evictable_size() == 0
+    assert pool.available_size() == 0
+    assert neighbor.component_data[0].session_ref > 0 and data.session_ref > 0
+
+    if released_on_ack:
+        # Return independently held slots during ACK publication to exercise the reread.
+        held_slots = allocator.alloc(released_on_ack)
+        assert held_slots is not None
+
+        def commit_and_release_slots(commit):
+            commits.append(commit)
+            allocator.free(held_slots)
+
+        monkeypatch.setattr(cache, "on_hicache_transfer_commit", commit_and_release_slots)
+
+    query = Mock(return_value=ready)
+    monkeypatch.setattr(ack.finish_event, "query", query, raising=False)
+    finish = Mock(wraps=cache.writing_check)
+    evict = Mock(wraps=cache.evict_for_alloc)
+    monkeypatch.setattr(cache, "writing_check", finish)
+    monkeypatch.setattr(cache, "evict_for_alloc", evict)
+    before = allocator.available_size()
+    target = before + 4 + released_on_ack
+    writes_before, commits_before = len(writes), len(commits)
+
+    assert ensure_device_capacity_preserving_live_kv(cache, target) is ready
+
+    query.assert_called_once_with()
+    if ready:
+        assert finish.call_args_list[:1] == [call(finish_count=1)]
+        ack.finish_event.synchronize.assert_called_once_with()
+        evict.assert_called_once()
+        assert evict.call_args.args[0].num_tokens == 4
+        assert not controller.ack_write_queue and not cache.ongoing_write_through
+        assert donor.write_through_pending_id is None and data.lock_ref == 0
+        assert len(commits) == commits_before + 1
+        assert commits[-1].direction == "d2h" and commits[-1].status == "completed"
+        assert commits[-1].node_ids == (donor.id,)
+        assert allocator.available_size() == target and data.value is None
+    else:
+        finish.assert_not_called()
+        ack.finish_event.synchronize.assert_not_called()
+        evict.assert_not_called()
+        assert controller.ack_write_queue == [ack]
+        assert cache.ongoing_write_through[donor.id] is pending
+        assert donor.write_through_pending_id == donor.id and data.lock_ref == donor_lock
+        assert len(commits) == commits_before
+        assert allocator.available_size() == before and data.value is device_slots
+    assert len(writes) == writes_before and not controller.write_queue
+    assert data.host_value is donor_slots and pool.slot_used[donor_slots].all()
+    assert neighbor.component_data[0].host_value is neighbor_slots
+    assert neighbor.component_data[0].value is None and pool.slot_used[neighbor_slots].all()
+    assert pool.available_size() == 0
+    cache.sanity_check()
+
+
+@pytest.mark.parametrize("constrained_cache", (12,), indirect=True)
+@pytest.mark.parametrize("batched", (False, True), ids=("two-acks", "multi-node-ack"))
+def test_multiple_pending_write_nodes_are_left_pending(constrained_cache, monkeypatch, batched):
+    from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, pool, writes, commits = constrained_cache
+    neighbor, _ = insert_session(cache, range(1, 5), "neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    donors = (
+        insert_session(cache, range(10, 14), "first")[0],
+        insert_session(cache, range(20, 24), "second")[0],
+    )
+    controller = cache.cache_controller
+    for donor in donors:
+        assert cache._execute_and_commit_kv_backup(
+            BackupKV([donor.id]), write_back=False, no_host_reclaim=True,
+            beliefkv_defer_writing=batched,
+        ) == 4
+    if batched:
+        controller.start_writing()
+    acks = tuple(controller.ack_write_queue)
+    assert [len(ack.node_ids) for ack in acks] == ([2] if batched else [1, 1])
+    for ack in acks:
+        monkeypatch.setattr(ack.finish_event, "query", Mock(return_value=True), raising=False)
+    finish = Mock(wraps=cache.writing_check)
+    monkeypatch.setattr(cache, "writing_check", finish)
+    pending = dict(cache.ongoing_write_through)
+    before = allocator.available_size()
+    assert pool.available_size() == 0
+
+    assert not ensure_device_capacity_preserving_live_kv(cache, before + 4)
+
+    finish.assert_not_called()
+    for ack in acks:
+        ack.finish_event.query.assert_not_called()
+        ack.finish_event.synchronize.assert_not_called()
+    assert tuple(controller.ack_write_queue) == acks and not controller.write_queue
+    assert cache.ongoing_write_through == pending
+    assert allocator.available_size() == before and pool.available_size() == 0
+    assert neighbor.component_data[0].host_value is neighbor_slots
+    assert pool.slot_used[neighbor_slots].all() and len(writes) == 3 and len(commits) == 1
+    cache.sanity_check()
 
 
 @pytest.mark.parametrize("use_mirror", (False, True))
