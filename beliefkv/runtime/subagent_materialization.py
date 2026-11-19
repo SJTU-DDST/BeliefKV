@@ -425,7 +425,7 @@ class SubagentMaterialization:
             return
 
         loading_check = getattr(cache, "loading_check", None)
-        self._demand_restore_chunk = DemandRestoreChunk(cache)
+        self._demand_restore_chunk = DemandRestoreChunk(cache, max_source_nodes=self.max_nodes)
 
         def init_load_back(params):
             acks = getattr(cache.cache_controller, "ack_load_queue", ())

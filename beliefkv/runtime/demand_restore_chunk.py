@@ -18,8 +18,9 @@ class _Pending:
 class DemandRestoreChunk:
     """Retain one partial prefix until native has committed its H2D ACK."""
 
-    def __init__(self, cache):
+    def __init__(self, cache, *, max_source_nodes):
         self.cache = cache
+        self.max_source_nodes = max_source_nodes
         self.pending = None
 
     def start(self, params, key, tokens, *, device_reserve, protected_nodes):
@@ -35,11 +36,12 @@ class DemandRestoreChunk:
             return "restore_not_available"
 
         suffix_id = params.best_match_node
-        suffix = tree.node_by_id(suffix_id)
-        node = suffix
-        missing = []
-        while node.id != req.last_node:
-            if len(missing) == 256:
+        node = tree.node_by_id(suffix_id)
+        prefix = None
+        remaining = params.host_hit_length
+        depth = 0
+        while node is not None and node.id != req.last_node:
+            if depth >= self.max_source_nodes:
                 return "source_path_bound"
             if node is tree.root_node:
                 return "source_prefix_mismatch"
@@ -52,17 +54,17 @@ class DemandRestoreChunk:
                 or node.write_through_pending_id is not None
             ):
                 return "source_extent_unowned_or_busy"
-            missing.append(node)
-            node = node.parent
-        if sum(len(node.key) for node in missing) != params.host_hit_length:
-            return "source_prefix_mismatch"
-
-        remaining = tokens
-        for node in reversed(missing):
             extent = len(node.key)
-            if remaining <= extent:
-                break
+            if not 0 < extent <= remaining:
+                return "source_prefix_mismatch"
             remaining -= extent
+            # Find the cutoff from the suffix without storing the whole path.
+            if prefix is None and remaining < tokens:
+                prefix, prefix_tokens = node, tokens - remaining
+            depth += 1
+            node = node.parent
+        if node is None or remaining or prefix is None:
+            return "source_prefix_mismatch"
 
         # Attempt the native allocation once. A declined staging attempt may
         # move settled state, but may not discard any referenced checkpoint.
@@ -71,9 +73,9 @@ class DemandRestoreChunk:
             cache, tokens + device_reserve, protected_nodes=protected_nodes,
         ):
             return "device_capacity_not_funded"
-        prefix_id = node.id
-        if remaining < extent:
-            split = tree.split_host_only_full_prefix(node.id, node.creation_time, remaining)
+        prefix_id = prefix.id
+        if prefix_tokens < len(prefix.key):
+            split = tree.split_host_only_full_prefix(prefix.id, prefix.creation_time, prefix_tokens)
             if split is None:
                 return "native_split_declined"
             prefix_id, actions = split
