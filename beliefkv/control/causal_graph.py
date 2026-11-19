@@ -119,6 +119,7 @@ class GraphDelta:
     completed_invocations: frozenset[str] = frozenset()
     changed_contexts: frozenset[str] = frozenset()
     graph_version: int = 0
+    satisfied_join_waiters: frozenset[tuple[str, str]] = frozenset()  # (join_id, waiter_id)
 
 
 class RuntimeCausalContextGraph:
@@ -434,12 +435,13 @@ class RuntimeCausalContextGraph:
             return GraphDelta(event.event_id)
         invocation.state = InvocationState.CANCELLED
         invocation.updated_ts_ms = event.ts_ms
-        awakened = self._complete_dependencies(invocation, event.ts_ms)
+        awakened, satisfied = self._complete_dependencies(invocation, event.ts_ms)
         return GraphDelta(
             event.event_id,
             awakened_invocations=frozenset(awakened),
             completed_invocations=frozenset({invocation.invocation_id}),
             changed_contexts=frozenset({invocation.context_id}),
+            satisfied_join_waiters=satisfied,
         )
 
     def _on_context_advance(self, event: RuntimeEvent) -> GraphDelta:
@@ -544,7 +546,7 @@ class RuntimeCausalContextGraph:
             return GraphDelta(event.event_id)
         invocation.state = InvocationState.DONE
         invocation.updated_ts_ms = event.ts_ms
-        awakened = self._complete_dependencies(invocation, event.ts_ms)
+        awakened, satisfied = self._complete_dependencies(invocation, event.ts_ms)
         return GraphDelta(
             event.event_id,
             awakened_invocations=frozenset(awakened),
@@ -553,6 +555,7 @@ class RuntimeCausalContextGraph:
                 {invocation.context_id}
                 | {self.invocations[item].context_id for item in awakened}
             ),
+            satisfied_join_waiters=satisfied,
         )
 
     def _on_message(self, event: RuntimeEvent) -> GraphDelta:
@@ -655,6 +658,7 @@ class RuntimeCausalContextGraph:
                     if invocation.state is InvocationState.READY else frozenset()
                 ),
                 changed_contexts=frozenset({invocation.context_id}),
+                satisfied_join_waiters=frozenset({(join_id, invocation.invocation_id)}),
             )
         invocation.state = (
             InvocationState.WAIT_CHILD if invocation.blocking_child_ids else InvocationState.WAIT_JOIN
@@ -668,14 +672,15 @@ class RuntimeCausalContextGraph:
     def _on_join_satisfied(self, event: RuntimeEvent) -> GraphDelta:
         join_id = require_id(event.join_id, "join_id")
         join = self._join(join_id, event.workflow_id)
-        join.satisfied = True
-        awakened = self._wake_join_waiters(join, event.ts_ms)
+        satisfied: set[tuple[str, str]] = set()
+        awakened = self._satisfy_join(join, event.ts_ms, satisfied)
         return GraphDelta(
             event.event_id,
             awakened_invocations=frozenset(awakened),
             changed_contexts=frozenset(
                 self.invocations[item].context_id for item in awakened
             ),
+            satisfied_join_waiters=frozenset(satisfied),
         )
 
     def _on_join_timeout(self, event: RuntimeEvent) -> GraphDelta:
@@ -765,12 +770,13 @@ class RuntimeCausalContextGraph:
         if bool(event.attributes.get("terminal", False)):
             invocation.state = InvocationState.DONE
             invocation.updated_ts_ms = event.ts_ms
-            awakened = self._complete_dependencies(invocation, event.ts_ms)
+            awakened, satisfied = self._complete_dependencies(invocation, event.ts_ms)
             return GraphDelta(
                 event.event_id,
                 awakened_invocations=frozenset(awakened),
                 completed_invocations=frozenset({invocation.invocation_id}),
                 changed_contexts=frozenset({invocation.context_id}),
+                satisfied_join_waiters=satisfied,
             )
         invocation.state = InvocationState.READY
         invocation.updated_ts_ms = event.ts_ms
@@ -782,8 +788,9 @@ class RuntimeCausalContextGraph:
 
     def _complete_dependencies(
         self, invocation: InvocationRecord, ts_ms: float
-    ) -> set[str]:
+    ) -> tuple[set[str], frozenset[tuple[str, str]]]:
         awakened: set[str] = set()
+        satisfied: set[tuple[str, str]] = set()
         target_id = invocation.return_target_id or invocation.parent_invocation_id
         if target_id is not None and target_id in self.invocations:
             parent = self.invocations[target_id]
@@ -812,19 +819,34 @@ class RuntimeCausalContextGraph:
                 continue
             join.completed_member_ids.add(invocation.invocation_id)
             if self._join_is_satisfied(join):
-                join.satisfied = True
-                awakened.update(self._wake_join_waiters(join, ts_ms))
-        return awakened
+                awakened.update(self._satisfy_join(join, ts_ms, satisfied))
+        return awakened, frozenset(satisfied)
 
     def _join_is_satisfied(self, join: JoinRecord) -> bool:
         if join.mode == JoinMode.ANY:
             return bool(join.completed_member_ids)
         return join.completed_member_ids >= join.member_invocation_ids
 
-    def _wake_join_waiters(self, join: JoinRecord, ts_ms: float) -> set[str]:
+    def _satisfy_join(
+        self, join: JoinRecord, ts_ms: float, satisfied: set[tuple[str, str]],
+    ) -> set[str]:
+        new_releases = satisfied if not join.satisfied else None
+        join.satisfied = True
+        return self._wake_join_waiters(join, ts_ms, new_releases=new_releases)
+
+    def _wake_join_waiters(
+        self, join: JoinRecord, ts_ms: float, *,
+        new_releases: set[tuple[str, str]] | None = None,
+    ) -> set[str]:
         awakened: set[str] = set()
         for waiter_id in join.waiter_invocation_ids:
             waiter = self.invocations[waiter_id]
+            if (
+                new_releases is not None and waiter_id not in join.released_waiter_ids
+                and waiter.join_id == join.join_id
+                and waiter.state in (InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD)
+            ):
+                new_releases.add((join.join_id, waiter_id))
             join.released_waiter_ids.add(waiter_id)
             if waiter.join_id != join.join_id:
                 continue

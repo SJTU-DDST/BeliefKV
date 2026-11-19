@@ -1959,18 +1959,15 @@ class NativeAdmissionRuntime:
                 elif event.kind is RuntimeEventKind.JOIN_WAIT and event.join_id and event.invocation_id:
                     self._join_by_invocation.setdefault(event.invocation_id, set()).add(event.join_id)
             if self.enable_join_parent_priority:
+                previous_version = graph_version
                 for event, delta in zip(events, deltas):
+                    if delta.graph_version == previous_version:
+                        continue
+                    previous_version = delta.graph_version
                     if event.kind is RuntimeEventKind.JOIN_WAIT and event.invocation_id:
                         self._join_priority_pending.pop(event.invocation_id, None)
-                    if event.kind in (
-                        RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_WAIT,
-                        RuntimeEventKind.JOIN_SATISFIED,
-                    ) or event.kind is RuntimeEventKind.LLM_RESULT and event.attributes.get("terminal"):
-                        for invocation_id in delta.awakened_invocations:
-                            invocation = self.graph.invocations.get(invocation_id)
-                            join = self.graph.joins.get(invocation.join_id) if invocation else None
-                            if join is not None and join.satisfied and invocation_id in join.waiter_invocation_ids:
-                                self._join_priority_pending[invocation_id] = join.join_id
+                    for join_id, waiter_id in delta.satisfied_join_waiters:
+                        self._join_priority_pending[waiter_id] = join_id
                     for invocation_id in delta.completed_invocations:
                         self._join_priority_pending.pop(invocation_id, None)
                 if any(event.kind is RuntimeEventKind.WORKFLOW_END for event in events):

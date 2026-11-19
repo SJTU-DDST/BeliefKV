@@ -309,6 +309,120 @@ def test_join_only_consumes_priority_once_on_actual_admission(monkeypatch):
         runtime.close()
 
 
+def summary_call_events():
+    return (
+        observed(
+            20, Kind.INVOCATION_CREATE, invocation_id="summary", context_id="ctx-summary",
+            parent_invocation_id="parent", relation_type=RelationType.CALL,
+            agent_definition_id="context-summarizer", attributes={"runtime_internal": True},
+        ),
+        observed(
+            21, Kind.CALL, invocation_id="parent", target_invocation_id="summary",
+            attributes={"runtime_internal": True},
+        ),
+    )
+
+
+@pytest.mark.parametrize("terminal", (Kind.RETURN, Kind.INVOCATION_CANCEL))
+def test_nonmember_call_completion_cannot_rearm_consumed_join_priority(monkeypatch, terminal):
+    runtime, requests = join_fixture(monkeypatch)
+    try:
+        normal, parent = requests
+        runtime.plan_native_prefill(requests, running_batch=None, adder=None)
+        runtime.on_prefill_candidate_result(parent, admitted=True, result="CONTINUE")
+        assert not runtime._join_priority_pending
+
+        runtime.on_events(summary_call_events())
+        runtime.on_events((observed(
+            22, terminal, invocation_id="summary", attributes={"runtime_internal": True},
+        ),))
+        assert runtime.graph.invocations["parent"].join_id == "join"
+        assert not runtime._join_priority_pending
+        runtime._join_priority_normal_admissions = 4
+        plan = runtime.plan_native_prefill(requests, running_batch=None, adder=None)
+        assert plan.prioritized[0].request_id == normal.rid
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("satisfaction", (
+    Kind.RETURN, Kind.LLM_RESULT, Kind.INVOCATION_CANCEL, Kind.JOIN_SATISFIED,
+))
+def test_join_priority_survives_release_under_a_foreground_call(monkeypatch, satisfaction):
+    runtime, other_waiter, _ = last_child_fixture(monkeypatch, mode="join_priority_only")
+    try:
+        parent = request("parent")
+        runtime.register_visible_request(parent)
+        key = runtime.visible[parent.rid]
+        runtime.on_events((
+            observed(19, Kind.JOIN_WAIT, invocation_id="normal", join_id="join"),
+            *summary_call_events(),
+        ))
+        release = (
+            observed(22, satisfaction, join_id="join")
+            if satisfaction is Kind.JOIN_SATISFIED else
+            observed(22, satisfaction, invocation_id="child", attributes={"terminal": True})
+        )
+        runtime.on_events((release,))
+        assert runtime.graph.joins["join"].released_waiter_ids == {"parent", "normal"}
+        assert runtime._join_priority_pending == {"parent": "join", "normal": "join"}
+        assert not runtime._ready_join_parent(parent, key)
+        assert runtime._ready_join_parent(other_waiter, runtime.visible[other_waiter.rid])
+
+        runtime.on_events((observed(
+            23, Kind.INVOCATION_CANCEL, invocation_id="summary",
+            attributes={"runtime_internal": True},
+        ),))
+        assert runtime._ready_join_parent(parent, key)
+        runtime.on_prefill_candidate_result(parent, admitted=True, result="CONTINUE")
+        if satisfaction is Kind.JOIN_SATISFIED:
+            assert not runtime.graph.invocations["child"].state.terminal
+            runtime.on_events((observed(24, Kind.RETURN, invocation_id="child"),))
+        runtime.on_events((release, observed(25, Kind.JOIN_SATISFIED, join_id="join")))
+        assert runtime._join_priority_pending == {"normal": "join"}
+    finally:
+        runtime.close()
+
+
+def test_join_timeout_releases_waiter_without_satisfied_join_priority(monkeypatch):
+    runtime, _, _ = last_child_fixture(monkeypatch, mode="join_priority_only")
+    try:
+        join = runtime.graph.joins["join"]
+        runtime.on_events((observed(20, Kind.JOIN_TIMEOUT, join_id="join"),))
+        assert join.released_waiter_ids == {"parent"}
+        assert not join.satisfied
+        assert not runtime._join_priority_pending
+        runtime.on_events((observed(21, Kind.RETURN, invocation_id="child"),))
+        assert join.satisfied
+        assert not runtime._join_priority_pending
+    finally:
+        runtime.close()
+
+
+def test_join_wait_replay_preserves_one_shot_priority_and_fresh_wait_rearms(monkeypatch):
+    runtime, requests = join_fixture(monkeypatch, return_before_wait=True)
+    try:
+        _, parent = requests
+        key = runtime.visible[parent.rid]
+        original = observed(6, Kind.JOIN_WAIT, invocation_id="parent", join_id="join")
+        runtime.on_events((original,))
+        assert runtime._ready_join_parent(parent, key)
+        runtime.on_prefill_candidate_result(parent, admitted=True, result="CONTINUE")
+        runtime.on_events((original,))
+        assert not runtime._join_priority_pending
+
+        runtime.on_events((
+            *summary_call_events(),
+            observed(22, Kind.JOIN_WAIT, invocation_id="parent", join_id="join"),
+        ))
+        assert runtime._join_priority_pending == {"parent": "join"}
+        assert not runtime._ready_join_parent(parent, key)
+        runtime.on_events((observed(23, Kind.INVOCATION_CANCEL, invocation_id="summary"),))
+        assert runtime._ready_join_parent(parent, key)
+    finally:
+        runtime.close()
+
+
 def test_join_only_aged_head_keeps_four_ordinary_turns_between_promotions(monkeypatch):
     runtime, requests = join_fixture(monkeypatch)
     try:
