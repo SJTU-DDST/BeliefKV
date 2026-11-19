@@ -110,12 +110,11 @@ def test_native_writeback_preserves_host_neighbor(constrained_cache, use_mirror)
     cache.sanity_check()
 
 
-@pytest.mark.parametrize("case", ("stale_index", "pinned_mirror", "d3_cold_device"))
-def test_no_room_preserves_sole_host_copy(constrained_cache, monkeypatch, case):
+@pytest.mark.parametrize("pinned_mirror", (False, True))
+def test_no_room_preserves_sole_host_copy(constrained_cache, monkeypatch, pinned_mirror):
     from test_beliefkv_terminal_capacity import insert_session
 
     cache, allocator, pool, writes, _ = constrained_cache
-    pinned_mirror = case != "stale_index"
     neighbor, _ = insert_session(cache, range(1, 5 if pinned_mirror else 9), "neighbor")
     neighbor_slots = _backup(cache, neighbor, demote=True)
     if pinned_mirror:
@@ -132,16 +131,6 @@ def test_no_room_preserves_sole_host_copy(constrained_cache, monkeypatch, case):
     tree, full = cache.tree_core, cache.components[0]
     host_hook = Mock(wraps=full.drive_host_eviction)
     monkeypatch.setattr(full, "drive_host_eviction", host_hook)
-    materialization = None
-    guarded_host_hook = host_hook
-    if case == "d3_cold_device":
-        cache.release_radix_session("victim")
-        discard = Mock(wraps=tree.discard_terminated_leaf)
-        monkeypatch.setattr(tree, "discard_terminated_leaf", discard)
-        runtime = SimpleNamespace(counts=Counter(), _native_chunk_input_reserve=4)
-        materialization = SubagentMaterialization(runtime, include_root_entries=True)
-        materialization.attach(cache)
-        guarded_host_hook = full.drive_host_eviction
     try:
         assert not ensure_device_capacity_preserving_live_kv(cache, before + 4)
         assert evict.call_count == int(pinned_mirror)
@@ -151,16 +140,119 @@ def test_no_room_preserves_sole_host_copy(constrained_cache, monkeypatch, case):
         assert tree.node_by_id(victim.id) is victim and victim in tree.evictable_device_leaves
         assert tree.node_by_id(neighbor.id) is neighbor and neighbor in tree.evictable_host_leaves
         assert pool.slot_used[neighbor_slots].all()
-        assert full.drive_host_eviction is guarded_host_hook
+        assert full.drive_host_eviction is host_hook
         host_hook.assert_not_called()
-        if materialization is not None:
-            discard.assert_called_once_with(victim.id, victim.creation_time)
     finally:
-        if materialization is not None:
-            materialization.close()
         if pinned_mirror:
             cache.dec_lock_ref(mirror.id, device_hold)
             cache.dec_host_lock_ref(mirror.id, host_hold)
+    cache.sanity_check()
+
+
+@pytest.mark.parametrize("pinned_mirror", (False, True))
+@pytest.mark.parametrize("blocker", (
+    None, "session_ref", "device_lock", "host_lock_ref",
+    "write_through_pending_id", "load_back_pending_id",
+))
+def test_guarded_d3_cold_device_leaf(constrained_cache, monkeypatch, pinned_mirror, blocker):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, pool, writes, commits = constrained_cache
+    neighbor, _ = insert_session(cache, range(1, 5 if pinned_mirror else 9), "neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    if pinned_mirror:
+        mirror, _ = insert_session(cache, range(10, 14), "pinned-mirror")
+        mirror_slots = _backup(cache, mirror)
+        mirror_device_hold = cache.inc_lock_ref(mirror.id).to_dec_params()
+        mirror_host_hold = cache.inc_host_lock_ref(mirror.id).to_dec_params()
+    leaf, _ = insert_session(cache, range(20, 24), "candidate")
+    data = leaf.component_data[0]
+    device_slots = data.value
+    if blocker != "session_ref":
+        cache.release_radix_session("candidate")
+    leaf_hold = cache.inc_lock_ref(leaf.id).to_dec_params() if blocker == "device_lock" else None
+    before, writes_before, commits_before = allocator.available_size(), len(writes), len(commits)
+    assert pool.available_size() == 0
+    runtime = SimpleNamespace(counts=Counter(), _native_chunk_input_reserve=4)
+    gate = SubagentMaterialization(runtime, include_root_entries=True)
+    tree = cache.tree_core
+    discard = Mock(wraps=tree.discard_terminated_leaf)
+    monkeypatch.setattr(tree, "discard_terminated_leaf", discard)
+    evict = Mock(wraps=cache.evict_for_alloc)
+    monkeypatch.setattr(cache, "evict_for_alloc", evict)
+    gate.attach(cache)
+    attached_evict = cache._evict_device_leaf
+    try:
+        with monkeypatch.context() as state:
+            if blocker == "host_lock_ref":
+                state.setattr(data, blocker, 1)
+            if blocker in ("write_through_pending_id", "load_back_pending_id"):
+                state.setattr(leaf, blocker, leaf.id)
+            expected = blocker is None
+            assert ensure_device_capacity_preserving_live_kv(cache, before + 4) is expected
+
+        assert cache._evict_device_leaf is attached_evict
+        assert "_release_all_component_layers" not in vars(tree)
+        assert allocator.available_size() == before + 4 * expected
+        assert len(writes) == writes_before and len(commits) == commits_before
+        assert runtime.counts["subagent_materialization_cold_device_discarded_nodes"] == expected
+        assert runtime.counts["subagent_materialization_cold_device_discarded_tokens"] == 4 * expected
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert pool.slot_used[neighbor_slots].all() and pool.available_size() == 0
+        if pinned_mirror:
+            assert mirror.component_data[0].host_value is mirror_slots
+            assert pool.slot_used[mirror_slots].all()
+        if expected:
+            evict.assert_called_once()
+            discard.assert_called_once_with(leaf.id, leaf.creation_time)
+            with pytest.raises(KeyError):
+                tree.node_by_id(leaf.id)
+        else:
+            assert evict.call_count == int(pinned_mirror and blocker != "device_lock")
+            assert tree.node_by_id(leaf.id) is leaf
+            assert data.value is device_slots and data.host_value is None
+    finally:
+        gate.close()
+        if leaf_hold is not None:
+            cache.dec_lock_ref(leaf.id, leaf_hold)
+        if pinned_mirror:
+            cache.dec_host_lock_ref(mirror.id, mirror_host_hold)
+            cache.dec_lock_ref(mirror.id, mirror_device_hold)
+    cache.sanity_check()
+
+
+def test_d3_failed_backup_preserves_live_host_descendant(constrained_cache, monkeypatch):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, pool, writes, commits = constrained_cache
+    parent, _ = insert_session(cache, range(1, 5), "parent")
+    child, _ = insert_session(cache, range(1, 9), "child")
+    child_slots = _backup(cache, child, demote=True)
+    cache.release_radix_session("parent")
+    tree = cache.tree_core
+    assert child.parent is parent and parent in tree.evictable_device_leaves
+    assert pool.available_size() == 4 and child.component_data[0].session_ref > 0
+    before, parent_slots = allocator.available_size(), parent.component_data[0].value
+    reject_write = Mock(return_value=None)
+    monkeypatch.setattr(cache.cache_controller, "write", reject_write)
+    fallback = Mock(wraps=tree.drop_subtree_no_host)
+    monkeypatch.setattr(tree, "drop_subtree_no_host", fallback)
+    runtime = SimpleNamespace(counts=Counter(), _native_chunk_input_reserve=4)
+    gate = SubagentMaterialization(runtime, include_root_entries=True)
+    gate.attach(cache)
+    try:
+        assert not ensure_device_capacity_preserving_live_kv(cache, before + 4)
+        reject_write.assert_called()
+        fallback.assert_not_called()
+        assert tree.drop_subtree_no_host is fallback
+        assert allocator.available_size() == before
+        assert tree.node_by_id(parent.id) is parent and tree.node_by_id(child.id) is child
+        assert parent.component_data[0].value is parent_slots
+        assert child.component_data[0].host_value is child_slots and pool.slot_used[child_slots].all()
+        assert len(writes) == len(commits) == 1
+        assert not runtime.counts["subagent_materialization_cold_device_discarded_nodes"]
+    finally:
+        gate.close()
     cache.sanity_check()
 
 

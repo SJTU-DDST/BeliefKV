@@ -1,9 +1,10 @@
 """Capacity checks for a synchronous FULL demand restore."""
 
 from contextlib import contextmanager
+from itertools import islice
 
 
-_MAX_MIRROR_PREFLIGHT = 64
+_MAX_PREFLIGHT_LEAVES = 64
 
 
 class _BackupUnavailable(Exception):
@@ -12,11 +13,6 @@ class _BackupUnavailable(Exception):
 
 def _stop_eviction(*_args, **_kwargs):
     raise _BackupUnavailable
-
-
-def _keep_host_leaves(*_args, **_kwargs):
-    # Native tree eviction has already reclaimed any eligible mirrors.
-    pass
 
 
 @contextmanager
@@ -33,12 +29,46 @@ def _override_hook(owner, name, hook):
             setattr(owner, name, previous)
 
 
-def ensure_device_capacity_preserving_live_kv(cache, tokens: int) -> bool:
+def _is_unreferenced_leaf(tree, node):
+    data = node.component_data[0]
+    if (
+        node is tree.root_node or node.children
+        or data.session_ref or data.lock_ref or data.host_lock_ref
+        or node.write_through_pending_id is not None or node.load_back_pending_id is not None
+    ):
+        return False
+    try:
+        return tree.node_by_id(node.id) is node
+    except KeyError:
+        return False
+
+
+def _cold_device_leaf_slots(tree, node):
+    data = node.component_data[0]
+    if (
+        node in tree.evictable_device_leaves and data.value is not None
+        and data.host_value is None and _is_unreferenced_leaf(tree, node)
+    ):
+        return len(data.value)
+    return 0
+
+
+def _cold_host_leaf_slots(tree, node):
+    data = node.component_data[0]
+    if (
+        node in tree.evictable_host_leaves and data.value is None
+        and data.host_value is not None and _is_unreferenced_leaf(tree, node)
+    ):
+        return len(data.host_value)
+    return 0
+
+
+def ensure_device_capacity_preserving_live_kv(cache, tokens: int, *, protected_nodes=()) -> bool:
     """Try to make ``tokens`` absolute FULL slots free on the scheduler thread.
 
     This supports single-rank native write-back ownership. A failed attempt may
-    leave completed backups, demotions, reclaimed mirrors, and radix splits in
-    place. The caller allocates the available device slots.
+    leave completed backups, demotions, reclaimed mirrors, radix splits, and
+    discarded unreferenced leaves in place. The caller allocates the available slots.
     """
     controller = getattr(cache, "cache_controller", None)
     if (
@@ -68,28 +98,92 @@ def ensure_device_capacity_preserving_live_kv(cache, tokens: int) -> bool:
         or shortfall > cache.full_evictable_size()
     ):
         return False
-    host_free = controller.mem_pool_host.available_size()
+    # D3 installs its device-leaf callback on the cache instance.
+    can_discard_cold = (
+        callable(vars(cache).get("_evict_device_leaf"))
+        and getattr(cache, "enable_session_radix_cache", False) is True
+        and callable(getattr(tree, "discard_terminated_leaf", None))
+    )
+    protected = frozenset(protected_nodes)
+    possible_slots = controller.mem_pool_host.available_size()
     mirrors = tree.full_host_duplicates
-    if host_free < shortfall and len(mirrors) <= _MAX_MIRROR_PREFLIGHT:
+    cold_host_leaves = []
+    if can_discard_cold and possible_slots < shortfall:
+        cold_host_leaves = [
+            (node, slots)
+            for node in islice(tree.evictable_host_leaves, _MAX_PREFLIGHT_LEAVES)
+            if node.id not in protected and (slots := _cold_host_leaf_slots(tree, node))
+        ]
+        possible_slots += sum(slots for _, slots in cold_host_leaves)
+    if possible_slots < shortfall and len(mirrors) <= _MAX_PREFLIGHT_LEAVES:
         # Each dual slot can either fund a device demotion or be reused for
         # a fresh backup. Count both pinned and usable mirrors as an upper bound.
         for node in mirrors.values():
             data = node.component_data[0]
             if data.value is not None and data.host_value is not None:
-                host_free += len(data.host_value)
-                if host_free >= shortfall:
+                possible_slots += len(data.host_value)
+                if possible_slots >= shortfall:
                     break
-        if host_free < shortfall:
+        if can_discard_cold and possible_slots < shortfall:
+            for node in islice(tree.evictable_device_leaves, _MAX_PREFLIGHT_LEAVES):
+                if node.id in protected:
+                    continue
+                possible_slots += _cold_device_leaf_slots(tree, node)
+                if possible_slots >= shortfall:
+                    break
+        if possible_slots < shortfall:
             return False
 
+    from sglang.srt.disaggregation.kv_events import StorageMedium
     from sglang.srt.mem_cache.base_prefix_cache import EvictParams
 
-    # D3 can discard a cold device leaf directly through the tree. Protect that
-    # release too, including when an installed callback captured the tree method.
+    native_evict_leaf = cache._evict_device_leaf
+    native_release = tree._release_all_component_layers
+    selected_leaf = None
+    host_leaves_ordered = False
+
+    def reclaim_cold_host(num_tokens, tracker, device_frees, host_frees):
+        nonlocal host_leaves_ordered
+        if not cold_host_leaves or tracker[0] >= num_tokens:
+            return
+        if not host_leaves_ordered:
+            cold_host_leaves.sort(
+                key=lambda entry: full.session_ref_eviction_strategy(entry[0]),
+                reverse=True,
+            )
+            host_leaves_ordered = True
+        # Native has already tried its dual-resident copies for this backup.
+        while cold_host_leaves and tracker[0] < num_tokens:
+            node, _ = cold_host_leaves.pop()
+            if _cold_host_leaf_slots(tree, node):
+                tree._evict_host_leaf(node, tracker, device_frees, host_frees)
+
+    def evict_leaf(node_id, tracker):
+        nonlocal selected_leaf
+        if can_discard_cold and full.is_evict_device_ongoing:
+            selected_leaf = tree.node_by_id(node_id)
+        try:
+            return native_evict_leaf(node_id, tracker)
+        finally:
+            selected_leaf = None
+
+    def release_layers(node, medium, *args):
+        # The attached callback may have captured discard_terminated_leaf.
+        # Its native leaf validation runs before this release.
+        if (
+            node is not selected_leaf or medium is not StorageMedium.GPU
+            or node.id in protected
+            or not _cold_device_leaf_slots(tree, node)
+        ):
+            raise _BackupUnavailable
+        return native_release(node, medium, *args)
+
     with (
-        _override_hook(full, "drive_host_eviction", _keep_host_leaves),
+        _override_hook(full, "drive_host_eviction", reclaim_cold_host),
+        _override_hook(cache, "_evict_device_leaf", evict_leaf),
         _override_hook(cache, "_drop_subtree_no_host", _stop_eviction),
-        _override_hook(tree, "_release_all_component_layers", _stop_eviction),
+        _override_hook(tree, "drop_subtree_no_host", _stop_eviction),
+        _override_hook(tree, "_release_all_component_layers", release_layers),
     ):
         try:
             cache.evict_for_alloc(EvictParams(num_tokens=shortfall))

@@ -1,12 +1,17 @@
 """D3 partial demand restore through the native scheduler and PrefillAdder."""
 
 from array import array
+from collections import Counter
 from types import SimpleNamespace as NS
 
 import pytest
 
-from beliefkv.runtime.subagent_materialization import SubagentMaterialization
-from tests.test_demand_restore_capacity import _backup, bind_host_slots
+from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
+from beliefkv.runtime.subagent_materialization import (
+    SubagentMaterialization,
+    observe_materialization_headroom,
+)
+from tests.test_demand_restore_capacity import _backup, bind_host_slots, constrained_cache
 from tests.test_demand_prefill_pipeline_native import staged_native
 from tests.test_demand_prefill_pipeline_scheduler import (
     BatchConstructionReached,
@@ -25,8 +30,58 @@ def full_native(base_full_native, monkeypatch):
     return base_full_native
 
 
+@pytest.mark.parametrize("blocker", (None, "session_ref", "prefetch_lease"))
+def test_guarded_restore_can_use_unreferenced_host_leaf(constrained_cache, monkeypatch, blocker):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, host, _, _ = constrained_cache
+    neighbor, _ = insert_session(cache, range(1, 5), "live-host")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    cold, _ = insert_session(cache, range(11, 15), "cold-host")
+    cold_slots = _backup(cache, cold, demote=True)
+    if blocker != "session_ref":
+        cache.release_radix_session("cold-host")
+    protected = (cold.id,) if blocker == "prefetch_lease" else ()
+    expected = blocker is None
+    victim, _ = insert_session(cache, range(21, 25), "live-device")
+    tree = cache.tree_core
+    available = allocator.available_size()
+    assert host.available_size() == 0
+    assert observe_materialization_headroom(
+        cache, protected_host_nodes=protected,
+    ).reclaimable_host_tokens == 4 * expected
+
+    losses = []
+
+    def record_eviction(node, _component, tokens):
+        if node.component_data[0].session_ref:
+            losses.append(tokens)
+
+    monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
+    runtime = NS(counts=Counter(), _native_chunk_input_reserve=4)
+    gate = SubagentMaterialization(runtime, include_root_entries=True)
+    gate.attach(cache)
+    try:
+        assert ensure_device_capacity_preserving_live_kv(
+            cache, available + 4, protected_nodes=protected,
+        ) is expected
+        assert allocator.available_size() == available + 4 * expected
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert host.slot_used[neighbor_slots].all() and not losses
+        if expected:
+            assert victim.component_data[0].value is None
+            assert victim.component_data[0].host_value.tolist() == cold_slots.tolist()
+            assert cold.id not in tree._node_arena
+        else:
+            assert victim.component_data[0].value is not None
+            assert cold.component_data[0].host_value is cold_slots
+        cache.sanity_check()
+    finally:
+        gate.close()
+
+
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
-@pytest.mark.parametrize("outcome", ("resume", "abort", "new_epoch", "control"))
+@pytest.mark.parametrize("outcome", ("resume", "abort", "new_epoch", "control", "decline"))
 def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome):
     from sglang.srt.managers.schedule_policy import AddReqResult
     from test_beliefkv_terminal_capacity import insert_session
@@ -79,13 +134,28 @@ def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome
     monkeypatch.setattr(controller, "start_loading", lambda **kwargs: (
         controller.layer_done_counter.producer_index if start(**kwargs) >= 0 else -1
     ))
-    if outcome == "control":
-        monkeypatch.setattr(gate, "_stage_demand_restore_chunk", lambda *_args: False)
+    if outcome in ("control", "decline"):
+        if outcome == "control":
+            monkeypatch.setattr(gate, "_stage_demand_restore_chunk", lambda *_args: False)
+        else:
+            monkeypatch.setattr(
+                "beliefkv.runtime.demand_restore_chunk.ensure_device_capacity_preserving_live_kv",
+                lambda *_args, **_kwargs: False,
+            )
         f.complete.ready = True
         with pytest.raises(BatchConstructionReached):
             invoke()
         assert [len(load.host_indices) for load in f.loads] == [8]
         assert drops
+        if outcome == "decline":
+            declined, = (
+                call.args[0] for call in runtime._opportunity_writer.record.call_args_list
+                if call.args[0]["event"] == "subagent_materialization_demand_restore_chunk_declined"
+            )
+            assert declined["key"]["request_id"] == req.rid
+            assert declined["reason"] == "device_capacity_not_funded"
+            assert declined["proposed_tokens"] == 4
+            assert gate._demand_restore_chunk.pending is None
         cache.loading_check(finish_count=1)
         cache.dec_lock_ref(req.last_node, req.lock_receipt)
         cache.dec_lock_ref(mirror.id, mirror_hold)

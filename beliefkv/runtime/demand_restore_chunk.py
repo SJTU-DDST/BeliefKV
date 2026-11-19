@@ -22,7 +22,8 @@ class DemandRestoreChunk:
         self.cache = cache
         self.pending = None
 
-    def start(self, params, key, tokens, *, device_reserve):
+    def start(self, params, key, tokens, *, device_reserve, protected_nodes):
+        """Return a decline reason, or None after handing the slice to native."""
         cache, req = self.cache, params.req
         tree, controller = cache.tree_core, cache.cache_controller
         if (
@@ -31,27 +32,30 @@ class DemandRestoreChunk:
             or controller.load_queue or controller.ack_load_queue
             or not 0 < tokens < params.host_hit_length
         ):
-            return False
+            return "restore_not_available"
 
         suffix_id = params.best_match_node
         suffix = tree.node_by_id(suffix_id)
         node = suffix
         missing = []
         while node.id != req.last_node:
-            if len(missing) == 256 or node is tree.root_node:
-                return False
+            if len(missing) == 256:
+                return "source_path_bound"
+            if node is tree.root_node:
+                return "source_prefix_mismatch"
             full = node.component_data[0]
+            if full.value is not None or full.host_value is None:
+                return "source_prefix_mismatch"
             if (
-                full.value is not None or full.host_value is None
-                or not full.session_ref or full.host_lock_ref or full.lock_ref
+                not full.session_ref or full.host_lock_ref or full.lock_ref
                 or node.load_back_pending_id is not None
                 or node.write_through_pending_id is not None
             ):
-                return False
+                return "source_extent_unowned_or_busy"
             missing.append(node)
             node = node.parent
         if sum(len(node.key) for node in missing) != params.host_hit_length:
-            return False
+            return "source_prefix_mismatch"
 
         remaining = tokens
         for node in reversed(missing):
@@ -63,20 +67,22 @@ class DemandRestoreChunk:
         # Attempt the native allocation once. A declined staging attempt may
         # move settled state, but may not discard any referenced checkpoint.
         req._beliefkv_d3_staged_restore_key = key
-        if not ensure_device_capacity_preserving_live_kv(cache, tokens + device_reserve):
-            return False
+        if not ensure_device_capacity_preserving_live_kv(
+            cache, tokens + device_reserve, protected_nodes=protected_nodes,
+        ):
+            return "device_capacity_not_funded"
         prefix_id = node.id
         if remaining < extent:
             split = tree.split_host_only_full_prefix(node.id, node.creation_time, remaining)
             if split is None:
-                return False
+                return "native_split_declined"
             prefix_id, actions = split
             cache._apply_cache_actions(actions)
 
         suffix_receipt = cache.inc_host_lock_ref(suffix_id).to_dec_params()
         try:
             if not cache.load_back(prefix_id, req=req):
-                return False
+                return "native_load_declined"
             prefix_receipt = cache.inc_lock_ref(prefix_id).to_dec_params()
             self.pending = _Pending(req, key, prefix_id, prefix_receipt, suffix_id, suffix_receipt)
         finally:
@@ -90,7 +96,7 @@ class DemandRestoreChunk:
         ack = controller.ack_load_queue[-1]
         if tuple(ack.node_ids) != (prefix_id,) or dict(ack.num_tokens_by_pool).get("kv") != tokens:
             raise RuntimeError("staged demand restore differs from its native allocation")
-        return True
+        return None
 
     def defer_until_ack(self, req):
         pending = self.pending

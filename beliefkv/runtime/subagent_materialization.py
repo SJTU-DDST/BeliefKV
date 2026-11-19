@@ -462,62 +462,97 @@ class SubagentMaterialization:
 
     def _stage_demand_restore_chunk(self, cache, params):
         runtime = self.runtime
-        pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
         chunk = getattr(runtime, "_native_chunk_input_reserve", None)
-        if (
-            not chunk or params.host_hit_length < 2 * chunk or params.mem_quota is not None
-            or self._demand_restore_chunk.pending is not None
-            or getattr(self._adder, "can_run_list", ()) or pipeline is None
-            or pipeline.pending is not None or not pipeline.has_decode_work(self._running_batch)
-            or cache.cache_controller.load_queue or cache.cache_controller.ack_load_queue
-            or cache.token_to_kv_pool_allocator.available_size() >= params.host_hit_length
-        ):
+        hit = params.host_hit_length
+        if not chunk or hit < 2 * chunk:
             return False
+        device_free = cache.token_to_kv_pool_allocator.available_size()
+        if device_free >= hit:
+            return False
+
         req = params.req
         key = runtime.visible.get(req.rid)
+        controller = cache.cache_controller
+        writer = getattr(runtime, "_opportunity_writer", None)
+        writes_at_trial = len(controller.ack_write_queue)
+
+        def decline(reason, **details):
+            if (
+                writer is not None and key is not None
+                and getattr(req, "_beliefkv_d3_restore_decline", None) != (key, reason)
+            ):
+                req._beliefkv_d3_restore_decline = key, reason
+                writer.record({
+                    "event": "subagent_materialization_demand_restore_chunk_declined",
+                    "ts_ms": time.time() * 1000., "key": asdict(key), "reason": reason,
+                    "initial_Host_hit_tokens": hit, "device_free_tokens": device_free,
+                    "queued_write_acks_at_trial": writes_at_trial, **details,
+                })
+            return False
+
+        pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
+        if params.mem_quota is not None or getattr(self._adder, "can_run_list", ()):
+            return decline("prefill_batch_already_constrained")
+        if (
+            self._demand_restore_chunk.pending is not None
+            or (pipeline is not None and pipeline.pending is not None)
+            or controller.load_queue or controller.ack_load_queue
+        ):
+            return decline("restore_in_flight")
+        if pipeline is None or not pipeline.has_decode_work(self._running_batch):
+            return decline("no_resident_decode")
         if (
             key is None or key.session_id is None or key.session_generation is None
             or self._context(key) not in self.materialized
             or _request_key(req, known_keys=runtime.visible) != key
             or self.admission.latest.get(key.invocation_id) != key
             or not self.admission.allows(key) or runtime._terminal(key)
-            or getattr(req, "_beliefkv_d3_staged_restore_key", None) == key
-            or req.rid in (
-                getattr(runtime, "_join_priority_promoted", None),
-                getattr(runtime, "_join_last_child_priority_promoted", None),
-                getattr(runtime, "_final_priority_promoted", None),
-            )
         ):
-            return False
+            return decline("continuation_not_eligible")
+        if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key:
+            return decline("already_attempted")
         guard = getattr(self.admission, "_ready_service_guard", None)
-        if guard is not None and guard.elapsed_service_timeout(key, time.monotonic()):
-            return False
+        if req.rid in (
+            getattr(runtime, "_join_priority_promoted", None),
+            getattr(runtime, "_join_last_child_priority_promoted", None),
+            getattr(runtime, "_final_priority_promoted", None),
+        ) or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic())):
+            return decline("protected_service")
         page = runtime._native_page_size
         reserve = chunk + page * len(self._running_batch.reqs)
+        protected_nodes = (
+            params.best_match_node,
+            *(lease.node_id for lease in runtime._prefetch_service_leases.values()),
+        )
         headroom = observe_materialization_headroom(
             cache, max_nodes=self.max_nodes,
-            required_free_tokens=params.host_hit_length + reserve,
-            protected_host_nodes=(
-                params.best_match_node,
-                *(lease.node_id for lease in runtime._prefetch_service_leases.values()),
-            ),
+            required_free_tokens=hit + reserve,
+            protected_host_nodes=protected_nodes,
         )
         safe_tokens = headroom.available_tokens - reserve
-        if not headroom.observable or safe_tokens + chunk >= params.host_hit_length:
-            return False
-        tokens = min(params.host_hit_length // 2, safe_tokens) // page * page
+        if not headroom.observable:
+            return decline("headroom_unobservable", observation=headroom.reason)
+        if safe_tokens + chunk >= hit:
+            return decline("headroom_expected_to_cover_native_restore", safe_tokens=safe_tokens)
+        tokens = min(hit // 2, safe_tokens) // page * page
         if tokens < max(chunk, cache.load_back_threshold):
-            return False
+            return decline("no_safe_slice", safe_tokens=safe_tokens, observation=headroom.reason)
         runtime.counts["subagent_materialization_demand_restore_chunk_trials"] += 1
-        if not self._demand_restore_chunk.start(params, key, tokens, device_reserve=reserve):
-            return False
+        reason = self._demand_restore_chunk.start(
+            params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
+        )
+        if reason is not None:
+            return decline(
+                reason, proposed_tokens=tokens, device_reserve_tokens=reserve,
+                headroom=asdict(headroom),
+            )
         runtime.counts["subagent_materialization_demand_restore_chunks"] += 1
         runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] += tokens
-        if (writer := getattr(runtime, "_opportunity_writer", None)) is not None:
+        if writer is not None:
             writer.record({
                 "event": "subagent_materialization_demand_restore_chunk",
                 "ts_ms": time.time() * 1000., "key": asdict(key),
-                "initial_Host_hit_tokens": params.host_hit_length,
+                "initial_Host_hit_tokens": hit,
                 "staged_tokens": tokens, "observed_safe_tokens": safe_tokens,
                 "prefix_node_id": self._demand_restore_chunk.pending.prefix_node,
             })
