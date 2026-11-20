@@ -115,6 +115,29 @@ def _d3_scheduler(f, monkeypatch):
     return gate, scheduler, construction, invoke
 
 
+def _add_resident_prefill(f, *, start=121):
+    from sglang.srt.managers.schedule_batch import Req
+    from sglang.srt.sampling.sampling_params import SamplingParams
+    from test_beliefkv_terminal_capacity import insert_session
+
+    _, generation = insert_session(f.cache, range(start, start + 4), "resident")
+    resident = Req(
+        rid="resident-peer", origin_input_text="",
+        origin_input_ids=array("q", range(start, start + 5)),
+        sampling_params=SamplingParams(max_new_tokens=2), session_id="resident",
+        beliefkv_metadata={
+            "root_workflow_id": "peer", "invocation_id": "resident",
+            "context_id": "resident", "context_epoch": 0,
+        },
+    )
+    resident.session_generation = generation
+    f.waiting.append(resident)
+    visible = f.runtime.visible
+    visible[resident.rid] = _request_key(resident)
+    f.runtime._agent_admission.allows = lambda key: visible.get(key.request_id) == key
+    return resident
+
+
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
 @pytest.mark.parametrize("outcome", ("resume", "abort", "new_epoch", "control", "decline"))
 def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome):
@@ -238,6 +261,20 @@ def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome
     indirect=True,
 )
 def test_d3_recycles_acked_slices_until_native_suffix_is_funded(staged_native, monkeypatch):
+    _run_repeated_restore(staged_native, monkeypatch, selected_write_ack=False)
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 1, "select": False, "prefix_sizes": (19,)}, 19),),
+    indirect=True,
+)
+def test_d3_suffix_write_ack_retry_preserves_selected_resident_prefill(staged_native, monkeypatch):
+    _run_repeated_restore(staged_native, monkeypatch, selected_write_ack=True)
+
+
+def _run_repeated_restore(staged_native, monkeypatch, *, selected_write_ack):
+    from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
@@ -250,6 +287,10 @@ def test_d3_recycles_acked_slices_until_native_suffix_is_funded(staged_native, m
     neighbor_slots = _backup(cache, neighbor, demote=True)
     for start, size in ((111, 6), (121, 6), (131, 4), (141, 4), (201, 32)):
         insert_session(cache, range(start, start + size), str(start))
+    if selected_write_ack:
+        resident = _add_resident_prefill(f, start=161)
+        f.waiting.remove(resident)
+        donor, _ = insert_session(cache, (151,), "write-donor")
     held_device = allocator.alloc(allocator.available_size() - 3)
     assert (allocator.available_size(), host.available_size()) == (3, 6)
     req.origin_input_ids = array("q", range(1, 25))
@@ -266,13 +307,15 @@ def test_d3_recycles_acked_slices_until_native_suffix_is_funded(staged_native, m
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
     decode_slots = None
     prefix_nodes = []
+    expected_batches = []
+    staged_sizes = (6, 4, 5) if selected_write_ack else (6, 4, 4)
     try:
         offset = 0
-        for tokens in (6, 4, 4):
+        for tokens in staged_sizes:
             f.complete.ready = False
             assert invoke() == (None, f.running)
             assert not losses, f"restore evicted {sum(losses)} live Host-only tokens"
-            assert not construction and scheduler.waiting_queue == [req]
+            assert construction == expected_batches and scheduler.waiting_queue == [req]
             assert scheduler.chunked_req is None and req.kv.req_pool_idx is None
             assert f.pipeline.pending is None
             native_load.assert_not_called()
@@ -284,6 +327,10 @@ def test_d3_recycles_acked_slices_until_native_suffix_is_funded(staged_native, m
             ack, = controller.ack_load_queue
             assert ack.node_ids == [pending.prefix_node] and ack.num_tokens_by_pool == {"kv": tokens}
             assert (allocator.available_size(), host.available_size()) == (3, 0)
+            if selected_write_ack and offset == 6:
+                write_ack.finish_event.synchronize.assert_called_once_with()
+                assert not controller.ack_write_queue and not cache.ongoing_write_through
+                assert donor.write_through_pending_id is None
             if offset == 0:
                 # Decode consumes two reserve slots before the first H2D ACK.
                 decode_slots = allocator.alloc(2)
@@ -298,17 +345,51 @@ def test_d3_recycles_acked_slices_until_native_suffix_is_funded(staged_native, m
             ack.finish_event.synchronize.assert_called_once_with()
             assert not controller.ack_load_queue and not cache.ongoing_load_back
             offset += tokens
+            if selected_write_ack and offset == 6:
+                host.free(held_host[-1:])
+                held_host = held_host[:-1]
+                assert cache._execute_and_commit_kv_backup(
+                    BackupKV([donor.id]), write_back=False, no_host_reclaim=True,
+                ) == 1
+                write_ack, = controller.ack_write_queue
+                assert write_ack.node_ids == [donor.id] and not controller.write_queue
+                query_write = Mock(return_value=False)
+                monkeypatch.setattr(write_ack.finish_event, "query", query_write, raising=False)
+
+                scheduler.waiting_queue.insert(0, resident)
+                with pytest.raises(BatchConstructionReached):
+                    invoke()
+                assert not losses, f"suffix retry evicted {sum(losses)} live Host-only tokens"
+                expected_batches.append((resident,))
+                assert construction == expected_batches and scheduler.waiting_queue == [req]
+                assert resident.extend_range.length == 1 and resident.host_hit_length == 0
+                assert req.host_hit_length == len(source_slots) - offset
+                assert scheduler.chunked_req is None
+                assert gate._demand_restore_chunk.pending is None and f.pipeline.pending is None
+                assert len(f.loads) == 1 and not controller.ack_load_queue
+                assert controller.ack_write_queue == [write_ack]
+                assert donor.write_through_pending_id == donor.id
+                native_load.assert_not_called()
+                query_write.assert_called_once_with()
+                write_ack.finish_event.synchronize.assert_not_called()
+                decline, = _restore_declines(f.runtime)
+                assert decline["key"] == asdict(f.key)
+                assert decline["reason"] == "write_ack_retry_next_pass"
+                assert decline["queued_write_acks_at_trial"] == 1
+                assert f.runtime.counts["subagent_materialization_demand_restore_ack_retries"] == 1
+                cache.dec_lock_ref(resident.last_node, resident.lock_receipt)
+                query_write.return_value = True
 
         with pytest.raises(BatchConstructionReached):
             invoke()
         native_load.assert_called_once()
         assert native_load.call_args.args[0].host_hit_length == 4
-        assert construction == [(req,)] and not scheduler.waiting_queue
-        assert scheduler.chunked_req is req and req.extend_range.start == 18
-        assert [len(load.host_indices) for load in f.loads] == [6, 4, 4, 4]
+        assert construction == [*expected_batches, (req,)] and not scheduler.waiting_queue
+        assert scheduler.chunked_req is req and req.extend_range.start == len(source_slots)
+        assert [len(load.host_indices) for load in f.loads] == [*staged_sizes, 4]
         assert f.loads[-1].host_indices.tolist() == source_slots[offset:]
         assert allocator.available_size() == 3
-        assert f.runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] == 14
+        assert f.runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] == offset
         assert f.runtime.counts["subagent_materialization_demand_restore_suffix_funded"] == 1
         cache.loading_check()
         cache.dec_lock_ref(req.last_node, req.lock_receipt)
@@ -330,9 +411,7 @@ def test_d3_recycles_acked_slices_until_native_suffix_is_funded(staged_native, m
 
 @pytest.fixture
 def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
-    from sglang.srt.managers.schedule_batch import Req
     from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
-    from sglang.srt.sampling.sampling_params import SamplingParams
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
@@ -352,26 +431,13 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
         ) == 4
         write_ack, = controller.ack_write_queue
         assert write_ack.node_ids == [donor.id] and donor.write_through_pending_id == donor.id
-    _, generation = insert_session(cache, range(121, 125), "resident")
+    resident = _add_resident_prefill(f)
     insert_session(cache, range(201, 233), "device-victim")
     held_device = allocator.alloc(allocator.available_size() - (0 if idle else 3))
     # Both paths can fund four restored pages plus three reserve pages.
     # The idle path needs a new backup of the seven-page donor.
     assert (allocator.available_size(), host.available_size()) == ((0, 7) if idle else (3, 5))
     f.req.origin_input_ids = array("q", range(1, 15))
-    resident = Req(
-        rid="resident-peer", origin_input_text="", origin_input_ids=array("q", range(121, 126)),
-        sampling_params=SamplingParams(max_new_tokens=2), session_id="resident",
-        beliefkv_metadata={
-            "root_workflow_id": "peer", "invocation_id": "resident",
-            "context_id": "resident", "context_epoch": 0,
-        },
-    )
-    resident.session_generation = generation
-    f.waiting.append(resident)
-    visible = f.runtime.visible
-    visible[resident.rid] = _request_key(resident)
-    f.runtime._agent_admission.allows = lambda key: visible.get(key.request_id) == key
 
     evict = Mock(wraps=cache.evict_for_alloc)
     native_load = Mock(wraps=cache.init_load_back)
