@@ -43,6 +43,7 @@ class WorkflowToolPressure:
     def __init__(self, admission):
         self.admission = admission
         self.starts = {}
+        self.returned = {}
         work = getattr(admission, "_work", None)
         provider = getattr(work, "model", None) or getattr(work, "artifact", None)
         self.settings = ToolRetentionSettings.from_artifact(getattr(provider, "raw", {}))
@@ -58,14 +59,30 @@ class WorkflowToolPressure:
         now = time.monotonic()
         for event in events:
             identity = event.invocation_id
-            run = event.attributes.get("tool_run_id")
-            if event.kind is Kind.TOOL_START and run is not None:
-                self.starts.setdefault(identity, {}).setdefault(run, now)
+            run = event.attributes.get("tool_run_id") or event.attributes.get("tool_call_id")
+            if event.kind is Kind.TOOL_START:
+                self.returned.pop(identity, None)
+                if run is not None:
+                    key = self.admission.latest.get(identity)
+                    self.starts.setdefault(identity, {}).setdefault(run, (key, now))
             elif event.kind is Kind.TOOL_END and identity in self.starts:
-                self.starts[identity].pop(run, None)
+                starts = self.starts[identity]
+                started = starts.pop(run, None)
+                if not starts:
+                    del self.starts[identity]
+                if started is not None and not starts:
+                    key, _ = started
+                    if (
+                        key is not None and self.admission.latest.get(identity) == key
+                        and event.workflow_id == key.root_workflow_id
+                        and event.context_id in (None, key.context_id)
+                        and event.context_epoch in (None, key.context_epoch)
+                    ):
+                        self.returned[identity] = key, now
 
     def forget(self, identity):
         self.starts.pop(identity, None)
+        self.returned.pop(identity, None)
 
     def _unstarted(self, item, key):
         a, runtime = self.admission, self.admission.runtime
@@ -147,8 +164,19 @@ class WorkflowToolPressure:
         blocked = bool(
             invocation.active_tool_calls or invocation.blocking_child_ids
             or runtime._agent_observed_blocked_budget_key(key)
-            or item.acting and not item.pending
         )
+        if not blocked and item.acting and not item.pending:
+            returned = self.returned.get(item.identity)
+            if (
+                returned is not None and returned[0] == key
+                and invocation.state is InvocationState.READY
+                and now < returned[1] + a.control_interval_s
+            ):
+                # The tool returned while the next request is still entering the scheduler.
+                return WorkflowToolState(
+                    protected=self._protected(key, now), source="observed_tool_return",
+                )
+            blocked = True
         protected = self._protected(key, now)
         safe = not item.pending or self._unstarted(item, key)
         if not blocked or not safe or protected:
@@ -161,10 +189,10 @@ class WorkflowToolPressure:
             starts = self.starts.setdefault(item.identity, {})
             # Start from observed events, never the oracle's future tool times.
             starts = {
-                run: starts.get(run, now) for run in invocation.active_tool_calls
+                run: starts.get(run, (key, now)) for run in invocation.active_tool_calls
             }
             self.starts[item.identity] = starts
-            age = max(0., now - max(starts.values()))
+            age = max(0., now - max(started for _, started in starts.values()))
             horizon = self._horizon_ms(item)
             if age < self.short_grace_s:
                 return WorkflowToolState(

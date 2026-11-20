@@ -11,6 +11,7 @@ from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.experiments.internal_comparison import MODES, arm_environment
 from beliefkv.policy.paper_baselines import ThunderProgram
 from beliefkv.policy.workflow_size_resume import WorkflowSizeWorkingSet, WorkflowToolState
+from beliefkv.runtime import workflow_tool_pressure
 from beliefkv.runtime.reference_thunder_admission import validate_reference_admission
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.workflow_tool_pressure import WorkflowToolPressure
@@ -182,17 +183,164 @@ def observer(runtime, admission, *, identity="long", age=10.):
         request.session_id, request.session_generation = current.session_id, current.session_generation
     item = admission.policy.programs[identity]
     key = admission.latest[identity]
-    invocation = runtime.graph.invocations[identity]
-    invocation.state = InvocationState.WAIT_TOOL
-    invocation.active_tool_calls["tool-run"] = "execute"
     request = admission._live_requests[key.request_id]
     request.kv = NS(req_pool_idx=None, kv_allocated_len=0, kv_committed_len=0)
     request.output_ids.clear()
     request.finished = lambda: False
     request.is_retracted = request.retracted_stain = False
     now = time.monotonic()
-    helper.starts[identity] = {"tool-run": now - age}
+    if age is not None:
+        invocation = runtime.graph.invocations[identity]
+        invocation.state = InvocationState.WAIT_TOOL
+        invocation.active_tool_calls["tool-run"] = "execute"
+        helper.starts[identity] = {"tool-run": (key, now - age)}
     return helper, item, key, request, now
+
+
+@pytest.fixture
+def tool_return_gap(monkeypatch, tmp_path):
+    runtime, admission = queued(monkeypatch, tmp_path, global_order=True, activate_first=False)
+    try:
+        helper, item, key, request, _ = observer(runtime, admission, age=None)
+        item.active = True
+        output_tokens = admission._work.artifact.requests[key.request_id]["output_tokens"]
+        request.output_ids.extend([1] * output_tokens)
+        request.finished = lambda: True
+        assert runtime.on_batch_completed(NS(reqs=[request])) == (key.request_id,)
+        assert item.active and item.acting and not item.pending
+        assert admission.latest[item.identity] == runtime.context_sessions[key.context_id] == key
+        clock = NS(now=float(int(time.monotonic()) + 1))
+        monkeypatch.setattr(workflow_tool_pressure, "time", NS(monotonic=lambda: clock.now))
+        yield runtime, admission, helper, item, key, clock
+    finally:
+        runtime.close()
+
+
+def pressure_event(key, seq, kind, **changes):
+    return replace(
+        event(seq, kind, invocation_id=key.invocation_id,
+              context_id=key.context_id, context_epoch=key.context_epoch),
+        workflow_id=key.root_workflow_id, **changes,
+    )
+
+
+def tool_event(key, seq, kind, run="tool-run"):
+    return pressure_event(key, seq, kind, attributes={"tool_run_id": run})
+
+
+def test_only_the_final_tool_end_protects_the_native_gap_and_duplicates_do_not_renew_it(
+    tool_return_gap,
+):
+    runtime, admission, helper, item, key, clock = tool_return_gap
+    runtime.on_events((tool_event(key, 30, Kind.TOOL_START),))
+    clock.now += 1.
+    sibling_started = clock.now
+    runtime.on_events((tool_event(key, 31, Kind.TOOL_START, "sibling"),))
+    assert helper.starts[item.identity]["sibling"] == (key, sibling_started)
+    clock.now += 10.
+    runtime.on_events((tool_event(key, 32, Kind.TOOL_END),))
+    state = helper.observe(item, clock.now)
+    assert state.blocked and state.pause_safe
+    assert state.source == "elapsed_tool_fallback" and state.elapsed_s == 10.
+    assert state.weight < 1.
+
+    runtime.on_events((tool_event(key, 33, Kind.TOOL_END, "sibling"),))
+    deadline = clock.now + admission.control_interval_s
+    clock.now = deadline - .25
+    runtime.on_events((
+        tool_event(key, 34, Kind.TOOL_END, "sibling"),
+        tool_event(key, 35, Kind.TOOL_END, "unknown"),
+    ))
+    state = helper.observe(item, clock.now)
+    assert state.source == "observed_tool_return" and state.weight == 1.
+    clock.now = deadline
+    runtime.on_events((tool_event(key, 36, Kind.TOOL_END, "sibling"),))
+    state = helper.observe(item, clock.now)
+    assert state.blocked and state.pause_safe
+    assert state.source == "elapsed_native_gap_fallback" and state.weight < 1.
+
+
+@pytest.mark.parametrize("blocker", (Kind.CALL, Kind.JOIN_WAIT), ids=("call", "join"))
+def test_tool_return_waits_for_real_call_or_join_blockers(tool_return_gap, blocker):
+    runtime, admission, helper, item, key, clock = tool_return_gap
+    runtime.on_events((
+        tool_event(key, 30, Kind.TOOL_START),
+        pressure_event(key, 31, Kind.INVOCATION_CREATE, invocation_id="child",
+                       context_id="child-context"),
+    ))
+    if blocker is Kind.CALL:
+        runtime.on_events((pressure_event(key, 32, Kind.CALL, target_invocation_id="child"),))
+    else:
+        runtime.on_events((
+            pressure_event(key, 32, Kind.JOIN_CREATE, join_id="join",
+                           member_invocation_ids=("child",)),
+            pressure_event(key, 33, Kind.JOIN_WAIT, join_id="join"),
+        ))
+    clock.now += 10.
+    runtime.on_events((tool_event(key, 34, Kind.TOOL_END),))
+    state = helper.observe(item, clock.now)
+    assert state.blocked and state.pause_safe
+    assert state.source == "observed_join_blocked" and state.weight == 0.
+
+    clock.now += admission.control_interval_s / 2.
+    runtime.on_events((pressure_event(key, 35, Kind.RETURN, invocation_id="child",
+                                      context_id="child-context"),))
+    state = helper.observe(item, clock.now)
+    assert state.source == "observed_tool_return" and state.weight == 1.
+
+
+@pytest.mark.parametrize("change", ("unknown_run", "event_epoch", "session_before", "epoch_after",
+                                    "session_after"))
+def test_unknown_or_out_of_date_tool_ends_leave_native_gap_fallback(tool_return_gap, change):
+    runtime, admission, helper, item, key, clock = tool_return_gap
+    if change != "unknown_run":
+        runtime.on_events((tool_event(key, 30, Kind.TOOL_START),))
+    clock.now += 10.
+    end = tool_event(key, 31, Kind.TOOL_END)
+    if change == "event_epoch":
+        end = replace(end, context_epoch=key.context_epoch + 1)
+    if change == "session_before":
+        rebound = replace(key, session_generation=key.session_generation + 1)
+        admission.latest[item.identity] = runtime.context_sessions[key.context_id] = rebound
+    runtime.on_events((end,))
+    if change in ("epoch_after", "session_after"):
+        assert helper.observe(item, clock.now).source == "observed_tool_return"
+        rebound = (
+            replace(key, context_epoch=key.context_epoch + 1) if change == "epoch_after"
+            else replace(key, session_generation=key.session_generation + 1)
+        )
+        admission.latest[item.identity] = runtime.context_sessions[key.context_id] = rebound
+        runtime.graph.contexts[key.context_id].epoch = rebound.context_epoch
+    state = helper.observe(item, clock.now)
+    assert state.blocked and state.pause_safe
+    assert state.source == "elapsed_native_gap_fallback" and state.weight < 1.
+
+
+def test_real_control_keeps_just_returned_long_program_until_the_receipt_window_expires(
+    tool_return_gap,
+):
+    runtime, admission, _, item, key, clock = tool_return_gap
+    admission.forget("active")
+    admission.policy.capacity_tokens, admission.policy.buffer_tokens = item.tokens + 250, 0
+    runtime.on_events((tool_event(key, 30, Kind.TOOL_START),))
+    clock.now += 10.
+    runtime.on_events((tool_event(key, 31, Kind.TOOL_END),))
+
+    short = admission.policy.programs["short"]
+    assert item.active and short.pending and not short.active
+    admission.next_tick = 0.
+    admission.tick(now=clock.now)
+    assert item.active and not item.marked_for_pause and not short.active
+    assert admission.policy.remaining_capacity() == 250
+    assert not admission.policy.last_pressure
+
+    clock.now += admission.control_interval_s
+    admission.tick(now=clock.now)
+    assert short.active and not short.marked_for_pause and not item.active
+    decision, = admission.policy.last_pressure
+    assert decision["selected"] == item.identity
+    assert decision["tool_state"]["source"] == "elapsed_native_gap_fallback"
+    assert decision["tool_retention_weight"] < 1.
 
 
 def test_real_control_preserves_a_ready_child_when_the_registered_tool_successor_is_still_blocked(
