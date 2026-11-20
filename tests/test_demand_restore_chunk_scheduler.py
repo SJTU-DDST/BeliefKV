@@ -938,24 +938,29 @@ def test_d3_stages_with_a_selected_resident_prefill(resident_restore_pressure, m
 
 
 @pytest.mark.parametrize(
-    ("staged_native", "wait_for_ack", "join_parent"),
+    ("staged_native", "full_native", "wait_for_ack", "join_parent", "peer_split"),
     (
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (8, 8)}, True, False, id="full-credit",
+            {"members": 2, "select": False, "prefix_sizes": (8, 8)}, 16, True, False, 0,
+            id="full-credit",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (4, 8)}, False, False,
+            {"members": 2, "select": False, "prefix_sizes": (18, 14)}, 32, True, False, 8,
+            id="bounded-partial-credit",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (4, 8)}, 16, False, False, 0,
             id="insufficient-credit",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (8, 8)}, False, True,
+            {"members": 2, "select": False, "prefix_sizes": (8, 8)}, 16, False, True, 0,
             id="promoted-join-parent",
         ),
     ),
-    indirect=("staged_native",),
+    indirect=("staged_native", "full_native"),
 )
 def test_d3_waits_for_unrelated_submitted_restore_ack(
-    staged_native, monkeypatch, wait_for_ack, join_parent,
+    staged_native, monkeypatch, wait_for_ack, join_parent, peer_split,
 ):
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -966,8 +971,16 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
     peer, consumer = f.members
     peer_leaf, consumer_leaf = f.leaves
     key = runtime.visible[consumer.rid]
-    credit, hit = len(peer_leaf.key), len(consumer_leaf.key)
+    peer_tokens, hit = len(peer_leaf.key), len(consumer_leaf.key)
     source_slots = consumer_leaf.component_data[0].host_value
+
+    if peer_split:
+        parent_id, actions = tree.split_host_only_full_prefix(
+            peer_leaf.id, peer_leaf.creation_time, peer_split,
+        )
+        cache._apply_cache_actions(actions)
+        assert peer_leaf.parent is tree.node_by_id(parent_id)
+    credit = len(peer_leaf.key)
 
     held_host = host.alloc(host.available_size() - 8)
     neighbor, _ = insert_session(cache, range(100, 108), "waiting-parent")
@@ -976,7 +989,7 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
     assert neighbor_data.session_ref > 0 and neighbor_data.value is None
     for start in (200, 210, 220):
         insert_session(cache, range(start, start + 8), str(start))
-    held_device = allocator.alloc(allocator.available_size() - credit)
+    held_device = allocator.alloc(allocator.available_size() - peer_tokens)
 
     losses = []
 
@@ -989,7 +1002,10 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
     f.waiting[:] = [peer]
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
     runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 4
-    gate.max_nodes = 1
+    gate.max_nodes = 2 if peer_split else 1
+    if peer_split:
+        # The submitted transfer covers both extents, but the credit walk can see only its anchor.
+        gate.max_candidates = 1
     gate.materialized.add(gate._context(key))
     try:
         # The consumer arrives after the peer takes the ordinary native submission path.
@@ -1003,7 +1019,7 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         assert cache.ready_to_load_host_cache() >= 0
         ack, = controller.ack_load_queue
         receipt = cache.ongoing_load_back[peer_leaf.id]
-        assert ack.node_ids == [peer_leaf.id] and ack.num_tokens_by_pool == {"kv": credit}
+        assert ack.node_ids == [peer_leaf.id] and ack.num_tokens_by_pool == {"kv": peer_tokens}
         assert not ack.child_receipts
         assert not controller.load_queue and not controller.write_queue and not controller.ack_write_queue
         assert f.pipeline.pending is None and not getattr(consumer, "_beliefkv_d3_restore_credit", None)
@@ -1014,6 +1030,12 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         )
         assert headroom.reason == NODE_CENSUS_BOUND and headroom.available_tokens == 0
         assert not ack.finish_event.query()
+        if peer_split:
+            chunk = scheduler.chunked_prefill_size
+            reserve = chunk + scheduler.page_size * len(f.running.reqs)
+            required = max(chunk, cache.load_back_threshold) + reserve
+            assert required <= credit < hit < peer_tokens
+            assert allocator.available_size() + cache.full_evictable_size() >= required
 
         if join_parent:
             runtime._join_priority_promoted = consumer.rid
@@ -1023,9 +1045,18 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
             assert not losses, f"unpublished peer H2D led to live Host-only evictions: {losses}"
             wait = consumer._beliefkv_d3_restore_credit
             wait_key, wait_hit, receipts = wait
-            assert wait_key == key and wait_hit == hit == credit
+            assert wait_key == key and wait_hit == hit
             assert tuple(receipts) == (peer_leaf.id,) and receipts[peer_leaf.id] is receipt
             assert consumer._beliefkv_d3_indexed_restore_defer_key == key
+            deferred, = (
+                row for event in runtime._opportunity_writer.record.call_args_list
+                if (row := event.args[0])["event"] == "subagent_materialization_restore_pressure_deferred"
+            )
+            assert deferred["key"] == asdict(key) and deferred["already_submitted"]
+            assert deferred["native_node_ids"] == [peer_leaf.id]
+            assert (deferred["unfunded_restore_tokens"], deferred["reclaimable_after_ack_tokens"]) == (
+                hit, credit,
+            )
             for ready in (False, True):
                 f.complete.ready = ready
                 assert ack.finish_event.query() is ready
@@ -1051,12 +1082,25 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         cache.loading_check()
         ack.finish_event.synchronize.assert_called_once_with()
         assert not controller.ack_load_queue and not cache.ongoing_load_back
-        with pytest.raises(BatchConstructionReached):
-            invoke()
+        for _ in range(hit + 1):
+            try:
+                assert invoke() == (None, f.running)
+            except BatchConstructionReached:
+                break
+            assert peer_split and not losses
+            assert f.pipeline.pending is not None or gate._demand_restore_chunk.pending is not None
+            target_ack, = controller.ack_load_queue
+            assert target_ack is not ack and target_ack.node_ids == [f.loads[-1].node_id]
+            cache.loading_check()
+            target_ack.finish_event.synchronize.assert_called_once_with()
+        else:
+            pytest.fail("consumer did not reach native batch construction")
         assert construction == [(peer,), (consumer,)] and not scheduler.waiting_queue
         assert consumer.extend_range.start == hit
-        assert [load.node_id for load in f.loads] == [peer_leaf.id, consumer_leaf.id]
-        assert f.loads[-1].host_indices.tolist() == source_slots.tolist()
+        assert f.loads[-1].node_id == consumer_leaf.id
+        assert [
+            slot for load in f.loads[1:] for slot in load.host_indices.tolist()
+        ] == source_slots.tolist()
         assert not getattr(consumer, "_beliefkv_d3_restore_credit", None)
         assert runtime.counts["subagent_materialization_restore_pressure_deferrals"] == int(wait_for_ack)
         cache.loading_check()

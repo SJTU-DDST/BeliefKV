@@ -629,12 +629,14 @@ class SubagentMaterialization:
             and self.admission.allows(key) and not self.runtime._terminal(key)
         )
 
-    def _can_slice_after_selected_restore(self, cache, params, key, headroom, credit):
+    def _can_slice_after_peer_restore(self, cache, params, key, headroom, credit, *, submitted):
         runtime = self.runtime
         chunk = runtime._native_chunk_input_reserve
+        expected_acks = 1 if submitted else 0
         if (
             not chunk or credit < chunk
-            or self._demand_restore_chunk.pending is not None or cache.cache_controller.ack_load_queue
+            or self._demand_restore_chunk.pending is not None
+            or len(cache.cache_controller.ack_load_queue) != expected_acks
             or not self._restore_stage_matches_live(params.req, key)
         ):
             return False
@@ -769,7 +771,11 @@ class SubagentMaterialization:
         chunk = self.runtime._native_chunk_input_reserve
         identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
         if submitted:
-            if shortfall > credit or not identity_matches:
+            if not identity_matches or (
+                shortfall > credit and not self._can_slice_after_peer_restore(
+                    cache, params, key, headroom, credit, submitted=True,
+                )
+            ):
                 return False
         elif headroom.census_complete:
             if shortfall > credit and (not chunk or credit < chunk):
@@ -779,8 +785,8 @@ class SubagentMaterialization:
             # load or a guarded slice once the selected H2D publishes its ACK.
             if (
                 headroom.reason != NODE_CENSUS_BOUND or not identity_matches
-                or shortfall > credit and not self._can_slice_after_selected_restore(
-                    cache, params, key, headroom, credit,
+                or shortfall > credit and not self._can_slice_after_peer_restore(
+                    cache, params, key, headroom, credit, submitted=False,
                 )
             ):
                 return False
