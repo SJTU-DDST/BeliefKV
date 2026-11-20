@@ -578,6 +578,7 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
 
     f = staged_native
     native, allocator = f.cache, f.allocator
+    source_slots = [leaf.component_data[0].host_value.tolist() for leaf in f.leaves]
     first_hit = len(f.leaf.component_data[0].host_value)
     occupied = first_hit + len(f.leaves[1].component_data[0].host_value)
     free_host = 4 if case == "free_host" else 0
@@ -656,6 +657,12 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
         else:
             assert selected == f.members
             assert len(f.loads) == 2
+            if case == "small_credit":
+                assert [load.host_indices.tolist() for load in f.loads] == source_slots
+                assert gate._demand_restore_chunk.pending is None
+                for leaf in f.leaves:
+                    data = leaf.component_data[0]
+                    assert (data.lock_ref, data.host_lock_ref) == (2, 1)
 
     f.complete.ready = True
     native.loading_check(finish_count=1)
@@ -792,13 +799,26 @@ def test_d3_waits_for_submitted_selected_restore_ack(staged_native, monkeypatch)
 
 
 @pytest.mark.parametrize(
-    "staged_native",
-    (pytest.param(
-        {"members": 2, "select": False, "prefix_sizes": (4, 12)}, id="indexed_partial_credit",
-    ),),
-    indirect=True,
+    ("staged_native", "free_after_peer", "free_host", "slice_tokens"),
+    (
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (4, 12)}, 5, 0, 4,
+            id="indexed_partial_credit",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 6,
+            id="indexed_small_credit_independent",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 0, None,
+            id="indexed_small_credit_unfunded",
+        ),
+    ),
+    indirect=("staged_native",),
 )
-def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(staged_native, monkeypatch):
+def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
+    staged_native, monkeypatch, free_after_peer, free_host, slice_tokens,
+):
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
@@ -807,10 +827,12 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(staged_nati
     peer, consumer = f.members
     peer_leaf, consumer_leaf = f.leaves
     key = runtime.visible[consumer.rid]
-    chunk, hit = len(peer_leaf.key), len(consumer_leaf.key)
+    chunk, credit, hit = 4, len(peer_leaf.key), len(consumer_leaf.key)
     reserve = chunk + native.page_size * len(f.running.reqs)
-    occupied = chunk + hit
-    back_up = _track_native_host_allocations(native, occupied + 7, occupied=occupied)
+    occupied = credit + hit
+    peer_data, consumer_data = (leaf.component_data[0] for leaf in f.leaves)
+    peer_slots, consumer_slots = (data.host_value.tolist() for data in (peer_data, consumer_data))
+    back_up = _track_native_host_allocations(native, occupied + 7 + free_host, occupied=occupied)
     neighbor, _ = insert_session(native, range(100, 103), "waiting-parent")
     back_up(neighbor)
     native._demote(neighbor.id, {0: 0})
@@ -823,8 +845,9 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(staged_nati
     donor_slots = donor_data.host_value
     # Pin the donor's Host copy while its backed HBM remains evictable.
     donor_lock = native.inc_host_lock_ref(donor.id).to_dec_params()
-    insert_session(native, range(200, 200 + allocator.available_size() - chunk - reserve), "unbacked")
-    assert (allocator.available_size(), native.host_pool_group.available_size()) == (9, 0)
+    free_before = free_after_peer + credit
+    insert_session(native, range(200, 200 + allocator.available_size() - free_before), "unbacked")
+    assert (allocator.available_size(), native.host_pool_group.available_size()) == (free_before, free_host)
     assert donor in tree.evictable_device_leaves and len(donor_data.value) == len(donor_slots) == 4
 
     runtime._agent_admission.latest = {key.invocation_id: key}
@@ -851,6 +874,42 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(staged_nati
             peer_batch.setattr(f.pipeline, "stage", lambda *_args, **_kwargs: False)
             with pytest.raises(BatchConstructionReached):
                 invoke()
+        events = [call.args[0] for call in runtime._opportunity_writer.record.call_args_list]
+        deferrals = [
+            event for event in events
+            if event["event"] == "subagent_materialization_restore_pressure_deferred"
+        ]
+        if slice_tokens is None:
+            assert not deferrals
+            assert getattr(consumer, "_beliefkv_d3_restore_credit", None) is None
+            assert gate._demand_restore_chunk.pending is None
+            decline, = (
+                event for event in events
+                if event["event"] == "subagent_materialization_demand_restore_chunk_declined"
+                and event["key"]["request_id"] == consumer.rid
+            )
+            assert decline["reason"] == "prefill_batch_already_constrained"
+            selected_h2d = decline["selected_batch"]["native_h2d"]
+            assert selected_h2d["native_node_ids"] == [peer_leaf.id]
+            assert selected_h2d["headroom_observation"] == NODE_CENSUS_BOUND
+            assert selected_h2d["reclaimable_after_ack_tokens"] == credit == 2
+            independent = hit - selected_h2d["unfunded_restore_tokens"]
+            assert independent == free_after_peer + free_host == 7
+            assert independent + credit == chunk + reserve
+            assert construction == [(peer, consumer)] and not scheduler.waiting_queue
+            assert controller.load_queue == f.loads and consumer.host_loaded_length == hit
+            assert [load.host_indices.tolist() for load in f.loads] == [peer_slots, consumer_slots]
+            for data in (peer_data, consumer_data):
+                assert (data.lock_ref, data.host_lock_ref) == (2, 1)
+            assert native.ready_to_load_host_cache() >= 0
+            f.complete.ready = True
+            native.loading_check()
+            assert not native.ongoing_load_back and not controller.ack_load_queue
+            for member in f.members:
+                native.dec_lock_ref(member.last_node, member.lock_receipt)
+            native.sanity_check()
+            return
+
         assert neighbor_data.host_value is neighbor_slots, (
             f"selected pass lost the Host-only neighbor and loaded "
             f"{[len(load.host_indices) for load in f.loads]} H2D tokens"
@@ -859,50 +918,67 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(staged_nati
         assert f.pipeline.pending is None and gate._demand_restore_chunk.pending is None
         peer_load, = f.loads
         assert controller.load_queue == [peer_load] and peer_load.beliefkv_command_id is None
-        assert allocator.available_size() == reserve
-        deferral, = (
-            event.args[0] for event in runtime._opportunity_writer.record.call_args_list
-            if event.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
-        )
+        assert peer_load.host_indices.tolist() == peer_slots
+        assert (peer_data.lock_ref, peer_data.host_lock_ref) == (2, 1)
+        assert (consumer_data.lock_ref, consumer_data.host_lock_ref) == (0, 0)
+        assert allocator.available_size() == free_after_peer and donor in tree.evictable_device_leaves
+        deferral, = deferrals
         shortfall = deferral["unfunded_restore_tokens"]
-        credit = deferral["reclaimable_after_ack_tokens"]
         assert deferral["headroom_observation"] == NODE_CENSUS_BOUND
         assert deferral["native_node_ids"] == [peer_leaf.id]
         assert deferral["key"]["request_id"] == consumer.rid
-        assert chunk == credit == 4 and shortfall == hit - reserve == 7
+        assert not deferral["already_submitted"] and deferral["requested_restore_tokens"] == hit
+        assert deferral["reclaimable_after_ack_tokens"] == credit
+        assert hit - shortfall == free_after_peer + free_host
+        funding_credit = credit if credit == chunk else 0
+        assert hit - shortfall + funding_credit == chunk + reserve
+        assert allocator.available_size() + len(donor_data.value) >= chunk + reserve
         assert credit < shortfall and consumer._beliefkv_d3_indexed_restore_defer_key == key
         receipt = native.ongoing_load_back[peer_leaf.id]
-        assert consumer._beliefkv_d3_restore_credit[2][peer_leaf.id] is receipt
+        wait_key, wait_hit, receipts = consumer._beliefkv_d3_restore_credit
+        assert (wait_key, wait_hit, tuple(receipts)) == (key, hit, (peer_leaf.id,))
+        assert receipts[peer_leaf.id] is receipt
 
         assert native.ready_to_load_host_cache() >= 0
         ack, = controller.ack_load_queue
         assert ack.node_ids == [peer_leaf.id] and ack.num_tokens_by_pool == {"kv": credit}
-        f.complete.ready = True
-        assert invoke() == (None, f.running)
-        assert f.loads == [peer_load] and controller.ack_load_queue == [ack]
+        for ready in (False, True):
+            f.complete.ready = ready
+            assert invoke() == (None, f.running)
+            assert f.loads == [peer_load] and controller.ack_load_queue == [ack]
+            assert native.ongoing_load_back[peer_leaf.id] is receipt
+            assert (consumer_data.lock_ref, consumer_data.host_lock_ref) == (0, 0)
         ack.finish_event.synchronize.assert_not_called()
         native.loading_check()
         ack.finish_event.synchronize.assert_called_once_with()
+        assert (peer_data.lock_ref, peer_data.host_lock_ref) == (1, 0)
 
         headroom = observe_materialization_headroom(
             native, max_nodes=gate.max_nodes, protected_host_nodes=(consumer_leaf.id,),
         )
         assert headroom.reason == NODE_CENSUS_BOUND
         assert headroom.reclaimable_host_tokens == credit
-        assert headroom.available_tokens == allocator.available_size() + len(donor_data.value) == chunk + reserve
+        assert headroom.available_tokens == free_after_peer + free_host + credit == slice_tokens + reserve
         assert invoke() == (None, f.running)
         pending = gate._demand_restore_chunk.pending
-        assert pending is not None and pending.request is consumer
-        assert pending.tokens == chunk and pending.remaining_tokens == hit - chunk
+        assert pending is not None and (pending.request, pending.key) == (consumer, key)
+        assert pending.tokens == slice_tokens and pending.remaining_tokens == hit - slice_tokens
+        assert pending.suffix_node == consumer_leaf.id
+        prefix_data = tree.node_by_id(pending.prefix_node).component_data[0]
+        assert f.loads[-1].host_indices.tolist() == consumer_slots[:slice_tokens]
+        assert consumer_data.host_value.tolist() == consumer_slots[slice_tokens:]
+        assert (prefix_data.lock_ref, prefix_data.host_lock_ref, consumer_data.host_lock_ref) == (2, 1, 1)
         assert construction == [(peer,)] and scheduler.waiting_queue == [consumer]
         assert consumer._beliefkv_d3_restore_credit is None and consumer.kv.req_pool_idx is None
         assert donor_data.value is None and donor_data.host_value is donor_slots
         assert allocator.available_size() == reserve
         assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
         slice_ack, = controller.ack_load_queue
-        assert slice_ack.node_ids == [pending.prefix_node] and slice_ack.num_tokens_by_pool == {"kv": chunk}
+        assert slice_ack.node_ids == [pending.prefix_node]
+        assert slice_ack.num_tokens_by_pool == {"kv": slice_tokens}
         native.loading_check()
         assert not native.ongoing_load_back and not controller.ack_load_queue
+        assert (prefix_data.lock_ref, prefix_data.host_lock_ref, consumer_data.host_lock_ref) == (1, 0, 1)
         native.dec_lock_ref(peer.last_node, peer.lock_receipt)
         native.sanity_check()
     finally:

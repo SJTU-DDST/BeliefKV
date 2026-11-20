@@ -691,7 +691,7 @@ class SubagentMaterialization:
         chunk = runtime._native_chunk_input_reserve
         expected_acks = 1 if submitted else 0
         if (
-            not chunk or 0 < credit < chunk
+            not chunk
             or self._demand_restore_chunk.pending is not replace_pending
             or len(cache.cache_controller.ack_load_queue) != expected_acks
             or not self._restore_stage_matches_live(params.req, key)
@@ -709,9 +709,11 @@ class SubagentMaterialization:
         minimum = (minimum + page - 1) // page * page
         reserve = chunk + page * len(self._running_batch.reqs)
         # Credit supplies Host slots for safe demotion, never extra HBM slots.
+        # An ACK smaller than a chunk can clear the load barrier if capacity is independent.
+        funding_credit = credit if credit >= chunk else 0
         required = minimum + reserve
         return (
-            headroom.available_tokens + credit >= required
+            headroom.available_tokens + funding_credit >= required
             and headroom.device_free_tokens + cache.full_evictable_size() >= required
         )
 
