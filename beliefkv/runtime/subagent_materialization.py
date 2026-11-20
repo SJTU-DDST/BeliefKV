@@ -810,6 +810,17 @@ class SubagentMaterialization:
             return False
 
         staged = self._demand_restore_chunk.pending
+        protected_receipt = None
+        if (
+            staged is not None and staged.request is not params.req
+            and getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
+            and len(acks) == 1 and not acks[0].child_receipts
+            and tuple(acks[0].node_ids) == (staged.prefix_node,)
+            and self._restore_stage_matches_live(staged.request, staged.key)
+            and self._staged_peer_protected(staged.key)
+            and not self._staged_peer_protected(key)
+        ):
+            protected_receipt = cache.ongoing_load_back.get(staged.prefix_node)
         leading_tagged = submitted and bool(acks[0].child_receipts)
         own_join_receipts = None
         if submitted:
@@ -843,6 +854,7 @@ class SubagentMaterialization:
             params.best_match_node,
             *(lease.node_id for lease in leases.values()),
             *(own_join_receipts or ()),
+            *((staged.prefix_node,) if protected_receipt is not None else ()),
         )
         protected = frozenset(protected_nodes)
         credit, remaining = 0, self.max_candidates
@@ -878,7 +890,7 @@ class SubagentMaterialization:
                 unfunded_restore_tokens=None,
                 headroom_observation=None,
             )
-        if not credit and not own_join_receipts:
+        if not credit and not own_join_receipts and protected_receipt is None:
             return False
 
         counts = self.runtime.counts
@@ -898,10 +910,18 @@ class SubagentMaterialization:
                 selected_h2d["unfunded_restore_tokens"] = max(0, shortfall)
         if not headroom.observable or shortfall <= 0:
             return False
+        identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
+        if protected_receipt is not None and identity_matches:
+            # A JOIN can take the next pass after an ordinary restore deferral.
+            # Its exact in-flight ACK is a barrier, not allocation credit.
+            params.req._beliefkv_d3_restore_credit = key, hit, {
+                staged.prefix_node: protected_receipt,
+            }
+            counts["subagent_materialization_protected_stage_waits"] += 1
+            return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
         chunk = self.runtime._native_chunk_input_reserve
         small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
-        identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
         staged_producer = None
         if (
             submitted and not leading_tagged and shortfall > credit and staged is not None

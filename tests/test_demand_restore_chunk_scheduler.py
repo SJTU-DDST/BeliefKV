@@ -1477,6 +1477,7 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         pytest.param(True, None, 2, id="partial-credit"),
         pytest.param(True, None, 3, id="insufficient-partial-credit"),
         pytest.param(True, "promoted", 2, id="promoted-producer-partial-credit"),
+        pytest.param(True, "promoted-after-retry", 2, id="promoted-producer-after-peer-retry"),
         pytest.param(True, "pending_join", 2, id="pending-join-producer-partial-credit"),
         pytest.param(True, "fit_target", 2, id="fit-target-producer-partial-credit"),
     ),
@@ -1518,7 +1519,8 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
 
     monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
     f.waiting[:] = [producer]
-    producer_promoted = producer_protection == "promoted"
+    resumed_peer = producer_protection == "promoted-after-retry"
+    producer_promoted = producer_protection in {"promoted", "promoted-after-retry"}
     if producer_promoted:
         runtime._join_priority_promoted = producer.rid
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
@@ -1575,9 +1577,37 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             guard = ReadyServiceGuard(runtime._agent_admission, fit_after_s=600)
             guard.fit_target = staged.key
             runtime._agent_admission._ready_service_guard = guard
+        if resumed_peer:
+            # Its prior ordinary ACK retry yielded to the promoted JOIN parent.
+            consumer._beliefkv_d3_indexed_restore_defer_key = consumer_key
 
         scheduler.waiting_queue.append(consumer)
         assert invoke() == (None, f.running)
+        if resumed_peer:
+            assert not losses
+            assert f.loads == [first_load] and controller.ack_load_queue == [first_ack]
+            assert scheduler.waiting_queue == [producer, consumer] and not construction
+            assert restore.pending is staged and restore.parked is None
+            key, hit, receipts = consumer._beliefkv_d3_restore_credit
+            assert key == consumer_key and hit == len(consumer_slots)
+            assert receipts == {staged.prefix_node: receipt}
+            assert gate._peer_restore_retry is None and staged.credit_waiter is None
+            first_ack.finish_event.synchronize.assert_not_called()
+            assert invoke() == (None, f.running)
+            assert runtime.counts["subagent_materialization_protected_stage_waits"] == 1
+
+            f.complete.ready = True
+            cache.loading_check()
+            f.complete.ready = False
+            assert invoke() == (None, f.running)
+            assert restore.pending.request is producer
+            assert restore.pending.remaining_tokens < staged.remaining_tokens
+            assert not losses and len(f.loads) == 2 and not construction
+            assert neighbor_data.host_value is neighbor_slots
+            f.complete.ready = True
+            cache.loading_check()
+            cache.sanity_check()
+            return
         if decode_growth and (producer_protection is not None or decode_growth == 3):
             runtime.on_prefill_candidate_result.assert_called_with(
                 consumer, admitted=False, result="RESTORE_STAGED",
@@ -1789,6 +1819,76 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         gate.close()
         if decode_slots is not None:
             allocator.free(decode_slots)
+        allocator.free(held_device)
+        host.free(held_host)
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 3, "select": False, "prefix_sizes": (18, 1, 8)}, 27),),
+    indirect=True,
+)
+def test_d3_waits_for_protected_stage_with_ordinary_loads_selected(staged_native, monkeypatch):
+    from sglang.srt.managers.schedule_policy import AddReqResult
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    producer, selected, consumer = f.members
+    key = runtime.visible[consumer.rid]
+    held_host = host.alloc(host.available_size() - 14)
+    neighbor, _ = insert_session(cache, range(101, 109), "waiting-parent")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    for start, size in ((111, 6), (121, 6), (131, 8), (201, 32)):
+        insert_session(cache, range(start, start + size), str(start))
+    held_device = allocator.alloc(allocator.available_size() - 3)
+    f.waiting[:] = [producer]
+    runtime._join_priority_promoted = producer.rid
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    gate.materialized.add(gate._context(key))
+
+    try:
+        assert invoke() == (None, f.running)
+        restore = gate._demand_restore_chunk
+        staged = restore.pending
+        existing_ack, = controller.ack_load_queue
+        assert staged.request is producer and not construction
+        assert existing_ack.node_ids == [staged.prefix_node]
+        prior_receipt = cache.ongoing_load_back[staged.prefix_node]
+        consumer._beliefkv_d3_indexed_restore_defer_key = key
+
+        adder = f.adder()
+        scheduler.waiting_queue[:] = [producer, selected, consumer]
+        gate.prepare(tuple(scheduler.waiting_queue), running_batch=f.running, adder=adder)
+        selected.init_next_round_input(cache)
+        assert selected.host_hit_length == 1
+        adder.add_one_req(selected, has_chunked_req=False, truncation_align_size=None)
+        assert adder.can_run_list == [selected]
+        ordinary, = controller.load_queue
+        assert ordinary.node_ids == [selected.last_node]
+        assert len(f.loads) == 2
+
+        consumer.init_next_round_input(cache)
+        assert consumer.host_hit_length == 8
+        assert adder.add_one_req(
+            consumer, has_chunked_req=False, truncation_align_size=None,
+        ) is AddReqResult.OTHER
+        assert controller.load_queue == [ordinary] and len(f.loads) == 2
+        assert controller.ack_load_queue == [existing_ack]
+        assert adder.can_run_list == [selected] and restore.pending is staged
+        assert consumer._beliefkv_d3_restore_credit == (key, 8, {staged.prefix_node: prior_receipt})
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert restore.parked is None and staged.credit_waiter is None
+
+        assert cache.ready_to_load_host_cache() >= 0
+        f.complete.ready = True
+        cache.loading_check()
+        cache.dec_lock_ref(selected.last_node, selected.lock_receipt)
+        cache.sanity_check()
+    finally:
+        gate.close()
         allocator.free(held_device)
         host.free(held_host)
 
