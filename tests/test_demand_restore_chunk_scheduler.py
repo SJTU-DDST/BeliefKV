@@ -9,6 +9,7 @@ from unittest.mock import Mock, call
 import pytest
 
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
+from beliefkv.runtime.demand_restore_chunk import DEFER_WRITE_ACK, DemandRestoreChunk
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import (
     _request_key,
@@ -667,7 +668,7 @@ def _restore_declines(runtime):
     ("free_before", "reclaimed", "threshold", "staged_tokens"),
     (
         pytest.param(3, 2, 1, 2, id="shortened"),
-        pytest.param(5, 0, 1, 0, id="no-progress"),
+        pytest.param(5, 0, 1, 2, id="no-progress"),
         pytest.param(3, 1, 1, 0, id="below-chunk"),
         pytest.param(3, 2, 3, 0, id="below-load-threshold"),
     ),
@@ -703,8 +704,12 @@ def test_d3_uses_partial_capacity_cleanup(
     cache.load_back_threshold = threshold
     req.origin_input_ids = array("q", range(1, 15))
 
-    def partial_cleanup(native, target, *, minimum_tokens, **kwargs):
-        assert native is cache and target == 7
+    def partial_cleanup(native, target, *, minimum_tokens=None, **kwargs):
+        assert native is cache
+        if target != 7:
+            assert not reclaimed and target == free_before == allocator.available_size()
+            assert minimum_tokens is None
+            return ensure_device_capacity_preserving_live_kv(native, target, **kwargs)
         assert minimum_tokens == 3 + max(2, threshold)
         assert allocator.available_size() == free_before
         if reclaimed:
@@ -720,6 +725,7 @@ def test_d3_uses_partial_capacity_cleanup(
     native_load = Mock(wraps=cache.init_load_back)
     monkeypatch.setattr(cache, "init_load_back", native_load)
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    funding_calls = 2 if staged_tokens and not reclaimed else 1
     try:
         if staged_tokens:
             assert invoke() == (None, f.running)
@@ -754,7 +760,7 @@ def test_d3_uses_partial_capacity_cleanup(
             cache.loading_check()
             ack.finish_event.synchronize.assert_called_once_with()
             assert not controller.ack_load_queue and not cache.ongoing_load_back
-            funding.assert_called_once()
+            assert funding.call_count == funding_calls
             monkeypatch.setattr(
                 "beliefkv.runtime.demand_restore_chunk.ensure_device_capacity_preserving_live_kv",
                 ensure_device_capacity_preserving_live_kv,
@@ -767,7 +773,7 @@ def test_d3_uses_partial_capacity_cleanup(
 
         with pytest.raises(BatchConstructionReached):
             invoke()
-        funding.assert_called_once()
+        assert funding.call_count == funding_calls
         native_load.assert_called_once()
         assert native_load.call_args.args[0].host_hit_length == (2 if staged_tokens else 8)
         assert construction == [(req,)] and not scheduler.waiting_queue
@@ -793,6 +799,123 @@ def test_d3_uses_partial_capacity_cleanup(
         gate.close()
         allocator.free(held_device)
         host.free(held_host)
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize("case", ("raw-slots", "shortage", "unsupported", "pending-write"))
+def test_d3_validates_zero_gain_slice_with_native_capacity(staged_native, monkeypatch, case):
+    from sglang.srt.mem_cache.base_prefix_cache import InitLoadBackParams
+    from sglang.srt.mem_cache.unified_cache.cache_action import BackupKV
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, req = f.cache, f.allocator, f.req
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    suffix = f.leaf.component_data[0]
+    source_slots = suffix.host_value
+    neighbor, _ = insert_session(cache, range(101, 105), "neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    write_ack = None
+    if case == "pending-write":
+        donor, _ = insert_session(cache, range(111, 115), "pending-backup")
+        assert cache._execute_and_commit_kv_backup(
+            BackupKV([donor.id]), write_back=False, no_host_reclaim=True,
+        ) == 4
+        write_ack, = controller.ack_write_queue
+        monkeypatch.setattr(write_ack.finish_event, "query", Mock(return_value=False), raising=False)
+    reserve, minimum, proposed = 3, 2, 4
+    free = reserve + minimum - int(case == "shortage")
+    held = allocator.alloc(allocator.available_size() - free)
+    assert held is not None and allocator.available_size() == free
+    if write_ack is None:
+        assert cache.full_evictable_size() == 0
+    req.init_next_round_input(cache)
+    params = InitLoadBackParams(
+        best_match_node=req.best_match_node, host_hit_length=req.host_hit_length, req=req,
+    )
+    assert params.best_match_node == f.leaf.id and params.host_hit_length == len(source_slots)
+    node_ids, commit_count = tuple(tree._node_arena), len(f.commits)
+    host_free = host.available_size()
+    evict = Mock(wraps=cache.evict_for_alloc)
+    write = Mock(wraps=controller.write)
+    funding = Mock(wraps=ensure_device_capacity_preserving_live_kv)
+    monkeypatch.setattr(cache, "evict_for_alloc", evict)
+    monkeypatch.setattr(controller, "write", write)
+    monkeypatch.setattr(
+        "beliefkv.runtime.demand_restore_chunk.ensure_device_capacity_preserving_live_kv", funding,
+    )
+    restore = DemandRestoreChunk(cache, max_source_nodes=8)
+    options = dict(
+        device_reserve=reserve, protected_nodes=(f.leaf.id,), minimum_tokens=minimum,
+    )
+
+    try:
+        with monkeypatch.context() as geometry:
+            if case == "unsupported":
+                geometry.setattr(cache, "pp_size", 2)
+            result = restore.start(params, f.key, proposed, **options)
+        if write_ack is not None:
+            assert result == DEFER_WRITE_ACK and restore.pending is None
+            assert allocator.available_size() == free and not f.loads
+            result = restore.start(params, f.key, proposed, **options)
+            assert controller.ack_write_queue == [write_ack]
+            write_ack.finish_event.query.assert_has_calls([call(), call()])
+            write_ack.finish_event.synchronize.assert_not_called()
+
+        evict.assert_not_called()
+        write.assert_not_called()
+        assert len(f.commits) == commit_count and host.available_size() == host_free
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert host.slot_used[neighbor_slots].all() and host.slot_used[source_slots].all()
+        targets = [entry.args[1] for entry in funding.call_args_list]
+        if case != "raw-slots":
+            assert result == "device_capacity_not_funded" and restore.pending is None
+            assert targets == {
+                "shortage": [proposed + reserve],
+                "unsupported": [proposed + reserve, free],
+                "pending-write": [proposed + reserve, proposed + reserve],
+            }[case]
+            assert allocator.available_size() == free and tuple(tree._node_arena) == node_ids
+            assert suffix.host_value is source_slots and suffix.value is None
+            assert (suffix.lock_ref, suffix.host_lock_ref) == (0, 0)
+            assert not f.loads and not controller.ack_load_queue and not cache.ongoing_load_back
+            return
+
+        assert result is None
+        assert targets == [proposed + reserve, minimum + reserve]
+        pending = restore.pending
+        assert (pending.tokens, pending.remaining_tokens) == (minimum, params.host_hit_length - minimum)
+        prefix = tree.node_by_id(pending.prefix_node)
+        full = prefix.component_data[0]
+        load, = f.loads
+        ack, = controller.ack_load_queue
+        assert f.leaf.parent is prefix and pending.suffix_node == f.leaf.id
+        assert load.node_id == prefix.id and load.host_indices.tolist() == source_slots[:minimum].tolist()
+        assert suffix.host_value.tolist() == source_slots[minimum:].tolist()
+        assert allocator.available_size() == reserve
+        assert ack.node_ids == [prefix.id] and ack.num_tokens_by_pool == {"kv": minimum}
+        assert (full.lock_ref, full.host_lock_ref, suffix.host_lock_ref) == (2, 1, 1)
+
+        f.complete.ready = True
+        assert restore.defer_until_ack(req)
+        ack.finish_event.synchronize.assert_not_called()
+        cache.loading_check(finish_count=1)
+        ack.finish_event.synchronize.assert_called_once_with()
+        assert (full.lock_ref, full.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
+        assert not restore.defer_until_ack(req)
+        assert restore.pending is None and not controller.ack_load_queue and not cache.ongoing_load_back
+        assert (full.lock_ref, full.host_lock_ref, suffix.host_lock_ref) == (0, 0, 0)
+        commit, = f.commits[commit_count:]
+        assert commit.direction == "h2d" and commit.node_ids == (prefix.id,)
+    finally:
+        if controller.ack_load_queue:
+            cache.loading_check(finish_count=1)
+        restore.release()
+        if write_ack is not None:
+            cache.writing_check(finish_count=1)
+        allocator.free(held)
+        cache.sanity_check()
 
 
 def _assert_write_ack_defers(case, key):

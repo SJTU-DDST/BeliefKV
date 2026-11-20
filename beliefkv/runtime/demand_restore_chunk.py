@@ -114,7 +114,7 @@ class DemandRestoreChunk:
         if node is None or remaining or prefix is None:
             return "source_prefix_mismatch"
 
-        # Attempt the native allocation once. A declined staging attempt may
+        # Attempt native reclaim once. A declined staging attempt may
         # move settled state, but may not discard any referenced checkpoint.
         allocator = cache.token_to_kv_pool_allocator
         free_before = allocator.available_size()
@@ -134,8 +134,18 @@ class DemandRestoreChunk:
             free_after = allocator.available_size()
             page = cache.page_size
             smaller = (free_after - device_reserve) // page * page
-            if free_after <= free_before or not minimum_tokens <= smaller < tokens:
+            if not minimum_tokens <= smaller < tokens:
                 return "device_capacity_not_funded"
+            if free_after <= free_before:
+                # The already-free target validates the mode and skips write checks.
+                if (
+                    controller.write_queue or controller.ack_write_queue
+                    or cache.ongoing_write_through
+                    or not ensure_device_capacity_preserving_live_kv(
+                        cache, smaller + device_reserve, protected_nodes=protected_nodes,
+                    )
+                ):
+                    return "device_capacity_not_funded"
             # The original source walk validated every node in the shorter slice.
             trim = tokens - smaller
             while trim >= prefix_tokens:
