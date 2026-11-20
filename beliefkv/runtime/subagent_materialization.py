@@ -892,6 +892,7 @@ class SubagentMaterialization:
         if not headroom.observable or shortfall <= 0:
             return False
         chunk = self.runtime._native_chunk_input_reserve
+        small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
         identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
         staged = self._demand_restore_chunk.pending
         staged_producer = None
@@ -913,20 +914,20 @@ class SubagentMaterialization:
                 )
             ):
                 return False
-        elif headroom.census_complete:
-            if shortfall > credit and (not chunk or credit < chunk):
+        elif headroom.census_complete and not small_peer_retry:
+            if shortfall > credit and not chunk:
                 return False
         else:
-            # Indexed capacity is a lower bound. Retry once if it funds a full
-            # load or a guarded slice once the selected H2D publishes its ACK.
+            # Retry once for a funded load or slice after the selected ACK.
             if (
-                headroom.reason != NODE_CENSUS_BOUND or not identity_matches
+                (not headroom.census_complete and headroom.reason != NODE_CENSUS_BOUND)
+                or not identity_matches
                 or shortfall > credit and not self._can_slice_after_restore_ack(
                     cache, params, key, headroom, credit, submitted=False,
                 )
             ):
                 return False
-        if submitted or not headroom.census_complete:
+        if submitted or not headroom.census_complete or small_peer_retry:
             if getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key:
                 return False
             params.req._beliefkv_d3_indexed_restore_defer_key = key

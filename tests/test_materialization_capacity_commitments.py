@@ -799,25 +799,33 @@ def test_d3_waits_for_submitted_selected_restore_ack(staged_native, monkeypatch)
 
 
 @pytest.mark.parametrize(
-    ("staged_native", "free_after_peer", "free_host", "slice_tokens"),
+    ("staged_native", "free_after_peer", "free_host", "slice_tokens", "census"),
     (
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (4, 12)}, 5, 0, 4,
+            {"members": 2, "select": False, "prefix_sizes": (4, 12)}, 5, 0, 4, "indexed",
             id="indexed_partial_credit",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 6,
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 6, "indexed",
             id="indexed_small_credit_independent",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 0, None,
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 0, None, "indexed",
             id="indexed_small_credit_unfunded",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 6, "complete",
+            id="complete_small_credit_independent",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, None, "retry_used",
+            id="complete_small_credit_retry_used",
         ),
     ),
     indirect=("staged_native",),
 )
 def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
-    staged_native, monkeypatch, free_after_peer, free_host, slice_tokens,
+    staged_native, monkeypatch, free_after_peer, free_host, slice_tokens, census,
 ):
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -855,7 +863,12 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
     runtime._native_page_size = native.page_size
     runtime._prefetch_service_leases = {}
     gate = SubagentMaterialization(runtime, include_root_entries=True)
-    gate.max_nodes = 2
+    census_complete = census != "indexed"
+    reason = "" if census_complete else NODE_CENSUS_BOUND
+    if not census_complete:
+        gate.max_nodes = 2
+    if census == "retry_used":
+        consumer._beliefkv_d3_indexed_restore_defer_key = key
     gate.materialized.add(gate._context(key))
     gate.attach(native)
     scheduler, construction, invoke = native_scheduler(f, enabled=True)
@@ -891,11 +904,17 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
             assert decline["reason"] == "prefill_batch_already_constrained"
             selected_h2d = decline["selected_batch"]["native_h2d"]
             assert selected_h2d["native_node_ids"] == [peer_leaf.id]
-            assert selected_h2d["headroom_observation"] == NODE_CENSUS_BOUND
+            assert selected_h2d["headroom_observation"] == reason
             assert selected_h2d["reclaimable_after_ack_tokens"] == credit == 2
             independent = hit - selected_h2d["unfunded_restore_tokens"]
-            assert independent == free_after_peer + free_host == 7
-            assert independent + credit == chunk + reserve
+            assert independent == free_after_peer + free_host
+            assert selected_h2d["unfunded_restore_tokens"] > credit
+            if census == "retry_used":
+                assert independent == chunk + reserve
+                assert consumer._beliefkv_d3_indexed_restore_defer_key == key
+                assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
+            else:
+                assert independent + credit == chunk + reserve
             assert construction == [(peer, consumer)] and not scheduler.waiting_queue
             assert controller.load_queue == f.loads and consumer.host_loaded_length == hit
             assert [load.host_indices.tolist() for load in f.loads] == [peer_slots, consumer_slots]
@@ -924,7 +943,7 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
         assert allocator.available_size() == free_after_peer and donor in tree.evictable_device_leaves
         deferral, = deferrals
         shortfall = deferral["unfunded_restore_tokens"]
-        assert deferral["headroom_observation"] == NODE_CENSUS_BOUND
+        assert deferral["headroom_observation"] == reason
         assert deferral["native_node_ids"] == [peer_leaf.id]
         assert deferral["key"]["request_id"] == consumer.rid
         assert not deferral["already_submitted"] and deferral["requested_restore_tokens"] == hit
@@ -956,7 +975,7 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
         headroom = observe_materialization_headroom(
             native, max_nodes=gate.max_nodes, protected_host_nodes=(consumer_leaf.id,),
         )
-        assert headroom.reason == NODE_CENSUS_BOUND
+        assert headroom.reason == reason and headroom.census_complete is census_complete
         assert headroom.reclaimable_host_tokens == credit
         assert headroom.available_tokens == free_after_peer + free_host + credit == slice_tokens + reserve
         assert invoke() == (None, f.running)
@@ -980,6 +999,20 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
         assert not native.ongoing_load_back and not controller.ack_load_queue
         assert (prefix_data.lock_ref, prefix_data.host_lock_ref, consumer_data.host_lock_ref) == (1, 0, 1)
         native.dec_lock_ref(peer.last_node, peer.lock_receipt)
+        if census_complete:
+            with pytest.raises(BatchConstructionReached):
+                invoke()
+            assert construction == [(peer,), (consumer,)] and not scheduler.waiting_queue
+            assert gate._demand_restore_chunk.pending is None
+            assert [load.host_indices.tolist() for load in f.loads] == [
+                peer_slots, consumer_slots[:slice_tokens], consumer_slots[slice_tokens:],
+            ]
+            assert runtime.counts["subagent_materialization_restore_pressure_deferrals"] == 1
+            assert runtime.counts["subagent_materialization_demand_restore_chunks"] == 1
+            native.loading_check()
+            native.dec_lock_ref(consumer.last_node, consumer.lock_receipt)
+            assert (prefix_data.lock_ref, consumer_data.lock_ref, consumer_data.host_lock_ref) == (0, 0, 0)
+            assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
         native.sanity_check()
     finally:
         gate.close()
