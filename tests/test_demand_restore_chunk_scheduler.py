@@ -1480,6 +1480,7 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         pytest.param(True, "promoted-after-retry", 2, id="promoted-producer-after-peer-retry"),
         pytest.param(True, "pending_join", 2, id="pending-join-producer-partial-credit"),
         pytest.param(True, "fit_target", 2, id="fit-target-producer-partial-credit"),
+        pytest.param(True, "both_protected", 2, id="protected-producer-and-consumer"),
     ),
 )
 def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
@@ -1520,7 +1521,7 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
     monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
     f.waiting[:] = [producer]
     resumed_peer = producer_protection == "promoted-after-retry"
-    producer_promoted = producer_protection in {"promoted", "promoted-after-retry"}
+    producer_promoted = producer_protection in {"promoted", "promoted-after-retry", "both_protected"}
     if producer_promoted:
         runtime._join_priority_promoted = producer.rid
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
@@ -1577,13 +1578,19 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             guard = ReadyServiceGuard(runtime._agent_admission, fit_after_s=600)
             guard.fit_target = staged.key
             runtime._agent_admission._ready_service_guard = guard
+        elif producer_protection == "both_protected":
+            guard = ReadyServiceGuard(runtime._agent_admission, fit_after_s=600)
+            guard.fit_target = consumer_key
+            runtime._agent_admission._ready_service_guard = guard
         if resumed_peer:
             # Its prior ordinary ACK retry yielded to the promoted JOIN parent.
             consumer._beliefkv_d3_indexed_restore_defer_key = consumer_key
 
         scheduler.waiting_queue.append(consumer)
         assert invoke() == (None, f.running)
-        if resumed_peer:
+        if decode_growth and producer_protection in {
+            "promoted", "promoted-after-retry", "pending_join", "fit_target",
+        }:
             assert not losses
             assert f.loads == [first_load] and controller.ack_load_queue == [first_ack]
             assert scheduler.waiting_queue == [producer, consumer] and not construction
@@ -1608,7 +1615,7 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             cache.loading_check()
             cache.sanity_check()
             return
-        if decode_growth and (producer_protection is not None or decode_growth == 3):
+        if decode_growth and (producer_protection == "both_protected" or decode_growth == 3):
             runtime.on_prefill_candidate_result.assert_called_with(
                 consumer, admitted=False, result="RESTORE_STAGED",
             )
@@ -1639,15 +1646,19 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         key, hit, receipts = consumer._beliefkv_d3_restore_credit
         assert key == consumer_key and hit == 8
         assert tuple(receipts) == (staged.prefix_node,) and receipts[staged.prefix_node] is receipt
-        deferred, = (
-            row for event in runtime._opportunity_writer.record.call_args_list
-            if (row := event.args[0])["event"] == "subagent_materialization_restore_pressure_deferred"
-        )
-        assert deferred["key"] == asdict(consumer_key) and deferred["already_submitted"]
-        assert deferred["native_node_ids"] == first_ack.node_ids
-        assert (deferred["reclaimable_after_ack_tokens"], deferred["unfunded_restore_tokens"]) == (
-            6, 5 + decode_growth,
-        )
+        if producer_promoted:
+            assert runtime.counts["subagent_materialization_protected_stage_waits"] == 1
+            assert staged.credit_waiter is None
+        else:
+            deferred, = (
+                row for event in runtime._opportunity_writer.record.call_args_list
+                if (row := event.args[0])["event"] == "subagent_materialization_restore_pressure_deferred"
+            )
+            assert deferred["key"] == asdict(consumer_key) and deferred["already_submitted"]
+            assert deferred["native_node_ids"] == first_ack.node_ids
+            assert (deferred["reclaimable_after_ack_tokens"], deferred["unfunded_restore_tokens"]) == (
+                6, 5 + decode_growth,
+            )
         if decode_growth:
             cache.loading_check()
             assert invoke() == (None, f.running)

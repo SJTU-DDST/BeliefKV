@@ -810,13 +810,15 @@ class SubagentMaterialization:
             return False
 
         staged = self._demand_restore_chunk.pending
+        chunk = self.runtime._native_chunk_input_reserve
         protected_receipt = None
         if (
             staged is not None and staged.request is not params.req
-            and getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
+            and chunk and hit >= 2 * chunk
             and len(acks) == 1 and not acks[0].child_receipts
             and tuple(acks[0].node_ids) == (staged.prefix_node,)
             and self._restore_stage_matches_live(staged.request, staged.key)
+            and self._restore_stage_matches_live(params.req, key)
             and self._staged_peer_protected(staged.key)
             and not self._staged_peer_protected(key)
         ):
@@ -912,15 +914,13 @@ class SubagentMaterialization:
             return False
         identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
         if protected_receipt is not None and identity_matches:
-            # A JOIN can take the next pass after an ordinary restore deferral.
-            # Its exact in-flight ACK is a barrier, not allocation credit.
+            # Finish the protected transfer before retrying a large restore.
             params.req._beliefkv_d3_restore_credit = key, hit, {
                 staged.prefix_node: protected_receipt,
             }
             counts["subagent_materialization_protected_stage_waits"] += 1
             return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
-        chunk = self.runtime._native_chunk_input_reserve
         small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
         staged_producer = None
         if (
