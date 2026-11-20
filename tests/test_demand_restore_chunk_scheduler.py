@@ -1787,8 +1787,22 @@ def test_d3_uses_leading_staged_ack_ahead_of_tagged_join(staged_native, monkeypa
     (({"members": 1, "select": False, "prefix_sizes": (18,)}, 32),),
     indirect=True,
 )
-@pytest.mark.parametrize("case", ("own", "foreign", "stale-attempt", "leased-only", "promoted"))
-def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native, monkeypatch, case):
+@pytest.mark.parametrize(
+    ("case", "lead_tokens", "device_free"),
+    (
+        pytest.param("own", 0, 3, id="own"),
+        pytest.param("own", 6, 3, id="own-behind-ordinary"),
+        pytest.param("unfunded", 2, 2, id="own-ack-cannot-fund"),
+        pytest.param("unfunded", 1, 4, id="subchunk-lead-cannot-fund"),
+        pytest.param("foreign", 0, 3, id="foreign"),
+        pytest.param("stale-attempt", 0, 3, id="stale-attempt"),
+        pytest.param("leased-only", 0, 3, id="leased-only"),
+        pytest.param("promoted", 0, 3, id="promoted"),
+    ),
+)
+def test_d3_retries_own_tagged_join_ack_with_independent_capacity(
+    staged_native, monkeypatch, case, lead_tokens, device_free,
+):
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
@@ -1803,18 +1817,28 @@ def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native,
     cache._apply_cache_actions(actions)
     first = tree.node_by_id(prefix_id)
     commands = {"join-first": first, "join-second": second}
+    own_tokens = sum(len(node.key) for node in commands.values())
 
-    held_host = host.alloc(host.available_size() - 14)
-    neighbor, _ = insert_session(cache, range(101, 109), "waiting-parent")
+    neighbor_tokens = 8
+    lease_tokens = 6 if case == "leased-only" else 0
+    if lead_tokens:
+        lease_tokens = 2
+    free_host = 0 if lease_tokens else 6
+    host_budget = neighbor_tokens + lead_tokens + lease_tokens + free_host
+    held_host = host.alloc(host.available_size() - host_budget)
+    neighbor, _ = insert_session(cache, range(101, 101 + neighbor_tokens), "waiting-parent")
     neighbor_slots = _backup(cache, neighbor, demote=True)
     for start, size in ((111, 6), (121, 6), (131, 4), (141, 4), (201, 24)):
         insert_session(cache, range(start, start + size), str(start))
     locks = []
-    if case == "leased-only":
-        mirror, _ = insert_session(cache, range(151, 157), "leased")
+    if lease_tokens:
+        mirror, _ = insert_session(cache, range(151, 151 + lease_tokens), "leased")
         _backup(cache, mirror)
         locks.append((mirror.id, tree.inc_lock_ref(mirror.id).to_dec_params()))
-    held_device = allocator.alloc(allocator.available_size() - 7)
+    if lead_tokens:
+        lead_node, _ = insert_session(cache, range(161, 161 + lead_tokens), "ordinary-peer")
+        lead_slots = _backup(cache, lead_node, demote=True)
+    held_device = allocator.alloc(allocator.available_size() - device_free - own_tokens - lead_tokens)
     assert held_host is not None and held_device is not None
 
     losses = []
@@ -1829,7 +1853,7 @@ def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native,
     runtime.context_sessions = {f.key.context_id: f.key}
     runtime._prefetch_steps = {}
     runtime.physical_ledger = NS(is_pending=runtime._prefetch_steps.__contains__)
-    if case == "leased-only":
+    if lease_tokens:
         runtime._prefetch_service_leases["existing"] = NS(node_id=mirror.id)
     if case == "promoted":
         runtime._join_priority_promoted = req.rid
@@ -1852,7 +1876,19 @@ def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native,
         )
         return True
 
+    tagged_ready = NS(value=False)
     try:
+        leading_acks, leading_ids = [], []
+        if lead_tokens:
+            assert cache.load_back(lead_node.id)
+            assert cache.ready_to_load_host_cache() >= 0
+            lead, = controller.ack_load_queue
+            assert lead.node_ids == [lead_node.id] and not lead.child_receipts
+            assert lead.num_tokens_by_pool == {"kv": lead_tokens}
+            assert not lead.finish_event.query()
+            leading_acks.append(lead)
+            leading_ids.append(lead_node.id)
+
         issued = cache.prefetch_gpu_session_nodes(
             session_id=f.key.session_id, session_generation=f.key.session_generation,
             leaf_node_id=f.leaf.id, leaf_creation_time=float(f.leaf.creation_time),
@@ -1860,44 +1896,87 @@ def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native,
             beliefkv_before_enqueue=register,
         )
         assert len(issued) == 2 and all(item.issued and item.load_started for item in issued)
-        tagged, = controller.ack_load_queue
+        tagged, = controller.ack_load_queue[len(leading_acks):]
+        monkeypatch.setattr(tagged.finish_event, "query", lambda: tagged_ready.value)
+        initial_acks = [*leading_acks, tagged]
+        assert controller.ack_load_queue == initial_acks
         anchors = [first.id, second.id]
+        initial_load_ids = [*leading_ids, *anchors]
+        hit = len(source_slots) - own_tokens
         receipts = {node: cache.ongoing_load_back[node] for node in anchors}
-        assert tagged.node_ids == anchors and tagged.num_tokens_by_pool == {"kv": 4}
+        assert tagged.node_ids == anchors and tagged.num_tokens_by_pool == {"kv": own_tokens}
         assert [child.command_id for child in tagged.child_receipts] == list(commands)
-        assert (allocator.available_size(), host.available_size()) == (3, 0 if locks else 6)
+        assert (allocator.available_size(), host.available_size()) == (device_free, free_host)
         assert not tagged.finish_event.query() and not controller.load_queue
         if case == "leased-only":
             assert observe_materialization_headroom(cache).reclaimable_host_tokens == 6
+        if lead_tokens:
+            protected = (f.leaf.id, *anchors, mirror.id)
+            headroom = observe_materialization_headroom(cache, protected_host_nodes=protected)
+            assert headroom.census_complete and headroom.available_tokens == device_free
+            assert observe_materialization_headroom(cache).reclaimable_host_tokens == lease_tokens
+            chunk = runtime._native_chunk_input_reserve
+            reserve = chunk + cache.page_size * len(f.running.reqs)
+            minimum = max(chunk, cache.load_back_threshold) + reserve
+            funding_credit = lead_tokens if lead_tokens >= chunk else 0
+            assert device_free + cache.full_evictable_size() >= minimum
+            assert device_free + lease_tokens + lead_tokens < hit
+            assert (device_free + funding_credit >= minimum) is (case == "own")
+            if case == "unfunded":
+                excluded_credit = lead_tokens if lead_tokens < chunk else own_tokens
+                assert device_free + funding_credit + excluded_credit >= minimum
 
         assert invoke() == (None, f.running)
-        assert controller.ack_load_queue[0] is tagged and not construction
+        assert controller.ack_load_queue[:len(initial_acks)] == initial_acks and not construction
         assert all(cache.ongoing_load_back[node] is receipt for node, receipt in receipts.items())
         tagged.finish_event.synchronize.assert_not_called()
         if case != "own":
             assert not getattr(req, "_beliefkv_d3_restore_credit", None)
             assert gate._demand_restore_chunk.pending is None
-            assert [load.node_id for load in f.loads] == [*anchors, f.leaf.id]
+            assert [load.node_id for load in f.loads] == [*initial_load_ids, f.leaf.id]
             assert f.pipeline.pending is not None
             return
 
         assert not losses, f"own JOIN ACK led to referenced Host-only eviction: {losses}"
+        assert f.pipeline.pending is None and [load.node_id for load in f.loads] == initial_load_ids
         wait = req._beliefkv_d3_restore_credit
-        assert wait[:2] == (f.key, 14) and wait[2] == receipts
+        expected_receipts = {node: cache.ongoing_load_back[node] for node in initial_load_ids}
+        assert wait[:2] == (f.key, hit) and wait[2].keys() == expected_receipts.keys()
+        assert all(wait[2][node] is receipt for node, receipt in expected_receipts.items())
         assert req._beliefkv_d3_indexed_restore_defer_key == f.key
+        assert gate._peer_restore_retry is None
         deferred, = (
             row for event in runtime._opportunity_writer.record.call_args_list
             if (row := event.args[0])["event"] == "subagent_materialization_restore_pressure_deferred"
         )
-        assert deferred["native_node_ids"] == anchors and deferred["already_submitted"]
-        assert deferred["reclaimable_after_ack_tokens"] == 0
+        assert deferred["native_node_ids"] == initial_load_ids and deferred["already_submitted"]
+        assert deferred["own_join_ack"]
+        assert deferred["reclaimable_after_ack_tokens"] == lead_tokens < deferred["unfunded_restore_tokens"]
+        if lead_tokens:
+            # Retire the ordinary head while the tagged transfer stays in flight.
+            assert controller.ack_load_queue == initial_acks
+            f.complete.ready = True
+            cache.loading_check()
+            f.complete.ready = False
+            lead.finish_event.synchronize.assert_called_once_with()
+            assert controller.ack_load_queue == [tagged]
+            assert lead_node.id not in cache.ongoing_load_back
+            assert tree.full_host_duplicates[lead_node.id] is lead_node
+            assert f.commits[-1].node_ids == (lead_node.id,) and not f.commits[-1].child_commits
+
         for ready in (False, True):
-            f.complete.ready = ready
+            tagged_ready.value = ready
             assert invoke() == (None, f.running)
             assert req._beliefkv_d3_restore_credit is wait
-            assert controller.ack_load_queue == [tagged] and len(f.loads) == 2
+            assert controller.ack_load_queue == [tagged]
+            assert [load.node_id for load in f.loads] == initial_load_ids
+            assert all(cache.ongoing_load_back[node] is receipt for node, receipt in receipts.items())
+            assert all(runtime.physical_ledger.is_pending(command) for command in commands)
+            assert all(not commit.child_commits for commit in f.commits)
             assert f.pipeline.pending is None and gate._demand_restore_chunk.pending is None
             assert scheduler.waiting_queue == [req] and not construction and not losses
+            assert neighbor.component_data[0].host_value is neighbor_slots
+            assert host.slot_used[neighbor_slots].all()
         tagged.finish_event.synchronize.assert_not_called()
 
         def publish(commit):
@@ -1914,11 +1993,19 @@ def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native,
         cache.loading_check()
         tagged.finish_event.synchronize.assert_called_once_with()
         assert not controller.ack_load_queue and not cache.ongoing_load_back
+        assert not runtime._prefetch_steps
+        if lead_tokens:
+            headroom = observe_materialization_headroom(cache, protected_host_nodes=protected)
+            assert headroom.reclaimable_host_tokens == lead_tokens
+            assert headroom.available_tokens == device_free + lead_tokens
         f.complete.ready = False
         assert invoke() == (None, f.running)
         staged = gate._demand_restore_chunk.pending
         assert staged.key == f.key and staged.tokens == 6
-        assert f.loads[-1].host_indices.tolist() == source_slots[4:10]
+        assert f.loads[-1].host_indices.tolist() == source_slots[own_tokens:own_tokens + staged.tokens]
+        slice_ack, = controller.ack_load_queue
+        assert slice_ack.node_ids == [staged.prefix_node] and not slice_ack.child_receipts
+        assert slice_ack.num_tokens_by_pool == {"kv": staged.tokens}
         assert req._beliefkv_d3_restore_credit is None
         assert runtime.counts["subagent_materialization_restore_pressure_deferrals"] == 1
         assert all(node.component_data[0].lock_ref for node in commands.values())
@@ -1934,7 +2021,11 @@ def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native,
             pytest.fail("JOIN consumer did not reach native batch construction")
         assert construction == [(req,)] and not scheduler.waiting_queue
         assert req.extend_range.start == len(source_slots)
-        assert [slot for load in f.loads for slot in load.host_indices.tolist()] == source_slots
+        if lead_tokens:
+            assert f.loads[0].host_indices.tolist() == lead_slots.tolist()
+        assert [
+            slot for load in f.loads[len(leading_ids):] for slot in load.host_indices.tolist()
+        ] == source_slots
         assert neighbor.component_data[0].host_value is neighbor_slots
         assert host.slot_used[neighbor_slots].all() and not losses
         cache.loading_check()
@@ -1942,6 +2033,7 @@ def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native,
         cache.sanity_check()
     finally:
         f.complete.ready = True
+        tagged_ready.value = True
         cache.loading_check()
         f.pipeline.close()
         gate.close()

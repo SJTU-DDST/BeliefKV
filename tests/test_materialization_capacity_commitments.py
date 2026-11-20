@@ -799,33 +799,37 @@ def test_d3_waits_for_submitted_selected_restore_ack(staged_native, monkeypatch)
 
 
 @pytest.mark.parametrize(
-    ("staged_native", "free_after_peer", "free_host", "slice_tokens", "census"),
+    ("staged_native", "free_after_peer", "free_host", "lease_tokens", "slice_tokens", "census"),
     (
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (4, 12)}, 5, 0, 4, "indexed",
+            {"members": 2, "select": False, "prefix_sizes": (4, 12)}, 5, 0, 0, 4, "indexed",
             id="indexed_partial_credit",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 6, "indexed",
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 0, 6, "indexed",
             id="indexed_small_credit_independent",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 0, None, "indexed",
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 0, 0, None, "indexed",
             id="indexed_small_credit_unfunded",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 6, "complete",
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 0, 6, "complete",
             id="complete_small_credit_independent",
         ),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, None, "retry_used",
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 6, 0, 3, None, "complete",
+            id="complete_small_credit_leased_only",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (2, 12)}, 7, 2, 0, None, "retry_used",
             id="complete_small_credit_retry_used",
         ),
     ),
     indirect=("staged_native",),
 )
 def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
-    staged_native, monkeypatch, free_after_peer, free_host, slice_tokens, census,
+    staged_native, monkeypatch, free_after_peer, free_host, lease_tokens, slice_tokens, census,
 ):
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -840,7 +844,9 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
     occupied = credit + hit
     peer_data, consumer_data = (leaf.component_data[0] for leaf in f.leaves)
     peer_slots, consumer_slots = (data.host_value.tolist() for data in (peer_data, consumer_data))
-    back_up = _track_native_host_allocations(native, occupied + 7 + free_host, occupied=occupied)
+    back_up = _track_native_host_allocations(
+        native, occupied + 7 + free_host + lease_tokens, occupied=occupied,
+    )
     neighbor, _ = insert_session(native, range(100, 103), "waiting-parent")
     back_up(neighbor)
     native._demote(neighbor.id, {0: 0})
@@ -853,6 +859,11 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
     donor_slots = donor_data.host_value
     # Pin the donor's Host copy while its backed HBM remains evictable.
     donor_lock = native.inc_host_lock_ref(donor.id).to_dec_params()
+    if lease_tokens:
+        mirror, _ = insert_session(native, range(120, 120 + lease_tokens), "leased-mirror")
+        back_up(mirror)
+        lease_lock = native.inc_lock_ref(mirror.id).to_dec_params()
+        assert mirror.component_data[0].host_lock_ref == 0
     free_before = free_after_peer + credit
     insert_session(native, range(200, 200 + allocator.available_size() - free_before), "unbacked")
     assert (allocator.available_size(), native.host_pool_group.available_size()) == (free_before, free_host)
@@ -862,6 +873,15 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
     runtime._native_chunk_input_reserve = chunk
     runtime._native_page_size = native.page_size
     runtime._prefetch_service_leases = {}
+    if lease_tokens:
+        runtime._prefetch_service_leases["existing"] = NS(node_id=mirror.id)
+        assert observe_materialization_headroom(native).reclaimable_host_tokens == lease_tokens
+        assert observe_materialization_headroom(
+            native, protected_host_nodes=(consumer_leaf.id, mirror.id),
+        ).reclaimable_host_tokens == 0
+        assert free_after_peer + free_host + lease_tokens == chunk + reserve
+        assert free_after_peer + free_host + credit < chunk + reserve
+        assert native.full_evictable_size() + free_after_peer >= chunk + reserve
     gate = SubagentMaterialization(runtime, include_root_entries=True)
     census_complete = census != "indexed"
     reason = "" if census_complete else NODE_CENSUS_BOUND
@@ -893,7 +913,7 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
             if event["event"] == "subagent_materialization_restore_pressure_deferred"
         ]
         if slice_tokens is None:
-            assert not deferrals
+            assert not deferrals, deferrals
             assert getattr(consumer, "_beliefkv_d3_restore_credit", None) is None
             assert gate._demand_restore_chunk.pending is None
             decline, = (
@@ -913,6 +933,10 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
                 assert independent == chunk + reserve
                 assert consumer._beliefkv_d3_indexed_restore_defer_key == key
                 assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
+            elif lease_tokens:
+                assert independent + credit < chunk + reserve
+                assert getattr(consumer, "_beliefkv_d3_indexed_restore_defer_key", None) is None
+                assert gate._peer_restore_retry is None
             else:
                 assert independent + credit == chunk + reserve
             assert construction == [(peer, consumer)] and not scheduler.waiting_queue
@@ -1016,6 +1040,8 @@ def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(
         native.sanity_check()
     finally:
         gate.close()
+        if lease_tokens:
+            native.dec_lock_ref(mirror.id, lease_lock)
         native.dec_host_lock_ref(donor.id, donor_lock)
 
 
