@@ -11,8 +11,10 @@ from beliefkv.experiments.internal_comparison import MODES, arm_environment
 from beliefkv.experiments.paper_baselines import environment as paper_environment
 from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 from beliefkv.runtime.reference_thunder_admission import validate_reference_admission
+from beliefkv.runtime.sglang_v0520_admission import _request_key
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from scripts.run_causal_comparison import preflight_runtime
+from tests.test_demand_restore_capacity import _backup, bind_host_slots
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_sglang_v0520_runtime import req
 from tests.test_tool_policy_adaptation import demand_runtime
@@ -217,6 +219,128 @@ def test_queue_time_native_loss_is_detected_and_a_chosen_restore_is_not_paused_a
     assert admission.policy.programs["consumer"].active
     assert admission.counts["residency_continuation_checks"] == 1
     assert admission.counts["residency_pauses"] == 1
+
+
+@pytest.mark.parametrize("full_native", (32768,), indirect=True)
+@pytest.mark.parametrize("ownership", ("released", "stale-request"))
+def test_native_staged_restore_preserves_ready_continuation(full_native, monkeypatch, ownership):
+    from sglang.srt.managers.schedule_batch import Req
+    from sglang.srt.mem_cache.base_prefix_cache import InitLoadBackParams
+    from sglang.srt.sampling.sampling_params import SamplingParams
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, writes, loads, _ = full_native
+    slice_tokens, missing = 2048, 14_000
+    checkpoint = slice_tokens + missing
+    host = bind_host_slots(cache, writes, checkpoint, monkeypatch)
+    leaf, generation = insert_session(cache, range(1, checkpoint + 1), "root-session")
+    host_slots = _backup(cache, leaf)
+
+    for name, value in arm_environment({
+        **settings(), "DEMAND_PREFILL_PIPELINE": "1",
+        "BELIEFKV_SUBAGENT_MATERIALIZATION": "pressure_v2",
+    }, "full").items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setenv("BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH", "0")
+    monkeypatch.setenv("BELIEFKV_PAPER_BASELINE", "")
+    monkeypatch.setenv("SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM", "0")
+    runtime = NativeAdmissionRuntime()
+    try:
+        runtime.attach_native_cache(cache)
+        runtime._native_chunk_input_reserve = slice_tokens
+        runtime._native_page_size = cache.page_size
+        admission = runtime._agent_admission
+        pause = admission._residency_pause
+        gate = runtime._subagent_materialization
+        restore = gate._demand_restore_chunk
+        now = time.monotonic()
+        admission.policy.arrive("root", checkpoint, now=now)
+        admission.policy.completed("root", checkpoint, now=now)
+        runtime.on_events((
+            event(0, Kind.WORKFLOW_START),
+            event(1, Kind.INVOCATION_CREATE, invocation_id="root", context_id="ctx-root",
+                  context_epoch=14),
+            event(2, Kind.LLM_SUBMIT, invocation_id="root", context_id="ctx-root",
+                  context_epoch=14, attributes={"request_id": "root-following"}),
+        ))
+        successor = Req(
+            rid="root-following", origin_input_text="",
+            origin_input_ids=array("q", range(1, checkpoint + 2)),
+            sampling_params=SamplingParams(max_new_tokens=2),
+            session_id="root-session",
+            beliefkv_metadata={
+                "root_workflow_id": "wf", "invocation_id": "root",
+                "context_id": "ctx-root", "context_epoch": 14,
+            },
+        )
+        successor.session_generation = generation
+        assert runtime.register_visible_request(successor)
+        key = runtime.visible[successor.rid]
+        item = admission.policy.programs[key.invocation_id]
+        assert item.active and item.pending and item.steps == 2
+        assert runtime._executable_waiting_key(successor) == key and admission.allows(key)
+        assert cache.inspect_beliefkv_reentry(successor)["missing_full_tokens"] == 0
+
+        cache._demote(leaf.id, {})
+        successor.init_next_round_input(cache)
+        assert successor.best_match_node == leaf.id and successor.host_hit_length == checkpoint
+        params = InitLoadBackParams(
+            best_match_node=leaf.id, host_hit_length=checkpoint, req=successor,
+        )
+        assert restore.start(
+            params, key, slice_tokens, device_reserve=slice_tokens + 1, protected_nodes=(leaf.id,),
+        ) is None
+        pending = restore.pending
+        assert (pending.request, pending.key, pending.remaining_tokens) == (successor, key, missing)
+        ack, = cache.cache_controller.ack_load_queue
+        assert ack.node_ids == [pending.prefix_node] and ack.num_tokens_by_pool == {"kv": slice_tokens}
+        cache.loading_check(finish_count=1)
+        ack.finish_event.synchronize.assert_called_once_with()
+
+        prefix = cache.tree_core.node_by_id(pending.prefix_node).component_data[0]
+        suffix = leaf.component_data[0]
+        assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
+        assert suffix.value is None and host.slot_used[host_slots].all()
+        observed = runtime._read_request_reentry(successor, key=key, refresh=True)
+        assert observed["device_checkpoint_tokens"] == slice_tokens
+        assert observed["missing_full_tokens"] == missing
+        assert not gate.has_staged_restore(successor, replace(key, attempt_id=key.attempt_id + 1))
+        assert gate.has_staged_restore(successor, key)
+
+        capacity, revision = admission.policy.remaining_capacity(), runtime.semantic_revision
+        admission.synchronize_residency([successor])
+        assert item.active and admission.allows(key)
+        assert admission.policy.remaining_capacity() == capacity
+        assert runtime.semantic_revision == revision
+        assert not pause.paused and key not in pause.compared_requests
+        assert admission.counts["residency_pauses"] == 0
+        assert restore.pending is pending and (prefix.lock_ref, suffix.host_lock_ref) == (1, 1)
+
+        current = successor
+        if ownership == "released":
+            assert not gate.defer_start(successor)
+            assert restore.pending is None and (prefix.lock_ref, suffix.host_lock_ref) == (0, 0)
+        else:
+            current = copy(successor)
+            assert current is not successor and _request_key(current) == key
+            admission._live_requests[key.request_id] = current
+            assert restore.pending is pending and (prefix.lock_ref, suffix.host_lock_ref) == (1, 1)
+        assert not gate.has_staged_restore(current, key)
+        assert runtime._read_request_reentry(current, key=key, refresh=True)["missing_full_tokens"] == missing
+
+        pause.next_check = 0.
+        admission.synchronize_residency([current])
+        assert not item.active and pause.paused[key.invocation_id] == key
+        assert key in pause.compared_requests
+        assert admission.counts["residency_pauses"] == 1
+        assert admission.counts["residency_pause_observed_missing_full_tokens"] == missing
+        assert admission.policy.remaining_capacity() == capacity + item.tokens + admission.policy.buffer_tokens
+        assert len(loads) == 1 and allocator.available_size() == allocator.size - slice_tokens
+        cache.sanity_check()
+    finally:
+        if cache.cache_controller.ack_load_queue:
+            cache.loading_check(finish_count=1)
+        runtime.close()
 
 
 @pytest.mark.parametrize(("new_input", "keeps_active"), ((4, True), (5, False)))

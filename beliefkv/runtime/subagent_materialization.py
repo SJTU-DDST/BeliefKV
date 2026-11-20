@@ -1852,6 +1852,16 @@ class SubagentMaterialization:
         finally:
             counts["subagent_materialization_cpu_ns"] += time.thread_time_ns() - cpu
 
+    def has_staged_restore(self, req, key):
+        chunk = self._demand_restore_chunk
+        if chunk is None:
+            return False
+        parked = chunk.parked[1] if chunk.parked is not None else None
+        for restore in (chunk.pending, parked):
+            if restore is not None and restore.request is req and restore.key == key:
+                return True
+        return False
+
     def defer_start(self, req):
         if (chunk := self._demand_restore_chunk) is not None:
             if self._yield_restore_to_credit_waiter(req) or chunk.defer_until_ack(req):

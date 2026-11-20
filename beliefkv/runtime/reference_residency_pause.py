@@ -137,6 +137,10 @@ class ReferenceResidencyPause:
             or key in self.compared_requests
         ):
             return False
+        materialization = getattr(runtime, "_subagent_materialization", None)
+        if materialization is not None and materialization.has_staged_restore(req, key):
+            # The guarded restore still owns the prefix and its remaining Host suffix.
+            return False
         if cheap_first:
             hint = runtime._read_request_residency_hint(req, key=key)
             a.counts["residency_continuation_hint_checks"] += 1

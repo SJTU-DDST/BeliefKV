@@ -1662,6 +1662,9 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             assert borrower_ack.node_ids == [borrower.prefix_node]
             assert borrower_ack.num_tokens_by_pool == {"kv": 4}
             assert restore.parked == (consumer, staged)
+            assert gate.has_staged_restore(consumer, consumer_key)
+            assert gate.has_staged_restore(producer, staged.key)
+            assert not gate.has_staged_restore(producer, consumer_key)
             assert producer._beliefkv_d3_committed_restore is None
             assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
             assert allocator.available_size() == 3 and prefix.host_value is None
@@ -1684,6 +1687,8 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             assert consumer.extend_range.start == len(consumer_slots)
             assert len(f.loads) == 3 and f.loads[2].node_id == consumer_leaf.id
             assert restore.pending is None and restore.parked == (consumer, staged)
+            assert gate.has_staged_restore(producer, staged.key)
+            assert not gate.has_staged_restore(consumer, consumer_key)
             assert producer._beliefkv_d3_committed_restore is None
             assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
             assert not losses
