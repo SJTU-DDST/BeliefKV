@@ -15,11 +15,11 @@ def write_json(path, data):
     path.write_text(json.dumps(data) + "\n")
 
 
-def make_arm(root, label, *, stop=False, censored=(), origin=0., window_end=4.):
+def make_arm(root, label, *, stop=False, censored=(), origin=0., window_end=4., measured=18):
     ids = [f"w{i:02d}" for i in range(22)]
     arrivals = poisson_arrival_plan(ids, rate_per_second=.5, seed=31, initial_workflows=2)
     cohort = declare_cohort(
-        arrivals, warmup=2, measured=18, throughput_start_s=1., throughput_end_s=window_end,
+        arrivals, warmup=2, measured=measured, throughput_start_s=1., throughput_end_s=window_end,
         stop_after_measured=stop,
     )
     directory = root / label
@@ -95,7 +95,7 @@ def make_arm(root, label, *, stop=False, censored=(), origin=0., window_end=4.):
         })
         report.update(
             measured_service_output_matches_complete_receipts=True,
-            measured_exact_receipt_requests=18,
+            measured_exact_receipt_requests=measured,
         )
     else:
         # The oldest complete auditor had no separate all_measured_completed flag.
@@ -138,6 +138,13 @@ def test_cli_accepts_legacy_complete_reports_and_reconciles_fixed_window(tmp_pat
         assert result["arms"][label]["system_window_output"] == {
             "output_tokens": 15, "output_tokens_per_second": pytest.approx(15 / 33),
         }
+
+
+def test_reports_the_declared_measured_group_size(tmp_path):
+    first, second = (make_arm(tmp_path, label, measured=8) for label in ("first", "second"))
+    groups = comparison.compare_arms([first, second])["groups"]
+    assert groups["fixed_8"]["member_count"] == 8
+    assert groups["fixed_measured_plus_warmup"]["member_count"] == 10
 
 
 def test_censored_union_uses_fixed_18_stop_and_one_followup_for_all_members(tmp_path, monkeypatch):

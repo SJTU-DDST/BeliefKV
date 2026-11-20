@@ -200,7 +200,7 @@ def audit_arm(registration_path, registration, report_path, report, arm, supplie
     ):
         raise ValueError("group output and sealed system window totals do not reconcile")
 
-    # The fixed-18 completion time gives a conservative bound on observation follow-up.
+    # The measured cohort's completion time bounds observation follow-up.
     end_ms = certificate["cohort_completion_monotonic_ms"] if certificate else max(ends.values())
     return {
         "natural_jct_s": {
@@ -314,8 +314,6 @@ def compare_arms(arm_specs, cohort_plan=None):
         inputs[label] = registration_path, registration, report_path, report, arm
 
     members = membership(reference)
-    if len(members["measured"]) != 18:
-        raise ValueError("require the declared fixed 18 measured workflows")
     observations = {}
     for label, args in inputs.items():
         try:
@@ -337,7 +335,9 @@ def compare_arms(arm_specs, cohort_plan=None):
             "output_accounting_field": "output_token_delta",
         },
         "groups": {
-            "fixed_18": report_group(observations, members["measured"], ("measured",), duration),
+            f"fixed_{len(members['measured'])}": report_group(
+                observations, members["measured"], ("measured",), duration,
+            ),
             "fixed_measured_plus_warmup": report_group(
                 observations, members["warmup"] + members["measured"], ("measured", "warmup"), duration,
             ),
