@@ -569,13 +569,11 @@ class SubagentMaterialization:
             return False
 
         pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
-        # A confirmed suffix can use the existing single-write ACK retry
-        # while a selected resident batch advances.
-        write_blocks_selected = writes_at_trial > 1 or (writes_at_trial == 1 and not continuation)
+        # A single write ACK can be retried while selected resident work advances.
         if params.mem_quota is not None or (
             selected and (
                 controller.load_queue or controller.ack_load_queue
-                or controller.write_queue or write_blocks_selected
+                or controller.write_queue or writes_at_trial > 1
             )
         ):
             return decline("prefill_batch_already_constrained")

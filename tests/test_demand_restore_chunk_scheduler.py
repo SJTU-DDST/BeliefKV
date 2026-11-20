@@ -594,8 +594,10 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     controller = cache.cache_controller
     host = cache.host_pool_group.anchor_entry.host_pool
     source_slots = f.leaf.component_data[0].host_value
-    idle = getattr(request, "param", None) == "idle"
-    held_host = host.alloc(host.size - (19 if idle else 21))
+    mode = getattr(request, "param", None)
+    idle = mode == "idle"
+    host_slots = {"idle": 19, "two-write-acks": 22}.get(mode, 21)
+    held_host = host.alloc(host.size - host_slots)
     neighbor, _ = insert_session(cache, range(101, 105), "neighbor")
     neighbor_slots = _backup(cache, neighbor, demote=True)
     donor, _ = insert_session(cache, range(111, 118 if idle else 115), "donor")
@@ -606,6 +608,13 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
         ) == 4
         write_ack, = controller.ack_write_queue
         assert write_ack.node_ids == [donor.id] and donor.write_through_pending_id == donor.id
+    if mode == "two-write-acks":
+        second_donor, _ = insert_session(cache, (131,), "second-write-donor")
+        assert cache._execute_and_commit_kv_backup(
+            BackupKV([second_donor.id]), write_back=False, no_host_reclaim=True,
+        ) == 1
+        first, second = controller.ack_write_queue
+        assert first is write_ack and second.node_ids == [second_donor.id]
     resident = _add_resident_prefill(f)
     insert_session(cache, range(201, 233), "device-victim")
     held_device = allocator.alloc(allocator.available_size() - (0 if idle else 3))
@@ -918,7 +927,16 @@ def test_d3_write_ack_retry_is_bounded_by_request_key(resident_restore_pressure,
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
-@pytest.mark.parametrize("guard", ("prefill_batch_already_constrained", "protected_service"))
+@pytest.mark.parametrize(
+    ("guard", "resident_restore_pressure"),
+    (
+        pytest.param(
+            "prefill_batch_already_constrained", "two-write-acks", id="prefill_batch_already_constrained",
+        ),
+        pytest.param("protected_service", "write-ack", id="protected_service"),
+    ),
+    indirect=("resident_restore_pressure",),
+)
 def test_d3_write_ack_retry_preserves_native_guards(resident_restore_pressure, guard):
     case = resident_restore_pressure
     f = case.f
@@ -928,11 +946,13 @@ def test_d3_write_ack_retry_preserves_native_guards(resident_restore_pressure, g
     else:
         f.runtime._join_priority_promoted = f.req.rid
         members = (f.req,)
+    write_acks = len(f.cache.cache_controller.ack_write_queue)
     _assert_native_batch(case, members, [8])
     case.query.assert_not_called()
     case.native_load.assert_called_once()
     decline, = _restore_declines(f.runtime)
     assert decline["reason"] == guard and decline["key"] == asdict(f.key)
+    assert decline["queued_write_acks_at_trial"] == write_acks
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
@@ -1031,17 +1051,20 @@ def test_d3_promoted_join_parent_preserves_native_fallback(resident_restore_pres
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
-@pytest.mark.parametrize("resident_restore_pressure", ("idle",), indirect=True)
+@pytest.mark.parametrize("resident_restore_pressure", ("idle", "first-slice-write-ack"), indirect=True)
 def test_d3_stages_with_a_selected_resident_prefill(resident_restore_pressure, monkeypatch):
     case = resident_restore_pressure
     f = case.f
     cache, req, resident = f.cache, f.req, case.resident
     tree, controller = cache.tree_core, cache.cache_controller
+    write_ack = case.write_ack
     neighbor = case.neighbor.component_data[0]
     assert neighbor.session_ref > 0 and neighbor.value is None
-    assert not controller.write_queue and not controller.ack_write_queue
+    assert not controller.write_queue
+    assert controller.ack_write_queue == ([write_ack] if write_ack is not None else [])
+    assert len(cache.ongoing_write_through) == len(controller.ack_write_queue)
     assert not controller.load_queue and not controller.ack_load_queue
-    assert not cache.ongoing_write_through and not cache.ongoing_load_back
+    assert not f.loads and not cache.ongoing_load_back
     drops = []
 
     def record_eviction(node, _component, tokens):
@@ -1054,13 +1077,35 @@ def test_d3_stages_with_a_selected_resident_prefill(resident_restore_pressure, m
 
     with pytest.raises(BatchConstructionReached):
         case.invoke()
+    if write_ack is not None:
+        decline, = _restore_declines(f.runtime)
+        assert decline["reason"] == "write_ack_retry_next_pass"
+        assert decline["key"] == asdict(f.key) and decline["queued_write_acks_at_trial"] == 1
+        assert f.runtime.counts["subagent_materialization_demand_restore_ack_retries"] == 1
+    else:
+        assert not _restore_declines(f.runtime)
     assert case.construction == [(resident,)]
     assert case.scheduler.waiting_queue == [req] and case.scheduler.chunked_req is None
     assert resident.extend_range.length == 1 and resident.host_hit_length == 0
     assert req.host_hit_length == 8 and req.lock_receipt.node_id is None
     assert req.kv.req_pool_idx is None and f.pipeline.pending is None
     case.native_load.assert_not_called()
-    assert not _restore_declines(f.runtime)
+    if write_ack is not None:
+        assert case.gate._demand_restore_chunk.pending is None
+        assert not f.loads and not controller.ack_load_queue
+        assert controller.ack_write_queue == [write_ack]
+        assert not drops and neighbor.host_value is case.neighbor_slots
+        case.query.assert_called_once_with()
+        write_ack.finish_event.synchronize.assert_not_called()
+        case.writing_check.assert_not_called()
+
+        case.query.return_value = True
+        assert case.invoke() == (None, f.running)
+        assert case.construction == [(resident,)] and case.scheduler.waiting_queue == [req]
+        assert not controller.ack_write_queue and not cache.ongoing_write_through
+        assert case.writing_check.call_args_list[:1] == [call(finish_count=1)]
+        write_ack.finish_event.synchronize.assert_called_once_with()
+        case.native_load.assert_not_called()
     pending = case.gate._demand_restore_chunk.pending
     assert pending.request is req and pending.key == f.key and pending.suffix_node == f.leaf.id
     load, = f.loads
@@ -1073,7 +1118,9 @@ def test_d3_stages_with_a_selected_resident_prefill(resident_restore_pressure, m
     assert resident_data.lock_ref == 1 and resident_data.value is not None
     assert (prefix.lock_ref, prefix.host_lock_ref) == (2, 1)
     assert suffix.value is None and suffix.host_lock_ref == 1
-    assert (f.allocator.available_size(), case.host.available_size()) == (3, 0)
+    assert (f.allocator.available_size(), case.host.available_size()) == (
+        3, 5 if write_ack is not None else 0,
+    )
     assert neighbor.host_value is case.neighbor_slots and not drops
     cache.dec_lock_ref(resident.last_node, resident.lock_receipt)
     assert resident_data.lock_ref == 0
