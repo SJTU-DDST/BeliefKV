@@ -546,13 +546,7 @@ class SubagentMaterialization:
             return decline("restore_in_flight")
         if pipeline is None or not pipeline.has_decode_work(self._running_batch):
             return decline("no_resident_decode")
-        if (
-            key is None or key.session_id is None or key.session_generation is None
-            or self._context(key) not in self.materialized
-            or _request_key(req, known_keys=runtime.visible) != key
-            or self.admission.latest.get(key.invocation_id) != key
-            or not self.admission.allows(key) or runtime._terminal(key)
-        ):
+        if not self._restore_stage_matches_live(req, key):
             return decline("continuation_not_eligible")
         if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation:
             return decline("already_attempted")
@@ -622,6 +616,42 @@ class SubagentMaterialization:
             })
         return True
 
+    def _restore_stage_matches_live(self, req, key):
+        return (
+            key is not None and key.session_id is not None and key.session_generation is not None
+            and self._context(key) in self.materialized
+            and _request_key(req, known_keys=self.runtime.visible) == key
+            and self.admission.latest.get(key.invocation_id) == key
+            and self.admission.allows(key) and not self.runtime._terminal(key)
+        )
+
+    def _can_slice_after_selected_restore(self, cache, params, key, headroom, credit):
+        runtime = self.runtime
+        chunk = runtime._native_chunk_input_reserve
+        if (
+            not chunk or credit < chunk
+            or self._demand_restore_chunk.pending is not None or cache.cache_controller.ack_load_queue
+            or not self._restore_stage_matches_live(params.req, key)
+        ):
+            return False
+        continuation = self._demand_restore_chunk.continues(params, key)
+        if getattr(params.req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation:
+            return False
+        hit, page = params.host_hit_length, runtime._native_page_size
+        minimum = max(chunk, cache.load_back_threshold)
+        if continuation:
+            minimum = min(hit, minimum)
+        elif hit // 2 < minimum:
+            return False
+        minimum = (minimum + page - 1) // page * page
+        reserve = chunk + page * len(self._running_batch.reqs)
+        # Credit supplies Host slots for safe demotion, never extra HBM slots.
+        required = minimum + reserve
+        return (
+            headroom.available_tokens + credit >= required
+            and headroom.device_free_tokens + cache.full_evictable_size() >= required
+        )
+
     def _restore_has_service_priority(self, key):
         runtime = self.runtime
         guard = getattr(self.admission, "_ready_service_guard", None)
@@ -632,11 +662,15 @@ class SubagentMaterialization:
         ) or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
 
     def _defer_demand_restore(self, cache, params, selected_h2d=None):
-        queue = cache.cache_controller.load_queue
-        selected = getattr(self._adder, "can_run_list", ())
+        controller = cache.cache_controller
+        queue = controller.load_queue
+        acks = controller.ack_load_queue
+        submitted = not queue
+        selected = () if submitted else getattr(self._adder, "can_run_list", ())
         hit = params.host_hit_length
         if (
-            not queue or not selected or len(queue) > self.max_candidates
+            (submitted and (len(acks) != 1 or acks[0].child_receipts))
+            or (not submitted and (not selected or len(queue) > self.max_candidates))
             or hit < max(1, cache.load_back_threshold)
             or params.mem_quota is not None
             or cache.token_to_kv_pool_allocator.available_size() >= hit
@@ -653,29 +687,38 @@ class SubagentMaterialization:
         if key is None or self._restore_has_service_priority(key):
             return False
 
-        tree = cache.tree_core
-        selected_last_nodes = [req.last_node for req in selected]
-        selected_anchors = set(selected_last_nodes)
-        if any(
-            op.beliefkv_command_id is not None or len(op.node_ids) != 1
-            or op.node_ids[0] not in selected_anchors
-            or op.node_ids[0] not in cache.ongoing_load_back
-            for op in queue
+        if submitted:
+            # Native receipts carrying JOIN/EOS commands retain their existing priority.
+            native_node_ids = acks[0].node_ids
+        else:
+            selected_last_nodes = [req.last_node for req in selected]
+            selected_anchors = set(selected_last_nodes)
+            if any(
+                op.beliefkv_command_id is not None or len(op.node_ids) != 1
+                or op.node_ids[0] not in selected_anchors
+                for op in queue
+            ):
+                return False
+            native_node_ids = [op.node_ids[0] for op in queue]
+        if not 0 < len(native_node_ids) <= self.max_candidates or any(
+            anchor not in cache.ongoing_load_back for anchor in native_node_ids
         ):
             return False
+
         # A bounded walk gives a lower bound on settled mirrors available after ACK.
+        tree = cache.tree_core
         credit, remaining = 0, self.max_candidates
         credited_receipts = {}
-        for op in queue:
+        for anchor in native_node_ids:
             if remaining == 0:
                 break
-            anchor = op.node_ids[0]
             node = tree.node_by_id(anchor)
             while remaining and node is not tree.root_node and node.load_back_pending_id == anchor:
                 remaining -= 1
                 full = node.component_data[0]
                 if (
-                    node.write_through_pending_id is None
+                    node.id != params.best_match_node
+                    and node.write_through_pending_id is None
                     and full.host_lock_ref == int(node.id == anchor)
                     and full.value is not None and full.host_value is not None
                     and len(full.value) == len(full.host_value)
@@ -683,8 +726,7 @@ class SubagentMaterialization:
                     credit += len(full.host_value)
                     credited_receipts[anchor] = cache.ongoing_load_back[anchor]
                 node = node.parent
-        native_node_ids = [op.node_ids[0] for op in queue]
-        if selected_h2d is not None:
+        if selected_h2d is not None and not submitted:
             queued_anchors = set(native_node_ids)
             selected_h2d.update(
                 native_node_ids=native_node_ids,
@@ -711,7 +753,7 @@ class SubagentMaterialization:
             time.thread_time_ns() - cpu
         )
         shortfall = hit - headroom.available_tokens
-        if selected_h2d is not None:
+        if selected_h2d is not None and not submitted:
             selected_h2d["headroom_observation"] = headroom.reason
             if headroom.observable:
                 selected_h2d["unfunded_restore_tokens"] = max(0, shortfall)
@@ -719,19 +761,25 @@ class SubagentMaterialization:
             return False
         chunk = self.runtime._native_chunk_input_reserve
         identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
-        if headroom.census_complete:
+        if submitted:
+            if shortfall > credit or not identity_matches:
+                return False
+        elif headroom.census_complete:
             if shortfall > credit and (not chunk or credit < chunk):
                 return False
-        elif (
-            headroom.reason != NODE_CENSUS_BOUND
-            or shortfall > credit
-            or getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
-            or not identity_matches
-        ):
-            return False
         else:
-            # Indexed headroom is a lower bound. Allow one retry when the
-            # selected batch's ACK covers the entire observed shortfall.
+            # Indexed capacity is a lower bound. Retry once if it funds a full
+            # load or a guarded slice once the selected H2D publishes its ACK.
+            if (
+                headroom.reason != NODE_CENSUS_BOUND or not identity_matches
+                or shortfall > credit and not self._can_slice_after_selected_restore(
+                    cache, params, key, headroom, credit,
+                )
+            ):
+                return False
+        if submitted or not headroom.census_complete:
+            if getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key:
+                return False
             params.req._beliefkv_d3_indexed_restore_defer_key = key
         if identity_matches:
             params.req._beliefkv_d3_restore_credit = key, hit, credited_receipts
@@ -749,6 +797,7 @@ class SubagentMaterialization:
                 "unfunded_restore_tokens": shortfall,
                 "reclaimable_after_ack_tokens": credit,
                 "headroom_observation": headroom.reason,
+                "already_submitted": submitted,
             })
         return True
 

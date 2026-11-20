@@ -13,6 +13,7 @@ from beliefkv.runtime.demand_prefill_pipeline import DemandPrefillPipeline
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
 from beliefkv.runtime.subagent_materialization import (
+    NODE_CENSUS_BOUND,
     SubagentMaterialization,
     observe_materialization_headroom,
 )
@@ -788,6 +789,125 @@ def test_d3_waits_for_submitted_selected_restore_ack(staged_native, monkeypatch)
     assert retained["checkpoint_tokens"] == 8
     native.sanity_check()
     gate.close()
+
+
+@pytest.mark.parametrize(
+    "staged_native",
+    (pytest.param(
+        {"members": 2, "select": False, "prefix_sizes": (4, 12)}, id="indexed_partial_credit",
+    ),),
+    indirect=True,
+)
+def test_d3_stages_indexed_partial_credit_after_selected_restore_ack(staged_native, monkeypatch):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    native, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = native.tree_core, native.cache_controller
+    peer, consumer = f.members
+    peer_leaf, consumer_leaf = f.leaves
+    key = runtime.visible[consumer.rid]
+    chunk, hit = len(peer_leaf.key), len(consumer_leaf.key)
+    reserve = chunk + native.page_size * len(f.running.reqs)
+    occupied = chunk + hit
+    back_up = _track_native_host_allocations(native, occupied + 7, occupied=occupied)
+    neighbor, _ = insert_session(native, range(100, 103), "waiting-parent")
+    back_up(neighbor)
+    native._demote(neighbor.id, {0: 0})
+    neighbor_data = neighbor.component_data[0]
+    neighbor_slots = neighbor_data.host_value
+    assert neighbor_data.session_ref > 0 and neighbor_data.value is None
+    donor, _ = insert_session(native, range(110, 114), "backed-donor")
+    back_up(donor)
+    donor_data = donor.component_data[0]
+    donor_slots = donor_data.host_value
+    # Pin the donor's Host copy while its backed HBM remains evictable.
+    donor_lock = native.inc_host_lock_ref(donor.id).to_dec_params()
+    insert_session(native, range(200, 200 + allocator.available_size() - chunk - reserve), "unbacked")
+    assert (allocator.available_size(), native.host_pool_group.available_size()) == (9, 0)
+    assert donor in tree.evictable_device_leaves and len(donor_data.value) == len(donor_slots) == 4
+
+    runtime._agent_admission.latest = {key.invocation_id: key}
+    runtime._native_chunk_input_reserve = chunk
+    runtime._native_page_size = native.page_size
+    runtime._prefetch_service_leases = {}
+    gate = SubagentMaterialization(runtime, include_root_entries=True)
+    gate.max_nodes = 2
+    gate.materialized.add(gate._context(key))
+    gate.attach(native)
+    scheduler, construction, invoke = native_scheduler(f, enabled=True)
+    scheduler.chunked_prefill_size = chunk
+
+    def candidates(running, adder):
+        gate.prepare(scheduler.waiting_queue, running_batch=running, adder=adder)
+        return scheduler.waiting_queue
+
+    scheduler._beliefkv_prefill_candidates = candidates
+    runtime.defer_prefill_for_prefetch = gate.defer_start
+
+    try:
+        # Keep the peer on ordinary native service while it queues its H2D.
+        with monkeypatch.context() as peer_batch:
+            peer_batch.setattr(f.pipeline, "stage", lambda *_args, **_kwargs: False)
+            with pytest.raises(BatchConstructionReached):
+                invoke()
+        assert neighbor_data.host_value is neighbor_slots, (
+            f"selected pass lost the Host-only neighbor and loaded "
+            f"{[len(load.host_indices) for load in f.loads]} H2D tokens"
+        )
+        assert construction == [(peer,)] and scheduler.waiting_queue == [consumer]
+        assert f.pipeline.pending is None and gate._demand_restore_chunk.pending is None
+        peer_load, = f.loads
+        assert controller.load_queue == [peer_load] and peer_load.beliefkv_command_id is None
+        assert allocator.available_size() == reserve
+        deferral, = (
+            event.args[0] for event in runtime._opportunity_writer.record.call_args_list
+            if event.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
+        )
+        shortfall = deferral["unfunded_restore_tokens"]
+        credit = deferral["reclaimable_after_ack_tokens"]
+        assert deferral["headroom_observation"] == NODE_CENSUS_BOUND
+        assert deferral["native_node_ids"] == [peer_leaf.id]
+        assert deferral["key"]["request_id"] == consumer.rid
+        assert chunk == credit == 4 and shortfall == hit - reserve == 7
+        assert credit < shortfall and consumer._beliefkv_d3_indexed_restore_defer_key == key
+        receipt = native.ongoing_load_back[peer_leaf.id]
+        assert consumer._beliefkv_d3_restore_credit[2][peer_leaf.id] is receipt
+
+        assert native.ready_to_load_host_cache() >= 0
+        ack, = controller.ack_load_queue
+        assert ack.node_ids == [peer_leaf.id] and ack.num_tokens_by_pool == {"kv": credit}
+        f.complete.ready = True
+        assert invoke() == (None, f.running)
+        assert f.loads == [peer_load] and controller.ack_load_queue == [ack]
+        ack.finish_event.synchronize.assert_not_called()
+        native.loading_check()
+        ack.finish_event.synchronize.assert_called_once_with()
+
+        headroom = observe_materialization_headroom(
+            native, max_nodes=gate.max_nodes, protected_host_nodes=(consumer_leaf.id,),
+        )
+        assert headroom.reason == NODE_CENSUS_BOUND
+        assert headroom.reclaimable_host_tokens == credit
+        assert headroom.available_tokens == allocator.available_size() + len(donor_data.value) == chunk + reserve
+        assert invoke() == (None, f.running)
+        pending = gate._demand_restore_chunk.pending
+        assert pending is not None and pending.request is consumer
+        assert pending.tokens == chunk and pending.remaining_tokens == hit - chunk
+        assert construction == [(peer,)] and scheduler.waiting_queue == [consumer]
+        assert consumer._beliefkv_d3_restore_credit is None and consumer.kv.req_pool_idx is None
+        assert donor_data.value is None and donor_data.host_value is donor_slots
+        assert allocator.available_size() == reserve
+        assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
+        slice_ack, = controller.ack_load_queue
+        assert slice_ack.node_ids == [pending.prefix_node] and slice_ack.num_tokens_by_pool == {"kv": chunk}
+        native.loading_check()
+        assert not native.ongoing_load_back and not controller.ack_load_queue
+        native.dec_lock_ref(peer.last_node, peer.lock_receipt)
+        native.sanity_check()
+    finally:
+        gate.close()
+        native.dec_host_lock_ref(donor.id, donor_lock)
 
 
 @pytest.mark.parametrize(

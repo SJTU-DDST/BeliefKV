@@ -842,6 +842,132 @@ def test_d3_stages_with_a_selected_resident_prefill(resident_restore_pressure, m
 
 
 @pytest.mark.parametrize(
+    ("staged_native", "wait_for_ack"),
+    (
+        pytest.param({"members": 2, "select": False, "prefix_sizes": (8, 8)}, True, id="full-credit"),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (4, 8)}, False, id="insufficient-credit",
+        ),
+    ),
+    indirect=("staged_native",),
+)
+def test_d3_waits_for_unrelated_submitted_restore_ack(staged_native, monkeypatch, wait_for_ack):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    peer, consumer = f.members
+    peer_leaf, consumer_leaf = f.leaves
+    key = runtime.visible[consumer.rid]
+    credit, hit = len(peer_leaf.key), len(consumer_leaf.key)
+    source_slots = consumer_leaf.component_data[0].host_value
+
+    held_host = host.alloc(host.available_size() - 8)
+    neighbor, _ = insert_session(cache, range(100, 108), "waiting-parent")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    neighbor_data = neighbor.component_data[0]
+    assert neighbor_data.session_ref > 0 and neighbor_data.value is None
+    for start in (200, 210, 220):
+        insert_session(cache, range(start, start + 8), str(start))
+    held_device = allocator.alloc(allocator.available_size() - credit)
+
+    losses = []
+
+    def record_eviction(node, _component, count):
+        full = node.component_data[0]
+        if full.value is None and full.session_ref > 0:
+            losses.append((node.id, count))
+
+    monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
+    f.waiting[:] = [peer]
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 4
+    gate.max_nodes = 1
+    gate.materialized.add(gate._context(key))
+    try:
+        # The consumer arrives after the peer takes the ordinary native submission path.
+        with monkeypatch.context() as peer_batch:
+            peer_batch.setattr(f.pipeline, "stage", lambda *_args, **_kwargs: False)
+            with pytest.raises(BatchConstructionReached):
+                invoke()
+        assert construction == [(peer,)] and not scheduler.waiting_queue
+        peer_load, = f.loads
+        assert controller.load_queue == [peer_load] and peer_load.beliefkv_command_id is None
+        assert cache.ready_to_load_host_cache() >= 0
+        ack, = controller.ack_load_queue
+        receipt = cache.ongoing_load_back[peer_leaf.id]
+        assert ack.node_ids == [peer_leaf.id] and ack.num_tokens_by_pool == {"kv": credit}
+        assert not ack.child_receipts
+        assert not controller.load_queue and not controller.write_queue and not controller.ack_write_queue
+        assert f.pipeline.pending is None and not getattr(consumer, "_beliefkv_d3_restore_credit", None)
+        assert (allocator.available_size(), host.available_size(), cache.full_evictable_size()) == (0, 0, 24)
+        headroom = observe_materialization_headroom(
+            cache, max_nodes=gate.max_nodes, required_free_tokens=hit,
+            protected_host_nodes=(consumer_leaf.id,),
+        )
+        assert headroom.reason == NODE_CENSUS_BOUND and headroom.available_tokens == 0
+        assert not ack.finish_event.query()
+
+        scheduler.waiting_queue.append(consumer)
+        assert invoke() == (None, f.running)
+        if wait_for_ack:
+            assert not losses, f"unpublished peer H2D led to live Host-only evictions: {losses}"
+            wait = consumer._beliefkv_d3_restore_credit
+            wait_key, wait_hit, receipts = wait
+            assert wait_key == key and wait_hit == hit == credit
+            assert tuple(receipts) == (peer_leaf.id,) and receipts[peer_leaf.id] is receipt
+            assert consumer._beliefkv_d3_indexed_restore_defer_key == key
+            for ready in (False, True):
+                f.complete.ready = ready
+                assert ack.finish_event.query() is ready
+                assert invoke() == (None, f.running)
+                assert construction == [(peer,)] and scheduler.waiting_queue == [consumer]
+                assert f.loads == [peer_load] and controller.ack_load_queue == [ack]
+                assert cache.ongoing_load_back[peer_leaf.id] is receipt
+                assert consumer._beliefkv_d3_restore_credit is wait
+                assert consumer.kv.req_pool_idx is None and consumer_leaf.load_back_pending_id is None
+                assert f.pipeline.pending is None and gate._demand_restore_chunk.pending is None
+                assert neighbor_data.host_value is neighbor_slots and not losses
+            ack.finish_event.synchronize.assert_not_called()
+        else:
+            assert credit < hit and losses == [(neighbor.id, 8)]
+            decline, = _restore_declines(runtime)
+            assert decline["key"] == asdict(key) and decline["reason"] == "restore_in_flight"
+            assert not getattr(consumer, "_beliefkv_d3_restore_credit", None)
+            assert controller.ack_load_queue[0] is ack
+            assert [load.node_id for load in f.loads] == [peer_leaf.id, consumer_leaf.id]
+            ack.finish_event.synchronize.assert_not_called()
+
+        f.complete.ready = True
+        cache.loading_check()
+        ack.finish_event.synchronize.assert_called_once_with()
+        assert not controller.ack_load_queue and not cache.ongoing_load_back
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [(peer,), (consumer,)] and not scheduler.waiting_queue
+        assert consumer.extend_range.start == hit
+        assert [load.node_id for load in f.loads] == [peer_leaf.id, consumer_leaf.id]
+        assert f.loads[-1].host_indices.tolist() == source_slots.tolist()
+        assert not getattr(consumer, "_beliefkv_d3_restore_credit", None)
+        assert runtime.counts["subagent_materialization_restore_pressure_deferrals"] == int(wait_for_ack)
+        cache.loading_check()
+        for req in (peer, consumer):
+            cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        assert not controller.ack_load_queue and not cache.ongoing_load_back
+        assert f.pipeline.pending is None and gate._demand_restore_chunk.pending is None
+        if wait_for_ack:
+            assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
+            assert host.slot_used[neighbor_slots].all() and not losses
+        cache.sanity_check()
+    finally:
+        gate.close()
+        allocator.free(held_device)
+        host.free(held_host)
+
+
+@pytest.mark.parametrize(
     "staged_native", ({"members": 3, "select": False, "prefix_sizes": (4, 8, 4)},),
     indirect=True,
 )
