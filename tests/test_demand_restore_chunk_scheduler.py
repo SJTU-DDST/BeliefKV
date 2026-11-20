@@ -2,7 +2,7 @@
 
 from array import array
 from collections import Counter
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, call
 
@@ -11,6 +11,7 @@ import pytest
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import _request_key
+from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep
 from beliefkv.runtime.subagent_materialization import (
     NODE_CENSUS_BOUND,
     MaterializationHeadroom,
@@ -1395,6 +1396,175 @@ def test_d3_uses_leading_staged_ack_ahead_of_tagged_join(staged_native, monkeypa
         cache.sanity_check()
     finally:
         gate.close()
+        allocator.free(held_device)
+        host.free(held_host)
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 1, "select": False, "prefix_sizes": (18,)}, 32),),
+    indirect=True,
+)
+@pytest.mark.parametrize("case", ("own", "foreign", "stale-attempt", "leased-only", "promoted"))
+def test_d3_retries_own_tagged_join_ack_with_independent_capacity(staged_native, monkeypatch, case):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, runtime, req = f.cache, f.allocator, f.runtime, f.req
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    source_slots = f.leaf.component_data[0].host_value.tolist()
+    prefix_id, actions = tree.split_host_only_full_prefix(f.leaf.id, f.leaf.creation_time, 4)
+    cache._apply_cache_actions(actions)
+    second = tree.node_by_id(prefix_id)
+    prefix_id, actions = tree.split_host_only_full_prefix(second.id, second.creation_time, 2)
+    cache._apply_cache_actions(actions)
+    first = tree.node_by_id(prefix_id)
+    commands = {"join-first": first, "join-second": second}
+
+    held_host = host.alloc(host.available_size() - 14)
+    neighbor, _ = insert_session(cache, range(101, 109), "waiting-parent")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    for start, size in ((111, 6), (121, 6), (131, 4), (141, 4), (201, 24)):
+        insert_session(cache, range(start, start + size), str(start))
+    locks = []
+    if case == "leased-only":
+        mirror, _ = insert_session(cache, range(151, 157), "leased")
+        _backup(cache, mirror)
+        locks.append((mirror.id, tree.inc_lock_ref(mirror.id).to_dec_params()))
+    held_device = allocator.alloc(allocator.available_size() - 7)
+    assert held_host is not None and held_device is not None
+
+    losses = []
+
+    def record_eviction(node, _component, count):
+        full = node.component_data[0]
+        if full.value is None and full.session_ref > 0:
+            losses.append((node.id, count))
+
+    monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    runtime.context_sessions = {f.key.context_id: f.key}
+    runtime._prefetch_steps = {}
+    runtime.physical_ledger = NS(is_pending=runtime._prefetch_steps.__contains__)
+    if case == "leased-only":
+        runtime._prefetch_service_leases["existing"] = NS(node_id=mirror.id)
+    if case == "promoted":
+        runtime._join_priority_promoted = req.rid
+
+    def register(operation):
+        command = operation.beliefkv_command_id
+        node = commands[command]
+        assert operation.node_ids == [node.id]
+        key = f.key
+        if node is second:
+            if case == "foreign":
+                key = replace(key, request_id="foreign-consumer")
+            elif case == "stale-attempt":
+                key = replace(key, attempt_id=key.attempt_id + 1)
+        runtime._prefetch_steps[command] = (
+            PrefetchLoadStep(
+                key, f.leaf.id, float(f.leaf.creation_time), node.id, float(node.creation_time), False,
+            ),
+            "join_ticket", None,
+        )
+        return True
+
+    try:
+        issued = cache.prefetch_gpu_session_nodes(
+            session_id=f.key.session_id, session_generation=f.key.session_generation,
+            leaf_node_id=f.leaf.id, leaf_creation_time=float(f.leaf.creation_time),
+            nodes=tuple((node.id, float(node.creation_time), False, cmd) for cmd, node in commands.items()),
+            beliefkv_before_enqueue=register,
+        )
+        assert len(issued) == 2 and all(item.issued and item.load_started for item in issued)
+        tagged, = controller.ack_load_queue
+        anchors = [first.id, second.id]
+        receipts = {node: cache.ongoing_load_back[node] for node in anchors}
+        assert tagged.node_ids == anchors and tagged.num_tokens_by_pool == {"kv": 4}
+        assert [child.command_id for child in tagged.child_receipts] == list(commands)
+        assert (allocator.available_size(), host.available_size()) == (3, 0 if locks else 6)
+        assert not tagged.finish_event.query() and not controller.load_queue
+        if case == "leased-only":
+            assert observe_materialization_headroom(cache).reclaimable_host_tokens == 6
+
+        assert invoke() == (None, f.running)
+        assert controller.ack_load_queue[0] is tagged and not construction
+        assert all(cache.ongoing_load_back[node] is receipt for node, receipt in receipts.items())
+        tagged.finish_event.synchronize.assert_not_called()
+        if case != "own":
+            assert not getattr(req, "_beliefkv_d3_restore_credit", None)
+            assert gate._demand_restore_chunk.pending is None
+            assert [load.node_id for load in f.loads] == [*anchors, f.leaf.id]
+            assert f.pipeline.pending is not None
+            return
+
+        assert not losses, f"own JOIN ACK led to referenced Host-only eviction: {losses}"
+        wait = req._beliefkv_d3_restore_credit
+        assert wait[:2] == (f.key, 14) and wait[2] == receipts
+        assert req._beliefkv_d3_indexed_restore_defer_key == f.key
+        deferred, = (
+            row for event in runtime._opportunity_writer.record.call_args_list
+            if (row := event.args[0])["event"] == "subagent_materialization_restore_pressure_deferred"
+        )
+        assert deferred["native_node_ids"] == anchors and deferred["already_submitted"]
+        assert deferred["reclaimable_after_ack_tokens"] == 0
+        for ready in (False, True):
+            f.complete.ready = ready
+            assert invoke() == (None, f.running)
+            assert req._beliefkv_d3_restore_credit is wait
+            assert controller.ack_load_queue == [tagged] and len(f.loads) == 2
+            assert f.pipeline.pending is None and gate._demand_restore_chunk.pending is None
+            assert scheduler.waiting_queue == [req] and not construction and not losses
+        tagged.finish_event.synchronize.assert_not_called()
+
+        def publish(commit):
+            f.commits.append(commit)
+            if commit.child_commits:
+                assert [child.command_id for child in commit.child_commits] == list(commands)
+                locks.append((second.id, tree.inc_lock_ref(second.id).to_dec_params()))
+                runtime._prefetch_service_leases.update(
+                    (cmd, NS(node_id=node.id)) for cmd, node in commands.items()
+                )
+                runtime._prefetch_steps.clear()
+
+        monkeypatch.setattr(cache, "on_hicache_transfer_commit", publish)
+        cache.loading_check()
+        tagged.finish_event.synchronize.assert_called_once_with()
+        assert not controller.ack_load_queue and not cache.ongoing_load_back
+        f.complete.ready = False
+        assert invoke() == (None, f.running)
+        staged = gate._demand_restore_chunk.pending
+        assert staged.key == f.key and staged.tokens == 6
+        assert f.loads[-1].host_indices.tolist() == source_slots[4:10]
+        assert req._beliefkv_d3_restore_credit is None
+        assert runtime.counts["subagent_materialization_restore_pressure_deferrals"] == 1
+        assert all(node.component_data[0].lock_ref for node in commands.values())
+        for _ in range(staged.remaining_tokens):
+            f.complete.ready = True
+            cache.loading_check()
+            try:
+                assert invoke() == (None, f.running)
+            except BatchConstructionReached:
+                break
+            assert gate._demand_restore_chunk.pending is not None or f.pipeline.pending is not None
+        else:
+            pytest.fail("JOIN consumer did not reach native batch construction")
+        assert construction == [(req,)] and not scheduler.waiting_queue
+        assert req.extend_range.start == len(source_slots)
+        assert [slot for load in f.loads for slot in load.host_indices.tolist()] == source_slots
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert host.slot_used[neighbor_slots].all() and not losses
+        cache.loading_check()
+        cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        cache.sanity_check()
+    finally:
+        f.complete.ready = True
+        cache.loading_check()
+        f.pipeline.close()
+        gate.close()
+        for node, lock in locks:
+            tree.dec_lock_ref(node, lock)
         allocator.free(held_device)
         host.free(held_host)
 

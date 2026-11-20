@@ -629,12 +629,13 @@ class SubagentMaterialization:
             and self.admission.allows(key) and not self.runtime._terminal(key)
         )
 
-    def _can_slice_after_peer_restore(self, cache, params, key, headroom, credit, *, submitted):
+    def _can_slice_after_restore_ack(self, cache, params, key, headroom, credit, *, submitted):
+        """Check physical capacity, with zero credit for an independent retry."""
         runtime = self.runtime
         chunk = runtime._native_chunk_input_reserve
         expected_acks = 1 if submitted else 0
         if (
-            not chunk or credit < chunk
+            not chunk or 0 < credit < chunk
             or self._demand_restore_chunk.pending is not None
             or len(cache.cache_controller.ack_load_queue) != expected_acks
             or not self._restore_stage_matches_live(params.req, key)
@@ -670,6 +671,41 @@ class SubagentMaterialization:
             or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
         )
 
+    def _own_join_ack_receipts(self, cache, ack, key):
+        runtime = self.runtime
+        if (
+            getattr(runtime, "physical_disabled", False)
+            or getattr(runtime, "context_sessions", {}).get(key.context_id) != key
+            or len(ack.child_receipts) != len(ack.node_ids)
+        ):
+            return None
+        sessions = cache.session_refs
+        if (
+            sessions._session_generations.get(key.session_id) != key.session_generation
+            or key.session_id in sessions._closed_session_ids
+        ):
+            return None
+        steps = runtime._prefetch_steps
+        ledger = runtime.physical_ledger
+        receipts, commands = {}, set()
+        for anchor, child in zip(ack.node_ids, ack.child_receipts):
+            command = child.command_id
+            pending = steps.get(command)
+            if (
+                command is None or command in commands or anchor in receipts
+                or child.node_id != anchor or pending is None or not ledger.is_pending(command)
+            ):
+                return None
+            step, source, _ = pending
+            if source != "join_ticket" or step.key != key or step.node_id != anchor:
+                return None
+            node = cache.tree_core.node_by_id(anchor)
+            if node.creation_time != step.creation_time or node.load_back_pending_id != anchor:
+                return None
+            receipts[anchor] = cache.ongoing_load_back[anchor]
+            commands.add(command)
+        return receipts
+
     def _defer_demand_restore(self, cache, params, selected_h2d=None):
         controller = cache.cache_controller
         queue = controller.load_queue
@@ -678,7 +714,7 @@ class SubagentMaterialization:
         selected = () if submitted else getattr(self._adder, "can_run_list", ())
         hit = params.host_hit_length
         if (
-            (submitted and (not acks or acks[0].child_receipts))
+            (submitted and not acks)
             or (not submitted and (not selected or len(queue) > self.max_candidates))
             or hit < max(1, cache.load_back_threshold)
             or params.mem_quota is not None
@@ -696,8 +732,9 @@ class SubagentMaterialization:
         if key is None or self._restore_has_service_priority(key):
             return False
 
+        tagged = submitted and bool(acks[0].child_receipts)
         if submitted:
-            # Only the leading ordinary ACK can fund the submitted retry.
+            # Only the leading ACK can publish on the next pass.
             native_node_ids = acks[0].node_ids
         else:
             selected_last_nodes = [req.last_node for req in selected]
@@ -714,11 +751,23 @@ class SubagentMaterialization:
         ):
             return False
 
-        # A bounded walk gives a lower bound on settled mirrors available after ACK.
-        tree = cache.tree_core
+        protected_nodes = (params.best_match_node,)
         credit, remaining = 0, self.max_candidates
-        credited_receipts = {}
-        for anchor in native_node_ids:
+        receipts = {}
+        if tagged:
+            if len(acks) != 1:
+                return False
+            receipts = self._own_join_ack_receipts(cache, acks[0], key)
+            if not receipts:
+                return False
+            # The owner's ACK removes an ordering dependency. Use independent capacity.
+            protected_nodes = (
+                *protected_nodes, *native_node_ids,
+                *(lease.node_id for lease in self.runtime._prefetch_service_leases.values()),
+            )
+        tree = cache.tree_core
+        # A bounded walk gives a lower bound on ordinary mirrors available after ACK.
+        for anchor in (() if tagged else native_node_ids):
             if remaining == 0:
                 break
             node = tree.node_by_id(anchor)
@@ -733,7 +782,7 @@ class SubagentMaterialization:
                     and len(full.value) == len(full.host_value)
                 ):
                     credit += len(full.host_value)
-                    credited_receipts[anchor] = cache.ongoing_load_back[anchor]
+                    receipts[anchor] = cache.ongoing_load_back[anchor]
                 node = node.parent
         if selected_h2d is not None and not submitted:
             queued_anchors = set(native_node_ids)
@@ -747,15 +796,14 @@ class SubagentMaterialization:
                 unfunded_restore_tokens=None,
                 headroom_observation=None,
             )
-        if not credit:
+        if not credit and not tagged:
             return False
 
         counts = self.runtime.counts
         cpu = time.thread_time_ns()
         headroom = observe_materialization_headroom(
             cache, max_nodes=self.max_nodes, required_free_tokens=hit,
-            # Native pins this anchor before reclaiming. It cannot fund its own load.
-            protected_host_nodes=(params.best_match_node,),
+            protected_host_nodes=protected_nodes,
         )
         counts["subagent_materialization_restore_pressure_checks"] += 1
         counts["subagent_materialization_restore_pressure_check_cpu_ns"] += (
@@ -772,7 +820,7 @@ class SubagentMaterialization:
         identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
         if submitted:
             if not identity_matches or (
-                shortfall > credit and not self._can_slice_after_peer_restore(
+                shortfall > credit and not self._can_slice_after_restore_ack(
                     cache, params, key, headroom, credit, submitted=True,
                 )
             ):
@@ -785,7 +833,7 @@ class SubagentMaterialization:
             # load or a guarded slice once the selected H2D publishes its ACK.
             if (
                 headroom.reason != NODE_CENSUS_BOUND or not identity_matches
-                or shortfall > credit and not self._can_slice_after_peer_restore(
+                or shortfall > credit and not self._can_slice_after_restore_ack(
                     cache, params, key, headroom, credit, submitted=False,
                 )
             ):
@@ -795,12 +843,12 @@ class SubagentMaterialization:
                 return False
             params.req._beliefkv_d3_indexed_restore_defer_key = key
         if identity_matches:
-            wait = key, hit, credited_receipts
+            wait = key, hit, receipts
             params.req._beliefkv_d3_restore_credit = wait
             staged = self._demand_restore_chunk.pending
             if (
                 submitted and staged is not None and staged.request is not params.req
-                and staged.prefix_node in credited_receipts and staged.credit_waiter is None
+                and staged.prefix_node in receipts and staged.credit_waiter is None
             ):
                 staged.credit_waiter = params.req, wait
         counts["subagent_materialization_restore_pressure_deferrals"] += 1
@@ -818,6 +866,7 @@ class SubagentMaterialization:
                 "reclaimable_after_ack_tokens": credit,
                 "headroom_observation": headroom.reason,
                 "already_submitted": submitted,
+                "own_join_ack": tagged,
             })
         return True
 
