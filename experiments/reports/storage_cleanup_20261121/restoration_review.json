@@ -1,0 +1,11 @@
+{
+  "status": "verified_restoration",
+  "observed_at": "2026-11-21T00:16:37.919648+08:00",
+  "original_path": "/home/longhao/experiment/.worktrees/beliefkv-gpu-startup-5957fab8",
+  "commit": "5957fab81b987dacf373a17335677f768a7fe7d8",
+  "git_tree": "6c64d9ebc01b8374ecc4af427c4187c38013ac81",
+  "ignored_files_restored_and_compared": 867,
+  "symbolic_links_restored": 4,
+  "complete_checkout_clean": true,
+  "probe_removed_without_force": true
+}

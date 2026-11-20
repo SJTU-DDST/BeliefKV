@@ -1,0 +1,505 @@
+{
+  "status": "independently_verified",
+  "observed_at": "2026-11-21T00:29:04.175977+08:00",
+  "runs": [
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/locobench_workflow_entry_20261026_v236b",
+      "files": 1,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/locobench_workflow_entry_20261026_v236b.tar.zst",
+      "archive_sha256": "166c33064604474a141a08b4576e09c1a8c9386f2b3f593f765b78f589451c01",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/locobench_workflow_entry_20261026_v236b.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 236257280,
+      "archive_allocated_bytes": 5165056
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_oneshot_24root_batch24_checkpoint_durability_full_20261024_v142",
+      "files": 1,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/qwen35_locobench_oneshot_24root_batch24_checkpoint_durability_full_20261024_v142.tar.zst",
+      "archive_sha256": "edba9904455167639c09f63da771804aeee4870dd00cc4d0398560c4dc9d5daa",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/qwen35_locobench_oneshot_24root_batch24_checkpoint_durability_full_20261024_v142.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 72515584,
+      "archive_allocated_bytes": 1429504
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_locobench_user_team_1root_20261020_v90b",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/qwen35_locobench_user_team_1root_20261020_v90b.tar.zst",
+      "archive_sha256": "0a6aa02839852c71e195fd73c11e32912b9ca9cc574ec83fcb639c1642bd5d50",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/qwen35_locobench_user_team_1root_20261020_v90b.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 401899520,
+      "archive_allocated_bytes": 18051072
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_fragmented_capacity_20261029_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/tokencake_fragmented_capacity_20261029_r1.tar.zst",
+      "archive_sha256": "85256dc0c599458cbe0d8d3ae0a439b91be6f5751053f142a7d69e7c40fc4e7a",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/tokencake_fragmented_capacity_20261029_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 508592128,
+      "archive_allocated_bytes": 21086208
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/tokencake_locobench_native_hooks_20261028_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/tokencake_locobench_native_hooks_20261028_r1.tar.zst",
+      "archive_sha256": "38371b37851cb788ca0006de778520c04f29295f8dcd9c6a724b73ad2613b926",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/tokencake_locobench_native_hooks_20261028_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 480329728,
+      "archive_allocated_bytes": 20021248
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_final82_initial12_mean70_capacity_oracle_20261031_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_final82_initial12_mean70_capacity_oracle_20261031_r1.tar.zst",
+      "archive_sha256": "09aa99889517dcd2a30d92252b75150ab6c681b977a16cd4953514619820f99e",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_final82_initial12_mean70_capacity_oracle_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1945354240,
+      "archive_allocated_bytes": 102596608
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_final82_initial12_mean70_predictive_control_20261031_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_final82_initial12_mean70_predictive_control_20261031_r1.tar.zst",
+      "archive_sha256": "a014762cd3769549c1acd5361d6ce426952378909c3f8d383f3578dbfa8c0a04",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_final82_initial12_mean70_predictive_control_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1930739712,
+      "archive_allocated_bytes": 101343232
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_final_selected_original56_nonranking_native_20261031_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_final_selected_original56_nonranking_native_20261031_r1.tar.zst",
+      "archive_sha256": "147cd669dd3e068c9e561442e88e1c61d0b4c7b3c76c4a1bd37aea13569fed31",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_final_selected_original56_nonranking_native_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1145528320,
+      "archive_allocated_bytes": 38383616
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original100_host400_mean60_full_20261113_r1",
+      "files": 4,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean60_full_20261113_r1.tar.zst",
+      "archive_sha256": "3a898bcae9b7bc147c33dd5dc0571113c43714678b687e284eb29b485fdc9111",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean60_full_20261113_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 2549489664,
+      "archive_allocated_bytes": 126488576
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original100_host400_mean60_oracle_20261113_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean60_oracle_20261113_r1.tar.zst",
+      "archive_sha256": "ed1db298f71b2e21d9d83e6c1e9404424010d6214de640287e7a4e2a8fac7122",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean60_oracle_20261113_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 2399404032,
+      "archive_allocated_bytes": 120025088
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original100_host400_mean60_shortfirst_oracle_20261113_r1",
+      "files": 4,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean60_shortfirst_oracle_20261113_r1.tar.zst",
+      "archive_sha256": "a069aa08b6cee854ca65f2800010c8935f389d1b0239ed36d80e03f6d7b66b0a",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean60_shortfirst_oracle_20261113_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 2625273856,
+      "archive_allocated_bytes": 129822720
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original100_host400_mean70_full_20261112_r2",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean70_full_20261112_r2.tar.zst",
+      "archive_sha256": "68b19cd4c1c0d7ab0ecf91194065e73e02963a7c89f582cf6ef9e7e097601db0",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original100_host400_mean70_full_20261112_r2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1581039616,
+      "archive_allocated_bytes": 78831616
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_foreground_call_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_foreground_call_20261031_r1.tar.zst",
+      "archive_sha256": "107a1728bdc5023260785160683e11ec492f3dfeb81fa8b91ceecf2db1ebf961",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_foreground_call_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1406586880,
+      "archive_allocated_bytes": 74862592
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_initial12_mean70_calibrated_combination_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_calibrated_combination_20261031_r1.tar.zst",
+      "archive_sha256": "2163c986c0bef2db4d66fbba4ec4667508b844f5a3c22b97f291bd84c99b533d",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_calibrated_combination_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1415704576,
+      "archive_allocated_bytes": 75661312
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_initial12_mean70_capacity_combination_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_capacity_combination_20261031_r1.tar.zst",
+      "archive_sha256": "613d3589c02ab80b3ce99a881161f7de18436d89e4a9d8f3e0c1d62f57b8e16e",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_capacity_combination_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1397891072,
+      "archive_allocated_bytes": 75239424
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_initial12_mean70_thunder_decay_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_thunder_decay_20261031_r1.tar.zst",
+      "archive_sha256": "5656fba94b3188bf6f504e9b4852bc1c8aec3c844f32755116631951c07accce",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_thunder_decay_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 999067648,
+      "archive_allocated_bytes": 28880896
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_initial12_mean70_toolaware_control_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_toolaware_control_20261031_r1.tar.zst",
+      "archive_sha256": "2768b314c7d41938a1939b870e728aa869acaa60e2c258a48e4c338d80f87aeb",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_toolaware_control_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1399578624,
+      "archive_allocated_bytes": 74510336
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_initial12_mean70_toolaware_oracle_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_toolaware_oracle_20261031_r1.tar.zst",
+      "archive_sha256": "4c8f94cebc829646bac374421b975e700e8d6eefba3bf4a67af99c184ebcd5a9",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_initial12_mean70_toolaware_oracle_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1399492608,
+      "archive_allocated_bytes": 74469376
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_mean70_oracle_window1s_full_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_mean70_oracle_window1s_full_20261031_r1.tar.zst",
+      "archive_sha256": "6c82a0d0acbc3ac6bcc77e718c03742f62fd164a50f0953e05c3a0d180cf5724",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_mean70_oracle_window1s_full_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1399136256,
+      "archive_allocated_bytes": 76312576
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_shared_engine_full_20261101_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_shared_engine_full_20261101_r1.tar.zst",
+      "archive_sha256": "e5155193ee478fa0889fc8db0fb0992eab65f665029cab90b6bcd3a13caf680a",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_shared_engine_full_20261101_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1352155136,
+      "archive_allocated_bytes": 73564160
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original56_shared_engine_thunder_decay_20261101_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_shared_engine_thunder_decay_20261101_r1.tar.zst",
+      "archive_sha256": "8bbe14d5b2c268186e00a9cf50cd408adb26a06e62a6564405e7691112659a9e",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original56_shared_engine_thunder_decay_20261101_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 996978688,
+      "archive_allocated_bytes": 29122560
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original69_initial12_mean70_predictive_control_20261031_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original69_initial12_mean70_predictive_control_20261031_r1.tar.zst",
+      "archive_sha256": "541ad303fa645015efe85fe145a1d538a0c30dd56a866eddb468b6e6b8d67c4c",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original69_initial12_mean70_predictive_control_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1301401600,
+      "archive_allocated_bytes": 70131712
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original69_initial12_mean70_thunder_decay_20261031_r1",
+      "files": 1,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original69_initial12_mean70_thunder_decay_20261031_r1.tar.zst",
+      "archive_sha256": "a071651141109559b1fe25a627c81b1f738664c66e629c3020e5d407e985398f",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original69_initial12_mean70_thunder_decay_20261031_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 949342208,
+      "archive_allocated_bytes": 25726976
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_background_extension_full_20261101_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_background_extension_full_20261101_r1.tar.zst",
+      "archive_sha256": "0c7bfc5fa662d99235c37ab3adbf81ef04987e6285b066dc7a99b99b96555485",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_background_extension_full_20261101_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1561903104,
+      "archive_allocated_bytes": 84267008
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_background_substitution_full_20261101_bgsub73r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_background_substitution_full_20261101_bgsub73r1.tar.zst",
+      "archive_sha256": "e6778c80d7aabec34e9cb607b596c713e01300eb827ac82bfe85e1495d716e0c",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_background_substitution_full_20261101_bgsub73r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1275777024,
+      "archive_allocated_bytes": 69574656
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_background_substitution_thunder_decay_20261101_bgsub73r1",
+      "files": 1,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_background_substitution_thunder_decay_20261101_bgsub73r1.tar.zst",
+      "archive_sha256": "bf6b7fe764cdc30aea9cdf4cd866b7bb1ea6f887c34fd947637531884817007c",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_background_substitution_thunder_decay_20261101_bgsub73r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 934187008,
+      "archive_allocated_bytes": 25423872
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_R5_horizon64_20261102_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_horizon64_20261102_r1.tar.zst",
+      "archive_sha256": "bd35ce61d882d799c26b273450915d1dbee43618773454f5bc9e53a2bd1483c1",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_horizon64_20261102_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1374072832,
+      "archive_allocated_bytes": 75403264
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_R5_horizon64_confirmation_20261102_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_horizon64_confirmation_20261102_r1.tar.zst",
+      "archive_sha256": "818c7ab13fe9b274d85fa9a9ae1f0ab5dbb9795e1c3c8eef11ed82b4e52e4292",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_horizon64_confirmation_20261102_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1428815872,
+      "archive_allocated_bytes": 78585856
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_R5_learned_20261102_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_learned_20261102_r1.tar.zst",
+      "archive_sha256": "5ba205e7f5ef70d840a566206c4a5d16da333dc7235a8d358680a8717e38d554",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_learned_20261102_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1362657280,
+      "archive_allocated_bytes": 74940416
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_R5_valid_predictions_20261102_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_valid_predictions_20261102_r1.tar.zst",
+      "archive_sha256": "7887118e8032c4e447b4f1d6b914c41a4da7c11126e5776e127f8be3138ea3a5",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_R5_valid_predictions_20261102_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1431318528,
+      "archive_allocated_bytes": 78618624
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_control_optimized_20261103_r2",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_control_optimized_20261103_r2.tar.zst",
+      "archive_sha256": "9bb5cf5a7f6ffa2b0216ef912477c3e7422e3b3c6f2f181a062a183f5d104678",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_control_optimized_20261103_r2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 327245824,
+      "archive_allocated_bytes": 16826368
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_control_refresh_20261104_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_control_refresh_20261104_r1.tar.zst",
+      "archive_sha256": "055bc8d8084c7daa5ca4067a6f03b34c23c49bf984f2c049f6b4e78be2d92d3c",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_control_refresh_20261104_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1357324288,
+      "archive_allocated_bytes": 74629120
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_oracle_20261102_oracle2",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_oracle_20261102_oracle2.tar.zst",
+      "archive_sha256": "23749106d5367a5d734bef1bc8a2782b77a3ab09c8bd37df0fb191bfe4bbfa85",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_oracle_20261102_oracle2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1425981440,
+      "archive_allocated_bytes": 75718656
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_oracle_repeat_20261102_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_oracle_repeat_20261102_r1.tar.zst",
+      "archive_sha256": "7a1ea8b4b3158d1026ee091f6cff0af6fe98968210de9a16554fc9618b14f67e",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_oracle_repeat_20261102_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 312344576,
+      "archive_allocated_bytes": 14671872
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_ranking_disabled_20261104_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_ranking_disabled_20261104_r1.tar.zst",
+      "archive_sha256": "da50cbf2c2d1aa2dbcd03cea5514b0712334ee0663becde1533eac19a9fb7bee",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_ranking_disabled_20261104_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1454485504,
+      "archive_allocated_bytes": 79417344
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_registered_copy_full_20261102_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_registered_copy_full_20261102_r1.tar.zst",
+      "archive_sha256": "7b3ce866026e018374d3f59a980bbe36d5b8f4a6d21c5ced2a3379c45a11861d",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_registered_copy_full_20261102_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1446285312,
+      "archive_allocated_bytes": 77357056
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_host400_thunder_decay_20261102_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_thunder_decay_20261102_r1.tar.zst",
+      "archive_sha256": "a87c13db501e3eb911c57bc02ba95e06afc0d04ba73c512b84120de220b7dda4",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_host400_thunder_decay_20261102_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1157812224,
+      "archive_allocated_bytes": 32333824
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original73_static_balance_full_20261101_balance73r2",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_static_balance_full_20261101_balance73r2.tar.zst",
+      "archive_sha256": "abf26c76eec31ab4f58930a64cfcddac13070cb6aedf81a4871f14830b5808b5",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original73_static_balance_full_20261101_balance73r2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1364471808,
+      "archive_allocated_bytes": 73203712
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean60_full_20261106_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean60_full_20261106_r1.tar.zst",
+      "archive_sha256": "d777b8539bdde56e2fb6eaabf15c4b702f0f99115f5290d26a1477011fdde412",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean60_full_20261106_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 2064084992,
+      "archive_allocated_bytes": 102412288
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean60_full_20261110_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean60_full_20261110_r1.tar.zst",
+      "archive_sha256": "e2b7b1f432b77737f13e9117bd7ec456b3964b345e681fad0e1f5738d66bfa90",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean60_full_20261110_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 2065944576,
+      "archive_allocated_bytes": 102445056
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_continuous_work_oracle_20261108_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_continuous_work_oracle_20261108_r1.tar.zst",
+      "archive_sha256": "ce9294ea32f29ba9d10a0d4dec6b7e94b1017db22659b5fc0bb11a1b357fe687",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_continuous_work_oracle_20261108_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1539973120,
+      "archive_allocated_bytes": 77848576
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_full_20261106_r2",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_full_20261106_r2.tar.zst",
+      "archive_sha256": "d0d177245937b620f899d6f702306c15b4b40bd0761206b1d291475415683294",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_full_20261106_r2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1556066304,
+      "archive_allocated_bytes": 77410304
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_learned_20261106_r2",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_learned_20261106_r2.tar.zst",
+      "archive_sha256": "8f3373df44c9aa3cfe4c2946e1162d6ba0c522397a4d75e595111c130b21a988",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_learned_20261106_r2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1467392000,
+      "archive_allocated_bytes": 74665984
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_native_20261107_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_native_20261107_r1.tar.zst",
+      "archive_sha256": "ee78083c63e88f9efc8c6ba3f0a335e895b14b33f5509e1211b2659e1b085cee",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_native_20261107_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1385029632,
+      "archive_allocated_bytes": 44871680
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_oracle_20261106_r2",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_oracle_20261106_r2.tar.zst",
+      "archive_sha256": "42305b70d16aefcab52a00af1ccc9761199cd27e8d52c872de6219e202b2d76c",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_oracle_20261106_r2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1517821952,
+      "archive_allocated_bytes": 75395072
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_r5_model_work_oracle_20261108_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_r5_model_work_oracle_20261108_r1.tar.zst",
+      "archive_sha256": "b26f52647c5097f47a43e376bf7c917f81fc6ebfbaa969e6303ee0f6c5bef2ee",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_r5_model_work_oracle_20261108_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1510612992,
+      "archive_allocated_bytes": 76533760
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_repeat_full_20261107_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_repeat_full_20261107_r1.tar.zst",
+      "archive_sha256": "c9e9ebf143470ada8f552c5f222bd6a9cbf68ffb0d861882e836d194fdeb1b7c",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_repeat_full_20261107_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1530576896,
+      "archive_allocated_bytes": 76275712
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_repeat_learned_20261107_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_repeat_learned_20261107_r1.tar.zst",
+      "archive_sha256": "76d00a2f5bd703e248c3b1b5f556bcbc50974520fd00e6144f76dbd66c1536e4",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_repeat_learned_20261107_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1504215040,
+      "archive_allocated_bytes": 76746752
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_repeat_oracle_20261107_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_repeat_oracle_20261107_r1.tar.zst",
+      "archive_sha256": "b6c12809edfeb7990a80ed306939fb2b2db3b4e307656c31f492ac1b75a0c9cc",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_repeat_oracle_20261107_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1528201216,
+      "archive_allocated_bytes": 76046336
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_thunderagent_acting_decay_20261106_r2",
+      "files": 1,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_thunderagent_acting_decay_20261106_r2.tar.zst",
+      "archive_sha256": "9f224d42116e3a0176cec94a47d1e005ba0a9d86b2b5aa6d2236ef6594c52ce8",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_thunderagent_acting_decay_20261106_r2.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 281575424,
+      "archive_allocated_bytes": 6119424
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_thunderagent_acting_decay_20261107_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_thunderagent_acting_decay_20261107_r1.tar.zst",
+      "archive_sha256": "20fec0d9434b3d39d7ec570ee0b3ead6498860a8f62b01cc40d3fd329c3865aa",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_thunderagent_acting_decay_20261107_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1272516608,
+      "archive_allocated_bytes": 32235520
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_original83_host400_mean70_tool_band_pressure_oracle_20261108_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_tool_band_pressure_oracle_20261108_r1.tar.zst",
+      "archive_sha256": "a46db237dbc9b50f108761928ac34a8a01f7fe3544289d1c990b593fd4ea4bab",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_original83_host400_mean70_tool_band_pressure_oracle_20261108_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1535979520,
+      "archive_allocated_bytes": 77791232
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original56_full_20261030_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_sustained_original56_full_20261030_r1.tar.zst",
+      "archive_sha256": "433bbcc2638d10a7aa3b92b738e423e312c50fbebf0bb2afdfd62ddc124cd601",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_sustained_original56_full_20261030_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1269555200,
+      "archive_allocated_bytes": 69132288
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original56_mean60_full_20261030_r1",
+      "files": 3,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_sustained_original56_mean60_full_20261030_r1.tar.zst",
+      "archive_sha256": "dcffe5b3bc60946d0ed23bea2c018e723aa2d49e05c2c08f5c9bfe5eb8b691c3",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_sustained_original56_mean60_full_20261030_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1066184704,
+      "archive_allocated_bytes": 57098240
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/workflow_sustained_original56_mean70_full_20261030_r1",
+      "files": 2,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_sustained_original56_mean70_full_20261030_r1.tar.zst",
+      "archive_sha256": "6ee07fa34967d656f568a4c971d94e3fdf0d62741fcb6d83bfbba64daff111bc",
+      "restore_command": "tar --extract '--use-compress-program=zstd -T1' --file /home/longhao/experiment/BeliefKV/experiments/archive/20261121_historical_stage_logs/workflow_sustained_original56_mean70_full_20261030_r1.tar.zst --directory /home/longhao/experiment/BeliefKV/experiments/raw",
+      "source_allocated_bytes": 1316184064,
+      "archive_allocated_bytes": 71462912
+    }
+  ],
+  "archived_runs": 55,
+  "archived_files": 120,
+  "net_reclaimed_bytes": 68973166592,
+  "all_archive_sha256_members_metadata_and_restoration_markers_verified": true
+}

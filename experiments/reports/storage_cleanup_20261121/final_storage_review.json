@@ -1,0 +1,40 @@
+{
+  "status": "verified_and_observed",
+  "started_at": "2026-11-21T00:29:32.609291+08:00",
+  "finished_at": "2026-11-21T00:29:58.953238+08:00",
+  "retired_checkouts": 98,
+  "archived_log_runs": 106,
+  "archived_log_files": 221,
+  "net_reclaimed_bytes": 211659100160,
+  "directory_allocated_bytes": {
+    "/home/longhao/experiment/.worktrees": 271051284480,
+    "/home/longhao/experiment/BeliefKV/experiments/raw": 349071761408,
+    "/home/longhao/experiment/BeliefKV/experiments/archive": 16046596096,
+    "/home/longhao/experiment/BeliefKV/experiments/reports": 29239013376,
+    "/home/longhao/experiment/BeliefKV": 425478569984,
+    "/home/longhao/experiment": 701610602496,
+    "/home/longhao": 741162754048
+  },
+  "df_after_bytes": "Filesystem         1B-blocks          Used    Available Use% Mounted on\n/dev/nvme0n1p2 3778190245888 3263918223360 322273931264  92% /\n",
+  "df_after_human": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/nvme0n1p2  3.5T  3.0T  301G  92% /\n",
+  "initial_observations": {
+    "df_available_bytes": 111451389952,
+    "df_used_bytes": 3474740764672,
+    "worktrees_allocated_bytes": 319729000448,
+    "beliefkv_allocated_bytes": 547972624384,
+    "raw_allocated_bytes": 477153005568,
+    "experiment_allocated_bytes": 912465068032,
+    "home_allocated_bytes": 952018587648
+  },
+  "proof_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261121/worktree_review.json": "dc9b032c684c608d393da54af602193c0ac6a443b37da5240c2336e24fd99441",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261121/branch_checkouts/worktree_review.json": "53f3052bdc0c30b95d97ff14d06db2bdb072dd8bdb982775be0955e3994b46ca",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261121/direct_checkouts/worktree_review.json": "5ae2a0b7e66e8b5c8196536af5832414cebd497292db56c617d03fb8b8ca0286",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261121/log_review.json": "d33eb4e76bb33fa7155c2a1f5572ec4e0d519b3c2aa1310c68e70d7ae30472ac",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261121/stage_logs/log_review.json": "b198779f83574601e12a65a4e553faf039d9228007f120140cddf40d32c099a8",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261121/restoration_review.json": "82dd5e6114168ebe3d09b91d897bd1dc96dd68b321895fa8196a3f4607713067"
+  },
+  "allocation_scope": "Allocated blocks by directory, without following links or crossing mounts.",
+  "measurement_note": "Directory and df changes include concurrent experiment and other-user writes.",
+  "scope": "Storage maintenance; no GPU launch, job stop, serving policy or other-user cleanup."
+}
