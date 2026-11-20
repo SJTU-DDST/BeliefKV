@@ -246,6 +246,23 @@ class _InitialRequest:
     retry_after: float = 0.
 
 
+@dataclass
+class _PeerRestoreRetry:
+    request: object
+    credit: tuple
+    node_ids: tuple[int, ...]
+    committed: bool = False
+
+    def matches_receipts(self, ongoing):
+        return all(ongoing.get(node) is receipt for node, receipt in self.credit[2].items())
+
+    def matches_ack(self, ack, ongoing):
+        return (
+            not ack.child_receipts and tuple(ack.node_ids) == self.node_ids
+            and self.matches_receipts(ongoing)
+        )
+
+
 class SubagentMaterialization:
     """A pre-materialization filter, not a new source of native admission rights."""
 
@@ -275,6 +292,7 @@ class SubagentMaterialization:
         self._native_host_eviction = None
         self._native_demand_restore = None
         self._demand_restore_chunk = None
+        self._peer_restore_retry = None
         self.last_observation = MaterializationHeadroom(False, "not_sampled")
         self.last_decision = {}
 
@@ -428,14 +446,32 @@ class SubagentMaterialization:
         if envs.SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM.get():
             return
 
-        loading_check = getattr(cache, "loading_check", None)
+        native_loading_check = getattr(cache, "loading_check", None)
         self._demand_restore_chunk = DemandRestoreChunk(cache, max_source_nodes=self.max_nodes)
+
+        def loading_check(finish_count=None):
+            retry = self._peer_restore_retry
+            if retry is None or retry.committed or finish_count == 0:
+                return native_loading_check(finish_count=finish_count)
+            acks = cache.cache_controller.ack_load_queue
+            ack = acks[0] if acks else None
+            ongoing = cache.ongoing_load_back
+            matches = ack is not None and retry.matches_ack(ack, ongoing)
+            result = native_loading_check(finish_count=finish_count)
+            if (
+                matches and self._peer_restore_retry is retry
+                and (not acks or acks[0] is not ack)
+                and all(node not in ongoing for node in retry.node_ids)
+            ):
+                # Native consumed the exact ordinary ACK and published its mirrors.
+                retry.committed = True
+            return result
 
         def init_load_back(params):
             acks = getattr(cache.cache_controller, "ack_load_queue", ())
             hit = params.host_hit_length
             if (
-                acks and callable(loading_check)
+                acks and callable(native_loading_check)
                 and hit >= max(1, cache.load_back_threshold)
                 and cache.token_to_kv_pool_allocator.available_size() < hit
             ):
@@ -446,7 +482,8 @@ class SubagentMaterialization:
                         break
                     ready += 1
                 if ready:
-                    loading_check(finish_count=ready)
+                    # The candidate order is already fixed on this path.
+                    native_loading_check(finish_count=ready)
                     self.runtime.counts["subagent_materialization_restore_acks_reaped"] += ready
             # Carry the existing deferral observations into the chunk guard.
             selected_h2d = (
@@ -466,7 +503,11 @@ class SubagentMaterialization:
                 cache._beliefkv_demand_restore_request_id = previous
 
         cache.init_load_back = init_load_back
-        self._native_demand_restore = cache, native_load, init_load_back
+        if callable(native_loading_check):
+            cache.loading_check = loading_check
+        self._native_demand_restore = (
+            cache, native_load, init_load_back, native_loading_check, loading_check,
+        )
 
     def _stage_demand_restore_chunk(self, cache, params, selected_h2d=None):
         runtime = self.runtime
@@ -844,13 +885,24 @@ class SubagentMaterialization:
             params.req._beliefkv_d3_indexed_restore_defer_key = key
         if identity_matches:
             wait = key, hit, receipts
-            params.req._beliefkv_d3_restore_credit = wait
+            req = params.req
+            req._beliefkv_d3_restore_credit = wait
             staged = self._demand_restore_chunk.pending
             if (
-                submitted and staged is not None and staged.request is not params.req
+                submitted and staged is not None and staged.request is not req
                 and staged.prefix_node in receipts and staged.credit_waiter is None
             ):
-                staged.credit_waiter = params.req, wait
+                staged.credit_waiter = req, wait
+            elif (
+                not tagged and staged is None and (submitted or not acks)
+                and params.best_match_node not in receipts
+                and len(receipts) == len(native_node_ids)
+                and callable(getattr(cache, "loading_check", None))
+                and self._peer_restore_retry is None
+                and getattr(req, "_beliefkv_d3_peer_retry_key", None) != key
+            ):
+                req._beliefkv_d3_peer_retry_key = key
+                self._peer_restore_retry = _PeerRestoreRetry(req, wait, tuple(native_node_ids))
         counts["subagent_materialization_restore_pressure_deferrals"] += 1
         counts["subagent_materialization_restore_pressure_shortfall_tokens"] += shortfall
         counts["subagent_materialization_restore_pressure_covered_tokens"] += min(shortfall, credit)
@@ -869,6 +921,39 @@ class SubagentMaterialization:
                 "own_join_ack": tagged,
             })
         return True
+
+    def take_peer_restore_retry(self, native_order, *, adder):
+        retry = self._peer_restore_retry
+        if retry is None:
+            return None
+        req = retry.request
+        key = retry.credit[0]
+        runtime = self.runtime
+        cache = self._demand_restore_chunk.cache
+        pipeline = runtime._demand_prefill_pipeline
+        controller = cache.cache_controller
+        live = (
+            not getattr(runtime, "physical_disabled", False)
+            and len(native_order) <= 512
+            and getattr(req, "_beliefkv_d3_restore_credit", None) is retry.credit
+            and self._restore_stage_matches_live(req, key) and self.allows(key)
+            and not req.finished() and getattr(req, "to_finish", None) is None
+            and any(member is req for member in native_order)
+        )
+        if live and not retry.committed and retry.matches_receipts(cache.ongoing_load_back):
+            return None
+
+        # Spend the preference at this selection boundary, even if native cannot use it.
+        self._peer_restore_retry = None
+        if (
+            not live or not retry.committed or adder.can_run_list
+            or self._demand_restore_chunk.pending is not None or pipeline.pending is not None
+            or controller.load_queue or controller.ack_load_queue
+            or controller.write_queue or controller.ack_write_queue
+            or not pipeline.has_decode_work(self._running_batch)
+        ):
+            return None
+        return req, key
 
     def _yield_restore_to_credit_waiter(self, req):
         restore = self._demand_restore_chunk
@@ -1057,13 +1142,18 @@ class SubagentMaterialization:
         return ()
 
     def _restore_native_eviction(self):
+        self._peer_restore_retry = None
         if self._demand_restore_chunk is not None:
             self._demand_restore_chunk.release()
             self._demand_restore_chunk = None
         if self._native_demand_restore is not None:
-            cache, native_load, init_load_back = self._native_demand_restore
+            (
+                cache, native_load, init_load_back, native_loading_check, loading_check,
+            ) = self._native_demand_restore
             if cache.init_load_back is init_load_back:
                 cache.init_load_back = native_load
+            if getattr(cache, "loading_check", None) is loading_check:
+                cache.loading_check = native_loading_check
             self._native_demand_restore = None
         if self._native_device_eviction is not None:
             cache, native_evict, evict_device_leaf = self._native_device_eviction

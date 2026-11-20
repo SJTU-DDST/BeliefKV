@@ -10,7 +10,12 @@ import pytest
 
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
-from beliefkv.runtime.sglang_v0520_admission import _request_key
+from beliefkv.runtime.sglang_v0520_admission import (
+    _request_key,
+    compile_native_prefill_plan,
+    select_native_prefill_candidates,
+)
+from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.sglang_v0520_physical import PrefetchLoadStep
 from beliefkv.runtime.subagent_materialization import (
     NODE_CENSUS_BOUND,
@@ -255,6 +260,174 @@ def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome
     assert neighbor.component_data[0].host_value is neighbor_slots
     assert host.slot_used[neighbor_slots].all() and not drops
     cache.sanity_check()
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native", "base_full_native"),
+    (({"members": 3, "select": False, "prefix_sizes": (16, 1, 24)}, 56, 96),),
+    indirect=True,
+)
+@pytest.mark.parametrize("case", (
+    "fit", "original_order", "native_refusal", "stale_session", "different_receipt",
+    "join_priority", "eos_priority", "started_chunk",
+))
+def test_d3_peer_ack_retries_selected_waiter_before_fresh_restore(
+    staged_native, monkeypatch, case,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    producer, fresh, consumer = f.members
+    producer_leaf, fresh_leaf, consumer_leaf = f.leaves
+    key = runtime.visible[consumer.rid]
+    suffix = consumer_leaf.component_data[0].host_value
+    held_host = host.alloc(host.available_size() - 8)
+    neighbor, _ = insert_session(cache, range(100, 108), "waiting-parent")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    for start in range(200, 360, 10):
+        insert_session(cache, range(start, start + 4), str(start))
+    held_device = allocator.alloc(allocator.available_size() - 16)
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    gate.max_nodes = 1
+    gate.materialized.add(gate._context(key))
+    runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 6
+    scheduler.max_prefill_tokens = 32
+    f.running.is_empty = lambda: False
+
+    # Only the upstream order is supplied by the test. Apply the runtime's
+    # retry and native selection before running the bound scheduler/adder.
+    orders, losses = [], []
+    runtime._subagent_materialization = gate
+    runtime.semantic_revision = 0
+    runtime._executable_waiting_key = lambda req, **kw: _request_key(req)
+    runtime._join_priority_promoted = runtime._join_last_child_priority_promoted = None
+    runtime._final_priority_promoted = runtime._prefetch_priority_promoted = None
+    runtime._parent_handoff_priority_promoted = None
+    runtime._join_priority_pending = {}
+    runtime._last_join_child_has_waiting_parent = lambda _: False
+    runtime._final_request_stages = {}
+    runtime._live_final_stage = lambda _: True
+
+    def normal_plan(order, *, running_batch, adder, _queue_inspection=None):
+        gate.prepare(tuple(order), running_batch=running_batch, adder=adder)
+        return compile_native_prefill_plan(
+            [runtime.visible[req.rid] for req in order], semantic_revision=0,
+        )
+
+    runtime._plan_native_prefill = normal_plan
+
+    def select(order, running, adder):
+        plan = (
+            normal_plan(order, running_batch=running, adder=adder)
+            if case == "original_order" else
+            NativeAdmissionRuntime.plan_native_prefill.__wrapped__(
+                runtime, order, running_batch=running, adder=adder,
+            )
+        )
+        candidates = select_native_prefill_candidates(
+            order, plan=plan, current_semantic_revision=0,
+        ).candidates
+        orders.append(candidates)
+        return candidates
+
+    scheduler._beliefkv_prefill_candidates = lambda running, adder: select(
+        scheduler.waiting_queue, running, adder,
+    )
+
+    def record_eviction(node, _component, tokens):
+        data = node.component_data[0]
+        if data.value is None and data.session_ref > 0:
+            losses.append((node.id, tokens))
+
+    monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
+    try:
+        scheduler.waiting_queue[:] = [producer, consumer]
+        assert invoke() == (None, f.running)
+        assert not losses and not construction
+        assert tuple(member.request for member in f.pipeline.pending.members) == (producer,)
+        ack, = controller.ack_load_queue
+        assert not ack.child_receipts and ack.node_ids == [producer_leaf.id]
+        assert ack.num_tokens_by_pool == {"kv": 16}
+        deferred, = (
+            call.args[0] for call in runtime._opportunity_writer.record.call_args_list
+            if call.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
+        )
+        assert deferred["key"] == asdict(key) and not deferred["already_submitted"]
+        assert deferred["reclaimable_after_ack_tokens"] == 16 < deferred["unfunded_restore_tokens"]
+        assert allocator.available_size() == host.available_size() == 0
+
+        scheduler.waiting_queue[:] = [producer, fresh, consumer]
+        assert invoke() == (None, f.running)
+        assert orders == [(producer, consumer)] and not ack.finish_event.synchronize.called
+        if case == "different_receipt":
+            receipt = cache.ongoing_load_back[producer_leaf.id]
+            cache.ongoing_load_back[producer_leaf.id] = type(receipt)(*receipt)
+        f.complete.ready = True
+        cache.loading_check()
+        ack.finish_event.synchronize.assert_called_once_with()
+        assert not controller.ack_load_queue
+        assert not f.pipeline.defer(scheduler.waiting_queue, f.running)
+        f.complete.ready = False
+
+        if case in {"stale_session", "different_receipt", "join_priority", "eos_priority", "started_chunk"}:
+            if case == "stale_session":
+                consumer.session_generation += 1
+            elif case == "join_priority":
+                runtime._join_priority_pending[runtime.visible[producer.rid].invocation_id] = "join"
+            elif case == "eos_priority":
+                runtime._final_request_stages[producer.rid] = NS(semantic_only=False)
+            adder = f.adder()
+            if case == "started_chunk":
+                producer.init_next_round_input()
+                adder.add_chunked_req(producer)
+                assert adder.can_run_list == [producer]
+            expected = (producer, fresh) if case == "stale_session" else (producer, fresh, consumer)
+            assert select(scheduler.waiting_queue, f.running, adder) == expected
+            assert gate._peer_restore_retry is None
+            assert len(f.loads) == 1 and not losses
+            f.pipeline.cancel("test_complete")
+            cache.sanity_check()
+            return
+
+        if case == "native_refusal":
+            consumer.origin_input_ids.extend(range(400, 500))
+            assert invoke() == (None, f.running)
+            assert orders[-1] == (consumer, producer, fresh)
+            assert not construction and not losses and len(f.loads) == 1
+            runtime.on_prefill_candidate_result.assert_called_with(
+                consumer, admitted=False, result="NO_TOKEN",
+            )
+            assert select(scheduler.waiting_queue, f.running, f.adder()) == (producer, fresh, consumer)
+        elif case == "fit":
+            assert invoke() == (None, f.running)
+            assert orders[-1] == (consumer, producer, fresh)
+            pending = gate._demand_restore_chunk.pending
+            assert pending.request is consumer and pending.tokens == 9
+            assert len(f.loads) == 2 and f.loads[-1].node_id != fresh_leaf.id
+            assert f.loads[-1].host_indices.tolist() == suffix[:9].tolist()
+            assert neighbor.component_data[0].host_value is neighbor_slots and not losses
+            assert consumer.kv.req_pool_idx is None and not construction
+            assert select(scheduler.waiting_queue, f.running, f.adder()) == (producer, fresh, consumer)
+        else:
+            assert invoke() == (None, f.running)
+            assert orders[-1] == (producer, fresh, consumer)
+            assert f.loads[1].node_id == fresh_leaf.id
+            assert _restore_declines(runtime)[-1]["reason"] == "prefill_batch_already_constrained"
+            assert any(node == neighbor.id for node, _ in losses)
+        assert runtime.counts["subagent_materialization_peer_ack_retry_ordered"] == int(case != "original_order")
+        if case != "original_order":
+            assert gate._peer_restore_retry is None
+        f.complete.ready = True
+        cache.loading_check()
+        f.pipeline.cancel("test_complete")
+        cache.sanity_check()
+    finally:
+        gate.close()
+        allocator.free(held_device)
+        host.free(held_host)
 
 
 @pytest.mark.parametrize(

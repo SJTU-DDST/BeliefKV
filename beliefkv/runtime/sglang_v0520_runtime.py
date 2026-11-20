@@ -12481,6 +12481,50 @@ class NativeAdmissionRuntime:
         self, native_order: Sequence[object], *, running_batch: object, adder: object,
         _queue_inspection: _NativePrefillQueueInspection | None = None,
     ) -> NativePrefillPlan:
+        plan = self._plan_native_prefill(
+            native_order, running_batch=running_batch, adder=adder,
+            _queue_inspection=_queue_inspection,
+        )
+        gate = self._subagent_materialization
+        if gate is None or adder is None:
+            return plan
+        retry = gate.take_peer_restore_retry(native_order, adder=adder)
+        if retry is None:
+            return plan
+        request, key = retry
+        if self._executable_waiting_key(request, key=key) != key:
+            return plan
+
+        ordered = plan.prioritized
+        if key not in ordered:
+            return plan
+        index = ordered.index(key)
+        if not 0 < index < gate.max_candidates:
+            return plan
+        protected_ids = (
+            self._join_priority_promoted, self._join_last_child_priority_promoted,
+            self._final_priority_promoted, self._prefetch_priority_promoted,
+            self._parent_handoff_priority_promoted,
+        )
+        service = getattr(self._agent_admission, "_ready_service_guard", None)
+        for earlier in ordered[:index]:
+            if (
+                earlier.request_id in protected_ids
+                or earlier.invocation_id in self._join_priority_pending
+                or self._last_join_child_has_waiting_parent(earlier)
+                or (service is not None and earlier in (service.target, service.fit_target))
+            ):
+                return plan
+            stage = self._final_request_stages.get(earlier.request_id)
+            if stage is not None and not stage.semantic_only and self._live_final_stage(stage):
+                return plan
+        self.counts["subagent_materialization_peer_ack_retry_ordered"] += 1
+        return replace(plan, prioritized=(key, *ordered[:index], *ordered[index + 1:]))
+
+    def _plan_native_prefill(
+        self, native_order: Sequence[object], *, running_batch: object, adder: object,
+        _queue_inspection: _NativePrefillQueueInspection | None = None,
+    ) -> NativePrefillPlan:
         plan = self._build_native_prefill_plan(
             native_order, running_batch=running_batch, adder=adder,
             _queue_inspection=_queue_inspection,
