@@ -34,7 +34,7 @@ def make_arm(root, label, *, stop=False, censored=(), origin=0., window_end=4.):
     write_json(registration, {
         "workflow_arrivals_path": str(arrivals_path), "workflow_arrivals": arrivals,
         "workflow_ids": ids, "run_root": str(arm.parent), "order": ["full"],
-        "token_source_sha256": "same-source",
+        "token_source_sha256": "same-source", "source_arm": str(directory),
     })
 
     events, ends = [], {}
@@ -80,6 +80,11 @@ def make_arm(root, label, *, stop=False, censored=(), origin=0., window_end=4.):
         exact_receipt_requests=len(receipts),
     )
     if stop:
+        expected_path = directory / "expected.json"
+        write_json(expected_path, {
+            "warmup-request": {"llm_submit": [["w00"]], "llm_result": [None, 8]},
+        })
+        report["inputs_sha256"][str(expected_path)] = sha256_file(expected_path)
         certificate_path = directory / "completion.json"
         write_json(certificate_path, {
             "cohort_completion_monotonic_ms": max(ends[key] for key in cohort["measured_workflow_ids"]),
@@ -149,6 +154,7 @@ def test_censored_union_uses_fixed_18_stop_and_one_followup_for_all_members(tmp_
             "certificate": str(certificate), "certificate_sha256": sha256_file(certificate),
             "measured_requests": 18,
             "completed_workflow_ids": [f"w{i:02d}" for i in range(22) if i != 1],
+            "completed_receipt_requests": ["warmup-request"],
         }
 
     monkeypatch.setattr(comparison, "verify_measured_execution", verify)
@@ -167,6 +173,20 @@ def test_censored_union_uses_fixed_18_stop_and_one_followup_for_all_members(tmp_
     for label in ("complete", "stopped"):
         assert union["arms"][label]["restricted_mean_JCT_s"] == pytest.approx(38.25)
         assert union["arms"][label]["window_output_tokens"] == 10
+
+
+def test_rejects_warmup_completion_without_its_exact_receipt(tmp_path, monkeypatch):
+    complete = make_arm(tmp_path, "complete")
+    stopped = make_arm(tmp_path, "stopped", stop=True, censored=("w01",))
+    certificate = stopped[1].with_name("completion.json")
+    monkeypatch.setattr(comparison, "verify_measured_execution", lambda *_: {
+        "certificate": str(certificate), "certificate_sha256": sha256_file(certificate),
+        "measured_requests": 18,
+        "completed_workflow_ids": [f"w{i:02d}" for i in range(22) if i != 1],
+        "completed_receipt_requests": [],
+    })
+    with pytest.raises(ValueError, match="completed warmup workflow lacks an exact receipt"):
+        comparison.compare_arms([complete, stopped])
 
 
 @pytest.mark.parametrize("unarrived", [False, True])
@@ -193,6 +213,7 @@ def test_restricted_mean_requires_positive_followup_for_every_member(unarrived):
     ("system_rate", "differs from the sealed"),
     ("bins", "do not reconcile"),
     ("raw_seal", "changed sealed prefix"),
+    ("tool_timing", "same tool timing overlay"),
 ])
 def test_rejects_nonmatching_or_changed_sealed_inputs(tmp_path, change, error):
     first, second = (make_arm(tmp_path, label) for label in ("first", "second"))
@@ -206,6 +227,10 @@ def test_rejects_nonmatching_or_changed_sealed_inputs(tmp_path, change, error):
         report["common_window_output_tokens_per_second"] += 1
     elif change == "bins":
         report["common_window_throughput_bins"][0]["output_tokens"] += 1
+    elif change == "tool_timing":
+        registration = comparison.load(second[1])
+        registration["tool_timing_overlay"] = {"sha256": "different-overlay"}
+        write_json(second[1], registration)
     else:
         path = Path(next(name for name in report["input_jsonl_prefixes"] if name.endswith("runtime_audit.jsonl")))
         path.write_text(path.read_text().replace("2048", "2049"))

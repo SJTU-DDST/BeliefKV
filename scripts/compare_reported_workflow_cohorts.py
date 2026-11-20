@@ -168,6 +168,26 @@ def audit_arm(registration_path, registration, report_path, report, arm, supplie
             or sorted(ends) != evidence["completed_workflow_ids"]
         ):
             raise ValueError("cohort report differs from certified workflow boundaries")
+        expected_path = Path(registration["source_arm"]) / "expected.json"
+        expected_digest = sha256_file(expected_path)
+        if report["inputs_sha256"].get(str(expected_path.resolve())) != expected_digest:
+            raise ValueError("the warmup receipt population lacks a pinned source")
+        pins[str(expected_path.resolve())] = expected_digest
+        completed_receipts = set(evidence["completed_receipt_requests"])
+        completed_warmup = set(members["warmup"]) & ends.keys()
+        expected_output = Counter()
+        for request_id, row in load(expected_path).items():
+            workflow_id = row["llm_submit"][0][0]
+            if workflow_id not in completed_warmup:
+                continue
+            if request_id not in completed_receipts:
+                raise ValueError("a completed warmup workflow lacks an exact receipt")
+            expected_output[workflow_id] += row["llm_result"][1]
+        if any(
+            audited["all_service_output_tokens_by_workflow"].get(key, 0) != expected_output[key]
+            for key in completed_warmup
+        ):
+            raise ValueError("completed warmup output differs from its exact receipt population")
     if any(report[key] != audited[key] for key in fields):
         raise ValueError("cohort report differs from the sealed workflow and service audit")
 
@@ -180,7 +200,7 @@ def audit_arm(registration_path, registration, report_path, report, arm, supplie
     ):
         raise ValueError("group output and sealed system window totals do not reconcile")
 
-    # Use the fixed-18 completion boundary for censoring, before observer polling or drain.
+    # The fixed-18 completion time gives a conservative bound on observation follow-up.
     end_ms = certificate["cohort_completion_monotonic_ms"] if certificate else max(ends.values())
     return {
         "natural_jct_s": {
@@ -263,7 +283,7 @@ def compare_arms(arm_specs, cohort_plan=None):
     if len(arm_specs) < 2 or len({label for label, *_ in arm_specs}) != len(arm_specs):
         raise ValueError("supply at least two distinctly named arms")
     cohort_path = Path(cohort_plan).resolve() if cohort_plan else None
-    reference, token_source = None, None
+    reference, token_source, tool_timing = None, None, None
     if cohort_path is not None:
         reference = load(cohort_path)
         if isinstance(reference.get("cohort"), str):
@@ -283,6 +303,10 @@ def compare_arms(arm_specs, cohort_plan=None):
             token_source = registration["token_source_sha256"]
         if not token_source or registration["token_source_sha256"] != token_source:
             raise ValueError("arms must replay the same frozen token source")
+        overlay = (registration.get("tool_timing_overlay") or {}).get("sha256")
+        if inputs and overlay != tool_timing:
+            raise ValueError("arms must replay the same tool timing overlay")
+        tool_timing = overlay
         arm = registered_arm(registration, report)
         if arm in seen:
             raise ValueError("each named arm must refer to a distinct replay")
@@ -305,6 +329,7 @@ def compare_arms(arm_specs, cohort_plan=None):
         "schema_version": 1,
         "arrival_plan_sha256": reference["arrival_plan_sha256"],
         "token_source_sha256": token_source,
+        "tool_timing_overlay_sha256": tool_timing,
         "throughput_window": {
             "offset_seconds": [start, end], "duration_seconds": duration,
             "bounds": "[start, end)", "clock": "native_batch_completion",
