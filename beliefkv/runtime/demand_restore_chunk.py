@@ -120,6 +120,7 @@ class DemandRestoreChunk:
         free_before = allocator.available_size()
         funded = ensure_device_capacity_preserving_live_kv(
             cache, tokens + device_reserve, protected_nodes=protected_nodes,
+            minimum_tokens=minimum_tokens + device_reserve,
             retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
         )
         if funded is None:

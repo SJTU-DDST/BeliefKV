@@ -96,7 +96,8 @@ def _cold_host_reclaim_plan(tree, protected, needed):
 
 
 def ensure_device_capacity_preserving_live_kv(
-    cache, tokens: int, *, protected_nodes=(), retry_pending_write=False,
+    cache, tokens: int, *, minimum_tokens: int | None = None, protected_nodes=(),
+    retry_pending_write=False,
 ) -> bool | None:
     """Try to make ``tokens`` absolute FULL slots free on the scheduler thread.
 
@@ -104,10 +105,14 @@ def ensure_device_capacity_preserving_live_kv(
     leave completed backups, demotions, reclaimed mirrors, radix splits, and
     discarded unreferenced leaves in place. The caller allocates the available slots.
     Return None without mutation when a single unfinished ACK can be retried.
+    With a minimum, preflight may fund a smaller target. True still requires
+    the original target, and a partial caller must recheck the allocator.
     """
     controller = getattr(cache, "cache_controller", None)
+    minimum = tokens if minimum_tokens is None else minimum_tokens
     if (
         type(tokens) is not int or tokens < 0
+        or type(minimum) is not int or not 0 <= minimum <= tokens
         or getattr(cache, "tree_components", None) != (0,)
         or getattr(cache, "tp_world_size", None) != 1
         or getattr(cache, "pp_size", None) != 1
@@ -142,12 +147,13 @@ def ensure_device_capacity_preserving_live_kv(
         shortfall = tokens - allocator.available_size()
         if shortfall <= 0:
             return True
-    if (
-        controller.write_queue or controller.ack_write_queue
-        or cache.ongoing_write_through
-        or shortfall > cache.full_evictable_size()
-    ):
+    if controller.write_queue or controller.ack_write_queue or cache.ongoing_write_through:
         return False
+    minimum_shortfall = max(0, minimum - allocator.available_size())
+    evictable = cache.full_evictable_size()
+    if minimum_shortfall > evictable:
+        return False
+    shortfall = min(shortfall, evictable)
     # D3 installs its device-leaf callback on the cache instance.
     can_discard_cold = (
         callable(vars(cache).get("_evict_device_leaf"))
@@ -179,8 +185,11 @@ def ensure_device_capacity_preserving_live_kv(
                 possible_slots += _cold_device_leaf_slots(tree, node)
                 if possible_slots >= shortfall:
                     break
-        if possible_slots < shortfall:
+        if possible_slots < minimum_shortfall:
             return False
+        shortfall = min(shortfall, possible_slots)
+    if not shortfall:
+        return False
 
     from sglang.srt.disaggregation.kv_events import StorageMedium
     from sglang.srt.mem_cache.base_prefix_cache import EvictParams

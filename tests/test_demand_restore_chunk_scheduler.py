@@ -703,8 +703,9 @@ def test_d3_uses_partial_capacity_cleanup(
     cache.load_back_threshold = threshold
     req.origin_input_ids = array("q", range(1, 15))
 
-    def partial_cleanup(native, target, **kwargs):
+    def partial_cleanup(native, target, *, minimum_tokens, **kwargs):
         assert native is cache and target == 7
+        assert minimum_tokens == 3 + max(2, threshold)
         assert allocator.available_size() == free_before
         if reclaimed:
             assert ensure_device_capacity_preserving_live_kv(native, free_before + reclaimed, **kwargs)

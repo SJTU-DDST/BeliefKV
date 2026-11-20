@@ -407,6 +407,80 @@ def test_guarded_d3_reclaims_cold_host_prefix_after_leaf(constrained_cache, case
     cache.sanity_check()
 
 
+@pytest.mark.parametrize("full_native", (128,), indirect=True)
+@pytest.mark.parametrize("constrained_cache", (69,), indirect=True)
+@pytest.mark.parametrize(
+    "minimum_gain", (63, 66, None), ids=("fundable", "unfundable", "full-only"),
+)
+def test_guarded_d3_bounded_host_preflight_funds_minimum(
+    constrained_cache, monkeypatch, minimum_gain,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    cache, allocator, pool, writes, commits = constrained_cache
+    neighbor, _ = insert_session(cache, range(1, 5), "live-neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    cold_leaves = []
+    for token in range(10, 75):
+        session = f"cold-{token}"
+        leaf, _ = insert_session(cache, (token,), session)
+        _backup(cache, leaf, demote=True)
+        cache.release_radix_session(session)
+        cold_leaves.append(leaf)
+    tree = cache.tree_core
+    # Sweep the lazy duplicate index left by the fixture's direct demotions.
+    reclaimed = {0: 0}
+    tree._reclaim_full_host_duplicates(1, reclaimed, {}, {})
+    assert reclaimed[0] == 0 and not tree.full_host_duplicates
+    # The 64-leaf scan sees 63 or 64 cold slots depending on the set order.
+    # Separate Device leaves make either amount possible without splitting.
+    donors = [
+        insert_session(cache, range(start, start + size), f"donor-{size}")[0]
+        for start, size in ((100, 63), (200, 1), (300, 3))
+    ]
+    assert tree.evictable_host_leaves == {neighbor, *cold_leaves}
+    assert pool.available_size() == 0 and cache.full_evictable_size() == 67
+    before = allocator.available_size()
+    writes_before, commits_before = len(writes), len(commits)
+    evict = Mock(wraps=cache.evict_for_alloc)
+    monkeypatch.setattr(cache, "evict_for_alloc", evict)
+    gate = SubagentMaterialization(
+        SimpleNamespace(counts=Counter(), _native_chunk_input_reserve=4),
+        include_root_entries=True,
+    )
+    gate.attach(cache)
+    try:
+        options = {} if minimum_gain is None else {"minimum_tokens": before + minimum_gain}
+        assert ensure_device_capacity_preserving_live_kv(cache, before + 67, **options) is False
+    finally:
+        gate.close()
+
+    freed = allocator.available_size() - before
+    neighbor_data = neighbor.component_data[0]
+    assert tree.node_by_id(neighbor.id) is neighbor and neighbor_data.session_ref > 0
+    assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
+    assert pool.slot_used[neighbor_slots].all()
+    if minimum_gain == 63:
+        evict.assert_called_once()
+        assert 63 <= freed <= 64
+        assert evict.call_args.args[0].num_tokens == freed
+        demoted = [node for node in donors if node.component_data[0].value is None]
+        assert [commit.node_ids for commit in commits[commits_before:]] == [
+            (node.id,) for node in demoted
+        ]
+        assert len(writes) == writes_before + len(demoted)
+        assert sum(len(node.component_data[0].host_value) for node in demoted) == freed
+        slots = allocator.alloc(before + minimum_gain)
+        assert slots is not None and len(slots) == before + minimum_gain
+        allocator.free(slots)
+    else:
+        evict.assert_not_called()
+        assert freed == 0 and len(writes) == writes_before and len(commits) == commits_before
+        assert tree.evictable_host_leaves == {neighbor, *cold_leaves}
+        assert all(node.component_data[0].value is not None for node in donors)
+    cache.sanity_check()
+
+
 def test_d3_failed_backup_preserves_live_host_descendant(constrained_cache, monkeypatch):
     from test_beliefkv_terminal_capacity import insert_session
 
