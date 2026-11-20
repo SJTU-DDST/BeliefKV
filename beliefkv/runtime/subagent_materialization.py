@@ -252,6 +252,8 @@ class _PeerRestoreRetry:
     credit: tuple
     node_ids: tuple[int, ...]
     committed: bool = False
+    staged_producer: object | None = None
+    adder: object | None = None
 
     def matches_receipts(self, ongoing):
         return all(ongoing.get(node) is receipt for node, receipt in self.credit[2].items())
@@ -483,7 +485,7 @@ class SubagentMaterialization:
                     ready += 1
                 if ready:
                     # The candidate order is already fixed on this path.
-                    native_loading_check(finish_count=ready)
+                    loading_check(finish_count=ready)
                     self.runtime.counts["subagent_materialization_restore_acks_reaped"] += ready
             # Carry the existing deferral observations into the chunk guard.
             selected_h2d = (
@@ -577,8 +579,19 @@ class SubagentMaterialization:
             )
         ):
             return decline("prefill_batch_already_constrained")
+        retry = self._peer_restore_retry
+        producer = self._demand_restore_chunk.pending
+        replace_pending = None
         if (
-            self._demand_restore_chunk.pending is not None
+            producer is not None and retry is not None and retry.staged_producer is producer
+            and retry.request is req and retry.credit[0] == key and retry.committed
+            and (retry.adder is None or retry.adder is self._adder)
+        ):
+            self._peer_restore_retry = None
+            if not self._staged_peer_protected(producer.key):
+                replace_pending = producer
+        if (
+            producer is not replace_pending
             or (pipeline is not None and pipeline.pending is not None)
             or controller.load_queue or controller.ack_load_queue
         ):
@@ -630,7 +643,7 @@ class SubagentMaterialization:
         runtime.counts["subagent_materialization_demand_restore_chunk_trials"] += 1
         reason = self._demand_restore_chunk.start(
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
-            minimum_tokens=minimum_tokens,
+            minimum_tokens=minimum_tokens, replace_pending=replace_pending,
         )
         if reason == FULL_RESTORE_FUNDED:
             runtime.counts["subagent_materialization_demand_restore_suffix_funded"] += 1
@@ -645,6 +658,8 @@ class SubagentMaterialization:
                 return True
             return False
         pending = self._demand_restore_chunk.pending
+        if replace_pending is not None:
+            runtime.counts["subagent_materialization_staged_peer_slice_retries"] += 1
         runtime.counts["subagent_materialization_demand_restore_chunks"] += 1
         runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] += pending.tokens
         if writer is not None:
@@ -668,14 +683,16 @@ class SubagentMaterialization:
             and self.admission.allows(key) and not self.runtime._terminal(key)
         )
 
-    def _can_slice_after_restore_ack(self, cache, params, key, headroom, credit, *, submitted):
+    def _can_slice_after_restore_ack(
+        self, cache, params, key, headroom, credit, *, submitted, replace_pending=None,
+    ):
         """Check physical capacity, with zero credit for an independent retry."""
         runtime = self.runtime
         chunk = runtime._native_chunk_input_reserve
         expected_acks = 1 if submitted else 0
         if (
             not chunk or 0 < credit < chunk
-            or self._demand_restore_chunk.pending is not None
+            or self._demand_restore_chunk.pending is not replace_pending
             or len(cache.cache_controller.ack_load_queue) != expected_acks
             or not self._restore_stage_matches_live(params.req, key)
         ):
@@ -708,6 +725,23 @@ class SubagentMaterialization:
                 getattr(runtime, "_final_priority_promoted", None),
             )
             or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
+        )
+
+    def _staged_peer_protected(self, key):
+        runtime = self.runtime
+        guard = getattr(self.admission, "_ready_service_guard", None)
+        last_child = getattr(runtime, "_last_join_child_has_waiting_parent", None)
+        stage = getattr(runtime, "_final_request_stages", {}).get(key.request_id)
+        return (
+            self._restore_has_service_priority(key)
+            or key.invocation_id in getattr(runtime, "_join_priority_pending", ())
+            or (last_child is not None and last_child(key))
+            or key.request_id in (
+                getattr(runtime, "_prefetch_priority_promoted", None),
+                getattr(runtime, "_parent_handoff_priority_promoted", None),
+            )
+            or (guard is not None and key in (guard.target, guard.fit_target))
+            or (stage is not None and not stage.semantic_only and runtime._live_final_stage(stage))
         )
 
     def _own_join_ack_receipts(self, cache, ack, key):
@@ -857,10 +891,23 @@ class SubagentMaterialization:
             return False
         chunk = self.runtime._native_chunk_input_reserve
         identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
+        staged = self._demand_restore_chunk.pending
+        staged_producer = None
+        if (
+            submitted and not tagged and shortfall > credit and staged is not None
+            and staged.request is not params.req and staged.credit_waiter is None
+            and self._demand_restore_chunk.parked is None
+            and len(acks) == 1 and tuple(native_node_ids) == tuple(receipts) == (staged.prefix_node,)
+            and self._peer_restore_retry is None
+            and not self._staged_peer_protected(staged.key)
+            and callable(getattr(cache, "loading_check", None))
+        ):
+            staged_producer = staged
         if submitted:
             if not identity_matches or (
                 shortfall > credit and not self._can_slice_after_restore_ack(
                     cache, params, key, headroom, credit, submitted=True,
+                    replace_pending=staged_producer,
                 )
             ):
                 return False
@@ -885,8 +932,11 @@ class SubagentMaterialization:
             wait = key, hit, receipts
             req = params.req
             req._beliefkv_d3_restore_credit = wait
-            staged = self._demand_restore_chunk.pending
-            if (
+            if staged_producer is not None:
+                self._peer_restore_retry = _PeerRestoreRetry(
+                    req, wait, tuple(native_node_ids), staged_producer=staged_producer,
+                )
+            elif (
                 submitted and staged is not None and staged.request is not req
                 and staged.prefix_node in receipts and staged.credit_waiter is None
             ):
@@ -917,12 +967,13 @@ class SubagentMaterialization:
                 "headroom_observation": headroom.reason,
                 "already_submitted": submitted,
                 "own_join_ack": tagged,
+                **({"staged_peer_slice": True} if staged_producer is not None else {}),
             })
         return True
 
     def take_peer_restore_retry(self, native_order, *, adder):
         retry = self._peer_restore_retry
-        if retry is None:
+        if retry is None or retry.staged_producer is not None:
             return None
         req = retry.request
         key = retry.credit[0]
@@ -957,12 +1008,22 @@ class SubagentMaterialization:
         restore = self._demand_restore_chunk
         pending = restore.pending
         if (
-            pending is None or pending.request is not req or pending.credit_waiter is None
+            pending is None or pending.request is not req
             or pending.prefix_node in restore.cache.ongoing_load_back
         ):
             return False
-        waiter, credit = pending.credit_waiter
-        pending.credit_waiter = None
+        retry = self._peer_restore_retry
+        staged_retry = retry is not None and retry.staged_producer is pending
+        if staged_retry:
+            if not retry.committed or (retry.adder is not None and retry.adder is not self._adder):
+                return False
+            waiter, credit = retry.request, retry.credit
+            retry.adder = self._adder
+        elif pending.credit_waiter is not None:
+            waiter, credit = pending.credit_waiter
+            pending.credit_waiter = None
+        else:
+            return False
         key, _, _ = credit
         runtime = self.runtime
         pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
@@ -974,7 +1035,10 @@ class SubagentMaterialization:
             or runtime._terminal(key) or waiter.finished() or getattr(waiter, "to_finish", None) is not None
             or not self.admission.allows(key) or not self.allows(key)
             or not any(candidate is waiter for candidate in self._native_order)
-            or self._restore_has_service_priority(pending.key)
+            or (
+                self._staged_peer_protected(pending.key) if staged_retry
+                else self._restore_has_service_priority(pending.key)
+            )
             or pipeline is None or not pipeline.has_decode_work(self._running_batch)
         ):
             return False
@@ -1596,10 +1660,9 @@ class SubagentMaterialization:
         self._native_order = native_order
         self._running_batch = running_batch
         self._adder = adder
-        if (
-            self._demand_restore_chunk is not None
-            and (restore := self._demand_restore_chunk.pending) is not None
-            and (
+        chunk = self._demand_restore_chunk
+        if chunk is not None and (chunk.pending is not None or chunk.parked is not None):
+            chunk.release_if(lambda restore: (
                 self.runtime.visible.get(restore.key.request_id) != restore.key
                 or self.admission.latest.get(restore.key.invocation_id) != restore.key
                 or _request_key(restore.request, known_keys=self.runtime.visible) != restore.key
@@ -1607,9 +1670,16 @@ class SubagentMaterialization:
                 or not self.admission.allows(restore.key)
                 or self.runtime._terminal(restore.key)
                 or restore.request.finished() or getattr(restore.request, "to_finish", None) is not None
-            )
-        ):
-            self._demand_restore_chunk.release()
+            ))
+        retry = self._peer_restore_retry
+        if retry is not None and retry.staged_producer is not None:
+            if (
+                retry.staged_producer is not self._demand_restore_chunk.pending
+                or (retry.adder is not None and retry.adder is not adder)
+            ):
+                self._peer_restore_retry = None
+            elif retry.committed:
+                retry.adder = adder
         if not self.pending or all(record.started for record in self.pending.values()):
             return
         now = time.monotonic() if now is None else now
@@ -1768,8 +1838,8 @@ class SubagentMaterialization:
             counts["subagent_materialization_cpu_ns"] += time.thread_time_ns() - cpu
 
     def defer_start(self, req):
-        if self._demand_restore_chunk is not None:
-            if self._yield_restore_to_credit_waiter(req) or self._demand_restore_chunk.defer_until_ack(req):
+        if (chunk := self._demand_restore_chunk) is not None:
+            if self._yield_restore_to_credit_waiter(req) or chunk.defer_until_ack(req):
                 return True
         if self._waiting_for_restore_credit(req):
             return True
@@ -1840,12 +1910,10 @@ class SubagentMaterialization:
             record.retry_after = 0.
 
     def forget(self, invocation):
-        if (
-            self._demand_restore_chunk is not None
-            and (restore := self._demand_restore_chunk.pending) is not None
-            and restore.key.invocation_id == invocation
-        ):
-            self._demand_restore_chunk.release()
+        if self._demand_restore_chunk is not None:
+            self._demand_restore_chunk.release_if(
+                lambda restore: restore.key.invocation_id == invocation,
+            )
         self.pending = OrderedDict(
             (rid, record) for rid, record in self.pending.items()
             if record.key.invocation_id != invocation
@@ -1860,12 +1928,11 @@ class SubagentMaterialization:
         }
 
     def abort_demand_restore(self, abort):
-        if (
-            self._demand_restore_chunk is not None
-            and (restore := self._demand_restore_chunk.pending) is not None
-            and (getattr(abort, "abort_all", False) or restore.key.request_id.startswith(abort.rid))
-        ):
-            self._demand_restore_chunk.release()
+        if self._demand_restore_chunk is not None:
+            self._demand_restore_chunk.release_if(
+                lambda restore: getattr(abort, "abort_all", False)
+                or restore.key.request_id.startswith(abort.rid),
+            )
 
     def close(self):
         self._restore_native_eviction()

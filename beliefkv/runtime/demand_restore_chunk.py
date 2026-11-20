@@ -29,23 +29,53 @@ class DemandRestoreChunk:
         self.cache = cache
         self.max_source_nodes = max_source_nodes
         self.pending = None
+        self.parked = None
 
-    @staticmethod
-    def continues(params, key):
+    def continues(self, params, key):
         req = params.req
         committed = getattr(req, "_beliefkv_d3_committed_restore", None)
-        return committed is not None and committed == (
-            key, req.last_node, params.best_match_node, params.host_hit_length,
-        )
+        if committed is None:
+            return False
+        prior_key, prefix, suffix, remaining = committed
+        hit = params.host_hit_length
+        if key != prior_key or params.best_match_node != suffix or not 0 < hit <= remaining:
+            return False
+        if req.last_node == prefix:
+            return hit == remaining
 
-    def start(self, params, key, tokens, *, device_reserve, protected_nodes, minimum_tokens=1):
+        # A shared restore may have made additional prefix tokens resident.
+        # Accept that progress only along the original path and for the exact delta.
+        tree = self.cache.tree_core
+        try:
+            node = tree.node_by_id(req.last_node)
+        except KeyError:
+            return False
+        advanced = remaining - hit
+        for _ in range(self.max_source_nodes):
+            if node.id == prefix:
+                return advanced == 0
+            if node is tree.root_node or len(node.key) > advanced:
+                return False
+            advanced -= len(node.key)
+            node = node.parent
+        return node.id == prefix and advanced == 0
+
+    def start(
+        self, params, key, tokens, *, device_reserve, protected_nodes,
+        minimum_tokens=1, replace_pending=None,
+    ):
         """Stage a slice, fund the final native load, or return a decline reason."""
         cache, req = self.cache, params.req
         tree, controller = cache.tree_core, cache.cache_controller
         continuation = self.continues(params, key)
         hit = params.host_hit_length
         if (
-            self.pending is not None
+            self.pending is not replace_pending
+            or (replace_pending is not None and (
+                self.parked is not None
+                or replace_pending.request is req
+                or replace_pending.prefix_node in cache.ongoing_load_back
+            ))
             or (getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation)
             or controller.load_queue or controller.ack_load_queue
             or not 0 < tokens <= hit
@@ -129,8 +159,11 @@ class DemandRestoreChunk:
             self.pending = _Pending(
                 req, key, tokens, hit - tokens, prefix_id, prefix_receipt, suffix_id, suffix_receipt,
             )
+            if replace_pending is not None:
+                # Keep one settled producer pinned while the borrower stages its suffix.
+                self.parked = req, replace_pending
         finally:
-            if self.pending is None:
+            if self.pending is replace_pending:
                 cache.dec_host_lock_ref(suffix_id, suffix_receipt)
 
         producer = cache.ready_to_load_host_cache()
@@ -144,20 +177,38 @@ class DemandRestoreChunk:
 
     def defer_until_ack(self, req):
         pending = self.pending
+        if self.parked is not None and self.parked[1].request is req:
+            borrower, producer = self.parked
+            if pending is not None and pending.request is borrower:
+                return True
+            self.parked = None
+            self._commit(producer)
         if pending is None or pending.request is not req:
             return False
         if pending.prefix_node in self.cache.ongoing_load_back:
             return True
-        req._beliefkv_d3_committed_restore = (
-            pending.key, pending.prefix_node, pending.suffix_node, pending.remaining_tokens,
-        )
-        self.release()
+        self.pending = None
+        self._commit(pending)
         return False
 
-    def release(self):
-        pending = self.pending
-        if pending is None:
-            return
-        self.pending = None
+    def _commit(self, pending):
+        pending.request._beliefkv_d3_committed_restore = (
+            pending.key, pending.prefix_node, pending.suffix_node, pending.remaining_tokens,
+        )
+        self._release_pins(pending)
+
+    def _release_pins(self, pending):
         self.cache.dec_lock_ref(pending.prefix_node, pending.prefix_receipt)
         self.cache.dec_host_lock_ref(pending.suffix_node, pending.suffix_receipt)
+
+    def release_if(self, predicate):
+        if self.pending is not None and predicate(self.pending):
+            pending, self.pending = self.pending, None
+            self._release_pins(pending)
+        if self.parked is not None and predicate(self.parked[1]):
+            _, producer = self.parked
+            self.parked = None
+            self._release_pins(producer)
+
+    def release(self):
+        self.release_if(lambda _pending: True)

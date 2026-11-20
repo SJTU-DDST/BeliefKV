@@ -89,6 +89,30 @@ def long_native(full_native, monkeypatch):
     )
 
 
+def test_committed_restore_recognizes_additional_resident_shared_prefix(long_native, monkeypatch):
+    f = long_native
+    cache, req = f.cache, f.req
+    monkeypatch.setattr(cache, "load_back_threshold", EXTENT_TOKENS)
+    chunk = DemandRestoreChunk(cache, max_source_nodes=SOURCE_NODES)
+    assert chunk.start(
+        _load_params(req), f.key, EXTENT_TOKENS, device_reserve=2, protected_nodes=(),
+    ) is None
+    cache.loading_check(finish_count=1)
+    assert not chunk.defer_until_ack(req)
+
+    assert cache.load_back(f.source[1].id, req=req)
+    assert cache.ready_to_load_host_cache() >= 0
+    cache.loading_check(finish_count=1)
+    req.init_next_round_input(cache)
+    tail = _load_params(req)
+    assert tail.best_match_node == f.leaf.id and req.last_node == f.source[1].id
+    assert tail.host_hit_length == (SOURCE_NODES - 2) * EXTENT_TOKENS
+    assert chunk.continues(tail, f.key)
+    assert not chunk.continues(replace(tail, host_hit_length=tail.host_hit_length - 1), f.key)
+    assert not chunk.continues(replace(tail, best_match_node=f.source[2].id), f.key)
+    cache.sanity_check()
+
+
 @pytest.mark.parametrize("inside_extent", (False, True), ids=("node-boundary", "inside-node"))
 def test_stage_long_native_path_and_restore_exact_remainder(long_native, inside_extent):
     f = long_native

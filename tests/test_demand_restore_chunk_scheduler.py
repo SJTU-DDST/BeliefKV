@@ -1345,15 +1345,20 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
     indirect=True,
 )
 @pytest.mark.parametrize(
-    ("consumer_queued", "producer_promoted"),
+    ("consumer_queued", "producer_protection", "decode_growth"),
     (
-        pytest.param(True, False, id="queued"),
-        pytest.param(False, False, id="removed"),
-        pytest.param(True, True, id="promoted-join-producer"),
+        pytest.param(True, None, 0, id="queued"),
+        pytest.param(False, None, 0, id="removed"),
+        pytest.param(True, "promoted", 0, id="promoted-join-producer"),
+        pytest.param(True, None, 2, id="partial-credit"),
+        pytest.param(True, None, 3, id="insufficient-partial-credit"),
+        pytest.param(True, "promoted", 2, id="promoted-producer-partial-credit"),
+        pytest.param(True, "pending_join", 2, id="pending-join-producer-partial-credit"),
+        pytest.param(True, "fit_target", 2, id="fit-target-producer-partial-credit"),
     ),
 )
 def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
-    staged_native, monkeypatch, consumer_queued, producer_promoted,
+    staged_native, monkeypatch, consumer_queued, producer_protection, decode_growth,
 ):
     from sglang.srt.managers.schedule_policy import AddReqResult
     from test_beliefkv_terminal_capacity import insert_session
@@ -1375,6 +1380,10 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
     for start, size in ((111, 6), (121, 6), (131, 8), (201, 32)):
         insert_session(cache, range(start, start + size), str(start))
     held_device = allocator.alloc(allocator.available_size() - 3)
+    decode_slots = None
+    if decode_growth:
+        # A four-token minimum plus the three-slot reserve needs seven slots.
+        monkeypatch.setattr(cache, "load_back_threshold", 4)
 
     losses = []
 
@@ -1385,6 +1394,7 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
 
     monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
     f.waiting[:] = [producer]
+    producer_promoted = producer_protection == "promoted"
     if producer_promoted:
         runtime._join_priority_promoted = producer.rid
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
@@ -1393,10 +1403,20 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
     start_loading = controller.start_loading
 
     def complete_consumer_load(**kwargs):
-        # Keep a new producer slice in flight while allowing the consumer's own ACK.
         consumer_load = [op.node_id for op in controller.load_queue] == [consumer_leaf.id]
         result = start_loading(**kwargs)
-        if consumer_load:
+        if result >= 0 and decode_growth:
+            # Preserve completed events across ring reuse while controlling new ACKs.
+            event = controller.ack_load_queue[-1].finish_event
+
+            def synchronize():
+                assert event.query()
+                event.query = lambda: True
+
+            event.synchronize.side_effect = synchronize
+            controller.layer_done_counter.events[result].finish_event = event
+        elif consumer_load:
+            # Keep a new producer slice in flight while allowing the consumer's own ACK.
             controller.ack_load_queue[-1].finish_event.query = lambda: True
         return result
 
@@ -1417,8 +1437,45 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (2, 1, 1)
         assert (allocator.available_size(), host.available_size()) == (3, 0)
 
+        if decode_growth:
+            decode_slots = allocator.alloc(decode_growth)
+            device_free = allocator.available_size()
+            assert decode_slots is not None and device_free == 3 - decode_growth
+            assert 6 < 8 - device_free
+            assert (device_free + 6 >= 4 + 3) == (decode_growth == 2)
+
+        if producer_protection == "pending_join":
+            runtime._join_priority_pending = {staged.key.invocation_id: "join"}
+            assert getattr(runtime, "_join_priority_promoted", None) is None
+        elif producer_protection == "fit_target":
+            guard = ReadyServiceGuard(runtime._agent_admission, fit_after_s=600)
+            guard.fit_target = staged.key
+            runtime._agent_admission._ready_service_guard = guard
+
         scheduler.waiting_queue.append(consumer)
         assert invoke() == (None, f.running)
+        if decode_growth and (producer_protection is not None or decode_growth == 3):
+            runtime.on_prefill_candidate_result.assert_called_with(
+                consumer, admitted=False, result="RESTORE_STAGED",
+            )
+            assert not getattr(consumer, "_beliefkv_d3_restore_credit", None)
+            assert gate._peer_restore_retry is None
+            assert restore.pending is staged and restore.parked is None and not construction
+            assert len(f.loads) == 2
+            assert f.loads[-1].node_id == consumer_leaf.id
+            assert f.loads[-1].host_indices.tolist() == consumer_slots
+            assert sum(count for _, count in losses) == 5 + decode_growth
+            producer_ack, consumer_ack = controller.ack_load_queue
+            assert producer_ack is first_ack and consumer_ack.node_ids == [consumer_leaf.id]
+            assert consumer_ack.num_tokens_by_pool == {"kv": 8}
+            first_ack.finish_event.synchronize.assert_not_called()
+            f.complete.ready = True
+            cache.loading_check()
+            f.pipeline.cancel("test_complete")
+            cache.sanity_check()
+            return
+
+        assert not losses, f"consumer evicted referenced Host-only KV before producer ACK: {losses}"
         runtime.on_prefill_candidate_result.assert_called_with(
             consumer, admitted=False, result=AddReqResult.OTHER.name,
         )
@@ -1434,7 +1491,15 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         )
         assert deferred["key"] == asdict(consumer_key) and deferred["already_submitted"]
         assert deferred["native_node_ids"] == first_ack.node_ids
-        assert (deferred["reclaimable_after_ack_tokens"], deferred["unfunded_restore_tokens"]) == (6, 5)
+        assert (deferred["reclaimable_after_ack_tokens"], deferred["unfunded_restore_tokens"]) == (
+            6, 5 + decode_growth,
+        )
+        if decode_growth:
+            cache.loading_check()
+            assert invoke() == (None, f.running)
+            assert scheduler.waiting_queue == [producer, consumer] and not construction
+            assert f.loads == [first_load] and controller.ack_load_queue == [first_ack]
+            assert cache.ongoing_load_back[staged.prefix_node] is receipt and not losses
         first_ack.finish_event.synchronize.assert_not_called()
 
         f.complete.ready = True
@@ -1445,6 +1510,100 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         assert restore.pending is staged
         assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
         assert tree._can_reclaim_full_host_duplicate(tree.node_by_id(staged.prefix_node))
+
+        if decode_growth:
+            pins_at_borrower_lock = []
+            acquire = cache.inc_lock_ref
+
+            def record_borrower_lock(node_id, *args, **kwargs):
+                acquired = acquire(node_id, *args, **kwargs)
+                if len(f.loads) == 2 and node_id == f.loads[-1].node_id:
+                    pins_at_borrower_lock.append((prefix.lock_ref, suffix.host_lock_ref))
+                return acquired
+
+            with monkeypatch.context() as track:
+                track.setattr(cache, "inc_lock_ref", record_borrower_lock)
+                assert invoke() == (None, f.running)
+
+            assert pins_at_borrower_lock == [(1, 1), (1, 1)]
+            assert not construction and scheduler.waiting_queue == [producer, consumer]
+            assert f.pipeline.pending is None and scheduler.chunked_req is None
+            assert gate._peer_restore_retry is None
+            borrower = restore.pending
+            assert borrower.request is consumer and (borrower.tokens, borrower.remaining_tokens) == (4, 4)
+            assert borrower.suffix_node == consumer_leaf.id
+            assert len(f.loads) == 2 and f.loads[-1].node_id == borrower.prefix_node
+            assert f.loads[-1].host_indices.tolist() == consumer_slots[:4]
+            borrower_ack, = controller.ack_load_queue
+            assert borrower_ack.node_ids == [borrower.prefix_node]
+            assert borrower_ack.num_tokens_by_pool == {"kv": 4}
+            assert restore.parked == (consumer, staged)
+            assert producer._beliefkv_d3_committed_restore is None
+            assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
+            assert allocator.available_size() == 3 and prefix.host_value is None
+            assert not losses and neighbor_data.host_value is neighbor_slots
+            assert host.slot_used[neighbor_slots].all()
+
+            # The producer remains first in the queue throughout the borrower's chain.
+            assert invoke() == (None, f.running)
+            assert len(f.loads) == 2 and not losses
+            assert not construction and scheduler.waiting_queue == [producer, consumer]
+            assert restore.pending is borrower and controller.ack_load_queue == [borrower_ack]
+            borrower_ack.finish_event.synchronize.assert_not_called()
+            f.complete.ready = True
+            cache.loading_check()
+            borrower_ack.finish_event.synchronize.assert_called_once_with()
+
+            with pytest.raises(BatchConstructionReached):
+                invoke()
+            assert construction == [(consumer,)] and scheduler.waiting_queue == [producer]
+            assert consumer.extend_range.start == len(consumer_slots)
+            assert len(f.loads) == 3 and f.loads[2].node_id == consumer_leaf.id
+            assert restore.pending is None and restore.parked == (consumer, staged)
+            assert producer._beliefkv_d3_committed_restore is None
+            assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
+            assert not losses
+            cache.loading_check()
+
+            for remaining in (8, 4):
+                f.complete.ready = False
+                assert invoke() == (None, f.running)
+                resumed = restore.pending
+                assert resumed.request is producer and resumed.suffix_node == producer_leaf.id
+                assert (resumed.tokens, resumed.remaining_tokens) == (4, remaining)
+                assert restore.parked is None
+                assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (2, 0, 1)
+                assert not losses
+                next_ack, = controller.ack_load_queue
+                assert next_ack.node_ids == [resumed.prefix_node]
+                f.complete.ready = True
+                cache.loading_check()
+                next_ack.finish_event.synchronize.assert_called_once_with()
+
+            with pytest.raises(BatchConstructionReached):
+                invoke()
+            assert construction == [(consumer,), (producer,)] and not scheduler.waiting_queue
+            assert producer.extend_range.start == len(producer_slots)
+            assert [len(load.host_indices) for load in f.loads] == [6, 4, 4, 4, 4, 4]
+            assert [
+                slot for load in f.loads[1:3] for slot in load.host_indices.tolist()
+            ] == consumer_slots
+            assert [
+                slot for load in [first_load, *f.loads[3:]] for slot in load.host_indices.tolist()
+            ] == producer_slots
+            assert not losses and neighbor_data.host_value is neighbor_slots
+            assert host.slot_used[neighbor_slots].all()
+
+            cache.loading_check()
+            for req in (consumer, producer):
+                cache.dec_lock_ref(req.last_node, req.lock_receipt)
+            gate.close()
+            assert restore.pending is None and not cache.ongoing_load_back
+            for load in f.loads:
+                full = tree.node_by_id(load.node_id).component_data[0]
+                assert (full.lock_ref, full.host_lock_ref) == (0, 0)
+            cache.sanity_check()
+            return
 
         expect_yield = consumer_queued and not producer_promoted
         if expect_yield:
@@ -1499,6 +1658,8 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         cache.sanity_check()
     finally:
         gate.close()
+        if decode_slots is not None:
+            allocator.free(decode_slots)
         allocator.free(held_device)
         host.free(held_host)
 
