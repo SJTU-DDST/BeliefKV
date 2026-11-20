@@ -425,16 +425,21 @@ def watch(registration):
             "measured_JCT_ms": {key: ends[key] - starts[key] for key in sorted(measured)},
             "cohort_completion_monotonic_ms": max(ends[key] for key in measured),
             "stop_observed_monotonic_ms": time.monotonic() * 1000.,
-            "completed_nonmeasured": sorted(ends.keys() - measured),
-            "right_censored_nonmeasured": sorted(allowed - measured - ends.keys()),
-            "never_submitted_background": sorted(allowed - starts.keys()),
             "no_measured_workflow_truncated": True,
             "policy_not_given_cohort_membership": True,
         }
         capture.reservation.write_json(output / "intent.json", intent)
         receipts = stop_owned(comparison, cohort, output, state=current)
+        # Include background boundaries flushed before the replay exited.
+        rows, final_offset = tail_records(events_path, offset)
+        if final_offset != events_path.stat().st_size:
+            raise ValueError("replay events were not completely flushed before certification")
+        boundaries(rows, starts, ends, allowed)
         completion = {
             **intent, **receipts, "status": "measured_cohort_complete_background_censored",
+            "completed_nonmeasured": sorted(ends.keys() - measured),
+            "right_censored_nonmeasured": sorted(allowed - measured - ends.keys()),
+            "never_submitted_background": sorted(allowed - starts.keys()),
             "actual_owned_exit_verified": True,
             "fresh_idle_drain_verified": True,
             "raw_supervisor_interruption_is_expected_for_this_frozen_run": True,

@@ -111,6 +111,62 @@ def test_incremental_boundary_reader_does_not_consume_partial_json(tmp_path):
         stop.boundaries(rows, starts, ends, {"w1"})
 
 
+def test_certificate_includes_background_boundaries_flushed_during_stop(tmp_path, monkeypatch):
+    arrivals, cohort, events, _ = partial_fixture()
+    replay = tmp_path / "full/replay"
+    replay.mkdir(parents=True)
+    event_path = replay / "runtime_events.replay.jsonl"
+    event_path.write_text("".join(json.dumps(row) + "\n" for row in events))
+    registration, comparison = tmp_path / "observer.json", tmp_path / "comparison.json"
+    cohort_path, arrivals_path = tmp_path / "cohort.json", tmp_path / "arrivals.json"
+    output, analysis = tmp_path / "termination", tmp_path / "analysis"
+    write = stop.capture.reservation.write_json
+    write(registration, {
+        "comparison": str(comparison), "cohort": str(cohort_path), "inputs_sha256": {},
+        "output_dir": str(output), "analysis_output": str(analysis), "poll_seconds": 2,
+    })
+    write(comparison, {
+        "run_root": str(tmp_path), "order": ["full"], "workflow_arrivals_path": str(arrivals_path),
+    })
+    write(comparison.with_suffix(".state.json"), {"status": "running_full"})
+    write(cohort_path, cohort)
+    write(arrivals_path, arrivals)
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
+    monkeypatch.setattr(stop.os, "getpriority", lambda *_: 19)
+    monkeypatch.setattr(stop, "sha256_file", lambda _: "digest")
+    monkeypatch.setattr(stop.time, "sleep", lambda _: pytest.fail("stop must begin at measured completion"))
+
+    measured_ends = {
+        row["workflow_id"]: row["ts_ms"] for row in events
+        if row["kind"] == "workflow_end" and row["workflow_id"] in cohort["measured_workflow_ids"]
+    }
+    late_arrival = events[0]["ts_ms"] + arrivals["arrival_schedule"][4]["offset_seconds"] * 1000.
+
+    def shutdown(_comparison, _cohort, directory, *, state):
+        assert stop.causal.load(directory / "intent.json")["measured_end_ms"] == measured_ends
+        with event_path.open("a") as stream:
+            for kind, workflow, when in (
+                ("workflow_start", "w4", late_arrival), ("workflow_end", "w3", late_arrival + 1.),
+            ):
+                stream.write(json.dumps({"kind": kind, "workflow_id": workflow, "ts_ms": when}) + "\n")
+        return {"complete_measured_native_work_verified": True}
+
+    monkeypatch.setattr(stop, "stop_owned", shutdown)
+    monkeypatch.setattr(stop, "review", lambda *_: write(analysis / "workload_decision.json", {
+        "accepted_for_oracle_diagnostic": False, "failed_checks": [],
+    }))
+    stop.watch(registration)
+    state = stop.causal.load(registration.with_suffix(".state.json"))
+    assert state["status"] == "measured_cohort_review_complete", state.get("error")
+    completion = stop.causal.load(output / "completion.json")
+    assert completion["measured_end_ms"] == measured_ends
+    assert completion["cohort_completion_monotonic_ms"] == max(measured_ends.values())
+    assert completion["completed_nonmeasured"] == ["w0", "w3"]
+    assert completion["right_censored_nonmeasured"] == ["w4", "w5"]
+    assert completion["never_submitted_background"] == ["w5"]
+    assert all(completion[key] == value for key, value in stop.causal.load(output / "intent.json").items())
+
+
 @pytest.mark.parametrize("broken_receipts,host_bytes", [
     pytest.param(
         broken, host,
