@@ -11,7 +11,11 @@ from types import SimpleNamespace
 
 from beliefkv.control.causal_graph import InvocationState, JoinMode
 from beliefkv.core.events import RelationType
-from beliefkv.runtime.demand_restore_chunk import DEFER_WRITE_ACK, DemandRestoreChunk
+from beliefkv.runtime.demand_restore_chunk import (
+    DEFER_WRITE_ACK,
+    FULL_RESTORE_FUNDED,
+    DemandRestoreChunk,
+)
 from beliefkv.runtime.sglang_v0520_admission import _request_key
 
 
@@ -467,15 +471,19 @@ class SubagentMaterialization:
     def _stage_demand_restore_chunk(self, cache, params, selected_h2d=None):
         runtime = self.runtime
         chunk = getattr(runtime, "_native_chunk_input_reserve", None)
+        if not chunk:
+            return False
         hit = params.host_hit_length
-        if not chunk or hit < 2 * chunk:
+        req = params.req
+        key = runtime.visible.get(req.rid)
+        continuation = self._demand_restore_chunk.continues(params, key)
+        threshold = max(1, cache.load_back_threshold)
+        if hit < (threshold if continuation else 2 * chunk):
             return False
         device_free = cache.token_to_kv_pool_allocator.available_size()
         if device_free >= hit:
             return False
 
-        req = params.req
-        key = runtime.visible.get(req.rid)
         controller = cache.cache_controller
         writer = getattr(runtime, "_opportunity_writer", None)
         writes_at_trial = len(controller.ack_write_queue)
@@ -544,7 +552,7 @@ class SubagentMaterialization:
             or not self.admission.allows(key) or runtime._terminal(key)
         ):
             return decline("continuation_not_eligible")
-        if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key:
+        if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation:
             return decline("already_attempted")
         if self._restore_has_service_priority(key):
             return decline("protected_service")
@@ -571,10 +579,13 @@ class SubagentMaterialization:
         safe_tokens = headroom.available_tokens - reserve
         if not headroom.observable:
             return decline("headroom_unobservable", observation=headroom.reason)
-        if safe_tokens + chunk >= hit:
+        if not continuation and safe_tokens + chunk >= hit:
             return decline("headroom_expected_to_cover_native_restore", safe_tokens=safe_tokens)
-        tokens = min(hit // 2, safe_tokens) // page * page
-        minimum_tokens = max(chunk, cache.load_back_threshold)
+        tokens = min(hit if continuation else hit // 2, safe_tokens) // page * page
+        minimum_tokens = max(chunk, threshold)
+        if continuation:
+            # Require a native chunk of progress unless the whole remainder fits.
+            minimum_tokens = min(hit, minimum_tokens)
         if tokens < minimum_tokens:
             return decline("no_safe_slice", safe_tokens=safe_tokens, observation=headroom.reason)
         runtime.counts["subagent_materialization_demand_restore_chunk_trials"] += 1
@@ -582,6 +593,9 @@ class SubagentMaterialization:
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
             minimum_tokens=minimum_tokens,
         )
+        if reason == FULL_RESTORE_FUNDED:
+            runtime.counts["subagent_materialization_demand_restore_suffix_funded"] += 1
+            return False
         if reason is not None:
             decline(
                 reason, proposed_tokens=tokens, device_reserve_tokens=reserve,
@@ -602,6 +616,7 @@ class SubagentMaterialization:
                 "proposed_tokens": tokens, "staged_tokens": pending.tokens,
                 "observed_safe_tokens": safe_tokens, "prefix_node_id": pending.prefix_node,
                 "selected_prefill_reserved_tokens": selected_slots,
+                "continuation": continuation,
             })
         return True
 

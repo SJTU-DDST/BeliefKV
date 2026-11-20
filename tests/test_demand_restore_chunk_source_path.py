@@ -144,6 +144,7 @@ def test_stage_long_native_path_and_restore_exact_remainder(long_native, inside_
     assert offset == params.host_hit_length and f.host.slot_used[f.host_slots].all()
 
     assert chunk.defer_until_ack(req)
+    assert not chunk.continues(params, f.key)
     cache.loading_check(finish_count=0)
     assert chunk.defer_until_ack(req) and len(f.loads) == 1
     cache.loading_check(finish_count=1)
@@ -160,7 +161,12 @@ def test_stage_long_native_path_and_restore_exact_remainder(long_native, inside_
     tail_tokens = params.host_hit_length - tokens
     assert req.last_node == prefix.id and req.best_match_node == f.leaf.id
     assert req.host_hit_length == tail_tokens and len(req.prefix_indices) == ANCHOR_TOKENS + tokens
-    indices, last_node = cache.init_load_back(_load_params(req))
+    tail = _load_params(req)
+    assert chunk.continues(tail, f.key)
+    assert not chunk.continues(params, f.key)
+    assert not chunk.continues(replace(tail, best_match_node=prefix.id), f.key)
+    assert not chunk.continues(tail, replace(f.key, context_epoch=f.key.context_epoch + 1))
+    indices, last_node = cache.init_load_back(tail)
     assert len(indices) == tail_tokens and last_node == f.leaf.id
     assert len(f.loads) == 2
     assert f.loads[-1].host_indices.tolist() == f.host_slots[tokens:].tolist()

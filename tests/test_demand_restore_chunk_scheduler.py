@@ -26,11 +26,11 @@ from tests.test_full_only_native_lifecycle import full_native as base_full_nativ
 
 
 @pytest.fixture
-def full_native(base_full_native, monkeypatch):
+def full_native(base_full_native, monkeypatch, request):
     cache, _, writes, _, _ = base_full_native
     unit = cache.host_pool_group.size_per_token
     spawn_reserve = (64 * 1024**2 + unit - 1) // unit
-    bind_host_slots(cache, writes, spawn_reserve + 16, monkeypatch)
+    bind_host_slots(cache, writes, spawn_reserve + getattr(request, "param", 16), monkeypatch)
     monkeypatch.setenv("SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM", "0")
     return base_full_native
 
@@ -232,6 +232,102 @@ def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome
     cache.sanity_check()
 
 
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 1, "select": False, "prefix_sizes": (18,)}, 18),),
+    indirect=True,
+)
+def test_d3_recycles_acked_slices_until_native_suffix_is_funded(staged_native, monkeypatch):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, req, allocator = f.cache, f.req, f.allocator
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    source_slots = f.leaf.component_data[0].host_value.tolist()
+    held_host = host.alloc(host.available_size() - 14)
+    neighbor, _ = insert_session(cache, range(101, 109), "neighbor")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    for start, size in ((111, 6), (121, 6), (131, 4), (141, 4), (201, 32)):
+        insert_session(cache, range(start, start + size), str(start))
+    held_device = allocator.alloc(allocator.available_size() - 3)
+    assert (allocator.available_size(), host.available_size()) == (3, 6)
+    req.origin_input_ids = array("q", range(1, 25))
+    losses = []
+
+    def record_eviction(node, _component, tokens):
+        full = node.component_data[0]
+        if full.value is None and full.session_ref > 0:
+            losses.append(tokens)
+
+    monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
+    native_load = Mock(wraps=cache.init_load_back)
+    monkeypatch.setattr(cache, "init_load_back", native_load)
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    decode_slots = None
+    prefix_nodes = []
+    try:
+        offset = 0
+        for tokens in (6, 4, 4):
+            f.complete.ready = False
+            assert invoke() == (None, f.running)
+            assert not losses, f"restore evicted {sum(losses)} live Host-only tokens"
+            assert not construction and scheduler.waiting_queue == [req]
+            assert scheduler.chunked_req is None and req.kv.req_pool_idx is None
+            assert f.pipeline.pending is None
+            native_load.assert_not_called()
+            pending = gate._demand_restore_chunk.pending
+            assert pending.request is req and pending.tokens == tokens
+            assert pending.key == f.key and pending.suffix_node == f.leaf.id
+            prefix_nodes.append(tree.node_by_id(pending.prefix_node))
+            assert f.loads[-1].host_indices.tolist() == source_slots[offset:offset + tokens]
+            ack, = controller.ack_load_queue
+            assert ack.node_ids == [pending.prefix_node] and ack.num_tokens_by_pool == {"kv": tokens}
+            assert (allocator.available_size(), host.available_size()) == (3, 0)
+            if offset == 0:
+                # Decode consumes two reserve slots before the first H2D ACK.
+                decode_slots = allocator.alloc(2)
+                assert allocator.available_size() == 1
+
+            assert invoke() == (None, f.running)
+            assert len(f.loads) == len(prefix_nodes) and controller.ack_load_queue == [ack]
+            assert gate._demand_restore_chunk.pending is pending
+            ack.finish_event.synchronize.assert_not_called()
+            f.complete.ready = True
+            cache.loading_check()
+            ack.finish_event.synchronize.assert_called_once_with()
+            assert not controller.ack_load_queue and not cache.ongoing_load_back
+            offset += tokens
+
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        native_load.assert_called_once()
+        assert native_load.call_args.args[0].host_hit_length == 4
+        assert construction == [(req,)] and not scheduler.waiting_queue
+        assert scheduler.chunked_req is req and req.extend_range.start == 18
+        assert [len(load.host_indices) for load in f.loads] == [6, 4, 4, 4]
+        assert f.loads[-1].host_indices.tolist() == source_slots[offset:]
+        assert allocator.available_size() == 3
+        assert f.runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] == 14
+        assert f.runtime.counts["subagent_materialization_demand_restore_suffix_funded"] == 1
+        cache.loading_check()
+        cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        assert gate._demand_restore_chunk.pending is None and f.pipeline.pending is None
+        assert not controller.ack_load_queue and not cache.ongoing_load_back
+        for node in (*prefix_nodes, f.leaf):
+            full = node.component_data[0]
+            assert (full.lock_ref, full.host_lock_ref) == (0, 0)
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert host.slot_used[neighbor_slots].all() and not losses
+        cache.sanity_check()
+    finally:
+        gate.close()
+        if decode_slots is not None:
+            allocator.free(decode_slots)
+        allocator.free(held_device)
+        host.free(held_host)
+
+
 @pytest.fixture
 def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     from sglang.srt.managers.schedule_batch import Req
@@ -407,6 +503,14 @@ def test_d3_uses_partial_capacity_cleanup(
             cache.loading_check()
             ack.finish_event.synchronize.assert_called_once_with()
             assert not controller.ack_load_queue and not cache.ongoing_load_back
+            funding.assert_called_once()
+            monkeypatch.setattr(
+                "beliefkv.runtime.demand_restore_chunk.ensure_device_capacity_preserving_live_kv",
+                ensure_device_capacity_preserving_live_kv,
+            )
+            assert invoke() == (None, f.running)
+            assert not construction and scheduler.waiting_queue == [req]
+            cache.loading_check()
         else:
             f.complete.ready = True
 
@@ -414,17 +518,15 @@ def test_d3_uses_partial_capacity_cleanup(
             invoke()
         funding.assert_called_once()
         native_load.assert_called_once()
-        assert native_load.call_args.args[0].host_hit_length == 8 - staged_tokens
+        assert native_load.call_args.args[0].host_hit_length == (2 if staged_tokens else 8)
         assert construction == [(req,)] and not scheduler.waiting_queue
         assert scheduler.chunked_req is req and (req.extend_range.start, req.extend_range.length) == (8, 2)
         assert gate._demand_restore_chunk.pending is None and f.pipeline.pending is None
-        assert runtime.counts["subagent_materialization_demand_restore_chunk_trials"] == 1
-        assert runtime.counts["subagent_materialization_demand_restore_chunks"] == bool(staged_tokens)
-        assert runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] == staged_tokens
-        assert [load.host_indices.tolist() for load in f.loads] == (
-            [source_slots[:staged_tokens], source_slots[staged_tokens:]]
-            if staged_tokens else [source_slots]
-        )
+        assert runtime.counts["subagent_materialization_demand_restore_chunks"] == (2 if staged_tokens else 0)
+        assert runtime.counts["subagent_materialization_demand_restore_chunk_tokens"] == (6 if staged_tokens else 0)
+        pieces = [load.host_indices.tolist() for load in f.loads]
+        assert [len(piece) for piece in pieces] == ([2, 4, 2] if staged_tokens else [8])
+        assert [slot for piece in pieces for slot in piece] == source_slots
         cache.loading_check()
         cache.dec_lock_ref(req.last_node, req.lock_receipt)
         assert not controller.ack_load_queue and not cache.ongoing_load_back
@@ -432,6 +534,7 @@ def test_d3_uses_partial_capacity_cleanup(
             assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
             assert host.slot_used[neighbor_slots].all()
         else:
+            assert runtime.counts["subagent_materialization_demand_restore_chunk_trials"] == 1
             decline, = _restore_declines(runtime)
             assert decline["reason"] == "device_capacity_not_funded" and decline["proposed_tokens"] == 4
         cache.sanity_check()

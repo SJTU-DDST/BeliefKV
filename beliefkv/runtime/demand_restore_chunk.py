@@ -6,6 +6,7 @@ from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_pres
 
 
 DEFER_WRITE_ACK = "write_ack_retry_next_pass"
+FULL_RESTORE_FUNDED = "full_restore_funded"
 
 
 @dataclass
@@ -13,6 +14,7 @@ class _Pending:
     request: object
     key: object
     tokens: int
+    remaining_tokens: int
     prefix_node: int
     prefix_receipt: object
     suffix_node: int
@@ -27,15 +29,26 @@ class DemandRestoreChunk:
         self.max_source_nodes = max_source_nodes
         self.pending = None
 
+    @staticmethod
+    def continues(params, key):
+        req = params.req
+        committed = getattr(req, "_beliefkv_d3_committed_restore", None)
+        return committed is not None and committed == (
+            key, req.last_node, params.best_match_node, params.host_hit_length,
+        )
+
     def start(self, params, key, tokens, *, device_reserve, protected_nodes, minimum_tokens=1):
-        """Return a decline reason, or None after handing the slice to native."""
+        """Stage a slice, fund the final native load, or return a decline reason."""
         cache, req = self.cache, params.req
         tree, controller = cache.tree_core, cache.cache_controller
+        continuation = self.continues(params, key)
+        hit = params.host_hit_length
         if (
             self.pending is not None
-            or getattr(req, "_beliefkv_d3_staged_restore_key", None) == key
+            or (getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation)
             or controller.load_queue or controller.ack_load_queue
-            or not 0 < tokens < params.host_hit_length
+            or not 0 < tokens <= hit
+            or (tokens == hit and not continuation)
         ):
             return "restore_not_available"
 
@@ -82,6 +95,9 @@ class DemandRestoreChunk:
             req._beliefkv_d3_write_ack_retry_key = key
             return DEFER_WRITE_ACK
         req._beliefkv_d3_staged_restore_key = key
+        req._beliefkv_d3_committed_restore = None
+        if funded and tokens == hit:
+            return FULL_RESTORE_FUNDED
         if not funded:
             free_after = allocator.available_size()
             page = cache.page_size
@@ -110,7 +126,7 @@ class DemandRestoreChunk:
                 return "native_load_declined"
             prefix_receipt = cache.inc_lock_ref(prefix_id).to_dec_params()
             self.pending = _Pending(
-                req, key, tokens, prefix_id, prefix_receipt, suffix_id, suffix_receipt,
+                req, key, tokens, hit - tokens, prefix_id, prefix_receipt, suffix_id, suffix_receipt,
             )
         finally:
             if self.pending is None:
@@ -131,6 +147,9 @@ class DemandRestoreChunk:
             return False
         if pending.prefix_node in self.cache.ongoing_load_back:
             return True
+        req._beliefkv_d3_committed_restore = (
+            pending.key, pending.prefix_node, pending.suffix_node, pending.remaining_tokens,
+        )
         self.release()
         return False
 
