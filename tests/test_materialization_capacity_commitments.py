@@ -697,6 +697,133 @@ def test_d3_submits_selected_demand_before_destructive_writeback(staged_native, 
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 2, "select": False},), indirect=True)
+def test_d3_waits_for_submitted_selected_restore_ack(staged_native, monkeypatch):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    native, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = native.tree_core, native.cache_controller
+    peer, consumer = f.members
+    peer_leaf, consumer_leaf = f.leaves
+    back_up = _track_native_host_allocations(native, 24, occupied=16)
+    neighbor, generation = insert_session(native, range(100, 108), "waiting-parent")
+    back_up(neighbor)
+    native._demote(neighbor.id, {0: 0})
+    neighbor_data = neighbor.component_data[0]
+    neighbor_slots = neighbor_data.host_value
+    assert neighbor_data.session_ref > 0 and neighbor_data.value is None
+    insert_session(native, range(200, 200 + allocator.size - 12), "unbacked")
+
+    runtime._agent_admission.latest = {key.invocation_id: key for key in runtime.visible.values()}
+    runtime._native_chunk_input_reserve = 4
+    runtime._native_page_size = native.page_size
+    runtime._prefetch_service_leases = {}
+    gate = SubagentMaterialization(runtime, include_root_entries=True)
+    gate.materialized.add(gate._context(runtime.visible[consumer.rid]))
+    gate.attach(native)
+    scheduler, construction, invoke = native_scheduler(f, enabled=True)
+
+    def candidates(running, adder):
+        gate.prepare(tuple(scheduler.waiting_queue), running_batch=running, adder=adder)
+        return scheduler.waiting_queue
+
+    scheduler._beliefkv_prefill_candidates = candidates
+    runtime.defer_prefill_for_prefetch = gate.defer_start
+
+    # Model a peer batch that takes the normal native submission path.
+    with monkeypatch.context() as peer_batch:
+        peer_batch.setattr(f.pipeline, "stage", lambda *_args, **_kwargs: False)
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+    assert construction == [(peer,)] and scheduler.waiting_queue == [consumer]
+    assert f.pipeline.pending is None and not controller.ack_load_queue
+    assert (allocator.available_size(), native.host_pool_group.available_size()) == (4, 0)
+    load, = f.loads
+    assert controller.load_queue == [load] and load.node_id == peer_leaf.id
+    deferral, = (
+        event.args[0] for event in runtime._opportunity_writer.record.call_args_list
+        if event.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
+    )
+    assert deferral["key"]["request_id"] == consumer.rid
+    assert deferral["native_node_ids"] == [peer_leaf.id] and deferral["unfunded_restore_tokens"] == 4
+    receipt = native.ongoing_load_back[peer_leaf.id]
+    assert native.ready_to_load_host_cache() >= 0
+    ack, = controller.ack_load_queue
+    assert ack.node_ids == [peer_leaf.id] and ack.num_tokens_by_pool == {"kv": 8}
+    assert not controller.load_queue
+
+    callbacks = runtime.on_prefill_candidate_result.call_count
+    for transfer_ready in (False, True):
+        f.complete.ready = transfer_ready
+        assert ack.finish_event.query() is transfer_ready
+        assert invoke() == (None, f.running)
+        assert f.loads == [load] and f.pipeline.pending is None
+        assert construction == [(peer,)] and scheduler.waiting_queue == [consumer]
+        assert consumer.kv.req_pool_idx is None and consumer.lock_receipt.node_id is None
+        assert consumer_leaf.load_back_pending_id is None
+        assert controller.ack_load_queue == [ack] and not controller.load_queue
+        assert native.ongoing_load_back[peer_leaf.id] is receipt
+        assert neighbor_data.host_value is neighbor_slots
+    assert runtime.on_prefill_candidate_result.call_count == callbacks
+    ack.finish_event.synchronize.assert_not_called()
+
+    native.loading_check()
+    ack.finish_event.synchronize.assert_called_once_with()
+    assert not controller.ack_load_queue and not native.ongoing_load_back
+    assert tree.full_host_duplicates[peer_leaf.id] is peer_leaf
+    with pytest.raises(BatchConstructionReached):
+        invoke()
+    assert construction == [(peer,), (consumer,)] and not scheduler.waiting_queue
+    assert consumer.host_loaded_length == 8
+    assert [load.node_id for load in f.loads] == [peer_leaf.id, consumer_leaf.id]
+    native.loading_check()
+    assert not controller.ack_load_queue and not native.ongoing_load_back
+    for member in f.members:
+        native.dec_lock_ref(member.last_node, member.lock_receipt)
+    assert neighbor_data.value is None and neighbor_data.host_value is neighbor_slots
+    retained = native.inspect_beliefkv_reentry(NS(
+        session_id="waiting-parent", session_generation=generation,
+        origin_input_ids=array("q", range(100, 109)), extra_key=None, cache_salt=None,
+    ))
+    assert retained["checkpoint_tokens"] == 8
+    native.sanity_check()
+    gate.close()
+
+
+@pytest.mark.parametrize(
+    "changed",
+    ("request_attempt", "visible_epoch", "receipt", "submitted_batch", "priority", "capacity", "decode"),
+)
+def test_d3_drops_restore_credit_when_wait_is_no_longer_applicable(runtime, changed, monkeypatch):
+    req = parent_request(runtime, allocated=0, session_id="parent-session")
+    key = runtime.visible[req.rid]
+    receipt = object()
+    req._beliefkv_d3_restore_credit = key, 8, {7: receipt}
+    gate = runtime._subagent_materialization
+    gate._running_batch = NS(reqs=[])
+    cache = NS(
+        cache_controller=NS(ack_load_queue=[NS(node_ids=[7 if changed != "submitted_batch" else 8])]),
+        ongoing_load_back={7: object() if changed == "receipt" else receipt},
+        token_to_kv_pool_allocator=NS(available_size=lambda: 8 if changed == "capacity" else 4),
+    )
+    if changed == "request_attempt":
+        req.cache_request_handle = NS(attempt_id=key.attempt_id + 1)
+    if changed == "visible_epoch":
+        runtime.visible[req.rid] = replace(key, context_epoch=key.context_epoch + 1)
+    if changed == "priority":
+        runtime._join_priority_promoted = req.rid
+
+    with monkeypatch.context() as restore:
+        restore.setattr(gate, "_demand_restore_chunk", NS(cache=cache))
+        restore.setattr(
+            runtime, "_demand_prefill_pipeline", NS(has_decode_work=lambda _: changed != "decode"),
+            raising=False,
+        )
+        assert not gate._waiting_for_restore_credit(req)
+    assert req._beliefkv_d3_restore_credit is None
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 2, "select": False},), indirect=True)
 @pytest.mark.parametrize("completed", (False, True))
 def test_d3_reaps_completed_restore_before_reclaiming_host(staged_native, completed):
     from test_beliefkv_terminal_capacity import insert_session

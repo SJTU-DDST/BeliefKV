@@ -546,12 +546,7 @@ class SubagentMaterialization:
             return decline("continuation_not_eligible")
         if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key:
             return decline("already_attempted")
-        guard = getattr(self.admission, "_ready_service_guard", None)
-        if req.rid in (
-            getattr(runtime, "_join_priority_promoted", None),
-            getattr(runtime, "_join_last_child_priority_promoted", None),
-            getattr(runtime, "_final_priority_promoted", None),
-        ) or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic())):
+        if self._restore_has_service_priority(key):
             return decline("protected_service")
         page = runtime._native_page_size
         selected_slots = 0
@@ -610,6 +605,15 @@ class SubagentMaterialization:
             })
         return True
 
+    def _restore_has_service_priority(self, key):
+        runtime = self.runtime
+        guard = getattr(self.admission, "_ready_service_guard", None)
+        return key.request_id in (
+            getattr(runtime, "_join_priority_promoted", None),
+            getattr(runtime, "_join_last_child_priority_promoted", None),
+            getattr(runtime, "_final_priority_promoted", None),
+        ) or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
+
     def _defer_demand_restore(self, cache, params, selected_h2d=None):
         queue = cache.cache_controller.load_queue
         selected = getattr(self._adder, "can_run_list", ())
@@ -629,14 +633,7 @@ class SubagentMaterialization:
             return False
         req_id = params.req.rid
         key = self.runtime.visible.get(req_id)
-        if key is None or req_id in (
-            getattr(self.runtime, "_join_priority_promoted", None),
-            getattr(self.runtime, "_join_last_child_priority_promoted", None),
-            getattr(self.runtime, "_final_priority_promoted", None),
-        ):
-            return False
-        guard = getattr(self.admission, "_ready_service_guard", None)
-        if guard is not None and guard.elapsed_service_timeout(key, time.monotonic()):
+        if key is None or self._restore_has_service_priority(key):
             return False
 
         tree = cache.tree_core
@@ -651,6 +648,7 @@ class SubagentMaterialization:
             return False
         # A bounded walk gives a lower bound on settled mirrors available after ACK.
         credit, remaining = 0, self.max_candidates
+        credited_receipts = {}
         for op in queue:
             if remaining == 0:
                 break
@@ -666,9 +664,10 @@ class SubagentMaterialization:
                     and len(full.value) == len(full.host_value)
                 ):
                     credit += len(full.host_value)
+                    credited_receipts[anchor] = cache.ongoing_load_back[anchor]
                 node = node.parent
+        native_node_ids = [op.node_ids[0] for op in queue]
         if selected_h2d is not None:
-            native_node_ids = [op.node_ids[0] for op in queue]
             queued_anchors = set(native_node_ids)
             selected_h2d.update(
                 native_node_ids=native_node_ids,
@@ -702,6 +701,7 @@ class SubagentMaterialization:
         if not headroom.observable or shortfall <= 0:
             return False
         chunk = self.runtime._native_chunk_input_reserve
+        identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
         if headroom.census_complete:
             if shortfall > credit and (not chunk or credit < chunk):
                 return False
@@ -709,13 +709,15 @@ class SubagentMaterialization:
             headroom.reason != NODE_CENSUS_BOUND
             or shortfall > credit
             or getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
-            or _request_key(params.req, known_keys=self.runtime.visible) != key
+            or not identity_matches
         ):
             return False
         else:
             # Indexed headroom is a lower bound. Allow one retry when the
             # selected batch's ACK covers the entire observed shortfall.
             params.req._beliefkv_d3_indexed_restore_defer_key = key
+        if identity_matches:
+            params.req._beliefkv_d3_restore_credit = key, hit, credited_receipts
         counts["subagent_materialization_restore_pressure_deferrals"] += 1
         counts["subagent_materialization_restore_pressure_shortfall_tokens"] += shortfall
         counts["subagent_materialization_restore_pressure_covered_tokens"] += min(shortfall, credit)
@@ -725,13 +727,37 @@ class SubagentMaterialization:
                 "event": "subagent_materialization_restore_pressure_deferred",
                 "ts_ms": time.time() * 1000.,
                 "key": asdict(key),
-                "native_node_ids": [op.node_ids[0] for op in queue],
+                "native_node_ids": native_node_ids,
                 "requested_restore_tokens": hit,
                 "unfunded_restore_tokens": shortfall,
                 "reclaimable_after_ack_tokens": credit,
                 "headroom_observation": headroom.reason,
             })
         return True
+
+    def _waiting_for_restore_credit(self, req):
+        credit = getattr(req, "_beliefkv_d3_restore_credit", None)
+        if credit is None:
+            return False
+        key, hit, receipts = credit
+        pipeline = getattr(self.runtime, "_demand_prefill_pipeline", None)
+        if (
+            self._demand_restore_chunk is not None and pipeline is not None
+            and self.runtime.visible.get(req.rid) == key
+            and _request_key(req, known_keys=self.runtime.visible) == key
+            and pipeline.has_decode_work(self._running_batch)
+            and not self._restore_has_service_priority(key)
+        ):
+            cache = self._demand_restore_chunk.cache
+            if cache.token_to_kv_pool_allocator.available_size() < hit and any(
+                anchor in receipts and cache.ongoing_load_back.get(anchor) is receipts[anchor]
+                for ack in cache.cache_controller.ack_load_queue for anchor in ack.node_ids
+            ):
+                # Let native publish the matching ACK and unlock its Host mirrors.
+                self.runtime.counts["subagent_materialization_restore_credit_wait_checks"] += 1
+                return True
+        req._beliefkv_d3_restore_credit = None
+        return False
 
     def _attach_host_eviction_trimming(self, cache, tree, component):
         drive_native = getattr(component, "drive_host_eviction", None)
@@ -1483,6 +1509,8 @@ class SubagentMaterialization:
 
     def defer_start(self, req):
         if self._demand_restore_chunk is not None and self._demand_restore_chunk.defer_until_ack(req):
+            return True
+        if self._waiting_for_restore_credit(req):
             return True
         record = self.pending.get(getattr(req, "rid", None))
         if record is None or record.started:
