@@ -968,6 +968,159 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(staged_native, monkeypatch
 
 
 @pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 2, "select": False, "prefix_sizes": (18, 8)}, 26),),
+    indirect=True,
+)
+@pytest.mark.parametrize("consumer_queued", (True, False), ids=("queued", "removed"))
+def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
+    staged_native, monkeypatch, consumer_queued,
+):
+    from sglang.srt.managers.schedule_policy import AddReqResult
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    producer, consumer = f.members
+    producer_leaf, consumer_leaf = f.leaves
+    consumer_key = runtime.visible[consumer.rid]
+    producer_slots = producer_leaf.component_data[0].host_value.tolist()
+    consumer_slots = consumer_leaf.component_data[0].host_value.tolist()
+
+    held_host = host.alloc(host.available_size() - 14)
+    neighbor, _ = insert_session(cache, range(101, 109), "waiting-parent")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    neighbor_data = neighbor.component_data[0]
+    for start, size in ((111, 6), (121, 6), (131, 8), (201, 32)):
+        insert_session(cache, range(start, start + size), str(start))
+    held_device = allocator.alloc(allocator.available_size() - 3)
+
+    losses = []
+
+    def record_eviction(node, _component, count):
+        full = node.component_data[0]
+        if full.value is None and full.session_ref > 0:
+            losses.append((node.id, count))
+
+    monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
+    f.waiting[:] = [producer]
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    restore = gate._demand_restore_chunk
+    gate.materialized.add(gate._context(consumer_key))
+    start_loading = controller.start_loading
+
+    def complete_consumer_load(**kwargs):
+        # Keep a new producer slice in flight while allowing the consumer's own ACK.
+        consumer_load = [op.node_id for op in controller.load_queue] == [consumer_leaf.id]
+        result = start_loading(**kwargs)
+        if consumer_load:
+            controller.ack_load_queue[-1].finish_event.query = lambda: True
+        return result
+
+    monkeypatch.setattr(controller, "start_loading", complete_consumer_load)
+    try:
+        assert neighbor_data.session_ref > 0 and neighbor_data.value is None
+        assert (allocator.available_size(), host.available_size()) == (3, 6)
+        assert invoke() == (None, f.running)
+        staged = restore.pending
+        assert staged.request is producer and staged.tokens == 6 and staged.remaining_tokens == 12
+        first_load, = f.loads
+        first_ack, = controller.ack_load_queue
+        receipt = cache.ongoing_load_back[staged.prefix_node]
+        assert first_ack.node_ids == [staged.prefix_node] and not first_ack.child_receipts
+        assert first_load.host_indices.tolist() == producer_slots[:6]
+        prefix = tree.node_by_id(staged.prefix_node).component_data[0]
+        suffix = producer_leaf.component_data[0]
+        assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (2, 1, 1)
+        assert (allocator.available_size(), host.available_size()) == (3, 0)
+
+        scheduler.waiting_queue.append(consumer)
+        assert invoke() == (None, f.running)
+        runtime.on_prefill_candidate_result.assert_called_with(
+            consumer, admitted=False, result=AddReqResult.OTHER.name,
+        )
+        assert scheduler.waiting_queue == [producer, consumer] and not construction
+        assert f.loads == [first_load] and controller.ack_load_queue == [first_ack]
+        assert not losses and f.pipeline.pending is None
+        key, hit, receipts = consumer._beliefkv_d3_restore_credit
+        assert key == consumer_key and hit == 8
+        assert tuple(receipts) == (staged.prefix_node,) and receipts[staged.prefix_node] is receipt
+        deferred, = (
+            row for event in runtime._opportunity_writer.record.call_args_list
+            if (row := event.args[0])["event"] == "subagent_materialization_restore_pressure_deferred"
+        )
+        assert deferred["key"] == asdict(consumer_key) and deferred["already_submitted"]
+        assert deferred["native_node_ids"] == first_ack.node_ids
+        assert (deferred["reclaimable_after_ack_tokens"], deferred["unfunded_restore_tokens"]) == (6, 5)
+        first_ack.finish_event.synchronize.assert_not_called()
+
+        f.complete.ready = True
+        cache.loading_check()
+        f.complete.ready = False
+        first_ack.finish_event.synchronize.assert_called_once_with()
+        assert not controller.ack_load_queue and not cache.ongoing_load_back
+        assert restore.pending is staged
+        assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
+        assert tree._can_reclaim_full_host_duplicate(tree.node_by_id(staged.prefix_node))
+
+        if consumer_queued:
+            # A producer that restages ends this pass with OTHER. Also observe
+            # the consumer's next pass so the old path exposes its KV eviction.
+            for _ in range(2):
+                try:
+                    assert invoke() == (None, f.running)
+                except BatchConstructionReached:
+                    break
+            assert not losses, (
+                f"peer ACK credit was recycled before the consumer, losing Host-only KV {losses}. "
+                f"H2D sequence {[(load.node_id, len(load.host_indices)) for load in f.loads]}"
+            )
+            assert construction == [(consumer,)] and scheduler.waiting_queue == [producer]
+            assert restore.pending is staged and f.pipeline.pending is None
+            assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
+            assert prefix.value is not None and prefix.host_value is None and suffix.value is None
+            assert consumer.extend_range.start == hit and consumer.host_loaded_length == hit
+            assert [load.node_id for load in f.loads] == [staged.prefix_node, consumer_leaf.id]
+            assert f.loads[-1].host_indices.tolist() == consumer_slots
+            assert consumer._beliefkv_d3_restore_credit is None
+            cache.loading_check()
+            assert not controller.ack_load_queue and not cache.ongoing_load_back
+        else:
+            scheduler.waiting_queue.remove(consumer)
+            assert runtime.visible[consumer.rid] == consumer_key
+
+        # One opportunity for the waiter. The producer then stages its next slice.
+        assert invoke() == (None, f.running)
+        resumed = restore.pending
+        assert resumed.request is producer and resumed is not staged
+        assert resumed.suffix_node == staged.suffix_node
+        offset = staged.tokens
+        assert f.loads[-1].host_indices.tolist() == producer_slots[offset:offset + resumed.tokens]
+        next_ack, = controller.ack_load_queue
+        assert next_ack.node_ids == [resumed.prefix_node]
+        assert construction == ([(consumer,)] if consumer_queued else [])
+        assert scheduler.waiting_queue == [producer] and scheduler.chunked_req is None
+        assert runtime.counts["subagent_materialization_restore_credit_yields"] == int(consumer_queued)
+        assert neighbor_data.host_value is neighbor_slots and host.slot_used[neighbor_slots].all()
+        assert not losses
+
+        f.complete.ready = True
+        cache.loading_check()
+        gate.close()
+        if consumer_queued:
+            cache.dec_lock_ref(consumer.last_node, consumer.lock_receipt)
+        assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (0, 0, 0)
+        assert restore.pending is None and not cache.ongoing_load_back
+        cache.sanity_check()
+    finally:
+        gate.close()
+        allocator.free(held_device)
+        host.free(held_host)
+
+
+@pytest.mark.parametrize(
     "staged_native", ({"members": 3, "select": False, "prefix_sizes": (4, 8, 4)},),
     indirect=True,
 )

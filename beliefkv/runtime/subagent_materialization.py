@@ -782,7 +782,14 @@ class SubagentMaterialization:
                 return False
             params.req._beliefkv_d3_indexed_restore_defer_key = key
         if identity_matches:
-            params.req._beliefkv_d3_restore_credit = key, hit, credited_receipts
+            wait = key, hit, credited_receipts
+            params.req._beliefkv_d3_restore_credit = wait
+            staged = self._demand_restore_chunk.pending
+            if (
+                submitted and staged is not None and staged.request is not params.req
+                and staged.prefix_node in credited_receipts and staged.credit_waiter is None
+            ):
+                staged.credit_waiter = params.req, wait
         counts["subagent_materialization_restore_pressure_deferrals"] += 1
         counts["subagent_materialization_restore_pressure_shortfall_tokens"] += shortfall
         counts["subagent_materialization_restore_pressure_covered_tokens"] += min(shortfall, credit)
@@ -798,6 +805,43 @@ class SubagentMaterialization:
                 "reclaimable_after_ack_tokens": credit,
                 "headroom_observation": headroom.reason,
                 "already_submitted": submitted,
+            })
+        return True
+
+    def _yield_restore_to_credit_waiter(self, req):
+        restore = self._demand_restore_chunk
+        pending = restore.pending
+        if (
+            pending is None or pending.request is not req or pending.credit_waiter is None
+            or pending.prefix_node in restore.cache.ongoing_load_back
+        ):
+            return False
+        waiter, credit = pending.credit_waiter
+        pending.credit_waiter = None
+        key, _, _ = credit
+        runtime = self.runtime
+        pipeline = getattr(runtime, "_demand_prefill_pipeline", None)
+        if (
+            getattr(waiter, "_beliefkv_d3_restore_credit", None) is not credit
+            or runtime.visible.get(waiter.rid) != key
+            or _request_key(waiter, known_keys=runtime.visible) != key
+            or self.admission.latest.get(key.invocation_id) != key
+            or runtime._terminal(key) or waiter.finished() or getattr(waiter, "to_finish", None) is not None
+            or not self.admission.allows(key) or not self.allows(key)
+            or not any(candidate is waiter for candidate in self._native_order)
+            or self._restore_has_service_priority(pending.key)
+            or pipeline is None or not pipeline.has_decode_work(self._running_batch)
+        ):
+            return False
+        # Keep the producer's prefix and suffix pinned while its waiter gets
+        # one native pass to use the Host mirrors freed by this ACK.
+        runtime.counts["subagent_materialization_restore_credit_yields"] += 1
+        writer = getattr(runtime, "_opportunity_writer", None)
+        if writer is not None:
+            writer.record({
+                "event": "subagent_materialization_restore_credit_yield",
+                "ts_ms": time.time() * 1000., "key": asdict(key),
+                "producer": asdict(pending.key), "prefix_node_id": pending.prefix_node,
             })
         return True
 
@@ -1574,8 +1618,9 @@ class SubagentMaterialization:
             counts["subagent_materialization_cpu_ns"] += time.thread_time_ns() - cpu
 
     def defer_start(self, req):
-        if self._demand_restore_chunk is not None and self._demand_restore_chunk.defer_until_ack(req):
-            return True
+        if self._demand_restore_chunk is not None:
+            if self._yield_restore_to_credit_waiter(req) or self._demand_restore_chunk.defer_until_ack(req):
+                return True
         if self._waiting_for_restore_credit(req):
             return True
         record = self.pending.get(getattr(req, "rid", None))

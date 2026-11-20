@@ -19,6 +19,7 @@ class _Pending:
     prefix_receipt: object
     suffix_node: int
     suffix_receipt: object
+    credit_waiter: tuple[object, tuple] | None = None
 
 
 class DemandRestoreChunk:
