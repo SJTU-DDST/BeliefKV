@@ -9,6 +9,7 @@ from unittest.mock import Mock, call
 import pytest
 
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
+from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import _request_key
 from beliefkv.runtime.subagent_materialization import (
     NODE_CENSUS_BOUND,
@@ -762,6 +763,101 @@ def test_d3_write_ack_retry_preserves_native_guards(resident_restore_pressure, g
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
 @pytest.mark.parametrize("resident_restore_pressure", ("idle",), indirect=True)
+def test_d3_stages_promoted_join_parent_without_pending_write(resident_restore_pressure, monkeypatch):
+    case = resident_restore_pressure
+    f = case.f
+    cache, req = f.cache, f.req
+    controller = cache.cache_controller
+    f.runtime._join_priority_promoted = req.rid
+    case.scheduler.waiting_queue.remove(case.resident)
+    assert not controller.write_queue and not controller.ack_write_queue
+    assert not cache.ongoing_write_through and not controller.ack_load_queue
+    assert f.allocator.available_size() == 0 and len(case.source_slots) == 8
+    assert ensure_device_capacity_preserving_live_kv(
+        cache, 8, protected_nodes=(f.leaf.id,),
+    ) is False
+    neighbor = case.neighbor.component_data[0]
+    assert neighbor.value is None and neighbor.session_ref > 0
+    losses = []
+
+    def record_eviction(node, _component, tokens):
+        full = node.component_data[0]
+        if full.value is None and full.session_ref > 0:
+            losses.append((node.id, tokens))
+
+    monkeypatch.setattr(cache.tree_core, "_beliefkv_host_eviction_observer", record_eviction)
+    assert case.invoke() == (None, f.running)
+    assert not losses, f"promoted JOIN restore evicted referenced Host-only KV: {losses}"
+    case.native_load.assert_not_called()
+    assert not case.construction and case.scheduler.waiting_queue == [req]
+    pending = case.gate._demand_restore_chunk.pending
+    assert pending.request is req and pending.key == f.key and pending.tokens == 4
+    ack, = controller.ack_load_queue
+    assert ack.node_ids == [pending.prefix_node] and ack.num_tokens_by_pool == {"kv": 4}
+
+    assert case.invoke() == (None, f.running)
+    assert controller.ack_load_queue == [ack]
+    ack.finish_event.synchronize.assert_not_called()
+    f.complete.ready = True
+    cache.loading_check()
+
+    case.scheduler.waiting_queue.append(case.resident)
+    with pytest.raises(BatchConstructionReached):
+        case.invoke()
+    assert case.construction == [(req,)] and case.scheduler.waiting_queue == [case.resident]
+    assert case.scheduler.chunked_req is req and req.extend_range.start == 8
+    assert [len(load.host_indices) for load in f.loads] == [4, 4]
+    assert [slot for load in f.loads for slot in load.host_indices.tolist()] == case.source_slots.tolist()
+    assert neighbor.host_value is case.neighbor_slots and case.host.slot_used[case.neighbor_slots].all()
+    assert not losses and not _restore_declines(f.runtime)
+    assert case.gate._demand_restore_chunk.pending is None and f.pipeline.pending is None
+    cache.loading_check()
+    cache.dec_lock_ref(req.last_node, req.lock_receipt)
+    cache.sanity_check()
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize("resident_restore_pressure", ("idle",), indirect=True)
+@pytest.mark.parametrize("blocker", ("no_safe_slice", "final", "last_child", "timeout"))
+def test_d3_promoted_join_parent_preserves_native_fallback(resident_restore_pressure, blocker):
+    case = resident_restore_pressure
+    f = case.f
+    req = f.req
+    f.runtime._join_priority_promoted = req.rid
+    case.scheduler.waiting_queue.remove(case.resident)
+    held_host = None
+    if blocker == "no_safe_slice":
+        held_host = case.host.alloc(3)
+    elif blocker == "final":
+        f.runtime._final_priority_promoted = req.rid
+    elif blocker == "last_child":
+        f.runtime._join_last_child_priority_promoted = req.rid
+    else:
+        guard = ReadyServiceGuard(f.runtime._agent_admission)
+        guard.since[f.key.invocation_id] = f.key, -guard.timeout_s
+        f.runtime._agent_admission._ready_service_guard = guard
+    try:
+        f.complete.ready = True
+        with pytest.raises(BatchConstructionReached):
+            case.invoke()
+        assert case.construction == [(req,)] and case.scheduler.chunked_req is req
+        assert case.gate._demand_restore_chunk.pending is None
+        case.native_load.assert_called_once()
+        assert [len(load.host_indices) for load in f.loads] == [8]
+        decline, = _restore_declines(f.runtime)
+        assert decline["reason"] == ("no_safe_slice" if held_host is not None else "protected_service")
+        assert decline["queued_write_acks_at_trial"] == 0
+        assert f.runtime.counts["subagent_materialization_demand_restore_ack_retries"] == 0
+        f.cache.loading_check()
+        f.cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        f.cache.sanity_check()
+    finally:
+        if held_host is not None:
+            case.host.free(held_host)
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize("resident_restore_pressure", ("idle",), indirect=True)
 def test_d3_stages_with_a_selected_resident_prefill(resident_restore_pressure, monkeypatch):
     case = resident_restore_pressure
     f = case.f
@@ -842,16 +938,25 @@ def test_d3_stages_with_a_selected_resident_prefill(resident_restore_pressure, m
 
 
 @pytest.mark.parametrize(
-    ("staged_native", "wait_for_ack"),
+    ("staged_native", "wait_for_ack", "join_parent"),
     (
-        pytest.param({"members": 2, "select": False, "prefix_sizes": (8, 8)}, True, id="full-credit"),
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (4, 8)}, False, id="insufficient-credit",
+            {"members": 2, "select": False, "prefix_sizes": (8, 8)}, True, False, id="full-credit",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (4, 8)}, False, False,
+            id="insufficient-credit",
+        ),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (8, 8)}, False, True,
+            id="promoted-join-parent",
         ),
     ),
     indirect=("staged_native",),
 )
-def test_d3_waits_for_unrelated_submitted_restore_ack(staged_native, monkeypatch, wait_for_ack):
+def test_d3_waits_for_unrelated_submitted_restore_ack(
+    staged_native, monkeypatch, wait_for_ack, join_parent,
+):
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
@@ -910,6 +1015,8 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(staged_native, monkeypatch
         assert headroom.reason == NODE_CENSUS_BOUND and headroom.available_tokens == 0
         assert not ack.finish_event.query()
 
+        if join_parent:
+            runtime._join_priority_promoted = consumer.rid
         scheduler.waiting_queue.append(consumer)
         assert invoke() == (None, f.running)
         if wait_for_ack:
@@ -932,7 +1039,7 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(staged_native, monkeypatch
                 assert neighbor_data.host_value is neighbor_slots and not losses
             ack.finish_event.synchronize.assert_not_called()
         else:
-            assert credit < hit and losses == [(neighbor.id, 8)]
+            assert (join_parent or credit < hit) and losses == [(neighbor.id, 8)]
             decline, = _restore_declines(runtime)
             assert decline["key"] == asdict(key) and decline["reason"] == "restore_in_flight"
             assert not getattr(consumer, "_beliefkv_d3_restore_credit", None)
@@ -972,9 +1079,16 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(staged_native, monkeypatch
     (({"members": 2, "select": False, "prefix_sizes": (18, 8)}, 26),),
     indirect=True,
 )
-@pytest.mark.parametrize("consumer_queued", (True, False), ids=("queued", "removed"))
+@pytest.mark.parametrize(
+    ("consumer_queued", "producer_promoted"),
+    (
+        pytest.param(True, False, id="queued"),
+        pytest.param(False, False, id="removed"),
+        pytest.param(True, True, id="promoted-join-producer"),
+    ),
+)
 def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
-    staged_native, monkeypatch, consumer_queued,
+    staged_native, monkeypatch, consumer_queued, producer_promoted,
 ):
     from sglang.srt.managers.schedule_policy import AddReqResult
     from test_beliefkv_terminal_capacity import insert_session
@@ -1006,6 +1120,8 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
 
     monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
     f.waiting[:] = [producer]
+    if producer_promoted:
+        runtime._join_priority_promoted = producer.rid
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
     restore = gate._demand_restore_chunk
     gate.materialized.add(gate._context(consumer_key))
@@ -1065,7 +1181,8 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (1, 0, 1)
         assert tree._can_reclaim_full_host_duplicate(tree.node_by_id(staged.prefix_node))
 
-        if consumer_queued:
+        expect_yield = consumer_queued and not producer_promoted
+        if expect_yield:
             # A producer that restages ends this pass with OTHER. Also observe
             # the consumer's next pass so the old path exposes its KV eviction.
             for _ in range(2):
@@ -1087,11 +1204,11 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             assert consumer._beliefkv_d3_restore_credit is None
             cache.loading_check()
             assert not controller.ack_load_queue and not cache.ongoing_load_back
-        else:
+        elif not consumer_queued:
             scheduler.waiting_queue.remove(consumer)
             assert runtime.visible[consumer.rid] == consumer_key
 
-        # One opportunity for the waiter. The producer then stages its next slice.
+        # Resume the producer once its ACK has been published.
         assert invoke() == (None, f.running)
         resumed = restore.pending
         assert resumed.request is producer and resumed is not staged
@@ -1100,19 +1217,137 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         assert f.loads[-1].host_indices.tolist() == producer_slots[offset:offset + resumed.tokens]
         next_ack, = controller.ack_load_queue
         assert next_ack.node_ids == [resumed.prefix_node]
-        assert construction == ([(consumer,)] if consumer_queued else [])
-        assert scheduler.waiting_queue == [producer] and scheduler.chunked_req is None
-        assert runtime.counts["subagent_materialization_restore_credit_yields"] == int(consumer_queued)
+        assert construction == ([(consumer,)] if expect_yield else [])
+        expected_waiting = [producer, consumer] if producer_promoted else [producer]
+        assert scheduler.waiting_queue == expected_waiting and scheduler.chunked_req is None
+        assert runtime.counts["subagent_materialization_restore_credit_yields"] == int(expect_yield)
         assert neighbor_data.host_value is neighbor_slots and host.slot_used[neighbor_slots].all()
         assert not losses
 
         f.complete.ready = True
         cache.loading_check()
         gate.close()
-        if consumer_queued:
+        if expect_yield:
             cache.dec_lock_ref(consumer.last_node, consumer.lock_receipt)
         assert (prefix.lock_ref, prefix.host_lock_ref, suffix.host_lock_ref) == (0, 0, 0)
         assert restore.pending is None and not cache.ongoing_load_back
+        cache.sanity_check()
+    finally:
+        gate.close()
+        allocator.free(held_device)
+        host.free(held_host)
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 2, "select": False, "prefix_sizes": (18, 8)}, 27),),
+    indirect=True,
+)
+def test_d3_uses_leading_staged_ack_ahead_of_tagged_join(staged_native, monkeypatch):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    producer, consumer = f.members
+    consumer_key = runtime.visible[consumer.rid]
+    consumer_leaf = f.leaves[1]
+
+    held_host = host.alloc(host.available_size() - 15)
+    neighbor, _ = insert_session(cache, range(101, 109), "waiting-parent")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    join, generation = insert_session(cache, (91,), "join-parent")
+    join_slots = _backup(cache, join, demote=True)
+    for start, size in ((111, 6), (121, 6), (201, 32)):
+        insert_session(cache, range(start, start + size), str(start))
+    held_device = allocator.alloc(allocator.available_size() - 3)
+    losses = []
+
+    def record_eviction(node, _component, count):
+        full = node.component_data[0]
+        if full.value is None and full.session_ref > 0:
+            losses.append((node.id, count))
+
+    monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
+    f.waiting[:] = [producer]
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    gate.materialized.add(gate._context(consumer_key))
+    try:
+        assert invoke() == (None, f.running)
+        staged = gate._demand_restore_chunk.pending
+        lead, = controller.ack_load_queue
+        lead_receipt = cache.ongoing_load_back[staged.prefix_node]
+        assert lead.node_ids == [staged.prefix_node] and not lead.child_receipts
+        assert lead.num_tokens_by_pool == {"kv": staged.tokens} == {"kv": 6}
+        prefetched = cache.prefetch_gpu_session_node(
+            session_id="join-parent", session_generation=generation,
+            leaf_node_id=join.id, leaf_creation_time=float(join.creation_time),
+            node_id=join.id, node_creation_time=float(join.creation_time),
+            beliefkv_command_id="join-prefetch", beliefkv_before_enqueue=lambda _: True,
+            beliefkv_include_mamba=False,
+        )
+        assert prefetched.issued and prefetched.load_started
+        first, tagged = controller.ack_load_queue
+        assert first is lead and tagged.node_ids == [join.id]
+        join_child, = tagged.child_receipts
+        assert join_child.node_id == join.id and join_child.command_id == "join-prefetch"
+        join_receipt = cache.ongoing_load_back[join.id]
+        join_ready = NS(value=False)
+        monkeypatch.setattr(tagged.finish_event, "query", lambda: join_ready.value)
+        assert (allocator.available_size(), host.available_size()) == (2, 0)
+
+        scheduler.waiting_queue.append(consumer)
+        assert invoke() == (None, f.running)
+        assert not losses, f"ordinary ACK ahead of tagged JOIN led to Host-only eviction: {losses}"
+        wait = consumer._beliefkv_d3_restore_credit
+        key, hit, receipts = wait
+        assert key == consumer_key and hit == 8
+        assert tuple(receipts) == (staged.prefix_node,)
+        assert receipts[staged.prefix_node] is lead_receipt
+        assert consumer._beliefkv_d3_indexed_restore_defer_key == consumer_key
+        assert staged.credit_waiter == (consumer, wait)
+        assert invoke() == (None, f.running)
+        assert controller.ack_load_queue == [lead, tagged] and len(f.loads) == 2
+
+        f.complete.ready = True
+        cache.loading_check()
+        f.complete.ready = False
+        assert controller.ack_load_queue == [tagged]
+        lead.finish_event.synchronize.assert_called_once_with()
+        tagged.finish_event.synchronize.assert_not_called()
+        assert cache.ongoing_load_back[join.id] is join_receipt
+
+        # The lead's mirrors fund this load while JOIN retains its own native ACK.
+        assert invoke() == (None, f.running)
+        still_tagged, demand = controller.ack_load_queue
+        assert still_tagged is tagged and demand.node_ids == [consumer_leaf.id]
+        assert [load.node_id for load in f.loads] == [staged.prefix_node, join.id, consumer_leaf.id]
+        assert not demand.child_receipts and consumer._beliefkv_d3_restore_credit is None
+        assert cache.ongoing_load_back[join.id] is join_receipt
+        assert join.component_data[0].host_value is join_slots
+        assert gate._demand_restore_chunk.pending is staged and not construction
+        assert runtime.counts["subagent_materialization_restore_pressure_deferrals"] == 1
+        assert runtime.counts["subagent_materialization_restore_credit_yields"] == 1
+        tagged.finish_event.synchronize.assert_not_called()
+        assert not losses
+
+        join_ready.value = True
+        cache.loading_check()
+        tagged.finish_event.synchronize.assert_called_once_with()
+        assert controller.ack_load_queue == [demand]
+        child_commit, = f.commits[-1].child_commits
+        assert child_commit.command_id == "join-prefetch"
+        f.complete.ready = True
+        cache.loading_check()
+        scheduler.waiting_queue.remove(producer)
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [(consumer,)] and consumer.extend_range.start == 8
+        assert neighbor.component_data[0].host_value is neighbor_slots and not losses
+        assert host.slot_used[neighbor_slots].all() and host.slot_used[join_slots].all()
+        assert not cache.ongoing_load_back and not controller.ack_load_queue
+        cache.dec_lock_ref(consumer.last_node, consumer.lock_receipt)
         cache.sanity_check()
     finally:
         gate.close()

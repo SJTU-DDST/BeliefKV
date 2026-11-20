@@ -550,7 +550,11 @@ class SubagentMaterialization:
             return decline("continuation_not_eligible")
         if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation:
             return decline("already_attempted")
-        if self._restore_has_service_priority(key):
+        # A promoted JOIN parent may try a guarded slice without a write ACK retry.
+        protect_join_parent = bool(
+            writes_at_trial or controller.write_queue or cache.ongoing_write_through
+        )
+        if self._restore_has_service_priority(key, protect_join_parent=protect_join_parent):
             return decline("protected_service")
         page = runtime._native_page_size
         selected_slots = 0
@@ -652,14 +656,17 @@ class SubagentMaterialization:
             and headroom.device_free_tokens + cache.full_evictable_size() >= required
         )
 
-    def _restore_has_service_priority(self, key):
+    def _restore_has_service_priority(self, key, *, protect_join_parent=True):
         runtime = self.runtime
         guard = getattr(self.admission, "_ready_service_guard", None)
-        return key.request_id in (
-            getattr(runtime, "_join_priority_promoted", None),
-            getattr(runtime, "_join_last_child_priority_promoted", None),
-            getattr(runtime, "_final_priority_promoted", None),
-        ) or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
+        return (
+            (protect_join_parent and key.request_id == getattr(runtime, "_join_priority_promoted", None))
+            or key.request_id in (
+                getattr(runtime, "_join_last_child_priority_promoted", None),
+                getattr(runtime, "_final_priority_promoted", None),
+            )
+            or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
+        )
 
     def _defer_demand_restore(self, cache, params, selected_h2d=None):
         controller = cache.cache_controller
@@ -669,7 +676,7 @@ class SubagentMaterialization:
         selected = () if submitted else getattr(self._adder, "can_run_list", ())
         hit = params.host_hit_length
         if (
-            (submitted and (len(acks) != 1 or acks[0].child_receipts))
+            (submitted and (not acks or acks[0].child_receipts))
             or (not submitted and (not selected or len(queue) > self.max_candidates))
             or hit < max(1, cache.load_back_threshold)
             or params.mem_quota is not None
@@ -688,7 +695,7 @@ class SubagentMaterialization:
             return False
 
         if submitted:
-            # Native receipts carrying JOIN/EOS commands retain their existing priority.
+            # Only the leading ordinary ACK can fund the submitted retry.
             native_node_ids = acks[0].node_ids
         else:
             selected_last_nodes = [req.last_node for req in selected]
