@@ -416,8 +416,11 @@ def test_root_hold_requires_v2_and_releases_into_the_real_native_plan(runtime):
     key = runtime.visible[req.rid]
     if not gate.include_root_entries:
         assert req.rid not in gate.pending and a.allows(key)
+        assert not gate.awaiting_first_root_prefill(key)
         return
 
+    assert gate.awaiting_first_root_prefill(key)
+    assert not gate.awaiting_first_root_prefill(replace(key, context_epoch=key.context_epoch + 1))
     prepare(runtime, [req], running=[object()])
     assert gate.status()["held_root_request_ids"] == [req.rid]
     assert not a.allows(key) and not a._timeout_force_resume_allowed(key)
@@ -435,6 +438,7 @@ def test_root_hold_requires_v2_and_releases_into_the_real_native_plan(runtime):
     assert not gate.defer_start(req)
     runtime.on_prefill_candidate_result(req, admitted=True, result="CONTINUE")
     assert gate.pending[req.rid].started and create.workflow_id in gate.started_workflows
+    assert not gate.awaiting_first_root_prefill(key)
     assert runtime.counts["subagent_materialization_root_started"] == 1
 
 
@@ -445,6 +449,7 @@ def test_root_budget_prioritizes_actual_blocking_children_before_shorter_new_wor
     unrelated = child(runtime, "other", tokens=100)
     blocking = child(runtime, "blocking", tokens=100)
     a, gate = runtime._agent_admission, runtime._subagent_materialization
+    assert not gate.awaiting_first_root_prefill(a.latest["blocking"])
     scores = {"arrival": 1., "other": .9, "blocking": .1}
     a._combination = NS(_work_weight=lambda key, _: scores[key.invocation_id])
     if wait == "call":

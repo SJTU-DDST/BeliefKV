@@ -275,6 +275,39 @@ def test_fit_adds_to_existing_grants_when_raw_capacity_allows(queue):
     assert not a.counts["ready_service_fit_displaced_grants"]
 
 
+@pytest.mark.parametrize(("b_first_root", "capacity", "selected", "displaced"), (
+    (False, 660, ("b",), None),
+    (True, 660, ("a",), "b-request"),
+    (False, 900, ("b", "a"), None),
+))
+def test_d3_first_root_fit_only_uses_spare_capacity_or_replaces_a_first_root(
+    queue, monkeypatch, b_first_root, capacity, selected, displaced,
+):
+    runtime, a, guard, keys, _env, now, _headroom, _prefix, records = queue
+    a.policy.capacity_tokens = capacity
+    a.policy.programs["b"].steps = 1 if b_first_root else 2
+    first_roots = {keys["a"]}
+    if b_first_root:
+        first_roots.add(keys["b"])
+    gate = NS(
+        include_root_entries=True, allows=lambda _key: True,
+        awaiting_first_root_prefill=first_roots.__contains__,
+    )
+    with monkeypatch.context() as local:
+        local.setattr(runtime, "_subagent_materialization", gate)
+        a.tick(now=now)
+
+    chosen = keys["a"] if "a" in selected else None
+    assert a.policy.last_selection["selected_in_priority_order"] == selected
+    assert guard.fit_target == chosen
+    assert a.counts["ready_service_fit_native_checks"] == int(chosen is not None)
+    grants = [row for row in records if row["event"] == "ready_service_fit_granted"]
+    assert len(grants) == int(chosen is not None)
+    if grants:
+        donor = grants[0]["displaced"]
+        assert (donor["request_id"] if donor is not None else None) == displaced
+
+
 def test_first_request_without_a_session_checkpoint_uses_full_input_bound(queue, monkeypatch):
     runtime, a, guard, keys, _env, now, _headroom, _prefix, records = queue
     monkeypatch.setattr(runtime, "_read_request_reentry", lambda *args, **kw: None)

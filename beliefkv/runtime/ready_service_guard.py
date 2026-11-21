@@ -217,6 +217,10 @@ class ReadyServiceGuard:
             return selected
         spare = capacity - ordinary_tokens
         runtime = a.runtime
+        gate = getattr(runtime, "_subagent_materialization", None)
+        first_root_keys = {
+            key for key in keys if gate.awaiting_first_root_prefill(key)
+        } if gate is not None and gate.include_root_entries else set()
         replaceable = []
         for key in reversed(selected):
             if protected(key):
@@ -232,12 +236,16 @@ class ReadyServiceGuard:
         limit = spare + max((sizes[key] for key in replaceable), default=0)
         if limit <= a.policy.buffer_tokens:
             return selected
+        # D3 first roots may use spare capacity or replace another first root.
+        replaceable_roots = [key for key in replaceable if key in first_root_keys]
+        first_root_limit = spare + max((sizes[key] for key in replaceable_roots), default=0)
         oldest = None
         for key in keys:
             entry = self.since.get(key.invocation_id)
+            target_limit = first_root_limit if key in first_root_keys else limit
             if (
                 key in chosen or key in self.fit_attempted or entry is None or entry[0] != key
-                or now < entry[1] + self.fit_after_s or sizes[key] > limit
+                or now < entry[1] + self.fit_after_s or sizes[key] > target_limit
                 or protected(key)
             ):
                 continue
@@ -251,8 +259,9 @@ class ReadyServiceGuard:
         if found is None or not a._can_resume(found[0]):
             return selected
         deficit = sizes[fit] - spare
+        replacements = replaceable_roots if fit in first_root_keys else replaceable
         displaced = (
-            next(key for key in replaceable if sizes[key] >= deficit) if deficit > 0 else None
+            next(key for key in replacements if sizes[key] >= deficit) if deficit > 0 else None
         )
         a.counts["ready_service_fit_native_checks"] += 1
         if displaced is not None and displaced != selected[-1]:

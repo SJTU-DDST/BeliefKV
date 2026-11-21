@@ -1669,6 +1669,10 @@ class SubagentMaterialization:
         record = self.pending.get(key.request_id)
         return record is not None and record.key == key and not record.started
 
+    def awaiting_first_root_prefill(self, key):
+        record = self.pending.get(key.request_id)
+        return record is not None and record.key == key and record.root_entry and not record.started
+
     def held_ready_root(self, key):
         record = self.pending.get(key.request_id)
         return (
