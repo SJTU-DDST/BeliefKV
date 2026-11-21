@@ -1620,7 +1620,7 @@ class SubagentMaterialization:
                 committed[key.request_id] = member.request
         return committed
 
-    def _outstanding_inputs(self, running_batch, committed, queued, *, refresh, inspect_reentry=True):
+    def _outstanding_inputs(self, running_batch, committed, queued, *, refresh, conservative=False):
         runtime, a = self.runtime, self.admission
         running = {
             getattr(req, "rid", None) for req in getattr(running_batch, "reqs", ())
@@ -1645,6 +1645,11 @@ class SubagentMaterialization:
                 or type(allocated) is int and allocated > 0
             ):
                 if (
+                    conservative and record is not None and record.permitted
+                    and record.key == key and record.request is req and queued.get(rid) is req
+                ):
+                    outstanding += self._price(record)
+                elif (
                     self.include_root_entries and record is None and queued.get(rid) is req
                     and self._context(key) in self.materialized and a.allows(key)
                     and self._ready(key)
@@ -1652,8 +1657,7 @@ class SubagentMaterialization:
                     # A logically admitted continuation can still be waiting for
                     # the next native batch. Its reusable prefix is already in the census.
                     reentry = (
-                        runtime._read_request_reentry(req, key=key, refresh=refresh)
-                        if inspect_reentry else None
+                        None if conservative else runtime._read_request_reentry(req, key=key, refresh=refresh)
                     )
                     prefix = reentry.get("checkpoint_tokens", 0) if reentry is not None else 0
                     if type(prefix) is not int or not 0 <= prefix < len(req.origin_input_ids):
@@ -1720,9 +1724,9 @@ class SubagentMaterialization:
             reserve = self._reserve(self._running_batch, self._adder)
             committed = self._input_commitments(self._adder)
             queued = {getattr(req, "rid", None): req for req in self._native_order}
-            # A standalone probe conservatively charges uninspected inputs in full.
+            # Reserve unused D3 permits and charge uninspected inputs in full.
             outstanding, _, _ = self._outstanding_inputs(
-                self._running_batch, committed, queued, refresh=False, inspect_reentry=False,
+                self._running_batch, committed, queued, refresh=False, conservative=True,
             )
             committed_tokens = reserve + outstanding
             observation = observe_materialization_headroom(
@@ -1994,12 +1998,9 @@ class SubagentMaterialization:
                 self.next_running_census = now + self.interval_s
             counts["subagent_materialization_complete_censuses"] += observation.census_complete
             counts["subagent_materialization_census_nodes"] += observation.inspected_nodes
-            if self.adaptive_resume_ranking:
-                self._observe_resume_ranking(
-                    observation, None if reserve is None else reserve + outstanding, now,
-                )
             # Unknown geometry preserves the original scheduler rather than
             # silently treating unobserved Host state as zero or deadlocking.
+            reserve_known = reserve is not None
             reserve = (reserve or 0) if observation.observable else 0
             available = observation.available_tokens - reserve - outstanding
             candidates = [
@@ -2045,14 +2046,17 @@ class SubagentMaterialization:
                     if owner not in self.progress_path:
                         self.progress_path.append(owner)
                     counts["subagent_materialization_progress_exceptions"] += 1
-                    counts["subagent_materialization_progress_deficit_tokens"] += max(
-                        0, self._price(progress) - available,
-                    )
+                    available -= self._price(progress)
+                    counts["subagent_materialization_progress_deficit_tokens"] += max(0, -available)
             if not observation.observable:
                 allowed.update(
                     rid for rid, record in self.pending.items()
                     if not record.started and (not record.root_entry or self._ready(record.key))
                 )
+            if self.adaptive_resume_ranking:
+                # The same decision may commit more inputs before native selection.
+                committed_budget = observation.available_tokens - available if reserve_known else None
+                self._observe_resume_ranking(observation, committed_budget, now)
             for record in self.pending.values():
                 if not record.started:
                     self._publish(record, record.key.request_id in allowed, now)
