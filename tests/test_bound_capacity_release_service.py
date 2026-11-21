@@ -62,6 +62,25 @@ def test_last_matching_release_exact_grant_and_bounded_service_are_linked():
     assert summarize(rows)["bounded_release_to_service_ms"]["p50"] == 25.
 
 
+@pytest.mark.parametrize("late", (False, True))
+def test_logical_handoff_does_not_reuse_a_prior_physical_release(late):
+    records, batches = fixture()
+    records[2].update(
+        logical_only=True, logical_deficit_tokens=13, physical_capacity_credit=False,
+        released_device_tokens=0, released_host_tokens=0,
+        native_fit={"first_chunk_and_restore_tokens": 18, "device_free_tokens": 20},
+    )
+    if late:
+        records[-1].update(ts_ms=1010., monotonic_s=1.01)
+    rows, _progress, _observed = analyze(records, batches)
+    totals = summarize(rows)
+    assert totals["logical_only_grants"] == 1
+    assert totals["logical_only_bounded_new_service_verified"] == int(not late)
+    assert not rows[0]["release_record_matched"]
+    assert rows[0]["grant_to_new_service_ms"] == 15.
+    assert totals["matched_physical_release_records"] == 0
+
+
 def test_periodic_start_to_publication_span_does_not_contaminate_free_grant_clock():
     records, batches = fixture()
     records[-1]["ts_ms"] += 58.

@@ -1,4 +1,4 @@
-"""Audit explicitly paired tool releases, grants and bounded native service."""
+"""Audit tool budget handoffs and bounded native service."""
 
 import argparse
 from collections import Counter, defaultdict
@@ -105,6 +105,33 @@ def paired_paths(progress, observed):
             "consumer_key": key, "grant_journal_sequence": grant_sequence,
             "grant_monotonic_ms": grant_ms, "release_record_matched": False,
         }
+        if marker.get("logical_only") is True:
+            fit = marker["native_fit"]
+            need, free = fit["first_chunk_and_restore_tokens"], fit["device_free_tokens"]
+            deficit = marker["logical_deficit_tokens"]
+            if (
+                marker["physical_capacity_credit"] is not False
+                or any(type(marker[field]) is not int or marker[field] != 0
+                       for field in ("released_device_tokens", "released_host_tokens"))
+                or type(need) is not int or type(free) is not int or not 0 < need <= free
+                or type(deficit) is not int or deficit <= 0
+            ):
+                raise ValueError("invalid logical-only handoff evidence")
+            episode = episodes.get((key, grant_sequence))
+            if episode is None:
+                raise ValueError("logical handoff lacks its exact free-grant progress episode")
+            bounded = episode["new_service_before_next_control_or_intervention"] is True
+            result.update(
+                logical_only=True, logical_deficit_tokens=deficit,
+                first_chunk_and_restore_tokens=need, device_free_tokens=free,
+                status="bounded_new_service_verified" if bounded else "new_service_outside_grant_window",
+                grant_to_new_service_ms=episode["first_new_useful_service_ms"],
+                grant_to_new_launch_ms=episode["first_new_useful_launch_ms"],
+                observation_window_end_reason=episode["observation_window_end_reason"],
+                service_before_next_control_or_intervention=bounded,
+            )
+            rows.append(result)
+            continue
         if len(consumer_identities[key[0], key[3]]) != 1:
             result["status"] = "ambiguous_consumer_attempt_or_session_identity"
             rows.append(result)
@@ -162,10 +189,17 @@ def paired_paths(progress, observed):
 def summarize(rows):
     matched = [row for row in rows if row["release_record_matched"]]
     bounded = [row for row in matched if row["service_before_next_control_or_intervention"] is True]
+    logical = [row for row in rows if row.get("logical_only")]
+    bounded_logical = [row for row in logical if row["service_before_next_control_or_intervention"] is True]
     return {
         "linked_replacements": len(rows), "matched_physical_release_records": len(matched),
         "bounded_new_service_verified": len(bounded),
         "service_not_verified_in_grant_window": len(matched) - len(bounded),
+        "logical_only_grants": len(logical),
+        "logical_only_bounded_new_service_verified": len(bounded_logical),
+        "logical_only_bounded_grant_to_service_ms": distribution([
+            row["grant_to_new_service_ms"] for row in bounded_logical
+        ]),
         "release_to_grant_ms": distribution([row["last_release_record_to_grant_ms"] for row in matched]),
         "bounded_grant_to_service_ms": distribution([row["grant_to_new_service_ms"] for row in bounded]),
         "bounded_release_to_service_ms": distribution([
