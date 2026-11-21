@@ -34,6 +34,7 @@ SOURCES = frozenset(("periodic_decay_resume", "undiscounted_free_dispatch"))
 UNSEARCHED_REFERENCE_REASONS = frozenset((
     "metadata_unavailable_reference_fallback",
     "remaining_work_ranking_disabled_reference",
+    "initial_materialization_reference_preserved",
     "no_competing_choice",
     "native_resources_unavailable_reference_fallback",
     "reference_candidate_summary_unavailable",

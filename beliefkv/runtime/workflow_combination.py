@@ -55,6 +55,14 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         from beliefkv.policy.workflow_shortest_frontier import strict_remaining_work_enabled
 
         self.strict_remaining_work = strict_remaining_work_enabled(raw)
+        self.resume_only_work_ranking = raw.get("resume_only_work_ranking", False)
+        if type(self.resume_only_work_ranking) is not bool or (
+            self.resume_only_work_ranking and (
+                not self.strict_remaining_work
+                or getattr(admission.runtime, "subagent_materialization_policy", None) != "pressure_v2"
+            )
+        ):
+            raise ValueError("resume-only work ranking requires strict ranking and D3 root/child control")
         self.shortest_work_first = raw.get("shortest_work_first_admission", False)
         if type(self.shortest_work_first) is not bool or self.shortest_work_first and (
             profile["kind"] != kinds[6] or not ranking
@@ -450,6 +458,12 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             if priority is not None and not getattr(self, "strict_remaining_work", False) else weight
         )
 
+    def _initial_materialization(self, key):
+        if not getattr(self, "resume_only_work_ranking", False):
+            return False
+        gate = self.admission.runtime._subagent_materialization
+        return gate is not None and gate.awaiting_first_prefill(key)
+
     def _strict_candidate_window(self, keys, reference, capacity, predictions, *,
                                  complete_free_siblings=False):
         a = self.admission
@@ -495,7 +509,10 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                         break
                     checks_left -= 1
                     peer = a.latest.get(identity)
-                    if peer is None or peer.root_workflow_id != token[0]:
+                    if (
+                        peer is None or peer.root_workflow_id != token[0]
+                        or self._initial_materialization(peer)
+                    ):
                         continue
                     found = a._candidate(peer.request_id, peer, include_first=True)
                     if (
@@ -574,6 +591,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         indexed_siblings = ()
         private_blocked_tokens, unreferenced_tokens = None, 0
         self.cold_summary = ()
+        rank_keys = keys
         accumulation = getattr(self, "capacity_accumulation", None)
         if accumulation is not None:
             accumulation.last = None
@@ -583,6 +601,12 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             if not getattr(a, "remaining_work_ranking_enabled", True):
                 result["reason"] = "remaining_work_ranking_disabled_reference"
                 return list(reference)
+            if getattr(self, "resume_only_work_ranking", False):
+                # Preserve a window that would grant a D3 entry before its first prefill.
+                if any(self._initial_materialization(key) for key in reference):
+                    result["reason"] = "initial_materialization_reference_preserved"
+                    return list(reference)
+                rank_keys = [key for key in keys if not self._initial_materialization(key)]
             if accumulation is not None:
                 held = accumulation.consider(keys, reference, capacity, predictions, source)
                 if held is not None:
@@ -599,13 +623,13 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 return list(reference)
             if strict and source == "undiscounted_free_dispatch":
                 window = self._strict_candidate_window(
-                    keys, reference, capacity, predictions, complete_free_siblings=True,
+                    rank_keys, reference, capacity, predictions, complete_free_siblings=True,
                 )
-                observed = set(keys) | set(reference)
+                observed = set(rank_keys) | set(reference)
                 indexed_siblings = tuple(key for key in window if key not in observed)
                 a.counts["strict_remaining_work_indexed_siblings"] += len(indexed_siblings)
             else:
-                window = self._candidate_window(keys, reference, capacity, predictions)
+                window = self._candidate_window(rank_keys, reference, capacity, predictions)
             if not window or (not strict and len(window) == len(reference)):
                 result["reason"] = "no_competing_choice"
                 return list(reference)
@@ -618,7 +642,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             for key in tuple(window):
                 group, total, _active = self._group(key, groups)
                 if total > 1:
-                    for peer in islice(keys, self.max_sibling_candidates):
+                    for peer in islice(rank_keys, self.max_sibling_candidates):
                         if len(window) >= self.max_sibling_candidates:
                             break
                         if peer not in window and self._group(peer, groups)[0] == group:

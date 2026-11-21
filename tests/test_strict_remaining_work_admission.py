@@ -14,6 +14,7 @@ from beliefkv.policy.workflow_shortest_frontier import (
     choose_shortest_work_first, strict_remaining_work_enabled,
 )
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
+from beliefkv.runtime.subagent_materialization import SubagentMaterialization, _InitialRequest
 from beliefkv.core.events import RuntimeEventKind as Kind
 from scripts.audit_workflow_combination_choices import replay_choice, validate_selection_policy
 from scripts.audit_strict_workflow_priority import compare
@@ -141,6 +142,62 @@ def strict_runtime(monkeypatch, tmp_path):
     return runtime, admission
 
 
+def mark_unmaterialized(runtime, keys):
+    gate = runtime._subagent_materialization = SubagentMaterialization(
+        runtime, include_root_entries=True,
+    )
+    for key in keys:
+        request = runtime._agent_admission._live_requests[key.request_id]
+        gate.pending[key.request_id] = _InitialRequest(key, request, 0., permitted=True)
+    return gate
+
+
+@pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
+def test_resume_only_preserves_first_materialization_reference(monkeypatch, tmp_path, source):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    control.resume_only_work_ranking = True
+    a, b, c = (admission.latest[owner] for owner in ("a", "b", "c"))
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        gate = mark_unmaterialized(runtime, (b,))
+        select = partial(control.select, capacity=500, maximum=4, source=source)
+        assert select([a, b, c], [b, c]) == [b, c]
+        assert records[-1]["decision"]["reason"] == "initial_materialization_reference_preserved"
+        assert select([a, b, c], [c]) == [a]
+        assert {candidate["identity"] for candidate in records[-1]["candidates"]} == {"a", "c"}
+        gate.pending[b.request_id].started = True
+        assert select([a, b, c], [b, c]) == [a]
+    finally:
+        runtime.close()
+
+
+def test_resume_only_keeps_materialization_and_tool_order(monkeypatch, tmp_path):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    control.completion_path_oracle = True
+    admission._conditional_distribution = True
+    admission.workflow_pressure_pause = True
+    a, b = (admission.latest[owner] for owner in ("a", "b"))
+    try:
+        gate = mark_unmaterialized(runtime, (b, a))
+        queued = list(gate.pending.values())
+        assert gate._ordered(queued) == queued[::-1]
+        assert admission.order_tool_replacement([b, a]) == [a, b]
+        assert admission._pressure_preference(admission.policy.programs["a"], 0.) is not None
+
+        control.resume_only_work_ranking = True
+        assert gate._ordered(queued) == queued
+        assert admission.order_tool_replacement([b, a]) == [b, a]
+        assert admission._pressure_preference(admission.policy.programs["a"], 0.) is None
+        status = admission.status()
+        assert not status["workflow_distribution_changes_pressure_victims"]
+        assert not status["workflow_distribution_changes_tool_replacement_order"]
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
 @pytest.mark.parametrize("ready", (False, True))
 def test_strict_empty_shortlist_skips_native_capacity(monkeypatch, tmp_path, source, ready):
@@ -188,14 +245,15 @@ def test_strict_choice_changes_actual_eligibility_and_native_candidates(monkeypa
         runtime.close()
 
 
-@pytest.mark.parametrize("mode, capacity, blocked_peer, expected", (
-    ("all", 500, False, {"child-0", "child-1"}),
-    ("all", 499, False, {"child-0"}),
-    ("any", 500, False, {"child-0"}),
-    ("all", 500, True, {"child-0"}),
+@pytest.mark.parametrize("mode, capacity, blocked_peer, first_prefill, expected", (
+    ("all", 500, False, False, {"child-0", "child-1"}),
+    ("all", 499, False, False, {"child-0"}),
+    ("any", 500, False, False, {"child-0"}),
+    ("all", 500, True, False, {"child-0"}),
+    ("all", 500, False, True, {"child-0"}),
 ))
 def test_free_dispatch_considers_ready_sibling_outside_rotating_window(
-    monkeypatch, tmp_path, mode, capacity, blocked_peer, expected,
+    monkeypatch, tmp_path, mode, capacity, blocked_peer, first_prefill, expected,
 ):
     runtime, admission = strict_runtime(monkeypatch, tmp_path)
     try:
@@ -211,6 +269,9 @@ def test_free_dispatch_considers_ready_sibling_outside_rotating_window(
             req = request(owner, owner, tokens=150, workflow="wf")
             req.output_ids.clear()
             runtime.register_visible_request(req)
+        if first_prefill:
+            admission._combination.resume_only_work_ranking = True
+            mark_unmaterialized(runtime, (admission.latest["child-1"],))
         if blocked_peer:
             runtime.on_events((observed(
                 110, Kind.TOOL_START, invocation_id="child-1", context_id="child-1-context",
@@ -228,7 +289,7 @@ def test_free_dispatch_considers_ready_sibling_outside_rotating_window(
         assert admission.policy.remaining_capacity() >= 0
         choice = next(row for row in records if row["event"] == "workflow_combination_selection")
         assert [key["invocation_id"] for key in choice.get("indexed_sibling_candidates", ())] == (
-            ["child-1"] if mode == "all" and not blocked_peer else []
+            ["child-1"] if mode == "all" and not blocked_peer and not first_prefill else []
         )
         requests = list(admission._live_requests.values())
         plan = runtime.plan_native_prefill(requests, running_batch=NS(reqs=[]), adder=None)

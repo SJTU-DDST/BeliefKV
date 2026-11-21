@@ -208,11 +208,12 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
         return {"prediction": asdict(prediction)} if prediction is not None else {}
 
     def status(self):
+        state = super().status()
         deferred = self._deferred_dispatch
         compute = getattr(self.runtime, "_workflow_compute_service", None)
         pressure = self._work.artifact.pressure_work_ranking
         return {
-            **super().status(),
+            **state,
             "future_information_used": True, "deployable": False,
             "workflow_work_source": "oracle",
             "workflow_oracle_remaining_work_ranking_enabled": self.remaining_work_ranking_enabled,
@@ -227,6 +228,8 @@ class WorkflowOracleAdmission(WorkflowSizeAdmission):
                 "within_reference_category"
             ),
             "workflow_size_other_admission_paths": (
+                state["workflow_size_other_admission_paths"]
+                if state.get("workflow_resume_only_work_ranking") else
                 "protected_join_unchanged;first_continuation_sibling_use_exact_model_work_bins"
                 if self._work.model_work_only else
                 "protected_join_unchanged;first_continuation_sibling_use_shared_remaining_path_dispatch"

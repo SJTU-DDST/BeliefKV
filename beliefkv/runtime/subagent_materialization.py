@@ -1496,6 +1496,10 @@ class SubagentMaterialization:
         record = self.pending.get(key.request_id) if key is not None else None
         return record is None or record.key == key and (record.started or record.permitted)
 
+    def awaiting_first_prefill(self, key):
+        record = self.pending.get(key.request_id)
+        return record is not None and record.key == key and not record.started
+
     def held_ready_root(self, key):
         record = self.pending.get(key.request_id)
         return (
@@ -1628,7 +1632,10 @@ class SubagentMaterialization:
     def _ordered(self, records):
         a = self.admission
         combination = getattr(a, "_combination", None)
-        if not getattr(a, "remaining_work_ranking_enabled", True):
+        if (
+            not getattr(a, "remaining_work_ranking_enabled", True)
+            or getattr(combination, "resume_only_work_ranking", False)
+        ):
             return records
         if combination is None:
             if not getattr(a, "rank_before_category", False):

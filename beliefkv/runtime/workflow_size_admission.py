@@ -125,6 +125,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         return self._priority(self._prediction(invocation))
 
     def _pressure_preference(self, item, now):
+        if getattr(self._combination, "resume_only_work_ranking", False):
+            return None
         if self._conditional_distribution:
             if (
                 getattr(self._combination, "completion_path_profile", None) is not None
@@ -185,6 +187,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def order_tool_replacement(self, keys):
         # A donor pair must not be filtered by the pre-release free budget or
         # delayed by the ordinary admission window.
+        if getattr(self._combination, "resume_only_work_ranking", False):
+            return keys
         if self._conditional_distribution:
             if self._combination is not None and self._combination.shortest_work_first:
                 return self._combination.order_tool_replacement(keys)
@@ -450,6 +454,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
     def status(self):
         dispatch = bool(self.dispatch_interval_ms)
         shortest = bool(self._combination is not None and self._combination.shortest_work_first)
+        resume_only = getattr(self._combination, "resume_only_work_ranking", False)
         path_priority = bool(
             getattr(self._combination, "completion_path_profile", None) is not None
             or getattr(self._combination, "completion_path_oracle", False)
@@ -483,6 +488,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             ),
             "workflow_work_predictor": self._work.status(),
             "workflow_size_other_admission_paths": (
+                "reference_materialization_tool_and_pressure_order;protected_join_unchanged"
+                if resume_only else
                 "protected_join_unchanged;first_continuation_sibling_use_probability_combination"
                 if self._conditional_distribution else
                 "join_unchanged;bounded_free_dispatch_uses_cached_workflow_classes"
@@ -490,17 +497,19 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             ),
             "workflow_size_new_preemption": False,
             "workflow_shortest_work_first_admission": shortest,
+            **({"workflow_resume_only_work_ranking": True} if resume_only else {}),
             **({
                 "workflow_conditional_distribution_scope": (
+                    "existing_continuation_resume_only" if resume_only else
                     "shortest_path_admission_and_existing_tool_pair_and_pressure_order"
                     if path_priority and self.workflow_pressure_pause else
                     "shortest_work_admission_and_existing_immediate_tool_pair_order"
                     if shortest else "shared_combination_admission_only"
                 ),
                 "workflow_distribution_changes_pressure_victims": (
-                    path_priority and self.workflow_pressure_pause
+                    not resume_only and path_priority and self.workflow_pressure_pause
                 ),
-                "workflow_distribution_changes_tool_replacement_order": shortest,
+                "workflow_distribution_changes_tool_replacement_order": shortest and not resume_only,
                 "workflow_distribution_argmax_used_for_admission": False,
             } if self._conditional_distribution else {}),
             **({
