@@ -917,7 +917,7 @@ def test_backoff_uses_full_input_budget_after_initial_capacity_fits(runtime, mon
     prepare(runtime, [req], running=[object()])
     raw_free = gate.last_decision["reserved_tokens"] + gate._price(gate.pending[req.rid])
     runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: raw_free
-    monkeypatch.setattr(gate, "_outstanding_inputs", lambda *args, **kwargs: (1, 0, 1))
+    monkeypatch.setattr(gate, "_outstanding_inputs", lambda *args, **kwargs: (1, 0, 1, 0))
     prepare(runtime, [req], running=[object()], now=100.5)
     assert not gate.allows(runtime.visible[req.rid])
     assert runtime.counts["subagent_materialization_pressure_backoff_checks"] == 1

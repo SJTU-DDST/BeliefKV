@@ -11,8 +11,11 @@ import pytest
 from beliefkv.core.events import RuntimeEventKind as Kind
 from beliefkv.runtime.demand_prefill_pipeline import DemandPrefillPipeline
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
-from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
+from beliefkv.runtime.sglang_v0520_admission import (
+    compile_native_prefill_plan, select_native_prefill_candidates,
+)
 from beliefkv.runtime.subagent_materialization import (
+    MaterializationHeadroom,
     NODE_CENSUS_BOUND,
     SubagentMaterialization,
     observe_materialization_headroom,
@@ -135,6 +138,123 @@ def test_running_decode_growth_is_reserved_before_first_materialization(runtime)
 
     assert gate.last_decision["outstanding_input_tokens"] == (480 if gate.include_root_entries else 80)
     assert gate.allows(runtime.visible[req.rid]) is not gate.include_root_entries
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("condition", (
+    "partial_input", "selected", "stale_batch", "prefill_only", "valid", "invalid_ratio", "unknown_reserve",
+    "minimum_generation", "sole_host",
+))
+def test_decode_growth_credit_requires_a_live_fully_materialized_continuation(
+    runtime, monkeypatch, condition,
+):
+    parent = parent_request(runtime, allocated=620)
+    parent.output_ids[:] = [1] * 20
+    parent.sampling_params = NS(max_new_tokens=16384)
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    runtime._native_chunk_input_reserve = 2048
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 3400
+    running = NS(reqs=[parent])
+    adder = NS(running_batch=running, new_token_ratio=.25, can_run_list=[])
+    if condition == "partial_input":
+        parent.kv.kv_committed_len = len(parent.origin_input_ids) - 1
+    elif condition == "selected":
+        adder.can_run_list.append(parent)
+        parent.prefix_indices = ()
+    elif condition == "stale_batch":
+        adder.running_batch = NS(reqs=[parent])
+    elif condition == "prefill_only":
+        running.is_prefill_only = True
+    elif condition == "invalid_ratio":
+        adder.new_token_ratio = float("nan")
+    elif condition == "unknown_reserve":
+        runtime._host_demand_capacity = NS(reserve=lambda: None)
+    elif condition == "minimum_generation":
+        parent.sampling_params.min_new_tokens = parent.sampling_params.max_new_tokens
+    elif condition == "sole_host":
+        monkeypatch.setattr(
+            "beliefkv.runtime.subagent_materialization.observe_materialization_headroom",
+            lambda *args, **kwargs: MaterializationHeadroom(
+                True, device_free_tokens=2900, reclaimable_host_tokens=500,
+                reclaimable_host_only_tokens=500,
+            ),
+        )
+
+    gate.prepare([req], running_batch=running, adder=adder, now=100.)
+
+    credit = 1024 if condition in ("valid", "unknown_reserve", "sole_host") else 0
+    key = runtime.visible[req.rid]
+    assert gate.last_decision["running_decode_growth_credit_tokens"] == credit
+    assert gate.last_decision["outstanding_input_tokens"] == 4096
+    assert gate.last_decision["running_decode_growth_backfill_request_id"] == (
+        req.rid if condition == "valid" else None
+    )
+    assert gate.last_decision["reserved_tokens"] == (
+        0 if condition == "unknown_reserve" else 2 + len(adder.can_run_list)
+    )
+    assert gate.allows(key) is (condition == "valid")
+    assert not req.kv.kv_allocated_len
+
+    if condition == "valid":
+        # A changed native estimate invalidates an unused permit before allocation.
+        adder.new_token_ratio = 1.
+        assert gate.defer_start(req)
+        assert not gate.allows(key)
+        assert not req.kv.kv_allocated_len
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_decode_growth_credit_does_not_relax_resume_ranking(runtime, monkeypatch):
+    parent = parent_request(runtime, allocated=620)
+    parent.output_ids[:] = [1] * 20
+    parent.sampling_params = NS(max_new_tokens=16384)
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    gate.adaptive_resume_ranking = True
+    runtime._native_chunk_input_reserve = 2048
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 3400
+    running = NS(reqs=[parent])
+    adder = NS(running_batch=running, new_token_ratio=.25, can_run_list=[])
+    budgets = []
+    monkeypatch.setattr(gate, "_observe_resume_ranking", lambda _, budget, __: budgets.append(budget))
+
+    gate.prepare([req], running_batch=running, adder=adder, now=100.)
+
+    assert gate.allows(runtime.visible[req.rid])
+    assert budgets == [4096 + 2 + 200]
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_decode_growth_credit_keeps_original_permits_and_backfills_one(runtime, monkeypatch):
+    parent = parent_request(runtime, allocated=620)
+    parent.output_ids[:] = [1] * 20
+    parent.sampling_params = NS(max_new_tokens=16384)
+    original, extra, held = [child(runtime, identity=name) for name in ("original", "extra", "held")]
+    gate = runtime._subagent_materialization
+    runtime._native_chunk_input_reserve = 2048
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: 4350
+    running = NS(reqs=[parent])
+    adder = NS(running_batch=running, new_token_ratio=.25, can_run_list=[])
+
+    gate.prepare([original, extra, held], running_batch=running, adder=adder, now=100.)
+
+    assert gate.last_decision["running_decode_growth_backfill_request_id"] == extra.rid
+    assert gate.allows(runtime.visible[original.rid])
+    assert gate.allows(runtime.visible[extra.rid])
+    assert not gate.allows(runtime.visible[held.rid])
+
+    # The native queue starts with the backfill. The original request keeps
+    # first claim on the only free request row.
+    queue = [extra, original]
+    adder.max_running_requests = 2
+    base_plan = compile_native_prefill_plan(
+        [runtime.visible[req.rid] for req in queue], semantic_revision=runtime.semantic_revision,
+    )
+    monkeypatch.setattr(runtime, "_build_native_prefill_plan", lambda *args, **kwargs: base_plan)
+    plan = runtime.plan_native_prefill(queue, running_batch=running, adder=adder)
+    selection = select_native_prefill_candidates(queue, plan=plan, current_semantic_revision=runtime.semantic_revision)
+    assert selection.candidates[:adder.max_running_requests - len(running.reqs)] == (original,)
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)

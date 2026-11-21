@@ -5,6 +5,7 @@ from collections import OrderedDict
 from dataclasses import asdict, dataclass, replace
 from heapq import heapify, heappop, heappush
 from itertools import islice
+from math import ceil
 import os
 import time
 from types import SimpleNamespace
@@ -1705,16 +1706,22 @@ class SubagentMaterialization:
         allocated = getattr(getattr(record.request, "kv", None), "kv_allocated_len", 0)
         return self._input_price(record.request, allocated if record.started else 0)
 
-    def _input_price(self, req, allocated):
+    def _input_price(self, req, allocated, *, decode_ratio=None):
         page = self.runtime._native_page_size
         buffer = self.admission.policy.buffer_tokens
         if self.include_root_entries:
             generated = len(req.output_ids)
-            maximum = getattr(getattr(req, "sampling_params", None), "max_new_tokens", None)
+            sampling = getattr(req, "sampling_params", None)
+            maximum = getattr(sampling, "max_new_tokens", None)
             growth = (
                 min(max(0, maximum - generated), self.decode_growth_clip_tokens)
                 if type(maximum) is int else 0
             )
+            if decode_ratio is not None:
+                minimum = getattr(sampling, "min_new_tokens", 0)
+                if type(minimum) is int and minimum >= 0:
+                    required_growth = min(growth, max(0, minimum - generated))
+                    growth = max(ceil(growth * decode_ratio), required_growth)
             buffer = max(buffer, generated + growth)
         tokens = len(req.origin_input_ids) + buffer
         if type(allocated) is int and allocated >= 0:
@@ -1737,12 +1744,24 @@ class SubagentMaterialization:
                 committed[key.request_id] = member.request
         return committed
 
-    def _outstanding_inputs(self, running_batch, committed, queued, *, refresh, conservative=False):
+    def _outstanding_inputs(
+        self, running_batch, committed, queued, *, refresh, conservative=False, adder=None,
+    ):
         runtime, a = self.runtime, self.admission
         running = {
-            getattr(req, "rid", None) for req in getattr(running_batch, "reqs", ())
+            getattr(req, "rid", None): req for req in getattr(running_batch, "reqs", ())
         }
+        chunk = runtime._native_chunk_input_reserve
+        ratio = getattr(adder, "new_token_ratio", None)
+        if (
+            conservative or not self.include_root_entries or type(chunk) is not int or chunk <= 0
+            or getattr(adder, "running_batch", None) is not running_batch
+            or getattr(running_batch, "is_prefill_only", False)
+            or type(ratio) not in (int, float) or not 0 <= ratio < 1
+        ):
+            ratio = None
         outstanding = initial = ready_continuations = 0
+        decode_credit = 0
         for rid, req in a._live_requests.items():
             key = runtime.visible.get(rid)
             if (
@@ -1794,7 +1813,19 @@ class SubagentMaterialization:
             outstanding += price
             if record is not None and record.started:
                 initial += price
-        return outstanding + ready_continuations, initial, ready_continuations
+            if (
+                ratio is not None and record is None and not selected and running.get(rid) is req
+                and getattr(kv, "req_pool_idx", None) is not None
+                and type(allocated) is int
+                and type(committed_length := getattr(kv, "kv_committed_len", None)) is int
+                and len(req.origin_input_ids) <= committed_length <= allocated
+                and not getattr(req, "is_retracted", False)
+            ):
+                decode_credit += price - self._input_price(req, allocated, decode_ratio=ratio)
+        # Keep a full input quantum of spare growth for the already-running batch.
+        if decode_credit:
+            decode_credit = max(0, decode_credit - chunk)
+        return outstanding + ready_continuations, initial, ready_continuations, decode_credit
 
     def _reserve(self, running_batch, adder):
         runtime, cache = self.runtime, self.runtime._native_cache
@@ -1847,7 +1878,7 @@ class SubagentMaterialization:
             committed = self._input_commitments(self._adder)
             queued = {getattr(req, "rid", None): req for req in self._native_order}
             # Reserve unused D3 permits and charge uninspected inputs in full.
-            outstanding, _, _ = self._outstanding_inputs(
+            outstanding, _, _, _ = self._outstanding_inputs(
                 self._running_batch, committed, queued, refresh=False, conservative=True,
             )
             committed_tokens = reserve + outstanding
@@ -2106,8 +2137,8 @@ class SubagentMaterialization:
                     counts["subagent_materialization_pressure_backoff_before_input_scan"] += 1
                     return
             queued = {getattr(req, "rid", None): req for req in native_order}
-            outstanding, initial, ready_continuations = self._outstanding_inputs(
-                running_batch, committed, queued, refresh=_starting,
+            outstanding, initial, ready_continuations, decode_credit = self._outstanding_inputs(
+                running_batch, committed, queued, refresh=_starting, adder=adder,
             )
             required = initial_required + outstanding
             raw = observe_materialization_headroom(
@@ -2136,12 +2167,13 @@ class SubagentMaterialization:
             reserve_known = reserve is not None
             reserve = (reserve or 0) if observation.observable else 0
             available = observation.available_tokens - reserve - outstanding
-            candidates = [
+            ready = [
                 record for record in self.pending.values()
                 if not record.started and record.key.request_id in queued
                 and record.key.request_id not in committed_initial
                 and self._ready(record.key)
             ]
+            candidates = ready
             if self.include_root_entries and observation.observable and observation.available_tokens < required:
                 # A request that cannot use the remaining budget should not
                 # crowd a feasible request out of the bounded ranking window.
@@ -2167,6 +2199,22 @@ class SubagentMaterialization:
                 if not observation.observable or price <= available:
                     allowed.add(record.key.request_id)
                     available -= price
+            growth_backfill = None
+            if observation.observable and reserve_known and decode_credit:
+                # Preserve the full-reserve choices before spending any decode credit.
+                extra_limit = available + decode_credit - observation.reclaimable_host_only_tokens
+                fitting = [
+                    record for record in ready
+                    if record.key.request_id not in allowed
+                    and available < self._price(record) <= extra_limit
+                ]
+                if fitting:
+                    backfill = self._pressure_order(fitting)[0]
+                    growth_backfill = backfill.key.request_id
+                    allowed.add(growth_backfill)
+                    available -= self._price(backfill)
+                    if backfill not in candidates:
+                        candidates.append(backfill)
             progress = None
             if observation.observable and not allowed and not outstanding:
                 progress = self._progress_candidate(
@@ -2214,6 +2262,8 @@ class SubagentMaterialization:
             if self.include_root_entries:
                 decision.update(
                     ready_continuation_tokens=ready_continuations,
+                    running_decode_growth_credit_tokens=decode_credit,
+                    running_decode_growth_backfill_request_id=growth_backfill,
                     root_candidates=[record.key.request_id for record in candidates if record.root_entry],
                     held_root_request_ids=[
                         rid for rid in decision["held"] if self.pending[rid].root_entry
@@ -2231,6 +2281,17 @@ class SubagentMaterialization:
                     })
         finally:
             counts["subagent_materialization_cpu_ns"] += time.thread_time_ns() - cpu
+
+    def order_growth_backfill(self, plan):
+        rid = self.last_decision.get("running_decode_growth_backfill_request_id")
+        record = self.pending.get(rid) if rid is not None else None
+        if record is None or record.started or not record.permitted:
+            return plan
+        key = record.key
+        if key not in plan.prioritized or key == plan.prioritized[-1]:
+            return plan
+        ordered = tuple(other for other in plan.prioritized if other != key)
+        return replace(plan, prioritized=(*ordered, key))
 
     def has_staged_restore(self, req, key):
         chunk = self._demand_restore_chunk

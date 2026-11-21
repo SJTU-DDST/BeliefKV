@@ -12525,10 +12525,15 @@ class NativeAdmissionRuntime:
         self, native_order: Sequence[object], *, running_batch: object, adder: object,
         _queue_inspection: _NativePrefillQueueInspection | None = None,
     ) -> NativePrefillPlan:
-        plan = self._build_native_prefill_plan(
-            native_order, running_batch=running_batch, adder=adder,
-            _queue_inspection=_queue_inspection,
-        )
+        gate = self._subagent_materialization
+
+        def build(inspection=None):
+            plan = self._build_native_prefill_plan(
+                native_order, running_batch=running_batch, adder=adder, _queue_inspection=inspection,
+            )
+            return gate.order_growth_backfill(plan) if gate is not None else plan
+
+        plan = build(_queue_inspection)
         if not plan.prioritized or self.physical_disabled:
             return plan
         handoff = getattr(self._agent_admission, "_join_handoff", None)
@@ -12564,9 +12569,7 @@ class NativeAdmissionRuntime:
                 selection.candidates, running_batch=running_batch, adder=adder,
             )
             if plan.semantic_revision != self.semantic_revision:
-                plan = self._build_native_prefill_plan(
-                    native_order, running_batch=running_batch, adder=adder,
-                )
+                plan = build()
                 selection = select_native_prefill_candidates(
                     native_order, plan=plan, current_semantic_revision=self.semantic_revision,
                 )
@@ -12578,9 +12581,7 @@ class NativeAdmissionRuntime:
         if self.semantic_revision != plan.semantic_revision:
             # Tool return/cancellation may arrive while the donor is rechecked.
             self.counts["tool_offload_admission_event_replans"] += 1
-            plan = self._build_native_prefill_plan(
-                native_order, running_batch=running_batch, adder=adder,
-            )
+            plan = build()
         return plan
 
     def _build_native_prefill_plan(
