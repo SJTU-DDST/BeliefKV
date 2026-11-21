@@ -426,6 +426,84 @@ def test_d3_does_not_spend_host_only_headroom_before_first_ack(
     cache.sanity_check()
 
 
+@pytest.mark.parametrize(
+    ("staged_native", "full_native", "base_full_native"),
+    (({"members": 1, "select": False, "prefix_sizes": (20,)}, 40, 96),),
+    indirect=True,
+)
+@pytest.mark.parametrize("native_refuses_preference", (False, True))
+def test_d3_restore_suffix_preserves_reusable_host_when_mirrors_can_fund_progress(
+    staged_native, monkeypatch, native_refuses_preference,
+):
+    from sglang.srt.mem_cache.base_prefix_cache import MatchPrefixParams
+    from sglang.srt.mem_cache.radix_cache import RadixKey
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, req = f.cache, f.req
+    tree, host = cache.tree_core, cache.host_pool_group.anchor_entry.host_pool
+    held_host = host.alloc(host.available_size() - 20)
+    mirror, _ = insert_session(cache, range(101, 108), "mirror")
+    _backup(cache, mirror)
+    mirror_hold = cache.inc_lock_ref(mirror.id).to_dec_params()
+    reusable, _ = insert_session(cache, range(111, 124), "reusable")
+    reusable_slots = _backup(cache, reusable, demote=True)
+    cache.release_radix_session("reusable")
+    insert_session(cache, range(201, 241), "device-donor")
+    held_device = f.allocator.alloc(f.allocator.available_size() - 3)
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    try:
+        assert invoke() == (None, f.running)
+        assert [len(load.host_indices) for load in f.loads] == [7]
+        assert reusable.component_data[0].host_value is reusable_slots
+        f.complete.ready = True
+        cache.loading_check()
+
+        if native_refuses_preference:
+            attempts = []
+
+            def fund(*args, preserve_host_only, **kwargs):
+                attempts.append(preserve_host_only)
+                if preserve_host_only:
+                    return False
+                return ensure_device_capacity_preserving_live_kv(
+                    *args, preserve_host_only=False, **kwargs,
+                )
+
+            monkeypatch.setattr(
+                "beliefkv.runtime.demand_restore_chunk.ensure_device_capacity_preserving_live_kv", fund,
+            )
+        else:
+            assert invoke() == (None, f.running)
+            assert [len(load.host_indices) for load in f.loads] == [7, 7]
+            assert gate._demand_restore_chunk.pending.preserve_host_only
+            assert reusable.component_data[0].host_value is reusable_slots
+            cache.loading_check()
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [(req,)] and not scheduler.waiting_queue
+        expected_loads = [7, 13] if native_refuses_preference else [7, 7, 6]
+        assert [len(load.host_indices) for load in f.loads] == expected_loads
+        assert req.extend_range.start == 20
+        cache.loading_check()
+        cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        matched = cache.match_prefix(MatchPrefixParams(key=RadixKey(array("q", range(111, 124)))))
+        if native_refuses_preference:
+            assert attempts == [True, False]
+            assert matched.host_hit_length < len(reusable_slots)
+        else:
+            assert reusable.component_data[0].host_value is reusable_slots
+            assert host.slot_used[reusable_slots].all()
+            assert matched.host_hit_length == len(reusable_slots)
+        cache.sanity_check()
+    finally:
+        gate.close()
+        f.pipeline.cancel("test_complete")
+        cache.dec_lock_ref(mirror.id, mirror_hold)
+        f.allocator.free(held_device)
+        host.free(held_host)
+
+
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
 @pytest.mark.parametrize("outcome", ("resume", "abort", "new_epoch", "control", "decline"))
 def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome):

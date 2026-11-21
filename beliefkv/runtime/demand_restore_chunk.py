@@ -20,6 +20,7 @@ class _Pending:
     prefix_receipt: object
     suffix_node: int
     suffix_receipt: object
+    preserve_host_only: bool
     credit_waiter: tuple[object, tuple] | None = None
 
 
@@ -75,7 +76,7 @@ class DemandRestoreChunk:
     def start(
         self, params, key, tokens, *, device_reserve, protected_nodes,
         minimum_tokens=1, replace_pending=None, preserve_host_only=False,
-        fund_from_backed_device=None,
+        fund_from_backed_device=None, preferred_suffix_tokens=0,
     ):
         """Stage a slice, fund the final native load, or return a decline reason."""
         cache, req = self.cache, params.req
@@ -133,17 +134,31 @@ class DemandRestoreChunk:
         # move settled state, but may not discard any referenced checkpoint.
         allocator = cache.token_to_kv_pool_allocator
         free_before = allocator.available_size()
+        proposed_tokens = tokens
         if fund_from_backed_device is not None:
             funded = fund_from_backed_device(tokens + device_reserve, protected_nodes)
             if not funded:
                 return "protected_service"
         else:
-            funded = ensure_device_capacity_preserving_live_kv(
-                cache, tokens + device_reserve, protected_nodes=protected_nodes,
-                minimum_tokens=minimum_tokens + device_reserve,
-                retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
-                preserve_host_only=preserve_host_only,
+            def fund(target, *, preserve):
+                return ensure_device_capacity_preserving_live_kv(
+                    cache, target + device_reserve, protected_nodes=protected_nodes,
+                    minimum_tokens=minimum_tokens + device_reserve,
+                    retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
+                    preserve_host_only=preserve,
+                )
+
+            prefer = continuation and minimum_tokens <= preferred_suffix_tokens <= tokens
+            funded = fund(
+                preferred_suffix_tokens if prefer else tokens,
+                preserve=preserve_host_only or prefer,
             )
+            if prefer:
+                if funded is False and allocator.available_size() < minimum_tokens + device_reserve:
+                    funded = fund(tokens, preserve=preserve_host_only)
+                else:
+                    tokens = preferred_suffix_tokens
+                    preserve_host_only = True
         if funded is None:
             req._beliefkv_d3_write_ack_retry_key = key
             return DEFER_WRITE_ACK
@@ -167,14 +182,14 @@ class DemandRestoreChunk:
                     )
                 ):
                     return "device_capacity_not_funded"
-            # The original source walk validated every node in the shorter slice.
-            trim = tokens - smaller
-            while trim >= prefix_tokens:
-                trim -= prefix_tokens
-                prefix = prefix.parent
-                prefix_tokens = len(prefix.key)
-            prefix_tokens -= trim
             tokens = smaller
+        # The original source walk validated every node in the funded slice.
+        trim = proposed_tokens - tokens
+        while trim >= prefix_tokens:
+            trim -= prefix_tokens
+            prefix = prefix.parent
+            prefix_tokens = len(prefix.key)
+        prefix_tokens -= trim
         prefix_id = prefix.id
         if prefix_tokens < len(prefix.key):
             split = tree.split_host_only_full_prefix(prefix.id, prefix.creation_time, prefix_tokens)
@@ -190,7 +205,7 @@ class DemandRestoreChunk:
             prefix_receipt = cache.inc_lock_ref(prefix_id).to_dec_params()
             self.pending = _Pending(
                 req, key, checkpoint_tokens, tokens, hit - tokens, prefix_id,
-                prefix_receipt, suffix_id, suffix_receipt,
+                prefix_receipt, suffix_id, suffix_receipt, preserve_host_only,
             )
             if replace_pending is not None:
                 # Keep one settled producer pinned while the borrower stages its suffix.

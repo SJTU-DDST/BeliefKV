@@ -686,6 +686,7 @@ class SubagentMaterialization:
         tokens = min(hit if continuation else hit // 2, safe_tokens)
         preserve_host_only = False
         fund_from_backed_device = None
+        preferred_suffix_tokens = 0
         if continuation:
             # Require a native chunk of progress unless the whole remainder fits.
             minimum_tokens = min(hit, minimum_tokens)
@@ -693,6 +694,11 @@ class SubagentMaterialization:
                 # A settled write can fund the suffix. Reuse the per-key ACK retry.
                 tokens = hit
                 preserve_host_only = True
+            elif headroom.reclaimable_host_only_tokens:
+                # After each ACK, try the suffix size funded by free slots and mirrors.
+                preferred_suffix_tokens = max(0, min(
+                    tokens, mirror_safe_tokens, device_free + cache.full_evictable_size() - reserve,
+                )) // page * page
         elif fund_whole_from_backed_device:
             # A whole restore funded by settled mirrors can leave the write in flight.
             tokens = hit
@@ -726,6 +732,7 @@ class SubagentMaterialization:
             minimum_tokens=minimum_tokens, replace_pending=replace_pending,
             preserve_host_only=preserve_host_only,
             fund_from_backed_device=fund_from_backed_device,
+            preferred_suffix_tokens=preferred_suffix_tokens,
         )
         if reason == FULL_RESTORE_FUNDED:
             stage = "suffix" if continuation else "whole_hit"
@@ -763,7 +770,7 @@ class SubagentMaterialization:
                 "observed_safe_tokens": safe_tokens, "prefix_node_id": pending.prefix_node,
                 "selected_prefill_reserved_tokens": selected_slots,
                 "continuation": continuation,
-                "preserve_host_only": preserve_host_only,
+                "preserve_host_only": pending.preserve_host_only,
             })
         return True
 
