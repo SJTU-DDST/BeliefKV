@@ -390,7 +390,7 @@ class ReferenceToolReplacement:
         if boundary is None:
             # An impossible pair needs neither Oracle path queries nor a
             # prediction worker readout. Reuse only this pass's donor check.
-            if not any(self._logical_window_can_fit(key, donors) for key in self.order):
+            if not self._logical_window_has_candidate(self.order, donors):
                 agents.counts["tool_event_replacement_logical_window_skips"] += len(self.order)
                 self.order = ()
             else:
@@ -541,3 +541,15 @@ class ReferenceToolReplacement:
             ):
                 return True
         return False
+
+    def _logical_window_has_candidate(self, keys, donors):
+        if len(keys) == 1:
+            return self._logical_window_can_fit(keys[0], donors)
+        programs = self.offload.runtime._agent_admission.policy.programs
+        # Every candidate sees the same raw budget and donor window in this prefilter.
+        smallest = min(
+            (key for key in keys if key.invocation_id in programs),
+            key=lambda key: programs[key.invocation_id].tokens,
+            default=None,
+        )
+        return smallest is not None and self._logical_window_can_fit(smallest, donors)

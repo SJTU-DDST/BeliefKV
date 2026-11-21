@@ -60,6 +60,23 @@ def test_logical_prefilter_keeps_the_original_bounded_rotating_donor_window(dema
     assert not controller.replacement._logical_window_can_fit(key, donors)
 
 
+def test_logical_window_checks_only_its_smallest_live_candidate(demand_runtime, monkeypatch):
+    _runtime, admission, controller, _adder = pair(demand_runtime)
+    small = admission.latest["consumer"]
+    large = replace(small, invocation_id="large")
+    missing = replace(small, invocation_id="missing")
+    admission.policy.programs[large.invocation_id] = NS(tokens=80, active=False)
+    donors = (admission.latest["tool"],)
+    check = Mock(wraps=controller.replacement._logical_window_can_fit)
+    monkeypatch.setattr(controller.replacement, "_logical_window_can_fit", check)
+
+    assert controller.replacement._logical_window_has_candidate((large, missing, small), donors)
+    check.assert_called_once_with(small, donors)
+    check.reset_mock()
+    assert not controller.replacement._logical_window_has_candidate((large, missing), donors)
+    check.assert_called_once_with(large, donors)
+
+
 @pytest.mark.parametrize("path", ("replacement", "ordinary"))
 def test_one_fresh_headroom_read_is_shared_with_the_same_demand_budget(
     demand_runtime, monkeypatch, path,
