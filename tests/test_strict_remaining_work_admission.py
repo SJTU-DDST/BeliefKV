@@ -245,15 +245,26 @@ def test_strict_choice_changes_actual_eligibility_and_native_candidates(monkeypa
         runtime.close()
 
 
-@pytest.mark.parametrize("mode, capacity, blocked_peer, first_prefill, expected", (
-    ("all", 500, False, False, {"child-0", "child-1"}),
-    ("all", 499, False, False, {"child-0"}),
-    ("any", 500, False, False, {"child-0"}),
-    ("all", 500, True, False, {"child-0"}),
-    ("all", 500, False, True, {"child-0"}),
+@pytest.mark.parametrize("mode, capacity, blocked_peer, expected", (
+    ("all", 500, False, {"child-0", "child-1"}),
+    ("all", 499, False, {"child-0"}),
+    ("any", 500, False, {"child-0"}),
+    ("all", 500, True, {"child-0"}),
 ))
 def test_free_dispatch_considers_ready_sibling_outside_rotating_window(
-    monkeypatch, tmp_path, mode, capacity, blocked_peer, first_prefill, expected,
+    monkeypatch, tmp_path, mode, capacity, blocked_peer, expected,
+):
+    _check_indexed_sibling_dispatch(monkeypatch, tmp_path, mode, capacity, blocked_peer, expected)
+
+
+def test_resume_only_excludes_unmaterialized_indexed_sibling(monkeypatch, tmp_path):
+    _check_indexed_sibling_dispatch(
+        monkeypatch, tmp_path, "all", 500, False, {"child-0"}, first_prefill=True,
+    )
+
+
+def _check_indexed_sibling_dispatch(
+    monkeypatch, tmp_path, mode, capacity, blocked_peer, expected, *, first_prefill=False,
 ):
     runtime, admission = strict_runtime(monkeypatch, tmp_path)
     try:

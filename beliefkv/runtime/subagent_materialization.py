@@ -851,8 +851,9 @@ class SubagentMaterialization:
 
         staged = self._demand_restore_chunk.pending
         chunk = self.runtime._native_chunk_input_reserve
-        protected_receipt = None
+        stage_receipt = None
         join_peer = False
+        ordinary_stage_peer = False
         if (
             staged is not None and staged.request is not params.req
             and chunk and hit >= 2 * chunk
@@ -860,12 +861,19 @@ class SubagentMaterialization:
             and tuple(acks[0].node_ids) == (staged.prefix_node,)
             and self._restore_stage_matches_live(staged.request, staged.key)
             and self._restore_stage_matches_live(params.req, key)
-            and self._staged_peer_protected(staged.key)
         ):
-            join_peer = self._can_wait_on_join_stage(params.req, key, staged.key)
-            if join_peer or not self._staged_peer_protected(key):
-                protected_receipt = cache.ongoing_load_back.get(staged.prefix_node)
-        if protected_receipt is None and self._restore_has_service_priority(key):
+            if self._staged_peer_protected(staged.key):
+                join_peer = self._can_wait_on_join_stage(params.req, key, staged.key)
+                if join_peer or not self._staged_peer_protected(key):
+                    stage_receipt = cache.ongoing_load_back.get(staged.prefix_node)
+            elif (
+                not submitted and len(queue) == 1
+                and getattr(params.req, "_beliefkv_d3_ordinary_stage_wait_key", None) != key
+                and not self._staged_peer_protected(key)
+            ):
+                stage_receipt = cache.ongoing_load_back.get(staged.prefix_node)
+                ordinary_stage_peer = stage_receipt is not None
+        if stage_receipt is None and self._restore_has_service_priority(key):
             return False
         leading_tagged = submitted and bool(acks[0].child_receipts)
         own_join_receipts = None
@@ -900,7 +908,7 @@ class SubagentMaterialization:
             params.best_match_node,
             *(lease.node_id for lease in leases.values()),
             *(own_join_receipts or ()),
-            *((staged.prefix_node,) if protected_receipt is not None else ()),
+            *((staged.prefix_node,) if stage_receipt is not None else ()),
         )
         protected = frozenset(protected_nodes)
         credit, remaining = 0, self.max_candidates
@@ -936,7 +944,7 @@ class SubagentMaterialization:
                 unfunded_restore_tokens=None,
                 headroom_observation=None,
             )
-        if not credit and not own_join_receipts and protected_receipt is None:
+        if not credit and not own_join_receipts and stage_receipt is None:
             return False
 
         counts = self.runtime.counts
@@ -957,11 +965,16 @@ class SubagentMaterialization:
         if not headroom.observable or shortfall <= 0:
             return False
         identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
-        if protected_receipt is not None and identity_matches:
-            # Finish the protected transfer before retrying a large restore.
-            params.req._beliefkv_d3_restore_credit = key, hit, {
-                staged.prefix_node: protected_receipt,
-            }
+        if stage_receipt is not None and identity_matches:
+            wait_receipts = {staged.prefix_node: stage_receipt}
+            if ordinary_stage_peer:
+                # Let the selected batch publish its load while the earlier stage is in flight.
+                wait_receipts.update({
+                    anchor: cache.ongoing_load_back[anchor] for anchor in native_node_ids
+                })
+                params.req._beliefkv_d3_ordinary_stage_wait_key = key
+                counts["subagent_materialization_ordinary_stage_overlap_waits"] += 1
+            params.req._beliefkv_d3_restore_credit = key, hit, wait_receipts
             if join_peer:
                 # A live JOIN may wait for one already-started JOIN restore chain.
                 params.req._beliefkv_d3_join_peer = key, staged.key
@@ -975,7 +988,8 @@ class SubagentMaterialization:
                         "prefix_node_id": staged.prefix_node,
                         "unfunded_restore_tokens": shortfall,
                     })
-            counts["subagent_materialization_protected_stage_waits"] += 1
+            if not ordinary_stage_peer:
+                counts["subagent_materialization_protected_stage_waits"] += 1
             return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
         small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
@@ -1194,6 +1208,12 @@ class SubagentMaterialization:
                 and self._restore_stage_matches_live(req, key)
                 if waiting_on_join else not self._restore_has_service_priority(key)
             )
+            if (
+                permitted and not waiting_on_join
+                and getattr(req, "_beliefkv_d3_ordinary_stage_wait_key", None) == key
+                and self._staged_peer_protected(key)
+            ):
+                permitted = False
             cache = restore.cache
             if permitted and cache.token_to_kv_pool_allocator.available_size() < hit:
                 retry = self._peer_restore_retry

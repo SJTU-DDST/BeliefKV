@@ -1934,12 +1934,7 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         host.free(held_host)
 
 
-@pytest.mark.parametrize(
-    ("staged_native", "full_native"),
-    (({"members": 3, "select": False, "prefix_sizes": (18, 1, 8)}, 27),),
-    indirect=True,
-)
-def test_d3_waits_for_protected_stage_with_ordinary_loads_selected(staged_native, monkeypatch):
+def _check_stage_overlap(staged_native, monkeypatch, mode):
     from sglang.srt.managers.schedule_policy import AddReqResult
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -1956,7 +1951,8 @@ def test_d3_waits_for_protected_stage_with_ordinary_loads_selected(staged_native
         insert_session(cache, range(start, start + size), str(start))
     held_device = allocator.alloc(allocator.available_size() - 3)
     f.waiting[:] = [producer]
-    runtime._join_priority_promoted = producer.rid
+    if mode == "protected_stage":
+        runtime._join_priority_promoted = producer.rid
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
     gate.materialized.add(gate._context(key))
 
@@ -1968,7 +1964,10 @@ def test_d3_waits_for_protected_stage_with_ordinary_loads_selected(staged_native
         assert staged.request is producer and not construction
         assert existing_ack.node_ids == [staged.prefix_node]
         prior_receipt = cache.ongoing_load_back[staged.prefix_node]
-        consumer._beliefkv_d3_indexed_restore_defer_key = key
+        if mode == "protected_stage":
+            consumer._beliefkv_d3_indexed_restore_defer_key = key
+        if mode == "already_waited":
+            consumer._beliefkv_d3_ordinary_stage_wait_key = key
 
         adder = f.adder()
         scheduler.waiting_queue[:] = [producer, selected, consumer]
@@ -1983,25 +1982,77 @@ def test_d3_waits_for_protected_stage_with_ordinary_loads_selected(staged_native
 
         consumer.init_next_round_input(cache)
         assert consumer.host_hit_length == 8
-        assert adder.add_one_req(
+        result = adder.add_one_req(
             consumer, has_chunked_req=False, truncation_align_size=None,
-        ) is AddReqResult.OTHER
+        )
+        if mode == "already_waited":
+            assert result is AddReqResult.CONTINUE
+            assert adder.can_run_list == [selected, consumer]
+            assert getattr(consumer, "_beliefkv_d3_restore_credit", None) is None
+            assert cache.ready_to_load_host_cache() >= 0
+            f.complete.ready = True
+            cache.loading_check()
+            cache.dec_lock_ref(selected.last_node, selected.lock_receipt)
+            cache.dec_lock_ref(consumer.last_node, consumer.lock_receipt)
+            cache.sanity_check()
+            return
+        assert result is AddReqResult.OTHER
         assert controller.load_queue == [ordinary] and len(f.loads) == 2
         assert controller.ack_load_queue == [existing_ack]
         assert adder.can_run_list == [selected] and restore.pending is staged
-        assert consumer._beliefkv_d3_restore_credit == (key, 8, {staged.prefix_node: prior_receipt})
+        assert consumer._beliefkv_d3_restore_credit[:2] == (key, 8)
+        assert consumer._beliefkv_d3_restore_credit[2][staged.prefix_node] is prior_receipt
+        if mode != "protected_stage":
+            assert consumer._beliefkv_d3_restore_credit[2][selected.last_node] is (
+                cache.ongoing_load_back[selected.last_node]
+            )
+            assert runtime.counts["subagent_materialization_ordinary_stage_overlap_waits"] == 1
+            assert not runtime.counts["subagent_materialization_protected_stage_waits"]
         assert neighbor.component_data[0].host_value is neighbor_slots
         assert restore.parked is None and staged.credit_waiter is None
 
         assert cache.ready_to_load_host_cache() >= 0
+        assert gate.defer_start(consumer)
+        if mode == "priority_change":
+            service = ReadyServiceGuard(runtime._agent_admission)
+            service.fit_target = key
+            runtime._agent_admission._ready_service_guard = service
+            assert not gate.defer_start(consumer)
         f.complete.ready = True
+        if mode == "ordinary_stage":
+            cache.loading_check(finish_count=1)
+            assert staged.prefix_node not in cache.ongoing_load_back
+            assert selected.last_node in cache.ongoing_load_back
+            assert gate.defer_start(consumer)
         cache.loading_check()
+        assert not gate.defer_start(consumer)
+        assert consumer._beliefkv_d3_restore_credit is None
+        assert neighbor.component_data[0].host_value is neighbor_slots
         cache.dec_lock_ref(selected.last_node, selected.lock_receipt)
         cache.sanity_check()
     finally:
         gate.close()
         allocator.free(held_device)
         host.free(held_host)
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 3, "select": False, "prefix_sizes": (18, 1, 8)}, 27),),
+    indirect=True,
+)
+def test_d3_waits_for_protected_stage_with_ordinary_loads_selected(staged_native, monkeypatch):
+    _check_stage_overlap(staged_native, monkeypatch, "protected_stage")
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 3, "select": False, "prefix_sizes": (18, 1, 8)}, 27),),
+    indirect=True,
+)
+@pytest.mark.parametrize("mode", ("ordinary_stage", "already_waited", "priority_change"))
+def test_d3_defers_large_restore_when_ordinary_stage_overlaps_selected_load(staged_native, monkeypatch, mode):
+    _check_stage_overlap(staged_native, monkeypatch, mode)
 
 
 @pytest.mark.parametrize(
