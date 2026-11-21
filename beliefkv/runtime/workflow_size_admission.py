@@ -6,7 +6,7 @@ import time
 
 from beliefkv.core.events import RelationType
 from beliefkv.policy.workflow_size_resume import WorkflowSizeWorkingSet, resume_category
-from beliefkv.predictor.workflow_work import R5_SCHEMA
+from beliefkv.predictor.workflow_work import R5_SCHEMA, WorkflowWorkModel
 from beliefkv.runtime.reference_free_continuation import ReferenceFreeContinuationAdmission
 from beliefkv.runtime.workflow_work_worker import WorkflowWorkWorker
 
@@ -25,6 +25,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         self._tool_boundary_preemption = None
         self._deferred_dispatch = None
         self._conditional_distribution = False
+        self._collect_work_progress = True
         combination = getattr(runtime, "workflow_combination_admission", False)
         self._task_seen = set()
         self._output_observed = {}
@@ -83,15 +84,23 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         return super()._coadmit_join(join_id)
 
     def _create_work(self, runtime):
-        work = WorkflowWorkWorker(
+        model = WorkflowWorkModel.load(runtime.workflow_work_model, runtime.workflow_work_model_sha256)
+        combination = getattr(runtime, "workflow_combination_admission", False)
+        if model.schema == R5_SCHEMA and not combination:
+            raise ValueError("R5 conditional distributions require shared combination admission")
+        # The reference combination uses neutral buckets and native JOIN
+        # membership. Its separate tool-pressure policy still reads the artifact.
+        self._collect_work_progress = not (
+            model.schema == R5_SCHEMA and not self.rank_before_category
+            and model.raw.get("remaining_work_ranking_enabled") is False
+            and "tool_boundary_preemption" not in model.raw
+        )
+        return WorkflowWorkWorker(
             runtime.workflow_work_model, runtime.workflow_work_model_sha256,
             tokenizer_path=getattr(runtime, "workflow_work_tokenizer_path", None),
             execution_environment=os.environ,
+            model=model, autostart=self._collect_work_progress,
         )
-        if work.model.schema == R5_SCHEMA and not getattr(runtime, "workflow_combination_admission", False):
-            work.close()
-            raise ValueError("R5 conditional distributions require shared combination admission")
-        return work
 
     def _priority(self, prediction):
         if self._conditional_distribution:
@@ -122,7 +131,9 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         return self._work.prediction(workflow)
 
     def _rank(self, invocation, now):
-        if self._conditional_distribution and getattr(self._combination, "adaptive_resume_ranking", False):
+        if not self._collect_work_progress or (
+            self._conditional_distribution and getattr(self._combination, "adaptive_resume_ranking", False)
+        ):
             return 1
         return self._priority(self._prediction(invocation))
 
@@ -265,22 +276,23 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                     "grant_deferred_to_shared_selection": True,
                     "physical_capacity_credit": False,
                 })
-        invocation = self.runtime.graph.invocations.get(key.invocation_id)
-        if key.root_workflow_id not in self._task_seen and (
-            invocation is not None and invocation.relation_type is RelationType.ROOT
-        ):
-            self._task_seen.add(key.root_workflow_id)
-            if getattr(getattr(self._work, "model", None), "schema", None) != R5_SCHEMA:
-                self._work.submit(
-                    key.root_workflow_id, "task", tuple(req.origin_input_ids[-8192:]),
-                    getattr(req, "tokenizer", None),
-                )
-        # Input IDs are immutable after submission; retain the source sequence
-        # until the background worker computes logical prefix increments.
-        self._work.submit(
-            key.root_workflow_id, "started", key.request_id, key.invocation_id,
-            key.context_id, req.origin_input_ids,
-        )
+        if self._collect_work_progress:
+            invocation = self.runtime.graph.invocations.get(key.invocation_id)
+            if key.root_workflow_id not in self._task_seen and (
+                invocation is not None and invocation.relation_type is RelationType.ROOT
+            ):
+                self._task_seen.add(key.root_workflow_id)
+                if getattr(getattr(self._work, "model", None), "schema", None) != R5_SCHEMA:
+                    self._work.submit(
+                        key.root_workflow_id, "task", tuple(req.origin_input_ids[-8192:]),
+                        getattr(req, "tokenizer", None),
+                    )
+            # Input IDs are immutable after submission; retain the source sequence
+            # until the background worker computes logical prefix increments.
+            self._work.submit(
+                key.root_workflow_id, "started", key.request_id, key.invocation_id,
+                key.context_id, req.origin_input_ids,
+            )
         if self._tool_boundary_preemption is not None:
             self._tool_boundary_preemption.registered(key)
 
@@ -296,15 +308,16 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             self._tool_pressure.events(events)
             if self.policy is not None:
                 self.policy.invalidate_tool_states()
-        for event in events:
-            self._work.submit(event.workflow_id, "event", event)
+        if self._collect_work_progress:
+            for event in events:
+                self._work.submit(event.workflow_id, "event", event)
         if self._tool_boundary_preemption is not None:
             self._tool_boundary_preemption.events(events)
         super().events(events)
 
     def _index_resume_groups(self):
         self._resume_groups.clear()
-        if self._siblings is None:
+        if self._siblings is None or not self._collect_work_progress:
             return
         # One pass over the already observed JOIN index at the control boundary.
         # The smallest inner group wins if nested membership is ever ambiguous.
@@ -416,6 +429,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             accumulation.serviced(batch)
         if self._tool_boundary_preemption is not None:
             self._tool_boundary_preemption.serviced(batch)
+        if not self._collect_work_progress:
+            return
         completed = set(completed_ids)
         for req in getattr(batch, "reqs", ()):
             record = self.requests.get(req.rid)
@@ -489,6 +504,7 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
                 getattr(self._deferred_dispatch, "window_ms", 0)
             ),
             "workflow_work_predictor": self._work.status(),
+            "workflow_work_progress_collection": self._collect_work_progress,
             "workflow_size_other_admission_paths": (
                 "reference_materialization_tool_and_pressure_order;protected_join_unchanged"
                 if resume_only else

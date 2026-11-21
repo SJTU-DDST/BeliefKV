@@ -39,6 +39,16 @@ def test_learned_window_deadline_reconciles_decay_before_raw_budget_dispatch(
         monkeypatch, tmp_path, ranking=ranking, window_ms=2000,
     )
     try:
+        assert admission.status()["workflow_work_progress_collection"] is ranking
+        assert (admission._work._thread is not None) is ranking
+        if not ranking:
+            assert not admission._work.counts["submitted"]
+
+            def unexpected_prediction_work(*args):
+                pytest.fail("disabled reference ranking called the predictor")
+
+            monkeypatch.setattr(admission._work, "submit", unexpected_prediction_work)
+            monkeypatch.setattr(admission._work, "prediction", unexpected_prediction_work)
         active = admission.policy.programs["a"]
         assert admission._admit_from_free_capacity(
             (active,), event="agent_dispatch_free_capacity_admitted", join_id=None,
@@ -72,6 +82,8 @@ def test_learned_window_deadline_reconciles_decay_before_raw_budget_dispatch(
         assert admission.next_tick == 104.
         assert admission._deferred_dispatch.next_dispatch == 104.
         assert admission.status()["workflow_coalescing_reconciles_decay_at_window_deadline"]
+        ready = admission._live_requests["b-request"]
+        admission.native_service(NS(reqs=[ready]), ("b-request",))
     finally:
         runtime.close()
 
