@@ -147,6 +147,81 @@ def _add_resident_prefill(f, *, start=121):
     return resident
 
 
+@pytest.mark.parametrize(
+    ("staged_native", "full_native", "base_full_native"),
+    (({"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96),),
+    indirect=True,
+)
+@pytest.mark.parametrize("mirror_wait", (False, True))
+def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
+    staged_native, monkeypatch, mirror_wait,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator = f.cache, f.allocator
+    producer, consumer = f.members
+    controller = cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    held_host = host.alloc(host.available_size() - 24)
+    reusable, _ = insert_session(cache, range(100, 124), "reusable")
+    reusable_slots = _backup(cache, reusable, demote=True)
+    cache.release_radix_session("reusable")
+    for start in range(200, 350, 10):
+        insert_session(cache, range(start, start + 4), str(start))
+    held_device = allocator.alloc(allocator.available_size() - 16)
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    gate.materialized.add(gate._context(f.runtime.visible[consumer.rid]))
+    f.runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 6
+    scheduler.max_prefill_tokens = 32
+    assert host.available_size() == 0 and allocator.available_size() == 16
+    if not mirror_wait:
+        def pooled_headroom(*args, **kwargs):
+            # Reproduce the previous pressure decision while keeping actual reclaim.
+            return replace(observe_materialization_headroom(*args, **kwargs), reclaimable_host_only_tokens=0)
+
+        monkeypatch.setattr(
+            "beliefkv.runtime.subagent_materialization.observe_materialization_headroom", pooled_headroom,
+        )
+    try:
+        assert invoke() == (None, f.running)
+        assert not construction
+        expected = (producer,) if mirror_wait else (producer, consumer)
+        assert tuple(member.request for member in f.pipeline.pending.members) == expected
+        assert [len(load.host_indices) for load in f.loads] == ([16] if mirror_wait else [16, 18])
+        f.complete.ready = True
+        cache.loading_check()
+        if not mirror_wait:
+            assert reusable.id not in cache.tree_core._node_arena
+            return
+        deferred, = [
+            call.args[0] for call in f.runtime._opportunity_writer.record.call_args_list
+            if call.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
+        ]
+        assert deferred["sole_host_capacity_excluded"]
+        assert gate._peer_restore_retry is None
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [(producer,)]
+        assert scheduler.waiting_queue == [consumer]
+        assert [len(load.host_indices) for load in f.loads] == [16, 9]
+        cache.loading_check()
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [(producer,), (consumer,)]
+        assert [len(load.host_indices) for load in f.loads] == [16, 9, 9]
+        assert reusable.component_data[0].host_value is reusable_slots
+        cache.loading_check()
+        for request in f.members:
+            cache.dec_lock_ref(request.last_node, request.lock_receipt)
+        cache.sanity_check()
+    finally:
+        gate.close()
+        f.pipeline.cancel("test_complete")
+        allocator.free(held_device)
+        host.free(held_host)
+
+
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
 @pytest.mark.parametrize("funding", ("old-check", "new-mirrors", "cold-device"))
 def test_d3_does_not_spend_host_only_headroom_before_first_ack(

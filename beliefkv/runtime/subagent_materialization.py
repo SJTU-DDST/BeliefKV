@@ -2,7 +2,7 @@
 
 from array import array
 from collections import OrderedDict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from heapq import heapify, heappop, heappush
 from itertools import islice
 import os
@@ -1015,10 +1015,35 @@ class SubagentMaterialization:
             selected_h2d["headroom_observation"] = headroom.reason
             if headroom.observable:
                 selected_h2d["unfunded_restore_tokens"] = max(0, shortfall)
-        if not headroom.observable or shortfall <= 0:
+        if not headroom.observable:
             return False
         req = params.req
+        mirror_wait = shortfall <= 0
+        if mirror_wait:
+            if (
+                submitted or acks or staged is not None or controller.write_queue
+                or controller.ack_write_queue or cache.ongoing_write_through
+                or not chunk or credit < chunk or len(native_node_ids) != 1
+                or tuple(receipts) != tuple(native_node_ids)
+                or headroom.reclaimable_host_only_tokens < -shortfall + chunk
+                or self._peer_restore_retry is not None
+                or getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
+                or self._staged_peer_protected(key)
+            ):
+                return False
         identity_matches = _request_key(req, known_keys=self.runtime.visible) == key
+        if mirror_wait:
+            # Let an already selected load publish its mirrors before dropping sole Host copies.
+            headroom = replace(
+                headroom, reclaimable_host_tokens=headroom.reclaimable_host_tokens
+                - headroom.reclaimable_host_only_tokens,
+                reclaimable_host_only_tokens=0,
+            )
+            if not identity_matches or not self._can_slice_after_restore_ack(
+                cache, params, key, headroom, credit, expected_acks=0,
+            ):
+                return False
+            shortfall = hit - headroom.available_tokens
         # A settled slice can still own the stage during this selection.
         # Let one already selected load publish its ACK if it funds the next slice.
         settled_stage_peer = (
@@ -1067,7 +1092,7 @@ class SubagentMaterialization:
             return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
         small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
-        bounded_retry = submitted or not headroom.census_complete or small_peer_retry
+        bounded_retry = mirror_wait or submitted or not headroom.census_complete or small_peer_retry
         second_peer = bounded_retry and getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
         staged_producer = None
         if (
@@ -1089,7 +1114,7 @@ class SubagentMaterialization:
                 )
             ):
                 return False
-        elif headroom.census_complete and not small_peer_retry:
+        elif mirror_wait or (headroom.census_complete and not small_peer_retry):
             if shortfall > credit and not chunk:
                 return False
         else:
@@ -1141,7 +1166,7 @@ class SubagentMaterialization:
                 and staged.prefix_node in receipts and staged.credit_waiter is None
             ):
                 staged.credit_waiter = req, wait
-            elif exact_peer and (
+            elif exact_peer and not mirror_wait and (
                 second_peer or getattr(req, "_beliefkv_d3_peer_retry_key", None) != key
             ):
                 req._beliefkv_d3_peer_retry_key = key
@@ -1164,6 +1189,7 @@ class SubagentMaterialization:
                 "headroom_observation": headroom.reason,
                 "already_submitted": submitted,
                 "own_join_ack": wait_for_join,
+                **({"sole_host_capacity_excluded": True} if mirror_wait else {}),
                 **({"staged_peer_slice": True} if staged_producer is not None else {}),
                 **({"second_peer_ack": True} if second_peer else {}),
             })
