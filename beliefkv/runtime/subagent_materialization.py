@@ -2035,26 +2035,37 @@ class SubagentMaterialization:
                 rid for rid, record in self.pending.items()
                 if not record.started and committed.get(rid) is record.request
             }
+            initial_required = (reserve or 0) + sum(
+                self._price(record) for rid, record in self.pending.items()
+                if not record.started and rid not in committed_initial
+            )
+            census_due = self.next_census
+            if self.include_root_entries and getattr(running_batch, "reqs", ()):
+                # Capacity events can rearm the free-page check on every tick.
+                census_due = max(census_due, self.next_running_census)
+            census_backoff = not _starting and now < census_due
+            if census_backoff:
+                lower_bound = observe_materialization_headroom(
+                    runtime._native_cache, max_nodes=0, required_free_tokens=initial_required,
+                )
+                if lower_bound.reason == NODE_CENSUS_BOUND:
+                    # Outstanding inputs can only increase the required capacity.
+                    self.next_check = min(self.next_check, census_due)
+                    counts["subagent_materialization_pressure_backoff_checks"] += 1
+                    counts["subagent_materialization_pressure_backoff_before_input_scan"] += 1
+                    return
             queued = {getattr(req, "rid", None): req for req in native_order}
             outstanding, initial, ready_continuations = self._outstanding_inputs(
                 running_batch, committed, queued, refresh=_starting,
             )
-            required = (reserve or 0) + outstanding + sum(
-                self._price(record) for rid, record in self.pending.items()
-                if not record.started and rid not in committed_initial
-            )
+            required = initial_required + outstanding
             raw = observe_materialization_headroom(
                 runtime._native_cache, max_nodes=0, required_free_tokens=required,
             )
-            if raw.reason == NODE_CENSUS_BOUND and not _starting:
-                census_due = self.next_census
-                if self.include_root_entries and getattr(running_batch, "reqs", ()):
-                    # Capacity events can rearm the free-page check on every tick.
-                    census_due = max(census_due, self.next_running_census)
-                if now < census_due:
-                    self.next_check = min(self.next_check, census_due)
-                    counts["subagent_materialization_pressure_backoff_checks"] += 1
-                    return
+            if census_backoff and raw.reason == NODE_CENSUS_BOUND:
+                self.next_check = min(self.next_check, census_due)
+                counts["subagent_materialization_pressure_backoff_checks"] += 1
+                return
             self.last_observation = observation = (
                 observe_materialization_headroom(
                     runtime._native_cache, max_nodes=self.max_nodes,

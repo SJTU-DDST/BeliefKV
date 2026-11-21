@@ -875,15 +875,30 @@ def test_expensive_census_is_shared_across_repeated_prefill_plans(runtime):
     assert runtime.counts["subagent_materialization_checks"] == 2
 
 
-def test_persistent_pressure_reuses_holds_without_using_old_census_for_new_grants(runtime):
+@pytest.mark.parametrize("runtime", ("pressure_v1", "pressure_v2"), indirect=True)
+def test_persistent_pressure_reuses_holds_without_using_old_census_for_new_grants(
+    runtime, monkeypatch,
+):
     req = child(runtime)
+    gate = runtime._subagent_materialization
+    original = gate._outstanding_inputs
+    scans = []
+
+    def track(*args, **kwargs):
+        scans.append(kwargs["refresh"])
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(gate, "_outstanding_inputs", track)
     for now in (100., 100.5, 101., 101.5):
         prepare(runtime, [req], running=[object()], now=now)
     assert runtime.counts["subagent_materialization_checks"] == 4
     assert runtime.counts["subagent_materialization_complete_censuses"] == 1
     assert runtime.counts["subagent_materialization_pressure_backoff_checks"] == 3
+    assert runtime.counts["subagent_materialization_pressure_backoff_before_input_scan"] == 3
+    assert scans == [False]
     prepare(runtime, [req], running=[object()], now=102.)
     assert runtime.counts["subagent_materialization_complete_censuses"] == 2
+    assert scans == [False, False]
 
 
 def test_raw_free_release_can_open_a_hold_during_census_backoff(runtime):
@@ -893,6 +908,20 @@ def test_raw_free_release_can_open_a_hold_during_census_backoff(runtime):
     prepare(runtime, [req], running=[object()], now=100.5)
     assert runtime._subagent_materialization.allows(runtime.visible[req.rid])
     assert runtime.counts["subagent_materialization_complete_censuses"] == 1
+    assert runtime.counts["subagent_materialization_pressure_backoff_before_input_scan"] == 0
+
+
+def test_backoff_uses_full_input_budget_after_initial_capacity_fits(runtime, monkeypatch):
+    req = child(runtime)
+    gate = runtime._subagent_materialization
+    prepare(runtime, [req], running=[object()])
+    raw_free = gate.last_decision["reserved_tokens"] + gate._price(gate.pending[req.rid])
+    runtime._native_cache.token_to_kv_pool_allocator.available_size = lambda: raw_free
+    monkeypatch.setattr(gate, "_outstanding_inputs", lambda *args, **kwargs: (1, 0, 1))
+    prepare(runtime, [req], running=[object()], now=100.5)
+    assert not gate.allows(runtime.visible[req.rid])
+    assert runtime.counts["subagent_materialization_pressure_backoff_checks"] == 1
+    assert runtime.counts["subagent_materialization_pressure_backoff_before_input_scan"] == 0
 
 
 @pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
