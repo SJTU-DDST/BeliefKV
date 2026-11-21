@@ -151,12 +151,16 @@ class ReferenceToolReplacement:
                 pending.pop(node.id)
         return tuple(selected), total
 
-    def _grant(self):
+    def _grant(self, *, blocked_donor=None, native_fit=None):
         runtime = self.offload.runtime
         agents = runtime._agent_admission
         request, key = self.consumer
         demand = self.demand(request, key, refresh=True)
-        if demand is None or demand[0] > 0 or demand[1] > 0:
+        if demand is None or demand[0] > 0:
+            return False
+        if blocked_donor is None and demand[1] > 0:
+            return False
+        if blocked_donor is not None and demand[1] <= 0:
             return False
         item, _request = agents._candidate(key.request_id, key, include_first=True)
         before = agents.policy.remaining_capacity()
@@ -166,6 +170,7 @@ class ReferenceToolReplacement:
         if not agents._admit_from_free_capacity(
             (item,), event="agent_dispatch_free_capacity_admitted", join_id=join_id,
             choice_keys=self.order, choice_sequence=agents.counts["free_dispatch_passes"],
+            **({"blocked_donor": blocked_donor} if blocked_donor is not None else {}),
         ):
             return False
         agents._dispatch_pending.pop(key.invocation_id, None)
@@ -174,6 +179,8 @@ class ReferenceToolReplacement:
                       "free_ordinary_continuation_admitted"] += 1
         agents.counts["free_dispatch_new_programs_admitted"] += item.steps == 1
         agents.counts["tool_event_replacement_grants"] += 1
+        if blocked_donor is not None:
+            agents.counts["tool_event_replacement_logical_only_grants"] += 1
         boundary = self.offload._boundary_policy()
         boundary_choice = bool(boundary is not None and boundary.has_release(self.donor, key))
         boundary_donors = (
@@ -199,8 +206,16 @@ class ReferenceToolReplacement:
                 "remaining_before_tokens": before,
                 "remaining_after_tokens": agents.policy.remaining_capacity(),
                 "coalescing_window_bypassed": True,
-                "physical_capacity_authority": "settled_private_release_then_fresh_native_budget",
+                "physical_capacity_authority": (
+                    "fresh_native_budget_without_demotion" if blocked_donor is not None
+                    else "settled_private_release_then_fresh_native_budget"
+                ),
                 "ordinary_restore_lease": False,
+                **({
+                    "logical_only": True, "physical_capacity_credit": False,
+                    "released_device_tokens": 0, "released_host_tokens": 0,
+                    "logical_deficit_tokens": demand[1], "native_fit": native_fit,
+                } if blocked_donor is not None else {}),
                 **({
                     "tool_boundary_preemption": True,
                     "tool_boundary_original_forecast_allowed": self.offload.action_detail.get(
@@ -213,6 +228,43 @@ class ReferenceToolReplacement:
                     } if boundary.bounded and boundary.active_plan is not None else {}),
                 } if boundary_choice else {}),
             })
+        return True
+
+    def _logical_handoff_guard(self, key, now):
+        runtime = self.offload.runtime
+        agents = runtime._agent_admission
+        gate = getattr(runtime, "_subagent_materialization", None)
+        guard = getattr(agents, "_ready_service_guard", None)
+        if (
+            not getattr(gate, "include_root_entries", False)
+            or agents._join_handoff is None or guard is None or not guard.fit_after_s
+            or guard.target not in (None, key) or guard.fit_target is not None
+            or key in guard.fit_attempted
+            or agents.policy.programs[key.invocation_id].steps <= 1
+            or gate.awaiting_first_prefill(key)
+        ):
+            return None
+        entry = guard.since.get(key.invocation_id)
+        if entry is None or entry[0] != key or now < entry[1] + guard.fit_after_s:
+            return None
+        return guard
+
+    def _grant_without_demotion(self, guard, request, key, donor):
+        runtime = self.offload.runtime
+        agents = runtime._agent_admission
+        agents.counts["tool_event_replacement_logical_only_probes"] += 1
+        native = guard._native_fit(key, request)
+        if native is None or native["first_chunk_and_restore_tokens"] > native["device_free_tokens"]:
+            agents.counts["tool_event_replacement_logical_only_no_native_fit"] += 1
+            return False
+        if not runtime._agent_blocked_prefix_backed(donor, observed_blocked=True):
+            agents.counts["tool_event_replacement_logical_only_no_settled_backing"] += 1
+            return False
+        if not self.offload._candidate_donor_eligible(donor):
+            return False
+        if not self._grant(blocked_donor=donor, native_fit=native):
+            return False
+        guard.fit_attempted.add(key)
         return True
 
     def run(self, native_order, *, running_batch, adder):
@@ -333,6 +385,7 @@ class ReferenceToolReplacement:
                     return result
         donors = controller._replacement_donors()
         donor_window_checked = False
+        logical_handoff_probed = False
         prechecked_donor = None
         if boundary is None:
             # An impossible pair needs neither Oracle path queries nor a
@@ -365,6 +418,10 @@ class ReferenceToolReplacement:
             demand = self.demand(*self.consumer, refresh=True)
             if demand is None or demand[0] <= 0 and demand[1] <= 0:
                 continue
+            guard = (
+                self._logical_handoff_guard(key, time.monotonic())
+                if boundary is None and not logical_handoff_probed and demand[0] == 0 else None
+            )
             for offset in range(min(len(donors), controller.max_contexts)):
                 donor = donors[(controller.cursor + offset) % len(donors)]
                 self.donor = donor
@@ -381,6 +438,12 @@ class ReferenceToolReplacement:
                     or not self.permits(*self.consumer, donor)
                 ):
                     continue
+                if guard is not None:
+                    logical_handoff_probed = True
+                    if self._grant_without_demotion(guard, request, key, donor):
+                        controller.cursor += offset + 1
+                        return True
+                    guard = None
                 index_revision = runtime.counts["parent_pressure_index_updates"]
                 semantic_revision = runtime.semantic_revision
                 boundary = controller._boundary_policy()

@@ -234,7 +234,7 @@ def test_categorized_overlay_rejects_foreign_classes(field, value):
 
 
 @pytest.fixture
-def demand_runtime(full_native):
+def demand_runtime(full_native, request):
     from test_beliefkv_terminal_capacity import insert_session
 
     cache, allocator, writes, _, _ = full_native
@@ -246,8 +246,10 @@ def demand_runtime(full_native):
         cache.tree_core._update_duplicate_tracking(node)
     cache._demote(consumer.id, {})
     # Occupy capacity independently of the replay's future workload.
-    extra = allocator.alloc(16)
-    assert extra is not None and allocator.available_size() == 4
+    reserve = getattr(request, "param", 16)
+    if reserve:
+        assert allocator.alloc(reserve) is not None
+    assert allocator.available_size() == 20 - reserve
     runtime, hint = tool_runtime()
     runtime.enable_prepare_host = True
     runtime.tool_wait_hints[hint.key.context_id] = replace(

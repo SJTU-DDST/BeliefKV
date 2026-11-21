@@ -269,7 +269,7 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
 
     def _admit_from_free_capacity(
         self, programs, *, event, join_id, choice_keys=None, choice_sequence=None,
-        grant_keys=None,
+        grant_keys=None, blocked_donor=None,
     ):
         # Extra grants can occur between the reference policy's periodic ticks.
         if any(
@@ -279,6 +279,17 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             return False
         self._refresh_streaming_progress()
         remaining = self.policy.remaining_capacity()
+        donor = None
+        if blocked_donor is not None:
+            donor = self.policy.programs.get(blocked_donor.invocation_id)
+            if (
+                donor is None or not donor.active or donor.pending or not donor.acting
+                or donor in programs or donor.marked_for_pause or self.policy.acting_weight != 1.
+                or self.latest.get(donor.identity) != blocked_donor
+                or not self.runtime._agent_observed_blocked_budget_key(blocked_donor)
+            ):
+                return False
+            remaining += donor.tokens + self.policy.buffer_tokens
         required = sum(item.tokens + self.policy.buffer_tokens for item in programs)
         if required > remaining:
             return False
@@ -288,6 +299,8 @@ class ReferenceThunderAdmission(ThunderAgentDecayAdapter):
             observe(programs, remaining, choice_keys, choice_sequence, grant_keys=grant_keys)
             if writer is not None and observe is not None else None
         )
+        if donor is not None:
+            self.policy._pause(donor, time.monotonic())
         for item in programs:
             item.active = True
             if self._residency_pause is not None and item.pending:

@@ -8,6 +8,8 @@ from unittest.mock import Mock
 import pytest
 
 from beliefkv.core.events import RuntimeEventKind as Kind
+from beliefkv.runtime.join_blocked_handoff import JoinBlockedHandoff
+from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
 from tests.test_full_only_native_lifecycle import full_native
 from tests.test_global_workflow_oracle import queued
@@ -233,6 +235,73 @@ def test_selected_continuation_is_not_paused_again_before_native_restore_service
     assert admission.policy.programs["consumer"].active
     assert admission.counts["residency_pauses"] == 1
     assert admission.latest["consumer"] in admission._residency_pause.compared_requests
+
+
+@pytest.mark.parametrize("demand_runtime", (0,), indirect=True)
+@pytest.mark.parametrize("constraint", (
+    None, "young", "insufficient_free", "native_growth", "write_pending", "donor_changed", "attempted",
+))
+def test_d3_ready_continuation_can_use_blocked_tool_budget_without_moving_kv(
+    demand_runtime, monkeypatch, constraint,
+):
+    parts = pair(demand_runtime)
+    runtime, admission, controller, adder = parts
+    cache, allocator, donor, request = demand_runtime[2:6]
+    adder.max_running_requests = 2
+    runtime._subagent_materialization = NS(
+        include_root_entries=True, allows=lambda _key: True,
+        awaiting_first_prefill=lambda _key: False, status=lambda: {}, close=lambda: None,
+    )
+    admission._join_handoff = JoinBlockedHandoff(admission)
+    guard = admission._ready_service_guard = ReadyServiceGuard(admission, fit_after_s=600)
+    ready = admission.latest["consumer"]
+    owner = admission.policy.programs["tool"]
+    admission.policy.programs["consumer"].steps = 2
+    request.sampling_params = NS(max_new_tokens=1)
+    guard.since[ready.invocation_id] = ready, time.monotonic() - (599 if constraint == "young" else 601)
+    if constraint == "insufficient_free":
+        assert allocator.alloc(5) is not None
+    elif constraint == "native_growth":
+        request.sampling_params.max_new_tokens = allocator.size_full
+    elif constraint == "write_pending":
+        cache.ongoing_write_through[donor.id] = object()
+    elif constraint == "donor_changed":
+        probe = runtime._agent_blocked_prefix_backed
+
+        def backing_changed(*args, **kwargs):
+            result = probe(*args, **kwargs)
+            owner.pending = True
+            return result
+
+        monkeypatch.setattr(runtime, "_agent_blocked_prefix_backed", backing_changed)
+    elif constraint == "attempted":
+        guard.fit_attempted.add(ready)
+
+    physical_release = Mock(return_value=False)
+    monkeypatch.setattr(controller, "_evict_backed", physical_release)
+    before = allocator.available_size()
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    assert run(parts) is (constraint is None), repr(dict(admission.counts))
+    assert allocator.available_size() == before
+    assert donor.component_data[0].value is not None
+    assert donor.component_data[0].host_value is not None
+    assert not runtime.physical_ledger.pending_count
+    if constraint is not None:
+        assert owner.active and not admission.allows(ready)
+        assert not admission.counts["tool_event_replacement_logical_only_grants"]
+        if constraint == "native_growth":
+            assert admission.counts["tool_event_replacement_logical_only_no_native_fit"] == 1
+        return
+    physical_release.assert_not_called()
+    assert not owner.active and not admission._can_resume(owner)
+    assert admission.allows(ready) and admission.policy.remaining_capacity() == 19
+    assert ready in guard.fit_attempted
+    assert admission.counts["tool_event_replacement_logical_only_probes"] == 1
+    assert admission.counts["tool_event_replacement_logical_only_grants"] == 1
+    decision = next(row for row in records if row["event"] == "agent_predicted_tool_replacement")
+    assert decision["logical_only"] and decision["released_device_tokens"] == 0
+    assert decision["logical_deficit_tokens"] == 13
 
 
 def test_fragmented_private_backed_prefix_is_released_in_native_leaf_order(demand_runtime):
