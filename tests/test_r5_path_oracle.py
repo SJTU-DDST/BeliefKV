@@ -61,9 +61,15 @@ def test_explicit_path_oracle_preserves_work_and_uses_the_shared_strict_selector
     assert parsed.rank_kind == "remaining_model_tool_critical_path_seconds"
 
 
-@pytest.mark.parametrize("change", (None, "resource", "cohort", "oracle_scale", "full_ranking"))
+@pytest.mark.parametrize("change", (None, "resource", "cohort", "oracle_scale", "full_ranking", "guarded"))
 def test_formal_choice_audits_bind_the_actual_shared_path_arms(tmp_path, change):
     raw = learned()
+    if change == "guarded":
+        raw.update(
+            preserve_reference_service_capacity=True,
+            resume_only_work_ranking=True,
+            adaptive_resume_ranking=True,
+        )
     base = {
         "order": ["full"],
         "common_environment": {"WORKFLOW_COMBINATION_ADMISSION": "1", "HICACHE_SIZE_GB": "200"},
@@ -95,7 +101,7 @@ def test_formal_choice_audits_bind_the_actual_shared_path_arms(tmp_path, change)
         assert verify_learned_combination_pair(reference, prediction) == [
             reference_path, prediction_path,
         ]
-    if change is None:
+    if change in (None, "guarded"):
         assert verify_model_work_pair(reference, oracle, prediction) == [
             reference_path, prediction_path, oracle_path,
         ]

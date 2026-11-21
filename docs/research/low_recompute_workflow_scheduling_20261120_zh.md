@@ -65,4 +65,4 @@ Oracle 两轮的固定 18 条均值分别下降 2.36% 和 1.49%，R5 分别下�
 调度贡献由同配置 `Full+D3` 与带约束的 R5 做配对。两份配置已通过 CPU
 runtime 装配，配置和审计结果在
 `experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/`，生效的
-准备目录为 `mean70_prepared_r2`。
+准备目录为 `mean70_prepared_r3`。

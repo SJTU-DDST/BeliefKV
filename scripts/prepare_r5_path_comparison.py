@@ -19,7 +19,10 @@ from scripts.run_causal_comparison import environment, preflight_runtime
 from scripts.train_workflow_work import write
 
 
-POLICY_FIELDS = ("free_dispatch_coalescing_window_ms", "tool_retention_policy")
+RANKING_ONLY_FIELDS = (
+    "resume_only_work_ranking", "adaptive_resume_ranking", "preserve_reference_service_capacity",
+)
+POLICY_FIELDS = ("free_dispatch_coalescing_window_ms", "tool_retention_policy", *RANKING_ONLY_FIELDS)
 LEARNED_PATH_TARGET = "predicted_remaining_model_tool_critical_path_seconds"
 ORACLE_PATH_TARGET = "exact_remaining_model_tool_critical_path_seconds"
 MODEL_FIELDS = {
@@ -68,6 +71,9 @@ def path_oracle_artifact(model, labels, model_sha256):
 def nonranking_artifact(model):
     raw = deepcopy(model)
     raw.pop("completion_path_readout", None)
+    for name in RANKING_ONLY_FIELDS:
+        if raw.get(name) is True:
+            raw.pop(name)
     raw.update(
         strict_remaining_work_admission=False, shortest_work_first_admission=False,
         remaining_work_ranking_enabled=False,
