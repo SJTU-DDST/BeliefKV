@@ -1,0 +1,12 @@
+{
+  "status": "same_protection_set_and_file_count",
+  "protected_worktrees": 312,
+  "reference_files": 6365,
+  "original_seconds": 17.64257720601745,
+  "first_cached_seconds": 2.5240276330150664,
+  "warm_cached_seconds": 2.2732417981605977,
+  "change": "memoize only longest existing registered path ancestor",
+  "new_registration_invalidates_cache": true,
+  "continuation_sha256": "671362d6b0b74e8087bb9aa7a1d196dabc9200ed869641718a86199ead48c037",
+  "original_operator_sha256": "79219757cc43f34a3d3b8ddde605cee894ad509441a9b42b4419ac1fe902aaff"
+}

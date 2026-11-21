@@ -1,0 +1,41 @@
+{
+  "observed_at_local": "2026-11-20T21:59:53.192676-08:00",
+  "observed_at_beijing": "2026-11-21T13:59:53.192771+08:00",
+  "before": {
+    "source": "task-start df and du tool observations",
+    "filesystem": "/dev/nvme0n1p2",
+    "total_bytes": 3778190245888,
+    "used_bytes": 3310640529408,
+    "available_bytes": 275551625216,
+    "used_percent": 93,
+    "worktrees_allocated_bytes": 290462248960
+  },
+  "after": {
+    "filesystem": "/dev/nvme0n1p2",
+    "total_bytes": 3778190245888,
+    "used_bytes": 3275014938624,
+    "available_bytes": 311177216000,
+    "used_percent": 92,
+    "worktrees_allocated_bytes": 239344078848
+  },
+  "retired_worktrees": 261,
+  "source_allocated_bytes": 53990653952,
+  "archive_allocated_bytes": 16573149184,
+  "net_reclaimed_bytes_estimate": 37417504768,
+  "protected_old_worktrees_all_present": 83,
+  "figure_sha256": {
+    "docs/figures/generate_two_design_paper_figures.py": "1d1a4a3c466303660b942bfddc8eda841c89524bd0fde78040e1fea41db3116c",
+    "docs/figures/generate_d2_comparison.py": "f1f41cb7bca895ef827487dca0658f1678cdd02ac8f3af99c7db8935cc4a83e7",
+    "docs/figures/generate_d2_schematic.py": "48bcf60815bc72f2e6928c3132154b8b0545a0fe4fd1256740c0afd6239d3406"
+  },
+  "figures_unchanged_since_precommit_observation": true,
+  "evidence_sha256": {
+    "review.json": "a387690797d42a3fff861cb724914eb6cd44a080a8981d7089cbebc2ea0b48fa",
+    "index_review.json": "19d27f1c7d844629869e19482a555971cc6688a6b40635a31f1e4084a4f31f8c",
+    "original_path_restoration_review.json": "1599ec400315a2ebfd1b5ec4694cd516fc68b6518188812f08aff88339918b76",
+    "cache_equivalence.json": "9c0ec67e8d996d703f7fe31cbfe0b853d4981445c2069068fa42141fe579693f",
+    "parallel_plan.json": "0b9937599d620e12af335e0639fe120a51758fd4c46f20eb27fd485ae1713ae4",
+    "complete_receipt.json": "895e16f7e2a815532442d907222d50d3c6258a2bb6d7ba99193fc5423db19f97"
+  },
+  "accounting_note": "Net estimate is original source/admin allocated bytes minus archive allocated bytes. Directory and filesystem differences also include concurrent activity. Available bytes use df avail, excluding filesystem reserved blocks."
+}

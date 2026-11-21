@@ -1,0 +1,16 @@
+{
+  "status": "original_restore_recipe_independently_verified",
+  "observed_at": "2026-11-21T13:56:03.061508+08:00",
+  "worktree": "/home/longhao/experiment/.worktrees/.worktrees/sglang-agentx-baseline-25155f0701c4-2c4291b967d6",
+  "git_admin": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/.git/worktrees/sglang-agentx-baseline-25155f0701c4-2c4291b967d6",
+  "source_archive_sha256": "0cd91fff13d73b7e6603b69287a5cb10fa1bb52081906b50223f0c29789659a3",
+  "admin_archive_sha256": "f2a776eafe964bf69080890c39607968e3d5f2847df0d15c59da4c00dde889eb",
+  "original_commit": "fa5cb52afaeaad1f59f6d3eb2c5cf124f72bb491",
+  "git_tree": "6437d7deeacc533f0d795ba166dfd5256b3f44b2",
+  "complete_source_compared": true,
+  "original_index_sha256_verified": true,
+  "original_staged_and_unstaged_status_verified": true,
+  "original_registration_repaired_and_visible": true,
+  "validation_copy_removed_without_force": true,
+  "finished_at": "2026-11-21T13:56:03.284394+08:00"
+}

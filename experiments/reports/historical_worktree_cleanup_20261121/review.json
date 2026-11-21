@@ -1,0 +1,82 @@
+{
+  "status": "independently_verified",
+  "finished_at": "2026-11-21T13:57:59.308164+08:00",
+  "retired_worktrees": 261,
+  "by_repository": {
+    "/home/longhao/experiment/BeliefKV": 12,
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20": 249
+  },
+  "frozen_engine_copies_with_changes": 239,
+  "source_allocated_bytes": 53990653952,
+  "archive_allocated_bytes": 16573149184,
+  "net_reclaimed_bytes": 37417504768,
+  "receipt_sha256": "895e16f7e2a815532442d907222d50d3c6258a2bb6d7ba99193fc5423db19f97",
+  "inventory_sha256": "d997d242c00eb7790ad3060eaeeea5f80af81797ac5db6d70f5b8204204003dd",
+  "all_archive_sha256_and_zstd_integrity_verified": true,
+  "all_original_heads_reflogs_and_branches_preserved": true,
+  "rehearsals": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-ack-readmission-5cf3bb8b-20261028",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/.worktrees/sglang-agentx-baseline-25155f0701c4-2c4291b967d6",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-11b84f7c3198-5e611b71f289",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-e53af6c6f493",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-c489dbb85265-e5cf6233fc9f",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-agentx-baseline-ed285ca3e1f5-01f085d1ce3f",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-demand-prefill-pipeline-20261028",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-layer-groups-20261028",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-sibling-capacity-20261028",
+      "passed": true,
+      "full_tar_compare": true,
+      "exact_index_and_status": true,
+      "ordinary_unregister_of_missing_path": true
+    }
+  ]
+}
