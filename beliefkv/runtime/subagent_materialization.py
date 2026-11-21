@@ -1727,10 +1727,15 @@ class SubagentMaterialization:
                 ):
                     # A logically admitted continuation can still be waiting for
                     # the next native batch. Its reusable prefix is already in the census.
-                    reentry = (
-                        None if conservative else runtime._read_request_reentry(req, key=key, refresh=refresh)
-                    )
-                    prefix = reentry.get("checkpoint_tokens", 0) if reentry is not None else 0
+                    prefix = 0
+                    if not conservative:
+                        restore = self._demand_restore_chunk
+                        prefix = restore.pinned_prefix_tokens(req, key) if restore is not None else None
+                        if prefix is None:
+                            reentry = runtime._read_request_reentry(req, key=key, refresh=refresh)
+                            prefix = reentry.get("checkpoint_tokens", 0) if reentry is not None else 0
+                        else:
+                            runtime.counts["subagent_materialization_pinned_restore_input_observations"] += 1
                     if type(prefix) is not int or not 0 <= prefix < len(req.origin_input_ids):
                         prefix = 0
                     ready_continuations += self._input_price(req, prefix)

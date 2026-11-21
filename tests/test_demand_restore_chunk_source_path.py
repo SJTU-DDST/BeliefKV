@@ -128,6 +128,9 @@ def test_stage_long_native_path_and_restore_exact_remainder(long_native, inside_
     assert req._beliefkv_d3_staged_restore_key is f.key
     pending = chunk.pending
     assert pending.request is req and pending.suffix_node == f.leaf.id
+    assert chunk.pinned_prefix_tokens(req, f.key) == len(f.tokens)
+    assert chunk.pinned_prefix_tokens(req, replace(f.key, attempt_id=f.key.attempt_id + 1)) is None
+    assert chunk.pinned_prefix_tokens(NS(rid=req.rid), f.key) is None
     prefix = tree.node_by_id(pending.prefix_node)
     path = _path(f.anchor, f.leaf)
     boundary = f.source[BOUNDARY_NODES - 1]
@@ -176,6 +179,7 @@ def test_stage_long_native_path_and_restore_exact_remainder(long_native, inside_
     assert prefix.component_data[0].host_lock_ref == 0
     assert f.leaf.component_data[0].host_lock_ref == 1
     assert not chunk.defer_until_ack(req) and chunk.pending is None
+    assert chunk.pinned_prefix_tokens(req, f.key) is None
     assert not cache.ongoing_load_back and not controller.ack_load_queue
     for node in (f.anchor, *path):
         assert node.load_back_pending_id is None

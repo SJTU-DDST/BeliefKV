@@ -8,6 +8,8 @@ from unittest.mock import Mock, call
 
 import pytest
 
+from beliefkv.control.causal_graph import InvocationState
+from beliefkv.core.events import RelationType
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
 from beliefkv.runtime.demand_restore_chunk import DEFER_WRITE_ACK, DemandRestoreChunk
 from beliefkv.runtime.ready_service_guard import ReadyServiceGuard
@@ -145,6 +147,127 @@ def _add_resident_prefill(f, *, start=121):
     visible[resident.rid] = _request_key(resident)
     f.runtime._agent_admission.allows = lambda key: visible.get(key.request_id) == key
     return resident
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
+    (({"members": 1, "select": False, "prefix_sizes": (40,)}, 40),),
+    indirect=True,
+)
+def test_d3_first_prefill_uses_bound_checkpoint_during_restore_ack(staged_native, monkeypatch):
+    from sglang.srt.managers.schedule_batch import Req
+    from sglang.srt.sampling.sampling_params import SamplingParams
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, continuation = f.cache, f.allocator, f.req
+    host = cache.host_pool_group.anchor_entry.host_pool
+    # Leave eight tokens resident and the remaining 32 on Host.
+    prefix, actions = cache.tree_core.split_host_only_full_prefix(
+        f.leaf.id, f.leaf.creation_time, 8,
+    )
+    cache._apply_cache_actions(actions)
+    assert cache.load_back(prefix)
+    assert cache.ready_to_load_host_cache() >= 0
+    f.complete.ready = True
+    cache.loading_check(finish_count=1)
+    f.complete.ready = False
+    prefix_host_hold = cache.inc_host_lock_ref(prefix).to_dec_params()
+    held_host = host.alloc(host.available_size())
+    assert host.available_size() == 0
+
+    def request(rid, ids, max_new_tokens):
+        return Req(
+            rid=rid, origin_input_text="", origin_input_ids=array("q", ids),
+            sampling_params=SamplingParams(max_new_tokens=max_new_tokens),
+            beliefkv_metadata={
+                "root_workflow_id": rid, "invocation_id": rid,
+                "context_id": rid, "context_epoch": 0,
+            },
+        )
+
+    decode = request("running-decode", range(51, 55), 6)
+    decode.output_ids.extend((55, 56))
+    decode_slots = allocator.alloc(6)
+    assert decode_slots is not None
+    decode.kv.kv_allocated_len = decode.kv.kv_committed_len = 6
+    f.running.reqs[:] = [decode]
+    first = request("first-root", (61, 62), 1)
+    first_key = _request_key(first)
+    runtime = f.runtime
+    runtime.visible.update({req.rid: _request_key(req) for req in (first, decode)})
+    runtime.context_sessions = {key.context_id: key for key in runtime.visible.values()}
+    runtime.graph = NS(
+        invocations={
+            key.invocation_id: NS(
+                workflow_id=key.root_workflow_id, context_id=key.context_id,
+                state=InvocationState.RUNNING_LLM, active_tool_calls={}, blocking_child_ids=set(),
+                parent_invocation_id=None, relation_type=RelationType.ROOT,
+            )
+            for key in runtime.visible.values()
+        },
+        contexts={
+            key.context_id: NS(workflow_id=key.root_workflow_id, epoch=key.context_epoch)
+            for key in runtime.visible.values()
+        },
+    )
+    runtime._native_cache = cache
+    runtime._hotpath_timing = NS(enabled=False)
+    runtime._reentry_observations = {}
+    runtime._visible_since = {}
+    runtime.semantic_revision = 0
+    runtime._executable_waiting_key = NativeAdmissionRuntime._executable_waiting_key.__get__(runtime)
+    runtime._read_request_reentry = NativeAdmissionRuntime._read_request_reentry.__get__(runtime)
+    admission = runtime._agent_admission
+    admission._live_requests = {req.rid: req for req in (continuation, decode, first)}
+    admission.policy = NS(buffer_tokens=1, programs={
+        first_key.invocation_id: NS(steps=1, active=False, marked_for_pause=False),
+    })
+    admission.control_interval_s = 2.
+
+    insert_session(cache, range(101, 121), "evictable")
+    held_device = allocator.alloc(allocator.available_size() - 28)
+    assert allocator.available_size() == 28 and cache.evictable_size() >= 20
+    monkeypatch.setattr("time.monotonic", lambda: 100.)
+    f.waiting.append(first)
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    gate.registered(first, first_key)
+    admission.allows = lambda key: key == f.key or (key == first_key and gate.allows(key))
+
+    before = cache.inspect_beliefkv_reentry(continuation)
+    assert before["checkpoint_tokens"] == 40 and before["device_checkpoint_tokens"] == 8
+    assert invoke() == (None, f.running) and gate.allows(first_key)
+    restore = gate._demand_restore_chunk.pending
+    assert restore.request is continuation and restore.key == f.key
+    assert (restore.tokens, restore.remaining_tokens, allocator.available_size()) == (16, 16, 12)
+    ack, = cache.cache_controller.ack_load_queue
+    assert not ack.finish_event.query()
+    assert cache.inspect_beliefkv_reentry(continuation)["checkpoint_tokens"] == 8
+
+    # The first root's native start check runs again while the continuation waits for ACK.
+    try:
+        invoke()
+    except BatchConstructionReached:
+        pass
+    decision = gate.last_decision
+    assert decision["ready_continuation_tokens"] == 3
+    assert decision["outstanding_input_tokens"] - decision["ready_continuation_tokens"] == 4
+    assert decision["reserved_tokens"] == 2 and decision["available_before_tokens"] == 3
+    assert decision["allowed"] == [first.rid] and not decision["held"]
+    assert construction == [(first,)] and scheduler.waiting_queue == [continuation]
+    assert runtime.on_prefill_candidate_result.call_args.kwargs["admitted"]
+    assert cache.cache_controller.ack_load_queue == [ack] and not ack.finish_event.query()
+    assert gate._demand_restore_chunk.pending is restore
+
+    cache.dec_lock_ref(first.last_node, first.lock_receipt)
+    f.complete.ready = True
+    cache.loading_check(finish_count=1)
+    gate.close()
+    cache.dec_host_lock_ref(prefix, prefix_host_hold)
+    allocator.free(decode_slots)
+    allocator.free(held_device)
+    host.free(held_host)
+    cache.sanity_check()
 
 
 @pytest.mark.parametrize(

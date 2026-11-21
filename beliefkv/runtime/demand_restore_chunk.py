@@ -13,6 +13,7 @@ FULL_RESTORE_FUNDED = "full_restore_funded"
 class _Pending:
     request: object
     key: object
+    checkpoint_tokens: int
     tokens: int
     remaining_tokens: int
     prefix_node: int
@@ -30,6 +31,17 @@ class DemandRestoreChunk:
         self.max_source_nodes = max_source_nodes
         self.pending = None
         self.parked = None
+
+    def pinned_prefix_tokens(self, req, key):
+        """Return the matched checkpoint while this request owns both pins."""
+        pending = self.pending
+        if pending is not None and pending.request is req and pending.key == key:
+            return pending.checkpoint_tokens
+        if self.parked is not None:
+            _, producer = self.parked
+            if producer.request is req and producer.key == key:
+                return producer.checkpoint_tokens
+        return None
 
     def continues(self, params, key):
         req = params.req
@@ -113,6 +125,7 @@ class DemandRestoreChunk:
             node = node.parent
         if node is None or remaining or prefix is None:
             return "source_prefix_mismatch"
+        checkpoint_tokens = len(req.prefix_indices) + hit
 
         # Attempt native reclaim once. A declined staging attempt may
         # move settled state, but may not discard any referenced checkpoint.
@@ -169,7 +182,8 @@ class DemandRestoreChunk:
                 return "native_load_declined"
             prefix_receipt = cache.inc_lock_ref(prefix_id).to_dec_params()
             self.pending = _Pending(
-                req, key, tokens, hit - tokens, prefix_id, prefix_receipt, suffix_id, suffix_receipt,
+                req, key, checkpoint_tokens, tokens, hit - tokens, prefix_id,
+                prefix_receipt, suffix_id, suffix_receipt,
             )
             if replace_pending is not None:
                 # Keep one settled producer pinned while the borrower stages its suffix.
