@@ -152,9 +152,18 @@ def _add_resident_prefill(f, *, start=121):
     (({"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96),),
     indirect=True,
 )
-@pytest.mark.parametrize("mirror_wait", (False, True))
+@pytest.mark.parametrize(
+    ("mirror_wait", "service_guard"),
+    (
+        pytest.param(False, None, id="False"),
+        pytest.param(True, None, id="True"),
+        pytest.param(True, "fit", id="fit"),
+        pytest.param(False, "timeout", id="timeout"),
+        pytest.param(False, "join", id="join"),
+    ),
+)
 def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
-    staged_native, monkeypatch, mirror_wait,
+    staged_native, monkeypatch, mirror_wait, service_guard,
 ):
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -171,11 +180,20 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
         insert_session(cache, range(start, start + 4), str(start))
     held_device = allocator.alloc(allocator.available_size() - 16)
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
-    gate.materialized.add(gate._context(f.runtime.visible[consumer.rid]))
+    key = f.runtime.visible[consumer.rid]
+    gate.materialized.add(gate._context(key))
     f.runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 6
     scheduler.max_prefill_tokens = 32
     assert host.available_size() == 0 and allocator.available_size() == 16
-    if not mirror_wait:
+    if service_guard == "fit":
+        gate.admission._ready_service_guard = ReadyServiceGuard(gate.admission, fit_after_s=600)
+        gate.admission._ready_service_guard.fit_target = key
+    elif service_guard == "timeout":
+        gate.admission._ready_service_guard = ReadyServiceGuard(gate.admission, fit_after_s=600)
+        gate.admission._ready_service_guard.target = key
+    elif service_guard == "join":
+        f.runtime._join_priority_pending = {key.invocation_id: "observed-join"}
+    elif not mirror_wait:
         def pooled_headroom(*args, **kwargs):
             # Reproduce the previous pressure decision while keeping actual reclaim.
             return replace(observe_materialization_headroom(*args, **kwargs), reclaimable_host_only_tokens=0)

@@ -798,7 +798,7 @@ class SubagentMaterialization:
             or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
         )
 
-    def _staged_peer_protected(self, key):
+    def _staged_peer_protected(self, key, *, protect_fit_target=True):
         runtime = self.runtime
         guard = getattr(self.admission, "_ready_service_guard", None)
         last_child = getattr(runtime, "_last_join_child_has_waiting_parent", None)
@@ -811,7 +811,9 @@ class SubagentMaterialization:
                 getattr(runtime, "_prefetch_priority_promoted", None),
                 getattr(runtime, "_parent_handoff_priority_promoted", None),
             )
-            or (guard is not None and key in (guard.target, guard.fit_target))
+            or (guard is not None and (
+                key == guard.target or (protect_fit_target and key == guard.fit_target)
+            ))
             or (stage is not None and not stage.semantic_only and runtime._live_final_stage(stage))
         )
 
@@ -1020,6 +1022,7 @@ class SubagentMaterialization:
         req = params.req
         mirror_wait = shortfall <= 0
         if mirror_wait:
+            # A fit grant can wait once for an already selected load's mirrors.
             if (
                 submitted or acks or staged is not None or controller.write_queue
                 or controller.ack_write_queue or cache.ongoing_write_through
@@ -1028,7 +1031,7 @@ class SubagentMaterialization:
                 or headroom.reclaimable_host_only_tokens < -shortfall + chunk
                 or self._peer_restore_retry is not None
                 or getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
-                or self._staged_peer_protected(key)
+                or self._staged_peer_protected(key, protect_fit_target=False)
             ):
                 return False
         identity_matches = _request_key(req, known_keys=self.runtime.visible) == key
