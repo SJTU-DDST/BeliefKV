@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Decompose complete measured workflows while preserving censored background."""
+"""Decompose complete fixed workflow groups from a sealed replay."""
 
 from __future__ import annotations
 
@@ -21,6 +21,13 @@ from beliefkv.experiments.source_provenance import sha256_file
 from scripts.audit_causal_jct_paths import account, first_launches, request_cohorts, unique
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.run_causal_gpu_replay import source_plan
+
+
+PATH_GROUPS = {
+    "measured": ("measured",),
+    "warmup": ("warmup",),
+    "measured_plus_warmup": ("measured", "warmup"),
+}
 
 
 def measured_plan(plan, workflows):
@@ -84,15 +91,21 @@ def request_details(events, requests, launches, cohorts):
     return details
 
 
-def audit_arm(plan, arm, report_path):
+def audit_arm(plan, arm, report_path, *, group="measured"):
     report = json.loads(report_path.read_bytes())
-    workflows = report["cohort"]["measured_workflow_ids"]
+    workflows, expected_jct_ms = [], {}
     if (
         report.get("all_measured_completed") is not True
         or report.get("normal_tails_removed") is not False
-        or set(report["measured_workflow_JCT_ms"]) != set(workflows)
     ):
-        raise ValueError("require complete fixed-cohort JCT with all normal tails")
+        raise ValueError(f"require complete fixed {group} JCT with all normal tails")
+    for partition in PATH_GROUPS[group]:
+        members = report["cohort"][f"{partition}_workflow_ids"]
+        timings = report[f"{partition}_workflow_JCT_ms"]
+        if timings.keys() != set(members):
+            raise ValueError(f"require complete fixed {partition} JCT")
+        workflows.extend(members)
+        expected_jct_ms.update(timings)
     selected = measured_plan(plan, workflows)
     members, expected_requests = set(workflows), set(selected.request_usage)
     reader = SealedRecords()
@@ -122,7 +135,7 @@ def audit_arm(plan, arm, report_path):
     cohorts = request_cohorts(events)
     result = account(
         selected, events, requests.values(), launches,
-        expected_jct_ms=report["measured_workflow_JCT_ms"], cohorts=cohorts,
+        expected_jct_ms=expected_jct_ms, cohorts=cohorts,
     )
     details = request_details(events, requests, launches, cohorts)
     for workflow, row in result["workflows"].items():
@@ -134,9 +147,9 @@ def audit_arm(plan, arm, report_path):
         row["request_count"] = len(own)
     return {
         **result, "requests": details, "arm": str(arm.resolve()),
-        "cohort": report["cohort"], "native_launch_samples": samples,
-        "measured_receipts": len(requests),
-        "measured_outputs": sum(row["output_tokens"] for row in requests.values()),
+        "cohort": report["cohort"], "group": group, "native_launch_samples": samples,
+        f"{group}_receipts": len(requests),
+        f"{group}_outputs": sum(row["output_tokens"] for row in requests.values()),
         "input_jsonl_prefixes": reader.prefixes,
         "inputs_sha256": {
             str(path.resolve()): sha256_file(path) for path in (report_path, status_path)
@@ -145,7 +158,11 @@ def audit_arm(plan, arm, report_path):
 
 
 def compare_paths(left, right):
-    if left["cohort"] != right["cohort"] or left["workflows"].keys() != right["workflows"].keys():
+    if (
+        left["cohort"] != right["cohort"]
+        or left.get("group", "measured") != right.get("group", "measured")
+        or left["workflows"].keys() != right["workflows"].keys()
+    ):
         raise ValueError("comparison must preserve the exact arrival-selected cohort")
     if left["requests"].keys() != right["requests"].keys():
         raise ValueError("comparison changed measured request population")
@@ -220,6 +237,8 @@ def main():
     parser.add_argument("--source-arm", type=Path, required=True)
     parser.add_argument("--arm", action="append", required=True, help="NAME=ARM_PATH")
     parser.add_argument("--cohort-report", action="append", required=True, help="NAME=REPORT_PATH")
+    parser.add_argument("--group", choices=PATH_GROUPS, default="measured",
+                        help="fixed workflow group with complete natural JCTs")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     arms = dict(value.split("=", 1) for value in args.arm)
@@ -231,7 +250,8 @@ def main():
         raise ValueError("require matching distinct arms/reports and a new output")
     plan, _, source = source_plan(args.source_arm)
     results = {
-        name: audit_arm(plan, Path(path), Path(reports[name])) for name, path in arms.items()
+        name: audit_arm(plan, Path(path), Path(reports[name]), group=args.group)
+        for name, path in arms.items()
     }
     names = list(arms)
     comparisons = {
@@ -248,7 +268,8 @@ def main():
         "source_evidence": source, "arms": results, "comparisons": comparisons,
         "inputs_sha256": {str(path): sha256_file(path) for path in paths},
         "scope": {
-            "whole_fixed_measured_workflows_only": True,
+            "whole_fixed_measured_workflows_only": args.group == "measured",
+            "fixed_workflow_group": args.group,
             "background_retained_in_actual_execution_but_excluded_from_path_population": True,
             "last_completing_dependency_path_reconstructs_each_complete_JCT": True,
             "submit_to_launch_includes_all_local_waiting": True,
@@ -264,7 +285,7 @@ def main():
     with args.output.open("x") as stream:
         json.dump(output, stream, indent=2, allow_nan=False)
     print(json.dumps({
-        "measured_workflows": len(results[names[0]]["workflows"]),
+        f"{args.group}_workflows": len(results[names[0]]["workflows"]),
         "mean_jct_s": {name: result["mean_jct_s"] for name, result in results.items()},
         "mean_differences_s": {
             name: value["right_minus_left_mean_jct_s"] for name, value in comparisons.items()

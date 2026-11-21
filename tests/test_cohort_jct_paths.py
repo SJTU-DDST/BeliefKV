@@ -85,9 +85,16 @@ def test_changed_cohorts_work_identity_or_unreconciled_paths_are_rejected(change
         compare_paths(before, after)
 
 
-@pytest.mark.parametrize("missing", (None, "measured_end", "measured_receipt", "service_sample"))
+@pytest.mark.parametrize(("group", "missing"), (
+    ("measured", None),
+    ("measured", "measured_end"),
+    ("measured", "measured_receipt"),
+    ("measured", "service_sample"),
+    ("warmup", None),
+    ("warmup", "warmup_completion"),
+))
 def test_complete_cohort_accounting_preserves_partial_background_and_rejects_measured_gaps(
-    tmp_path, missing,
+    tmp_path, group, missing,
 ):
     plan, events, rows, _ = fixture()
     plan = replace(plan, nodes=tuple(
@@ -126,17 +133,18 @@ def test_complete_cohort_accounting_preserves_partial_background_and_rejects_mea
     }
     (tmp_path / "server/native_telemetry_status.json").write_text(json.dumps(status))
     report = {
-        "cohort": {"measured_workflow_ids": ["w"]}, "all_measured_completed": True,
-        "normal_tails_removed": False, "measured_workflow_JCT_ms": {"w": 41.},
+        "cohort": {f"{group}_workflow_ids": ["w"]}, "all_measured_completed": True,
+        "normal_tails_removed": False,
+        f"{group}_workflow_JCT_ms": {} if missing == "warmup_completion" else {"w": 41.},
     }
     report_path = tmp_path / "cohort.json"
     report_path.write_text(json.dumps(report))
     if missing:
         with pytest.raises(ValueError):
-            audit_arm(plan, tmp_path, report_path)
+            audit_arm(plan, tmp_path, report_path, group=group)
     else:
-        observed = audit_arm(plan, tmp_path, report_path)
-        assert observed["measured_receipts"] == 3
-        assert observed["measured_outputs"] == 3
+        observed = audit_arm(plan, tmp_path, report_path, group=group)
+        assert observed[f"{group}_receipts"] == 3
+        assert observed[f"{group}_outputs"] == 3
         assert observed["mean_jct_s"] == .041
         assert set(observed["workflows"]) == {"w"}
