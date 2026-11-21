@@ -63,6 +63,8 @@ class Observations:
                 self.grants[sequence] = record
             elif event == "agent_predicted_tool_replacement":
                 self.replacements[sequence] = record
+                if record.get("logical_only") is True:
+                    self.counts["logical_only_replacement_records"] += 1
             if event in ("agent_periodic_admission_decision", "agent_dispatch_free_capacity_admitted"):
                 wall, mono = record.get("ts_ms"), record.get("monotonic_s")
                 if not finite_number(wall) or not finite_number(mono):
@@ -230,6 +232,8 @@ def audit(registration_path, cohort_path, output):
     if not offsets or max(offsets) - min(offsets) > 5.:
         raise ValueError("wall-to-monotonic admission clocks changed beyond the declared 5 ms limit")
     rows = paired_paths(progress, observed)
+    if sum(row.get("logical_only") is True for row in rows) != observed.counts["logical_only_replacement_records"]:
+        raise ValueError("logical-only replacement records do not match exact free grants")
     origin = phases["origin_monotonic_ms"]
     common = cohort["throughput_window_offset_seconds"]
     end = phases["last_measured_completion_offset_s"]

@@ -67,6 +67,7 @@ def test_logical_handoff_does_not_reuse_a_prior_physical_release(late):
     records, batches = fixture()
     records[2].update(
         logical_only=True, logical_deficit_tokens=13, physical_capacity_credit=False,
+        remaining_before_tokens=287, physical_capacity_authority="fresh_native_budget_without_demotion",
         released_device_tokens=0, released_host_tokens=0,
         native_fit={"first_chunk_and_restore_tokens": 18, "device_free_tokens": 20},
     )
@@ -79,6 +80,19 @@ def test_logical_handoff_does_not_reuse_a_prior_physical_release(late):
     assert not rows[0]["release_record_matched"]
     assert rows[0]["grant_to_new_service_ms"] == 15.
     assert totals["matched_physical_release_records"] == 0
+
+
+def test_logical_handoff_requires_the_recorded_budget_deficit():
+    records, batches = fixture()
+    records[2].update(
+        logical_only=True, logical_deficit_tokens=12, physical_capacity_credit=False,
+        remaining_before_tokens=287, physical_capacity_authority="fresh_native_budget_without_demotion",
+        released_device_tokens=0, released_host_tokens=0,
+        native_fit={"first_chunk_and_restore_tokens": 18, "device_free_tokens": 20},
+    )
+    rows, progress, _observed = analyze(records, batches)
+    assert not rows
+    assert progress["published_grant_interventions"]["unlinked_tool_replacement_markers"] == 1
 
 
 def test_periodic_start_to_publication_span_does_not_contaminate_free_grant_clock():

@@ -97,6 +97,23 @@ class PublishedGrantInterventions:
             and len(members) == 1 and identity(members[0]["key"], grant=True) == key
         )
 
+    @staticmethod
+    def _replacement_budget_matches(row, grant):
+        before = row.get("remaining_before_tokens")
+        if row.get("logical_only") is True:
+            deficit = row.get("logical_deficit_tokens")
+            return (
+                row.get("physical_capacity_authority") == "fresh_native_budget_without_demotion"
+                and row.get("physical_capacity_credit") is False
+                and type(before) is int and type(deficit) is int and deficit > 0
+                and grant["required_tokens"] - before == deficit
+                and grant["remaining_before_tokens"] - before >= deficit
+            )
+        return (
+            row.get("physical_capacity_authority") == "settled_private_release_then_fresh_native_budget"
+            and before == grant["remaining_before_tokens"]
+        )
+
     def observe(self, row, sequence, changes):
         event, linked = row.get("event"), False
         pending = self.pending
@@ -106,14 +123,12 @@ class PublishedGrantInterventions:
                 linked = (
                     identity(row["consumer"], grant=True) == key
                     and identity(row["donor"], grant=True)[2] != key[2]
-                    and row.get("remaining_before_tokens") == grant["remaining_before_tokens"]
+                    and self._replacement_budget_matches(row, grant)
                     and row.get("remaining_after_tokens") == grant["remaining_after_tokens"]
                     and finite_number(row.get("monotonic_s"))
                     and row["monotonic_s"] >= grant["monotonic_s"]
                     and row.get("coalescing_window_bypassed") is True
                     and row.get("ordinary_restore_lease") is False
-                    and row.get("physical_capacity_authority")
-                    == "settled_private_release_then_fresh_native_budget"
                 )
                 if linked:
                     self.links.append({
