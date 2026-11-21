@@ -745,6 +745,17 @@ class SubagentMaterialization:
             or (stage is not None and not stage.semantic_only and runtime._live_final_stage(stage))
         )
 
+    def _can_wait_on_join_stage(self, req, key, producer_key):
+        joins = getattr(self.runtime, "_join_priority_pending", ())
+        guard = getattr(self.admission, "_ready_service_guard", None)
+        previous = getattr(req, "_beliefkv_d3_join_peer", None)
+        return (
+            key.invocation_id in joins and producer_key.invocation_id in joins
+            and (previous is None or previous[0] != key or previous[1] == producer_key)
+            and not self._restore_has_service_priority(key, protect_join_parent=False)
+            and (guard is None or key not in (guard.target, guard.fit_target))
+        )
+
     def _own_join_ack_receipts(self, cache, ack, key):
         runtime = self.runtime
         if (
@@ -806,12 +817,13 @@ class SubagentMaterialization:
             return False
         req_id = params.req.rid
         key = self.runtime.visible.get(req_id)
-        if key is None or self._restore_has_service_priority(key):
+        if key is None:
             return False
 
         staged = self._demand_restore_chunk.pending
         chunk = self.runtime._native_chunk_input_reserve
         protected_receipt = None
+        join_peer = False
         if (
             staged is not None and staged.request is not params.req
             and chunk and hit >= 2 * chunk
@@ -820,9 +832,12 @@ class SubagentMaterialization:
             and self._restore_stage_matches_live(staged.request, staged.key)
             and self._restore_stage_matches_live(params.req, key)
             and self._staged_peer_protected(staged.key)
-            and not self._staged_peer_protected(key)
         ):
-            protected_receipt = cache.ongoing_load_back.get(staged.prefix_node)
+            join_peer = self._can_wait_on_join_stage(params.req, key, staged.key)
+            if join_peer or not self._staged_peer_protected(key):
+                protected_receipt = cache.ongoing_load_back.get(staged.prefix_node)
+        if protected_receipt is None and self._restore_has_service_priority(key):
+            return False
         leading_tagged = submitted and bool(acks[0].child_receipts)
         own_join_receipts = None
         if submitted:
@@ -918,6 +933,19 @@ class SubagentMaterialization:
             params.req._beliefkv_d3_restore_credit = key, hit, {
                 staged.prefix_node: protected_receipt,
             }
+            if join_peer:
+                # A live JOIN may wait for one already-started JOIN restore chain.
+                params.req._beliefkv_d3_join_peer = key, staged.key
+                counts["subagent_materialization_join_peer_waits"] += 1
+                writer = getattr(self.runtime, "_opportunity_writer", None)
+                if writer is not None:
+                    writer.record({
+                        "event": "subagent_materialization_join_peer_wait",
+                        "ts_ms": time.time() * 1000.,
+                        "key": asdict(key), "producer": asdict(staged.key),
+                        "prefix_node_id": staged.prefix_node,
+                        "unfunded_restore_tokens": shortfall,
+                    })
             counts["subagent_materialization_protected_stage_waits"] += 1
             return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
@@ -1095,15 +1123,26 @@ class SubagentMaterialization:
             return False
         key, hit, receipts = credit
         pipeline = getattr(self.runtime, "_demand_prefill_pipeline", None)
+        restore = self._demand_restore_chunk
         if (
-            self._demand_restore_chunk is not None and pipeline is not None
+            restore is not None and pipeline is not None
             and self.runtime.visible.get(req.rid) == key
             and _request_key(req, known_keys=self.runtime.visible) == key
             and pipeline.has_decode_work(self._running_batch)
-            and not self._restore_has_service_priority(key)
         ):
-            cache = self._demand_restore_chunk.cache
-            if cache.token_to_kv_pool_allocator.available_size() < hit and any(
+            staged = restore.pending
+            waiting_on_join = (
+                staged is not None and staged.prefix_node in receipts
+                and getattr(req, "_beliefkv_d3_join_peer", None) == (key, staged.key)
+            )
+            permitted = (
+                self._can_wait_on_join_stage(req, key, staged.key)
+                and self._restore_stage_matches_live(staged.request, staged.key)
+                and self._restore_stage_matches_live(req, key)
+                if waiting_on_join else not self._restore_has_service_priority(key)
+            )
+            cache = restore.cache
+            if permitted and cache.token_to_kv_pool_allocator.available_size() < hit and any(
                 anchor in receipts and cache.ongoing_load_back.get(anchor) is receipts[anchor]
                 for ack in cache.cache_controller.ack_load_queue for anchor in ack.node_ids
             ):

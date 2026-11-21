@@ -1481,6 +1481,7 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         pytest.param(True, "pending_join", 2, id="pending-join-producer-partial-credit"),
         pytest.param(True, "fit_target", 2, id="fit-target-producer-partial-credit"),
         pytest.param(True, "both_protected", 2, id="protected-producer-and-consumer"),
+        pytest.param(True, "both_join", 2, id="two-released-join-parents"),
     ),
 )
 def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
@@ -1521,7 +1522,9 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
     monkeypatch.setattr(tree, "_beliefkv_host_eviction_observer", record_eviction)
     f.waiting[:] = [producer]
     resumed_peer = producer_protection == "promoted-after-retry"
-    producer_promoted = producer_protection in {"promoted", "promoted-after-retry", "both_protected"}
+    producer_promoted = producer_protection in {
+        "promoted", "promoted-after-retry", "both_protected", "both_join",
+    }
     if producer_promoted:
         runtime._join_priority_promoted = producer.rid
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
@@ -1582,6 +1585,12 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             guard = ReadyServiceGuard(runtime._agent_admission, fit_after_s=600)
             guard.fit_target = consumer_key
             runtime._agent_admission._ready_service_guard = guard
+        elif producer_protection == "both_join":
+            runtime._join_priority_pending = {
+                staged.key.invocation_id: "older-join",
+                consumer_key.invocation_id: "younger-join",
+            }
+            runtime._join_priority_promoted = consumer.rid
         if resumed_peer:
             # Its prior ordinary ACK retry yielded to the promoted JOIN parent.
             consumer._beliefkv_d3_indexed_restore_defer_key = consumer_key
@@ -1589,7 +1598,7 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         scheduler.waiting_queue.append(consumer)
         assert invoke() == (None, f.running)
         if decode_growth and producer_protection in {
-            "promoted", "promoted-after-retry", "pending_join", "fit_target",
+            "promoted", "promoted-after-retry", "pending_join", "fit_target", "both_join",
         }:
             assert not losses
             assert f.loads == [first_load] and controller.ack_load_queue == [first_ack]
@@ -1600,19 +1609,41 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             assert receipts == {staged.prefix_node: receipt}
             assert gate._peer_restore_retry is None and staged.credit_waiter is None
             first_ack.finish_event.synchronize.assert_not_called()
+            if producer_protection == "both_join":
+                assert gate.defer_start(consumer)
+                # The scheduler may promote the earlier JOIN again on the next pass.
+                runtime._join_priority_promoted = producer.rid
             assert invoke() == (None, f.running)
             assert runtime.counts["subagent_materialization_protected_stage_waits"] == 1
 
             f.complete.ready = True
             cache.loading_check()
             f.complete.ready = False
+            if producer_protection == "both_join":
+                assert not gate.defer_start(consumer)
+                assert runtime.counts["subagent_materialization_join_peer_waits"] == 1
             assert invoke() == (None, f.running)
             assert restore.pending.request is producer
             assert restore.pending.remaining_tokens < staged.remaining_tokens
             assert not losses and len(f.loads) == 2 and not construction
             assert neighbor_data.host_value is neighbor_slots
+            if producer_protection == "both_join":
+                assert invoke() == (None, f.running)
+                assert runtime.counts["subagent_materialization_join_peer_waits"] == 2
+                assert len(f.loads) == 2 and not losses
+                allocator.free(held_device)
+                held_device = None
             f.complete.ready = True
             cache.loading_check()
+            if producer_protection == "both_join":
+                with pytest.raises(BatchConstructionReached):
+                    invoke()
+                assert construction == [(producer, consumer)]
+                assert not scheduler.waiting_queue and not losses
+                assert [req.extend_range.start for req in (producer, consumer)] == [18, 8]
+                cache.loading_check()
+                for req in (producer, consumer):
+                    cache.dec_lock_ref(req.last_node, req.lock_receipt)
             cache.sanity_check()
             return
         if decode_growth and (producer_protection == "both_protected" or decode_growth == 3):
@@ -1830,7 +1861,8 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
         gate.close()
         if decode_slots is not None:
             allocator.free(decode_slots)
-        allocator.free(held_device)
+        if held_device is not None:
+            allocator.free(held_device)
         host.free(held_host)
 
 
