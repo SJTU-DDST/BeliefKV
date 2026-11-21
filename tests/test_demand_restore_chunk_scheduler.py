@@ -2057,6 +2057,105 @@ def test_d3_defers_large_restore_when_ordinary_stage_overlaps_selected_load(stag
 
 @pytest.mark.parametrize(
     ("staged_native", "full_native"),
+    (({"members": 3, "select": False, "prefix_sizes": (18, 4, 16)}, 38),),
+    indirect=True,
+)
+def test_d3_waits_on_selected_load_after_ordinary_stage_ack(staged_native, monkeypatch):
+    from sglang.srt.managers.schedule_policy import AddReqResult
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, allocator, runtime = f.cache, f.allocator, f.runtime
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    producer, selected, consumer = f.members
+    source_slots = f.leaves[2].component_data[0].host_value.tolist()
+    key = runtime.visible[consumer.rid]
+    held_host = host.alloc(host.available_size() - 14)
+    neighbor, _ = insert_session(cache, range(101, 109), "waiting-parent")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    for start, size in ((111, 6), (121, 6), (131, 8), (201, 32)):
+        insert_session(cache, range(start, start + size), str(start))
+    held_device = allocator.alloc(allocator.available_size() - 3)
+    f.waiting[:] = [producer]
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    gate.materialized.add(gate._context(key))
+    try:
+        assert invoke() == (None, f.running)
+        restore = gate._demand_restore_chunk
+        staged = restore.pending
+        assert staged.request is producer and not construction
+        f.complete.ready = True
+        cache.loading_check()
+        f.complete.ready = False
+        assert restore.pending is staged and not controller.ack_load_queue
+        assert staged.prefix_node not in cache.ongoing_load_back
+
+        allocator.free(held_device[:2])
+        held_device = held_device[2:]
+        adder = f.adder()
+        scheduler.waiting_queue[:] = [producer, selected, consumer]
+        gate.prepare(scheduler.waiting_queue, running_batch=f.running, adder=adder)
+        selected.init_next_round_input(cache)
+        assert selected.host_hit_length == 4
+        assert adder.add_one_req(
+            selected, has_chunked_req=False, truncation_align_size=None,
+        ) is AddReqResult.CONTINUE
+        ordinary, = controller.load_queue
+        assert ordinary.node_ids == [selected.last_node]
+        selected_receipt = cache.ongoing_load_back[selected.last_node]
+
+        # Exercise the indexed-census path on this otherwise small native tree.
+        def indexed(cache, **kwargs):
+            observed = observe_materialization_headroom(cache, **kwargs)
+            return replace(observed, census_complete=False, reason=NODE_CENSUS_BOUND)
+
+        monkeypatch.setattr("beliefkv.runtime.subagent_materialization.observe_materialization_headroom", indexed)
+        consumer.init_next_round_input(cache)
+        assert consumer.host_hit_length == 16
+        assert adder.add_one_req(
+            consumer, has_chunked_req=False, truncation_align_size=None,
+        ) is AddReqResult.OTHER
+        assert adder.can_run_list == [selected] and controller.load_queue == [ordinary]
+        assert restore.pending is staged and len(f.loads) == 2
+        assert consumer._beliefkv_d3_restore_credit == (key, 16, {selected.last_node: selected_receipt})
+        assert runtime.counts["subagent_materialization_settled_stage_overlap_waits"] == 1
+        assert neighbor.component_data[0].host_value is neighbor_slots
+
+        assert cache.ready_to_load_host_cache() >= 0
+        assert gate.defer_start(consumer)
+        f.complete.ready = True
+        cache.loading_check()
+        assert not gate.defer_start(consumer)
+        assert consumer._beliefkv_d3_restore_credit is None
+        assert not gate.defer_start(producer) and restore.pending is None
+        assert consumer._beliefkv_d3_ordinary_stage_wait_key == key
+
+        f.complete.ready = False
+        retry = f.adder()
+        gate.prepare((consumer,), running_batch=f.running, adder=retry)
+        consumer.init_next_round_input(cache)
+        assert consumer.host_hit_length == 16
+        assert retry.add_one_req(
+            consumer, has_chunked_req=False, truncation_align_size=None,
+        ) is AddReqResult.OTHER
+        assert restore.pending.request is consumer
+        assert f.loads[-1].host_indices.tolist() == source_slots[:restore.pending.tokens]
+        assert neighbor.component_data[0].host_value is neighbor_slots
+        assert host.slot_used[neighbor_slots].all()
+        f.complete.ready = True
+        cache.loading_check()
+        assert not gate.defer_start(consumer)
+        cache.dec_lock_ref(selected.last_node, selected.lock_receipt)
+        cache.sanity_check()
+    finally:
+        gate.close()
+        allocator.free(held_device)
+        host.free(held_host)
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native"),
     (({"members": 2, "select": False, "prefix_sizes": (18, 8)}, 27),),
     indirect=True,
 )

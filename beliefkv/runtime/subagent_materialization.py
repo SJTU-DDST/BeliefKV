@@ -975,17 +975,38 @@ class SubagentMaterialization:
                 selected_h2d["unfunded_restore_tokens"] = max(0, shortfall)
         if not headroom.observable or shortfall <= 0:
             return False
-        identity_matches = _request_key(params.req, known_keys=self.runtime.visible) == key
-        if stage_receipt is not None and identity_matches:
-            wait_receipts = {staged.prefix_node: stage_receipt}
-            if ordinary_stage_peer:
-                # Let the selected batch publish its load while the earlier stage is in flight.
+        req = params.req
+        identity_matches = _request_key(req, known_keys=self.runtime.visible) == key
+        # A settled slice can still own the stage during this selection.
+        # Let one already selected load publish its ACK if it funds the next slice.
+        settled_stage_peer = (
+            stage_receipt is None and identity_matches and not submitted and not acks
+            and staged is not None and staged.request is not req
+            and staged.prefix_node not in cache.ongoing_load_back
+            and self._demand_restore_chunk.parked is None
+            and chunk and hit >= 2 * chunk and len(native_node_ids) == 1
+            and params.best_match_node not in receipts
+            and (headroom.reason == NODE_CENSUS_BOUND or credit < chunk)
+            and shortfall > credit
+            and getattr(req, "_beliefkv_d3_ordinary_stage_wait_key", None) != key
+            and not self._staged_peer_protected(staged.key)
+            and not self._staged_peer_protected(key)
+            and self._restore_stage_matches_live(staged.request, staged.key)
+            and self._can_slice_after_restore_ack(
+                cache, params, key, headroom, credit, expected_acks=0, replace_pending=staged,
+            )
+        )
+        if identity_matches and (stage_receipt is not None or settled_stage_peer):
+            wait_receipts = {staged.prefix_node: stage_receipt} if stage_receipt is not None else {}
+            if ordinary_stage_peer or settled_stage_peer:
                 wait_receipts.update({
                     anchor: cache.ongoing_load_back[anchor] for anchor in native_node_ids
                 })
-                params.req._beliefkv_d3_ordinary_stage_wait_key = key
+                req._beliefkv_d3_ordinary_stage_wait_key = key
                 counts["subagent_materialization_ordinary_stage_overlap_waits"] += 1
-            params.req._beliefkv_d3_restore_credit = key, hit, wait_receipts
+            if settled_stage_peer:
+                counts["subagent_materialization_settled_stage_overlap_waits"] += 1
+            req._beliefkv_d3_restore_credit = key, hit, wait_receipts
             if join_peer:
                 # A live JOIN may wait for one already-started JOIN restore chain.
                 params.req._beliefkv_d3_join_peer = key, staged.key
@@ -999,12 +1020,11 @@ class SubagentMaterialization:
                         "prefix_node_id": staged.prefix_node,
                         "unfunded_restore_tokens": shortfall,
                     })
-            if not ordinary_stage_peer:
+            if not (ordinary_stage_peer or settled_stage_peer):
                 counts["subagent_materialization_protected_stage_waits"] += 1
             return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
         small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
-        req = params.req
         bounded_retry = submitted or not headroom.census_complete or small_peer_retry
         second_peer = bounded_retry and getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
         staged_producer = None
