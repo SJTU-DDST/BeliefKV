@@ -23,12 +23,16 @@ def strict_remaining_work_enabled(raw):
         or raw.get("ready_capacity_accumulation_ms", 0) != 0
     ):
         raise ValueError("strict remaining-work admission excludes aging, utility packing and capacity holds")
+    preserve = raw.get("preserve_reference_service_capacity", False)
+    if type(preserve) is not bool or preserve and not enabled:
+        raise ValueError("reference service capacity guard requires strict remaining-work admission")
     return enabled
 
 
 def choose_shortest_work_first(
     candidates, reference, resources, costs, *, required=(), budget_ns=500_000,
     clock=time.perf_counter_ns, strict_remaining_work=False, group_ready_siblings=True,
+    preserve_reference_service_capacity=False,
 ):
     """Fill by workflow priority, retaining JOIN rights and ready sibling adjacency."""
     started = clock()
@@ -60,6 +64,8 @@ def choose_shortest_work_first(
             or not set(required) <= set(reference) or not set(required) <= by_id.keys()
             or any(type(owner) is not str or not owner for owner in reference)
             or type(budget_ns) is not int or budget_ns <= 0
+            or type(preserve_reference_service_capacity) is not bool
+            or preserve_reference_service_capacity and not strict_remaining_work
             or costs.selection_objective != "benefit" or costs.decode_cost_basis != "full_batch"
             or type(resources.cold_device_tokens) is not int or resources.cold_device_tokens < 0
             or resources.device_capacity_tokens is not None and (
@@ -133,6 +139,21 @@ def choose_shortest_work_first(
         if evaluated is None:
             result["reason"] = "no_feasible_shortest_work_reference_fallback"
             return result
+        if preserve_reference_service_capacity:
+            reason = None
+            if len(selected) < len(reference):
+                reason = "shortest_work_reference_count_preserved"
+            elif (
+                baseline is not None and baseline.get("current_device_summary_fits") is True
+                and evaluated.get("current_device_summary_fits") is False
+            ):
+                reason = "shortest_work_reference_immediate_fit_preserved"
+            if reason:
+                result.update(
+                    reason=reason, selected_evaluation=baseline, search_complete=True,
+                    ranked_selected=tuple(row.identity for row in selected),
+                )
+                return result
         result.update(
             selected=tuple(row.identity for row in selected),
             selected_evaluation=evaluated, search_complete=True,

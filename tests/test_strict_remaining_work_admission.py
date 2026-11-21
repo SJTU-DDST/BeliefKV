@@ -54,6 +54,46 @@ def test_remaining_work_is_not_outvoted_by_aggregate_utility():
     assert strict["selected"] == ("short",)
 
 
+@pytest.mark.parametrize("reference_in_window", (False, True))
+def test_service_capacity_guard_keeps_reference_count(reference_in_window):
+    rows, resources, costs = fixture()
+    if not reference_in_window:
+        rows = rows[:1]
+    reference = ("long-a", "long-b")
+    result = choose(rows, reference, resources, costs, preserve_reference_service_capacity=True)
+    assert result["selected"] == reference
+    assert result["ranked_selected"] == ("short",)
+    assert result["reason"] == "shortest_work_reference_count_preserved"
+    assert result["search_complete"]
+
+
+def test_service_capacity_guard_keeps_immediately_fitting_reference():
+    rows, resources, costs = fixture()
+    short = replace(rows[0], missing_extents=((("short", 1.), 20),))
+    reference = ("long-a",)
+    call = partial(choose, [short, rows[1]], reference, costs=costs,
+                   preserve_reference_service_capacity=True)
+    guarded = call(resources=replace(resources, device_tokens=19))
+    assert guarded["selected"] == reference
+    assert guarded["ranked_selected"] == ("short",)
+    assert guarded["reason"] == "shortest_work_reference_immediate_fit_preserved"
+    fitting = call(resources=replace(resources, device_tokens=20))
+    assert fitting["selected"] == ("short",)
+    assert fitting["reason"] == "shortest_work_set_changed"
+
+
+@pytest.mark.parametrize("options", (
+    {"preserve_reference_service_capacity": True},
+    {
+        "strict_remaining_work_admission": True, "shortest_work_first_admission": True,
+        "preserve_reference_service_capacity": 1,
+    },
+))
+def test_service_capacity_guard_requires_strict_and_boolean_artifact(options):
+    with pytest.raises(ValueError, match="reference service capacity guard"):
+        strict_remaining_work_enabled(options)
+
+
 @pytest.mark.parametrize("progress", ("linear", "quadratic"))
 @pytest.mark.parametrize("fanout", (1, 4, 8))
 def test_join_fanout_and_tolerance_do_not_change_workflow_priority(progress, fanout):
@@ -155,6 +195,29 @@ def mark_unmaterialized(runtime, keys):
 
 
 @pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
+def test_service_capacity_guard_is_applied_at_both_selection_entries(monkeypatch, tmp_path, source):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    control.preserve_reference_service_capacity = True
+    a, b, c = (admission.latest[owner] for owner in ("a", "b", "c"))
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        result = control.select([a, b, c], [b, c], capacity=500, maximum=4, source=source)
+        assert result == [b, c]
+        assert admission.status()["workflow_preserve_reference_service_capacity"]
+        assert records[-1]["decision"]["reason"] == "shortest_work_reference_count_preserved"
+        verify = partial(
+            validate_selection_policy, records, shortest_work_first=True, strict_remaining_work=True,
+        )
+        verify(preserve_reference_service_capacity=True)
+        with pytest.raises(ValueError, match="recorded service capacity guard"):
+            verify()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
 def test_resume_only_preserves_first_materialization_reference(monkeypatch, tmp_path, source):
     runtime, admission = strict_runtime(monkeypatch, tmp_path)
     control = admission._combination
@@ -180,6 +243,7 @@ def test_adaptive_resume_ranking_reverts_without_pricing_candidates(monkeypatch,
     runtime, admission = strict_runtime(monkeypatch, tmp_path)
     control = admission._combination
     control.resume_only_work_ranking = control.adaptive_resume_ranking = True
+    control.preserve_reference_service_capacity = True
     admission._conditional_distribution = True
     a, b, c = (admission.latest[owner] for owner in ("a", "b", "c"))
     gate = mark_unmaterialized(runtime, ())
@@ -199,11 +263,13 @@ def test_adaptive_resume_ranking_reverts_without_pricing_candidates(monkeypatch,
             assert select([a, b, c], [b, c]) == [b, c]
             assert records[-1]["decision"]["reason"] == "resume_pressure_reference"
             assert not records[-1]["candidates"]
+            replayed = replay_choice(records[-1], control.costs, control.cost_identity)
+            assert replayed["fallback_reference_preserved"] and replayed["selected"] == ["b", "c"]
 
         gate._observe_resume_ranking(
             MaterializationHeadroom(True, device_free_tokens=4096), 0, now,
         )
-        assert select([a, b, c], [b, c]) == [a]
+        assert select([a, b, c], [b]) == [a]
         assert records[-1]["decision"]["reason"] == "shortest_work_set_changed"
         assert admission.status()["workflow_adaptive_resume_ranking"]
     finally:
@@ -421,12 +487,15 @@ def test_legacy_timeout_is_retained_but_cannot_bypass_strict_priority(monkeypatc
 
 
 @pytest.mark.parametrize("deadline", (None, 1, 2))
-def test_strict_journal_exactly_replays_original_cutoff_and_external_reference(deadline):
+@pytest.mark.parametrize("preserve_capacity", (False, True))
+def test_strict_journal_exactly_replays_original_cutoff_and_external_reference(deadline, preserve_capacity):
     row, costs = recorded_aging()
     rows = [replace(value, weight=.9) for value in fixture()[0][:1]]
     # Keep the original exact identity for the retained short candidate.
     row["candidates"] = [asdict(value) for value in rows]
     row["selection_policy"] = "strict_remaining_work"
+    if preserve_capacity:
+        row["preserve_reference_service_capacity"] = True
     row.pop("ready_wait_priority")
     calls = -1
 
@@ -438,6 +507,7 @@ def test_strict_journal_exactly_replays_original_cutoff_and_external_reference(d
     row["decision"] = choose_shortest_work_first(
         rows, ("long-a", "long-b"), fixture()[1], costs,
         strict_remaining_work=True, clock=clock,
+        preserve_reference_service_capacity=preserve_capacity,
     )
     row = json.loads(json.dumps(row))
     result = replay_choice(
@@ -446,6 +516,14 @@ def test_strict_journal_exactly_replays_original_cutoff_and_external_reference(d
     assert result["search_replayed"]
     assert result["selected"] == list(row["decision"]["selected"])
     assert result["search_complete"] == row["decision"]["search_complete"]
+    if preserve_capacity and deadline is None:
+        assert result["selected"] == ["long-a", "long-b"]
+        mismatched = dict(row, preserve_reference_service_capacity=False)
+        with pytest.raises(ValueError, match="does not reproduce"):
+            replay_choice(
+                mismatched, costs, "frozen", allow_feasible_resource_alternatives=True,
+                plan_device_capacity=True,
+            )
 
 
 def test_strict_preparation_preserves_forecast_traffic_and_disables_all_wait_overrides(tmp_path):

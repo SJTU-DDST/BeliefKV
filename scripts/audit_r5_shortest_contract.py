@@ -110,6 +110,7 @@ def inspect_choice(row, costs):
     replay = choose_shortest_work_first(
         rows, decision.get("reference", ()), resources, costs, required=required,
         strict_remaining_work=True, clock=lambda: 0,
+        preserve_reference_service_capacity=row.get("preserve_reference_service_capacity", False),
     )
     result["unlimited_CPU_choice"] = list(replay["selected"])
     result["unlimited_CPU_choice_changed"] = set(replay["selected"]) != selected

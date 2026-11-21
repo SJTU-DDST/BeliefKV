@@ -55,6 +55,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         from beliefkv.policy.workflow_shortest_frontier import strict_remaining_work_enabled
 
         self.strict_remaining_work = strict_remaining_work_enabled(raw)
+        self.preserve_reference_service_capacity = raw.get("preserve_reference_service_capacity", False)
         self.resume_only_work_ranking = raw.get("resume_only_work_ranking", False)
         if type(self.resume_only_work_ranking) is not bool or (
             self.resume_only_work_ranking and (
@@ -733,9 +734,11 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             elif self.shortest_work_first:
                 from beliefkv.policy.workflow_shortest_frontier import choose_shortest_work_first
 
+                preserve = getattr(self, "preserve_reference_service_capacity", False)
                 result = choose_shortest_work_first(
                     *arguments, required=required,
                     **({"strict_remaining_work": True} if strict else {}),
+                    **({"preserve_reference_service_capacity": True} if preserve else {}),
                 )
             else:
                 result = choose_combination(
@@ -777,6 +780,8 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                             ),
                             "candidate_window_order": "protected_join_then_work_before_prefix_checks",
                         } if self.shortest_work_first else {}),
+                        **({"preserve_reference_service_capacity": True}
+                           if getattr(self, "preserve_reference_service_capacity", False) else {}),
                         "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
                         "decision": result, "candidates": [asdict(row) for row in candidates],
                         **({"indexed_sibling_candidates": [asdict(key) for key in indexed_siblings]}

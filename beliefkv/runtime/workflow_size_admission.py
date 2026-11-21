@@ -502,6 +502,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             **({"workflow_resume_only_work_ranking": True} if resume_only else {}),
             **({"workflow_adaptive_resume_ranking": True}
                if getattr(self._combination, "adaptive_resume_ranking", False) else {}),
+            **({"workflow_preserve_reference_service_capacity": True}
+               if getattr(self._combination, "preserve_reference_service_capacity", False) else {}),
             **({
                 "workflow_conditional_distribution_scope": (
                     "existing_continuation_resume_only" if resume_only else

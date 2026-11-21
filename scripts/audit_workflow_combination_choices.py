@@ -35,6 +35,7 @@ UNSEARCHED_REFERENCE_REASONS = frozenset((
     "metadata_unavailable_reference_fallback",
     "remaining_work_ranking_disabled_reference",
     "initial_materialization_reference_preserved",
+    "resume_pressure_reference",
     "no_competing_choice",
     "native_resources_unavailable_reference_fallback",
     "reference_candidate_summary_unavailable",
@@ -49,7 +50,7 @@ def validate_selection_policy(
     maximal_objective="benefit_per_cost", ready_wait_priority_ms=0,
     ready_capacity_accumulation_ms=0,
     ready_wait_priority_grace_ms=None, ready_wait_priority_max_boost=None,
-    strict_remaining_work=False,
+    strict_remaining_work=False, preserve_reference_service_capacity=False,
 ):
     if type(shortest_work_first) is not bool or type(cost_aware_maximal) is not bool or (
         cost_aware_maximal and not shortest_work_first
@@ -60,6 +61,10 @@ def validate_selection_policy(
         or ready_capacity_accumulation_ms
     ):
         raise ValueError("strict remaining-work policy cannot use utility packing or wait priority")
+    if type(preserve_reference_service_capacity) is not bool or (
+        preserve_reference_service_capacity and not strict_remaining_work
+    ):
+        raise ValueError("reference service capacity guard requires strict remaining-work policy")
     if maximal_objective not in ("benefit_per_cost", "benefit") or (
         maximal_objective != "benefit_per_cost" and not cost_aware_maximal
     ):
@@ -93,6 +98,8 @@ def validate_selection_policy(
         if row.get("event") == EVENT and row.get("selection_policy") != expected:
             raise ValueError("recorded selection policy differs from the registered artifact")
         if row.get("event") == EVENT:
+            if row.get("preserve_reference_service_capacity", False) is not preserve_reference_service_capacity:
+                raise ValueError("recorded service capacity guard differs from the registered artifact")
             priority = row.get("ready_wait_priority", {})
             if not isinstance(priority, dict) or priority.get("scale_ms", 0) != ready_wait_priority_ms:
                 raise ValueError("recorded ready wait priority differs from the registered artifact")
@@ -195,6 +202,9 @@ def replay_choice(
         None, "shortest_work_first", "maximal_cost_aware", "maximal_benefit", "strict_remaining_work",
     ):
         raise ValueError("unknown explicitly recorded selection policy")
+    preserve = row.get("preserve_reference_service_capacity", False)
+    if type(preserve) is not bool or preserve and strategy != "strict_remaining_work":
+        raise ValueError("invalid recorded reference service capacity guard")
     maximal_strategy = strategy in ("maximal_cost_aware", "maximal_benefit")
     shortest = strategy in ("shortest_work_first", "strict_remaining_work") and "evaluated_candidates" in observed
     selected = observed.get("selected")
@@ -290,6 +300,7 @@ def replay_choice(
                 budget_ns=500_000, clock=clock,
                 group_ready_siblings=observed.get("group_ready_siblings", False),
                 **({"strict_remaining_work": True} if strategy == "strict_remaining_work" else {}),
+                **({"preserve_reference_service_capacity": True} if preserve else {}),
             )
         return choose_combination(
             candidates, reference, resources, costs, required=required,
@@ -764,6 +775,7 @@ def main():
         ready_wait_priority_grace_ms=artifact.get("ready_wait_priority_grace_ms"),
         ready_wait_priority_max_boost=artifact.get("ready_wait_priority_max_boost"),
         strict_remaining_work=artifact.get("strict_remaining_work_admission", False),
+        preserve_reference_service_capacity=artifact.get("preserve_reference_service_capacity", False),
     )
     result = inspect(
         records,
