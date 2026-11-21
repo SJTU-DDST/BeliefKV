@@ -338,6 +338,61 @@ def new_root(live, identity, *, tokens=100, publish=True):
     return req, create
 
 
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+def test_resume_ranking_reuses_d3_samples_with_hysteresis(runtime):
+    gate = runtime._subagent_materialization
+    gate.adaptive_resume_ranking = True
+    runtime._native_chunk_input_reserve = 64
+    req, _ = new_root(runtime, "entry")
+    running = (object(),)
+    reserve = gate._reserve(NS(reqs=running), None)
+    allocate = runtime._native_cache.token_to_kv_pool_allocator
+    for now, margin, expected in (
+        (100., 127, False), (103., 128, True), (106., 64, True), (109., 63, False),
+    ):
+        allocate.available_size = lambda: reserve + margin
+        prepare(runtime, [req], running=running, now=now)
+        assert gate.allow_resume_ranking(now=now) is expected
+        assert gate.status()["resume_ranking"]["headroom_tokens"] == margin
+    assert runtime.counts["subagent_materialization_resume_pressure_probes"] == 0
+    assert runtime.counts["subagent_materialization_resume_ranking_enabled"] == 1
+    assert runtime.counts["subagent_materialization_resume_ranking_disabled"] == 1
+
+
+@pytest.mark.parametrize("runtime", ("pressure_v2",), indirect=True)
+@pytest.mark.parametrize("staged", (False, True))
+def test_resume_pressure_probe_charges_native_selected_inputs(runtime, monkeypatch, staged):
+    gate = runtime._subagent_materialization
+    gate.adaptive_resume_ranking = True
+    runtime._native_chunk_input_reserve = 64
+    req, _ = new_root(runtime, "entry")
+    gate.admitted(req)
+    req.prefix_indices = tuple(range(20))
+    running = NS(reqs=[])
+    adder = NS(can_run_list=[] if staged else [req])
+    if staged:
+        member = NS(key=runtime.visible[req.rid], request=req)
+        monkeypatch.setattr(
+            runtime, "_demand_prefill_pipeline", NS(pending=NS(members=[member]), close=lambda: None),
+            raising=False,
+        )
+    # No new entry is waiting. The next continuation choice must still refresh pressure.
+    gate.prepare([req], running_batch=running, adder=adder, now=100.)
+    reserve = gate._reserve(running, adder)
+    outstanding = gate._input_price(req, len(req.prefix_indices))
+    allocate = runtime._native_cache.token_to_kv_pool_allocator
+    allocate.available_size = lambda: reserve + outstanding + 127
+    assert not gate.allow_resume_ranking(now=100.)
+    assert gate.status()["resume_ranking"]["headroom_tokens"] == 127
+    allocate.available_size = lambda: reserve + outstanding + 128
+    assert not gate.allow_resume_ranking(now=101.)
+    assert gate.allow_resume_ranking(now=102.)
+    allocate.available_size = lambda: -1
+    assert not gate.allow_resume_ranking(now=104.)
+    assert gate.status()["resume_ranking"]["headroom_tokens"] is None
+    assert runtime.counts["subagent_materialization_resume_pressure_probes"] == 3
+
+
 @pytest.mark.parametrize("runtime", ("pressure_v1", "pressure_v2"), indirect=True)
 def test_root_hold_requires_v2_and_releases_into_the_real_native_plan(runtime):
     req, create = new_root(runtime, "arrival")

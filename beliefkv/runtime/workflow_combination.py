@@ -63,6 +63,11 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             )
         ):
             raise ValueError("resume-only work ranking requires strict ranking and D3 root/child control")
+        self.adaptive_resume_ranking = raw.get("adaptive_resume_ranking", False)
+        if type(self.adaptive_resume_ranking) is not bool or (
+            self.adaptive_resume_ranking and not self.resume_only_work_ranking
+        ):
+            raise ValueError("adaptive resume ranking requires resume-only work ranking")
         self.shortest_work_first = raw.get("shortest_work_first_admission", False)
         if type(self.shortest_work_first) is not bool or self.shortest_work_first and (
             profile["kind"] != kinds[6] or not ranking
@@ -607,6 +612,11 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                     result["reason"] = "initial_materialization_reference_preserved"
                     return list(reference)
                 rank_keys = [key for key in keys if not self._initial_materialization(key)]
+                if rank_keys and self.adaptive_resume_ranking:
+                    gate = runtime._subagent_materialization
+                    if gate is None or not gate.allow_resume_ranking():
+                        result["reason"] = "resume_pressure_reference"
+                        return list(reference)
             if accumulation is not None:
                 held = accumulation.consider(keys, reference, capacity, predictions, source)
                 if held is not None:

@@ -122,6 +122,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
         return self._work.prediction(workflow)
 
     def _rank(self, invocation, now):
+        if self._conditional_distribution and getattr(self._combination, "adaptive_resume_ranking", False):
+            return 1
         return self._priority(self._prediction(invocation))
 
     def _pressure_preference(self, item, now):
@@ -498,6 +500,8 @@ class WorkflowSizeAdmission(ReferenceFreeContinuationAdmission):
             "workflow_size_new_preemption": False,
             "workflow_shortest_work_first_admission": shortest,
             **({"workflow_resume_only_work_ranking": True} if resume_only else {}),
+            **({"workflow_adaptive_resume_ranking": True}
+               if getattr(self._combination, "adaptive_resume_ranking", False) else {}),
             **({
                 "workflow_conditional_distribution_scope": (
                     "existing_continuation_resume_only" if resume_only else

@@ -14,7 +14,9 @@ from beliefkv.policy.workflow_shortest_frontier import (
     choose_shortest_work_first, strict_remaining_work_enabled,
 )
 from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
-from beliefkv.runtime.subagent_materialization import SubagentMaterialization, _InitialRequest
+from beliefkv.runtime.subagent_materialization import (
+    MaterializationHeadroom, SubagentMaterialization, _InitialRequest,
+)
 from beliefkv.core.events import RuntimeEventKind as Kind
 from scripts.audit_workflow_combination_choices import replay_choice, validate_selection_policy
 from scripts.audit_strict_workflow_priority import compare
@@ -169,6 +171,41 @@ def test_resume_only_preserves_first_materialization_reference(monkeypatch, tmp_
         assert {candidate["identity"] for candidate in records[-1]["candidates"]} == {"a", "c"}
         gate.pending[b.request_id].started = True
         assert select([a, b, c], [b, c]) == [a]
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
+def test_adaptive_resume_ranking_reverts_without_pricing_candidates(monkeypatch, tmp_path, source):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    control.resume_only_work_ranking = control.adaptive_resume_ranking = True
+    admission._conditional_distribution = True
+    a, b, c = (admission.latest[owner] for owner in ("a", "b", "c"))
+    gate = mark_unmaterialized(runtime, ())
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    select = partial(control.select, capacity=500, maximum=4, source=source)
+    try:
+        now = time.monotonic()
+        gate._observe_resume_ranking(MaterializationHeadroom(True), 0, now)
+        with monkeypatch.context() as scoped:
+            def unexpected_prediction(*args):
+                pytest.fail("the reference selector should not consult the predictor")
+
+            scoped.setattr(control, "_work_weight", unexpected_prediction)
+            scoped.setattr(control, "prediction", unexpected_prediction)
+            assert admission._rank(a.invocation_id, now) == 1
+            assert select([a, b, c], [b, c]) == [b, c]
+            assert records[-1]["decision"]["reason"] == "resume_pressure_reference"
+            assert not records[-1]["candidates"]
+
+        gate._observe_resume_ranking(
+            MaterializationHeadroom(True, device_free_tokens=4096), 0, now,
+        )
+        assert select([a, b, c], [b, c]) == [a]
+        assert records[-1]["decision"]["reason"] == "shortest_work_set_changed"
+        assert admission.status()["workflow_adaptive_resume_ranking"]
     finally:
         runtime.close()
 

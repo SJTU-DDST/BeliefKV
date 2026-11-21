@@ -16,6 +16,7 @@ from beliefkv.runtime.demand_restore_chunk import (
     FULL_RESTORE_FUNDED,
     DemandRestoreChunk,
 )
+from beliefkv.runtime.host_demand_capacity import HostDemandCapacity
 from beliefkv.runtime.sglang_v0520_admission import _request_key
 
 
@@ -306,9 +307,19 @@ class SubagentMaterialization:
         self._peer_restore_retry = None
         self.last_observation = MaterializationHeadroom(False, "not_sampled")
         self.last_decision = {}
+        self.adaptive_resume_ranking = getattr(
+            getattr(getattr(runtime, "_agent_admission", None), "_combination", None),
+            "adaptive_resume_ranking", False,
+        )
+        self._resume_ranking_enabled = False
+        self._resume_ranking_refresh_at = float("-inf")
+        self._resume_ranking_headroom = None
 
     def attach(self, cache):
         self._restore_native_eviction()
+        self._resume_ranking_enabled = False
+        self._resume_ranking_refresh_at = float("-inf")
+        self._resume_ranking_headroom = None
         if (
             not self.include_root_entries
             or getattr(cache, "tree_components", ()) != (0,)
@@ -1589,7 +1600,7 @@ class SubagentMaterialization:
                 committed[key.request_id] = member.request
         return committed
 
-    def _outstanding_inputs(self, running_batch, committed, queued, *, refresh):
+    def _outstanding_inputs(self, running_batch, committed, queued, *, refresh, inspect_reentry=True):
         runtime, a = self.runtime, self.admission
         running = {
             getattr(req, "rid", None) for req in getattr(running_batch, "reqs", ())
@@ -1620,7 +1631,10 @@ class SubagentMaterialization:
                 ):
                     # A logically admitted continuation can still be waiting for
                     # the next native batch. Its reusable prefix is already in the census.
-                    reentry = runtime._read_request_reentry(req, key=key, refresh=refresh)
+                    reentry = (
+                        runtime._read_request_reentry(req, key=key, refresh=refresh)
+                        if inspect_reentry else None
+                    )
                     prefix = reentry.get("checkpoint_tokens", 0) if reentry is not None else 0
                     if type(prefix) is not int or not 0 <= prefix < len(req.origin_input_ids):
                         prefix = 0
@@ -1648,6 +1662,63 @@ class SubagentMaterialization:
             host_reserve = (demand.reserve() + unit - 1) // unit
             reserve = reserve + host_reserve if self.include_root_entries else max(reserve, host_reserve)
         return reserve
+
+    def _resume_ranking_margin(self):
+        runtime = self.runtime
+        quantum = runtime._native_chunk_input_reserve or runtime._native_input_reserve
+        quantum = max(runtime._native_page_size, quantum or 0)
+        # Resume ranking only after headroom has recovered by another input quantum.
+        return quantum if self._resume_ranking_enabled else 2 * quantum
+
+    def _observe_resume_ranking(self, observation, committed_tokens, now):
+        headroom = (
+            observation.available_tokens - committed_tokens
+            if observation.observable and committed_tokens is not None else None
+        )
+        enabled = headroom is not None and headroom >= self._resume_ranking_margin()
+        if enabled != self._resume_ranking_enabled:
+            counter = "enabled" if enabled else "disabled"
+            self.runtime.counts["subagent_materialization_resume_ranking_" + counter] += 1
+        self._resume_ranking_enabled = enabled
+        self._resume_ranking_headroom = headroom
+        self._resume_ranking_refresh_at = now + self.admission.control_interval_s
+        self.runtime.counts["subagent_materialization_resume_pressure_samples"] += 1
+
+    def allow_resume_ranking(self, *, now=None):
+        now = time.monotonic() if now is None else now
+        if now < self._resume_ranking_refresh_at:
+            return self._resume_ranking_enabled
+        if self._running_batch is None:
+            return False
+
+        # D3 can skip sampling when there are no fresh entries. Refresh only
+        # when a selector needs the value, within the normal control cadence.
+        cpu = time.thread_time_ns()
+        runtime = self.runtime
+        committed_tokens = 0
+        try:
+            reserve = self._reserve(self._running_batch, self._adder)
+            committed = self._input_commitments(self._adder)
+            queued = {getattr(req, "rid", None): req for req in self._native_order}
+            # A standalone probe conservatively charges uninspected inputs in full.
+            outstanding, _, _ = self._outstanding_inputs(
+                self._running_batch, committed, queued, refresh=False, inspect_reentry=False,
+            )
+            committed_tokens = reserve + outstanding
+            observation = observe_materialization_headroom(
+                runtime._native_cache, max_nodes=HostDemandCapacity.max_candidates,
+                required_free_tokens=committed_tokens + self._resume_ranking_margin(),
+                protected_host_nodes=(
+                    lease.node_id for lease in runtime._prefetch_service_leases.values()
+                ),
+            )
+        except (AttributeError, IndexError, KeyError, RuntimeError, TypeError,
+                ValueError, ZeroDivisionError):
+            observation = MaterializationHeadroom(False, "resume_pressure_unavailable")
+        self._observe_resume_ranking(observation, committed_tokens, now)
+        runtime.counts["subagent_materialization_resume_pressure_probes"] += 1
+        runtime.counts["subagent_materialization_resume_pressure_probe_cpu_ns"] += time.thread_time_ns() - cpu
+        return self._resume_ranking_enabled
 
     def _ordered(self, records):
         a = self.admission
@@ -1863,7 +1934,7 @@ class SubagentMaterialization:
             try:
                 reserve = self._reserve(running_batch, adder)
             except (AttributeError, KeyError, TypeError, ValueError, ZeroDivisionError):
-                reserve = 0
+                reserve = None
             committed = self._input_commitments(adder)
             committed_initial = {
                 rid for rid, record in self.pending.items()
@@ -1873,7 +1944,7 @@ class SubagentMaterialization:
             outstanding, initial, ready_continuations = self._outstanding_inputs(
                 running_batch, committed, queued, refresh=_starting,
             )
-            required = reserve + outstanding + sum(
+            required = (reserve or 0) + outstanding + sum(
                 self._price(record) for rid, record in self.pending.items()
                 if not record.started and rid not in committed_initial
             )
@@ -1903,9 +1974,13 @@ class SubagentMaterialization:
                 self.next_running_census = now + self.interval_s
             counts["subagent_materialization_complete_censuses"] += observation.census_complete
             counts["subagent_materialization_census_nodes"] += observation.inspected_nodes
+            if self.adaptive_resume_ranking:
+                self._observe_resume_ranking(
+                    observation, None if reserve is None else reserve + outstanding, now,
+                )
             # Unknown geometry preserves the original scheduler rather than
             # silently treating unobserved Host state as zero or deadlocking.
-            reserve = reserve if observation.observable else 0
+            reserve = (reserve or 0) if observation.observable else 0
             available = observation.available_tokens - reserve - outstanding
             candidates = [
                 record for record in self.pending.values()
@@ -2139,6 +2214,15 @@ class SubagentMaterialization:
             "interval_ms": self.interval_s * 1000., "max_census_nodes": self.max_nodes,
             "census_fallback_interval_ms": self.admission.control_interval_s * 1000.,
             "max_candidates": self.max_candidates, "last_decision": self.last_decision,
+            **({
+                "resume_ranking": {
+                    "enabled_at_last_sample": self._resume_ranking_enabled,
+                    "headroom_tokens": self._resume_ranking_headroom,
+                    "refresh_at_monotonic_s": (
+                        self._resume_ranking_refresh_at if self._resume_ranking_headroom is not None else None
+                    ),
+                },
+            } if self.adaptive_resume_ranking else {}),
             "logical_grants_and_physical_allocation_remain_native": True,
             "task_and_workflow_arrival_unchanged": True,
         }
