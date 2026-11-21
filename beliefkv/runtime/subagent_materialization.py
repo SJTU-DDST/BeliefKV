@@ -254,6 +254,7 @@ class _PeerRestoreRetry:
     committed: bool = False
     staged_producer: object | None = None
     adder: object | None = None
+    second_peer: bool = False
 
     def matches_receipts(self, ongoing):
         return all(ongoing.get(node) is receipt for node, receipt in self.credit[2].items())
@@ -263,6 +264,14 @@ class _PeerRestoreRetry:
             not ack.child_receipts and tuple(ack.node_ids) == self.node_ids
             and self.matches_receipts(ongoing)
         )
+
+    def awaiting_ack(self, cache):
+        if self.committed:
+            return False
+        if not self.second_peer:
+            return self.matches_receipts(cache.ongoing_load_back)
+        acks = cache.cache_controller.ack_load_queue
+        return bool(acks and self.matches_ack(acks[0], cache.ongoing_load_back))
 
 
 class SubagentMaterialization:
@@ -467,6 +476,14 @@ class SubagentMaterialization:
             ):
                 # Native consumed the exact ordinary ACK and published its mirrors.
                 retry.committed = True
+                req, key = retry.request, retry.credit[0]
+                if (
+                    not retry.second_peer and retry.staged_producer is None
+                    and getattr(req, "_beliefkv_d3_restore_credit", None) is retry.credit
+                    and getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
+                ):
+                    # Keep the proof even if the first ordering preference is spent.
+                    req._beliefkv_d3_first_peer_ack = key, retry.node_ids
             return result
 
         def init_load_back(params):
@@ -756,6 +773,18 @@ class SubagentMaterialization:
             and (guard is None or key not in (guard.target, guard.fit_target))
         )
 
+    def _live_second_peer_waiter(self, cache, req, key):
+        sessions = cache.session_refs
+        return (
+            not getattr(self.runtime, "physical_disabled", False)
+            and self.runtime.visible.get(req.rid) == key
+            and self._restore_stage_matches_live(req, key) and self.allows(key)
+            and sessions._session_generations.get(key.session_id) == key.session_generation
+            and key.session_id not in sessions._closed_session_ids
+            and not req.finished() and getattr(req, "to_finish", None) is None
+            and not self._staged_peer_protected(key)
+        )
+
     def _own_join_ack_receipts(self, cache, ack, key):
         runtime = self.runtime
         if (
@@ -950,6 +979,9 @@ class SubagentMaterialization:
             return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
         small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
+        req = params.req
+        bounded_retry = submitted or not headroom.census_complete or small_peer_retry
+        second_peer = bounded_retry and getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
         staged_producer = None
         if (
             submitted and not leading_tagged and shortfall > credit and staged is not None
@@ -975,25 +1007,43 @@ class SubagentMaterialization:
                 return False
         else:
             # Retry once for a funded load or slice after the selected ACK.
+            funding = 0 if second_peer else credit
             if (
                 (not headroom.census_complete and headroom.reason != NODE_CENSUS_BOUND)
                 or not identity_matches
                 or shortfall > credit and not self._can_slice_after_restore_ack(
-                    cache, params, key, headroom, credit, expected_acks=0,
+                    cache, params, key, headroom, funding, expected_acks=0,
                 )
             ):
                 return False
-        if submitted or not headroom.census_complete or small_peer_retry:
-            if getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) == key:
+        exact_peer = (
+            not wait_for_join and staged is None and (submitted or not acks)
+            and params.best_match_node not in receipts
+            and len(receipts) == len(native_node_ids)
+            and callable(getattr(cache, "loading_check", None))
+            and self._peer_restore_retry is None
+        )
+        if second_peer:
+            first_ack = getattr(req, "_beliefkv_d3_first_peer_ack", None)
+            if (
+                first_ack is None or first_ack[0] != key or submitted or not exact_peer
+                or not receipts.keys().isdisjoint(first_ack[1])
+                or self._demand_restore_chunk.parked is not None
+                or controller.write_queue or controller.ack_write_queue or cache.ongoing_write_through
+                or shortfall <= credit
+                or not self._live_second_peer_waiter(cache, req, key)
+            ):
                 return False
-            params.req._beliefkv_d3_indexed_restore_defer_key = key
+            # Spend the one extra wait on this barrier, independent of its credit.
+            req._beliefkv_d3_first_peer_ack = None
+        elif bounded_retry:
+            req._beliefkv_d3_indexed_restore_defer_key = key
         if identity_matches:
             if wait_for_join and not leading_tagged:
                 # Only ordinary mirrors fund the slice. Both receipts govern the wait.
                 native_node_ids = [*native_node_ids, *own_join_receipts]
                 receipts.update(own_join_receipts)
             wait = key, hit, receipts
-            req = params.req
             req._beliefkv_d3_restore_credit = wait
             if staged_producer is not None:
                 self._peer_restore_retry = _PeerRestoreRetry(
@@ -1004,16 +1054,13 @@ class SubagentMaterialization:
                 and staged.prefix_node in receipts and staged.credit_waiter is None
             ):
                 staged.credit_waiter = req, wait
-            elif (
-                not wait_for_join and staged is None and (submitted or not acks)
-                and params.best_match_node not in receipts
-                and len(receipts) == len(native_node_ids)
-                and callable(getattr(cache, "loading_check", None))
-                and self._peer_restore_retry is None
-                and getattr(req, "_beliefkv_d3_peer_retry_key", None) != key
+            elif exact_peer and (
+                second_peer or getattr(req, "_beliefkv_d3_peer_retry_key", None) != key
             ):
                 req._beliefkv_d3_peer_retry_key = key
-                self._peer_restore_retry = _PeerRestoreRetry(req, wait, tuple(native_node_ids))
+                self._peer_restore_retry = _PeerRestoreRetry(
+                    req, wait, tuple(native_node_ids), second_peer=second_peer,
+                )
         counts["subagent_materialization_restore_pressure_deferrals"] += 1
         counts["subagent_materialization_restore_pressure_shortfall_tokens"] += shortfall
         counts["subagent_materialization_restore_pressure_covered_tokens"] += min(shortfall, credit)
@@ -1031,6 +1078,7 @@ class SubagentMaterialization:
                 "already_submitted": submitted,
                 "own_join_ack": wait_for_join,
                 **({"staged_peer_slice": True} if staged_producer is not None else {}),
+                **({"second_peer_ack": True} if second_peer else {}),
             })
         return True
 
@@ -1052,11 +1100,15 @@ class SubagentMaterialization:
             and not req.finished() and getattr(req, "to_finish", None) is None
             and any(member is req for member in native_order)
         )
-        if live and not retry.committed and retry.matches_receipts(cache.ongoing_load_back):
+        if retry.second_peer:
+            live = live and self._live_second_peer_waiter(cache, req, key)
+        if live and retry.awaiting_ack(cache):
             return None
 
         # Spend the preference at this selection boundary, even if native cannot use it.
         self._peer_restore_retry = None
+        if retry.second_peer and getattr(req, "_beliefkv_d3_restore_credit", None) is retry.credit:
+            req._beliefkv_d3_restore_credit = None
         if (
             not live or not retry.committed or adder.can_run_list
             or self._demand_restore_chunk.pending is not None or pipeline.pending is not None
@@ -1142,13 +1194,22 @@ class SubagentMaterialization:
                 if waiting_on_join else not self._restore_has_service_priority(key)
             )
             cache = restore.cache
-            if permitted and cache.token_to_kv_pool_allocator.available_size() < hit and any(
-                anchor in receipts and cache.ongoing_load_back.get(anchor) is receipts[anchor]
-                for ack in cache.cache_controller.ack_load_queue for anchor in ack.node_ids
-            ):
-                # Let native publish the matching ACK and unlock its Host mirrors.
-                self.runtime.counts["subagent_materialization_restore_credit_wait_checks"] += 1
-                return True
+            if permitted and cache.token_to_kv_pool_allocator.available_size() < hit:
+                retry = self._peer_restore_retry
+                if retry is not None and retry.second_peer and retry.credit is credit:
+                    waiting = (
+                        retry.awaiting_ack(cache)
+                        and self._live_second_peer_waiter(cache, req, key)
+                    )
+                else:
+                    waiting = any(
+                        anchor in receipts and cache.ongoing_load_back.get(anchor) is receipts[anchor]
+                        for ack in cache.cache_controller.ack_load_queue for anchor in ack.node_ids
+                    )
+                if waiting:
+                    # Let native publish the matching ACK and unlock its Host mirrors.
+                    self.runtime.counts["subagent_materialization_restore_credit_wait_checks"] += 1
+                    return True
         req._beliefkv_d3_restore_credit = None
         return False
 

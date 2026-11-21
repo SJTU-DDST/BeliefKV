@@ -270,7 +270,8 @@ def test_d3_stages_before_batch_construction(staged_native, monkeypatch, outcome
 )
 @pytest.mark.parametrize("case", (
     "fit", "original_order", "native_refusal", "stale_session", "different_receipt",
-    "join_priority", "eos_priority", "started_chunk",
+    "join_priority", "eos_priority", "started_chunk", "second_peer",
+    "second_peer_unfunded", "second_peer_stale_receipt", "second_peer_service_target",
 ))
 def test_d3_peer_ack_retries_selected_waiter_before_fresh_restore(
     staged_native, monkeypatch, case,
@@ -363,7 +364,7 @@ def test_d3_peer_ack_retries_selected_waiter_before_fresh_restore(
         scheduler.waiting_queue[:] = [producer, fresh, consumer]
         assert invoke() == (None, f.running)
         assert orders == [(producer, consumer)] and not ack.finish_event.synchronize.called
-        if case == "different_receipt":
+        if case in ("different_receipt", "second_peer_stale_receipt"):
             receipt = cache.ongoing_load_back[producer_leaf.id]
             cache.ongoing_load_back[producer_leaf.id] = type(receipt)(*receipt)
         f.complete.ready = True
@@ -390,6 +391,73 @@ def test_d3_peer_ack_retries_selected_waiter_before_fresh_restore(
             assert gate._peer_restore_retry is None
             assert len(f.loads) == 1 and not losses
             f.pipeline.cancel("test_complete")
+            cache.sanity_check()
+            return
+
+        if case.startswith("second_peer"):
+            # The first retry cannot move past a service target. The native
+            # second pass still reaches the waiter after selecting its peer.
+            service = ReadyServiceGuard(runtime._agent_admission)
+            service.fit_target = runtime.visible[fresh.rid]
+            runtime._agent_admission._ready_service_guard = service
+            if case == "second_peer_service_target":
+                service.target = key
+            if case == "second_peer_unfunded":
+                # The first peer supplies at most 16 slots; a slice now needs 19.
+                runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 9
+            assert invoke() == (None, f.running)
+            assert orders[-1] == (producer, fresh, consumer)
+            waits = [
+                call.args[0] for call in runtime._opportunity_writer.record.call_args_list
+                if call.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
+            ]
+            if case != "second_peer":
+                assert waits == [deferred]
+                assert _restore_declines(runtime)[-1]["reason"] == "prefill_batch_already_constrained"
+                assert f.loads[-1].node_id == consumer_leaf.id
+                assert any(node == neighbor.id for node, _ in losses)
+                assert gate._demand_restore_chunk.pending is None
+                f.complete.ready = True
+                cache.loading_check()
+                f.pipeline.cancel("test_complete")
+                cache.sanity_check()
+                return
+
+            assert not losses, f"second ordinary collision evicted live Host-only KV: {losses}"
+            first_wait, second_wait = waits
+            assert first_wait == deferred
+            assert second_wait["key"] == asdict(key) and second_wait["second_peer_ack"]
+            assert second_wait["native_node_ids"] == [fresh_leaf.id]
+            assert second_wait["headroom_observation"] == NODE_CENSUS_BOUND
+            assert second_wait["reclaimable_after_ack_tokens"] == 1 < second_wait["unfunded_restore_tokens"]
+            assert [load.node_id for load in f.loads] == [producer_leaf.id, fresh_leaf.id]
+            second, = controller.ack_load_queue
+            assert not second.child_receipts and second.node_ids == [fresh_leaf.id]
+            assert second.num_tokens_by_pool == {"kv": 1}
+            retry = consumer._beliefkv_d3_restore_credit
+            assert retry[:2] == (key, len(suffix))
+            assert retry[2][fresh_leaf.id] is cache.ongoing_load_back[fresh_leaf.id]
+            assert gate._waiting_for_restore_credit(consumer)
+            assert invoke() == (None, f.running)
+            second.finish_event.synchronize.assert_not_called()
+            assert not construction and consumer.kv.req_pool_idx is None
+
+            f.complete.ready = True
+            cache.loading_check()
+            second.finish_event.synchronize.assert_called_once_with()
+            assert consumer._beliefkv_d3_first_peer_ack is None
+            assert not f.pipeline.defer(scheduler.waiting_queue, f.running)
+            service.fit_target = None
+            f.complete.ready = False
+            assert invoke() == (None, f.running)
+            assert orders[-1] == (consumer, producer, fresh)
+            pending = gate._demand_restore_chunk.pending
+            assert pending.request is consumer and 6 <= pending.tokens < len(suffix)
+            assert f.loads[-1].host_indices.tolist() == suffix[:pending.tokens].tolist()
+            assert len(f.loads) == 3 and not losses and not construction
+            assert neighbor.component_data[0].host_value is neighbor_slots
+            f.complete.ready = True
+            cache.loading_check()
             cache.sanity_check()
             return
 
