@@ -62,7 +62,7 @@ class DemandRestoreChunk:
 
     def start(
         self, params, key, tokens, *, device_reserve, protected_nodes,
-        minimum_tokens=1, replace_pending=None,
+        minimum_tokens=1, replace_pending=None, preserve_host_only=False,
     ):
         """Stage a slice, fund the final native load, or return a decline reason."""
         cache, req = self.cache, params.req
@@ -79,7 +79,7 @@ class DemandRestoreChunk:
             or (getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation)
             or controller.load_queue or controller.ack_load_queue
             or not 0 < tokens <= hit
-            or (tokens == hit and not continuation)
+            or (tokens == hit and not (continuation or preserve_host_only))
         ):
             return "restore_not_available"
 
@@ -122,6 +122,7 @@ class DemandRestoreChunk:
             cache, tokens + device_reserve, protected_nodes=protected_nodes,
             minimum_tokens=minimum_tokens + device_reserve,
             retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
+            preserve_host_only=preserve_host_only,
         )
         if funded is None:
             req._beliefkv_d3_write_ack_retry_key = key

@@ -62,6 +62,7 @@ def test_census_distinguishes_unique_useful_duplicate_inflight_and_untracked_slo
     assert result.observable
     assert result.useful_host_only_tokens == 500
     assert result.reclaimable_host_tokens == 200
+    assert result.reclaimable_host_only_tokens == 100
     assert result.pinned_host_tokens == 150
     assert result.untracked_host_tokens == 100
     assert result.available_tokens == 350
@@ -108,6 +109,7 @@ def test_census_bound_credits_only_native_indexed_headroom():
     assert complete.inspected_nodes == 8192
     assert complete.useful_host_only_tokens == 650
     assert complete.reclaimable_host_tokens == 300
+    assert complete.reclaimable_host_only_tokens == 100
     assert complete.available_tokens == 450
 
     # Split a device-only extent without changing either pool's free count.
@@ -122,6 +124,7 @@ def test_census_bound_credits_only_native_indexed_headroom():
     assert bounded.host_capacity_tokens == 1000
     assert bounded.host_free_tokens == 50 and bounded.device_free_tokens == 100
     assert bounded.reclaimable_host_tokens == 260
+    assert bounded.reclaimable_host_only_tokens == 60
     assert bounded.useful_host_only_tokens is None
     assert bounded.available_tokens == 410
     assert 0 < bounded.inspected_nodes <= 8192
@@ -223,6 +226,7 @@ def test_census_bound_discards_credit_that_exceeds_observed_host_usage():
     assert bounded.observable and not bounded.census_complete
     assert bounded.reason == "native_node_census_bound"
     assert bounded.reclaimable_host_tokens == 0
+    assert bounded.reclaimable_host_only_tokens == 0
     assert bounded.available_tokens == 105
 
 

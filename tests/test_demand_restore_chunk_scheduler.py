@@ -43,7 +43,7 @@ def full_native(base_full_native, monkeypatch, request):
     return base_full_native
 
 
-@pytest.mark.parametrize("blocker", (None, "session_ref", "prefetch_lease"))
+@pytest.mark.parametrize("blocker", (None, "session_ref", "prefetch_lease", "sole_copy"))
 def test_guarded_restore_can_use_unreferenced_host_leaf(constrained_cache, monkeypatch, blocker):
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -62,7 +62,7 @@ def test_guarded_restore_can_use_unreferenced_host_leaf(constrained_cache, monke
     assert host.available_size() == 0
     assert observe_materialization_headroom(
         cache, protected_host_nodes=protected,
-    ).reclaimable_host_tokens == 4 * expected
+    ).reclaimable_host_tokens == 4 * (blocker in (None, "sole_copy"))
 
     losses = []
 
@@ -77,6 +77,7 @@ def test_guarded_restore_can_use_unreferenced_host_leaf(constrained_cache, monke
     try:
         assert ensure_device_capacity_preserving_live_kv(
             cache, available + 4, protected_nodes=protected,
+            preserve_host_only=blocker == "sole_copy",
         ) is expected
         assert allocator.available_size() == available + 4 * expected
         assert neighbor.component_data[0].host_value is neighbor_slots
@@ -144,6 +145,69 @@ def _add_resident_prefill(f, *, start=121):
     visible[resident.rid] = _request_key(resident)
     f.runtime._agent_admission.allows = lambda key: visible.get(key.request_id) == key
     return resident
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize("funding", ("old-check", "new-mirrors", "cold-device"))
+def test_d3_does_not_spend_host_only_headroom_before_first_ack(
+    staged_native, monkeypatch, funding,
+):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, req = f.cache, f.req
+    tree, host = cache.tree_core, cache.host_pool_group.anchor_entry.host_pool
+    held_host = host.alloc(host.available_size() - 15)
+    mirror, _ = insert_session(cache, range(101, 108), "mirror")
+    _backup(cache, mirror)
+    mirror_hold = cache.inc_lock_ref(mirror.id).to_dec_params()
+    reusable, _ = insert_session(cache, range(111, 119), "reusable")
+    reusable_slots = _backup(cache, reusable, demote=True)
+    cache.release_radix_session("reusable")
+    insert_session(cache, range(201, 233), "device-donor")
+    if funding == "cold-device":
+        cache.release_radix_session("device-donor")
+    held = f.allocator.alloc(f.allocator.available_size())
+    req.origin_input_ids = array("q", range(1, 15))
+
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    headroom = observe_materialization_headroom(cache, protected_host_nodes=(f.leaf.id,))
+    assert headroom.host_free_tokens == headroom.device_free_tokens == 0
+    assert (headroom.reclaimable_host_tokens, headroom.reclaimable_host_only_tokens) == (15, 8)
+    if funding == "new-mirrors":
+        assert invoke() == (None, f.running)
+        assert not construction and scheduler.waiting_queue == [req]
+        pending = gate._demand_restore_chunk.pending
+        assert pending.key == f.key and pending.tokens == 4
+        f.complete.ready = True
+        cache.loading_check(finish_count=1)
+        expected_loads = [4, 4]
+    elif funding == "old-check":
+        # The old headroom test sent the whole hit to native reclaim.
+        monkeypatch.setattr(
+            "beliefkv.runtime.subagent_materialization.observe_materialization_headroom",
+            lambda *args, **kwargs: replace(headroom, reclaimable_host_only_tokens=0),
+        )
+        f.complete.ready = True
+        expected_loads = [8]
+    else:
+        f.complete.ready = True
+        expected_loads = [8]
+    with pytest.raises(BatchConstructionReached):
+        invoke()
+    assert construction == [(req,)] and scheduler.chunked_req is req
+    assert [len(load.host_indices) for load in f.loads] == expected_loads
+    assert (reusable.component_data[0].host_value is reusable_slots) is (funding != "old-check")
+    assert (reusable.id in tree._node_arena) is (funding != "old-check")
+    assert f.runtime.counts["subagent_materialization_demand_restore_whole_hit_funded"] == (
+        funding == "cold-device"
+    )
+    cache.loading_check()
+    cache.dec_lock_ref(req.last_node, req.lock_receipt)
+    cache.dec_lock_ref(mirror.id, mirror_hold)
+    f.allocator.free(held)
+    host.free(held_host)
+    cache.sanity_check()
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
@@ -665,7 +729,7 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     source_slots = f.leaf.component_data[0].host_value
     mode = getattr(request, "param", None)
     idle = mode == "idle"
-    host_slots = {"idle": 19, "two-write-acks": 22}.get(mode, 21)
+    host_slots = {"idle": 19, "two-write-acks": 22, "join-free-first-slice": 16}.get(mode, 21)
     held_host = host.alloc(host.size - host_slots)
     neighbor, _ = insert_session(cache, range(101, 105), "neighbor")
     neighbor_slots = _backup(cache, neighbor, demote=True)
@@ -686,10 +750,11 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
         assert first is write_ack and second.node_ids == [second_donor.id]
     resident = _add_resident_prefill(f)
     insert_session(cache, range(201, 233), "device-victim")
-    held_device = allocator.alloc(allocator.available_size() - (0 if idle else 3))
-    # Both paths can fund four restored pages plus three reserve pages.
-    # The idle path needs a new backup of the seven-page donor.
-    assert (allocator.available_size(), host.available_size()) == ((0, 7) if idle else (3, 5))
+    free_device, free_host = {
+        "idle": (0, 7), "join-free-first-slice": (5, 0),
+    }.get(mode, (3, 5))
+    held_device = allocator.alloc(allocator.available_size() - free_device)
+    assert (allocator.available_size(), host.available_size()) == (free_device, free_host)
     f.req.origin_input_ids = array("q", range(1, 15))
 
     evict = Mock(wraps=cache.evict_for_alloc)
@@ -1145,6 +1210,56 @@ def test_d3_write_ack_retry_preserves_native_guards(resident_restore_pressure, g
     decline, = _restore_declines(f.runtime)
     assert decline["reason"] == guard and decline["key"] == asdict(f.key)
     assert decline["queued_write_acks_at_trial"] == write_acks
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize("resident_restore_pressure", ("join-free-first-slice",), indirect=True)
+@pytest.mark.parametrize("write_ack_order", ("before-load", "after-load", "after-retry"))
+def test_d3_promoted_join_uses_free_pages_before_a_write_ack(
+    resident_restore_pressure, write_ack_order,
+):
+    case = resident_restore_pressure
+    f = case.f
+    cache, req = f.cache, f.req
+    controller = cache.cache_controller
+    f.runtime._join_priority_promoted = req.rid
+    case.scheduler.waiting_queue.remove(case.resident)
+
+    assert case.invoke() == (None, f.running)
+    assert case.scheduler.waiting_queue == [req] and not case.construction
+    case.native_load.assert_not_called()
+    case.evict.assert_not_called()
+    case.query.assert_not_called()
+    case.writing_check.assert_not_called()
+    assert controller.ack_write_queue == [case.write_ack]
+    pending = case.gate._demand_restore_chunk.pending
+    assert pending.key == f.key and pending.tokens == 2
+    assert f.allocator.available_size() == 3 and case.host.available_size() == 0
+    assert f.loads[-1].host_indices.tolist() == case.source_slots[:2].tolist()
+
+    if write_ack_order == "before-load":
+        case.query.return_value = True
+        cache.writing_check(finish_count=1)
+    f.complete.ready = True
+    cache.loading_check(finish_count=1)
+    if write_ack_order != "before-load":
+        assert case.invoke() == (None, f.running)
+        assert case.scheduler.waiting_queue == [req] and not case.construction
+        assert _restore_declines(f.runtime)[-1]["reason"] == DEFER_WRITE_ACK
+        case.native_load.assert_not_called()
+        case.write_ack.finish_event.synchronize.assert_not_called()
+    if write_ack_order == "after-retry":
+        with pytest.raises(BatchConstructionReached):
+            case.invoke()
+        assert case.construction == [(req,)] and [len(load.host_indices) for load in f.loads] == [2, 6]
+        assert f.runtime.counts["subagent_materialization_demand_restore_ack_retries"] == 1
+        case.native_load.assert_called_once()
+        cache.loading_check(finish_count=1)
+        cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        cache.sanity_check()
+    else:
+        case.query.return_value = True
+        _assert_native_batch(case, (req,), [2, 6])
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)

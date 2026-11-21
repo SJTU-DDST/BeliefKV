@@ -97,7 +97,7 @@ def _cold_host_reclaim_plan(tree, protected, needed):
 
 def ensure_device_capacity_preserving_live_kv(
     cache, tokens: int, *, minimum_tokens: int | None = None, protected_nodes=(),
-    retry_pending_write=False,
+    retry_pending_write=False, preserve_host_only=False,
 ) -> bool | None:
     """Try to make ``tokens`` absolute FULL slots free on the scheduler thread.
 
@@ -107,6 +107,7 @@ def ensure_device_capacity_preserving_live_kv(
     Return None without mutation when a single unfinished ACK can be retried.
     With a minimum, preflight may fund a smaller target. True still requires
     the original target, and a partial caller must recheck the allocator.
+    With preserve_host_only, even unreferenced Host-only extents are retained.
     """
     controller = getattr(cache, "cache_controller", None)
     minimum = tokens if minimum_tokens is None else minimum_tokens
@@ -164,7 +165,7 @@ def ensure_device_capacity_preserving_live_kv(
     possible_slots = controller.mem_pool_host.available_size()
     mirrors = tree.full_host_duplicates
     cold_host_leaves, cold_host_ancestors = (), set()
-    if can_discard_cold and possible_slots < shortfall:
+    if can_discard_cold and not preserve_host_only and possible_slots < shortfall:
         cold_host_leaves, cold_host_ancestors, cold_host_slots = _cold_host_reclaim_plan(
             tree, protected, shortfall - possible_slots,
         )

@@ -37,6 +37,7 @@ class MaterializationHeadroom:
     pinned_host_tokens: int = 0
     untracked_host_tokens: int = 0
     inspected_nodes: int = 0
+    reclaimable_host_only_tokens: int = 0
 
     @property
     def available_tokens(self):
@@ -74,6 +75,7 @@ def _indexed_host_headroom(tree, nodes, protected, *, limit, used, needed):
             if reclaimable >= needed:
                 break
 
+    mirror_tokens = reclaimable
     children_left = {}
     leaves = iter(getattr(tree, "evictable_host_leaves", ()))
     while inspected < limit and reclaimable < needed:
@@ -105,7 +107,9 @@ def _indexed_host_headroom(tree, nodes, protected, *, limit, used, needed):
             if left:
                 break
             node = parent
-    return (reclaimable if reclaimable <= used else 0), inspected
+    if reclaimable > used:
+        return 0, 0, inspected
+    return reclaimable, reclaimable - mirror_tokens, inspected
 
 
 def observe_materialization_headroom(
@@ -142,7 +146,7 @@ def observe_materialization_headroom(
         if type(nodes) is not dict:
             return MaterializationHeadroom(False, "invalid_native_node_census")
         if len(nodes) > max_nodes:
-            reclaimable = inspected = 0
+            reclaimable = host_only = inspected = 0
             if max_nodes > 0:
                 needed = (
                     required_free_tokens - free - device_free
@@ -150,7 +154,7 @@ def observe_materialization_headroom(
                     else capacity - free
                 )
                 try:
-                    reclaimable, inspected = _indexed_host_headroom(
+                    reclaimable, host_only, inspected = _indexed_host_headroom(
                         tree, nodes, set(protected_host_nodes), limit=max_nodes,
                         used=capacity - free, needed=needed,
                     )
@@ -161,6 +165,7 @@ def observe_materialization_headroom(
                 True, NODE_CENSUS_BOUND, host_capacity_tokens=capacity,
                 host_free_tokens=free, device_free_tokens=device_free,
                 reclaimable_host_tokens=reclaimable, inspected_nodes=inspected,
+                reclaimable_host_only_tokens=host_only,
             )
         protected = set(protected_host_nodes)
         useful = reclaimable = pinned = tracked = 0
@@ -209,10 +214,11 @@ def observe_materialization_headroom(
             node for identity, node in discardable.items() if children_left[identity] == 0
         ]
         freed = set()
+        host_only = 0
         while leaves:
             node = leaves.pop()
             freed.add(node.id)
-            reclaimable += len(node.component_data[0].host_value)
+            host_only += len(node.component_data[0].host_value)
             parent = node.parent
             if parent is not None and discardable.get(parent.id) is parent:
                 children_left[parent.id] -= 1
@@ -228,8 +234,9 @@ def observe_materialization_headroom(
         return MaterializationHeadroom(
             True, census_complete=True, host_capacity_tokens=capacity, host_free_tokens=free,
             device_free_tokens=device_free, useful_host_only_tokens=useful,
-            reclaimable_host_tokens=reclaimable, pinned_host_tokens=pinned,
+            reclaimable_host_tokens=reclaimable + host_only, pinned_host_tokens=pinned,
             untracked_host_tokens=used - tracked, inspected_nodes=len(nodes),
+            reclaimable_host_only_tokens=host_only,
         )
     except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError) as exc:
         return MaterializationHeadroom(False, "native_observation_unavailable:" + type(exc).__name__)
@@ -630,11 +637,11 @@ class SubagentMaterialization:
             return decline("continuation_not_eligible")
         if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation:
             return decline("already_attempted")
-        # A promoted JOIN parent may try a guarded slice without a write ACK retry.
-        protect_join_parent = bool(
-            writes_at_trial or controller.write_queue or cache.ongoing_write_through
+        pending_join_write = (
+            key.request_id == getattr(runtime, "_join_priority_promoted", None)
+            and (writes_at_trial or controller.write_queue or cache.ongoing_write_through)
         )
-        if self._restore_has_service_priority(key, protect_join_parent=protect_join_parent):
+        if self._restore_has_service_priority(key, protect_join_parent=False):
             return decline("protected_service")
         page = runtime._native_page_size
         selected_slots = 0
@@ -647,6 +654,14 @@ class SubagentMaterialization:
         if selected_slots > chunk:
             return decline("prefill_batch_already_constrained")
         reserve = chunk + page * len(self._running_batch.reqs)
+        minimum_tokens = max(chunk, threshold)
+        if pending_join_write and (
+            writes_at_trial != 1 or controller.write_queue or len(cache.ongoing_write_through) != 1
+            or len(controller.ack_write_queue[0].node_ids) != 1
+            or controller.ack_write_queue[0].node_ids[0] not in cache.ongoing_write_through
+            or (not continuation and device_free - reserve < minimum_tokens)
+        ):
+            return decline("protected_service")
         protected_nodes = (
             params.best_match_node,
             *(lease.node_id for lease in runtime._prefetch_service_leases.values()),
@@ -659,22 +674,48 @@ class SubagentMaterialization:
         safe_tokens = headroom.available_tokens - reserve
         if not headroom.observable:
             return decline("headroom_unobservable", observation=headroom.reason)
-        if not continuation and safe_tokens + chunk >= hit:
-            return decline("headroom_expected_to_cover_native_restore", safe_tokens=safe_tokens)
-        tokens = min(hit if continuation else hit // 2, safe_tokens) // page * page
-        minimum_tokens = max(chunk, threshold)
+        mirror_safe_tokens = safe_tokens - headroom.reclaimable_host_only_tokens
+        tokens = min(hit if continuation else hit // 2, safe_tokens)
+        preserve_host_only = False
         if continuation:
             # Require a native chunk of progress unless the whole remainder fits.
             minimum_tokens = min(hit, minimum_tokens)
+            if pending_join_write:
+                # A settled write can fund the suffix. Reuse the per-key ACK retry.
+                tokens = hit
+                preserve_host_only = True
+        elif pending_join_write:
+            if mirror_safe_tokens + chunk >= hit:
+                return decline("protected_service")
+            # Start the JOIN restore from pages the allocator can already supply.
+            safe_tokens = device_free - reserve
+            tokens = min(hit // 2, safe_tokens)
+            preserve_host_only = True
+        elif safe_tokens + chunk >= hit:
+            # An unreferenced Host-only extent can still be reused later.
+            # A first slice funded without those extents can publish new mirrors.
+            if mirror_safe_tokens < minimum_tokens or mirror_safe_tokens + chunk >= hit:
+                return decline(
+                    "headroom_expected_to_cover_native_restore",
+                    safe_tokens=safe_tokens, mirror_safe_tokens=mirror_safe_tokens,
+                )
+            safe_tokens = mirror_safe_tokens
+            preserve_host_only = True
+            # A cold device leaf may fund the entire restore. Native reclaim
+            # can prove this without dropping a sole Host copy.
+            tokens = hit
+        tokens = tokens // page * page
         if tokens < minimum_tokens:
             return decline("no_safe_slice", safe_tokens=safe_tokens, observation=headroom.reason)
         runtime.counts["subagent_materialization_demand_restore_chunk_trials"] += 1
         reason = self._demand_restore_chunk.start(
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
             minimum_tokens=minimum_tokens, replace_pending=replace_pending,
+            preserve_host_only=preserve_host_only,
         )
         if reason == FULL_RESTORE_FUNDED:
-            runtime.counts["subagent_materialization_demand_restore_suffix_funded"] += 1
+            stage = "suffix" if continuation else "whole_hit"
+            runtime.counts[f"subagent_materialization_demand_restore_{stage}_funded"] += 1
             return False
         if reason is not None:
             decline(
@@ -699,6 +740,7 @@ class SubagentMaterialization:
                 "observed_safe_tokens": safe_tokens, "prefix_node_id": pending.prefix_node,
                 "selected_prefill_reserved_tokens": selected_slots,
                 "continuation": continuation,
+                "preserve_host_only": preserve_host_only,
             })
         return True
 
