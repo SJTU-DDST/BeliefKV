@@ -75,6 +75,7 @@ class DemandRestoreChunk:
     def start(
         self, params, key, tokens, *, device_reserve, protected_nodes,
         minimum_tokens=1, replace_pending=None, preserve_host_only=False,
+        fund_from_backed_device=None,
     ):
         """Stage a slice, fund the final native load, or return a decline reason."""
         cache, req = self.cache, params.req
@@ -90,6 +91,7 @@ class DemandRestoreChunk:
             ))
             or (getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation)
             or controller.load_queue or controller.ack_load_queue
+            or getattr(controller, "_beliefkv_load_continuation", None) is not None
             or not 0 < tokens <= hit
             or (tokens == hit and not (continuation or preserve_host_only))
         ):
@@ -131,12 +133,17 @@ class DemandRestoreChunk:
         # move settled state, but may not discard any referenced checkpoint.
         allocator = cache.token_to_kv_pool_allocator
         free_before = allocator.available_size()
-        funded = ensure_device_capacity_preserving_live_kv(
-            cache, tokens + device_reserve, protected_nodes=protected_nodes,
-            minimum_tokens=minimum_tokens + device_reserve,
-            retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
-            preserve_host_only=preserve_host_only,
-        )
+        if fund_from_backed_device is not None:
+            funded = fund_from_backed_device(tokens + device_reserve, protected_nodes)
+            if not funded:
+                return "protected_service"
+        else:
+            funded = ensure_device_capacity_preserving_live_kv(
+                cache, tokens + device_reserve, protected_nodes=protected_nodes,
+                minimum_tokens=minimum_tokens + device_reserve,
+                retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
+                preserve_host_only=preserve_host_only,
+            )
         if funded is None:
             req._beliefkv_d3_write_ack_retry_key = key
             return DEFER_WRITE_ACK

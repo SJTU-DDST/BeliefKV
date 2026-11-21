@@ -655,11 +655,18 @@ class SubagentMaterialization:
             return decline("prefill_batch_already_constrained")
         reserve = chunk + page * len(self._running_batch.reqs)
         minimum_tokens = max(chunk, threshold)
+        fund_whole_from_backed_device = (
+            pending_join_write and not continuation and device_free - reserve < minimum_tokens
+        )
         if pending_join_write and (
             writes_at_trial != 1 or controller.write_queue or len(cache.ongoing_write_through) != 1
             or len(controller.ack_write_queue[0].node_ids) != 1
             or controller.ack_write_queue[0].node_ids[0] not in cache.ongoing_write_through
-            or (not continuation and device_free - reserve < minimum_tokens)
+        ):
+            return decline("protected_service")
+        if fund_whole_from_backed_device and (
+            self._native_device_eviction is None or not cache.tree_core.full_host_duplicates
+            or hit % page or device_free + cache.full_evictable_size() < hit + reserve
         ):
             return decline("protected_service")
         protected_nodes = (
@@ -677,6 +684,7 @@ class SubagentMaterialization:
         mirror_safe_tokens = safe_tokens - headroom.reclaimable_host_only_tokens
         tokens = min(hit if continuation else hit // 2, safe_tokens)
         preserve_host_only = False
+        fund_from_backed_device = None
         if continuation:
             # Require a native chunk of progress unless the whole remainder fits.
             minimum_tokens = min(hit, minimum_tokens)
@@ -684,10 +692,14 @@ class SubagentMaterialization:
                 # A settled write can fund the suffix. Reuse the per-key ACK retry.
                 tokens = hit
                 preserve_host_only = True
+        elif fund_whole_from_backed_device:
+            # A whole restore funded by settled mirrors can leave the write in flight.
+            tokens = hit
+            preserve_host_only = True
+            fund_from_backed_device = self._fund_from_backed_device
         elif pending_join_write:
             if mirror_safe_tokens + chunk >= hit:
                 return decline("protected_service")
-            # Start the JOIN restore from pages the allocator can already supply.
             safe_tokens = device_free - reserve
             tokens = min(hit // 2, safe_tokens)
             preserve_host_only = True
@@ -712,10 +724,20 @@ class SubagentMaterialization:
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
             minimum_tokens=minimum_tokens, replace_pending=replace_pending,
             preserve_host_only=preserve_host_only,
+            fund_from_backed_device=fund_from_backed_device,
         )
         if reason == FULL_RESTORE_FUNDED:
             stage = "suffix" if continuation else "whole_hit"
             runtime.counts[f"subagent_materialization_demand_restore_{stage}_funded"] += 1
+            if fund_whole_from_backed_device:
+                runtime.counts["subagent_materialization_join_backed_device_whole_restores"] += 1
+                if writer is not None:
+                    writer.record({
+                        "event": "subagent_materialization_join_backed_device_restore",
+                        "ts_ms": time.time() * 1000., "key": asdict(key),
+                        "host_hit_tokens": hit, "device_free_before_tokens": device_free,
+                        "device_reserve_tokens": reserve,
+                    })
             return False
         if reason is not None:
             decline(
@@ -1384,10 +1406,28 @@ class SubagentMaterialization:
         component.drive_host_eviction = drive_host_eviction
         self._native_host_eviction = component, drive_native, drive_host_eviction
 
-    def _use_backed_device_leaves(self, component, tree, native_evict, tracker, needed):
+    def _fund_from_backed_device(self, target, protected_nodes):
+        cache, native_evict, _ = self._native_device_eviction
+        allocator = cache.token_to_kv_pool_allocator
+        needed = target - allocator.available_size()
+        if needed <= 0:
+            return True
+        component = cache.components[0]
+        if component.is_evict_device_ongoing or not cache.tree_core.full_host_duplicates:
+            return False
+        return self._use_backed_device_leaves(
+            component, cache.tree_core, native_evict, {0: 0}, needed,
+            protected_nodes=protected_nodes,
+        ) and allocator.available_size() >= target
+
+    def _use_backed_device_leaves(
+        self, component, tree, native_evict, tracker, needed, *, protected_nodes=(),
+    ):
         # Plan the entire shortfall before demoting anything. Otherwise the
         # ensuing write-back could evict the newly created Host-only copies.
-        plan = self._plan_backed_device_demotions(component, tree, needed)
+        plan = self._plan_backed_device_demotions(
+            component, tree, needed, protected_nodes=protected_nodes,
+        )
         if not plan:
             return False
         before = tracker[0]
@@ -1396,25 +1436,31 @@ class SubagentMaterialization:
             native_evict(node.id, tracker)
         return tracker[0] - before >= needed
 
-    def _plan_backed_device_demotions(self, component, tree, needed):
+    def _plan_backed_device_demotions(self, component, tree, needed, *, protected_nodes=()):
         duplicates = tree.full_host_duplicates
         leaves = tree.evictable_device_leaves
-        native_heap = component._evict_device_heap
+        in_eviction = component.is_evict_device_ongoing
+        native_heap = component._evict_device_heap if in_eviction else ()
         limit = self.max_candidates
+        protected = frozenset(protected_nodes)
 
         def settled(node):
             if not (
-                duplicates.get(node.id) is node
+                node.id not in protected and duplicates.get(node.id) is node
                 and tree._can_reclaim_full_host_duplicate(node)
             ):
                 return False
             data = node.component_data[0]
-            return len(data.value) == len(data.host_value)
+            return data.lock_ref == 0 and len(data.value) == len(data.host_value)
 
-        if len(duplicates) < len(native_heap):
+        if not in_eviction or len(duplicates) < len(native_heap):
+            candidates = duplicates.values()
+            if not in_eviction:
+                # The Device-leaf index can be smaller than the lazy duplicate index.
+                candidates = leaves if len(leaves) < len(duplicates) else reversed(candidates)
             heap = [
                 (component.session_ref_eviction_strategy(node), node)
-                for node in islice(duplicates.values(), limit)
+                for node in islice(candidates, limit)
                 if node in leaves and settled(node)
             ]
         else:

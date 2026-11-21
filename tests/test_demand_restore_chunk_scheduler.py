@@ -945,10 +945,17 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     source_slots = f.leaf.component_data[0].host_value
     mode = getattr(request, "param", None)
     idle = mode == "idle"
-    host_slots = {"idle": 19, "two-write-acks": 22, "join-free-first-slice": 16}.get(mode, 21)
+    mirror_tokens = {"join-backed-whole-restore": 11, "join-partial-backed-capacity": 5}.get(mode, 0)
+    host_slots = {"idle": 19, "two-write-acks": 22, "join-free-first-slice": 16}.get(
+        mode, 16 + mirror_tokens if mirror_tokens else 21,
+    )
     held_host = host.alloc(host.size - host_slots)
     neighbor, _ = insert_session(cache, range(101, 105), "neighbor")
     neighbor_slots = _backup(cache, neighbor, demote=True)
+    backed = None
+    if mirror_tokens:
+        backed, _ = insert_session(cache, range(141, 141 + mirror_tokens), "settled-mirror")
+        _backup(cache, backed)
     donor, _ = insert_session(cache, range(111, 118 if idle else 115), "donor")
     write_ack = None
     if not idle:
@@ -968,6 +975,7 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     insert_session(cache, range(201, 233), "device-victim")
     free_device, free_host = {
         "idle": (0, 7), "join-free-first-slice": (5, 0),
+        "join-backed-whole-restore": (0, 0), "join-partial-backed-capacity": (0, 0),
     }.get(mode, (3, 5))
     held_device = allocator.alloc(allocator.available_size() - free_device)
     assert (allocator.available_size(), host.available_size()) == (free_device, free_host)
@@ -995,7 +1003,7 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
         yield NS(
             f=f, gate=gate, scheduler=scheduler, construction=construction, invoke=invoke,
             resident=resident, host=host, writes=writes, source_slots=source_slots,
-            neighbor=neighbor, neighbor_slots=neighbor_slots, donor=donor,
+            neighbor=neighbor, neighbor_slots=neighbor_slots, donor=donor, backed=backed,
             write_ack=write_ack, query=query, evict=evict, native_load=native_load,
             writing_check=writing_check,
         )
@@ -1476,6 +1484,80 @@ def test_d3_promoted_join_uses_free_pages_before_a_write_ack(
     else:
         case.query.return_value = True
         _assert_native_batch(case, (req,), [2, 6])
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize(("mode", "resident_restore_pressure"), (
+    ("settled", "join-backed-whole-restore"),
+    ("insufficient", "join-partial-backed-capacity"),
+    ("prefetch-protected", "join-backed-whole-restore"),
+    ("locked", "join-backed-whole-restore"),
+    ("native-load-continuation", "join-backed-whole-restore"),
+), indirect=("resident_restore_pressure",))
+def test_d3_promoted_join_requires_a_whole_restore_from_settled_mirrors(
+    resident_restore_pressure, mode,
+):
+    case = resident_restore_pressure
+    f = case.f
+    cache, req = f.cache, f.req
+    controller = cache.cache_controller
+    f.runtime._join_priority_promoted = req.rid
+    case.scheduler.waiting_queue.remove(case.resident)
+    mirror = case.backed.component_data[0]
+    host_copy = mirror.host_value
+    assert controller.ack_write_queue == [case.write_ack] and mirror.value is not None
+    writes_before = len(case.writes)
+    if mode == "prefetch-protected":
+        f.runtime._prefetch_service_leases["protected"] = NS(node_id=case.backed.id)
+    elif mode == "native-load-continuation":
+        controller._beliefkv_load_continuation = object()
+    lock = cache.inc_lock_ref(case.backed.id).to_dec_params() if mode == "locked" else None
+    try:
+        if mode == "settled":
+            device_slots = set(mirror.value.tolist())
+            pending_write_slots = set(case.donor.component_data[0].value.tolist())
+            f.complete.ready = True
+            with pytest.raises(BatchConstructionReached):
+                case.invoke()
+            assert case.construction == [(req,)] and case.gate._demand_restore_chunk.pending is None
+            assert mirror.value is None and f.allocator.available_size() == 3
+            first_load, = f.loads
+            assert first_load.host_indices.tolist() == case.source_slots.tolist()
+            assert set(first_load.device_indices.tolist()) <= device_slots
+            assert pending_write_slots.isdisjoint(first_load.device_indices.tolist())
+            assert f.runtime.counts["subagent_materialization_join_backed_device_whole_restores"] == 1
+            grant, = (
+                event.args[0] for event in f.runtime._opportunity_writer.record.call_args_list
+                if event.args[0]["event"] == "subagent_materialization_join_backed_device_restore"
+            )
+            assert grant["key"] == asdict(f.key) and grant["device_reserve_tokens"] == 3
+            case.native_load.assert_called_once()
+            cache.loading_check(finish_count=1)
+            cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        else:
+            def fallback(_params):
+                assert mirror.value is not None and f.allocator.available_size() == 0
+                return None
+
+            case.native_load.side_effect = fallback
+            assert case.invoke() == (None, f.running)
+            case.native_load.assert_called_once()
+            reason = "restore_not_available" if mode == "native-load-continuation" else "protected_service"
+            assert _restore_declines(f.runtime)[-1]["reason"] == reason
+            assert case.gate._demand_restore_chunk.pending is None and not f.loads
+        case.evict.assert_not_called()
+        case.query.assert_not_called()
+        case.writing_check.assert_not_called()
+        assert len(case.writes) == writes_before and controller.ack_write_queue == [case.write_ack]
+        assert mirror.host_value is host_copy and case.host.slot_used[host_copy].all()
+        assert case.neighbor.component_data[0].host_value is case.neighbor_slots
+    finally:
+        if lock is not None:
+            cache.dec_lock_ref(case.backed.id, lock)
+        if controller.ack_write_queue:
+            case.query.return_value = True
+            cache.writing_check(finish_count=1)
+        cache.sanity_check()
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
