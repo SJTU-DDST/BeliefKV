@@ -1182,10 +1182,11 @@ class SubagentMaterialization:
             and _request_key(req, known_keys=self.runtime.visible) == key
             and pipeline.has_decode_work(self._running_batch)
         ):
-            staged = restore.pending
+            join_peer = getattr(req, "_beliefkv_d3_join_peer", None)
+            staged = restore.pending if join_peer is not None and join_peer[0] == key else None
             waiting_on_join = (
                 staged is not None and staged.prefix_node in receipts
-                and getattr(req, "_beliefkv_d3_join_peer", None) == (key, staged.key)
+                and join_peer[1] == staged.key
             )
             permitted = (
                 self._can_wait_on_join_stage(req, key, staged.key)
