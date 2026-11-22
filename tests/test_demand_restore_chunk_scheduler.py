@@ -2130,6 +2130,8 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         pytest.param(True, "fit_target", 2, id="fit-target-producer-partial-credit"),
         pytest.param(True, "both_protected", 2, id="protected-producer-and-consumer"),
         pytest.param(True, "both_join", 2, id="two-released-join-parents"),
+        pytest.param(True, "consumer_join", 2, id="join-after-ordinary-stage"),
+        pytest.param(True, "consumer_join", 3, id="join-after-stage-insufficient-capacity"),
     ),
 )
 def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
@@ -2239,6 +2241,9 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
                 consumer_key.invocation_id: "younger-join",
             }
             runtime._join_priority_promoted = consumer.rid
+        elif producer_protection == "consumer_join":
+            runtime._join_priority_pending = {consumer_key.invocation_id: "join"}
+            runtime._join_priority_promoted = consumer.rid
         if resumed_peer:
             # Its prior ordinary ACK retry yielded to the promoted JOIN parent.
             consumer._beliefkv_d3_indexed_restore_defer_key = consumer_key
@@ -2335,6 +2340,9 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             )
             assert deferred["key"] == asdict(consumer_key) and deferred["already_submitted"]
             assert deferred["native_node_ids"] == first_ack.node_ids
+            assert deferred.get("join_after_ordinary_stage", False) is (
+                producer_protection == "consumer_join"
+            )
             assert (deferred["reclaimable_after_ack_tokens"], deferred["unfunded_restore_tokens"]) == (
                 6, 5 + decode_growth,
             )

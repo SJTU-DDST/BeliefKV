@@ -870,6 +870,17 @@ class SubagentMaterialization:
             and (guard is None or key not in (guard.target, guard.fit_target))
         )
 
+    def _join_can_wait_for_ordinary_stage(self, req, key, producer):
+        return (
+            producer is not None and producer.request is not req
+            and producer.credit_waiter is None
+            and key.request_id == getattr(self.runtime, "_join_priority_promoted", None)
+            and not self._restore_has_service_priority(key, protect_join_parent=False)
+            and not self._staged_peer_protected(producer.key)
+            and self._restore_stage_matches_live(producer.request, producer.key)
+            and self._restore_stage_matches_live(req, key)
+        )
+
     def _live_second_peer_waiter(self, cache, req, key):
         sessions = cache.session_refs
         return (
@@ -951,6 +962,7 @@ class SubagentMaterialization:
         stage_receipt = None
         join_peer = False
         ordinary_stage_peer = False
+        join_after_stage = False
         if (
             staged is not None and staged.request is not params.req
             and chunk and hit >= 2 * chunk
@@ -964,13 +976,18 @@ class SubagentMaterialization:
                 if join_peer or not self._staged_peer_protected(key):
                     stage_receipt = cache.ongoing_load_back.get(staged.prefix_node)
             elif (
+                submitted
+                and getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) != key
+            ):
+                join_after_stage = self._join_can_wait_for_ordinary_stage(params.req, key, staged)
+            elif (
                 not submitted and len(queue) == 1
                 and getattr(params.req, "_beliefkv_d3_ordinary_stage_wait_key", None) != key
                 and not self._staged_peer_protected(key)
             ):
                 stage_receipt = cache.ongoing_load_back.get(staged.prefix_node)
                 ordinary_stage_peer = stage_receipt is not None
-        if stage_receipt is None and self._restore_has_service_priority(key):
+        if stage_receipt is None and not join_after_stage and self._restore_has_service_priority(key):
             return False
         leading_tagged = submitted and bool(acks[0].child_receipts)
         own_join_receipts = None
@@ -1061,6 +1078,13 @@ class SubagentMaterialization:
                 selected_h2d["unfunded_restore_tokens"] = max(0, shortfall)
         if not headroom.observable:
             return False
+        if join_after_stage:
+            headroom = replace(
+                headroom, reclaimable_host_tokens=headroom.reclaimable_host_tokens
+                - headroom.reclaimable_host_only_tokens,
+                reclaimable_host_only_tokens=0,
+            )
+            shortfall = hit - headroom.available_tokens
         req = params.req
         mirror_wait = shortfall <= 0
         if mirror_wait:
@@ -1152,6 +1176,8 @@ class SubagentMaterialization:
             and callable(getattr(cache, "loading_check", None))
         ):
             staged_producer = staged
+        if join_after_stage and (staged_producer is None or credit < chunk):
+            return False
         if submitted:
             if not identity_matches or (
                 shortfall > credit and not self._can_slice_after_restore_ack(
@@ -1238,6 +1264,7 @@ class SubagentMaterialization:
                 "own_join_ack": wait_for_join,
                 **({"sole_host_capacity_excluded": True} if mirror_wait else {}),
                 **({"staged_peer_slice": True} if staged_producer is not None else {}),
+                **({"join_after_ordinary_stage": True} if join_after_stage else {}),
                 **({"second_peer_ack": True} if second_peer else {}),
             })
         return True
@@ -1354,6 +1381,12 @@ class SubagentMaterialization:
                 and self._restore_stage_matches_live(req, key)
                 if waiting_on_join else not self._restore_has_service_priority(key)
             )
+            retry = self._peer_restore_retry
+            if (
+                not permitted and retry is not None and retry.credit is credit
+                and retry.staged_producer is restore.pending
+            ):
+                permitted = self._join_can_wait_for_ordinary_stage(req, key, retry.staged_producer)
             if (
                 permitted and not waiting_on_join
                 and getattr(req, "_beliefkv_d3_ordinary_stage_wait_key", None) == key
@@ -1362,7 +1395,6 @@ class SubagentMaterialization:
                 permitted = False
             cache = restore.cache
             if permitted and cache.token_to_kv_pool_allocator.available_size() < hit:
-                retry = self._peer_restore_retry
                 if retry is not None and retry.second_peer and retry.credit is credit:
                     waiting = (
                         retry.awaiting_ack(cache)
