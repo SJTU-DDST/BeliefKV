@@ -1,0 +1,50 @@
+{
+  "status": "verified_and_observed",
+  "observed_at": "2026-11-22T07:44:16.903866-08:00",
+  "archived_runs": 30,
+  "archived_files": 119,
+  "source_allocated_bytes": 95790968832,
+  "archive_allocated_bytes": 4932538368,
+  "net_reclaimed_bytes": 90858430464,
+  "all_archive_hashes_members_original_metadata_and_recovery_markers_verified": true,
+  "actual_restoration_rehearsals": [
+    {
+      "batch": 0,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261122_historical_logs/batch_0/workflow_original133_host200_mean55_materialization_pressure_20261119_r5_d3_continuation_tail_r4_retry.tar.zst",
+      "all_restored_bytes_compared": true,
+      "restored_files_sha256": {
+        "workflow_original133_host200_mean55_materialization_pressure_20261119_r5_d3_continuation_tail_r4_retry/full/startup_attempts/0001/server/runtime_audit.jsonl": "bcc49bebc53bd7e961e259be47d253cbf68a043aee7f84460af982e088d03ac3",
+        "workflow_original133_host200_mean55_materialization_pressure_20261119_r5_d3_continuation_tail_r4_retry/full/startup_attempts/0001/server/eviction_attribution.jsonl": "294f0dc12aa9b4530e6a8beb5c69ec38d0667205c0e2eaa7638b3c26e20ced7c",
+        "workflow_original133_host200_mean55_materialization_pressure_20261119_r5_d3_continuation_tail_r4_retry/full/startup_attempts/0001/server/transfer_telemetry.jsonl": "215517e7c1e6ab580cc95be248963469852916be319076bf02404fcef5ec091c",
+        "workflow_original133_host200_mean55_materialization_pressure_20261119_r5_d3_continuation_tail_r4_retry/full/startup_attempts/0001/opportunities/admission_opportunities.jsonl": "13a537c631c8e7cd2a65df7f303da797ae060466fd22f4686efd5d9033d9fab6"
+      }
+    },
+    {
+      "batch": 1,
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261122_historical_logs/batch_1/workflow_original133_host200_mean55_materialization_pressure_20261118_nor5_growth_single_r2.tar.zst",
+      "all_restored_bytes_compared": true,
+      "restored_files_sha256": {
+        "workflow_original133_host200_mean55_materialization_pressure_20261118_nor5_growth_single_r2/full/startup_attempts/0001/server/runtime_audit.jsonl": "b947daa68481b32c9b58e09b71b826a735c09ecfa94d3002369c1eb8651d7d1a",
+        "workflow_original133_host200_mean55_materialization_pressure_20261118_nor5_growth_single_r2/full/startup_attempts/0001/opportunities/admission_opportunities.jsonl": "2147ce9794fa2b16bd6ae1f206ad91137691c63a5c0612c9ce628b06440e3c60"
+      }
+    }
+  ],
+  "proof_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261122/log_inventory.json": "370d94e58ed13672a009204ddd7ab55bd48514c7fcc265d7706ca384d837e0da",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261122/batch_0/log_review.json": "08e336546ac8426a084079192e40c5e5fbacbff6d2c80f86b4a9bbef32881284",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261122/batch_0/log_receipt.json": "4aa243d05ce1930454323750278b8adc25a15f51e3bd9824bdfa73ea94b1ed94",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261122/batch_1/log_review.json": "1ef49b96de9fa0a35331a7a1e0fe7745966933314640c1dceee9323614b5fc9b",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261122/batch_1/log_receipt.json": "85da4a1cb14e45723012790894a6031d8506c8adf2be19d4bfdcc8757ca885bf"
+  },
+  "operator_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261122/cleanup.py": "f188a1059c4ba000e4f8c86da8ee8b82885f4e25a7609c2fb60b43007847f100",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/storage_cleanup_20261122/finish.py": "e30e9cdc6510cec48e45d6162150bca43bfe1a14c716f5d8c1715824604a7e42"
+  },
+  "initial_raw_allocated_bytes": 436027375616,
+  "initial_experiments_allocated_bytes": 520681779200,
+  "original_df": "Filesystem         1B-blocks          Used    Available Use% Mounted on\n/dev/nvme0n1p2 3778190245888 3416556421120 169635733504  96% /\n",
+  "final_df": "Filesystem         1B-blocks          Used    Available Use% Mounted on\n/dev/nvme0n1p2 3778190245888 3325787361280 260404793344  93% /\n",
+  "final_df_human": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/nvme0n1p2  3.5T  3.1T  243G  93% /\n",
+  "measurement_note": "Reclaimed space uses selected allocated blocks minus every retained archive block. Filesystem changes also include concurrent experiment and other-user writes.",
+  "preserved": "Active/pending jobs and inputs; captured source runs; request tokens, workflow events, results, configurations, environments, models and previous archives."
+}
