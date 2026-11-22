@@ -315,7 +315,8 @@ def test_nonranking_control_keeps_work_forecast_and_removes_path_inference():
 
 
 @pytest.mark.parametrize("provider", ("learned", "oracle"))
-def test_preparation_preserves_non_model_settings_and_removes_stale_qualification(provider):
+@pytest.mark.parametrize("resume_only", (False, True))
+def test_preparation_preserves_non_model_settings_and_removes_stale_qualification(provider, resume_only):
     old = {
         "common_environment": {"HICACHE_SIZE_GB": "200", "BELIEFKV_SUBAGENT_MATERIALIZATION": "off"},
         "comparison_contract": {
@@ -324,11 +325,18 @@ def test_preparation_preserves_non_model_settings_and_removes_stale_qualificatio
         },
         "source_CPU_binding": {"old_source": True},
     }
-    value = configuration(old, Path("/new-model.json"), "a" * 64, source=provider, ranking=True)
+    value = configuration(
+        old, Path("/new-model.json"), "a" * 64, source=provider, ranking=True, resume_only=resume_only,
+    )
     assert all(value["common_environment"][name] == item for name, item in old["common_environment"].items())
     assert "source_CPU_binding" not in value
     assert "admission_utility" not in value["comparison_contract"]
     assert not value["comparison_contract"]["matched_control_changes_only_materialization_policy"]
+    assert value["comparison_contract"]["workflow_distribution_changes_pressure_victims"] is not resume_only
+    assert value["comparison_contract"]["workflow_pressure_victim_selection"] == (
+        "blocked_tool_retention_then_original_context_order" if resume_only
+        else "blocked_tool_retention_then_path_preference"
+    )
     assert value["workflow_work_qualification"]["future_information_used"] is (provider == "oracle")
     assert not value["gpu_execution"]["registered"]
 

@@ -82,7 +82,7 @@ def nonranking_artifact(model):
     return raw
 
 
-def configuration(control, path, digest, *, source, ranking):
+def configuration(control, path, digest, *, source, ranking, resume_only=False):
     result = deepcopy(control)
     env = result["common_environment"]
     for prefix in ("", "BELIEFKV_"):
@@ -103,6 +103,7 @@ def configuration(control, path, digest, *, source, ranking):
         "continuous_utility_training_reference_work",
     ):
         contract.pop(name, None)
+    rank_pressure_victims = ranking and not resume_only
     contract.update(
         workflow_work_ranking=ranking, future_information_used=source == "oracle",
         workflow_work_prediction=(
@@ -127,9 +128,9 @@ def configuration(control, path, digest, *, source, ranking):
         competitive_set_selection_objective="strict_remaining_path_then_joint_sibling_fit",
         selection_strategy="protected_JOIN_then_remaining_model_tool_path_then_ready_sibling_fit",
         workflow_resume_key=["protected_ready_JOIN", "remaining_path_seconds", "ready_sibling_group"],
-        workflow_distribution_changes_pressure_victims=ranking,
+        workflow_distribution_changes_pressure_victims=rank_pressure_victims,
         workflow_pressure_victim_selection=(
-            "blocked_tool_retention_then_path_preference" if ranking
+            "blocked_tool_retention_then_path_preference" if rank_pressure_victims
             else "blocked_tool_retention_then_original_context_order"
         ),
     )
@@ -240,6 +241,7 @@ def prepare(args):
         config = configuration(
             control, path, sha256_file(path),
             source="oracle" if name == "oracle" else "learned", ranking=name != "full",
+            resume_only=raw.get("resume_only_work_ranking", False),
         )
         output = args.output_dir / (name + ".json")
         write(output, config)
@@ -266,7 +268,9 @@ def prepare(args):
             Path(control["private_analysis_cohort"]["path"]),
             *(args.output_dir / (name + "_work.json") for name in arms),
             *(Path(value) for value in paths.values()),
+            ROOT / "beliefkv/policy/workflow_shortest_frontier.py",
             ROOT / "beliefkv/runtime/workflow_work_oracle.py",
+            ROOT / "beliefkv/runtime/workflow_work_worker.py",
             ROOT / "beliefkv/runtime/workflow_oracle_admission.py",
             ROOT / "beliefkv/runtime/workflow_size_admission.py",
             ROOT / "beliefkv/runtime/workflow_combination.py",

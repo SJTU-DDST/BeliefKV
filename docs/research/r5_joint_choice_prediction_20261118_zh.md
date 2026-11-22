@@ -173,3 +173,39 @@ CPU0、nice19。实验工件由已有 gitignore 忽略，代码和本文进入�
 同配置 Full+R5+D3；唯一实验差异是 D3 开关。没有热改该配对，
 没有为这些小步 CPU 修改新增 GPU 实验。新 R5 工件需在一致代码集成后
 验证完整 JCT、吞吐及服务顺序，不能将当前配对结果归因于本文候选。
+
+## 7. 2026-11-22 复核
+
+重新以 115 个非测量项目做四折评估。每个竞争者使用留出其自身项目的
+预测，同一决策内的竞争者可以来自不同折。含固定 18 条候选的边界排除在
+模型选择之外。候选同时通过全程和共同吞吐窗口的 workflow 与 JOIN 误差
+门槛后，按留出误差选中 `prior_residual_l1`。
+
+| 指标 | 原路径头 | 本轮残差路径头 |
+| --- | ---: | ---: |
+| 全程集合偏差 / 1,150 边界 | 227 | 185 |
+| 共同窗集合偏差 / 95 边界 | 20 | 18 |
+| 测量候选参与的集合偏差 / 316 边界 | 70 | 70 |
+| 固定测量成员自身的选集偏差 | 50 | 56 |
+| 共同窗固定测量成员自身的选集偏差 | 10 | 9 |
+| 固定测量成员多 ready sibling 整组漏选 | 2 | 0 |
+
+固定测量成员自身的选择共纠正 12 次，引入 18 次偏差，全部真实路径分数、
+资源和候选窗口取自同一冻结诊断。残差路径头保留为 CPU 候选。
+[交叉拟合结果](../../experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/path_crossfit_oof_common_r1/evaluation.json) ·
+[固定成员复核](../../experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/path_crossfit_oof_common_r1/fixed_member_comparison.json)
+
+修复并发进度事件引起的预测延迟误判。线程发布预测后，延迟从这份预测尚未
+纳入的第一条观测起算。确定性用例先复现新预测被旧时间戳拒绝，再核对有
+两条新观测排队时仍按较早观测实施超时回退。
+
+历史 `repaired_r4` 的 D3-off 臂自然完成。D3-on 臂因高重算被终止，固定
+测量组完成 17/18，该组没有完整平均 JCT。另一组已完成的 55 秒同配置
+三臂 `5bfe45ad`，R5 固定 18 条平均 JCT 增加 2.51%，Oracle 下降
+0.26%，共同窗输出分别下降 2.17% 和 1.42%。
+[55 秒三臂完整读数](../../experiments/reports/d3_reclaim_r5_20261118/rotation_prepared/rotation_5bfe45ad/report_zh.md)
+
+已用同一 55 秒到达表、tool overlay、固定成员和 cap-1 装配 Full、精确路径
+Oracle 与预测 R5。两条排序臂使用 D3 动态门控和仅续接排序，采用此前已
+装配的 guarded 路径头。三臂实际 runtime CPU 构造通过。
+[CPU 装配](../../experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/mean55_guarded_path_current_source_cpu_r1/arms/preparation.json)
