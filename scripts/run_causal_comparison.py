@@ -2119,10 +2119,20 @@ def watch(registration):
                     }
                     if any(info.get(key) != value for key, value in required.items()):
                         raise ValueError("actual server parameters differ from the common source")
+                    native = load(census)
                     gpu_startup.verify_capacity(
                         plan.get("expected_replay_capacity", plan["source_capacity"]),
-                        load(census)["capacity"],
+                        native["capacity"],
                     )
+                    requested_cap = max(1, int(attempt_env["SGLANG_HICACHE_WRITE_BACK_BATCH_NODES"]))
+                    observed_cap = native.get("write_back_batch_max_nodes")
+                    if (requested_cap > 1 or observed_cap is not None) and (
+                        type(observed_cap) is not int or observed_cap != requested_cap
+                    ):
+                        raise ValueError(
+                            f"{label}: requested native write-back cap {requested_cap}, "
+                            f"observed {observed_cap}"
+                        )
                     return server, attempt_socket, info, ready
 
                 def cleanup_startup(attempt):

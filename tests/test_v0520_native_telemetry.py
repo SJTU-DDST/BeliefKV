@@ -1567,12 +1567,14 @@ def test_capacity_census_is_scheduler_local_and_fail_closed(
         tree_core=SimpleNamespace(
             set_beliefkv_host_eviction_observer=lambda observer: None
         ),
+        write_back_batch_nodes=32,
     )
     audit = NativeReactiveTelemetry(tmp_path / "server")
     audit.record_capacity(cache)
     path = tmp_path / "server/native_capacity_census.json"
     census = json.loads(path.read_text())
     assert census["capacity"]["device_total_bytes"] == 800
+    assert census["write_back_batch_max_nodes"] == 32
     with pytest.raises(FileExistsError):
         audit.record_capacity(object())
     audit.close()

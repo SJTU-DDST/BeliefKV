@@ -1501,6 +1501,7 @@ def test_cleanup_waits_for_slow_device_teardown_but_reports_a_persistent_process
     "queued_no_tool_prefetch", "failed_predecessor", "source_slowdown", "capture_baseline",
     "orthogonal_controls", "telemetry_drain", "busy_start", "busy_between_arms",
     "startup_contention", "host_resize_200", "host_resize_400", "host_resize_mismatch",
+    "matched_write_back_caps", "wrong_native_write_back_cap", "missing_native_write_back_cap",
 ))
 def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     reference, tmp_path, monkeypatch, failure,
@@ -1511,6 +1512,9 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     busy_start, busy_between = failure == "busy_start", failure == "busy_between_arms"
     startup_contention = failure == "startup_contention"
     host_resize_mismatch = failure == "host_resize_mismatch"
+    batch_32 = failure in (
+        "matched_write_back_caps", "wrong_native_write_back_cap", "missing_native_write_back_cap",
+    )
     host_resize = (
         200 if failure in ("host_resize_200", "host_resize_mismatch")
         else 400 if failure == "host_resize_400" else None
@@ -1529,6 +1533,10 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     elif failure == "orthogonal_controls":
         order = ["scheduler_only", "kv_only"]
         failure = None
+    elif batch_32:
+        order = ["full", "thunderagent_acting_decay", "native_matched"]
+        if failure == "matched_write_back_caps":
+            failure = None
     elif captured_reference:
         order = list(comparison.DEFAULT_ORDER)
         assert "native_matched" not in order
@@ -1548,6 +1556,8 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         "token_source_sha256": "tokens", "workflow_ids": ["w"],
         "quality_exclusions": [], "scope": "test",
     }
+    if batch_32:
+        plan["reference_environment"]["SGLANG_HICACHE_WRITE_BACK_BATCH_NODES"] = "32"
     if host_resize:
         plan["reference_environment"] = {
             **plan["reference_environment"],
@@ -1614,7 +1624,15 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             launched.append(("server", label, kwargs["env"]))
             (arm / "server/native_telemetry_ready.json").write_text(json.dumps({"scheduler_pid": 101}))
             capacity = {"device_full_tokens": 123} if failure == "capacity" else plan["source_capacity"]
-            (arm / "server/native_capacity_census.json").write_text(json.dumps({"capacity": capacity}))
+            census = {"capacity": capacity}
+            if batch_32:
+                census["write_back_batch_max_nodes"] = 32
+                if label == "native_matched":
+                    if failure == "wrong_native_write_back_cap":
+                        census["write_back_batch_max_nodes"] = 1
+                    elif failure == "missing_native_write_back_cap":
+                        del census["write_back_batch_max_nodes"]
+            (arm / "server/native_capacity_census.json").write_text(json.dumps(census))
             return Process(100, None)
         label = current[0]
         assert kwargs["env"]["PYTHONHASHSEED"] == "21"
@@ -1669,8 +1687,11 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
     monkeypatch.setattr(comparison.fresh, "check_hold", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(comparison.qualified, "resources", resources)
     monkeypatch.setattr(comparison.qualified, "command", lambda _command: "101")
-    monkeypatch.setattr(comparison.qualified, "last_runtime_state",
-                        lambda _path: {"tool_continuity": False})
+    monkeypatch.setattr(comparison.qualified, "last_runtime_state", lambda _path: {
+        "tool_continuity": False,
+        **({"paper_baseline": {"counts": {"registered": 1, "completed": 1}}}
+           if current == ["thunderagent_acting_decay"] else {}),
+    })
     monkeypatch.setattr(comparison.comparison, "observe_arm", lambda mode, *_args, **_kwargs: configurations.append(mode))
     monkeypatch.setattr(comparison.reservation, "process", identities.get)
     monkeypatch.setattr(comparison, "owned_processes", lambda rows: (
@@ -1741,6 +1762,11 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
         ]
         if "join_priority_only" in order:
             assert "join_priority_only" in configurations
+        if batch_32:
+            assert all(
+                env["SGLANG_HICACHE_WRITE_BACK_BATCH_NODES"] == "32"
+                for kind, _, env in launched if kind == "server"
+            )
         if order == ["no_tool_prefetch"]:
             environment = next(row[2] for row in launched if row[0] == "server")
             assert environment["BELIEFKV_ENABLE_TOOL_PREFETCH"] == "0"
@@ -1755,6 +1781,11 @@ def test_supervisor_runs_cold_controls_and_stops_on_failures_before_advancing(
             assert "work changed" in state["error"]
         elif failure == "capacity":
             assert not any(row[0] == "driver" for row in launched)
+        elif batch_32:
+            assert state["completed_arms"] == ["full", "thunderagent_acting_decay"]
+            assert not any(row[:2] == ("driver", "native_matched") for row in launched)
+            observed = 1 if failure == "wrong_native_write_back_cap" else None
+            assert f"native_matched: requested native write-back cap 32, observed {observed}" in state["error"]
         elif failure == "failed_predecessor":
             assert not launched
             assert "predecessor failed" in state["error"]

@@ -252,6 +252,7 @@ class NativeReactiveTelemetry:
                 "collection_mode": self.collection_mode,
                 "scheduler_pid": os.getpid(),
                 "capacity": observation,
+                "write_back_batch_max_nodes": getattr(cache, "write_back_batch_nodes", None),
             }, output, indent=2, sort_keys=True)
             output.write("\n")
         self._cache = cache
