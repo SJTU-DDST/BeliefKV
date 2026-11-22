@@ -1479,6 +1479,34 @@ def frozen_execution_paths(revision, engine_tree, registration):
     )
 
 
+def oracle_information(common, artifact):
+    path_pressure = (
+        artifact.path_combination
+        and not artifact.raw.get("resume_only_work_ranking", False)
+        and common.get(
+            "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY",
+            common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
+        ) in ("workflow_remaining", "workflow_tool_aware")
+    )
+    information = {
+        "deployable": False,
+        "future_model_token_work_used": True,
+        "future_tool_durations_used": not artifact.model_work_only,
+        "future_dependency_graph_used_for_rank_only": not artifact.model_work_only,
+        "rank": artifact.rank_kind,
+        "future_model_work_used_for_pressure": artifact.pressure_work_ranking or path_pressure,
+        "source_bound_artifact_sha256": common["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
+        "model_service_seconds": "predeclared_context_and_batch_averaged_proxy",
+        "optimal_JCT_bound": False,
+    }
+    if artifact.path_combination:
+        information.update(
+            future_model_tool_path_used_for_pressure=path_pressure,
+            shared_R5_path_selector=True,
+        )
+    return information
+
+
 def register(args):
     request_timeout = validate_request_timeout(
         getattr(args, "request_timeout_s", REPLAY_REQUEST_TIMEOUT_S),
@@ -1849,29 +1877,7 @@ def register(args):
             "same_actual_capacity_required_across_arms": True,
         }
     if oracle_common.get("BELIEFKV_WORKFLOW_WORK_SOURCE", "learned") == "oracle":
-        path_pressure = (
-            getattr(oracle_artifact, "path_combination", False)
-            and oracle_common.get(
-                "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY",
-                oracle_common.get("AGENT_PRESSURE_PAUSE_POLICY", "reference"),
-            ) in ("workflow_remaining", "workflow_tool_aware")
-        )
-        plan["oracle_information"] = {
-            "deployable": False, "future_model_token_work_used": True,
-            "future_tool_durations_used": not oracle_artifact.model_work_only,
-            "future_dependency_graph_used_for_rank_only": not oracle_artifact.model_work_only,
-            "rank": oracle_artifact.rank_kind,
-            "future_model_work_used_for_pressure": (
-                oracle_artifact.pressure_work_ranking or path_pressure
-            ),
-            **({
-                "future_model_tool_path_used_for_pressure": path_pressure,
-                "shared_R5_path_selector": True,
-            } if getattr(oracle_artifact, "path_combination", False) else {}),
-            "source_bound_artifact_sha256": oracle_common["BELIEFKV_WORKFLOW_WORK_MODEL_SHA256"],
-            "model_service_seconds": "predeclared_context_and_batch_averaged_proxy",
-            "optimal_JCT_bound": False,
-        }
+        plan["oracle_information"] = oracle_information(oracle_common, oracle_artifact)
     if args.maximum_replay_slowdown is not None:
         source_speed_check(plan["source_metrics"], plan["source_metrics"], args.maximum_replay_slowdown)
     predecessor_ready(plan)

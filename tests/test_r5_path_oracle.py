@@ -21,6 +21,7 @@ from beliefkv.runtime.workflow_work_oracle import (
 from scripts.audit_workflow_combination_choices import verify_model_work_pair
 from scripts.prepare_r5_path_comparison import configuration, nonranking_artifact, path_oracle_artifact
 from scripts.review_learned_work_ranking import verify_learned_combination_pair
+from scripts.run_causal_comparison import oracle_information
 from tests.test_internal_comparison import observed
 from tests.test_paper_baseline_runtime import request
 from tests.test_workflow_completion_path import path_model
@@ -59,6 +60,26 @@ def test_explicit_path_oracle_preserves_work_and_uses_the_shared_strict_selector
     assert raw["admission_cost_profile"]["costs"] == model["admission_cost_profile"]["costs"]
     assert raw["admission_cost_profile"]["oracle_reference_path_s"] == 100.
     assert parsed.rank_kind == "remaining_model_tool_critical_path_seconds"
+
+
+@pytest.mark.parametrize(
+    ("resume_only", "pause_policy", "uses_path"),
+    ((False, "workflow_tool_aware", True), (True, "workflow_tool_aware", False),
+     (False, "reference", False)),
+)
+def test_registration_reports_when_exact_path_can_influence_pressure(
+    resume_only, pause_policy, uses_path,
+):
+    raw = artifact()
+    raw["resume_only_work_ranking"] = resume_only
+    scope = oracle_information({
+        "BELIEFKV_WORKFLOW_WORK_MODEL_SHA256": "a" * 64,
+        "BELIEFKV_AGENT_PRESSURE_PAUSE_POLICY": pause_policy,
+    }, WorkflowWorkOracleArtifact(raw))
+    assert scope["shared_R5_path_selector"]
+    assert scope["future_tool_durations_used"]
+    assert scope["future_model_work_used_for_pressure"] is uses_path
+    assert scope["future_model_tool_path_used_for_pressure"] is uses_path
 
 
 @pytest.mark.parametrize("change", (None, "resource", "cohort", "oracle_scale", "full_ranking", "guarded"))
