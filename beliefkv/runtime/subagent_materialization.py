@@ -1069,7 +1069,7 @@ class SubagentMaterialization:
                 submitted or acks or staged is not None or controller.write_queue
                 or controller.ack_write_queue or cache.ongoing_write_through
                 or not chunk or credit < chunk
-                or tuple(receipts) != tuple(native_node_ids)
+                or len(set(native_node_ids)) != len(native_node_ids)
                 or headroom.reclaimable_host_only_tokens < -shortfall + chunk
                 or self._peer_restore_retry is not None
                 or getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
@@ -1089,6 +1089,8 @@ class SubagentMaterialization:
             ):
                 return False
             shortfall = hit - headroom.available_tokens
+            # ACK membership is independent of which anchors provide usable mirrors.
+            receipts = {anchor: cache.ongoing_load_back[anchor] for anchor in native_node_ids}
         # A settled slice can still own the stage during this selection.
         # Let one already selected load publish its ACK if it funds the next slice.
         settled_stage_peer = (

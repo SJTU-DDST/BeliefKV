@@ -271,15 +271,19 @@ def test_d3_first_prefill_uses_bound_checkpoint_during_restore_ack(staged_native
 
 
 @pytest.mark.parametrize(
-    ("staged_native", "full_native", "base_full_native"),
+    ("staged_native", "full_native", "base_full_native", "creditless_member"),
     (
-        ({"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96),
+        ({"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96, False),
         pytest.param(
-            {"members": 3, "select": False, "prefix_sizes": (8, 8, 18)}, 56, 96,
+            {"members": 3, "select": False, "prefix_sizes": (8, 8, 18)}, 56, 96, False,
             id="merged-native-loads",
         ),
+        pytest.param(
+            {"members": 3, "select": False, "prefix_sizes": (14, 2, 18)}, 56, 96, True,
+            id="merged-native-loads-with-protected-anchor",
+        ),
     ),
-    indirect=True,
+    indirect=("staged_native", "full_native", "base_full_native"),
 )
 @pytest.mark.parametrize(
     ("mirror_wait", "service_guard"),
@@ -292,7 +296,7 @@ def test_d3_first_prefill_uses_bound_checkpoint_during_restore_ack(staged_native
     ),
 )
 def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
-    staged_native, monkeypatch, mirror_wait, service_guard,
+    staged_native, monkeypatch, mirror_wait, service_guard, creditless_member,
 ):
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -310,6 +314,8 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
         insert_session(cache, range(start, start + 4), str(start))
     held_device = allocator.alloc(allocator.available_size() - 16)
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    if creditless_member:
+        f.runtime._prefetch_service_leases["protected"] = NS(node_id=f.leaves[1].id)
     key = f.runtime.visible[consumer.rid]
     gate.materialized.add(gate._context(key))
     f.runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 6
@@ -341,6 +347,9 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
         )
         ack, = controller.ack_load_queue
         assert ack.node_ids == [request.last_node for request in expected]
+        if mirror_wait:
+            receipt_keys = consumer._beliefkv_d3_restore_credit[2].keys()
+            assert receipt_keys == set(ack.node_ids)
         f.complete.ready = True
         cache.loading_check()
         if not mirror_wait:
@@ -351,6 +360,9 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
             if call.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
         ]
         assert deferred["sole_host_capacity_excluded"]
+        assert deferred["reclaimable_after_ack_tokens"] == sum(
+            producer_loads[:-1] if creditless_member else producer_loads
+        )
         assert gate._peer_restore_retry is None
         with pytest.raises(BatchConstructionReached):
             invoke()
