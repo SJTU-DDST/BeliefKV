@@ -24,16 +24,20 @@ COUNTS = (
 )
 
 
-def samples(events, states, arrivals):
-    events = sorted(events, key=lambda row: row["ts_ms"])
+def replay_origin(events, arrivals):
     offsets = {row["workflow_id"]: row["offset_seconds"] for row in arrivals["arrival_schedule"]}
     origins = [
         row["ts_ms"] - 1000 * offsets[row["workflow_id"]]
         for row in events if row["kind"] == "workflow_start"
     ]
-    if not origins or max(origins) - min(origins) > 1e-5:
+    if not origins or any(not math.isfinite(value) for value in origins) or max(origins) - min(origins) > 1e-5:
         raise ValueError("replay clock differs from the bound arrival table")
-    origin, owners = origins[0], {}
+    return origins[0]
+
+
+def samples(events, states, arrivals):
+    events = sorted(events, key=lambda row: row["ts_ms"])
+    origin, owners = replay_origin(events, arrivals), {}
     for row in events:
         if row.get("invocation_id"):
             owner = row["invocation_id"]

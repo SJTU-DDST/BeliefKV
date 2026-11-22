@@ -70,6 +70,21 @@ def test_live_held_initial_child_does_not_count_as_existing_continuation_supply(
     assert rows[0]["continuation_ready_paused"] == 0
 
 
+def test_thunderagent_runtime_can_report_native_work_without_full_supply():
+    arrivals = {"arrival_schedule": [{"workflow_id": "w", "offset_seconds": 0}]}
+    registration = {"order": ["thunderagent_acting_decay"], "workflow_arrivals": arrivals}
+    events = [event("workflow_start", 3)]
+    states = [state(10, gate=False)]
+    states[0]["agent_admission"] = None
+    states[0]["paper_baseline"] = {"policy": "thunderagent_public_single_backend_acting_decay"}
+    assert readout.observed_supply(registration, events, states, source(), gate_enabled=False) == (None, 3)
+    with pytest.raises(ValueError, match="without a materialization gate"):
+        readout.observed_supply(registration, events, states, source(), gate_enabled=True)
+    registration["order"] = ["full"]
+    with pytest.raises(ValueError, match="exact native eligibility"):
+        readout.observed_supply(registration, events, states, source(), gate_enabled=False)
+
+
 def test_real_completed_prefix_continuation_remains_supply_while_tool_blocker_does_not():
     events = [
         event("workflow_start", 0), event("llm_submit", 1, request_id="first"),

@@ -14,6 +14,9 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments import host_numa
 from scripts import run_causal_comparison as causal
+from scripts.compare_reported_workflow_cohorts import (
+    WRITE_BACK_CAP_SETTING, compare_write_back_caps, read_write_back_batch,
+)
 from scripts.review_sustained_oracle import compare_cohorts
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
@@ -75,6 +78,32 @@ def matching_traffic(predictive, thunder):
         raise ValueError("paper baseline must not declare oracle information")
 
 
+def write_back_evidence(plans, cohorts, *, labels=None):
+    batches, batched_requested = {}, False
+    if labels is None:
+        plans = tuple(plans)
+        labels = [plan["order"][0] for plan in plans]
+    for label, plan, cohort in zip(labels, plans, cohorts, strict=True):
+        batch = read_write_back_batch(
+            Path(plan["run_root"]) / plan["order"][0],
+            sealed_prefixes=cohort.get("input_jsonl_prefixes"),
+        )
+        configured = plan.get("reference_environment", {}).get(WRITE_BACK_CAP_SETTING)
+        if configured is not None:
+            requested = max(1, int(configured))
+            batched_requested |= requested > 1
+            observed = batch["max_nodes"]
+            if observed is not None and observed != requested:
+                raise ValueError(f"{label}: requested native write-back cap {requested}, observed {observed}")
+        batches[label] = batch
+    return {
+        "write_back_cap_comparison": compare_write_back_caps(
+            batches, require_verified=batched_requested, ablation=False,
+        ),
+        "native_write_back_batches": batches,
+    }
+
+
 def named_metrics(thunder, predictive):
     result = compare_cohorts(thunder, predictive)
     for group in result["groups"].values():
@@ -132,8 +161,10 @@ def main():
         cohorts.append(cohort)
         decisions.append(causal.load(decision_path))
         inputs.extend((review_path, cohort_path, decision_path))
+    write_back = write_back_evidence(plans, cohorts)
     result = named_metrics(cohorts[1], cohorts[0])
     result.update(
+        **write_back,
         observed_at=datetime.now(timezone.utc).isoformat(),
         reference="thunderagent_acting_decay", candidate="predictive",
         positive_gain_means_predictive_is_better=True,
@@ -142,6 +173,7 @@ def main():
         formal_workload_accepted=False, single_run_statistical_significance_claimed=False,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             *inputs, Path(__file__), ROOT / "scripts/review_sustained_oracle.py",
+            ROOT / "scripts/compare_reported_workflow_cohorts.py",
             ROOT / "scripts/verify_measured_execution.py", ROOT / "scripts/stop_after_measured_cohort.py",
         )},
         GPU_action=False, automatic_GPU_followup=False, performance_accepted=False,

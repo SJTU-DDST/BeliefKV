@@ -24,7 +24,7 @@ from scripts.audit_host_block_prefill import OWNER_FIELDS, inspect as inspect_ho
 from scripts.audit_previous_prefix_prefill import inspect as inspect_prefix
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.audit_synchronous_control_costs import bracket_counters, timing_counters
-from scripts.plot_paused_agent_timeline import samples as paused_samples
+from scripts.plot_paused_agent_timeline import replay_origin, samples as paused_samples
 from scripts.run_continuous_matched_campaign import write as atomic_write
 from scripts.stop_after_measured_cohort import replay_arm
 from scripts.train_workflow_work import write
@@ -133,6 +133,21 @@ def supply_samples(events, states, arrivals, expected, *, gate_enabled):
             held_ready_paused=held_ready, held_initial_requests=len(held),
         )
     return rows, origin
+
+
+def observed_supply(registration, events, states, expected, *, gate_enabled):
+    arrivals = registration["workflow_arrivals"]
+    if registration["order"] != ["thunderagent_acting_decay"]:
+        return supply_samples(events, states, arrivals, expected, gate_enabled=gate_enabled)
+    if gate_enabled or not states or any(
+        state.get("physical_disabled") is not False or state.get("agent_admission") is not None
+        or state.get("subagent_materialization") is not None
+        or (state.get("paper_baseline") or {}).get("policy")
+        != "thunderagent_public_single_backend_acting_decay"
+        for state in states
+    ):
+        raise ValueError("require acting-decay baseline observations without a materialization gate")
+    return None, replay_origin(events, arrivals)
 
 
 def integrate_supply(rows, window, *, maximum_gap_s=1.5):
@@ -324,16 +339,13 @@ def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled
         row for row in reader(arm / "opportunities/admission_opportunities.jsonl")
         if row.get("event") == "admission_runtime_state"
     ]
-    rows, origin = supply_samples(
-        events, states, registration["workflow_arrivals"], expected,
-        gate_enabled=gate_enabled,
-    )
+    rows, origin = observed_supply(registration, events, states, expected, gate_enabled=gate_enabled)
     ends = {event["workflow_id"]: event["ts_ms"] for event in events
             if event["kind"] == "workflow_end"}
     common = cohort["throughput_window_offset_seconds"]
     complete = (max(ends[wid] for wid in cohort["measured_workflow_ids"]) - origin) / 1000.
     windows = {"common": common, "measured_lifetimes": (common[0], complete)}
-    if rows[-1]["offset_s"] < complete:
+    if (rows[-1]["offset_s"] if rows else (states[-1]["monotonic_ms"] - origin) / 1000.) < complete:
         raise ValueError("observations do not cover complete measured tails")
     info_path = arm / "server/server_info.json"
     info = causal.load(info_path)
@@ -453,7 +465,10 @@ def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled
         ).hexdigest(),
         "actual_capacity": capacity,
         "materialization_gate_enabled": gate_enabled,
-        "supply": {name: integrate_supply(rows, window) for name, window in windows.items()},
+        "supply": (
+            {name: integrate_supply(rows, window) for name, window in windows.items()}
+            if rows is not None else None
+        ),
         "native": native.report(
             status["background_writer_timing"]["categories"]["audit:gpu_service_sample"]["records_seen"]
         ),
@@ -483,14 +498,16 @@ def analyze(registration_path, cohort_path, report_path, output, *, gate_enabled
             "Materialization counters are direct runtime actions; avoided writes do not measure avoided re-execution.",
         ))
     output.mkdir(parents=True)
-    samples_path = output / "supply_samples.jsonl.gz"
-    with gzip.open(samples_path, "wt", encoding="ascii") as stream:
-        for row in rows:
-            stream.write(json.dumps(row, sort_keys=True, allow_nan=False) + "\n")
-    result["supply_samples"] = {
-        "path": str(samples_path.resolve()), "sha256": sha256_file(samples_path),
-        "records": len(rows), "maximum_interpolation_gap_s": 1.5,
-    }
+    result["supply_samples"] = None
+    if rows is not None:
+        samples_path = output / "supply_samples.jsonl.gz"
+        with gzip.open(samples_path, "wt", encoding="ascii") as stream:
+            for row in rows:
+                stream.write(json.dumps(row, sort_keys=True, allow_nan=False) + "\n")
+        result["supply_samples"] = {
+            "path": str(samples_path.resolve()), "sha256": sha256_file(samples_path),
+            "records": len(rows), "maximum_interpolation_gap_s": 1.5,
+        }
     write(output / "runtime.json", result)
     return result
 

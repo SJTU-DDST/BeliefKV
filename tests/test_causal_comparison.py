@@ -201,6 +201,23 @@ def test_each_control_preserves_common_work_and_only_enables_its_policy(referenc
     assert reference["arms"]["full"]["BELIEFKV_NATIVE_TELEMETRY_DIR"] == "old/native"
 
 
+@pytest.mark.parametrize("label", ("full", "thunderagent_acting_decay", "native_matched"))
+@pytest.mark.parametrize("declared,inherited,expected", ((None, "32", "1"), ("32", "1", "32")))
+def test_write_back_cap_is_pinned_in_the_matched_server_environment(
+    reference, tmp_path, label, declared, inherited, expected,
+):
+    key = "SGLANG_HICACHE_WRITE_BACK_BATCH_NODES"
+    if declared is not None:
+        reference["arms"]["full"][key] = declared
+    settings, _, _ = comparison.environment(
+        reference, label, tmp_path, tmp_path, tmp_path, 18554, tmp_path,
+    )
+    server_env = comparison.qualified.driver_environment(
+        {"environment": settings}, {key: inherited},
+    )
+    assert server_env[key] == expected
+
+
 @pytest.mark.parametrize("label", comparison.CONTROLS)
 def test_explicit_short_tool_continuity_reaches_the_actual_workflow_arm(reference, tmp_path, label):
     reference["arms"]["full"]["TOOL_CONTINUITY"] = "1"

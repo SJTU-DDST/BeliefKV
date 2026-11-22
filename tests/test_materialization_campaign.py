@@ -119,7 +119,8 @@ def test_pair_resume_cannot_hide_an_additional_baseline():
         })
 
 
-def test_resume_revalidates_actual_execution_and_review_before_skipping(tmp_path, monkeypatch):
+@pytest.mark.parametrize("label", ("control", "pressure"))
+def test_resume_revalidates_actual_execution_and_review_before_skipping(tmp_path, monkeypatch, label):
     from scripts import verify_measured_execution as verification
 
     proof = {
@@ -141,10 +142,16 @@ def test_resume_revalidates_actual_execution_and_review_before_skipping(tmp_path
         calls.append(("review", args))
     ))
     plan = {
-        "completed_stage_proofs": {"control": str(saved)}, "cohort": str(tmp_path / "cohort"),
-        "stages": {"control": {"registration": str(tmp_path / "registration"), "review": str(review)}},
+        "completed_stage_proofs": {label: str(saved)}, "cohort": str(tmp_path / "cohort"),
+        "stages": {label: {"registration": str(tmp_path / "registration"), "review": str(review)}},
     }
-    assert campaign.completed_stage_proofs(plan) == {"control": proof}
+    if label == "pressure":
+        plan.update(
+            GPU_stage_order=["control", "pressure"],
+            reuse_completed_pressure=True,
+            stages={"control": {}, **plan["stages"]},
+        )
+    assert campaign.completed_stage_proofs(plan) == {label: proof}
     assert [kind for kind, _args in calls] == ["execution", "review"]
     changed = deepcopy(proof)
     changed["work"]["r"][1] = 5
@@ -152,6 +159,72 @@ def test_resume_revalidates_actual_execution_and_review_before_skipping(tmp_path
     with pytest.raises(ValueError, match="proof changed"):
         campaign.completed_stage_proofs(plan)
     assert [kind for kind, _args in calls] == ["execution", "review", "execution"]
+
+
+@pytest.mark.parametrize("change", (None, "early", "argv"))
+def test_reuse_pressure_preflight_preserves_original_serving_arguments(tmp_path, monkeypatch, change):
+    state = tmp_path / "ranking_state.json"
+    state.write_text(json.dumps({
+        "status": "running" if change == "early" else "complete",
+        "completed": ["full", "oracle", "learned"],
+    }))
+    stages = {}
+    for index, label in enumerate(campaign.LABELS[:2]):
+        stage = {
+            "registration": str(tmp_path / (label + ".registration.json")),
+            "run_root": str(tmp_path / label),
+            "configuration": str(PREPARED / (label + ".json")),
+            "port": 19420 + index,
+        }
+        stage["command"] = [
+            "python", str(tmp_path / "scripts/run_causal_comparison.py"),
+            "--registration", stage["registration"], "--run-root", stage["run_root"],
+            "--port", str(stage["port"]), "--experiment-config", stage["configuration"],
+            "--request-timeout-s", "7200" if change == "argv" and label == "control" else "3600",
+        ]
+        Path(stage["registration"]).write_text(json.dumps({
+            "order": ["full"], "code_commit": "frozen", "run_root": stage["run_root"],
+            "experiment_configuration": stage["configuration"],
+        }))
+        stages[label] = stage
+    monkeypatch.setattr(campaign.causal.fresh, "_require_clean", lambda path: None)
+    monkeypatch.setattr(campaign.subprocess, "check_output", lambda *args, **kwargs: "frozen\n")
+    plan = {
+        "stages": stages, "operator": str(tmp_path), "shared_gpu": True,
+        "preceding_ranking_campaign_state": str(state),
+        "cohort": configurations()["pressure"]["private_analysis_cohort"]["path"],
+    }
+    if change is None:
+        campaign.verify_pressure_reuse_plan(plan)
+    else:
+        with pytest.raises(ValueError, match="wait for the complete|changed the frozen serving arguments"):
+            campaign.verify_pressure_reuse_plan(plan)
+
+
+@pytest.mark.parametrize("control_cap", (32, 1, True))
+def test_reused_pressure_pair_checks_real_write_back_cap(tmp_path, monkeypatch, control_cap):
+    stages, proofs = {}, {}
+    monkeypatch.setattr(campaign, "matching_serving_traffic", lambda *args: None)
+    for label, cap, policy in (("control", control_cap, "off"), ("pressure", 32, "pressure_v2")):
+        directory = tmp_path / label
+        directory.mkdir()
+        registration = directory / "registration.json"
+        registration.write_text(json.dumps({
+            "code_commit": "frozen", "engine_tree": "native",
+            "reference_environment": {
+                "BELIEFKV_SUBAGENT_MATERIALIZATION": policy,
+                "SGLANG_HICACHE_WRITE_BACK_BATCH_NODES": "32",
+            },
+        }))
+        drain = directory / "telemetry_drain.json"
+        drain.write_text(json.dumps({"drained_status": {"write_back_batch": {"max_nodes": cap}}}))
+        stages[label] = {"registration": str(registration)}
+        proofs[label] = {"certificate": str(directory / "completion.json"), "work": {}}
+    if control_cap == 32:
+        campaign.verify_reused_pressure_match({"stages": stages}, proofs)
+    else:
+        with pytest.raises(ValueError, match="matching native write-back caps"):
+            campaign.verify_reused_pressure_match({"stages": stages}, proofs)
 
 
 def test_queue_heartbeat_and_bridge_controls_can_be_updated(tmp_path):

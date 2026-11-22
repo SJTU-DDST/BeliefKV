@@ -201,17 +201,23 @@ def helper_module():
 
 
 def completed_stage_proofs(plan):
-    """Reuse only a verified completed prefix, preserving every original run."""
+    """Reuse verified stages, including an explicit pressure arm in a two-arm ablation."""
     labels = stage_labels(plan)
     saved = plan.get("completed_stage_proofs", {})
-    if not isinstance(saved, dict) or set(saved) != set(labels[:len(saved)]):
+    reuse_pressure = plan.get("reuse_completed_pressure", False)
+    if reuse_pressure is True:
+        if labels != LABELS[:2] or not isinstance(saved, dict) or set(saved) != {"pressure"}:
+            raise ValueError("reuse a completed pressure arm only in its two-arm ablation")
+    elif reuse_pressure is not False or not isinstance(saved, dict) or set(saved) != set(labels[:len(saved)]):
         raise ValueError("completed stages must be an ordered campaign prefix")
     if not saved:
         return {}
     from scripts.verify_measured_execution import verify_execution, review_matches_execution
 
     proofs = {}
-    for label in labels[:len(saved)]:
+    for label in labels:
+        if label not in saved:
+            continue
         stage = plan["stages"][label]
         previous = load(saved[label])
         fresh = verify_execution(Path(stage["registration"]), Path(plan["cohort"]))
@@ -225,17 +231,90 @@ def completed_stage_proofs(plan):
     return proofs
 
 
+def verify_pressure_reuse_plan(plan):
+    current = load(plan["preceding_ranking_campaign_state"])
+    if current["status"] != "complete" or current["completed"] != ["full", "oracle", "learned"]:
+        raise ValueError("wait for the complete ranking campaign before registering its D3 control")
+    shared = matching_preparations({
+        label: load(plan["stages"][label]["configuration"]) for label in LABELS[:2]
+    })
+    if plan["cohort"] != shared["private_analysis_cohort"]["path"] or not uses_shared_gpu(plan):
+        raise ValueError("reuse the exact verified cohort and shared GPU access")
+    control, pressure = (plan["stages"][label] for label in LABELS[:2])
+    registration = load(pressure["registration"])
+    if (
+        registration["experiment_configuration"] != pressure["configuration"]
+        or registration["run_root"] != pressure["run_root"]
+        or registration["order"] != ["full"]
+    ):
+        raise ValueError("the reused pressure stage differs from its registration")
+    operator = Path(plan["operator"])
+    causal.fresh._require_clean(operator)
+    if subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=operator, text=True,
+    ).strip() != registration["code_commit"]:
+        raise ValueError("the D3 control must use the reused pressure arm's serving commit")
+    expected = command_with(pressure["command"], {
+        "--registration": control["registration"], "--run-root": control["run_root"],
+        "--port": control["port"], "--experiment-config": control["configuration"],
+    })
+    if (
+        control["command"] != expected
+        or Path(expected[1]) != operator / "scripts/run_causal_comparison.py"
+    ):
+        raise ValueError("the D3 control launch changed the frozen serving arguments")
+
+
+def register_reused_pressure_control(plan_path, plan, owner):
+    # The registrar and runtime constructor must both come from the frozen serving checkout.
+    python = plan["stages"]["control"]["command"][0]
+    result = subprocess.check_output([
+        python, "-c",
+        "import json,sys\n"
+        "from scripts.run_materialization_campaign import load,register_stage\n"
+        "plan=load(sys.argv[1])\n"
+        "print(json.dumps(register_stage(plan['stages']['control'],plan,json.loads(sys.argv[2]))))\n",
+        str(plan_path), json.dumps(owner),
+    ], cwd=plan["operator"], text=True)
+    return json.loads(result)
+
+
+def verify_reused_pressure_match(plan, proofs):
+    registrations = {
+        label: load(plan["stages"][label]["registration"]) for label in LABELS[:2]
+    }
+    control, pressure = (registrations[label] for label in LABELS[:2])
+    matching_serving_traffic(control, pressure)
+    setting = "BELIEFKV_SUBAGENT_MATERIALIZATION"
+    on, off = pressure["reference_environment"], control["reference_environment"]
+    if (
+        on[setting] not in PRESSURE_POLICIES or off != {**on, setting: "off"}
+        or pressure["code_commit"] != control["code_commit"]
+        or pressure["engine_tree"] != control["engine_tree"]
+        or canonical_work(proofs["control"]["work"]) != canonical_work(proofs["pressure"]["work"])
+    ):
+        raise ValueError("the completed runs differ beyond the D3 policy")
+    caps = []
+    for label in LABELS[:2]:
+        drain = load(Path(proofs[label]["certificate"]).with_name("telemetry_drain.json"))
+        caps.append(drain["drained_status"]["write_back_batch"]["max_nodes"])
+    expected_cap = max(1, int(on.get("SGLANG_HICACHE_WRITE_BACK_BATCH_NODES", "1")))
+    if any(type(cap) is not int or cap != expected_cap for cap in caps):
+        raise ValueError("the completed D3 pair requires matching native write-back caps")
+
+
 def watch(plan_path):
     plan, output = load(plan_path), plan_path.parent
     labels = stage_labels(plan)
     shared_gpu = uses_shared_gpu(plan)
+    reuse_pressure = plan.get("reuse_completed_pressure") is True
     if os.environ.get("CUDA_VISIBLE_DEVICES") != "99999" or os.getpriority(os.PRIO_PROCESS, 0):
         raise ValueError("require a CUDA-hidden nice0 CPU coordinator")
     if (output / "state.json").exists():
         raise FileExistsError("preserve previous queue outcomes")
     owner = causal.reservation.process(os.getpid())
     state = {
-        "status": "verifying_inputs" if labels == PRESSURE_ONLY else "verifying_completed_Oracle",
+        "status": "verifying_inputs" if labels == PRESSURE_ONLY or reuse_pressure else "verifying_completed_Oracle",
         "process": owner,
         "GPU_stage_order": list(labels), "completed_stages": [],
         "shared_gpu": shared_gpu,
@@ -273,7 +352,9 @@ def watch(plan_path):
     proofs = {}
     try:
         verify_pins(plan["inputs_sha256"])
-        if labels != PRESSURE_ONLY:
+        if reuse_pressure:
+            verify_pressure_reuse_plan(plan)
+        elif labels != PRESSURE_ONLY:
             oracle_complete(load(plan["preceding_Oracle_comparison"]))
         proofs = completed_stage_proofs(plan)
         for label, proof in proofs.items():
@@ -317,7 +398,10 @@ def watch(plan_path):
                 verify_pins(plan["inputs_sha256"])
                 state["status"] = "registering_" + label
                 pulse()
-                supervisor = register_stage(stage, plan, owner)
+                supervisor = (
+                    register_reused_pressure_control(plan_path, plan, owner)
+                    if reuse_pressure else register_stage(stage, plan, owner)
+                )
                 state.update(serving_watcher=supervisor, status="waiting_actual_replay_" + label)
                 state["GPU_registered_stages"].append(label)
                 registration = Path(stage["registration"])
@@ -407,6 +491,8 @@ def watch(plan_path):
                 ])
                 state.update(status="complete_four_matched_arms", measured_completed=18)
             elif labels == LABELS[:2]:
+                if reuse_pressure:
+                    verify_reused_pressure_match(plan, proofs)
                 cpu("materialization_comparison", [
                     ROOT / "scripts/review_materialization_campaign.py",
                     "--plan", plan_path, "--output", output / "materialization_comparison",

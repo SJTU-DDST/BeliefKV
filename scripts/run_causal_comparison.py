@@ -167,6 +167,10 @@ def environment(
         CHUNKED_PREFILL_SIZE=str(prefill["chunked_prefill_size"]), ENABLE_SESSION_RADIX_CACHE="1",
         **host_numa.environment(reference["arms"]["full"]),
         HICACHE_WRITE_POLICY="write_back", BELIEFKV_FULL_MAMBA_HOST_SPLIT="80:20",
+        # Pin the native default even when the launching shell exports a different cap.
+        SGLANG_HICACHE_WRITE_BACK_BATCH_NODES=reference["arms"]["full"].get(
+            "SGLANG_HICACHE_WRITE_BACK_BATCH_NODES", "1",
+        ),
         BELIEFKV_CAUSAL_REPLAY_BRIDGE="1", SGLANG_PLUGINS="beliefkv_causal_replay",
         SGLANG_ENABLE_DELAY_SAMPLE="0" if sampling_mode == "position" else "1",
         BELIEFKV_CAUSAL_REPLAY_SAMPLING=sampling_mode, BELIEFKV_REPLAY_TOKEN_CAPTURE="0",

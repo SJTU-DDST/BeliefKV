@@ -6,12 +6,13 @@ from unittest.mock import Mock
 import pytest
 
 from scripts import review_materialization_campaign as review
+from scripts.compare_reported_workflow_cohorts import HOST_POOL_TELEMETRY, WRITE_BACK_CAP_SETTING
 from scripts.review_predictive_thunder_cohort import TRAFFIC_FIELDS
 from scripts.train_workflow_work import write
 from tests.test_sustained_oracle_review import cohort_report
 
 
-def completed_campaign(tmp_path):
+def completed_campaign(tmp_path, *, write_back_cap=32):
     measured = {
         "control": (100., 300.),
         "pressure": (120., 360.),
@@ -24,8 +25,13 @@ def completed_campaign(tmp_path):
             "review": str(tmp_path / label / "review"),
             "run_root": str(tmp_path / label / "run"),
             "arm": "full" if label in ("control", "pressure") else label,
+            "registration": str(tmp_path / label / "registration.json"),
         }
         plan["stages"][label] = stage
+        write(Path(stage["registration"]), {
+            "order": [stage["arm"]], "run_root": stage["run_root"],
+            "reference_environment": {WRITE_BACK_CAP_SETTING: str(write_back_cap)},
+        })
         write(tmp_path / (label + "_execution_proof.json"), {
             "actual_owned_exit_verified": True,
             "work": {"request": [10, 2, "prompt", "output", {"type": "stop", "matched": 1}]},
@@ -38,13 +44,18 @@ def completed_campaign(tmp_path):
             tmp_path / label / "run" / stage["arm"] / "server/native_capacity_census.json",
             {"capacity": {"device_full_tokens": 805198, "host_full_tokens": 2034506}},
         )
+        path = Path(stage["run_root"]) / stage["arm"] / HOST_POOL_TELEMETRY
+        path.write_text(json.dumps({
+            "event": "host_pool_usage", "write_back_batch": {"max_nodes": write_back_cap},
+        }) + "\n")
     path = tmp_path / "plan.json"
     write(path, plan)
     return path, plan
 
 
-def test_both_full_arms_are_compared_with_each_matched_baseline(tmp_path, monkeypatch):
-    plan_path, plan = completed_campaign(tmp_path)
+@pytest.mark.parametrize("cap", (1, 32))
+def test_both_full_arms_are_compared_with_each_matched_baseline(tmp_path, monkeypatch, cap):
+    plan_path, plan = completed_campaign(tmp_path, write_back_cap=cap)
     render = Mock()
     monkeypatch.setattr(review, "render", render)
     output = tmp_path / "results"
@@ -63,11 +74,13 @@ def test_both_full_arms_are_compared_with_each_matched_baseline(tmp_path, monkey
         assert result["candidate_arm"] == candidate
         assert result["groups"]["measured"]["mean_JCT_reduction_percent"] == pytest.approx(gain)
         assert result["actual_capacities_equal"] and result["complete_measured_work_equal"]
+        assert result["write_back_cap_comparison"] == {"status": "matched", "matched_max_nodes": cap}
         assert str(plan_path) in result["inputs_sha256"]
         assert str(tmp_path / (baseline + "_execution_proof.json")) in result["inputs_sha256"]
         assert result["performance_accepted"] is False
     primary = json.loads((output / "comparison.json").read_bytes())
     assert primary["groups"]["measured"]["mean_JCT_reduction_percent"] == pytest.approx(-20.)
+    assert set(primary["native_write_back_batches"]) == set(plan["stages"])
     assert primary["performance_accepted"] is False
     assert len(render.call_args.args[0]) == len(plan["stages"])
 
@@ -95,6 +108,33 @@ def test_baseline_mismatch_is_rejected_before_publishing_comparisons(
     monkeypatch.setattr(review, "render", render)
     output = tmp_path / "results"
     with pytest.raises(ValueError, match="exit|work|capacities"):
+        review.review(plan_path, output, baselines=True)
+    assert not output.exists()
+    render.assert_not_called()
+
+
+@pytest.mark.parametrize("label", ("control", "thunderagent_acting_decay", "native_matched"))
+@pytest.mark.parametrize("observed", (1, None))
+def test_four_arm_review_requires_matching_batched_write_back(tmp_path, monkeypatch, label, observed):
+    plan_path, plan = completed_campaign(tmp_path)
+    stage = plan["stages"][label]
+    path = Path(stage["run_root"]) / stage["arm"] / HOST_POOL_TELEMETRY
+    if observed is None:
+        path.unlink()
+        error = f"effective native write-back cap is unknown for: {label}"
+    else:
+        registration = Path(stage["registration"])
+        record = review.load(registration)
+        record["reference_environment"][WRITE_BACK_CAP_SETTING] = str(observed)
+        registration.write_text(json.dumps(record))
+        path.write_text(json.dumps({
+            "event": "host_pool_usage", "write_back_batch": {"max_nodes": observed},
+        }) + "\n")
+        error = "different effective native write-back caps"
+    render = Mock()
+    monkeypatch.setattr(review, "render", render)
+    output = tmp_path / "results"
+    with pytest.raises(ValueError, match=error):
         review.review(plan_path, output, baselines=True)
     assert not output.exists()
     render.assert_not_called()
@@ -132,6 +172,7 @@ def test_reuse_requires_completed_matching_control(tmp_path, monkeypatch, differ
             "reference_environment": {
                 "BELIEFKV_SUBAGENT_MATERIALIZATION": "off" if label == "control" else "pressure_v2",
                 "WORKFLOW_WORK_MODEL_SHA256": "predictor",
+                WRITE_BACK_CAP_SETTING: "32",
             },
             "source_sha256": {
                 **dict.fromkeys(review.D3_RUNTIME_SOURCES, label),
@@ -142,7 +183,7 @@ def test_reuse_requires_completed_matching_control(tmp_path, monkeypatch, differ
             data["reference_environment"]["WORKFLOW_WORK_MODEL_SHA256"] = "other"
         if label == "control" and difference == "source":
             data["source_sha256"]["beliefkv/runtime/workflow_combination.py"] = "other"
-        write(registration, data)
+        registration.write_text(json.dumps(data))
         proof = review.load(tmp_path / (label + "_execution_proof.json"))
         summary = review.load(directory / "review/cohort.json")
         certificate = directory / "completion.json"

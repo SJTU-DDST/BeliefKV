@@ -4,7 +4,10 @@ import json
 import pytest
 
 from beliefkv.experiments.source_provenance import sha256_file
-from scripts.review_predictive_thunder_cohort import matching_serving_traffic, matching_traffic, named_metrics
+from scripts.compare_reported_workflow_cohorts import HOST_POOL_TELEMETRY, WRITE_BACK_CAP_SETTING
+from scripts.review_predictive_thunder_cohort import (
+    matching_serving_traffic, matching_traffic, named_metrics, write_back_evidence,
+)
 from tests.test_sustained_oracle_review import censored_report
 
 
@@ -27,6 +30,39 @@ def test_matched_baseline_preserves_all_traffic_and_complete_jct():
     assert group["mean_JCT_reduction_percent"] > 0
     assert group["paired_completed_workflows"] == group["fixed_population"]
     assert "oracle_JCT_ms" not in group and "control_JCT_ms" not in group
+
+
+@pytest.mark.parametrize("label", ("thunderagent_acting_decay", "native_matched"))
+@pytest.mark.parametrize(("configured", "observed", "error"), (
+    ((32, 32), (32, 32), None),
+    ((32, 1), (32, 1), "different effective native write-back caps"),
+    ((32, 32), (32, 1), "requested native write-back cap 32, observed 1"),
+    ((32, 32), (None, None), "effective native write-back cap is unknown"),
+    ((None, None), (None, None), None),
+))
+def test_system_review_requires_batched_write_back_on_both_arms(tmp_path, label, configured, observed, error):
+    comparison_plans, cohorts = plans(), []
+    comparison_plans[1]["order"] = [label]
+    for plan, requested, cap in zip(comparison_plans, configured, observed, strict=True):
+        arm = tmp_path / plan["order"][0]
+        plan["run_root"] = str(tmp_path)
+        if requested is not None:
+            plan["reference_environment"] = {WRITE_BACK_CAP_SETTING: str(requested)}
+        path = arm / HOST_POOL_TELEMETRY
+        if cap is not None:
+            path.parent.mkdir(parents=True)
+            record = {"event": "host_pool_usage", "write_back_batch": {"max_nodes": cap}}
+            path.write_text(json.dumps(record) + "\n")
+        cohorts.append({})
+    if error:
+        with pytest.raises(ValueError, match=error):
+            write_back_evidence(comparison_plans, cohorts)
+    else:
+        result = write_back_evidence(comparison_plans, cohorts)
+        assert result["write_back_cap_comparison"] == {
+            "status": "unknown" if observed[0] is None else "matched",
+            "matched_max_nodes": observed[0],
+        }
 
 
 @pytest.mark.parametrize("field", (

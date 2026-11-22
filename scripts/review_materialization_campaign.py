@@ -10,7 +10,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.runtime.subagent_materialization import PRESSURE_POLICIES
 from scripts.plot_workflow_cohort_comparison import render
-from scripts.review_predictive_thunder_cohort import matching_serving_traffic
+from scripts.review_predictive_thunder_cohort import matching_serving_traffic, write_back_evidence
 from scripts.review_sustained_oracle import compare_cohorts
 from scripts.run_materialization_campaign import LABELS, canonical_work, load
 from scripts.train_workflow_work import write
@@ -67,10 +67,18 @@ def review(plan_path, output, *, baselines=False, reuse_control=None):
         if baselines or plan.get("GPU_stage_order") != ["pressure"] or set(stages) != {"pressure"}:
             raise ValueError("reuse a completed control with a pressure-only campaign")
         stages = reused_control_stages(plan, *reuse_control)
-    proofs, reports, capacities, pins = {}, {}, {}, {}
+    proofs, reports, registrations, capacities, pins = {}, {}, {}, {}, {}
     labels = LABELS if baselines else LABELS[:2]
     for label in labels:
         stage = stages[label]
+        registration = Path(stage["registration"])
+        registrations[label] = load(registration)
+        if (
+            registrations[label]["order"] != [stage["arm"]]
+            or Path(registrations[label]["run_root"]) != Path(stage["run_root"])
+        ):
+            raise ValueError("registered replay differs from the declared stage: " + label)
+        pins[str(registration)] = sha256_file(registration)
         review_dir = Path(stage["review"])
         report_path = review_dir / "cohort.json"
         reports[label] = load(report_path)
@@ -79,7 +87,7 @@ def review(plan_path, output, *, baselines=False, reuse_control=None):
             proofs[label] = load(proof_path)
             pins[str(proof_path)] = sha256_file(proof_path)
         else:
-            registration, cohort_path = Path(stage["registration"]), Path(plan["cohort"])
+            cohort_path = Path(plan["cohort"])
             proof = proofs[label] = verify_execution(registration, cohort_path)
             if proof.get("protocol") != "all_fixed_measured_workflows_completed":
                 raise ValueError("reuse requires the fixed-cohort completion protocol")
@@ -93,7 +101,7 @@ def review(plan_path, output, *, baselines=False, reuse_control=None):
                 raise ValueError("cohort report differs from the verified completion certificate")
             pins.update({
                 str(path): sha256_file(path)
-                for path in (registration, review_path, cohort_path, certificate)
+                for path in (review_path, cohort_path, certificate)
             })
         if proofs[label].get("actual_owned_exit_verified") is not True:
             raise ValueError("wait for actual measured completion and owned exit")
@@ -105,6 +113,7 @@ def review(plan_path, output, *, baselines=False, reuse_control=None):
             raise ValueError("measured native work changed")
         if capacities["control"] != capacities[label]:
             raise ValueError("actual resource capacities changed")
+    write_back = write_back_evidence(registrations.values(), reports.values(), labels=labels)
     names = {
         "control": "Full control", "pressure": "Full + materialization",
         "thunderagent_acting_decay": "ThunderAgent acting-decay",
@@ -112,6 +121,7 @@ def review(plan_path, output, *, baselines=False, reuse_control=None):
     }
     result = compare_cohorts(reports["control"], reports["pressure"], minimum_jct_gain=.01)
     result.update(
+        **write_back,
         scope="first_child_KV_materialization_only_matched_pair",
         inputs_sha256={**pins, str(plan_path): sha256_file(plan_path),
                        str(Path(__file__)): sha256_file(Path(__file__))},
@@ -129,6 +139,7 @@ def review(plan_path, output, *, baselines=False, reuse_control=None):
                     reports[label], reports[candidate], minimum_jct_gain=.01,
                 )
                 baseline.update(
+                    **write_back,
                     reference=label, candidate=names[candidate],
                     reference_arm=label, candidate_arm=candidate,
                     inputs_sha256=result["inputs_sha256"],

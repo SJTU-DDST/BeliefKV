@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as causal
-from scripts.review_predictive_thunder_cohort import matching_serving_traffic
+from scripts.review_predictive_thunder_cohort import matching_serving_traffic, write_back_evidence
 from scripts.review_sustained_oracle import compare_cohorts
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import review_matches_execution, verify_execution
@@ -78,8 +78,10 @@ def main():
         inputs.extend((review_path, cohort_path, capacity_path))
     if capacities[0] != capacities[1]:
         raise ValueError("actual native/Predictive KV pool capacities differ")
+    write_back = write_back_evidence(plans, cohorts)
     result = named_metrics(cohorts[1], cohorts[0])
     result.update(
+        **write_back,
         observed_at=datetime.now(timezone.utc).isoformat(),
         reference="native_sglang", candidate="predictive",
         positive_gain_means_predictive_is_better=True,
@@ -90,6 +92,7 @@ def main():
         formal_workload_accepted=False, single_run_statistical_significance_claimed=False,
         inputs_sha256={str(path.resolve()): sha256_file(path) for path in (
             *inputs, Path(__file__), ROOT / "scripts/review_sustained_oracle.py",
+            ROOT / "scripts/compare_reported_workflow_cohorts.py",
             ROOT / "scripts/review_predictive_thunder_cohort.py",
             ROOT / "scripts/verify_measured_execution.py", ROOT / "scripts/stop_after_measured_cohort.py",
         )},
