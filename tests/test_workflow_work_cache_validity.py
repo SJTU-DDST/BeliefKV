@@ -120,3 +120,44 @@ def test_dormant_manual_worker_without_a_live_producer_does_not_extend_validity(
         assert worker.prediction("wf") is None
     finally:
         worker.close()
+
+
+def test_fresh_publication_ages_only_progress_it_has_not_incorporated(monkeypatch):
+    clock = [1000.]
+    monkeypatch.setattr(module.time, "monotonic", lambda: clock[0])
+    model = WorkflowWorkModel(distribution_raw())
+    worker = WorkflowWorkWorker("", "", model=model, autostart=False)
+    try:
+        worker.submit("wf", "event", start())
+        worker.submit("wf", "event", root())
+        worker.submit("wf", "started", "r", "root", "c", [1, 2])
+        worker.process_pending()
+        initial = worker.prediction("wf")
+        lag = model.distribution_contract["maximum_observation_lag_s"]
+        clock[0] += .1
+        worker.submit("wf", "generated", "r", 4)
+        clock[0] += lag + model.distribution_contract["minimum_refresh_s"]
+        assert worker.prediction("wf") is None
+
+        queued_at = clock[0]
+        predict = model.predict
+
+        def predict_with_new_progress(*args, **kwargs):
+            result = predict(*args, **kwargs)
+            worker.submit("wf", "generated", "r", 8)
+            clock[0] += .25
+            worker.submit("wf", "generated", "r", 12)
+            return result
+
+        monkeypatch.setattr(model, "predict", predict_with_new_progress)
+        worker.process_pending()
+        fresh = worker.prediction("wf")
+        assert fresh is not None and fresh.revision == initial.revision + 1
+        clock[0] = queued_at + lag + .01
+        assert worker.prediction("wf") is None
+
+        monkeypatch.setattr(model, "predict", predict)
+        worker.process_pending()
+        assert worker.prediction("wf").revision == fresh.revision + 2
+    finally:
+        worker.close()

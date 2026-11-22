@@ -82,6 +82,7 @@ class WorkflowWorkWorker:
         self._dirty = set()
         self._revisions = Counter()
         self._submitted_revisions = Counter()
+        self._first_queued_observation = {}
         self._pending_since = {}
         self.counts = Counter()
         self.error = ""
@@ -117,6 +118,9 @@ class WorkflowWorkWorker:
             observed_at = time.monotonic()
             self._queue.append((workflow, action, args, observed_at))
             self._submitted_revisions[workflow] += 1
+            self._first_queued_observation.setdefault(
+                workflow, (self._submitted_revisions[workflow], observed_at),
+            )
             self._pending_since.setdefault(workflow, observed_at)
             self.counts["submitted"] += 1
             self._condition.notify()
@@ -239,6 +243,7 @@ class WorkflowWorkWorker:
         with self._condition:
             rows = tuple(self._queue)
             self._queue.clear()
+            self._first_queued_observation.clear()
         self.counts["worker_observations_processed"] += len(rows)
         self._consume(rows)
         for workflow in tuple(self._dirty):
@@ -350,8 +355,13 @@ class WorkflowWorkWorker:
                     not self._r5 or self._structural_consumed[workflow] == self._structural_submitted[workflow]
                 ):
                     self._predictions[workflow] = prediction
-                    if self._revisions[workflow] == self._submitted_revisions[workflow]:
+                    if prediction.revision == self._submitted_revisions[workflow]:
                         self._pending_since.pop(workflow, None)
+                    elif (queued := self._first_queued_observation.get(workflow)) is not None:
+                        revision, observed_at = queued
+                        # Advance only when the publication covers every preceding observation.
+                        if revision == prediction.revision + 1:
+                            self._pending_since[workflow] = observed_at
 
     def _run(self):
         try:
