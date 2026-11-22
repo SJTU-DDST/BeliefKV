@@ -204,7 +204,26 @@ def prepare_ack_engine_compatibility(
     from beliefkv.experiments.native_engine_variant import (
         COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE,
         DEMAND_PREFILL_PIPELINE_TREE, FREE_EXTENT_TREE, TOKENCAKE_TREE, AGENTIX_TREE,
+        D3_GUARDED_WRITEBACK_TREE,
     )
+    if candidate_tree == D3_GUARDED_WRITEBACK_TREE:
+        write_back_files = {
+            FILE, "python/sglang/srt/mem_cache/unified_cache/components/full.py",
+            "test/srt/test_beliefkv_write_back_batch.py",
+        }
+        if set(git("diff", "--name-only", FREE_EXTENT_TREE, candidate_tree).splitlines()) != write_back_files:
+            raise ValueError("guarded write-back engine changes files outside native write-back")
+        return {
+            "policy": "explicit_d3_guarded_writeback_engine_variant",
+            "source_engine_tree": original_tree, "candidate_engine_tree": candidate_tree,
+            "base_engine_tree": FREE_EXTENT_TREE,
+            "base_engine_compatibility": prepare_ack_engine_compatibility(
+                engine, source, candidate_tree=FREE_EXTENT_TREE,
+            ),
+            "changed_files": changed,
+            "requires_fresh_gpu_components_model_and_position_smoke": True,
+            "scope": "Bounded native chain write-back with the D3 capacity guard.",
+        }
     if candidate_tree == AGENTIX_TREE:
         from beliefkv.experiments.agentix_engine import verify_native_hooks
 

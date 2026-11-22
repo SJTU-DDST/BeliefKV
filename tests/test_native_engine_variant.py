@@ -7,7 +7,7 @@ import pytest
 
 from beliefkv.experiments.native_engine_variant import (
     COMMON_TREE, LAYER_TREE, GROUPED_LAYER_TREE, SIBLING_CAPACITY_TREE,
-    DEMAND_PREFILL_PIPELINE_TREE, engine_patch,
+    DEMAND_PREFILL_PIPELINE_TREE, D3_GUARDED_WRITEBACK_TREE, engine_patch,
 )
 from beliefkv.experiments.prepare_ack_engine import prepare_ack_engine_compatibility
 
@@ -90,3 +90,13 @@ def test_demand_pipeline_patch_cannot_be_replaced_by_arbitrary_native_edits(tmp_
     (tmp_path / "patches/sglang-demand-prefill-pipeline-runtime-20261028.patch").write_text("changed")
     with pytest.raises(ValueError, match="native demand pipeline engine patch"):
         engine_patch(tmp_path, DEMAND_PREFILL_PIPELINE_TREE)
+
+
+def test_guarded_writeback_requires_its_own_pinned_patch(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    patch = engine_patch(root, D3_GUARDED_WRITEBACK_TREE)
+    assert patch.name == "sglang-d3-guarded-writeback-runtime.patch"
+    (tmp_path / "patches").mkdir()
+    (tmp_path / "patches" / patch.name).write_bytes(b"changed")
+    with pytest.raises(ValueError, match="guarded write-back engine patch"):
+        engine_patch(tmp_path, D3_GUARDED_WRITEBACK_TREE)

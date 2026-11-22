@@ -457,6 +457,23 @@ class SubagentMaterialization:
                                 counts["subagent_materialization_writeback_padding_tokens_avoided"] += padding_saved
             return native_evict(node_id, tracker)
 
+        def write_back_prefix(plan, tracker, device_shortfall):
+            # Additional victims bypass the leaf hook only when it would
+            # accept them whole with no Host reclaim.
+            if not component.is_evict_device_ongoing:
+                return ()
+            available = min(
+                device_shortfall, component._evict_device_request_cnt - tracker[0],
+                pool.available_size(),
+            )
+            for index, node_id in enumerate(plan):
+                full = tree.node_by_id(node_id).component_data[0]
+                if full.value is None or not 0 < (size := len(full.value)) <= available:
+                    return plan[:index]
+                available -= size
+            return plan
+
+        cache.beliefkv_write_back_batch_guard = evict_device_leaf, write_back_prefix
         cache._evict_device_leaf = evict_device_leaf
         self._native_device_eviction = cache, native_evict, evict_device_leaf
         self._attach_host_eviction_trimming(cache, tree, component)
@@ -1577,6 +1594,9 @@ class SubagentMaterialization:
             self._native_demand_restore = None
         if self._native_device_eviction is not None:
             cache, native_evict, evict_device_leaf = self._native_device_eviction
+            guard = getattr(cache, "beliefkv_write_back_batch_guard", None)
+            if guard is not None and guard[0] is evict_device_leaf:
+                del cache.beliefkv_write_back_batch_guard
             if cache._evict_device_leaf is evict_device_leaf:
                 cache._evict_device_leaf = native_evict
             self._native_device_eviction = None

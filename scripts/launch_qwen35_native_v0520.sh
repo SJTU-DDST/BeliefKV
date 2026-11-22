@@ -258,6 +258,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     layer_free_extent)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-layer-free-extent-runtime-20261029.patch"
       ;;
+    d3_guarded_writeback)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-d3-guarded-writeback-runtime.patch"
+      ;;
     tokencake_scheduler)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-tokencake-scheduler-runtime-20261028.patch"
       ;;

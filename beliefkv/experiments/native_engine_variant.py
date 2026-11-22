@@ -15,6 +15,8 @@ DEMAND_PREFILL_PIPELINE_TREE = "729aa0caa7a1ffac84463f46b3d1843d1a6a22e4"
 DEMAND_PREFILL_PIPELINE_PATCH_SHA256 = "c9b3ae50490a5023e5d7fd1fb473c97b1c4c7f22923d06211bf1ea6173f86f0b"
 FREE_EXTENT_TREE = "434c35dd66211d0a230717c88bf1452056769a40"
 FREE_EXTENT_PATCH_SHA256 = "c3a287b69d8f400f722996930fb6aad6ddabaf1f8859fc98e794f556887b1e15"
+D3_GUARDED_WRITEBACK_TREE = "500479853e0542b0dc68e9ab8e03e1c1886830fd"
+D3_GUARDED_WRITEBACK_PATCH_SHA256 = "a57d52bfc30516d3654276a61f147d4784d147f091f4143f0786afe209cb98da"
 
 
 def reviewed_capture_composition(trees):
@@ -68,5 +70,10 @@ def engine_patch(root, tree):
         patch = root / "patches/sglang-layer-free-extent-runtime-20261029.patch"
         if sha256_file(patch) != FREE_EXTENT_PATCH_SHA256:
             raise ValueError("free extent engine patch differs from the reviewed implementation")
+        return patch
+    if tree == D3_GUARDED_WRITEBACK_TREE:
+        patch = root / "patches/sglang-d3-guarded-writeback-runtime.patch"
+        if sha256_file(patch) != D3_GUARDED_WRITEBACK_PATCH_SHA256:
+            raise ValueError("guarded write-back engine patch differs from the reviewed implementation")
         return patch
     return root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
