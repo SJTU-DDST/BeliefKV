@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -56,6 +57,26 @@ def test_resources_cannot_change_in_an_arm(label):
     values = configurations()
     values[label]["common_environment"]["HICACHE_SIZE_GB"] = "201"
     with pytest.raises(ValueError, match="resources|more than"):
+        campaign.matching_preparations(values)
+
+
+@pytest.mark.parametrize("baseline", campaign.LABELS[2:])
+@pytest.mark.parametrize("baseline_cap", (None, "1"))
+def test_batched_write_back_requires_matching_baseline_caps(baseline, baseline_cap):
+    values = configurations()
+    key = campaign.WRITE_BACK_CAP_SETTING
+    for spec in values.values():
+        spec["common_environment"][key] = "32"
+    assert campaign.matching_preparations(values)["resources"][key] == 32
+
+    common = values[baseline]["common_environment"]
+    if baseline_cap is None:
+        del common[key]
+        inherited = campaign.matching_preparations(values, inherited_write_back_cap="32")
+        assert inherited["resources"][key] == 32
+    else:
+        common[key] = baseline_cap
+    with pytest.raises(ValueError, match=f"{baseline}.*write-back cap 1.*32"):
         campaign.matching_preparations(values)
 
 
@@ -268,14 +289,19 @@ def test_oracle_review_must_include_complete_native_work():
         })
 
 
-def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=False, shared_gpu=False):
-    oracle, report, sources, template, supervisor = (
+def prepared_queue(
+    tmp_path, monkeypatch, *, pair_only=False, pressure_only=False, shared_gpu=False,
+    relative_reference=False,
+):
+    oracle, report, sources, template, supervisor, reference = (
         tmp_path / name for name in (
             "oracle.json", "cpu.xml", "sources.json", "template.json", "supervisor.py",
+            "reference.json",
         )
     )
     for path in (report, sources, supervisor):
         path.write_text("{}")
+    reference.write_text(json.dumps({"arms": {"full": {campaign.WRITE_BACK_CAP_SETTING: "32"}}}))
     if not pressure_only:
         oracle.write_text("{}")
     flags = (
@@ -283,6 +309,10 @@ def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=Fals
         "--experiment-config", "--arms", "--workflow-arrivals",
     )
     command = [campaign.sys.executable, "unused.py"]
+    if relative_reference:
+        command.append("--reference=" + os.path.relpath(reference, campaign.ROOT))
+    else:
+        command.extend(("--reference", str(reference)))
     for flag in flags:
         command.extend((flag, "unused"))
     stage = "full" if pressure_only else "oracle"
@@ -306,9 +336,12 @@ def prepared_queue(tmp_path, monkeypatch, *, pair_only=False, pressure_only=Fals
     return campaign.load(output / "plan.json")
 
 
-def test_actual_preparation_builds_four_matching_queue_entries(tmp_path, monkeypatch):
-    plan = prepared_queue(tmp_path, monkeypatch)
+@pytest.mark.parametrize("relative_reference", (False, True))
+def test_actual_preparation_builds_four_matching_queue_entries(tmp_path, monkeypatch, relative_reference):
+    plan = prepared_queue(tmp_path, monkeypatch, relative_reference=relative_reference)
     assert plan["minimum_model_work_p80_p20"] == 2.6
+    reference = tmp_path / "reference.json"
+    assert plan["inputs_sha256"][str(reference)] == campaign.sha256_file(reference)
     assert list(plan["stages"]) == list(campaign.LABELS)
     assert len({row["port"] for row in plan["stages"].values()}) == 4
     for label, stage in plan["stages"].items():

@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.runtime.subagent_materialization import PRESSURE_POLICIES
 from scripts import run_causal_comparison as causal
+from scripts.compare_reported_workflow_cohorts import WRITE_BACK_CAP_SETTING
 from scripts.run_continuous_matched_campaign import command_with, verify_serving_owner, write
 from scripts.finish_model_work_oracle import verify_pins, wait_observer_publication
 from scripts.review_predictive_thunder_cohort import matching_serving_traffic
@@ -51,7 +52,7 @@ def uses_shared_gpu(plan):
     return plan.get("shared_gpu") is True or tuple(plan.get("GPU_stage_order", ())) == PRESSURE_ONLY
 
 
-def matching_preparations(configurations):
+def matching_preparations(configurations, *, inherited_write_back_cap="1"):
     labels = next(
         (order for order in (LABELS, LABELS[:2]) if set(configurations) == set(order)), None,
     )
@@ -85,8 +86,14 @@ def matching_preparations(configurations):
                 "NATIVE_EXECUTION_CONFIG_SHA256",
             )
         }
-        if shared is not None and identity != shared:
-            raise ValueError("prepared arms changed traffic, measurement or resources")
+        cap = max(1, int(common.get(WRITE_BACK_CAP_SETTING, inherited_write_back_cap)))
+        identity["resources"][WRITE_BACK_CAP_SETTING] = cap
+        if shared is not None:
+            expected_cap = shared["resources"][WRITE_BACK_CAP_SETTING]
+            if cap != expected_cap:
+                raise ValueError(f"{label} native write-back cap {cap} differs from control cap {expected_cap}")
+            if identity != shared:
+                raise ValueError("prepared arms changed traffic, measurement or resources")
         shared = identity
     before, after = (deepcopy(configurations[label]) for label in LABELS[:2])
     for spec in (before, after):
@@ -454,13 +461,6 @@ def prepare(args):
             raise ValueError("prepared configuration changed")
         configurations[label] = load(binding["path"])
         pins[binding["path"]] = binding["sha256"]
-    shared = matching_preparations(configurations)
-    for name in ("workflow_arrivals", "private_analysis_cohort", "tool_timing_overlay"):
-        binding = shared[name]
-        if sha256_file(Path(binding["path"])) != binding["sha256"]:
-            raise ValueError("shared protocol changed")
-        pins[binding["path"]] = binding["sha256"]
-    causal.comparison.qualify_report(args.cpu_report, args.cpu_sources)
     template_plan = load(args.template_plan)
     template_labels = ("full", "pressure", "oracle") if labels == PRESSURE_ONLY else ("oracle",)
     template_stages = template_plan["stages"]
@@ -469,6 +469,21 @@ def prepare(args):
     ), None)
     if template is None:
         raise ValueError("the template plan has no compatible serving command")
+    reference_parser = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
+    reference_parser.add_argument("--reference", type=Path, required=True)
+    reference_args, _ = reference_parser.parse_known_args(template[2:])
+    reference_path = (ROOT / reference_args.reference).resolve()
+    pins[str(reference_path)] = sha256_file(reference_path)
+    reference_environment = load(reference_path)["arms"]["full"]
+    shared = matching_preparations(
+        configurations, inherited_write_back_cap=reference_environment.get(WRITE_BACK_CAP_SETTING, "1"),
+    )
+    for name in ("workflow_arrivals", "private_analysis_cohort", "tool_timing_overlay"):
+        binding = shared[name]
+        if sha256_file(Path(binding["path"])) != binding["sha256"]:
+            raise ValueError("shared protocol changed")
+        pins[binding["path"]] = binding["sha256"]
+    causal.comparison.qualify_report(args.cpu_report, args.cpu_sources)
     args.output.mkdir(parents=True)
     plugin = args.output / "prepared_plugin"
     with (args.output / "plugin_install.log").open("x") as stream:
