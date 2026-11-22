@@ -6,6 +6,7 @@ import shutil
 import pytest
 
 from beliefkv.experiments import native_execution as execution
+from beliefkv.experiments.native_engine_variant import D3_GUARDED_WRITEBACK_TREE
 from beliefkv.experiments.source_provenance import sha256_file
 from scripts import run_causal_comparison as comparison
 from tests.test_causal_comparison import reference
@@ -53,6 +54,19 @@ def test_absent_profile_does_not_open_files_or_change_historical_configuration(t
     assert execution.observe(None, {}, None, tmp_path) is None
     assert execution.verify_completed_configuration({}) is None
     execution.require_source_binding(None, {}, tmp_path)
+
+
+def test_guarded_writeback_uses_the_same_kernel_and_requires_its_own_gpu_identity(profile):
+    checkout, _, common = profile
+    baseline = execution.configuration(common, checkout)
+    guarded = execution.configuration({**common, "SGLANG_PATCH_FLAVOR": "d3_guarded_writeback"}, checkout)
+    assert guarded == {
+        **baseline, "identity": {**baseline["identity"], "engine_tree": D3_GUARDED_WRITEBACK_TREE},
+    }
+    with pytest.raises(ValueError, match="different native execution"):
+        execution.verify_qualified_configuration(
+            guarded, {"native_execution_configuration": baseline["identity"]},
+        )
 
 
 @pytest.mark.parametrize("arm", ("full", "native_matched", "thunderagent_acting_decay"))

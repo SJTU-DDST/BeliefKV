@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+from beliefkv.experiments.native_engine_variant import D3_GUARDED_WRITEBACK_TREE, FREE_EXTENT_TREE
 from beliefkv.experiments.source_provenance import sha256_file
 
 CONFIG_KEY = "NATIVE_EXECUTION_CONFIG"
@@ -44,7 +45,7 @@ def configuration(common, checkout):
         or document.get("device_KV_token_capacity") != 805198
         or document.get("triton_version") != "3.7.1"
         or document.get("GPU") != "NVIDIA H200 NVL"
-        or document.get("engine_tree") != "434c35dd66211d0a230717c88bf1452056769a40"
+        or document.get("engine_tree") != FREE_EXTENT_TREE
         or common.get("MODEL_CACHE_LAYOUT") != "full_only"
         or common.get("MAX_RUNNING_REQUESTS") != "24"
         or common.get("CHUNKED_PREFILL_SIZE") != "2048"
@@ -60,13 +61,18 @@ def configuration(common, checkout):
         or sha256_file(kernel) != document.get("kernel_configuration_sha256")
     ):
         raise ValueError("native MoE kernel configuration changed")
+    # The guarded write-back variant shares the base kernel and graph profile.
+    engine_tree = (
+        D3_GUARDED_WRITEBACK_TREE
+        if common.get("SGLANG_PATCH_FLAVOR") == "d3_guarded_writeback" else FREE_EXTENT_TREE
+    )
     return {
         "identity": {
             "configuration": str(source.relative_to(checkout)),
             "configuration_sha256": digest,
             "kernel_configuration": str(kernel.relative_to(checkout)),
             "kernel_configuration_sha256": document["kernel_configuration_sha256"],
-            "engine_tree": document["engine_tree"],
+            "engine_tree": engine_tree,
         },
         "environment": {MOE_KEY: str(moe_root)},
         "flags": ["--cuda-graph-config", json.dumps(GRAPH)],
