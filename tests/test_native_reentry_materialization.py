@@ -55,7 +55,7 @@ def test_aligned_prefill_tracks_the_safe_reentry_state(tagged, expected):
     )
     entry = batch._mamba_radix_cache_v2_req_prepare_for_extend(request)
     assert request.kv.mamba_last_track_seqlen == expected
-    assert entry.track_index == 10
+    assert entry.track_index.item() == 10
     assert entry.track_seqlen == (11265 if tagged else 11328)
 
 
