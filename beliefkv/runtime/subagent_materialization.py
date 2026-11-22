@@ -585,7 +585,7 @@ class SubagentMaterialization:
         writes_at_trial = len(controller.ack_write_queue)
         selected = getattr(self._adder, "can_run_list", ())
 
-        def decline(reason, **details):
+        def decline(reason, *, headroom=None, **details):
             if (
                 writer is not None and key is not None
                 and getattr(req, "_beliefkv_d3_restore_decline", None) != (key, reason)
@@ -619,7 +619,9 @@ class SubagentMaterialization:
                     "event": "subagent_materialization_demand_restore_chunk_declined",
                     "ts_ms": time.time() * 1000., "key": asdict(key), "reason": reason,
                     "initial_Host_hit_tokens": hit, "device_free_tokens": device_free,
-                    "queued_write_acks_at_trial": writes_at_trial, **details,
+                    "queued_write_acks_at_trial": writes_at_trial,
+                    **({"headroom": asdict(headroom)} if headroom is not None else {}),
+                    **details,
                 })
             return False
 
@@ -751,7 +753,11 @@ class SubagentMaterialization:
             tokens = hit
         tokens = tokens // page * page
         if tokens < minimum_tokens:
-            return decline("no_safe_slice", safe_tokens=safe_tokens, observation=headroom.reason)
+            return decline(
+                "no_safe_slice", headroom=headroom, safe_tokens=safe_tokens,
+                observation=headroom.reason, device_reserve_tokens=reserve,
+                minimum_slice_tokens=minimum_tokens,
+            )
         runtime.counts["subagent_materialization_demand_restore_chunk_trials"] += 1
         reason = self._demand_restore_chunk.start(
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
@@ -779,7 +785,7 @@ class SubagentMaterialization:
                 reason = "backed_device_capacity_not_funded"
             decline(
                 reason, proposed_tokens=tokens, device_reserve_tokens=reserve,
-                headroom=asdict(headroom),
+                headroom=headroom,
             )
             if reason == DEFER_WRITE_ACK:
                 runtime.counts["subagent_materialization_demand_restore_ack_retries"] += 1

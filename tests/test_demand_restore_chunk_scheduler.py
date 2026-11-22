@@ -1813,6 +1813,13 @@ def test_d3_promoted_join_parent_preserves_native_fallback(resident_restore_pres
         decline, = _restore_declines(f.runtime)
         assert decline["reason"] == ("no_safe_slice" if held_host is not None else "protected_service")
         assert decline["queued_write_acks_at_trial"] == 0
+        if blocker == "no_safe_slice":
+            headroom = decline["headroom"]
+            assert headroom["observable"]
+            assert headroom["host_free_tokens"] == 4
+            assert headroom["device_free_tokens"] == 0
+            assert decline["device_reserve_tokens"] == 3
+            assert decline["safe_tokens"] == 1 < decline["minimum_slice_tokens"] == 2
         assert f.runtime.counts["subagent_materialization_demand_restore_ack_retries"] == 0
         f.cache.loading_check()
         f.cache.dec_lock_ref(req.last_node, req.lock_receipt)
