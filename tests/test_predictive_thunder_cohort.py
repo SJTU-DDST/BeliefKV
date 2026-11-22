@@ -1,7 +1,9 @@
 from copy import deepcopy
+import json
 
 import pytest
 
+from beliefkv.experiments.source_provenance import sha256_file
 from scripts.review_predictive_thunder_cohort import matching_serving_traffic, matching_traffic, named_metrics
 from tests.test_sustained_oracle_review import censored_report
 
@@ -38,6 +40,30 @@ def test_baseline_rejects_changed_work_resources_arrivals_or_oracle_metadata(fie
     predictive, thunder = plans()
     thunder[field] = "changed"
     with pytest.raises(ValueError):
+        matching_traffic(predictive, thunder)
+
+
+@pytest.mark.parametrize("change", (None, "bytes", "pin", "registered_arrivals"))
+def test_reuses_identical_arrival_files_at_distinct_registered_paths(tmp_path, change):
+    predictive, thunder = plans()
+    schedule = {"arrival_schedule": [{"workflow_id": "w", "offset_seconds": 0}]}
+    for index, plan in enumerate((predictive, thunder)):
+        path = tmp_path / f"arrivals-{index}.json"
+        path.write_text(json.dumps(schedule))
+        plan["workflow_arrivals_path"] = str(path)
+        plan["workflow_arrivals"] = deepcopy(schedule)
+        plan["external_inputs"] = [{"path": str(path), "sha256": sha256_file(path)}]
+    if change is None:
+        matching_traffic(predictive, thunder)
+        return
+    if change == "bytes":
+        path.write_text(json.dumps(schedule) + "\n")
+    elif change == "pin":
+        thunder["external_inputs"] = []
+    else:
+        for plan in (predictive, thunder):
+            plan["workflow_arrivals"]["arrival_schedule"][0]["offset_seconds"] = 1
+    with pytest.raises(ValueError, match="workflow_arrivals_path"):
         matching_traffic(predictive, thunder)
 
 

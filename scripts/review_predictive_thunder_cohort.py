@@ -2,6 +2,8 @@
 
 import argparse
 from datetime import datetime, timezone
+from hashlib import sha256
+import json
 import os
 from pathlib import Path
 import sys
@@ -25,10 +27,35 @@ TRAFFIC_FIELDS = (
 )
 
 
+def _bound_arrival_sha256(plan):
+    name = plan.get("workflow_arrivals_path")
+    if not isinstance(name, str) or not name:
+        return None
+    path = Path(name).resolve()
+    pins = [
+        item["sha256"] for item in plan.get("external_inputs", ())
+        if item["path"] == str(path)
+    ]
+    if len(pins) != 1:
+        return None
+    try:
+        payload = path.read_bytes()
+        if sha256(payload).hexdigest() == pins[0] and json.loads(payload) == plan["workflow_arrivals"]:
+            return pins[0]
+    except (OSError, ValueError):
+        return None
+    return None
+
+
 def matching_serving_traffic(first, second):
     for name in TRAFFIC_FIELDS:
-        if name not in first or first[name] != second.get(name):
-            raise ValueError("paired execution changed fixed traffic or serving conditions: " + name)
+        if name in first and first[name] == second.get(name):
+            continue
+        if name == "workflow_arrivals_path":
+            digest = _bound_arrival_sha256(first)
+            if digest is not None and digest == _bound_arrival_sha256(second):
+                continue
+        raise ValueError("paired execution changed fixed traffic or serving conditions: " + name)
     if first.get("native_execution_configuration") != second.get("native_execution_configuration"):
         raise ValueError("paired execution changed the shared native execution configuration")
     for name in ("expected_replay_capacity", "host_capacity_experiment"):
