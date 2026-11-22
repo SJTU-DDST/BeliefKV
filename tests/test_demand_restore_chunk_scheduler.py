@@ -1023,10 +1023,15 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     source_slots = f.leaf.component_data[0].host_value
     mode = getattr(request, "param", None)
     idle = mode == "idle"
-    mirror_tokens = {"join-backed-whole-restore": 11, "join-partial-backed-capacity": 5}.get(mode, 0)
+    mirror_tokens = {
+        "join-backed-whole-restore": 11, "join-partial-backed-capacity": 5,
+        "ordinary-partial-backed-capacity": 5,
+    }.get(mode, 0)
     host_slots = {"idle": 19, "two-write-acks": 22, "join-free-first-slice": 16}.get(
         mode, 16 + mirror_tokens if mirror_tokens else 21,
     )
+    if mode == "ordinary-partial-backed-capacity":
+        host_slots += 4
     held_host = host.alloc(host.size - host_slots)
     neighbor, _ = insert_session(cache, range(101, 105), "neighbor")
     neighbor_slots = _backup(cache, neighbor, demote=True)
@@ -1054,6 +1059,7 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     free_device, free_host = {
         "idle": (0, 7), "join-free-first-slice": (5, 0),
         "join-backed-whole-restore": (0, 0), "join-partial-backed-capacity": (0, 0),
+        "ordinary-partial-backed-capacity": (0, 4),
     }.get(mode, (3, 5))
     held_device = allocator.alloc(allocator.available_size() - free_device)
     assert (allocator.available_size(), host.available_size()) == (free_device, free_host)
@@ -1636,6 +1642,63 @@ def test_d3_promoted_join_requires_a_whole_restore_from_settled_mirrors(
             case.query.return_value = True
             cache.writing_check(finish_count=1)
         cache.sanity_check()
+
+
+@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
+@pytest.mark.parametrize(
+    ("mode", "resident_restore_pressure"),
+    (
+        ("settled", "join-backed-whole-restore"),
+        ("insufficient", "join-partial-backed-capacity"),
+        ("aggregate-only", "ordinary-partial-backed-capacity"),
+    ),
+    indirect=("resident_restore_pressure",),
+)
+def test_d3_ordinary_native_restore_uses_whole_settled_capacity(resident_restore_pressure, mode):
+    case = resident_restore_pressure
+    f = case.f
+    cache, req = f.cache, f.req
+    case.scheduler.waiting_queue.remove(case.resident)
+    case.query.return_value = True
+    cache.writing_check(finish_count=1)
+    assert not cache.cache_controller.ack_write_queue
+    mirror = case.backed.component_data[0]
+    mirror_host = mirror.host_value
+    writes_before = len(case.writes)
+
+    if mode == "settled":
+        f.complete.ready = True
+        with pytest.raises(BatchConstructionReached):
+            case.invoke()
+        assert case.construction == [(req,)]
+        assert f.runtime.counts["subagent_materialization_backed_device_whole_restores"] == 1
+        assert not f.runtime.counts["subagent_materialization_join_backed_device_whole_restores"]
+        assert mirror.value is None and f.allocator.available_size() >= 3
+        load, = f.loads
+        assert load.host_indices.tolist() == case.source_slots.tolist()
+        cache.loading_check(finish_count=1)
+        cache.dec_lock_ref(req.last_node, req.lock_receipt)
+    else:
+        def fallback(_params):
+            assert mirror.value is not None and f.allocator.available_size() == 0
+            return None
+
+        case.native_load.side_effect = fallback
+        assert case.invoke() == (None, f.running)
+        assert not case.construction and not f.loads
+        assert not f.runtime.counts["subagent_materialization_backed_device_whole_restores"]
+        decline, = _restore_declines(f.runtime)
+        assert decline["reason"] == {
+            "insufficient": "headroom_expected_to_cover_native_restore",
+            "aggregate-only": "backed_device_capacity_not_funded",
+        }[mode]
+
+    case.native_load.assert_called_once()
+    case.evict.assert_not_called()
+    assert len(case.writes) == writes_before
+    assert mirror.host_value is mirror_host and case.host.slot_used[mirror_host].all()
+    assert case.neighbor.component_data[0].host_value is case.neighbor_slots
+    cache.sanity_check()
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)

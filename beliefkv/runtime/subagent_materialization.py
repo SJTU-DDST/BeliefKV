@@ -656,7 +656,7 @@ class SubagentMaterialization:
             return decline("prefill_batch_already_constrained")
         reserve = chunk + page * len(self._running_batch.reqs)
         minimum_tokens = max(chunk, threshold)
-        fund_whole_from_backed_device = (
+        fund_join_from_backed_device = (
             pending_join_write and not continuation and device_free - reserve < minimum_tokens
         )
         if pending_join_write and (
@@ -665,7 +665,7 @@ class SubagentMaterialization:
             or controller.ack_write_queue[0].node_ids[0] not in cache.ongoing_write_through
         ):
             return decline("protected_service")
-        if fund_whole_from_backed_device and (
+        if fund_join_from_backed_device and (
             self._native_device_eviction is None or not cache.tree_core.full_host_duplicates
             or hit % page or device_free + cache.full_evictable_size() < hit + reserve
         ):
@@ -699,7 +699,7 @@ class SubagentMaterialization:
                 preferred_suffix_tokens = max(0, min(
                     tokens, mirror_safe_tokens, device_free + cache.full_evictable_size() - reserve,
                 )) // page * page
-        elif fund_whole_from_backed_device:
+        elif fund_join_from_backed_device:
             # A whole restore funded by settled mirrors can leave the write in flight.
             tokens = hit
             preserve_host_only = True
@@ -713,7 +713,16 @@ class SubagentMaterialization:
         elif safe_tokens + chunk >= hit:
             # An unreferenced Host-only extent can still be reused later.
             # A first slice funded without those extents can publish new mirrors.
-            if mirror_safe_tokens < minimum_tokens or mirror_safe_tokens + chunk >= hit:
+            if (
+                mirror_safe_tokens >= hit and hit % page == 0
+                and self._native_device_eviction is not None and cache.tree_core.full_host_duplicates
+                and not (writes_at_trial or controller.write_queue or cache.ongoing_write_through)
+                and device_free + cache.full_evictable_size() >= hit + reserve
+            ):
+                # Fund the already selected native load with settled mirrors before
+                # its allocator has to choose a new write-back victim.
+                fund_from_backed_device = self._fund_from_backed_device
+            elif mirror_safe_tokens < minimum_tokens or mirror_safe_tokens + chunk >= hit:
                 return decline(
                     "headroom_expected_to_cover_native_restore",
                     safe_tokens=safe_tokens, mirror_safe_tokens=mirror_safe_tokens,
@@ -737,17 +746,20 @@ class SubagentMaterialization:
         if reason == FULL_RESTORE_FUNDED:
             stage = "suffix" if continuation else "whole_hit"
             runtime.counts[f"subagent_materialization_demand_restore_{stage}_funded"] += 1
-            if fund_whole_from_backed_device:
-                runtime.counts["subagent_materialization_join_backed_device_whole_restores"] += 1
+            if fund_from_backed_device is not None:
+                source = "join_backed_device" if fund_join_from_backed_device else "backed_device"
+                runtime.counts[f"subagent_materialization_{source}_whole_restores"] += 1
                 if writer is not None:
                     writer.record({
-                        "event": "subagent_materialization_join_backed_device_restore",
+                        "event": f"subagent_materialization_{source}_restore",
                         "ts_ms": time.time() * 1000., "key": asdict(key),
                         "host_hit_tokens": hit, "device_free_before_tokens": device_free,
                         "device_reserve_tokens": reserve,
                     })
             return False
         if reason is not None:
+            if reason == "protected_service" and fund_from_backed_device is not None and not fund_join_from_backed_device:
+                reason = "backed_device_capacity_not_funded"
             decline(
                 reason, proposed_tokens=tokens, device_reserve_tokens=reserve,
                 headroom=asdict(headroom),
