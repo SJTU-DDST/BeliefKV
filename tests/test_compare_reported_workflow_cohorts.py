@@ -216,21 +216,34 @@ def test_strict_cli_records_equal_effective_caps_and_evidence(tmp_path, monkeypa
         comparison.compare_arms([full, thunder], write_back_cap_ablation=True)
 
 
-def test_requested_cap_without_native_observation_is_unknown(tmp_path):
+@pytest.mark.parametrize("requested", [None, "32"])
+def test_batched_arm_requires_verified_baseline_by_default(tmp_path, requested):
+    full = make_arm(tmp_path, "full")
+    thunder = make_arm(tmp_path, "thunderagent")
+    write_native_host_usage(full, 32 if requested is None else None)
+    write_native_host_usage(thunder, None)
+    if requested is not None:
+        registration = comparison.load(full[1])
+        registration["reference_environment"] = {comparison.WRITE_BACK_CAP_SETTING: requested}
+        write_json(full[1], registration)
+
+    unknown = "thunderagent" if requested is None else "full, thunderagent"
+    for options in ({}, {"require_verified_write_back_cap": True}, {"write_back_cap_ablation": True}):
+        with pytest.raises(ValueError, match=f"native write-back cap is unknown for: {unknown}"):
+            comparison.compare_arms([full, thunder], **options)
+
+
+def test_requested_batched_cap_must_match_native_observation(tmp_path):
     full = make_arm(tmp_path, "full")
     thunder = make_arm(tmp_path, "thunderagent")
     write_native_host_usage(full, 32)
-    write_native_host_usage(thunder, None)
+    write_native_host_usage(thunder, 1)
     registration = comparison.load(thunder[1])
-    registration["reference_environment"] = {"SGLANG_HICACHE_WRITE_BACK_BATCH_NODES": "32"}
+    registration["reference_environment"] = {comparison.WRITE_BACK_CAP_SETTING: "32"}
     write_json(thunder[1], registration)
 
-    result = comparison.compare_arms([full, thunder])
-    assert result["write_back_cap_comparison"] == {"status": "unknown", "matched_max_nodes": None}
-    assert result["arms"]["thunderagent"]["write_back_batch"]["max_nodes"] is None
-    for option in ("require_verified_write_back_cap", "write_back_cap_ablation"):
-        with pytest.raises(ValueError, match="native write-back cap is unknown for: thunderagent"):
-            comparison.compare_arms([full, thunder], **{option: True})
+    with pytest.raises(ValueError, match="thunderagent: requested native write-back cap 32, observed 1"):
+        comparison.compare_arms([full, thunder])
 
 
 @pytest.mark.parametrize("caps, message", [

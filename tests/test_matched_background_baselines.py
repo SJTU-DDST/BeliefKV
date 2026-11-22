@@ -27,6 +27,7 @@ def full_configuration():
             "MODEL_PATH": "/models/qwen", "MODEL_CACHE_LAYOUT": "full_only",
             "MAX_RUNNING_REQUESTS": "24", "CHUNKED_PREFILL_SIZE": "2048",
             "ENABLE_MIXED_CHUNK": "0", "DEVICE_FULL_TOKENS": "805198",
+            "SGLANG_HICACHE_WRITE_BACK_BATCH_NODES": "32",
             "HOST_NUMA_NODE": "1", "HOST_NUMA_MEMORY_POLICY": "interleave",
             "HOST_NUMA_MEMORY_NODES": "0,1", "HOST_NUMA_PLACEMENT_CHECK": "diagnostic",
             "AGENT_ADMISSION": "thunderagent_reference",
@@ -53,6 +54,7 @@ def test_matching_baseline_preserves_traffic_and_resources_without_mutating_full
     assert result["workflow_arrivals"] == before["workflow_arrivals"]
     assert result["private_analysis_cohort"] == before["private_analysis_cohort"]
     assert common["ROOT_COUNT"] == "100" and common["HICACHE_SIZE_GB"] == "400"
+    assert common["SGLANG_HICACHE_WRITE_BACK_BATCH_NODES"] == "32"
     assert common["HOST_NUMA_PLACEMENT_CHECK"] == "diagnostic"
     assert common["AGENT_CONTROL_INTERVAL_MS"] == "5000"
     assert common["BELIEFKV_WORKFLOW_WORK_SOURCE"] == "learned"
@@ -74,7 +76,8 @@ def test_matching_baseline_preserves_traffic_and_resources_without_mutating_full
 
 @pytest.mark.parametrize("label", LABELS)
 @pytest.mark.parametrize("corruption", (
-    "arrival", "cohort", "host", "numa", "future", "prediction", "cadence", "registration",
+    "arrival", "cohort", "host", "write_back_cap", "numa", "future", "prediction",
+    "cadence", "registration",
 ))
 def test_invalid_matching_contract_is_rejected(full_configuration, label, corruption):
     result = configuration(full_configuration, label)
@@ -84,6 +87,8 @@ def test_invalid_matching_contract_is_rejected(full_configuration, label, corrup
         result["private_analysis_cohort"]["path"] = "/different/cohort.json"
     elif corruption == "host":
         result["common_environment"]["HICACHE_SIZE_GB"] = "200"
+    elif corruption == "write_back_cap":
+        result["common_environment"]["SGLANG_HICACHE_WRITE_BACK_BATCH_NODES"] = "1"
     elif corruption == "numa":
         result["common_environment"]["HOST_NUMA_PLACEMENT_CHECK"] = "strict"
     elif corruption == "future":

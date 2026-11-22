@@ -28,6 +28,7 @@ RAW_FILES = (
     "replay/native_requests.jsonl",
 )
 HOST_POOL_TELEMETRY = "server/host_pool_telemetry.jsonl"
+WRITE_BACK_CAP_SETTING = "SGLANG_HICACHE_WRITE_BACK_BATCH_NODES"
 
 
 def load(path):
@@ -128,7 +129,7 @@ def compare_write_back_caps(batches, *, require_verified, ablation):
             f"different effective native write-back caps (max_nodes): {details}. "
             "Use --write-back-cap-ablation for an intentional cap change."
         )
-    if unknown and (require_verified or ablation):
+    if unknown and (require_verified or ablation or any(cap > 1 for cap in known)):
         raise ValueError(f"effective native write-back cap is unknown for: {', '.join(unknown)}")
     if ablation and len(known) < 2:
         raise ValueError("write-back cap ablation requires different verified effective caps")
@@ -384,15 +385,27 @@ def compare_arms(
         inputs[label] = registration_path, registration, report_path, report, arm
 
     write_back_batches = {}
-    for label, (_, _, _, report, arm) in inputs.items():
+    batched_write_back_requested = False
+    for label, (_, registration, _, report, arm) in inputs.items():
         try:
-            write_back_batches[label] = read_write_back_batch(
+            batch = read_write_back_batch(
                 arm, sealed_prefixes=report["input_jsonl_prefixes"],
             )
+            configured = (registration.get("reference_environment") or {}).get(WRITE_BACK_CAP_SETTING)
+            if configured is not None:
+                requested = max(1, int(configured))
+                batched_write_back_requested |= requested > 1
+                observed = batch["max_nodes"]
+                if observed is not None and observed != requested:
+                    raise ValueError(f"requested native write-back cap {requested}, observed {observed}")
+            write_back_batches[label] = batch
         except (OSError, ValueError, KeyError) as error:
             raise ValueError(f"{label}: {error}") from error
     write_back_comparison = compare_write_back_caps(
-        write_back_batches, require_verified=require_verified_write_back_cap,
+        write_back_batches,
+        require_verified=require_verified_write_back_cap or (
+            batched_write_back_requested and not write_back_cap_ablation
+        ),
         ablation=write_back_cap_ablation,
     )
 
@@ -474,7 +487,7 @@ than the earliest certified observation end across arms.""",
     parser.add_argument("--cohort", type=Path, help="common frozen declaration or campaign plan")
     cap_mode = parser.add_mutually_exclusive_group()
     cap_mode.add_argument("--require-verified-write-back-cap", action="store_true",
-                          help="require equal effective native write-back caps in every arm")
+                          help="require equal native caps in every arm, including single-node runs")
     cap_mode.add_argument("--write-back-cap-ablation", action="store_true",
                           help="allow intentional cap differences with evidence for every arm")
     parser.add_argument("--output", type=Path, required=True, help="new comparison JSON")
