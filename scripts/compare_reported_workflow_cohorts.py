@@ -27,6 +27,7 @@ RAW_FILES = (
     "server/runtime_audit.jsonl",
     "replay/native_requests.jsonl",
 )
+HOST_POOL_TELEMETRY = "server/host_pool_telemetry.jsonl"
 
 
 def load(path):
@@ -70,6 +71,72 @@ def registered_arm(registration, report):
     if len(paths) != 1:
         raise ValueError("cohort seal must identify one replay arm in the registration")
     return paths.pop()
+
+
+def read_write_back_batch(arm, *, sealed_prefixes=None):
+    """Read max_nodes (None if unobserved) and its JSONL seal from a replay arm."""
+    path = Path(arm) / HOST_POOL_TELEMETRY
+    name = str(path)
+    reader = SealedRecords()
+    if sealed_prefixes is not None and name in sealed_prefixes:
+        reader.prefixes[name] = sealed_prefixes[name]
+    max_nodes = None
+    for row in reader(path):
+        if not isinstance(row, dict):
+            raise ValueError(f"invalid native Host telemetry record: {path}")
+        if row.get("event") != "host_pool_usage":
+            continue
+        batch = row.get("write_back_batch")
+        if batch is None:
+            continue
+        if not isinstance(batch, dict):
+            raise ValueError(f"invalid native write_back_batch: {path}")
+        observed = batch.get("max_nodes")
+        if observed is None:
+            continue
+        if type(observed) is not int or observed < 1:
+            raise ValueError(f"invalid native write_back_batch.max_nodes: {path}")
+        if max_nodes is not None and max_nodes != observed:
+            raise ValueError(
+                f"native write_back_batch.max_nodes changed from {max_nodes} to {observed}: {path}"
+            )
+        max_nodes = observed
+
+    seal = reader.prefixes.get(name)
+    if seal is not None and not (
+        seal["complete_prefix_bytes"] == seal["first_read_limit_bytes"] == path.stat().st_size
+    ):
+        raise ValueError(f"write-back cap requires complete unchanged Host telemetry: {path}")
+    return {
+        "max_nodes": max_nodes,
+        "telemetry_path": name if seal is not None else None,
+        "telemetry_seal": seal,
+    }
+
+
+def compare_write_back_caps(batches, *, require_verified, ablation):
+    if require_verified and ablation:
+        raise ValueError("choose either matching-cap verification or write-back cap ablation")
+    caps = {label: batch["max_nodes"] for label, batch in batches.items()}
+    known = {cap for cap in caps.values() if cap is not None}
+    unknown = [label for label, cap in caps.items() if cap is None]
+    if len(known) > 1 and not ablation:
+        details = ", ".join(
+            f"{label}={cap if cap is not None else 'unknown'}" for label, cap in caps.items()
+        )
+        raise ValueError(
+            f"different effective native write-back caps (max_nodes): {details}. "
+            "Use --write-back-cap-ablation for an intentional cap change."
+        )
+    if unknown and (require_verified or ablation):
+        raise ValueError(f"effective native write-back cap is unknown for: {', '.join(unknown)}")
+    if ablation and len(known) < 2:
+        raise ValueError("write-back cap ablation requires different verified effective caps")
+    if ablation:
+        return {"status": "ablation", "matched_max_nodes": None}
+    if unknown:
+        return {"status": "unknown", "matched_max_nodes": None}
+    return {"status": "matched", "matched_max_nodes": known.pop()}
 
 
 def audit_arm(registration_path, registration, report_path, report, arm, supplied_path):
@@ -279,7 +346,10 @@ def report_group(observations, members, partitions, window_seconds):
     }
 
 
-def compare_arms(arm_specs, cohort_plan=None):
+def compare_arms(
+    arm_specs, cohort_plan=None, *, require_verified_write_back_cap=False,
+    write_back_cap_ablation=False,
+):
     if len(arm_specs) < 2 or len({label for label, *_ in arm_specs}) != len(arm_specs):
         raise ValueError("supply at least two distinctly named arms")
     cohort_path = Path(cohort_plan).resolve() if cohort_plan else None
@@ -313,6 +383,19 @@ def compare_arms(arm_specs, cohort_plan=None):
         seen.add(arm)
         inputs[label] = registration_path, registration, report_path, report, arm
 
+    write_back_batches = {}
+    for label, (_, _, _, report, arm) in inputs.items():
+        try:
+            write_back_batches[label] = read_write_back_batch(
+                arm, sealed_prefixes=report["input_jsonl_prefixes"],
+            )
+        except (OSError, ValueError, KeyError) as error:
+            raise ValueError(f"{label}: {error}") from error
+    write_back_comparison = compare_write_back_caps(
+        write_back_batches, require_verified=require_verified_write_back_cap,
+        ablation=write_back_cap_ablation,
+    )
+
     members = membership(reference)
     observations = {}
     for label, args in inputs.items():
@@ -328,6 +411,7 @@ def compare_arms(arm_specs, cohort_plan=None):
         "arrival_plan_sha256": reference["arrival_plan_sha256"],
         "token_source_sha256": token_source,
         "tool_timing_overlay_sha256": tool_timing,
+        "write_back_cap_comparison": write_back_comparison,
         "throughput_window": {
             "offset_seconds": [start, end], "duration_seconds": duration,
             "bounds": "[start, end)", "clock": "native_batch_completion",
@@ -348,6 +432,7 @@ def compare_arms(arm_specs, cohort_plan=None):
                     "system_window_output", "termination_rule", "observation_end_offset_s",
                     "inputs_sha256", "input_jsonl_prefixes",
                 )},
+                "write_back_batch": write_back_batches[label],
                 "partition_window_output": {
                     name: {"output_tokens": count, "output_tokens_per_second": count / duration}
                     for name, count in arm["partition_tokens"].items()
@@ -365,6 +450,7 @@ def main():
 
   CUDA_VISIBLE_DEVICES=99999 taskset -c 0 nice -n 19 python \\
     scripts/compare_reported_workflow_cohorts.py --cohort path/to/analysis_cohort.json \\
+    --require-verified-write-back-cap \\
     --arm unranked unranked.registration.json unranked/pressure_review/cohort.json \\
     --arm ranked ranked.registration.json ranked/pressure_review/cohort.json \\
     --output comparison.json
@@ -375,6 +461,10 @@ The optional common cohort path can be a frozen campaign plan that points to
 the declaration. Omit it to use the declarations pinned by the sealed reports.
 Complete schema-1 reports also work with matching members, arrivals and window.
 
+The cap comes from native host_pool_usage records in each arm. Different
+observed caps fail by default. Legacy arms without cap evidence produce an
+unknown comparison status unless matching verified caps are required.
+
 For a censored group, a restricted mean averages min(JCT, common_followup)
 over all fixed members. Follow-up runs from each arrival and ends no later
 than the earliest certified observation end across arms.""",
@@ -382,12 +472,20 @@ than the earliest certified observation end across arms.""",
     parser.add_argument("--arm", action="append", nargs=3, required=True,
                         metavar=("NAME", "REGISTRATION", "COHORT_REPORT"))
     parser.add_argument("--cohort", type=Path, help="common frozen declaration or campaign plan")
+    cap_mode = parser.add_mutually_exclusive_group()
+    cap_mode.add_argument("--require-verified-write-back-cap", action="store_true",
+                          help="require equal effective native write-back caps in every arm")
+    cap_mode.add_argument("--write-back-cap-ablation", action="store_true",
+                          help="allow intentional cap differences with evidence for every arm")
     parser.add_argument("--output", type=Path, required=True, help="new comparison JSON")
     args = parser.parse_args()
     if args.output.exists():
         parser.error(f"comparison already exists: {args.output}")
     try:
-        write(args.output, compare_arms(args.arm, args.cohort))
+        write(args.output, compare_arms(
+            args.arm, args.cohort, require_verified_write_back_cap=args.require_verified_write_back_cap,
+            write_back_cap_ablation=args.write_back_cap_ablation,
+        ))
     except (OSError, ValueError, KeyError) as error:
         parser.error(str(error))
     print(args.output)

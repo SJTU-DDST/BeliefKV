@@ -104,6 +104,26 @@ def make_arm(root, label, *, stop=False, censored=(), origin=0., window_end=4., 
     return label, registration, report_path
 
 
+def write_native_host_usage(arm_spec, *caps):
+    _, registration_path, _ = arm_spec
+    registration = comparison.load(registration_path)
+    arm = Path(registration["run_root"]) / registration["order"][0]
+    path = arm / comparison.HOST_POOL_TELEMETRY
+    rows = [{"event": "host_pool_transfer_ack", "ts_ms": 1795325894572.1042}]
+    for index, cap in enumerate(caps):
+        rows.append({
+            "event": "host_pool_usage",
+            "ts_ms": 1795325894572.1091 + index * 1000,
+            "sample_semantics": "scheduler_safe_point_sampled_high_water",
+            "write_back_batch": {
+                "max_nodes": cap,
+                "counts": {"attempts": index, "batches": index if cap == 32 else 0},
+            },
+        })
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    return arm, path
+
+
 def test_cli_accepts_legacy_complete_reports_and_reconciles_fixed_window(tmp_path, monkeypatch):
     first = make_arm(tmp_path, "reference", origin=1000., window_end=34.)
     second = make_arm(tmp_path, "trial", origin=2000., window_end=34.)
@@ -114,6 +134,7 @@ def test_cli_accepts_legacy_complete_reports_and_reconciles_fixed_window(tmp_pat
     ])
     comparison.main()
     result = comparison.load(output)
+    assert result["write_back_cap_comparison"] == {"status": "unknown", "matched_max_nodes": None}
     fixed, union = (result["groups"][key] for key in ("fixed_18", "fixed_measured_plus_warmup"))
     assert fixed["member_count"] == fixed["completed_in_all_arms_count"] == 18
     assert union["member_count"] == union["completed_in_all_arms_count"] == 20
@@ -131,6 +152,7 @@ def test_cli_accepts_legacy_complete_reports_and_reconciles_fixed_window(tmp_pat
     assert result["throughput_window"]["offset_seconds"] == [1., 34.]
     assert result["throughput_window"]["timestamp_field"] == "complete_monotonic_ms"
     for label in ("reference", "trial"):
+        assert result["arms"][label]["write_back_batch"]["max_nodes"] is None
         assert fixed["arms"][label]["window_output_tokens"] == 6
         assert union["arms"][label]["window_output_tokens"] == 10
         assert union["arms"][label]["window_output_tokens_per_second"] == pytest.approx(10 / 33)
@@ -138,6 +160,100 @@ def test_cli_accepts_legacy_complete_reports_and_reconciles_fixed_window(tmp_pat
         assert result["arms"][label]["system_window_output"] == {
             "output_tokens": 15, "output_tokens_per_second": pytest.approx(15 / 33),
         }
+
+
+def test_cli_rejects_native_32_vs_1_except_for_explicit_ablation(tmp_path, monkeypatch, capsys):
+    full = make_arm(tmp_path, "full")
+    thunder = make_arm(tmp_path, "thunderagent")
+    write_native_host_usage(full, 32, 32)
+    write_native_host_usage(thunder, 1, 1)
+    output = tmp_path / "comparison.json"
+    argv = [
+        "compare_reported_workflow_cohorts.py", "--arm", *map(str, full),
+        "--arm", *map(str, thunder), "--output", str(output),
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    with pytest.raises(SystemExit) as error:
+        comparison.main()
+    assert error.value.code == 2
+    assert "different effective native write-back caps (max_nodes): full=32, thunderagent=1" in (
+        capsys.readouterr().err
+    )
+    assert not output.exists()
+
+    monkeypatch.setattr(sys, "argv", [*argv, "--write-back-cap-ablation"])
+    comparison.main()
+    result = comparison.load(output)
+    assert result["write_back_cap_comparison"] == {"status": "ablation", "matched_max_nodes": None}
+    assert result["arms"]["full"]["write_back_batch"]["max_nodes"] == 32
+    assert result["arms"]["thunderagent"]["write_back_batch"]["max_nodes"] == 1
+
+
+def test_strict_cli_records_equal_effective_caps_and_evidence(tmp_path, monkeypatch):
+    full = make_arm(tmp_path, "full")
+    thunder = make_arm(tmp_path, "thunderagent")
+    _, full_path = write_native_host_usage(full, 32, 32)
+    _, thunder_path = write_native_host_usage(thunder, 32)
+    output = tmp_path / "comparison.json"
+    monkeypatch.setattr(sys, "argv", [
+        "compare_reported_workflow_cohorts.py", "--require-verified-write-back-cap",
+        "--arm", *map(str, full), "--arm", *map(str, thunder), "--output", str(output),
+    ])
+    comparison.main()
+    result = comparison.load(output)
+    assert result["write_back_cap_comparison"] == {"status": "matched", "matched_max_nodes": 32}
+    for spec, path in ((full, full_path), (thunder, thunder_path)):
+        assert result["arms"][spec[0]]["write_back_batch"] == {
+            "max_nodes": 32,
+            "telemetry_path": str(path),
+            "telemetry_seal": {
+                "complete_prefix_bytes": path.stat().st_size,
+                "first_read_limit_bytes": path.stat().st_size,
+                "complete_prefix_sha256": sha256_file(path),
+            },
+        }
+    with pytest.raises(ValueError, match="ablation requires different verified effective caps"):
+        comparison.compare_arms([full, thunder], write_back_cap_ablation=True)
+
+
+def test_requested_cap_without_native_observation_is_unknown(tmp_path):
+    full = make_arm(tmp_path, "full")
+    thunder = make_arm(tmp_path, "thunderagent")
+    write_native_host_usage(full, 32)
+    write_native_host_usage(thunder, None)
+    registration = comparison.load(thunder[1])
+    registration["reference_environment"] = {"SGLANG_HICACHE_WRITE_BACK_BATCH_NODES": "32"}
+    write_json(thunder[1], registration)
+
+    result = comparison.compare_arms([full, thunder])
+    assert result["write_back_cap_comparison"] == {"status": "unknown", "matched_max_nodes": None}
+    assert result["arms"]["thunderagent"]["write_back_batch"]["max_nodes"] is None
+    for option in ("require_verified_write_back_cap", "write_back_cap_ablation"):
+        with pytest.raises(ValueError, match="native write-back cap is unknown for: thunderagent"):
+            comparison.compare_arms([full, thunder], **{option: True})
+
+
+@pytest.mark.parametrize("caps, message", [
+    ((32, 1), "max_nodes changed from 32 to 1"),
+    ((True,), "invalid native write_back_batch.max_nodes"),
+    (("32",), "invalid native write_back_batch.max_nodes"),
+    ((0,), "invalid native write_back_batch.max_nodes"),
+])
+def test_rejects_inconsistent_or_invalid_native_caps(tmp_path, caps, message):
+    arm, _ = write_native_host_usage(make_arm(tmp_path, "full"), *caps)
+    with pytest.raises(ValueError, match=message):
+        comparison.read_write_back_batch(arm)
+
+
+def test_write_back_batch_honors_an_existing_telemetry_seal(tmp_path):
+    arm, path = write_native_host_usage(make_arm(tmp_path, "full"), 32)
+    batch = comparison.read_write_back_batch(arm)
+    sealed_prefixes = {str(path): batch["telemetry_seal"]}
+    assert comparison.read_write_back_batch(arm, sealed_prefixes=sealed_prefixes) == batch
+
+    path.write_text(path.read_text().replace('"max_nodes": 32', '"max_nodes": 16'))
+    with pytest.raises(ValueError, match="changed sealed prefix"):
+        comparison.read_write_back_batch(arm, sealed_prefixes=sealed_prefixes)
 
 
 def test_reports_the_declared_measured_group_size(tmp_path):
