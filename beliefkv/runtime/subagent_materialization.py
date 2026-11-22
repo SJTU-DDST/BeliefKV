@@ -1064,11 +1064,11 @@ class SubagentMaterialization:
         req = params.req
         mirror_wait = shortfall <= 0
         if mirror_wait:
-            # A fit grant can wait once for an already selected load's mirrors.
+            # The selected ordinary loads publish one merged native ACK.
             if (
                 submitted or acks or staged is not None or controller.write_queue
                 or controller.ack_write_queue or cache.ongoing_write_through
-                or not chunk or credit < chunk or len(native_node_ids) != 1
+                or not chunk or credit < chunk
                 or tuple(receipts) != tuple(native_node_ids)
                 or headroom.reclaimable_host_only_tokens < -shortfall + chunk
                 or self._peer_restore_retry is not None

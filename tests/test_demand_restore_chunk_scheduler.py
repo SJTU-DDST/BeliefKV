@@ -272,7 +272,13 @@ def test_d3_first_prefill_uses_bound_checkpoint_during_restore_ack(staged_native
 
 @pytest.mark.parametrize(
     ("staged_native", "full_native", "base_full_native"),
-    (({"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96),),
+    (
+        ({"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96),
+        pytest.param(
+            {"members": 3, "select": False, "prefix_sizes": (8, 8, 18)}, 56, 96,
+            id="merged-native-loads",
+        ),
+    ),
     indirect=True,
 )
 @pytest.mark.parametrize(
@@ -292,7 +298,8 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
 
     f = staged_native
     cache, allocator = f.cache, f.allocator
-    producer, consumer = f.members
+    *producers, consumer = f.members
+    producer_loads = [len(req.origin_input_ids) - 1 for req in producers]
     controller = cache.cache_controller
     host = cache.host_pool_group.anchor_entry.host_pool
     held_host = host.alloc(host.available_size() - 24)
@@ -327,9 +334,13 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
     try:
         assert invoke() == (None, f.running)
         assert not construction
-        expected = (producer,) if mirror_wait else (producer, consumer)
+        expected = tuple(producers) if mirror_wait else tuple(f.members)
         assert tuple(member.request for member in f.pipeline.pending.members) == expected
-        assert [len(load.host_indices) for load in f.loads] == ([16] if mirror_wait else [16, 18])
+        assert [len(load.host_indices) for load in f.loads] == (
+            producer_loads if mirror_wait else [*producer_loads, 18]
+        )
+        ack, = controller.ack_load_queue
+        assert ack.node_ids == [request.last_node for request in expected]
         f.complete.ready = True
         cache.loading_check()
         if not mirror_wait:
@@ -343,14 +354,14 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
         assert gate._peer_restore_retry is None
         with pytest.raises(BatchConstructionReached):
             invoke()
-        assert construction == [(producer,)]
+        assert construction == [tuple(producers)]
         assert scheduler.waiting_queue == [consumer]
-        assert [len(load.host_indices) for load in f.loads] == [16, 9]
+        assert [len(load.host_indices) for load in f.loads] == [*producer_loads, 9]
         cache.loading_check()
         with pytest.raises(BatchConstructionReached):
             invoke()
-        assert construction == [(producer,), (consumer,)]
-        assert [len(load.host_indices) for load in f.loads] == [16, 9, 9]
+        assert construction == [tuple(producers), (consumer,)]
+        assert [len(load.host_indices) for load in f.loads] == [*producer_loads, 9, 9]
         assert reusable.component_data[0].host_value is reusable_slots
         cache.loading_check()
         for request in f.members:
