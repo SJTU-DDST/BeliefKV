@@ -273,7 +273,10 @@ def test_d3_first_prefill_uses_bound_checkpoint_during_restore_ack(staged_native
 @pytest.mark.parametrize(
     ("staged_native", "full_native", "base_full_native", "creditless_member"),
     (
-        ({"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96, False),
+        pytest.param(
+            {"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96, False,
+            id="staged_native0-56-96",
+        ),
         pytest.param(
             {"members": 3, "select": False, "prefix_sizes": (8, 8, 18)}, 56, 96, False,
             id="merged-native-loads",
