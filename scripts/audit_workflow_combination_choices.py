@@ -23,7 +23,7 @@ from beliefkv.runtime.workflow_capacity_accumulation import ReadyCapacityAccumul
 from scripts import run_causal_comparison as causal
 from scripts.audit_free_dispatch_service import identity
 from scripts.audit_native_system_costs import distribution, finite_number
-from scripts.audit_periodic_admission_decisions import inspect as periodic_inspect
+from scripts.audit_periodic_admission_decisions import inspect as periodic_inspect, observation_phases
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.review_matched_work_ranking import verify_calibrated_combination_pair
 from scripts.train_workflow_work import write
@@ -363,9 +363,12 @@ def replay_choice(
         search_replayed=True, reference=list(reference),
         selected_set_changed=set(selected) != set(reference),
         newly_selected_invocations=[owner for owner in selected if owner not in reference],
+        newly_selected_keys=[identity(keys[owner], grant=True) for owner in selected if owner not in reference],
         search_complete=observed["search_complete"],
         **{count_field: observed[count_field]},
     )
+    if "ranked_selected" in observed:
+        summary["ranked_selection_before_capacity_guard"] = list(observed["ranked_selected"])
     return summary
 
 
@@ -398,8 +401,8 @@ def periodic_service_fit(choice, selection, control, members, guard):
         dropped = displaced[2]
         selected_key = selection.get("keys", {}).get(dropped)
         if (
-            not choice["selected"] or dropped != choice["selected"][-1]
-            or dropped not in members
+            dropped not in ordinary or dropped not in members
+            or dropped in selection["decision"].get("required_reference_members", ())
             or identity(members[dropped]["key"], grant=True) != displaced
             or selected_key is not None and identity(selected_key, grant=True) != displaced
         ):
@@ -412,7 +415,7 @@ def periodic_service_fit(choice, selection, control, members, guard):
 
 def inspect(
     records, batches, costs, cost_identity, *, allow_feasible_resource_alternatives=False,
-    plan_device_capacity=False, include_all_selected_service=False,
+    plan_device_capacity=False, include_all_selected_service=False, cohort_observation=None,
 ):
     """Associate choices only with exact grants in their actual dispatch boundaries."""
     if type(include_all_selected_service) is not bool:
@@ -483,7 +486,20 @@ def inspect(
                     break
                 if identity(selection["keys"][owner], grant=True) != key:
                     raise ValueError("free grant changed the selected request attempt")
-                candidate = next(item for item in selection["candidates"] if item["identity"] == owner)
+                candidate = next((item for item in selection["candidates"] if item["identity"] == owner), None)
+                if candidate is None:
+                    reference = next((
+                        item for item in selection.get("logical_reference_window") or ()
+                        if item["key"]["invocation_id"] == owner
+                    ), None)
+                    if (
+                        owner not in choice["reference"] or reference is None
+                        or identity(reference["key"], grant=True) != key
+                        or member["complete_budget_tokens"] != reference["logical_tokens"]
+                    ):
+                        raise ValueError("unpriced free grant changed its exact reference or logical budget")
+                    # Reference grants without a native quote have no ranked service credit.
+                    continue
                 if (
                     member["complete_budget_tokens"] != candidate["logical_tokens"]
                     or member["observed_context_tokens"] != candidate["context_tokens"]
@@ -615,7 +631,7 @@ def inspect(
                 counts["newly_selected_free_with_bounded_useful_completion"] += (
                     episode["new_completion_before_next_control_or_intervention"] is True
                 )
-    return {
+    result = {
         "counts": dict(counts), "reasons": dict(reasons), "sources": dict(sources),
         "metadata_and_selection_cpu_us": distribution([
             row["metadata_and_selection_cpu_ns"] / 1000. for row in choices
@@ -650,6 +666,76 @@ def inspect(
                if include_all_selected_service else {}),
         },
     }
+    if cohort_observation is not None:
+        arrivals, cohort, events = cohort_observation
+        phases = observation_phases(progress, arrivals, cohort, events)
+        result["selection_service_by_window"] = summarize_selection_service(
+            choices, cohort, phases["origin_monotonic_ms"],
+        )
+    return result
+
+
+def summarize_selection_service(choices, cohort, origin_ms):
+    """Count changed selections and exact service for their newly selected members."""
+    start, end = cohort["throughput_window_offset_seconds"]
+    measured = set(cohort["measured_workflow_ids"])
+    fixed = measured | set(cohort["warmup_workflow_ids"])
+    windows = {
+        name: {"decision_reasons": Counter(), "changed_decisions": 0, "members": {
+            group: Counter() for group in ("all", "measured", "measured_plus_warmup")
+        }}
+        for name in ("whole_observation", "common_throughput_window", "after_common_window")
+    }
+    for choice in choices:
+        offset = (choice["monotonic_s"] * 1000. - origin_ms) / 1000.
+        observed = [windows["whole_observation"]]
+        if start <= offset < end:
+            observed.append(windows["common_throughput_window"])
+        elif offset >= end:
+            observed.append(windows["after_common_window"])
+        periodic = choice["source"] == "periodic_decay_resume"
+        episodes = {tuple(row["key"]): row for row in choice[
+            "periodic_service" if periodic else "free_service"
+        ]}
+        displaced = (choice.get("periodic_ready_service_fit") or {}).get("displaced")
+        for window in observed:
+            window["decision_reasons"][choice["reason"]] += 1
+            window["changed_decisions"] += choice["selected_set_changed"] is True
+        for key in map(tuple, choice.get("newly_selected_keys", ())):
+            service = episodes.get(key)
+            episode = service["episode"] if service else None
+            eventual = False
+            if displaced is not None and key == tuple(displaced):
+                outcome = "displaced_by_ready_service_fit"
+            elif service is None or (not periodic and not service["actual_grant_verified"]):
+                outcome = "grant_unverified"
+            elif not periodic and service["separate_tool_replacement"]:
+                outcome = "separate_tool_replacement"
+            elif episode is None:
+                outcome = "grant_without_service_episode"
+            else:
+                eventual = episode["following_native_service_ms"] is not None
+                if not episode.get("selection_retained", episode.get("active_after_pressure")):
+                    outcome = "revoked_by_pressure"
+                else:
+                    bounded = episode["new_service_before_next_control_or_intervention"]
+                    outcome = (
+                        "served_before_next_control_or_intervention" if bounded is True else
+                        "no_new_service_within_closed_window" if bounded is False else
+                        "service_window_open"
+                    )
+            populations = ["all"]
+            if key[1] in measured:
+                populations.append("measured")
+            if key[1] in fixed:
+                populations.append("measured_plus_warmup")
+            for window in observed:
+                for population in populations:
+                    counts = window["members"][population]
+                    counts["newly_selected"] += 1
+                    counts[outcome] += 1
+                    counts["following_exact_service_observed"] += eventual
+    return windows
 
 
 def verify_model_work_pair(control, oracle, learned):
@@ -777,6 +863,13 @@ def main():
         strict_remaining_work=artifact.get("strict_remaining_work_admission", False),
         preserve_reference_service_capacity=artifact.get("preserve_reference_service_capacity", False),
     )
+    cohort_observation = None
+    if args.complete:
+        cohort = causal.load(args.cohort)
+        if cohort.get("schema_version") == 2:
+            cohort_observation = (
+                plan["workflow_arrivals"], cohort, reader(arm / "replay/runtime_events.replay.jsonl"),
+            )
     result = inspect(
         records,
         reader(arm / "server/runtime_audit.jsonl"),
@@ -791,6 +884,9 @@ def main():
         plan_device_capacity=profile["kind"] in (
             "r5_frozen_batch_cost_proxy_capacity_v6", "r5_frozen_batch_cost_proxy_capacity_v7",
         ),
+        # The completed R5 audit compares retained reference members with the same-state Oracle.
+        include_all_selected_service=args.complete and args.policy_kind == "learned",
+        cohort_observation=cohort_observation,
     )
     result.update(
         observed_at=datetime.now(timezone.utc).isoformat(),

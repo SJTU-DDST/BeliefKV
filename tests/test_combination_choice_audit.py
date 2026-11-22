@@ -5,6 +5,8 @@ from types import SimpleNamespace as NS
 
 import pytest
 
+from beliefkv.experiments.replay_arrivals import poisson_arrival_plan
+from beliefkv.experiments.workflow_cohort import declare_cohort
 from beliefkv.policy.workflow_combination import (
     CombinationCandidate as Candidate, CombinationCosts as Costs,
     CombinationResources as Resources, choose_combination,
@@ -13,7 +15,7 @@ from scripts.audit_workflow_combination_choices import inspect, replay_choice
 from tests.test_workflow_size_selection_audit import key, service
 
 
-def evidence(*, deadline=None, required=()):
+def evidence(*, deadline=None, required=(), reference=("a",)):
     costs = Costs(.01, .001, tuple(1. + index * .1 for index in range(24)), 10000.)
     rows = [
         Candidate(owner, "workflow-" + owner, tokens + 100, 0, index, weight, owner,
@@ -31,7 +33,7 @@ def evidence(*, deadline=None, required=()):
         return 500_000 if deadline is not None and calls >= deadline else 0
 
     decision = choose_combination(
-        rows, ["a"], resources, costs, required=required, clock=clock,
+        rows, reference, resources, costs, required=required, clock=clock,
     )
     row = {
         "event": "workflow_combination_selection", "source": "periodic_decay_resume",
@@ -163,8 +165,8 @@ def test_real_runtime_empty_bootstrap_does_not_claim_a_replayed_search(monkeypat
         runtime.close()
 
 
-def service_evidence():
-    selection, costs = evidence()
+def service_evidence(*, reference=("a",)):
+    selection, costs = evidence(reference=reference)
     selected = selection["decision"]["selected"]
     control = {
         "event": "agent_periodic_admission_decision", "monotonic_s": 10.,
@@ -197,6 +199,72 @@ def test_actual_periodic_grant_and_bounded_progress_are_both_required():
     assert result["counts"]["newly_selected_periodic_retained_after_pressure"] == selected
     assert result["counts"]["newly_selected_periodic_with_bounded_useful_completion"] == selected
     assert result["metadata_and_selection_cpu_us"]["p50"] == 600.
+
+
+def test_retained_reference_member_service_is_available_for_r5_disagreements():
+    from scripts.audit_r5_completion_path import actual_disagreement_service
+
+    records, batches, costs = service_evidence(reference=("b", "c"))
+    row = records[0]
+    assert row["decision"]["selected"] == row["decision"]["reference"] == ["b", "c"]
+    scored = {"actual": ["b", "c"], "oracle": ["c", "d"]}
+    narrow = inspect(records, batches, costs, "frozen")["decisions"][0]
+    full = inspect(records, batches, costs, "frozen", include_all_selected_service=True)["decisions"][0]
+    assert actual_disagreement_service(row, scored, narrow)[0]["outcome"] == "without_service_association"
+    assert actual_disagreement_service(row, scored, full)[0]["outcome"] == (
+        "observed_before_next_control_or_intervention"
+    )
+    assert full["newly_selected_invocations"] == []
+
+
+@pytest.mark.parametrize("observed, outcome", (
+    ("timely", "served_before_next_control_or_intervention"),
+    ("late", "no_new_service_within_closed_window"),
+    ("open", "service_window_open"),
+    ("revoked", "revoked_by_pressure"),
+))
+def test_selection_service_counts_use_decision_window_and_exact_cohort(observed, outcome):
+    records, batches, costs = service_evidence()
+    measured = "workflow-c"
+    if observed == "late":
+        batch = next(row for row in batches if row["request_samples"][0]["workflow_id"] == measured)
+        batch.update(
+            launch_monotonic_ms=12001., service_start_monotonic_ms=12002.,
+            complete_monotonic_ms=12003.,
+        )
+    elif observed == "open":
+        records.pop()
+    elif observed == "revoked":
+        member = next(
+            row for row in records[1]["programs"] if row["key"]["root_workflow_id"] == measured
+        )
+        member["active_after_pressure"] = False
+    arrivals = poisson_arrival_plan(
+        ["workflow-a", "workflow-b", "workflow-c", "workflow-d", "workflow-e"],
+        seed=35, rate_per_second=1., initial_workflows=2,
+    )
+    start, end = (row["offset_seconds"] for row in arrivals["arrival_schedule"][2:4])
+    cohort = declare_cohort(
+        arrivals, warmup=2, measured=2, throughput_start_s=start, throughput_end_s=end,
+        stop_after_measured=True,
+    )
+    origin_ms = 10000. - (start + end) / 2 * 1000.
+    events = [{
+        "kind": "workflow_start", "workflow_id": row["workflow_id"],
+        "ts_ms": origin_ms + row["offset_seconds"] * 1000.,
+    } for row in arrivals["arrival_schedule"][:3]]
+
+    result = inspect(records, batches, costs, "frozen", cohort_observation=(arrivals, cohort, events))
+    windows = result["selection_service_by_window"]
+    common = windows["common_throughput_window"]
+    assert common["changed_decisions"] == 1
+    assert common["members"]["measured"] == {
+        "newly_selected": 1,
+        outcome: 1,
+        "following_exact_service_observed": int(observed != "revoked"),
+    }
+    assert common["members"]["measured_plus_warmup"]["newly_selected"] == 2
+    assert windows["after_common_window"]["members"]["all"]["newly_selected"] == 0
 
 
 @pytest.mark.parametrize("change", ("attempt", "earlier", "pause", "revoked", "zero"))
@@ -247,13 +315,13 @@ def test_following_actual_grant_cannot_change_selection_or_attempt():
         inspect(records, batches, costs, "frozen")
 
 
-def service_fit_evidence(*, replace):
+def service_fit_evidence(*, replace, displace_first=False):
     records, batches, costs = service_evidence()
     selection, control, _ = records
     control["monotonic_s"] -= .001  # The control clock is captured before the search.
     selected = selection["decision"]["selected"]
-    displaced = selected[-1] if replace else None
-    retained = selected[:-1] if replace else selected
+    displaced = selected[0 if displace_first else -1] if replace else None
+    retained = [owner for owner in selected if owner != displaced]
     granted = [*retained, "a"]
     budgets = {item["invocation_id"]: item["complete_budget_tokens"] for item in control["programs"]}
     total = sum(budgets[owner] for owner in granted)
@@ -273,9 +341,9 @@ def service_fit_evidence(*, replace):
     return records, [*batches, added], costs
 
 
-@pytest.mark.parametrize("replace", (False, True))
-def test_periodic_fit_is_credited_separately_from_ranked_service(replace):
-    records, batches, costs = service_fit_evidence(replace=replace)
+@pytest.mark.parametrize(("replace", "displace_first"), ((False, False), (True, False), (True, True)))
+def test_periodic_fit_is_credited_separately_from_ranked_service(replace, displace_first):
+    records, batches, costs = service_fit_evidence(replace=replace, displace_first=displace_first)
     result = inspect(records, batches, costs, "frozen", include_all_selected_service=True)
     choice = result["decisions"][0]
     assert choice["following_periodic_grant_verified"]

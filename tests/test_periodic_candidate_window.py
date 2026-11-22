@@ -75,6 +75,37 @@ def test_pair_uses_journal_boundaries_even_when_control_timestamp_precedes_searc
     assert result["outside_shorter_cases"][0]["outside_minimum"]["remaining_model_work"] == 50.
 
 
+@pytest.mark.parametrize("replace_grant", (False, True))
+def test_pair_reconciles_an_independent_ready_service_fit_grant(replace_grant):
+    records = history(capacity=300 if replace_grant else 600)
+    combination, control, resume = records
+    ranked = list(combination["decision"]["selected"])
+    keys = {item["invocation_id"]: item["key"] for item in control["programs"]}
+    actual = (*ranked[:-1], "outside") if replace_grant else (*ranked, "outside")
+    fit = {
+        "event": "ready_service_fit_granted",
+        "monotonic_s": control["monotonic_s"],
+        "logical_capacity_tokens": control["resume_capacity_tokens"],
+        "selected_tokens": 200 * len(actual),
+        "physical_capacity_credit": False,
+        "key": keys["outside"],
+        "displaced": keys[ranked[-1]] if replace_grant else None,
+    }
+    control["resumed_program_ids"] = resume["selected_in_priority_order"] = list(actual)
+    records.insert(1, fit)
+
+    pairs, counts = pair_periodic(records)
+    assert counts["exact_periodic_windows_paired"] == counts["ready_service_fit_reconciled"] == 1
+    assert pairs[0]["combination"]["decision"]["selected"] == ranked
+    assert "outside" in {member["key"]["invocation_id"] for member in pairs[0]["ready"]}
+    if replace_grant:
+        fit["displaced"] = {**fit["displaced"], "session_generation": 2}
+    else:
+        fit["monotonic_s"] += .001
+    with pytest.raises(ValueError, match="service fit"):
+        pair_periodic(records)
+
+
 @pytest.mark.parametrize("change", (
     "missing_control", "missing_resume", "new_periodic", "wrong_clock", "wrong_capacity",
     "wrong_selection", "changed_attempt", "changed_budget", "duplicate_program", "unknown_ready",

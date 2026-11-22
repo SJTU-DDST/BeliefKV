@@ -26,6 +26,7 @@ from beliefkv.predictor.workflow_work import WorkflowWorkModel, work_prediction_
 from beliefkv.predictor.workflow_work_distribution import DistributionProgress, SNAPSHOT_EVENTS
 from beliefkv.predictor.workflow_work_readout import representation, representation_fingerprint
 from beliefkv.runtime.workflow_work_oracle import WorkflowWorkOracleArtifact, cache_remaining_paths
+from scripts.audit_periodic_candidate_window import PERIODIC, RESUME, pair_periodic
 from scripts.audit_r5_shortest_contract import candidate
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.stop_after_measured_cohort import replay_arm
@@ -78,7 +79,7 @@ class Labels:
         return self.cache[workflow].at(now)
 
 
-def collect(registration, cohort_path, oracle_path, output):
+def collect(registration, cohort_path, oracle_path, output, *, include_unpriced=False):
     plan = json.loads(registration.read_bytes())
     proof = verify_execution(registration, cohort_path)
     cohort = json.loads(cohort_path.read_bytes())
@@ -139,9 +140,22 @@ def collect(registration, cohort_path, oracle_path, output):
             if count - generated[request] >= 128:
                 generated[request] = count
                 timeline.append((raw["complete_monotonic_ms"] / 1000., 2, len(timeline), (request, count)))
+    periodic_records = []
     for raw in reader(arm / "opportunities/admission_opportunities.jsonl"):
-        if raw.get("event") == "workflow_combination_selection" and raw["candidates"]:
+        choice = raw.get("event") == "workflow_combination_selection"
+        if choice and (raw["candidates"] or include_unpriced):
             timeline.append((raw["monotonic_s"], 3, len(timeline), raw))
+        if include_unpriced and (
+            raw.get("event") in (PERIODIC, RESUME, "ready_service_fit_granted")
+            or choice and raw["source"] == "periodic_decay_resume"
+        ):
+            periodic_records.append(raw)
+    periodic_ready = {}
+    if any(row["event"] == RESUME for row in periodic_records):
+        pairs, _ = pair_periodic(periodic_records)
+        periodic_ready = {pair["monotonic_s"]: pair["ready"] for pair in pairs}
+        if len(periodic_ready) != len(pairs):
+            raise ValueError("multiple periodic ready populations for one decision time")
     labels, states, clocks, task_text, snapshots = Labels(oracle), {}, {}, {}, []
     completed, submitted = set(), set()
     for now, action, _ordinal, value in sorted(timeline, key=lambda item: item[:3]):
@@ -190,6 +204,14 @@ def collect(registration, cohort_path, oracle_path, output):
                     "source", "monotonic_s", "decision", "candidates", "resources", "predictions", "keys",
                 )
             }
+            for key in (
+                "preserve_reference_service_capacity", "logical_reference_window",
+                "logical_reference_capacity_tokens", "unavailable_summaries", "selection_policy",
+            ):
+                if key in value:
+                    row[key] = value[key]
+            if value["source"] == "periodic_decay_resume" and now in periodic_ready:
+                row["periodic_ready_window"] = periodic_ready[now]
             row["states"] = {
                 workflow: {
                     "features": states[workflow].features(), "timing": clocks[workflow].features(now),
@@ -228,6 +250,7 @@ def collect(registration, cohort_path, oracle_path, output):
             str(path.resolve()): sha256_file(path) for path in (
                 registration, cohort_path, oracle_path, base_path, Path(__file__),
                 *((certificate,) if certificate is not None else ()),
+                *((ROOT / "scripts/audit_periodic_candidate_window.py",) if periodic_ready else ()),
             )
         },
         "target_is_fixed_service_and_tool_DAG_not_observed_JCT": True,
@@ -349,6 +372,7 @@ def fit(dataset, dataset_path, output):
                 [replace(value, weight=mapping[value.workflow]) for value in candidates],
                 row["decision"].get("reference", ()), resources, costs, required=required,
                 strict_remaining_work=True, clock=lambda: 0,
+                preserve_reference_service_capacity=row.get("preserve_reference_service_capacity", False),
             )
             selections[name] = list(choice["selected"])
             diagnostics[name + "_set_changes"] += set(choice["selected"]) != selected
@@ -393,23 +417,29 @@ def fit(dataset, dataset_path, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path)
+    parser.add_argument("--collect-only", action="store_true", help="collect completed-run evidence without fitting")
     for name in ("registration", "cohort", "oracle"):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     if args.output_dir.exists() or os.environ.get("CUDA_VISIBLE_DEVICES") != "99999":
         raise ValueError("require a new CPU-only preparation directory")
+    if args.collect_only and args.dataset is not None:
+        parser.error("--collect-only requires a completed run")
     args.output_dir.mkdir(parents=True)
     started = time.monotonic()
     if args.dataset is None:
         if any(value is None for value in (args.registration, args.cohort, args.oracle)):
             parser.error("collect the exact completed registration, cohort, and oracle")
         dataset_path = args.output_dir / "dataset.json"
-        dataset = collect(args.registration, args.cohort, args.oracle, dataset_path)
+        dataset = collect(
+            args.registration, args.cohort, args.oracle, dataset_path, include_unpriced=args.collect_only,
+        )
     else:
         dataset_path = args.dataset
         dataset = json.loads(dataset_path.read_bytes())
-    fit(dataset, dataset_path, args.output_dir)
+    if not args.collect_only:
+        fit(dataset, dataset_path, args.output_dir)
     print(json.dumps({"CPU_elapsed_s": time.monotonic() - started, "GPU_action": False}))
 
 

@@ -18,7 +18,7 @@ from scripts.audit_free_dispatch_service import identity
 from scripts.audit_learned_combination_prediction import planning_costs, verify_selection_policy
 from scripts.audit_live_work_prediction import audit, observation_timeline
 from scripts.audit_sealed_wait_prefetch import SealedRecords
-from scripts.audit_workflow_combination_choices import EVENT, replay_choice
+from scripts.audit_workflow_combination_choices import EVENT, periodic_service_fit, replay_choice
 from scripts.train_workflow_work import write
 from scripts.verify_measured_execution import verify_execution
 
@@ -28,15 +28,20 @@ RESUME = "workflow_size_resume_selection"
 
 def pair_periodic(records):
     """Associate synchronous records, rejecting missing or foreign control boundaries."""
-    pending, control, paired = None, None, []
+    pending = control = service_fit = None
+    paired = []
     counts = Counter()
     for sequence, row in enumerate(records):
         event = row.get("event")
         if event == EVENT and row.get("source") == "periodic_decay_resume":
             if pending is not None:
                 raise ValueError("another periodic selection arrived before its control and resume records")
-            pending, control = (sequence, row), None
+            pending = sequence, row
             counts["periodic_combination_entries"] += 1
+        elif event == "ready_service_fit_granted":
+            if pending is None or service_fit is not None or control is not None:
+                raise ValueError("service fit needs one pending periodic selection")
+            service_fit = row
         elif event == PERIODIC and pending is not None:
             if control is not None:
                 raise ValueError("periodic selection has multiple control records")
@@ -58,8 +63,7 @@ def pair_periodic(records):
                 or observed["monotonic_s"] != row["monotonic_s"]
                 or capacity != observed["resume_capacity_tokens"]
                 or capacity != row["capacity_tokens"]
-                or set(choice["decision"]["selected"]) != set(observed["resumed_program_ids"])
-                or set(choice["decision"]["selected"]) != set(row["selected_in_priority_order"])
+                or set(observed["resumed_program_ids"]) != set(row["selected_in_priority_order"])
             ):
                 raise ValueError("periodic window belongs to another capacity or selection boundary")
             programs = {}
@@ -68,6 +72,14 @@ def pair_periodic(records):
                 if owner in programs:
                     raise ValueError("periodic control repeats a program")
                 programs[owner] = item
+            granted = set(observed["resumed_program_ids"])
+            if not granted <= programs.keys():
+                raise ValueError("periodic grant lacks its recorded program")
+            if service_fit is not None:
+                periodic_service_fit(choice["decision"], choice, observed, programs, service_fit)
+                counts["ready_service_fit_reconciled"] += 1
+            elif set(choice["decision"]["selected"]) != granted:
+                raise ValueError("periodic window belongs to another selection boundary")
             keys = {}
             for item in row["candidates"]:
                 key = item["key"]
@@ -78,7 +90,7 @@ def pair_periodic(records):
             readiness = row.get("logical_ready_paused_before_resume")
             if not isinstance(readiness, dict):
                 counts["missing_exact_ready_map"] += 1
-                pending, control = None, None
+                pending = control = service_fit = None
                 continue
             ready, seen = [], set()
             for item in row["ordered"]:
@@ -122,7 +134,7 @@ def pair_periodic(records):
                 "resume_sequence": sequence,
             })
             counts["exact_periodic_windows_paired"] += 1
-            pending, control = None, None
+            pending = control = service_fit = None
     if pending is not None:
         raise ValueError("sealed history ends before the periodic window's actual control boundary")
     return paired, dict(counts)

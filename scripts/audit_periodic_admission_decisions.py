@@ -233,13 +233,24 @@ def inspect(records, batches, *, include_free_grants=False):
         ]
         if any(type(item.get("resume_window_eligible", True)) is not bool for item in programs):
             raise ValueError("invalid periodic admission window eligibility")
-        ready = [item for item in application_ready if item.get("resume_window_eligible", True)]
-        deferred = [item for item in application_ready if not item.get("resume_window_eligible", True)]
+        if any(type(item.get("first_materialization_held", False)) is not bool for item in programs):
+            raise ValueError("invalid periodic materialization hold")
+        ready, deferred, materialization_held = [], [], []
+        for item in application_ready:
+            if item.get("first_materialization_held", False):
+                materialization_held.append(item)
+            elif not item.get("resume_window_eligible", True):
+                deferred.append(item)
+            else:
+                ready.append(item)
         application_fitting = [
             item for item in application_ready if item["complete_budget_tokens"] <= capacity
         ]
         deferred_fitting = [
             item for item in deferred if item["complete_budget_tokens"] <= capacity
+        ]
+        held_fitting = [
+            item for item in materialization_held if item["complete_budget_tokens"] <= capacity
         ]
         if deferred:
             counts["controls_with_window_deferred_ready_paused"] += 1
@@ -266,6 +277,8 @@ def inspect(records, batches, *, include_free_grants=False):
         counts["controls_with_application_ready_paused"] += bool(application_ready)
         counts["controls_with_window_deferred_fitting_ready_paused"] += bool(deferred_fitting)
         counts["window_deferred_fitting_ready_paused_observations"] += len(deferred_fitting)
+        counts["controls_with_materialization_held_fitting_ready_paused"] += bool(held_fitting)
+        counts["materialization_held_fitting_ready_paused_observations"] += len(held_fitting)
         counts["cross_workflow_application_ready_set_competition_controls"] += application_competition
         counts["controls_with_available_resume_budget"] += capacity > 100
         counts["free_budget_without_application_ready_paused_controls"] += (
@@ -275,7 +288,10 @@ def inspect(records, batches, *, include_free_grants=False):
             capacity > 100 and bool(application_ready) and not application_fitting
         )
         counts["free_budget_with_only_window_deferred_fitting_ready_controls"] += (
-            capacity > 100 and bool(application_fitting) and not fitting
+            capacity > 100 and bool(deferred_fitting) and not fitting and not held_fitting
+        )
+        counts["free_budget_with_held_fits_and_none_eligible_controls"] += (
+            capacity > 100 and bool(held_fitting) and not fitting
         )
         counts["free_budget_with_fitting_window_eligible_ready_controls"] += (
             capacity > 100 and bool(fitting)
@@ -288,6 +304,8 @@ def inspect(records, batches, *, include_free_grants=False):
             "fitting_application_ready_paused_agents": len(application_fitting),
             "window_deferred_ready_paused_agents": len(deferred),
             "window_deferred_fitting_ready_paused_agents": len(deferred_fitting),
+            "materialization_held_ready_paused_agents": len(materialization_held),
+            "materialization_held_fitting_ready_paused_agents": len(held_fitting),
             "cross_workflow_application_ready_set_competition": application_competition,
             "fitting_workflows": len({
                 owners[item["invocation_id"]][1] for item in fitting
@@ -328,6 +346,8 @@ def inspect(records, batches, *, include_free_grants=False):
         "scope": {
             "exact_periodic_resume_budget_and_before_after_state": True,
             "application_readiness_separate_from_timed_resume_eligibility": True,
+            "materialization_holds_excluded_from_periodic_logical_eligibility": True,
+            "legacy_missing_materialization_hold_defaults_to_clear": True,
             "legacy_no_ready_counter_means_no_window_eligible_candidate": True,
             "application_ready_competition_is_diagnostic_not_a_grant_opportunity": True,
             "cross_category_competition_is_diagnostic_not_original_permission": True,
@@ -533,8 +553,9 @@ def observation_phases(result, arrivals, cohort, events):
                 and not row["fitting_application_ready_paused_agents"] for row in rows
             ),
             "free_budget_with_only_window_deferred_fitting_ready_controls": sum(
-                row["resume_capacity_tokens"] > 100 and bool(row["fitting_application_ready_paused_agents"])
-                and not row["fitting_ready_paused_agents"] for row in rows
+                row["resume_capacity_tokens"] > 100 and bool(row["window_deferred_fitting_ready_paused_agents"])
+                and not row["fitting_ready_paused_agents"]
+                and not row.get("materialization_held_fitting_ready_paused_agents", 0) for row in rows
             ),
             "free_budget_with_fitting_window_eligible_ready_controls": sum(
                 row["resume_capacity_tokens"] > 100 and bool(row["fitting_ready_paused_agents"])
@@ -551,6 +572,25 @@ def observation_phases(result, arrivals, cohort, events):
                 "free_budget_with_fitting_window_eligible_ready_controls",
             )
         }
+        held_observed = supply_observed and all(
+            "materialization_held_fitting_ready_paused_agents" in row for row in rows
+        )
+        if held_observed:
+            supply.update(
+                controls_with_materialization_held_fitting_ready_paused=sum(
+                    row["materialization_held_fitting_ready_paused_agents"] > 0 for row in rows
+                ),
+                free_budget_with_held_fits_and_none_eligible_controls=sum(
+                    row["resume_capacity_tokens"] > 100
+                    and bool(row["materialization_held_fitting_ready_paused_agents"])
+                    and not row["fitting_ready_paused_agents"] for row in rows
+                ),
+            )
+        else:
+            supply.update(
+                controls_with_materialization_held_fitting_ready_paused=None,
+                free_budget_with_held_fits_and_none_eligible_controls=None,
+            )
         completed = [
             workflow for when, workflow in model_completions
             if workflow in members and when / 1000. - origin >= left
@@ -565,6 +605,7 @@ def observation_phases(result, arrivals, cohort, events):
             "controls_with_predecision_ready_paused": ready,
             "predecision_ready_fraction": ready / len(rows) if rows else None,
             "application_readiness_diagnostics_observed": supply_observed,
+            "materialization_hold_diagnostics_observed": held_observed,
             **supply,
             "actual_cross_workflow_logical_set_competitions": sum(
                 row["cross_workflow_logical_set_competition"] for row in rows

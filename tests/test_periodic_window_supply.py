@@ -10,6 +10,7 @@ PARTITION = (
     "free_budget_without_application_ready_paused_controls",
     "free_budget_with_application_ready_but_none_fitting_controls",
     "free_budget_with_only_window_deferred_fitting_ready_controls",
+    "free_budget_with_held_fits_and_none_eligible_controls",
     "free_budget_with_fitting_window_eligible_ready_controls",
 )
 
@@ -78,6 +79,19 @@ def test_open_candidates_and_closed_peers_remain_separate():
     assert result["counts"]["free_budget_with_fitting_window_eligible_ready_controls"] == 1
 
 
+def test_materialization_held_fit_does_not_enter_periodic_competition():
+    choices, batches = records()
+    choices[0]["programs"][2]["first_materialization_held"] = True
+    result = inspect(choices, batches)
+    row = result["control_observations"][0]
+    assert row["fitting_application_ready_paused_agents"] == 3
+    assert row["fitting_ready_paused_agents"] == 2
+    assert row["materialization_held_fitting_ready_paused_agents"] == 1
+    assert row["cross_workflow_application_ready_set_competition"]
+    assert not row["cross_workflow_logical_set_competition"]
+    assert result["counts"]["ready_grants_with_following_exact_service"] == 1
+
+
 def test_missing_old_window_fields_reconstruct_the_original_open_window_semantics():
     choices, batches = records()
     result = inspect(choices, batches)
@@ -108,14 +122,17 @@ def test_supply_categories_partition_available_logical_budget_snapshots():
         item["application_ready"] = False
     no_fit = held(capacity=200)
     window_hold = held()
+    materialization_hold = held()
+    materialization_hold[0]["programs"][0]["first_materialization_held"] = True
+    materialization_hold[0]["programs"][0]["resume_window_eligible"] = True
     open_window = held()
     for item in open_window[0]["programs"]:
         item["resume_window_eligible"] = True
-    choices = [case[0] for case in (no_ready, no_fit, window_hold, open_window)]
+    choices = [case[0] for case in (no_ready, no_fit, window_hold, materialization_hold, open_window)]
     for index, row in enumerate(choices, start=1):
         row["monotonic_s"] = float(index)
     counts = inspect(choices, [])["counts"]
-    assert counts["controls_with_available_resume_budget"] == 4
+    assert counts["controls_with_available_resume_budget"] == 5
     assert all(counts[name] == 1 for name in PARTITION)
 
 
@@ -140,6 +157,22 @@ def test_phase_diagnostics_keep_held_work_distinct_without_changing_actual_choic
     ] == 0
 
 
+def test_phase_reports_materialization_held_fits_separately_from_timed_deferral():
+    result, arrivals, cohort, events = phase_evidence()
+    first = result["control_observations"][0]
+    first.update(
+        ready_paused_agents=0, fitting_ready_paused_agents=0,
+        materialization_held_fitting_ready_paused_agents=1,
+        window_deferred_fitting_ready_paused_agents=2,
+        cross_workflow_logical_set_competition=False,
+    )
+    fixed = observation_phases(result, arrivals, cohort, events)["phases"]["fixed_common_throughput_window"]
+    assert fixed["materialization_hold_diagnostics_observed"]
+    assert fixed["controls_with_materialization_held_fitting_ready_paused"] == 1
+    assert fixed["free_budget_with_held_fits_and_none_eligible_controls"] == 1
+    assert fixed["free_budget_with_only_window_deferred_fitting_ready_controls"] == 0
+
+
 def test_precomputed_old_phase_rows_without_readiness_detail_remain_unknown():
     values = deepcopy(phase_evidence())
     for row in values[0]["control_observations"]:
@@ -148,4 +181,6 @@ def test_precomputed_old_phase_rows_without_readiness_detail_remain_unknown():
     assert not fixed["application_readiness_diagnostics_observed"]
     assert fixed["controls_with_application_ready_paused"] is None
     assert fixed["free_budget_without_application_ready_paused_controls"] is None
+    assert not fixed["materialization_hold_diagnostics_observed"]
+    assert fixed["controls_with_materialization_held_fitting_ready_paused"] is None
     assert fixed["actual_periodic_controls"] == 1

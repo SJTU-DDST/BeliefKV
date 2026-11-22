@@ -1,9 +1,12 @@
 from copy import deepcopy
+from dataclasses import asdict, replace
 
 import pytest
 
+from beliefkv.policy.workflow_shortest_frontier import choose_shortest_work_first
 from scripts.audit_workflow_combination_choices import inspect
 from tests.test_combination_choice_audit import service_evidence
+from tests.test_workflow_shortest_frontier import fixture
 from tests.test_workflow_size_selection_audit import key
 
 
@@ -136,6 +139,54 @@ def test_metadata_fallback_with_missing_reference_keys_cannot_claim_free_selecti
     assert result["counts"]["newly_selected_free_episodes"] == 0
     assert result["decisions"][0]["selected_set_changed"] is None
     assert result["decisions"][0]["free_service"] == []
+
+
+@pytest.mark.parametrize("tamper", (None, "attempt", "budget", "missing_reference"))
+def test_capacity_guard_can_keep_an_unpriced_free_reference_member(tamper):
+    records, _, _ = evidence()
+    rows, resources, costs = fixture()
+    short, *reference = (
+        replace(row, workflow=key(row.identity)["root_workflow_id"], logical_tokens=row.context_tokens + 100)
+        for row in rows
+    )
+    resources = replace(resources, logical_tokens=sum(row.logical_tokens for row in reference))
+    identities = [row.identity for row in reference]
+    selection = records[0]
+    selection.update(
+        selection_policy="strict_remaining_work", preserve_reference_service_capacity=True,
+        resources=asdict(resources), candidates=[asdict(short)],
+        device_fit_scope="planned_pool_geometry", keys={row.identity: key(row.identity) for row in rows},
+        decision=choose_shortest_work_first(
+            [short], identities, resources, costs, strict_remaining_work=True,
+            preserve_reference_service_capacity=True, clock=lambda: 0,
+        ),
+        logical_reference_window=[{
+            "key": key(row.identity), "logical_tokens": row.logical_tokens,
+        } for row in reference],
+    )
+    grant = records[1]
+    grant["programs"] = [{
+        "key": key(row.identity), "complete_budget_tokens": row.logical_tokens,
+        "observed_context_tokens": row.context_tokens,
+    } for row in reference]
+    if tamper == "attempt":
+        grant["programs"][0]["key"]["attempt_id"] += 1
+    elif tamper == "budget":
+        grant["programs"][0]["complete_budget_tokens"] += 1
+        grant["programs"][0]["observed_context_tokens"] += 1
+    elif tamper == "missing_reference":
+        selection["logical_reference_window"].pop()
+    required = sum(row["complete_budget_tokens"] for row in grant["programs"])
+    grant.update(required_tokens=required, remaining_before_tokens=required)
+    if tamper:
+        with pytest.raises(ValueError, match="selected request attempt|unpriced free grant"):
+            inspect(records, [], costs, "frozen", plan_device_capacity=True)
+        return
+    result = inspect(records, [], costs, "frozen", plan_device_capacity=True)
+    choice = result["decisions"][0]
+    assert choice["selected"] == identities
+    assert choice["ranked_selection_before_capacity_guard"] == [short.identity]
+    assert not choice["free_service"]
 
 
 def test_separate_tool_replacement_cannot_be_credited_to_an_open_free_selection():
