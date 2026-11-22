@@ -1,6 +1,6 @@
 from dataclasses import replace
 from types import SimpleNamespace as NS
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -120,6 +120,27 @@ def test_one_permitted_donor_check_reuses_its_exact_consumer_demand(demand_runti
     assert admission.policy.programs["tool"].active
     assert not admission.policy.programs["consumer"].active
     assert not runtime.physical_ledger.pending_count
+
+
+def test_replacement_reuses_consumer_quote_then_refreshes_before_grant(demand_runtime, monkeypatch):
+    _runtime, admission, controller, _adder = parts = pair(demand_runtime)
+    replacement = controller.replacement
+    observe, evict = Mock(wraps=replacement.demand), controller._evict_backed
+    request, key = demand_runtime[5], admission.latest["consumer"]
+
+    def checked_evict(donor, *, node_ids):
+        # Candidate selection has priced the consumer once. Native eviction
+        # and the final grant still have their independent demand checks.
+        assert observe.call_args_list == [call(request, key, refresh=True)]
+        return evict(donor, node_ids=node_ids)
+
+    monkeypatch.setattr(replacement, "demand", observe)
+    monkeypatch.setattr(controller, "_evict_backed", checked_evict)
+    assert run(parts)
+    assert observe.call_count >= 3
+    assert observe.call_args_list[-1] == call(request, key, refresh=True)
+    assert admission.allows(key)
+    assert not admission.policy.programs["tool"].active
 
 
 def test_permitted_demand_is_rechecked_after_capacity_changes(demand_runtime):

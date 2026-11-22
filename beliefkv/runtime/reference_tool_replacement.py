@@ -82,7 +82,9 @@ class ReferenceToolReplacement:
     def _permitted_demand(self, request, key, donor):
         if self.consumer != (request, key) or donor != self.donor:
             return None
-        demand = self.demand(request, key)
+        return self._demand_within_donor_budget(self.demand(request, key), key, donor)
+
+    def _demand_within_donor_budget(self, demand, key, donor):
         agents = self.offload.runtime._agent_admission
         owner = agents.policy.programs.get(donor.invocation_id)
         if demand is None or owner is None:
@@ -418,6 +420,7 @@ class ReferenceToolReplacement:
             demand = self.demand(*self.consumer, refresh=True)
             if demand is None or demand[0] <= 0 and demand[1] <= 0:
                 continue
+            quoted_demand = demand if boundary is None else None
             guard = (
                 self._logical_handoff_guard(key, time.monotonic())
                 if boundary is None and not logical_handoff_probed and demand[0] == 0 else None
@@ -435,8 +438,14 @@ class ReferenceToolReplacement:
                     item is None
                     or not prechecked and not controller._candidate_donor_eligible(donor)
                     or not runtime._agent_observed_blocked_budget_key(donor)
-                    or not self.permits(*self.consumer, donor)
                 ):
+                    continue
+                if quoted_demand is not None:
+                    if self._demand_within_donor_budget(quoted_demand, key, donor) is None:
+                        continue
+                    # A later trial can observe changes made while probing this donor.
+                    quoted_demand = None
+                elif not self.permits(*self.consumer, donor):
                     continue
                 if guard is not None:
                     logical_handoff_probed = True
