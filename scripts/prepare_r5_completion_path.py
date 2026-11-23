@@ -207,6 +207,7 @@ def collect(registration, cohort_path, oracle_path, output, *, include_unpriced=
             for key in (
                 "preserve_reference_service_capacity", "logical_reference_window",
                 "logical_reference_capacity_tokens", "unavailable_summaries", "selection_policy",
+                "reference_initial_materialization_members",
             ):
                 if key in value:
                     row[key] = value[key]

@@ -471,9 +471,9 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         return gate is not None and gate.awaiting_first_prefill(key)
 
     def _strict_candidate_window(self, keys, reference, capacity, predictions, *,
-                                 complete_free_siblings=False):
+                                 complete_free_siblings=False, initial_grants=()):
         a = self.admission
-        required = [key for key in reference if a._protected_join(key)]
+        required = [key for key in reference if key in initial_grants or a._protected_join(key)]
         reserve = sum(
             a.policy.programs[key.invocation_id].tokens + a.policy.buffer_tokens for key in required
         )
@@ -594,7 +594,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
         }
         summaries, candidates, predictions, resources = {}, [], {}, None
         unavailable, protected_prefixes, prefix_summaries = [], set(), {}
-        indexed_siblings = ()
+        indexed_siblings = initial_grants = ()
         private_blocked_tokens, unreferenced_tokens = None, 0
         self.cold_summary = ()
         rank_keys = keys
@@ -608,11 +608,17 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 result["reason"] = "remaining_work_ranking_disabled_reference"
                 return list(reference)
             if getattr(self, "resume_only_work_ranking", False):
-                # Preserve a window that would grant a D3 entry before its first prefill.
-                if any(self._initial_materialization(key) for key in reference):
+                initial_grants = tuple(key for key in reference if self._initial_materialization(key))
+                if initial_grants and (
+                    source != "periodic_decay_resume" or not self.adaptive_resume_ranking
+                    or len(initial_grants) == len(reference)
+                ):
                     result["reason"] = "initial_materialization_reference_preserved"
                     return list(reference)
                 rank_keys = [key for key in keys if not self._initial_materialization(key)]
+                if initial_grants and all(key in reference for key in rank_keys):
+                    result["reason"] = "initial_materialization_reference_preserved"
+                    return list(reference)
                 if rank_keys and self.adaptive_resume_ranking:
                     gate = runtime._subagent_materialization
                     if gate is None or not gate.allow_resume_ranking():
@@ -639,6 +645,15 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 observed = set(rank_keys) | set(reference)
                 indexed_siblings = tuple(key for key in window if key not in observed)
                 a.counts["strict_remaining_work_indexed_siblings"] += len(indexed_siblings)
+            elif initial_grants:
+                # Quote the fixed D3 grants with the continuations so they share
+                # the same logical, device, input, and batch-slot checks.
+                window = self._strict_candidate_window(
+                    rank_keys, reference, capacity, predictions, initial_grants=initial_grants,
+                )
+                if not set(reference) < set(window):
+                    result["reason"] = "initial_materialization_reference_preserved"
+                    return list(reference)
             else:
                 window = self._candidate_window(rank_keys, reference, capacity, predictions)
             if not window or (not strict and len(window) == len(reference)):
@@ -700,7 +715,14 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                 )
                 candidates.append(candidate)
                 summaries[key.invocation_id] = key
-            if not any(self._supported_work(value) for value in predictions.values()):
+            supported = any(self._supported_work(value) for value in predictions.values())
+            if initial_grants and supported:
+                fixed_ids = {key.invocation_id for key in initial_grants}
+                supported = any(
+                    self._supported_work(predictions[row.workflow])
+                    for row in candidates if row.identity not in fixed_ids
+                )
+            if not supported:
                 result["reason"] = "predictions_unavailable_reference_fallback"
                 return list(reference)
             if self.include_unreferenced_capacity:
@@ -719,7 +741,7 @@ class WorkflowCombinationController(DeferredFreeAdmission):
             )
             required = [
                 key.invocation_id for key in reference
-                if (
+                if key in initial_grants or (
                     a._protected_join(key) if strict
                     else key.invocation_id in runtime._join_priority_pending
                 )
@@ -784,6 +806,9 @@ class WorkflowCombinationController(DeferredFreeAdmission):
                            if getattr(self, "preserve_reference_service_capacity", False) else {}),
                         "ts_ms": time.time() * 1000., "monotonic_s": time.monotonic(),
                         "decision": result, "candidates": [asdict(row) for row in candidates],
+                        **({"reference_initial_materialization_members": [
+                            key.invocation_id for key in initial_grants
+                        ]} if initial_grants else {}),
                         **({"indexed_sibling_candidates": [asdict(key) for key in indexed_siblings]}
                            if indexed_siblings else {}),
                         "logical_reference_window": reference_window,

@@ -238,6 +238,98 @@ def test_resume_only_preserves_first_materialization_reference(monkeypatch, tmp_
         runtime.close()
 
 
+@pytest.mark.parametrize(("source", "capacity", "headroom", "expected", "reason"), (
+    ("periodic_decay_resume", 650, 4096, ("b", "a"), "shortest_work_set_changed"),
+    ("periodic_decay_resume", 500, 4096, ("b", "c"), "initial_materialization_reference_preserved"),
+    ("periodic_decay_resume", 650, 0, ("b", "c"), "resume_pressure_reference"),
+    ("undiscounted_free_dispatch", 650, 4096, ("b", "c"), "initial_materialization_reference_preserved"),
+))
+def test_adaptive_mixed_window_preserves_first_grants_and_ranks_residual(
+    monkeypatch, tmp_path, source, capacity, headroom, expected, reason,
+):
+    from tests import test_workflow_combination_runtime as fixture_module
+
+    def bound_request(*args, **kwargs):
+        req = request(*args, **kwargs)
+        req.session_id, req.session_generation = req.rid + "-session", 0
+        return req
+
+    monkeypatch.setattr(fixture_module, "request", bound_request)
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    control.resume_only_work_ranking = control.adaptive_resume_ranking = True
+    control.preserve_reference_service_capacity = True
+    a, b, c = (admission.latest[owner] for owner in ("a", "b", "c"))
+    gate = mark_unmaterialized(runtime, (b,))
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        gate._observe_resume_ranking(
+            MaterializationHeadroom(True, device_free_tokens=headroom), 0, time.monotonic(),
+        )
+        selected = control.select([a, b, c], [b, c], capacity=capacity, maximum=4, source=source)
+        assert tuple(key.invocation_id for key in selected) == expected
+        choice, = records
+        assert choice["reference_initial_materialization_members"] == ["b"]
+        assert choice["decision"]["reason"] == reason
+        assert gate.pending[b.request_id].permitted and gate.awaiting_first_prefill(b)
+        if expected == ("b", "a"):
+            assert choice["decision"]["required_reference_members"] == ("b",)
+            assert sum(
+                row["logical_tokens"] for row in choice["candidates"] if row["identity"] in expected
+            ) == 650
+            replayed = replay_choice(choice, control.costs, control.cost_identity)
+            assert replayed["search_replayed"] and replayed["selected"] == ["b", "a"]
+        else:
+            assert not choice["candidates"]
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("condition", ("missing_first_grant_quote", "shorter_set_cannot_fit_now"))
+def test_adaptive_mixed_window_preserves_reference_when_native_checks_fail(
+    monkeypatch, tmp_path, condition,
+):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    control.resume_only_work_ranking = control.adaptive_resume_ranking = True
+    control.preserve_reference_service_capacity = True
+    a, b, c = (admission.latest[owner] for owner in ("a", "b", "c"))
+    gate = mark_unmaterialized(runtime, (b,))
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        gate._observe_resume_ranking(
+            MaterializationHeadroom(True, device_free_tokens=4096), 0, time.monotonic(),
+        )
+        if condition == "missing_first_grant_quote":
+            quote = control._prefix
+
+            def missing_first_quote(key, item):
+                if key == b:
+                    control._prefix_issue = "unobservable_missing_closure"
+                    return None
+                return quote(key, item)
+
+            monkeypatch.setattr(control, "_prefix", missing_first_quote)
+            reason = "reference_candidate_summary_unavailable"
+        else:
+            def limited_headroom(capacity, maximum):
+                return replace(resources(capacity, maximum), device_tokens=400, device_capacity_tokens=1000)
+
+            resources = control._resources
+            monkeypatch.setattr(control, "_resources", limited_headroom)
+            reason = "shortest_work_reference_immediate_fit_preserved"
+        assert control.select(
+            [a, b, c], [b, c], capacity=650, maximum=4, source="periodic_decay_resume",
+        ) == [b, c]
+        choice, = records
+        assert choice["decision"]["reason"] == reason
+        assert gate.pending[b.request_id].permitted and gate.awaiting_first_prefill(b)
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
 def test_adaptive_resume_ranking_reverts_without_pricing_candidates(monkeypatch, tmp_path, source):
     runtime, admission = strict_runtime(monkeypatch, tmp_path)
