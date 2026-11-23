@@ -126,10 +126,14 @@ def test_resume_revalidates_actual_execution_and_review_before_skipping(tmp_path
     proof = {
         "protocol": "all_fixed_measured_workflows_completed",
         "registration_sha256": "registration", "cohort_sha256": "cohort",
+        "certificate": str(tmp_path / "completion.json"),
         "certificate_sha256": "certificate", "actual_owned_exit_verified": True,
         "measured_requests": 1, "measured_output_tokens": 4,
         "work": {"r": [128, 4, "prompt", "output", {"type": "stop"}]},
     }
+    (tmp_path / "telemetry_drain.json").write_text(json.dumps({
+        "drained_status": {"write_back_batch": {"max_nodes": 32}},
+    }))
     saved, review = tmp_path / "proof.json", tmp_path / "review"
     saved.write_text(json.dumps(proof))
     review.mkdir()
@@ -151,7 +155,7 @@ def test_resume_revalidates_actual_execution_and_review_before_skipping(tmp_path
             reuse_completed_pressure=True,
             stages={"control": {}, **plan["stages"]},
         )
-    assert campaign.completed_stage_proofs(plan) == {label: proof}
+    assert campaign.completed_stage_proofs(plan, expected_write_back_cap=32) == {label: proof}
     assert [kind for kind, _args in calls] == ["execution", "review"]
     changed = deepcopy(proof)
     changed["work"]["r"][1] = 5
@@ -159,6 +163,58 @@ def test_resume_revalidates_actual_execution_and_review_before_skipping(tmp_path
     with pytest.raises(ValueError, match="proof changed"):
         campaign.completed_stage_proofs(plan)
     assert [kind for kind, _args in calls] == ["execution", "review", "execution"]
+
+
+@pytest.mark.parametrize("observed", (1, None))
+def test_watch_rejects_a_reused_baseline_with_unmatched_write_back_before_gpu(tmp_path, monkeypatch, observed):
+    from scripts import verify_measured_execution as verification
+
+    plan_path, oracle = tmp_path / "plan.json", tmp_path / "oracle.json"
+    oracle.write_text("{}")
+    review = tmp_path / "review"
+    review.mkdir()
+    (review / "review.json").write_text("{}")
+    proof = {"work": {}}
+    saved = tmp_path / "saved.json"
+    saved.write_text(json.dumps(proof))
+    batch = {"max_nodes": observed} if observed is not None else None
+    reused = campaign.LABELS[:-1]
+    plan_path.write_text(json.dumps({
+        "inputs_sha256": {}, "cohort": str(tmp_path / "cohort"),
+        "preceding_Oracle_comparison": str(oracle),
+        "write_back_batch_nodes": 32,
+        "completed_stage_proofs": dict.fromkeys(reused, str(saved)),
+        "stages": {
+            label: {"registration": str(tmp_path / label), "review": str(review)}
+            for label in campaign.LABELS
+        },
+    }))
+    # Only the reused ThunderAgent drain differs from the two Full drains.
+    for label in reused:
+        directory = tmp_path / label
+        directory.mkdir()
+        drain = {"drained_status": {"write_back_batch": {"max_nodes": 32}}}
+        if label == "thunderagent_acting_decay":
+            drain["drained_status"]["write_back_batch"] = batch
+        (directory / "telemetry_drain.json").write_text(json.dumps(drain))
+
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "99999")
+    monkeypatch.setattr(campaign.os, "getpriority", lambda *_: 0)
+    monkeypatch.setattr(campaign.signal, "signal", lambda *_: None)
+    monkeypatch.setattr(campaign, "oracle_complete", lambda _: None)
+    monkeypatch.setattr(verification, "verify_execution", lambda registration, _cohort: {
+        **proof, "certificate": str(registration / "completion.json"),
+    })
+    monkeypatch.setattr(verification, "review_matches_execution", lambda *_: None)
+    monkeypatch.setattr(campaign, "helper_module", lambda: pytest.fail("GPU check reached"))
+    campaign.watch(plan_path)
+
+    state = campaign.load(tmp_path / "state.json")
+    assert not state["GPU_registered_stages"]
+    assert (
+        "thunderagent_acting_decay: matching native write-back caps required, "
+        f"planned 32, observed {observed}"
+    ) in state["error"]
 
 
 @pytest.mark.parametrize("change", (None, "early", "argv"))
@@ -289,7 +345,7 @@ def test_completed_campaign_reviews_only_the_declared_methods(tmp_path, monkeypa
     monkeypatch.setattr(campaign.os, "getpriority", lambda *_: 0)
     monkeypatch.setattr(campaign.signal, "signal", lambda *_: None)
     monkeypatch.setattr(campaign, "oracle_complete", oracle_checks.append)
-    monkeypatch.setattr(campaign, "completed_stage_proofs", lambda _: dict.fromkeys(labels, {}))
+    monkeypatch.setattr(campaign, "completed_stage_proofs", lambda *_, **__: dict.fromkeys(labels, {}))
     monkeypatch.setattr(campaign, "register_stage", lambda *_: pytest.fail("unexpected GPU stage"))
     monkeypatch.setattr(campaign.causal.reservation, "process", lambda pid: {
         "pid": pid, "start_ticks": "fake_CPU_owner",

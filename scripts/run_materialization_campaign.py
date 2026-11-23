@@ -200,7 +200,18 @@ def helper_module():
     return module
 
 
-def completed_stage_proofs(plan):
+def verify_completed_write_back_cap(label, proof, expected):
+    drain = load(Path(proof["certificate"]).with_name("telemetry_drain.json"))
+    batch = drain["drained_status"].get("write_back_batch")
+    observed = batch.get("max_nodes") if isinstance(batch, dict) else None
+    if type(observed) is not int or observed != expected:
+        raise ValueError(
+            f"{label}: matching native write-back caps required, "
+            f"planned {expected}, observed {observed}"
+        )
+
+
+def completed_stage_proofs(plan, *, expected_write_back_cap=None):
     """Reuse verified stages, including an explicit pressure arm in a two-arm ablation."""
     labels = stage_labels(plan)
     saved = plan.get("completed_stage_proofs", {})
@@ -227,6 +238,8 @@ def completed_stage_proofs(plan):
         )) or canonical_work(previous.get("work")) != canonical_work(fresh["work"]):
             raise ValueError("completed stage proof changed: " + label)
         review_matches_execution(load(Path(stage["review"]) / "review.json"), fresh)
+        if expected_write_back_cap is not None:
+            verify_completed_write_back_cap(label, fresh, expected_write_back_cap)
         proofs[label] = fresh
     return proofs
 
@@ -235,11 +248,6 @@ def verify_pressure_reuse_plan(plan):
     current = load(plan["preceding_ranking_campaign_state"])
     if current["status"] != "complete" or current["completed"] != ["full", "oracle", "learned"]:
         raise ValueError("wait for the complete ranking campaign before registering its D3 control")
-    shared = matching_preparations({
-        label: load(plan["stages"][label]["configuration"]) for label in LABELS[:2]
-    })
-    if plan["cohort"] != shared["private_analysis_cohort"]["path"] or not uses_shared_gpu(plan):
-        raise ValueError("reuse the exact verified cohort and shared GPU access")
     control, pressure = (plan["stages"][label] for label in LABELS[:2])
     registration = load(pressure["registration"])
     if (
@@ -248,6 +256,15 @@ def verify_pressure_reuse_plan(plan):
         or registration["order"] != ["full"]
     ):
         raise ValueError("the reused pressure stage differs from its registration")
+    registered_cap = registration.get("reference_environment", {}).get(WRITE_BACK_CAP_SETTING, "1")
+    shared = matching_preparations({
+        label: load(plan["stages"][label]["configuration"]) for label in LABELS[:2]
+    }, inherited_write_back_cap=registered_cap)
+    if plan["cohort"] != shared["private_analysis_cohort"]["path"] or not uses_shared_gpu(plan):
+        raise ValueError("reuse the exact verified cohort and shared GPU access")
+    cap = shared["resources"][WRITE_BACK_CAP_SETTING]
+    if cap != max(1, int(registered_cap)):
+        raise ValueError("the D3 control changed the registered native write-back cap")
     operator = Path(plan["operator"])
     causal.fresh._require_clean(operator)
     if subprocess.check_output(
@@ -263,6 +280,7 @@ def verify_pressure_reuse_plan(plan):
         or Path(expected[1]) != operator / "scripts/run_causal_comparison.py"
     ):
         raise ValueError("the D3 control launch changed the frozen serving arguments")
+    return cap
 
 
 def register_reused_pressure_control(plan_path, plan, owner):
@@ -294,13 +312,9 @@ def verify_reused_pressure_match(plan, proofs):
         or canonical_work(proofs["control"]["work"]) != canonical_work(proofs["pressure"]["work"])
     ):
         raise ValueError("the completed runs differ beyond the D3 policy")
-    caps = []
+    expected_cap = max(1, int(on.get(WRITE_BACK_CAP_SETTING, "1")))
     for label in LABELS[:2]:
-        drain = load(Path(proofs[label]["certificate"]).with_name("telemetry_drain.json"))
-        caps.append(drain["drained_status"]["write_back_batch"]["max_nodes"])
-    expected_cap = max(1, int(on.get("SGLANG_HICACHE_WRITE_BACK_BATCH_NODES", "1")))
-    if any(type(cap) is not int or cap != expected_cap for cap in caps):
-        raise ValueError("the completed D3 pair requires matching native write-back caps")
+        verify_completed_write_back_cap(label, proofs[label], expected_cap)
 
 
 def watch(plan_path):
@@ -352,11 +366,17 @@ def watch(plan_path):
     proofs = {}
     try:
         verify_pins(plan["inputs_sha256"])
+        expected_cap = plan.get("write_back_batch_nodes")
+        if expected_cap is not None and (type(expected_cap) is not int or expected_cap < 1):
+            raise ValueError("require a positive planned native write-back cap")
         if reuse_pressure:
-            verify_pressure_reuse_plan(plan)
+            registered_cap = verify_pressure_reuse_plan(plan)
+            if expected_cap is not None and expected_cap != registered_cap:
+                raise ValueError("the planned cap differs from the reused native write-back cap")
+            expected_cap = registered_cap
         elif labels != PRESSURE_ONLY:
             oracle_complete(load(plan["preceding_Oracle_comparison"]))
-        proofs = completed_stage_proofs(plan)
+        proofs = completed_stage_proofs(plan, expected_write_back_cap=expected_cap)
         for label, proof in proofs.items():
             path = output / (label + "_execution_proof.json")
             if not path.exists():
@@ -472,6 +492,8 @@ def watch(plan_path):
                     registration, plan["cohort"], Path(stage["review"]) / "review.json", proof_path,
                 ])
                 proofs[label] = load(proof_path)
+                if expected_cap is not None:
+                    verify_completed_write_back_cap(label, proofs[label], expected_cap)
                 if labels != PRESSURE_ONLY:
                     if canonical_work(proofs[label]["work"]) != canonical_work(proofs["control"]["work"]):
                         raise ValueError("complete measured native work changed")
@@ -611,6 +633,7 @@ def prepare(args):
         "inputs_sha256": pins,
         "initial_workflows": 20, "workflows": 133, "mean_interval_seconds": 55.,
         "Host_GB": 200, "reuse_unchanged_exact_token_and_sampling_GPU_evidence": True,
+        "write_back_batch_nodes": shared["resources"][WRITE_BACK_CAP_SETTING],
         "actual_capacity_and_native_execution_checked_at_serving_start": True,
         "fixed18_full_JCT_and_fresh_drain_and_actual_exit_required": True,
         "no_foreign_process_termination": True, "goal_complete": False,
