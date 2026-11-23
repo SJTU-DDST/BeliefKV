@@ -84,10 +84,15 @@ def prepared_decisions(data, costs):
 
 
 def choose(item, mapping, costs):
+    recorded = item["raw"]
+    preserve_capacity = recorded.get("preserve_reference_service_capacity", False)
+    if type(preserve_capacity) is not bool:
+        raise ValueError("recorded reference service capacity guard must be boolean")
     result = choose_shortest_work_first(
         [replace(value, weight=mapping[value.workflow]) for value in item["candidates"]],
-        item["raw"]["decision"].get("reference", ()), item["resources"], costs,
+        recorded["decision"].get("reference", ()), item["resources"], costs,
         required=item["required"], strict_remaining_work=True, clock=lambda: 0,
+        preserve_reference_service_capacity=preserve_capacity,
     )
     return result["selected"]
 

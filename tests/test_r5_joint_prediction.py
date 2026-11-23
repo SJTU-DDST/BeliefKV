@@ -11,7 +11,7 @@ from beliefkv.predictor.workflow_completion_path import (
 from beliefkv.predictor.workflow_work import WorkflowWorkModel
 from beliefkv.policy.workflow_shortest_frontier import choose_shortest_work_first
 from scripts.optimize_r5_join_path import (
-    evaluate_choices, joint_difference, prepared_decisions, selection_key, validation_windows,
+    choose, evaluate_choices, joint_difference, prepared_decisions, selection_key, validation_windows,
 )
 from tests.test_r5_completion_path_audit import row
 from tests.test_workflow_completion_path import path_model
@@ -209,6 +209,35 @@ def test_crossfit_choice_rejects_a_competitor_without_its_own_project_score():
     assert common == {key: value for key, value in verified.items() if key != "common"}
     with pytest.raises(ValueError, match="each competitor"):
         heldout_choice_review(items, costs, [.9, float("nan")], truth, offsets, assignment)
+
+
+@pytest.mark.parametrize("guard", (None, False, True))
+def test_crossfit_scores_the_workflow_and_join_frontiers_under_the_recorded_capacity_guard(guard):
+    from scripts.crossvalidate_r5_join_path import heldout_choice_review
+
+    candidates, resources, costs = fixture()
+    candidates[1:] = [
+        replace(peer, workflow="long", group="join", unfinished_members=2)
+        for peer in candidates[1:]
+    ]
+    reference = ("long-b", "long-a")
+    original = row(candidates, resources, reference)
+    if guard is not None:
+        original["preserve_reference_service_capacity"] = guard
+    items = prepared_decisions({"decisions": [original]}, costs)
+    item, = items
+    item["in_common_window"] = True
+    assignment = {"short": 0, "long": 1}
+    offsets = {id(item): assignment}
+    expected_error = float(not guard)
+    report = heldout_choice_review(items, costs, [.1, .9], [.9, .1], offsets, assignment)
+    for scope in (report, report["common"]):
+        assert scope["workflow_equal_choice_error"] == expected_error
+        assert scope["workflow_equal_JOIN_error"] == expected_error
+
+    original["preserve_reference_service_capacity"] = "false"
+    with pytest.raises(ValueError, match="reference service capacity guard"):
+        choose(item, {"short": .9, "long": .1}, costs)
 
 
 def test_crossfit_selection_requires_both_workflow_and_join_noninferiority():
