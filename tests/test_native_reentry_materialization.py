@@ -2,6 +2,7 @@
 
 import ast
 from collections import namedtuple
+import os
 from pathlib import Path
 from types import SimpleNamespace as NS
 from unittest.mock import Mock
@@ -9,7 +10,11 @@ from unittest.mock import Mock
 import pytest
 
 
-ROOT = Path(__file__).resolve().parents[1] / "third_party/sglang-v0.5.20/python/sglang/srt"
+NATIVE = Path(
+    os.environ.get("SGLANG_SOURCE_CHECKOUT")
+    or Path(__file__).resolve().parents[1] / "third_party/sglang-v0.5.20"
+)
+ROOT = NATIVE / "python/sglang/srt"
 
 
 def native_method(file, cls, method, namespace, *, dependencies=()):
@@ -65,14 +70,14 @@ def test_only_live_unbacked_interior_pressure_victims_get_preserved(backed, live
     cache = native_method(
         "mem_cache/unified_radix_cache.py", "UnifiedRadixCache",
         "_preserve_mamba_reentry_candidates",
-        {"ComponentType": NS(MAMBA=2), "BackupKV": lambda ids: NS(node_ids=ids)},
+        {"ComponentType": NS(MAMBA=2), "BASE_COMPONENT_TYPE": 0, "BackupKV": lambda ids: NS(node_ids=ids)},
         dependencies=("_preserve_mamba_reentry_node",),
     )
     node = NS(
-        id=7, component_data=[None, None, NS(
-            value=object(), host_value=object() if backed else None,
-            session_ref=int(live), lock_ref=0,
-        )],
+        id=7, component_data=[
+            NS(value=object(), host_value=None, session_ref=int(live)), None,
+            NS(value=object(), host_value=object() if backed else None, session_ref=int(live), lock_ref=0),
+        ],
         write_through_pending_id=None, load_back_pending_id=None,
     )
     cache.is_write_back = True
