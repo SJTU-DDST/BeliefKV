@@ -330,6 +330,39 @@ def test_adaptive_mixed_window_preserves_reference_when_native_checks_fail(
         runtime.close()
 
 
+def test_periodic_control_publishes_mixed_grants_without_changing_d3_permit(monkeypatch, tmp_path):
+    runtime, admission = strict_runtime(monkeypatch, tmp_path)
+    control = admission._combination
+    control.resume_only_work_ranking = control.adaptive_resume_ranking = True
+    control.preserve_reference_service_capacity = True
+    a, b, c = (admission.latest[owner] for owner in ("a", "b", "c"))
+    gate = mark_unmaterialized(runtime, (b,))
+    admission.policy.capacity_tokens = 650
+    programs = admission.policy.programs
+    programs["a"].steps = programs["c"].steps = 2
+    programs["c"].tokens = 180
+    admission._live_requests[c.request_id].origin_input_ids = list(range(180))
+    monkeypatch.setattr(runtime, "_read_request_reentry", lambda *_args, **_kwargs: {
+        "checkpoint_tokens": 0, "missing_full_tokens": 0, "missing_mamba_slots": 0,
+    })
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    now = time.monotonic()
+    try:
+        gate._observe_resume_ranking(MaterializationHeadroom(True, device_free_tokens=4096), 0, now)
+        admission.tick(now=now)
+        choice = next(
+            row for row in records if row.get("source") == "periodic_decay_resume"
+        )
+        assert choice["decision"]["reference"] == ("c", "b")
+        assert choice["decision"]["selected"] == ("b", "a")
+        assert admission.allows(b) and admission.allows(a) and not admission.allows(c)
+        assert admission.policy.remaining_capacity() == 0
+        assert gate.pending[b.request_id].permitted and gate.awaiting_first_prefill(b)
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("source", ("periodic_decay_resume", "undiscounted_free_dispatch"))
 def test_adaptive_resume_ranking_reverts_without_pricing_candidates(monkeypatch, tmp_path, source):
     runtime, admission = strict_runtime(monkeypatch, tmp_path)
