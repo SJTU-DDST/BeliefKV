@@ -1,58 +1,58 @@
+# Allow reviewed project files only. Extend this list when adding a public file type.
+*
+!/.gitignore
+!/.gitattributes
+!/LICENSE
+!/README.md
+!/pyproject.toml
+!/environment.yml
+!/environment-agents.yml
+!/environment-next.yml
+
+# Source, runtime integrations, and regression tests.
+!/beliefkv/
+!/beliefkv/**/
+!/beliefkv/**/*.py
+!/scripts/
+!/scripts/**/
+!/scripts/**/*.py
+!/scripts/**/*.sh
+!/scripts/qwen_sandbox_allowlist_proxy.mjs
+!/tests/
+!/tests/**/
+!/tests/**/*.py
+!/tests/fixtures/h2d_retry_storm_p1_short.json
+!/tests/fixtures/qwen_sandbox_workspace/README.md
+!/patches/
+!/patches/README.md
+!/patches/sglang*.patch
+
+# Installation and small, reusable examples.
+!/docs/
+!/docs/setup.md
+!/third_party/
+!/third_party/README.md
+!/configs/
+!/configs/beliefkv_single_gpu.json
+!/configs/qwen2_5_0_5b_smoke.json
+!/configs/causal_replay_plugin/
+!/configs/causal_replay_plugin/pyproject.toml
+!/examples/
+!/examples/predictor_training_smoke.jsonl
+!/examples/subagent_ablation_matrix.json
+!/examples/subagent_shadow_scenario.json
+
+# Generated copies and local environments inside source directories.
 __pycache__/
-*.py[cod]
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 .venv/
 venv/
+node_modules/
 dist/
 build/
-*.log
-*.tmp
-
-experiments/raw/*
-experiments/processed/*
-experiments/results/*
-experiments/reports/*
-!experiments/raw/.gitkeep
-!experiments/raw/README.md
-!experiments/processed/.gitkeep
-!experiments/results/.gitkeep
-experiments/archive/*
-experiments/calibration/*
-experiments/analysis/*
-experiments/models/*
-experiments/shadow/*
-experiments/ab/*
-experiments/canary/*
-experiments/characterization/*
-experiments/micro/*
-experiments/smoke/*
-experiments/oracle/*
-experiments/replay/*
-experiments/prepared/*
-!experiments/archive/README.md
-
-# Hardware-keyed service artifacts are immutable experiment inputs, not source.
-artifacts/*
-
-third_party/*
-!third_party/README.md
-
-# Local benchmark data and immutable run artifacts are kept outside git.
-workloads/raw/*
-workloads/frozen/*
-workloads/runtime/*
-workloads/sources/*
-# Generated LoCoBench source packs, references, and provenance.
-workloads/locobench_agent_*_root_scoped_*/
-workloads/locobench_agent_testable_candidates_20261025/
-workloads/assets/locobench_*_references/
-!workloads/raw/.gitkeep
-!workloads/frozen/.gitkeep
-
-homework/*
 
 # Local exploratory experiment helpers.
 /beliefkv/experiments/deep_kv_capture.py
@@ -80,6 +80,7 @@ homework/*
 /scripts/qualify_deep_kv_capture.py
 /scripts/qualify_split_mixed_*.py
 /scripts/review_sparse_phase_cache.py
+/scripts/plot_*.py
 
 # Tests belonging only to the local exploratory helpers above.
 /tests/test_agent_sparse_kv_feasibility.py
@@ -100,29 +101,4 @@ homework/*
 /tests/test_sparse_*.py
 /tests/test_split_mixed_*.py
 /tests/test_token_conditioned_kv_reference.py
-
-# Dated local direction studies; formal scheduler designs/results stay visible.
-/docs/archive/research_inference_sources_20261112_zh.md
-/docs/research/*_cpu_2026111[345]_zh.md
-/docs/research/*_screen_2026111[0-5]_zh.md
-/docs/research/inference_*_2026111[012]_zh.md
-/docs/research/sparse_*_20261112_zh.md
-/docs/research/omnikv_*_20261112_zh.md
-/docs/research/hardware_*_20261112_zh.md
-/docs/research/dynamic_*_20261110_zh.md
-/docs/research/agent_sparse_kv_feasibility_20261112_zh.md
-/docs/research/control_ingress_race_mechanism_20261113_zh.md
-/docs/research/kv_compute_view_contract_20261114_zh.md
-/docs/research/layer_prefill_streaming_feasibility_20261112_zh.md
-/docs/research/moe_affinity_scope_20261114_zh.md
-/docs/research/prefill_tile_dispatch_review_20261114_zh.md
-/docs/research/system_research_boundary_20261113_zh.md
-
-# Generated plots, presentation builds, and local experiment results.
-/experiments/figures/
-/docs/archive/presentations/
-/docs/reports/2026-10/tokencake_paper_share/
-/docs/figures/*_20261114*.pdf
-/docs/figures/*_20261114*.png
-/docs/figures/sparse_kv/
-/docs/figures/two_designs/
+/tests/test_workflow_arrival_rate_sweep_plot.py
