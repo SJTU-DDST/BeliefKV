@@ -2,6 +2,10 @@ from copy import deepcopy
 
 import pytest
 
+from scripts.audit_free_dispatch_service import identity
+from scripts.audit_ranked_restore_service import (
+    attach_host_loss, selected_episodes, selected_host_losses, staged_transfers, summarize,
+)
 from scripts.audit_staged_native_restore import inspect
 
 
@@ -88,3 +92,96 @@ def test_shared_native_batch_counts_transfer_once_for_all_selected_members():
     assert result["counts"]["native_selected_requests"] == 2
     assert result["counts"]["native_h2d_bytes"] == 800
     assert result["episodes"][0]["native_batch_size"] == 2
+
+
+def test_ranked_restore_requires_exact_bounded_grants_and_counts_shared_bytes_once():
+    journals, transfers = observations()
+    staged = journals[0]
+    sibling = {**staged, "request_id": "sibling", "invocation_id": "sibling", "session_id": "peer"}
+    staged.update(requests=[dict(staged), sibling], native_batch_size=2)
+    staged.update(monotonic_ms=51., monotonic_clock_domain="boot")
+    transfers[0]["telemetry_origin"] = "native_hicache_ack_v0520"
+    keys = [identity(member) for member in staged["requests"]]
+    decisions = [{
+        "source": "periodic_decay_resume", "monotonic_s": .049,
+        "following_periodic_grant_verified": True, "newly_selected_keys": keys,
+        "periodic_service": [{
+            "key": key, "episode": {
+                "key": key, "selection_ms": 50., "first_new_useful_launch_ms": 2.,
+                "observation_window_end_ms": 55.,
+                "new_service_before_next_control_or_intervention": True,
+            },
+        } for key in keys],
+    }]
+    episodes = selected_episodes(decisions)
+    counts = staged_transfers(
+        episodes, journals, transfers, bytes_per_token=100, clock_domain="boot",
+    )
+    assert counts["native_h2d_bytes"] == 800
+    assert summarize(row for row in episodes) == {
+        "selected_episodes": 2, "episodes_with_verified_bounded_launch": 2,
+        "episodes_with_staged_H2D": 2, "distinct_staged_native_batches": 1,
+        "staged_native_batch_bytes": 800,
+        "attempts_with_exact_request_lifetime_host_loss": 0, "attempts_with_unverified_host_loss": 0,
+        "request_lifetime_executed_host_loss_tokens": 0,
+    }
+    assert all(row["staged_transfers"][0]["request_H2D_tokens"] is None for row in episodes)
+
+    late = {**staged, "monotonic_ms": 53.}
+    stale_session = {
+        **staged, "requests": [{**member, "session_generation": 3} for member in staged["requests"]],
+    }
+    staged_transfers(
+        episodes := selected_episodes(decisions), [late, stale_session], transfers,
+        bytes_per_token=100, clock_domain="boot",
+    )
+    assert summarize(episodes)["episodes_with_staged_H2D"] == 0
+
+
+def test_ranked_restore_excludes_independent_tool_grant_and_unbounded_launch():
+    staged = observations()[0][0]
+    key = identity(staged)
+    decision = {
+        "source": "undiscounted_free_dispatch", "monotonic_s": .05, "newly_selected_keys": [key],
+        "free_service": [{
+            "key": key, "actual_grant_verified": True, "separate_tool_replacement": True,
+            "episode": {"key": key, "new_service_before_next_control_or_intervention": True},
+        }],
+    }
+    assert selected_episodes([decision])[0]["first_launch_ms"] is None
+    service = decision["free_service"][0]
+    service["separate_tool_replacement"] = False
+    service["episode"]["new_service_before_next_control_or_intervention"] = False
+    assert selected_episodes([decision])[0]["first_launch_ms"] is None
+
+
+def test_ranked_host_loss_uses_exact_attempt_and_deduplicates_request_lifetime():
+    staged = observations()[0][0]
+    key = identity(staged)
+    row = {"key": key, "first_launch_ms": 52., "staged_transfers": [], "request_lifetime_host_loss": None}
+    other_attempt = {**row, "key": (*key[:5], 1, *key[6:])}
+    without_service = {**row, "first_launch_ms": None}
+    case = {
+        **staged, "identity_and_geometry_supported": True, "observed_attempts": [[0, "s", 2]],
+        "sampled_prefill_extend_tokens": 31, "sampled_lost_prefix_tokens": 7,
+    }
+    episodes = [row, dict(row), other_attempt, without_service]
+    attach_host_loss(episodes, [case])
+    counts = summarize(episodes)
+    assert counts["attempts_with_exact_request_lifetime_host_loss"] == 1
+    assert counts["attempts_with_unverified_host_loss"] == 1
+    assert counts["request_lifetime_executed_host_loss_tokens"] == 7
+    assert other_attempt["request_lifetime_host_loss"]["executed_host_loss_tokens"] is None
+    assert without_service["request_lifetime_host_loss"] is None
+
+
+def test_ranked_host_loss_reconciles_the_complete_native_token_count_before_filtering():
+    target = {
+        "event": "host_block_reaccess_attributed", "pool": "full",
+        "request_id": "selected", "full_recomputed_units": 7,
+    }
+    rows = [target, {**target, "request_id": "other", "full_recomputed_units": 9},
+            {**target, "event": "context_prefix_reuse_probe"}]
+    assert list(selected_host_losses(rows, {"selected"}, expected_tokens=16)) == [target]
+    with pytest.raises(ValueError, match="differ from the drained writer"):
+        list(selected_host_losses(rows, {"selected"}, expected_tokens=7))
