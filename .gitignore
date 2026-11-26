@@ -4,6 +4,7 @@
 !/.gitattributes
 !/LICENSE
 !/README.md
+!/AGENTS.md
 !/pyproject.toml
 !/environment.yml
 !/environment-agents.yml
@@ -33,9 +34,13 @@
 
 # Installation and small, reusable examples.
 !/docs/
+!/docs/architecture_status_zh.md
+!/docs/beliefkv_design.md
+!/docs/implementation_plan.md
 !/docs/setup.md
 !/docs/design/
 !/docs/design/three_design_synthesis_20261123_zh.md
+!/docs/design/two_design_synthesis_20261104_zh.md
 !/docs/experiments/
 !/docs/experiments/mars_mori_replay_20261123_zh.md
 !/docs/experiments/openhands_capture_preflight.md
@@ -45,6 +50,8 @@
 !/docs/figures/generate_d2_schematic.py
 !/docs/figures/generate_icml_figures.py
 !/docs/figures/generate_icml_kv_pipeline.py
+!/docs/figures/generate_monthly_paper_figures.py
+!/docs/figures/generate_two_design_paper_figures.py
 !/docs/figures/replay_migragate_tool_curves.py
 !/docs/figures/icml/
 !/docs/figures/icml/README.md
