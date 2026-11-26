@@ -528,7 +528,10 @@ class RuntimeCausalContextGraph:
         child.state = InvocationState.READY
         parent.child_invocation_ids.add(child_id)
         parked: set[str] = set()
-        if mode == ExecutionMode.FOREGROUND:
+        if mode == ExecutionMode.FOREGROUND and not (
+            event.kind is RuntimeEventKind.SPAWN
+            and event.attributes.get("tool_manages_foreground_wait") is True
+        ):
             parent.blocking_child_ids.add(child_id)
             parent.state = InvocationState.WAIT_CHILD
             parent.updated_ts_ms = event.ts_ms
@@ -598,7 +601,9 @@ class RuntimeCausalContextGraph:
         edge.count += 1
         edge.last_ts_ms = event.ts_ms
         target.pending_messages += 1
-        target.state = InvocationState.READY
+        tool_notification = event.attributes.get("delivery") == "synthetic_background_task_result"
+        if not tool_notification or target.state in (InvocationState.WAIT_MESSAGE, InvocationState.READY):
+            target.state = InvocationState.READY
         target.updated_ts_ms = event.ts_ms
         parked: set[str] = set()
         if handoff and not source.state.terminal:
@@ -607,7 +612,9 @@ class RuntimeCausalContextGraph:
             parked.add(source.invocation_id)
         return GraphDelta(
             event.event_id,
-            awakened_invocations=frozenset({target_id}),
+            awakened_invocations=(
+                frozenset({target_id}) if target.state is InvocationState.READY else frozenset()
+            ),
             parked_invocations=frozenset(parked),
             changed_contexts=frozenset({source.context_id, target.context_id}),
         )
@@ -698,7 +705,11 @@ class RuntimeCausalContextGraph:
     def _on_tool_start(self, event: RuntimeEvent) -> GraphDelta:
         invocation = self._event_invocation(event)
         self._ensure_not_terminal(invocation)
-        if invocation.state not in (InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD):
+        concurrent = (
+            invocation.state is InvocationState.RUNNING_LLM
+            and event.attributes.get("model_output_boundary") is not None
+        )
+        if not concurrent and invocation.state not in (InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD):
             invocation.state = InvocationState.WAIT_TOOL
         invocation.updated_ts_ms = event.ts_ms
         invocation.active_tool_family = str(event.attributes.get("tool_family", "unknown"))
@@ -713,7 +724,7 @@ class RuntimeCausalContextGraph:
         )
         return GraphDelta(
             event.event_id,
-            parked_invocations=frozenset({invocation.invocation_id}),
+            parked_invocations=frozenset() if concurrent else frozenset({invocation.invocation_id}),
             changed_contexts=frozenset({invocation.context_id}),
         )
 
@@ -725,7 +736,11 @@ class RuntimeCausalContextGraph:
             or event.attributes.get("tool_call_id") or "_legacy"
         )
         invocation.active_tool_calls.pop(identity, None)
-        if invocation.state not in (InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD):
+        concurrent = (
+            invocation.state is InvocationState.RUNNING_LLM
+            and event.attributes.get("model_output_boundary") is not None
+        )
+        if not concurrent and invocation.state not in (InvocationState.WAIT_JOIN, InvocationState.WAIT_CHILD):
             invocation.state = (
                 InvocationState.WAIT_TOOL if invocation.active_tool_calls else InvocationState.READY
             )
@@ -778,11 +793,15 @@ class RuntimeCausalContextGraph:
                 changed_contexts=frozenset({invocation.context_id}),
                 satisfied_join_waiters=satisfied,
             )
-        invocation.state = InvocationState.READY
+        invocation.state = (
+            InvocationState.WAIT_TOOL if invocation.active_tool_calls else InvocationState.READY
+        )
         invocation.updated_ts_ms = event.ts_ms
+        ready = invocation.state is InvocationState.READY
         return GraphDelta(
             event.event_id,
-            awakened_invocations=frozenset({invocation.invocation_id}),
+            awakened_invocations=frozenset({invocation.invocation_id}) if ready else frozenset(),
+            parked_invocations=frozenset() if ready else frozenset({invocation.invocation_id}),
             changed_contexts=frozenset({invocation.context_id}),
         )
 

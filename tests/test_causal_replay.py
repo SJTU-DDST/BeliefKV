@@ -8,7 +8,7 @@ import time
 import pytest
 
 from beliefkv.core.events import (
-    RelationType, RuntimeEvent, RuntimeEventKind as Kind,
+    EventConfidence, RelationType, RuntimeEvent, RuntimeEventKind as Kind,
 )
 from beliefkv.experiments.causal_replay import (
     CausalReplayError, compile_causal_replay, evaluate_causal_plan,
@@ -209,6 +209,77 @@ def test_gpu_time_is_not_baked_into_later_request_release():
     actual = evaluate_causal_plan(plans[1], {"r0": 5., "r1": 7.})
     assert actual == expected
     assert expected["workflow_elapsed_ms"] == {"w": 38.}
+
+
+def async_spawn_trace(*, timeout=False, cancelled=False):
+    trace = Trace()
+    trace.add("start", Kind.WORKFLOW_START, 0)
+    trace.create("root", 1)
+    trace.model("spawn-prompt", "root", 2, 4, 5)
+    for child in ("left", "right"):
+        trace.create(child, 6, parent="root")
+        trace.launch(child, "root", 7)
+    trace.model("parent-continues", "root", 8, 23, 24)
+    trace.model("left-work", "left", 9, 30, 31)
+    trace.model("right-work", "right", 9, 70, 72)
+    trace.add(
+        "any", Kind.JOIN_CREATE, 25, invocation_id="root", join_id="wait",
+        member_invocation_ids=("left", "right"), attributes={"mode": "any"},
+    )
+    trace.add("wait", Kind.JOIN_WAIT, 25, invocation_id="root", join_id="wait")
+    trace.add(
+        "outcome", Kind.JOIN_TIMEOUT if timeout else Kind.JOIN_SATISFIED,
+        27 if timeout else 32, invocation_id="root", join_id="wait",
+        member_invocation_ids=() if timeout else ("left",),
+    )
+    trace.add(
+        "left-terminal", Kind.INVOCATION_CANCEL if cancelled else Kind.RETURN,
+        32, invocation_id="left",
+    )
+    if not timeout:  # The terminal and JOIN outcome can share a clock tick.
+        trace.events.remove(trace.named["outcome"])
+        trace.events.append(trace.named["outcome"])
+    trace.model("parent-joined", "root", 33, 40, 41)
+    trace.returned("root", 42)
+    trace.returned("right", 73)
+    trace.add("end", Kind.WORKFLOW_END, 74)
+    return trace
+
+
+@pytest.mark.parametrize("timeout,cancelled", [(False, False), (False, True), (True, False)])
+def test_async_spawn_parent_runs_then_replays_only_the_observed_wait(timeout, cancelled):
+    trace = async_spawn_trace(timeout=timeout, cancelled=cancelled)
+    plan = compile_causal_replay(trace.ordered(), trace.native)
+    event_key = lambda name: event_node_id(trace.named[name].event_id)
+    before_wait = ancestors(plan, request_node_id("parent-continues"))
+    assert event_key("wait") not in before_wait
+    assert request_node_id("left-work") not in before_wait
+    after_wait = ancestors(plan, request_node_id("parent-joined"))
+    assert event_key("outcome") in after_wait
+    assert (event_key("left-terminal") in after_wait) == (not timeout)
+    assert request_node_id("right-work") not in after_wait
+    service = dict.fromkeys(plan.request_usage, 1.)
+    baseline = evaluate_causal_plan(plan, service)["node_completed_ms"]
+    delayed = evaluate_causal_plan(
+        plan, {**service, "left-work": 101., "right-work": 501.},
+    )["node_completed_ms"]
+    assert delayed[event_key("outcome")] - baseline[event_key("outcome")] == (
+        0 if timeout else 100.
+    )
+    assert delayed[event_key("end")] > baseline[event_key("end")]
+
+
+@pytest.mark.parametrize("change", [
+    {"member_invocation_ids": ("root",)},
+    {"invocation_id": "right"},
+    {"confidence": EventConfidence.INFERRED},
+])
+def test_async_wait_requires_the_actual_parent_and_observed_members(change):
+    trace = async_spawn_trace()
+    target = trace.named["outcome"]
+    trace.events[trace.events.index(target)] = replace(target, **change)
+    with pytest.raises(CausalReplayError, match="JOIN"):
+        compile_causal_replay(trace.ordered(), trace.native)
 
 
 def reusable_trace(workflow="w"):

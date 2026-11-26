@@ -114,16 +114,16 @@ def request_payload(
         ) != captured.identity
     ):
         raise ValueError("ready request differs from its captured identity")
-    seed = submit.attributes.get("sampling_seed")
-    if type(seed) is not int or not 0 <= seed < 2 ** 32:
-        raise ValueError("ready request lacks its original sampling seed")
     parameters = deepcopy(captured.sampling_parameters)
     generation = captured.generation_parameters
+    seed = submit.attributes.get("sampling_seed")
     if generation is not None:
-        if generation["sampling_seed"] != seed:
+        if "sampling_seed" in submit.attributes and not _same_wire(generation["sampling_seed"], seed):
             raise ValueError("ready request changes its captured sampling seed")
         parameters.update(generation)
     else:
+        if type(seed) is not int or not 0 <= seed < 2 ** 32:
+            raise ValueError("ready request lacks its original sampling seed")
         parameters.update(temperature=0., sampling_seed=seed)
     parameters.update(
         custom_params={
@@ -277,13 +277,14 @@ class CausalHTTPBackend:
             full_prompt_replay_guaranteed=True,
         )
 
-    async def _generate(self, payload, request):
-        if not self.streaming:
+    async def _generate(self, payload, request, publish_output=None):
+        if not self.streaming and publish_output is None:
             response = await self.client.post("/generate", json=payload)
             response.raise_for_status()
             return response.json()
         payload["stream"] = True
         final = None
+        done = False
         async with self.client.stream("POST", "/generate", json=payload) as response:
             response.raise_for_status()
             async for line in response.aiter_lines():
@@ -291,6 +292,7 @@ class CausalHTTPBackend:
                     continue
                 value = line[5:].strip()
                 if value == "[DONE]":
+                    done = True
                     break
                 chunk = json.loads(value)
                 meta = chunk.get("meta_info") if isinstance(chunk, dict) else None
@@ -300,16 +302,23 @@ class CausalHTTPBackend:
                     or meta["completion_tokens"] < 0
                 ):
                     raise ValueError("streaming replay lacks request and cumulative usage")
+                now = time.monotonic() * 1000.
+                if publish_output is not None:
+                    publish_output(meta["completion_tokens"], now)
                 if self.response_metrics is not None:
                     self.response_metrics.progress(
-                        request, meta["completion_tokens"], time.monotonic() * 1000.,
+                        request, meta["completion_tokens"], now,
                     )
                 final = chunk
         if final is None:
             raise ValueError("streaming replay returned no native output")
+        if publish_output is not None and not done:
+            raise ValueError("native output progress stream ended without its terminator")
         return final
 
-    async def execute(self, request: str, submit: RuntimeEvent) -> NativeReplayCompletion:
+    async def execute(
+        self, request: str, submit: RuntimeEvent, publish_output=None,
+    ) -> NativeReplayCompletion:
         context = submit.workflow_id, submit.context_id
         if (
             context in self._active or context in self._closed_contexts
@@ -328,7 +337,7 @@ class CausalHTTPBackend:
                 raise ValueError("native session changed without visible compaction")
             self._sessions[context] = session
             posted = True
-            native_payload = await self._generate(payload, request)
+            native_payload = await self._generate(payload, request, publish_output)
             now = time.monotonic() * 1000.
             meta = native_payload.get("meta_info") if type(native_payload) is dict else None
             entries = meta.get(RECEIPT_KEY) if type(meta) is dict else None

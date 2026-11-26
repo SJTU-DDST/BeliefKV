@@ -1,7 +1,10 @@
 import itertools
 import os
+import sys
 import tempfile
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
@@ -11,7 +14,9 @@ from beliefkv.runtime.codex_app_server import (
     CodexAppServerClient,
     CodexAppServerError,
     sanitized_codex_environment,
+    verify_codex_capture_binary,
 )
+from beliefkv.runtime.responses_bridge import extract_codex_thread_id
 
 
 class CollectingSink:
@@ -373,6 +378,130 @@ class CodexRuntimeAdapterTest(unittest.TestCase):
         self.assertEqual(tool_events[1].attributes["output_chars"], 29)
         self.assertNotIn("output", tool_events[1].attributes)
 
+    def test_child_request_waits_for_observed_spawn_publication(self):
+        self.adapter.handle_notification({
+            "method": "turn/started",
+            "params": {"threadId": "child-thread", "turn": {"id": "child-turn"}},
+        })
+        attempting = threading.Event()
+
+        def first_child_request():
+            attempting.set()
+            request = self.adapter.request_identity("child-thread", "child-turn", "root-thread")
+            self.adapter.submit_request(request)
+            return request
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            submitted = executor.submit(first_child_request)
+            self.assertTrue(attempting.wait(1))
+            self.assertFalse(submitted.done())
+            self.adapter.handle_notification({
+                "method": "item/completed",
+                "params": {
+                    "threadId": "root-thread",
+                    "turnId": "root-turn",
+                    "item": {
+                        "id": "spawn",
+                        "type": "collabAgentToolCall",
+                        "tool": "spawnAgent",
+                        "status": "completed",
+                        "receiverThreadIds": ["child-thread"],
+                        "agentsStates": {"child-thread": {"status": "pendingInit"}},
+                    },
+                },
+            })
+            request = submitted.result(timeout=1)
+        self.assertEqual(request.request_id, "codex-child-thread-0")
+        self.assertEqual(request.metadata.parent_invocation_id, "codex-invocation:root-thread")
+        self.assertEqual(
+            [event.kind for event in self.sink.events[-3:]],
+            [RuntimeEventKind.INVOCATION_CREATE, RuntimeEventKind.SPAWN, RuntimeEventKind.LLM_SUBMIT],
+        )
+
+    def test_raw_tool_lifecycle_does_not_wait_for_a_yielded_process_to_exit(self):
+        request = self.adapter.request_identity("root-thread", "root-turn", None)
+        self.adapter.submit_request(request)
+        self.assertTrue(self.adapter.complete_request(request, tool_call_ids=("command",)))
+        self.adapter.handle_notification({
+            "method": "rawResponseItem/completed",
+            "emittedAtMs": 1_700_000_000_000,
+            "params": {
+                "threadId": "root-thread", "turnId": "root-turn",
+                "item": {
+                    "type": "function_call", "name": "exec_command", "call_id": "command",
+                    "arguments": '{"cmd":"printf proof"}',
+                },
+            },
+        }, observed_ts_ms=100)
+        self.adapter.handle_notification({
+            "method": "item/started",
+            "params": {
+                "threadId": "root-thread", "turnId": "root-turn",
+                "startedAtMs": 1_700_000_000_003,
+                "item": {"type": "commandExecution", "id": "command", "processId": "13"},
+            },
+        }, observed_ts_ms=103)
+        # A different workflow was published before this callback got the lock.
+        self.adapter.clock_ms = lambda: 120
+        self.adapter.register_root({"id": "other-thread"}, workload_id="other")
+        self.adapter.handle_notification({
+            "method": "rawResponseItem/completed",
+            "emittedAtMs": 1_700_000_000_017,
+            "params": {
+                "threadId": "root-thread", "turnId": "root-turn",
+                "item": {"type": "function_call_output", "call_id": "command", "output": "yielded"},
+            },
+        }, observed_ts_ms=117)
+        next_request = self.adapter.request_identity("root-thread", "root-turn", None)
+        self.assertEqual(next_request.request_id, "codex-root-thread-1")
+        self.adapter.handle_notification({
+            "method": "item/completed",
+            "params": {
+                "threadId": "root-thread", "turnId": "root-turn",
+                "item": {"type": "commandExecution", "id": "command", "durationMs": 40},
+            },
+        }, observed_ts_ms=140)
+        start, end = [
+            event for event in self.sink.events
+            if event.kind in {RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END}
+        ]
+        self.assertEqual(start.ts_ms, 100)
+        self.assertEqual(end.ts_ms, 120)
+        self.assertEqual(end.attributes["duration_ms"], 17)
+        self.assertEqual(end.attributes["callback_observed_ts_ms"], 117)
+        self.assertEqual(end.attributes["callback_publication_adjustment_ms"], 3)
+        self.assertEqual(end.attributes["request_id"], request.request_id)
+        self.assertEqual(end.attributes["codex_process_id"], "13")
+        self.assertIsNone(end.attributes["runtime_duration_ms"])
+
+    def test_interrupt_censors_active_request_and_rejects_late_result(self):
+        request = self.adapter.request_identity("root-thread", "root-turn", None)
+        self.adapter.submit_request(request)
+        interrupted = {
+            "method": "turn/completed",
+            "params": {
+                "threadId": "root-thread", "turn": {"id": "root-turn", "status": "interrupted"},
+            },
+        }
+        self.adapter.handle_notification(interrupted)
+        self.adapter.handle_notification(interrupted)
+        self.assertFalse(self.adapter.complete_request(request, tool_call_ids=()))
+        self.assertEqual(self.adapter.active_turns(), {})
+        self.assertEqual(
+            [event.kind for event in self.sink.events[-4:]],
+            [RuntimeEventKind.LLM_SUBMIT, RuntimeEventKind.CALL_CENSORED,
+             RuntimeEventKind.INVOCATION_CANCEL, RuntimeEventKind.WORKFLOW_END],
+        )
+        self.assertEqual(self.sink.events[-3].attributes["request_id"], request.request_id)
+
+    def test_child_model_identity_is_not_inherited_from_parent_cache_key(self):
+        self.assertEqual(extract_codex_thread_id({
+            "prompt_cache_key": "root-thread",
+            "client_metadata": {
+                "x-codex-turn-metadata": '{"thread_id":"child-thread","turn_id":"child-turn"}',
+            },
+        }), "child-thread")
+
 
 class CodexAppServerEnvironmentTest(unittest.TestCase):
     def test_credentials_and_proxies_are_not_inherited(self):
@@ -410,6 +539,10 @@ class CodexAppServerEnvironmentTest(unittest.TestCase):
                 client.raise_if_reader_failed()
 
         self.assertIs(caught.exception.__cause__, failure)
+
+    def test_capture_rejects_an_unpinned_executable(self):
+        with self.assertRaisesRegex(CodexAppServerError, "unpinned Codex capture binary"):
+            verify_codex_capture_binary(sys.executable)
 
 
 if __name__ == "__main__":

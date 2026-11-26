@@ -1,0 +1,11 @@
+# OpenHands software-agent-sdk v1.14.0 (ab83d054ee88a3e19eea2af7fc3149a0d743804f).
+# Selected transport and SDK dependencies use versions from its uv.lock.
+openhands-sdk==1.14.0
+openhands-tools==1.14.0
+agent-client-protocol==0.8.1
+browser-use==0.11.9
+fastmcp==3.1.0
+litellm==1.80.10
+lmnr==0.7.24
+openai==2.8.1
+pydantic==2.12.5

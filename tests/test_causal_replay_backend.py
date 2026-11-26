@@ -97,6 +97,22 @@ def test_payload_keeps_original_stopping_budget_seed_and_exact_token_work(corpus
     assert captured.sampling_parameters["stop_token_ids"] == [9]
 
 
+def test_external_harness_uses_original_native_sampling_without_client_seed(corpus):
+    generation = {
+        "temperature": .7, "top_p": .9, "top_k": 40, "min_p": .1,
+        "frequency_penalty": 0., "presence_penalty": 0., "repetition_penalty": 1.,
+        "sampling_seed": None,
+    }
+    captured = replace(corpus.get("r0"), generation_parameters=generation)
+    submit = replace(submitted(), attributes={"request_id": "r0"})
+    metadata = BeliefKVRequestMetadata("w", "i", "c", 0)
+    payload = request_payload(captured, submit, metadata, processor="fixture")
+    assert {key: payload["sampling_params"][key] for key in generation} == generation
+    assert payload["sampling_params"]["custom_params"][PARAMETER_KEY]["force_after_sample"] is True
+    with pytest.raises(ValueError, match="changes its captured sampling seed"):
+        request_payload(captured, submitted(), metadata, processor="fixture")
+
+
 @pytest.mark.parametrize("change", ("kind", "request", "context", "epoch", "metadata", "seed", "bool_seed"))
 def test_payload_refuses_a_foreign_or_unseeded_ready_request(corpus, change):
     captured, submit = corpus.get("r0"), submitted()
@@ -238,7 +254,7 @@ def test_http_execution_and_terminal_close_use_native_receipts_without_reading_l
 
 
 def test_streaming_backend_measures_output_and_checks_the_same_native_terminal_receipt(corpus):
-    calls, observations = [], []
+    calls, observations, published = [], [], []
     metrics = StreamingWorkflowMetrics()
 
     class OutputStream(httpx.AsyncByteStream):
@@ -274,7 +290,7 @@ def test_streaming_backend_measures_output_and_checks_the_same_native_terminal_r
             await backend.emit(created())
             submit = submitted()
             await backend.emit(submit)
-            await backend.execute("r0", submit)
+            await backend.execute("r0", submit, lambda count, at: published.append((count, at)))
             await backend.emit(RuntimeEvent(
                 "end", time.monotonic() * 1000., Kind.WORKFLOW_END, "w",
             ))
@@ -285,6 +301,8 @@ def test_streaming_backend_measures_output_and_checks_the_same_native_terminal_r
     assert row["output_tokens"] == row["output_chunks"] == 2
     assert row["ttft_ms"] > 0 and row["interactivity_tps"] > 0
     assert row["first_output_monotonic_ms"] < row["last_output_monotonic_ms"]
+    assert [count for count, _ in published] == [0, 1, 2]
+    assert ([at for _, at in published[1:]]) == [row["first_output_monotonic_ms"], row["last_output_monotonic_ms"]]
     assert metrics.summary()["all_workflows_completed"]
     assert metrics.summary()["coverage"]["completed_requests"] == 1
     assert [path for path, _ in calls] == ["/generate", "/close_session"]

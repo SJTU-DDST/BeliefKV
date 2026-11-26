@@ -26,6 +26,7 @@ from beliefkv.experiments.causal_replay import compile_causal_replay, execute_ca
 from beliefkv.experiments.causal_replay_backend import CausalHTTPBackend
 from beliefkv.experiments.causal_replay_delivery import ReplayEventDelivery
 from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
+from beliefkv.experiments.harness_source import MANIFEST as HARNESS_MANIFEST, load_harness_source
 from beliefkv.experiments.source_provenance import sha256_file
 from beliefkv.experiments.replay_arrivals import arrival_offsets_ms, load_arrival_plan
 from beliefkv.experiments.tool_timing_overlay import load_overlay
@@ -45,6 +46,8 @@ def source_plan(arm: Path):
         from beliefkv.experiments.composite_workload import load_composed_source
 
         return load_composed_source(arm)
+    if (arm / HARNESS_MANIFEST).is_file():
+        return load_harness_source(arm)
     summaries = list(arm.glob("client_*/summary.json"))
     if len(summaries) != 1:
         raise ValueError("source must have one completed client summary")
@@ -120,6 +123,10 @@ async def run(args) -> dict:
             AgentXTokenCorpus(args.agentx_token_dir, args.agentx_prepared) if agentx
             else CapturedTokenCorpus(args.source_arm / "server/request_tokens.jsonl", expected)
         )
+        if evidence.get("source_kind") == "observed_external_harness" and (
+            corpus.evidence["token_source_sha256"] != evidence["token_source_sha256"]
+        ):
+            raise ValueError("harness token corpus differs from the registered source")
         log = stack.enter_context(JsonlRuntimeEventSink(
             args.output_dir / "runtime_events.replay.jsonl",
         ))
@@ -154,6 +161,7 @@ async def run(args) -> dict:
             try:
                 result = await execute_causal_replay(
                     plan, backend.execute, backend.emit, timing_policy=timing,
+                    execute_streaming_request=backend.execute,
                     workflow_arrival_offsets_ms=(
                         arrival_offsets_ms(arrivals) if arrivals is not None else None
                     ),

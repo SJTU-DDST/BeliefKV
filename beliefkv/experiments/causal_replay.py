@@ -10,7 +10,7 @@ import math
 import time
 from typing import Awaitable, Callable, Iterable, Mapping
 
-from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind
+from beliefkv.core.events import RuntimeEvent, RuntimeEventKind as Kind, is_unobserved_join_event
 from beliefkv.experiments.replay_timing import ReplayIdleClock, ReplayTimingPolicy
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.replay_token_capture import native_request_expectations
@@ -28,6 +28,7 @@ class ReplayNode:
     delay_ms: float
     event: RuntimeEvent | None = None
     request_id: str | None = None
+    output_boundary: tuple[str, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -40,9 +41,18 @@ class CausalReplayPlan:
     def dependency_graph(self) -> dict[str, tuple[str, ...]]:
         return {node.node_id: node.dependencies for node in self.nodes}
 
+    def output_boundaries(self) -> dict[str, dict[int, str]]:
+        boundaries = defaultdict(dict)
+        for node in self.nodes:
+            if node.output_boundary is not None:
+                request, count = node.output_boundary
+                boundaries[request][count] = node.node_id
+        return dict(boundaries)
+
     def summary(self) -> dict:
         counts = Counter(
-            node.event.kind.value if node.event else "native_request"
+            node.event.kind.value if node.event else
+            "native_output_boundary" if node.output_boundary else "native_request"
             for node in self.nodes
         )
         return {
@@ -73,6 +83,10 @@ def event_node_id(event_id: str) -> str:
 
 def request_node_id(request_id: str) -> str:
     return "request:" + request_id
+
+
+def output_boundary_node_id(request_id: str, count: int) -> str:
+    return f"output:{request_id}:{count}"
 
 
 def _identity(value, label: str) -> str:
@@ -115,6 +129,7 @@ def _callback_observed_timestamp(event: RuntimeEvent) -> float:
 
 def compile_causal_replay(
     events: Iterable[RuntimeEvent], native_events: Iterable[dict],
+    *, allow_streaming_tools: bool = False,
 ) -> CausalReplayPlan:
     """Bind recorded dependencies; unknown or incomplete lifecycles fail closed."""
     raw = tuple(events)
@@ -138,7 +153,7 @@ def compile_causal_replay(
     supported = {
         Kind.WORKFLOW_START, Kind.WORKFLOW_END, Kind.INVOCATION_CREATE,
         Kind.INVOCATION_CANCEL, Kind.RETURN, Kind.SPAWN, Kind.CALL,
-        Kind.JOIN_CREATE, Kind.JOIN_WAIT, Kind.JOIN_SATISFIED,
+        Kind.JOIN_CREATE, Kind.JOIN_WAIT, Kind.JOIN_SATISFIED, Kind.JOIN_TIMEOUT,
         Kind.TOOL_START, Kind.TOOL_END, Kind.LLM_SUBMIT, Kind.LLM_RESULT,
         Kind.CONTEXT_ADVANCE, Kind.CONTEXT_COMPACT, Kind.STRUCTURED_ACTION,
     }
@@ -175,7 +190,7 @@ def compile_causal_replay(
         elif event.kind in (Kind.SPAWN, Kind.CALL):
             target = event.workflow_id, _identity(event.target_invocation_id, "launch target")
             unique(launches, target, event, "invocation launch")
-        elif event.kind in (Kind.JOIN_CREATE, Kind.JOIN_WAIT, Kind.JOIN_SATISFIED):
+        elif event.kind in (Kind.JOIN_CREATE, Kind.JOIN_WAIT, Kind.JOIN_SATISFIED, Kind.JOIN_TIMEOUT):
             join = event.workflow_id, _identity(event.join_id, "join identity")
             table = (
                 join_creates if event.kind is Kind.JOIN_CREATE
@@ -253,6 +268,42 @@ def compile_causal_replay(
     if len(clock_domains) != 1:
         raise CausalReplayError("native completions use different monotonic clock domains")
 
+    stream_starts, stream_launches, boundary_nodes = {}, {}, {}
+    stream_ends = defaultdict(set)
+    if allow_streaming_tools:
+        for key, tool in tool_starts.items():
+            boundary = tool.attributes.get("model_output_boundary")
+            if boundary is None:
+                continue
+            rid = tool.attributes.get("request_id")
+            submit = submits.get(rid) if isinstance(rid, str) else None
+            count = boundary.get("output_tokens") if isinstance(boundary, dict) else None
+            published = boundary.get("published_ms") if isinstance(boundary, dict) else None
+            if (
+                submit is None or (submit.workflow_id, submit.invocation_id, submit.context_id)
+                != (tool.workflow_id, tool.invocation_id, tool.context_id)
+                or type(count) is not int or not 0 < count <= expected[rid]["llm_result"][1]
+                or type(published) not in (int, float) or not math.isfinite(published)
+                or not submit.ts_ms <= published <= tool.ts_ms < results[rid].ts_ms
+            ):
+                raise CausalReplayError("streaming tool lacks a valid published native output boundary")
+            node_id = output_boundary_node_id(rid, count)
+            reference_times.setdefault(node_id, published)
+            if reference_times[node_id] != published:
+                # Different tool frames can publish the same native prefix.
+                # Each tool keeps its own delivery offset relative to the first frame.
+                reference_times[node_id] = min(reference_times[node_id], published)
+            boundary_nodes[node_id] = ReplayNode(
+                node_id, tool.workflow_id, (event_node_id(submit.event_id),),
+                0., output_boundary=(rid, count),
+            )
+            stream_starts[key] = node_id
+        for target, launch in launches.items():
+            part = launch.attributes.get("tool_run_id")
+            tool_key = (launch.workflow_id, launch.invocation_id, part)
+            if tool_key in stream_starts:
+                stream_launches[target] = event_node_id(tool_starts[tool_key].event_id)
+
     nodes, frontier, response_frontier = {}, {}, {}
     active_requests, active_tools, active_joins = {}, defaultdict(set), {}
     closed = set()
@@ -305,6 +356,8 @@ def compile_causal_replay(
                 launch = launches.get(owner)
                 if launch is None or launch.invocation_id != event.parent_invocation_id:
                     raise CausalReplayError("child creation lacks a matching parent launch")
+                if owner in stream_launches:
+                    dependencies = {stream_launches[owner]}
             if event.attributes.get("reusable_subagent") is True:
                 context = event.workflow_id, _identity(event.context_id, "reusable context")
                 handle = _identity(event.attributes.get("agent_handle"), "agent handle")
@@ -345,14 +398,18 @@ def compile_causal_replay(
             request = event.attributes["request_id"]
             if active_requests.pop(owner, None) != request:
                 raise CausalReplayError("client result does not match its active request")
-            frontier[owner] = {emit(event, {request_node_id(request)})}
-            response_frontier[owner] = set(frontier[owner])
+            response_frontier[owner] = {emit(event, {request_node_id(request)})}
+            frontier[owner] = response_frontier[owner] | stream_ends.pop(owner, set())
         elif kind is Kind.TOOL_START:
             key = _tool_key(event)
             if owner in active_requests:
-                raise CausalReplayError("tool starts before its model result")
-            # Tools and spawn from the same response can run during JOIN_WAIT.
-            emit(event, response(owner))
+                boundary = stream_starts.get(key)
+                if boundary is None or boundary_nodes[boundary].output_boundary[0] != active_requests[owner]:
+                    raise CausalReplayError("tool starts before its model result without output evidence")
+                emit(event, {boundary})
+            else:
+                # Tools and spawn from the same response can run during JOIN_WAIT.
+                emit(event, response(owner))
             active_tools[owner].add(key)
         elif kind is Kind.TOOL_END:
             key = _tool_key(event)
@@ -368,7 +425,10 @@ def compile_causal_replay(
                 or abs(declared - duration) > 1.
             ):
                 raise CausalReplayError("tool duration and timestamps disagree")
-            frontier[owner].add(emit(event, {event_node_id(start.event_id)}))
+            end = emit(event, {event_node_id(start.event_id)})
+            frontier[owner].add(end)
+            if key in stream_starts and owner in active_requests:
+                stream_ends[owner].add(end)
             active_tools[owner].remove(key)
         elif kind in (Kind.SPAWN, Kind.CALL):
             target = event.workflow_id, event.target_invocation_id
@@ -379,14 +439,21 @@ def compile_causal_replay(
                 current(owner) if creation.attributes.get("runtime_internal") is True
                 else response(owner)
             )
+            if target in stream_launches:
+                dependencies = {stream_launches[target]}
             emit(event, dependencies | {event_node_id(creation.event_id)})
             if kind is Kind.CALL:
                 frontier[owner].add(event_node_id(terminals[target].event_id))
         elif kind is Kind.JOIN_CREATE:
             join = event.workflow_id, event.join_id
             waiter = join_waits[join]
-            if event.attributes.get("mode", "all") != "all" or not event.member_invocation_ids:
-                raise CausalReplayError("only a nonempty blocking ALL JOIN is supported")
+            if event.attributes.get("mode", "all") not in ("all", "any") or not event.member_invocation_ids:
+                raise CausalReplayError("JOIN requires a supported mode and nonempty membership")
+            if event.invocation_id not in (None, waiter.invocation_id) or (
+                waiter.member_invocation_ids
+                and set(waiter.member_invocation_ids) != set(event.member_invocation_ids)
+            ):
+                raise CausalReplayError("JOIN declaration and waiter disagree")
             parent = event.workflow_id, waiter.invocation_id
             dependencies = response(parent)
             for member in event.member_invocation_ids:
@@ -403,16 +470,41 @@ def compile_causal_replay(
             emit(event, response(owner) | {event_node_id(join_creates[join].event_id)})
             frontier[owner].add(event_node_id(join_ends[join].event_id))
             active_joins[owner] = join
-        elif kind is Kind.JOIN_SATISFIED:
+        elif kind in (Kind.JOIN_SATISFIED, Kind.JOIN_TIMEOUT):
             join = event.workflow_id, event.join_id
-            waiter = event.workflow_id, join_waits[join].invocation_id
-            if active_joins.pop(waiter, None) != join:
+            waited = join_waits[join]
+            declared = join_creates[join]
+            waiter = event.workflow_id, waited.invocation_id
+            if event.invocation_id not in (None, waiter[1]) or active_joins.pop(waiter, None) != join:
                 raise CausalReplayError("JOIN satisfied before its parent waits")
-            dependencies = {event_node_id(join_waits[join].event_id)}
-            for member in join_creates[join].member_invocation_ids:
+            dependencies = {event_node_id(waited.event_id)}
+            any_join = declared.attributes.get("mode", "all") == "any"
+            all_members = set(declared.member_invocation_ids)
+            observed_members = set(event.member_invocation_ids)
+            if not observed_members <= all_members:
+                raise CausalReplayError("JOIN outcome names a foreign member")
+            if (any_join or kind is Kind.JOIN_TIMEOUT) and any(
+                is_unobserved_join_event(boundary) for boundary in (declared, waited, event)
+            ):
+                raise CausalReplayError("ANY JOIN or timeout requires observed boundaries")
+            if kind is Kind.JOIN_TIMEOUT:
+                if observed_members:
+                    raise CausalReplayError("timeout with partial results needs separate result evidence")
+                emit(event, dependencies)
+                continue
+            # Exact tokens bind the parent to the results in the recorded reply.
+            if any_join and not observed_members:
+                raise CausalReplayError("ANY JOIN lacks its observed result members")
+            if not any_join:
+                if observed_members and observed_members != all_members:
+                    raise CausalReplayError("ALL JOIN outcome lacks a declared member")
+                observed_members = all_members
+            for member in observed_members:
                 terminal = terminals.get((event.workflow_id, member))
-                if terminal is None or terminal.kind is not Kind.RETURN:
-                    raise CausalReplayError("ALL JOIN lacks a returned member")
+                if terminal is None or (
+                    terminal.kind is Kind.INVOCATION_CANCEL and member not in event.member_invocation_ids
+                ):
+                    raise CausalReplayError("JOIN lacks an observed terminal member")
                 dependencies.add(event_node_id(terminal.event_id))
             emit(event, dependencies)
         elif kind in (Kind.RETURN, Kind.INVOCATION_CANCEL):
@@ -479,6 +571,7 @@ def compile_causal_replay(
             emit(event, dependencies | workflow_closes[event.workflow_id] or {workflow})
     if active_requests or any(active_tools.values()) or active_joins:
         raise CausalReplayError("trace ends with active requests, tools or JOINs")
+    nodes.update(boundary_nodes)
     try:
         tuple(TopologicalSorter({
             key: node.dependencies for key, node in nodes.items()
@@ -498,6 +591,7 @@ def compile_causal_replay(
 def evaluate_causal_plan(
     plan: CausalReplayPlan, request_service_ms: Mapping[str, float],
     *, workflow_arrival_offsets_ms: Mapping[str, float] | None = None,
+    request_progress_ms: Mapping[tuple[str, int], float] | None = None,
 ) -> dict:
     """CPU virtual-clock check; supplied service times are never a GPU prediction."""
     if request_service_ms.keys() != plan.request_usage.keys() or any(
@@ -505,6 +599,18 @@ def evaluate_causal_plan(
         for value in request_service_ms.values()
     ):
         raise CausalReplayError("service fixture must cover every request with finite nonnegative time")
+    progress = {} if request_progress_ms is None else request_progress_ms
+    boundaries = {node.output_boundary for node in plan.nodes if node.output_boundary}
+    if progress.keys() != boundaries or any(
+        type(delay) not in (int, float) or not math.isfinite(delay)
+        or not 0 <= delay <= request_service_ms[rid]
+        for (rid, _), delay in progress.items()
+    ) or any(
+        tuple(progress[rid, count] for count in sorted(counts))
+        != tuple(sorted(progress[rid, count] for count in counts))
+        for rid, counts in plan.output_boundaries().items()
+    ):
+        raise CausalReplayError("streaming fixture must supply ordered native output times")
     if workflow_arrival_offsets_ms is not None:
         from beliefkv.experiments.replay_arrivals import validate_offsets
 
@@ -522,7 +628,7 @@ def evaluate_causal_plan(
             ready = workflow_arrival_offsets_ms[node.workflow_id]
         completed[key] = ready + (
             request_service_ms[node.request_id] if node.request_id is not None else 0.
-        )
+        ) + (progress[node.output_boundary] if node.output_boundary is not None else 0.)
         if node.event:
             if node.event.kind is Kind.WORKFLOW_START:
                 releases[node.workflow_id] = completed[key]
@@ -552,17 +658,23 @@ async def execute_causal_replay(
     timing_policy: ReplayTimingPolicy | None = None,
     workflow_arrival_offsets_ms: Mapping[str, float] | None = None,
     workflow_release_order: tuple[str, ...] | None = None,
+    execute_streaming_request: Callable[
+        [str, RuntimeEvent, Callable[[int, float], None]], Awaitable[NativeReplayCompletion]
+    ] | None = None,
 ) -> dict:
     """Release only ready work; a backend must report its actual native completion."""
     nodes = {node.node_id: node for node in plan.nodes}
     if len(nodes) != len(plan.nodes) or any(
         dependency not in nodes for node in nodes.values() for dependency in node.dependencies
     ) or any(
-        (node.event is None) == (node.request_id is None)
+        sum(value is not None for value in (node.event, node.request_id, node.output_boundary)) != 1
         or not math.isfinite(node.delay_ms) or node.delay_ms < 0
         for node in nodes.values()
     ):
         raise CausalReplayError("invalid replay execution graph")
+    boundaries = plan.output_boundaries()
+    if boundaries and execute_streaming_request is None:
+        raise CausalReplayError("published output boundaries require a streaming native replay backend")
     if workflow_arrival_offsets_ms is not None:
         from beliefkv.experiments.replay_arrivals import validate_offsets
 
@@ -595,13 +707,40 @@ async def execute_causal_replay(
     )
     workflow_releases, workflow_elapsed = {}, {}
     emitted = 0
+    loop = asyncio.get_running_loop()
+    output_ready = {node_id: loop.create_future() for counts in boundaries.values() for node_id in counts.values()}
 
     async def execute(node):
         nonlocal emitted
+        if node.output_boundary is not None:
+            return await output_ready[node.node_id]
         if node.request_id is not None:
             submitted = time.monotonic() * 1000.
-            submit = visible_requests.pop(node.request_id)
-            receipt = await execute_request(node.request_id, submit)
+            rid = node.request_id
+            submit = visible_requests.pop(rid)
+            if rid in boundaries:
+                pending = iter(sorted(boundaries[rid].items()))
+                next_boundary = next(pending, None)
+                last_count, last_at = 0, submitted
+
+                def publish(count, at):
+                    nonlocal next_boundary, last_count, last_at
+                    if (
+                        type(count) is not int or not last_count <= count <= plan.request_usage[rid][1]
+                        or type(at) not in (int, float) or not math.isfinite(at)
+                        or not last_at <= at <= time.monotonic() * 1000. + 1.
+                    ):
+                        raise CausalReplayError("invalid native streaming output progress")
+                    last_count, last_at = count, at
+                    while next_boundary is not None and next_boundary[0] <= count:
+                        output_ready[next_boundary[1]].set_result(at)
+                        next_boundary = next(pending, None)
+
+                receipt = await execute_streaming_request(rid, submit, publish)
+                if next_boundary is not None:
+                    raise CausalReplayError("native response omitted a required published output boundary")
+            else:
+                receipt = await execute_request(rid, submit)
             now = time.monotonic() * 1000.
             if (
                 not isinstance(receipt, NativeReplayCompletion)

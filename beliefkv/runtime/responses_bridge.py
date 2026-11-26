@@ -23,11 +23,7 @@ class ConvertedResponsesRequest:
     tool_namespaces: tuple[tuple[str, str], ...] = ()
 
 
-def extract_codex_thread_id(request: dict[str, Any]) -> str:
-    cache_key = request.get("prompt_cache_key")
-    if isinstance(cache_key, str) and cache_key:
-        return cache_key
-
+def codex_turn_metadata(request: dict[str, Any]) -> dict[str, Any]:
     client_metadata = request.get("client_metadata")
     if isinstance(client_metadata, dict):
         encoded = client_metadata.get("x-codex-turn-metadata")
@@ -37,9 +33,23 @@ def extract_codex_thread_id(request: dict[str, Any]) -> str:
             except json.JSONDecodeError:
                 turn_metadata = None
             if isinstance(turn_metadata, dict):
-                thread_id = turn_metadata.get("thread_id")
-                if isinstance(thread_id, str) and thread_id:
-                    return thread_id
+                return turn_metadata
+    return {}
+
+
+def extract_codex_thread_id(request: dict[str, Any]) -> str:
+    # Subagents can share their parent's cache key.
+    thread_id = codex_turn_metadata(request).get("thread_id")
+    if isinstance(thread_id, str) and thread_id:
+        return thread_id
+    client_metadata = request.get("client_metadata")
+    if isinstance(client_metadata, dict):
+        thread_id = client_metadata.get("thread_id")
+        if isinstance(thread_id, str) and thread_id:
+            return thread_id
+    cache_key = request.get("prompt_cache_key")
+    if isinstance(cache_key, str) and cache_key:
+        return cache_key
     raise ResponsesBridgeError(
         "Codex request has neither prompt_cache_key nor thread_id metadata"
     )
@@ -51,6 +61,7 @@ def responses_to_chat_request(
     *,
     max_completion_tokens: int = 768,
     temperature: float = 0.0,
+    request_id: str | None = None,
 ) -> ConvertedResponsesRequest:
     if max_completion_tokens <= 0:
         raise ValueError("max_completion_tokens must be positive")
@@ -70,9 +81,8 @@ def responses_to_chat_request(
         "stream": False,
         "temperature": temperature,
         "max_tokens": max_completion_tokens,
-        "rid": (
-            f"codex-{thread_id}-{metadata.context_epoch}-"
-            f"{uuid.uuid4().hex[:12]}"
+        "rid": request_id or (
+            f"codex-{thread_id}-{metadata.context_epoch}-{uuid.uuid4().hex[:12]}"
         ),
         "beliefkv_metadata": metadata.to_wire(),
     }
@@ -97,6 +107,7 @@ def chat_response_to_responses_events(
     *,
     tool_name_aliases: Mapping[str, str] | None = None,
     tool_namespaces: Mapping[str, str] | None = None,
+    response_id: str | None = None,
 ) -> tuple[dict[str, Any], ...]:
     tool_name_aliases = tool_name_aliases or {}
     tool_namespaces = tool_namespaces or {}
@@ -107,7 +118,7 @@ def chat_response_to_responses_events(
     if not isinstance(message, dict):
         raise ResponsesBridgeError("SGLang chat choice has no message")
 
-    response_id = f"resp_{uuid.uuid4().hex}"
+    response_id = response_id or f"resp_{uuid.uuid4().hex}"
     output: list[dict[str, Any]] = []
     content = message.get("content")
     if isinstance(content, str) and content:
