@@ -83,35 +83,15 @@ def test_service_capacity_guard_keeps_immediately_fitting_reference():
     assert fitting["reason"] == "shortest_work_set_changed"
 
 
-def test_service_capacity_guard_needs_immediate_fit_to_replace_unpriced_reference():
+def test_service_capacity_retry_leaves_successful_planned_admission_unchanged():
     rows, resources, costs = fixture()
-    short = replace(rows[0], missing_extents=((("short", 1.), 20),))
-    reference = ("long-a",)
-    call = partial(choose, [short], reference, costs=costs, preserve_reference_service_capacity=True)
-    guarded = call(resources=replace(resources, device_tokens=19))
-    assert guarded["selected"] == reference
-    assert guarded["ranked_selected"] == ("short",)
-    assert guarded["reference_metadata_complete"] is False
-    assert guarded["reason"] == "shortest_work_reference_fit_unobserved"
-    fitting = call(resources=replace(resources, device_tokens=20))
-    assert fitting["selected"] == ("short",)
-
-
-@pytest.mark.parametrize("missing", (19, 20, 21))
-def test_service_capacity_guard_does_not_increase_an_existing_hbm_deficit(missing):
-    rows, resources, costs = fixture()
-    short = replace(rows[0], missing_extents=((("short", 1.), missing),))
+    short = replace(rows[0], missing_extents=((("short", 1.), 21),))
     incumbent = replace(rows[1], missing_extents=((("long-a", 1.), 20),))
     options = [short, incumbent], ("long-a",), replace(resources, device_tokens=10), costs
-    unguarded = choose(*options)
-    assert unguarded["selected"] == ("short",)
-    assert unguarded["reference_evaluation"]["current_device_summary_fits"] is False
-    assert unguarded["selected_evaluation"]["current_device_summary_fits"] is False
-    guarded = choose(*options, preserve_reference_service_capacity=True)
-    assert guarded["selected"] == (("long-a",) if missing > 20 else ("short",))
-    if missing > 20:
-        assert guarded["ranked_selected"] == ("short",)
-        assert guarded["reason"] == "shortest_work_reference_device_deficit_preserved"
+    result = choose(*options, preserve_reference_service_capacity=True)
+    assert result["selected"] == ("short",)
+    assert result["selected_evaluation"]["current_device_summary_fits"] is False
+    assert "service_capacity_retry" not in result
 
 
 def test_service_capacity_retry_preserves_count_with_a_fitting_shorter_candidate():
@@ -147,8 +127,7 @@ def test_service_capacity_retry_preserves_count_with_a_fitting_shorter_candidate
     assert not expired["search_complete"]
 
 
-@pytest.mark.parametrize("free", (10, 20))
-def test_service_capacity_retry_keeps_join_rights_and_counts_shared_sibling_kv_once(free):
+def test_service_capacity_retry_keeps_join_rights_and_counts_shared_sibling_kv_once():
     rows, resources, costs = fixture()
     rows[0] = replace(rows[0], logical_tokens=50, missing_extents=((("short", 1.), 90),))
     rows[2] = replace(rows[2], missing_extents=((("long-b", 1.), 20),))
@@ -158,16 +137,13 @@ def test_service_capacity_retry_keeps_join_rights_and_counts_shared_sibling_kv_o
     )
     second = replace(first, identity="second", category=0)
     result = choose(
-        [*rows, first, second], ("long-a", "long-b"), replace(resources, device_tokens=free), costs,
+        [*rows, first, second], ("long-a", "long-b"), replace(resources, device_tokens=20), costs,
         required=("long-a",), preserve_reference_service_capacity=True,
     )
     assert set(result["selected"]) == {"long-a", "first", "second"}
     assert result["selected_evaluation"]["required_device_tokens"] == 16
     assert result["reference_evaluation"]["required_device_tokens"] == 20
-    assert result["service_capacity_retry"] == (
-        "shortest_work_reference_immediate_fit_preserved" if free == 20 else
-        "shortest_work_reference_device_deficit_preserved"
-    )
+    assert result["service_capacity_retry"] == "shortest_work_reference_immediate_fit_preserved"
 
 
 @pytest.mark.parametrize("options", (

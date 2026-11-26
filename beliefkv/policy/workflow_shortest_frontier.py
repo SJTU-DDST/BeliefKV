@@ -113,23 +113,17 @@ def choose_shortest_work_first(
 
         def pack(limits):
             selected = list(forced)
-            seen = set(required)
-            for row in ordered:
-                peers = [peer for peer in groups[group_key(row)] if peer.identity not in seen]
-                if not peers:
-                    continue
+            for peers in groups.values():
                 if group_ready_siblings and len(peers) > 1:
                     if expired():
                         return None
                     if _evaluate([*selected, *peers], limits, costs) is not None:
                         selected.extend(peers)
-                        seen.update(peer.identity for peer in peers)
                         result["evaluated_candidates"] += len(peers)
                         continue
                 for peer in peers:
                     if expired():
                         return None
-                    seen.add(peer.identity)
                     result["evaluated_candidates"] += 1
                     if _evaluate([*selected, peer], limits, costs) is not None:
                         selected.append(peer)
@@ -152,14 +146,6 @@ def choose_shortest_work_first(
                 and evaluated.get("current_device_summary_fits") is False
             ):
                 reason = "shortest_work_reference_immediate_fit_preserved"
-            elif reference and baseline is None and evaluated.get("current_device_summary_fits") is False:
-                reason = "shortest_work_reference_fit_unobserved"
-            elif (
-                baseline is not None and baseline.get("current_device_summary_fits") is False
-                and evaluated.get("current_device_summary_fits") is False
-                and evaluated["required_device_tokens"] > baseline["required_device_tokens"]
-            ):
-                reason = "shortest_work_reference_device_deficit_preserved"
             if reason and baseline is not None and resources.device_capacity_tokens is not None:
                 # A shorter group may fit under the incumbent's service budget
                 # even when the original pool-sized greedy choice does not.
