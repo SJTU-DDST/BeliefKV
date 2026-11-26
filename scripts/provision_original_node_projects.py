@@ -76,7 +76,8 @@ def packages_for(task):
     return (packages, None) if packages else ([], "original_has_no_dependency_manifest")
 
 
-def install(task, directories, here, *, timeout_s, dependency_only=False, cache=None):
+def install(task, directories, here, *, timeout_s, dependency_only=False, cache=None,
+            use_original_lockfile=False, legacy_peer_dependencies=True):
     project = task["repo"].split("/", 1)[1]
     workspace = here / "workspaces" / project
     workload = SweBenchWorkload(
@@ -89,6 +90,19 @@ def install(task, directories, here, *, timeout_s, dependency_only=False, cache=
         name = "beliefkv-node-prepare-" + uuid.uuid4().hex
         log = here / "logs" / (project + f"-{index}.log")
         log.parent.mkdir(parents=True, exist_ok=True)
+        npm_action = "ci" if use_original_lockfile and any(
+            (workspace / directory / filename).is_file()
+            for filename in ("package-lock.json", "npm-shrinkwrap.json")
+        ) else "install"
+        resolver = f"npm {npm_action} --no-audit --no-fund"
+        if legacy_peer_dependencies:
+            resolver += " --legacy-peer-deps"
+        if dependency_only:
+            resolver += " --ignore-scripts && " + dependency_lifecycle()
+        fetch_options = [] if legacy_peer_dependencies else [
+            "--env", "NPM_CONFIG_FETCH_RETRIES=1",
+            "--env", "NPM_CONFIG_FETCH_TIMEOUT=30000",
+        ]
         command = [
             "docker", "run", "--rm", "--name", name,
             "--label", "beliefkv.cpu-preparation=original-node-20261030",
@@ -99,13 +113,11 @@ def install(task, directories, here, *, timeout_s, dependency_only=False, cache=
             "--workdir", "/workspace/" + directory.as_posix(),
             "--env", "HOME=/tmp", "--env", "HUSKY=0",
             "--env", "NPM_CONFIG_CACHE=/npm-cache",
+            *fetch_options,
             "--env", "PYTHON=/opt/miniconda3/envs/testbed/bin/python",
             "--env", "OMP_NUM_THREADS=1", "--env", "OPENBLAS_NUM_THREADS=1",
             "--entrypoint", "/bin/sh", task["docker_image"], "-c",
-            (
-                "npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund && "
-                + dependency_lifecycle()
-            ) if dependency_only else "npm install --legacy-peer-deps --no-audit --no-fund",
+            resolver,
         ]
         code, timeout = None, False
         try:
@@ -126,7 +138,7 @@ def install(task, directories, here, *, timeout_s, dependency_only=False, cache=
             "log": str(log), "log_sha256": sha256_file(log),
         })
         if code != 0 or timeout:
-            return {"installed": False, "attempts": logs}
+            return {"installed": False, "attempts": logs, "packages": installed}
         modules = workspace / directory / "node_modules"
         if not modules.is_dir():
             raise ValueError("successful dependency installation did not create node_modules")

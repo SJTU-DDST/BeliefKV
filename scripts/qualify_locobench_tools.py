@@ -60,12 +60,14 @@ def tool_command(role):
     )
 
 
-def qualify(row, image):
+def qualify(row, image, *, project_commands=()):
     source = Path(row["source_repo"])
+    project_commands = tuple(project_commands)
     settings = {
         "PYTHONPATH": package_paths(source),
         "QT_QPA_PLATFORM": "offscreen", "QT_OPENGL": "software", "MPLBACKEND": "Agg",
         "AWS_EC2_METADATA_DISABLED": "true",
+        **(row.get("sandbox_environment") or {}),
     }
     evidence = {
         "source_commit": row["base_commit"], "docker_image_id": image,
@@ -96,6 +98,14 @@ def qualify(row, image):
                     "nonzero_exit_returned": failed_command.exit_code == 7,
                     "docker_environment_args": backend._docker_environment_args(),
                 }
+                if project_commands:
+                    checks = []
+                    for command in project_commands:
+                        probe = backend.execute(command, timeout=45)
+                        checks.append({
+                            "command": command, "exit_code": probe.exit_code, "output": probe.output,
+                        })
+                    evidence["roles"][role]["project_commands"] = checks
             handoff = backends[0].execute("test \"$(cat .beliefkv-tool-check/shared.txt)\" = child")
             evidence["shared_workspace_handoff_passed"] = handoff.exit_code == 0
         finally:
@@ -111,30 +121,45 @@ def qualify(row, image):
         and evidence.get("shared_workspace_handoff_passed") is True
         and evidence["cleanup"] == ["completed", "completed"]
     )
+    if project_commands:
+        evidence["project_commands_passed"] = all(
+            probe["exit_code"] == 0
+            for role in roles.values() for probe in role["project_commands"]
+        )
     return evidence
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--image", required=True)
+    images = parser.add_mutually_exclusive_group(required=True)
+    images.add_argument("--image")
+    images.add_argument("--keep-project-images", action="store_true")
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--workers", type=int, default=4, choices=range(1, 9))
     args = parser.parse_args()
     if args.report.exists() or args.output.exists():
         parser.error("preserve existing reports and workload manifests")
     manifest = json.loads(args.manifest.read_bytes())
-    image = subprocess.check_output(
-        ["docker", "image", "inspect", args.image, "--format", "{{.Id}}"], text=True,
-    ).strip()
+    image_ids = {
+        image: subprocess.check_output(
+            ["docker", "image", "inspect", image, "--format", "{{.Id}}"], text=True, timeout=20,
+        ).strip()
+        for image in ({args.image} if args.image else {row["docker_image"] for row in manifest["workloads"]})
+    }
 
     def check(row):
-        result = qualify(row, image)
+        image = image_ids[args.image or row["docker_image"]]
+        try:
+            result = qualify(row, image)
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+            result = {"tool_execution_passed": False, "docker_image_id": image, "error": repr(error)}
         print(json.dumps({"project": row["repo"], "tools": result["tool_execution_passed"]}),
               flush=True)
         return row["source_repo"], result
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
         results = dict(executor.map(check, manifest["workloads"]))
     report = {
         "schema_version": 1, "cpu_only": True, "qualification_scope": "live_root_child_tools",
@@ -152,8 +177,9 @@ def main():
     pinned = deepcopy(manifest)
     pinned.pop("environment_qualification", None)
     for row in pinned["workloads"]:
-        row["docker_image"] = image
-        row["sandbox_environment"] = results[row["source_repo"]]["sandbox_environment"]
+        result = results[row["source_repo"]]
+        row["docker_image"] = result["docker_image_id"]
+        row["sandbox_environment"] = result["sandbox_environment"]
         row.pop("test_command", None)
         row.pop("test_entrypoint_scope", None)
     pinned["tool_environment_qualification"] = {

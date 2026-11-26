@@ -1,0 +1,111 @@
+{
+  "python_api_gateway_hard_009": {
+    "declaration": "pyproject.toml",
+    "extras": ["dev"],
+    "additional_dependencies": ["pydantic[email]>=2.7.0", "pyjwt==2.8.0", "aiohttp==3.9.1", "hypothesis"],
+    "environment_probes": [
+      "cd edubridge-gateway && python -c 'from pydantic import field_validator; from sqlalchemy.ext.asyncio import async_sessionmaker; import structlog, jwt'"
+    ],
+    "original_entries": [
+      "cd edubridge-gateway && python -c 'import edubridge_gateway.main'",
+      "cd edubridge-gateway && python -m pytest -q --collect-only tests/"
+    ]
+  },
+  "python_api_microservice_medium_008": {
+    "additional_dependencies": [
+      "fastapi", "uvicorn", "sqlmodel", "asyncpg", "pydantic", "strawberry-graphql",
+      "redis", "slowapi", "python-jose[cryptography]", "passlib[bcrypt]",
+      "alembic", "httpx", "pytest-asyncio", "sentry-sdk", "coverage"
+    ]
+  },
+  "python_api_microservice_medium_044": {
+    "additional_dependencies": ["slowapi"],
+    "environment_probes": [
+      "cd ProductivityPulse && python -c 'from slowapi import Limiter; import pydantic_settings, fastapi_limiter, sqlalchemy'"
+    ],
+    "original_entries": ["cd ProductivityPulse && python -m pytest -q --collect-only"]
+  },
+  "python_mobile_social_medium_022": {
+    "additional_dependencies": ["moto[dynamodb,s3]>=3,<4"],
+    "unavailable_requirements": {
+      "aws-lambda-powertools==2.31.1": "The original pin is unavailable on PyPI.",
+      "whatsapp-cloud-api==0.3.0": "The original pin is unavailable on PyPI."
+    },
+    "environment_probes": [
+      "cd gatherproof_backend && python -c 'import sys; assert sys.version_info[:2] == (3, 11); import pydantic_settings, aiocache; from moto import mock_dynamodb2, mock_s3; import src.data.repository'"
+    ],
+    "original_entries": ["cd gatherproof_backend && python -m pytest -q -m 'not e2e'"]
+  },
+  "python_game_simulation_medium_033": {
+    "unavailable_requirements": {
+      "types-aiohttp>=3.9,<4.0": "The typed client dependency has no published distribution on PyPI.",
+      "types-msgpack>=1.0,<2.0": "The declared typing package has no published distribution on PyPI."
+    },
+    "environment_probes": [
+      "cd physage_academy && python -c 'import pygame, pymunk, pydantic, hypothesis'"
+    ],
+    "original_entries": ["cd physage_academy && python -m pytest -q --collect-only"]
+  },
+  "python_api_rest_easy_006": {
+    "additional_dependencies": [
+      "fastapi", "uvicorn", "pydantic", "graphene", "redis", "sqlalchemy", "aioredis",
+      "prometheus-client", "opentelemetry-api", "opentelemetry-sdk", "httpx", "faker"
+    ],
+    "original_entries": ["cd pocketops && python -m pytest -q --collect-only"]
+  },
+  "python_desktop_development_expert_021": {
+    "additional_dependencies": [
+      "PySide6", "rx", "fastapi", "sqlalchemy", "pluggy", "watchdog",
+      "transitions", "pydantic", "pyshortcuts", "grpcio"
+    ],
+    "environment_probes": ["python -c 'import PySide6.QtCore, PySide6.QtWidgets, watchdog, transitions'"]
+  },
+  "python_system_automation_medium_098": {
+    "parse_registry_requirements": true
+  },
+  "python_system_monitoring_medium_061": {
+    "additional_dependencies": [
+      "fastapi", "pydantic", "celery", "sqlalchemy", "redis", "watchdog",
+      "bandit", "pytest-asyncio", "python-json-logger"
+    ]
+  },
+  "python_web_cms_hard_074": {
+    "additional_dependencies": [
+      "Django>=4,<5", "djangorestframework", "psycopg2", "celery[redis]",
+      "django-storages[s3]", "django-allauth", "social-auth-app-django",
+      "django-crispy-forms", "django-sslserver", "stripe", "fhir.resources",
+      "drf-yasg", "whitenoise", "gunicorn", "pytest-django", "sentry-sdk",
+      "faker", "freezegun", "factory-boy"
+    ],
+    "environment_probes": ["python -c 'import django, rest_framework, psycopg2, pytest_django'"],
+    "original_entries": ["cd mediverse_cms && python -m pytest -q --collect-only"]
+  },
+  "python_web_cms_expert_002": {
+    "additional_dependencies": [
+      "fastapi", "pydantic", "stripe", "sqlalchemy", "boto3", "aiocache", "loguru",
+      "python-jose[cryptography]", "uvicorn", "moto"
+    ],
+    "original_entries": ["cd healpress-cms && python -m pytest -q --collect-only"]
+  },
+  "python_web_cms_easy_038": {
+    "additional_dependencies": [
+      "Flask>=2,<3", "sqlmodel>=0.0.8", "pydantic>=1.10", "jinja2",
+      "redis", "flask-caching", "werkzeug", "Pillow", "Flask-Talisman", "Flask-Session"
+    ]
+  },
+  "python_web_social_easy_073": {
+    "additional_dependencies": [
+      "fastapi", "uvicorn[standard]", "sqlmodel", "asyncpg", "aio-pika",
+      "celery[redis]", "pydantic", "python-multipart", "fastapi-users", "jinja2",
+      "aioredis", "loguru"
+    ]
+  },
+  "python_web_portfolio_medium_041": {
+    "additional_dependencies": [
+      "fastapi", "uvicorn", "pydantic>=2", "sqlmodel", "sqlalchemy>=2",
+      "celery[redis]>=5", "pyjwt", "authlib", "loguru", "prometheus-client",
+      "httpx", "jinja2"
+    ],
+    "original_entries": ["cd scholarfolio && python -m pytest -q --collect-only"]
+  }
+}
