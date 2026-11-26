@@ -1,0 +1,116 @@
+diff --git a/vllm-continuum/vllm/entrypoints/openai/protocol.py b/vllm-continuum/vllm/entrypoints/openai/protocol.py
+index e2f3b94..4305bff 100644
+--- a/vllm-continuum/vllm/entrypoints/openai/protocol.py
++++ b/vllm-continuum/vllm/entrypoints/openai/protocol.py
+@@ -1666,6 +1666,7 @@ class CompletionStreamResponse(OpenAIBaseModel):
+     model: str
+     choices: list[CompletionResponseStreamChoice]
+     usage: Optional[UsageInfo] = Field(default=None)
++    beliefkv_native_output: Optional[dict[str, Any]] = None
+ 
+ 
+ class EmbeddingResponseData(OpenAIBaseModel):
+diff --git a/vllm-continuum/vllm/entrypoints/openai/serving_completion.py b/vllm-continuum/vllm/entrypoints/openai/serving_completion.py
+index 1426ba4..26ddc1a 100644
+--- a/vllm-continuum/vllm/entrypoints/openai/serving_completion.py
++++ b/vllm-continuum/vllm/entrypoints/openai/serving_completion.py
+@@ -454,6 +454,12 @@ class OpenAIServingCompletion(OpenAIServing):
+                             total_tokens=prompt_tokens + completion_tokens,
+                         )
+ 
++                    if request.vllm_xargs and "beliefkv_replay_output_ids" in request.vllm_xargs:
++                        from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
++                        chunk.beliefkv_native_output = {
++                            "deltas": res._beliefkv_output_deltas,
++                            "clock_domain": local_monotonic_clock_domain(),
++                        }
+                     response_json = chunk.model_dump_json(exclude_unset=False)
+                     yield f"data: {response_json}\n\n"
+ 
+diff --git a/vllm-continuum/vllm/outputs.py b/vllm-continuum/vllm/outputs.py
+index 64bcfd4..5fec868 100644
+--- a/vllm-continuum/vllm/outputs.py
++++ b/vllm-continuum/vllm/outputs.py
+@@ -145,6 +145,10 @@ class RequestOutput:
+ 
+         self.finished |= next_output.finished
+         self.kv_transfer_params = next_output.kv_transfer_params
++        if hasattr(next_output, "_beliefkv_output_deltas"):
++            previous = getattr(self, "_beliefkv_output_deltas", []) if aggregate else []
++            self._beliefkv_output_deltas = previous
++            self._beliefkv_output_deltas.extend(next_output._beliefkv_output_deltas)
+ 
+         for next_completion in next_output.outputs:
+             for i, completion in enumerate(self.outputs):
+diff --git a/vllm-continuum/vllm/v1/engine/core.py b/vllm-continuum/vllm/v1/engine/core.py
+index 4456dd5..e67cdd2 100644
+--- a/vllm-continuum/vllm/v1/engine/core.py
++++ b/vllm-continuum/vllm/v1/engine/core.py
+@@ -400,10 +400,15 @@ class EngineCore:
+                 scheduler.kv_cache_manager.get_recent_prefix_cache_stats())
+ 
+             usable_blocks = max(0, num_gpu_blocks - 1)
++            running_requests, waiting_requests = scheduler.get_request_counts()
+             stats = {
+                 "block_size": block_size,
+                 "num_gpu_blocks": num_gpu_blocks,
+                 "num_free_blocks": num_free_blocks,
++                "scheduling_policy": scheduler.policy.value,
++                "max_num_seqs": scheduler.scheduler_config.max_num_seqs,
++                "running_requests": running_requests,
++                "waiting_requests": waiting_requests,
+                 "usage": usage,
+                 "total_tokens": usable_blocks * block_size,
+                 "free_tokens": num_free_blocks * block_size,
+diff --git a/vllm-continuum/vllm/v1/engine/output_processor.py b/vllm-continuum/vllm/v1/engine/output_processor.py
+index 02c8c61..7ba2707 100644
+--- a/vllm-continuum/vllm/v1/engine/output_processor.py
++++ b/vllm-continuum/vllm/v1/engine/output_processor.py
+@@ -2,6 +2,7 @@
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
+ import asyncio
++import os
+ from collections.abc import Iterable
+ from dataclasses import dataclass
+ from typing import Any, Optional, Union, cast
+@@ -432,6 +433,14 @@ class OutputProcessor:
+             if request_output := req_state.make_request_output(
+                     new_token_ids, pooling_output, finish_reason, stop_reason,
+                     kv_transfer_params):
++                if (
++                    engine_core_timestamp is not None
++                    and os.environ.get("BELIEFKV_PAPER_REPLAY") == "mars"
++                    and isinstance(request_output, RequestOutput)
++                ):
++                    request_output._beliefkv_output_deltas = [(
++                        engine_core_timestamp * 1000., len(new_token_ids),
++                    )]
+                 if req_state.queue is not None:
+                     # AsyncLLM: put into queue for handling by generate().
+                     req_state.queue.put(request_output)
+diff --git a/vllm-continuum/vllm/v1/worker/gpu_model_runner.py b/vllm-continuum/vllm/v1/worker/gpu_model_runner.py
+index ebb18e8..64ff75c 100644
+--- a/vllm-continuum/vllm/v1/worker/gpu_model_runner.py
++++ b/vllm-continuum/vllm/v1/worker/gpu_model_runner.py
+@@ -3,6 +3,7 @@
+ 
+ import gc
+ import itertools
++import os
+ import time
+ from collections import defaultdict
+ from collections.abc import Iterator
+@@ -1863,6 +1864,12 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
+             sampler_output.sampled_token_ids = output_token_ids
+             self._update_states_after_model_execute(output_token_ids)
+ 
++        if os.environ.get("BELIEFKV_PAPER_REPLAY") == "mars":
++            from beliefkv.experiments.paper_baseline_native import replace_mars_samples
++            replace_mars_samples(
++                self, sampler_output.sampled_token_ids,
++                speculative=spec_decode_metadata is not None,
++            )
+         return sampler_output
+ 
+     def _bookkeeping_sync(

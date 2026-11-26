@@ -12,6 +12,10 @@ from beliefkv.experiments.causal_replay_sampling import (
     PARAMETER_KEY, SAMPLING_ENV, apply_position_logits, filter_position_batch,
     sample_with_positions,
 )
+from beliefkv.experiments.paper_baseline_sglang import (
+    ARM_ENV, observe_moe_configuration, paper_streamer_hook,
+    paper_tokenizer_metadata, paper_worker_state,
+)
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.replay_token_capture import _wire, generation_parameters
 
@@ -106,22 +110,26 @@ def _streamer_hook(result, *_args, **_kwargs):
 
 
 def register() -> None:
-    from beliefkv.runtime.host_registration_numa import register as register_host_numa
-    from beliefkv.runtime.host_registered_copy import register as register_host_copy
-    from beliefkv.runtime.workflow_compute_service import register as register_compute_service
+    paper_arm = os.environ.get(ARM_ENV)
+    if paper_arm is None:
+        from beliefkv.runtime.host_registration_numa import register as register_host_numa
+        from beliefkv.runtime.host_registered_copy import register as register_host_copy
+        from beliefkv.runtime.workflow_compute_service import register as register_compute_service
 
-    register_host_numa()
-    register_host_copy()
-    register_compute_service()
+        register_host_numa()
+        register_host_copy()
+        register_compute_service()
     setting = os.environ.get(BRIDGE_ENV, "0")
     if setting not in ("0", "1"):
         raise ValueError(f"{BRIDGE_ENV} must be 0 or 1")
+    mode = os.environ.get(SAMPLING_ENV, "legacy")
+    if paper_arm is not None and (paper_arm not in ("mars", "mori") or setting != "1" or mode != "position"):
+        raise ValueError("paper author replay requires a known arm and the position replay bridge")
     if setting == "0":
         return
     from sglang.srt.environ import envs
     from sglang.srt.plugins.hook_registry import HookRegistry, HookType
 
-    mode = os.environ.get(SAMPLING_ENV, "legacy")
     if mode not in ("legacy", "position"):
         raise ValueError(f"{SAMPLING_ENV} must be legacy or position")
     delayed = envs.SGLANG_ENABLE_DELAY_SAMPLE.get()
@@ -148,5 +156,15 @@ def register() -> None:
         )
     HookRegistry.register(
         "sglang.srt.managers.scheduler.Scheduler.get_output_streamer_class",
-        _streamer_hook, HookType.AFTER,
+        _streamer_hook if paper_arm is None else paper_streamer_hook, HookType.AFTER,
     )
+    if paper_arm is not None:
+        observe_moe_configuration()
+        HookRegistry.register(
+            "sglang.srt.managers.tokenizer_manager.TokenizerManager.update_request_meta_info",
+            paper_tokenizer_metadata, HookType.AROUND,
+        )
+        HookRegistry.register(
+            "sglang.srt.managers.scheduler.Scheduler.get_internal_state",
+            paper_worker_state, HookType.AFTER,
+        )

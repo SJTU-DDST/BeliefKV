@@ -47,6 +47,7 @@ def _tree_fingerprint(root: Path, paths: Iterable[str]) -> str:
 
 def _tree_with_patch(
     repository: Path, patch: Path | None, *, extra_paths: Iterable[str] = (),
+    exclude_paths: Iterable[str] = (),
 ) -> str:
     with tempfile.TemporaryDirectory(prefix="beliefkv-provenance-") as directory:
         temporary_index = Path(directory) / "index"
@@ -57,8 +58,17 @@ def _tree_with_patch(
                 index = repository / index
             # Keep staged entries and the timestamp Git uses for racy-content checks.
             shutil.copy2(index, temporary_index)
+            excluded = sorted(exclude_paths)
+            if excluded:
+                subprocess.run(
+                    ("git", "restore", "--source=HEAD", "--staged", "--", *excluded),
+                    cwd=repository,
+                    env={**__import__("os").environ, **environment},
+                    check=True,
+                    capture_output=True,
+                )
             subprocess.run(
-                ("git", "add", "-u"),
+                ("git", "add", "-u", "--", ".", *(f":(exclude,literal){path}" for path in excluded)),
                 cwd=repository,
                 env={**__import__("os").environ, **environment},
                 check=True,
@@ -130,7 +140,10 @@ def git_source_state(
             repository, "diff", "--name-only", "--diff-filter=A", "HEAD", expected_tree,
         )))
         covered_untracked = [path for path in untracked if path in added]
-        actual_tree = _tree_with_patch(repository, None, extra_paths=covered_untracked)
+        actual_tree = _tree_with_patch(
+            repository, None, extra_paths=covered_untracked,
+            exclude_paths=excluded & set(_paths(_git(repository, "ls-files", "--"))),
+        )
         patch_matches = expected_tree == actual_tree and not (set(untracked) - added)
         state["canonical_patch"] = {
             "path": str(patch),

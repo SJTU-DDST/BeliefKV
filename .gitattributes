@@ -1,2 +1,2 @@
-# Empty context lines in canonical unified patches contain one required space.
-patches/*.patch whitespace=-blank-at-eol
+# Unified diffs can end with a required blank context line.
+patches/*.patch whitespace=-blank-at-eol,-blank-at-eof

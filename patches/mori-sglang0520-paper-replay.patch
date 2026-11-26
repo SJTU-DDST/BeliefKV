@@ -1,0 +1,908 @@
+diff --git a/python/sglang/srt/entrypoints/http_server.py b/python/sglang/srt/entrypoints/http_server.py
+index f51d439..18ddb6e 100644
+--- a/python/sglang/srt/entrypoints/http_server.py
++++ b/python/sglang/srt/entrypoints/http_server.py
+@@ -117,6 +117,7 @@ from sglang.srt.function_call.function_call_parser import FunctionCallParser
+ from sglang.srt.managers.io_struct import (
+     AbortReq,
+     AttachHiCacheStorageReqInput,
++    BatchProgramOpsReqInput,
+     CheckWeightsReqInput,
+     CloseSessionReqInput,
+     ConfigureLoggingReq,
+@@ -130,11 +131,13 @@ from sglang.srt.managers.io_struct import (
+     InitWeightsUpdateGroupReqInput,
+     LoadLoRAAdapterFromTensorsReqInput,
+     LoadLoRAAdapterReqInput,
++    MarkProgramTypeReqInput,
+     OpenSessionReqInput,
+     ParseFunctionCallReq,
+     PauseGenerationReqInput,
+     ProfileReq,
+     ReleaseMemoryOccupationReqInput,
++    ReleaseProgramReqInput,
+     ResumeMemoryOccupationReqInput,
+     SendWeightsToRemoteInstanceReqInput,
+     SeparateReasoningReqInput,
+@@ -987,6 +990,46 @@ async def classify_request(obj: EmbeddingReqInput, request: Request):
+         return _create_error_response(e)
+ 
+ 
++def _require_mori():
++    if not envs.SGLANG_ENABLE_MORI.get():
++        raise HTTPException(status_code=404, detail="MORI is disabled.")
++
++
++@app.api_route("/mark_program_type", methods=["POST", "PUT"])
++@auth_level(AuthLevel.ADMIN_OPTIONAL)
++async def mark_program_type(program_id: str = Query(...), program_type: str = Query(...)):
++    _require_mori()
++    ret = await _global_state.tokenizer_manager.mark_program_type(
++        MarkProgramTypeReqInput(program_id=program_id, program_type=program_type)
++    )
++    return ORJSONResponse({"success": ret.success, "message": ret.message})
++
++
++@app.api_route("/release_program", methods=["POST", "PUT"])
++@auth_level(AuthLevel.ADMIN_OPTIONAL)
++async def release_program(program_id: str = Query(...)):
++    _require_mori()
++    ret = await _global_state.tokenizer_manager.release_program(
++        ReleaseProgramReqInput(program_id=program_id)
++    )
++    return ORJSONResponse({"success": ret.success, "message": ret.message})
++
++
++@app.api_route("/batch_program_ops", methods=["POST", "PUT"])
++@auth_level(AuthLevel.ADMIN_OPTIONAL)
++async def batch_program_ops(request: Request):
++    _require_mori()
++    body = await request.json()
++    marks = [(m["program_id"], m["program_type"]) for m in body.get("marks", []) or []]
++    releases = list(body.get("releases", []) or [])
++    if not marks and not releases:
++        return ORJSONResponse({"success": True, "message": "no-op"})
++    ret = await _global_state.tokenizer_manager.batch_program_ops(
++        BatchProgramOpsReqInput(marks=marks, releases=releases)
++    )
++    return ORJSONResponse({"success": ret.success, "message": ret.message})
++
++
+ @app.api_route("/flush_cache", methods=["GET", "POST"])
+ @auth_level(AuthLevel.ADMIN_OPTIONAL)
+ async def flush_cache(timeout: float = Query(0.0, ge=0.0)):
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 56ed772..b8dac7f 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -668,6 +668,8 @@ class Envs:
+     # registry no longer reads this. Kept because a few model/arch call sites
+     # still assert on it; do not use in new code.
+     SGLANG_ENABLE_UNIFIED_RADIX_TREE = EnvBool(False)
++    SGLANG_ENABLE_MORI = EnvBool(False)
++    BELIEFKV_MORI_WRITE_BACK_CAP = EnvInt(0)
+     # Registered TreeCore backend serving the unified radix cache.
+     SGLANG_UNIFIED_RADIX_TREE_CORE_BACKEND = EnvStr("python")
+     # TODO(DSV4): @ispobock this has bug on main branch when retract
+diff --git a/python/sglang/srt/managers/io_struct.py b/python/sglang/srt/managers/io_struct.py
+index f44aa49..d6d8eb9 100644
+--- a/python/sglang/srt/managers/io_struct.py
++++ b/python/sglang/srt/managers/io_struct.py
+@@ -178,6 +178,8 @@ class GenerateReqInput:
+     # Stable identity shared by requests in the same session. Unlike
+     # session_params, this does not alter or reconstruct the prompt.
+     session_id: Optional[str] = field(default=None, kw_only=True)
++    # MORI program shared by the requests in this submission.
++    program_id: Optional[str] = field(default=None, kw_only=True)
+     # The input prompt. It can be a single prompt or a batch of prompts.
+     text: Optional[Union[List[str], str]] = None
+     # The token ids for text.
+@@ -912,6 +914,7 @@ class GenerateReqInput:
+         sub = GenerateReqInput(
+             rid=self.rid[i],
+             session_id=self.session_id,
++            program_id=self.program_id,
+             beliefkv_metadata=(
+                 self.beliefkv_metadata[i]
+                 if isinstance(self.beliefkv_metadata, list)
+@@ -1104,6 +1107,7 @@ class TokenizedGenerateReqInput(BaseReq, kw_only=True):
+ 
+     # Cache namespace used to isolate otherwise-identical prefixes.
+     cache_salt: Optional[str] = None
++    program_id: Optional[str] = None
+ 
+     def wrap_pickle_fields(self):
+         self.time_stats = wrap_as_pickle(self.time_stats)
+@@ -1704,6 +1708,35 @@ class FlushCacheReqOutput(BaseReq, kw_only=True):
+     message: str = ""
+ 
+ 
++class MarkProgramTypeReqInput(BaseReq, kw_only=True):
++    program_id: str
++    program_type: str
++
++
++class MarkProgramTypeReqOutput(BaseReq, kw_only=True):
++    success: bool
++    message: str = ""
++
++
++class ReleaseProgramReqInput(BaseReq, kw_only=True):
++    program_id: str
++
++
++class ReleaseProgramReqOutput(BaseReq, kw_only=True):
++    success: bool
++    message: str = ""
++
++
++class BatchProgramOpsReqInput(BaseReq, kw_only=True):
++    marks: List[Tuple[str, str]]
++    releases: List[str]
++
++
++class BatchProgramOpsReqOutput(BaseReq, kw_only=True):
++    success: bool
++    message: str = ""
++
++
+ class AddExternalCorpusReqInput(BaseReq, kw_only=True):
+     corpus_id: Optional[str] = None
+     file_path: Optional[str] = None
+diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
+index 5cf4df9..0cfb6c2 100755
+--- a/python/sglang/srt/managers/schedule_batch.py
++++ b/python/sglang/srt/managers/schedule_batch.py
+@@ -979,6 +979,7 @@ class Req(ReqDllmMixin):
+         session_id: Optional[str] = None,
+         cache_salt: Optional[str] = None,
+         beliefkv_metadata: Optional[dict] = None,
++        program_id: Optional[str] = None,
+     ):
+         # Input and output info
+         self.rid = rid
+@@ -1004,6 +1005,7 @@ class Req(ReqDllmMixin):
+         self.session = session
+         self.session_id = session_id
+         self.beliefkv_metadata = beliefkv_metadata
++        self.program_id = program_id
+         # Used by the session radix cache to reject registration after a close/reopen.
+         self.session_generation: Optional[int] = None
+         self.input_embeds = input_embeds
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index a838452..012dc55 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -123,6 +123,8 @@ from sglang.srt.managers.io_struct import (
+     AddExternalCorpusReqOutput,
+     AttachHiCacheStorageReqInput,
+     AttachHiCacheStorageReqOutput,
++    BatchProgramOpsReqInput,
++    BatchProgramOpsReqOutput,
+     BatchTokenizedEmbeddingReqInput,
+     BatchTokenizedGenerateReqInput,
+     CheckWeightsReqInput,
+@@ -155,11 +157,15 @@ from sglang.srt.managers.io_struct import (
+     LoadLoRAAdapterFromTensorsReqOutput,
+     LoadLoRAAdapterReqInput,
+     LoadLoRAAdapterReqOutput,
++    MarkProgramTypeReqInput,
++    MarkProgramTypeReqOutput,
+     MMInputsProcessError,
+     OpenSessionReqInput,
+     PauseGenerationReqInput,
+     ProfileReq,
+     ReleaseMemoryOccupationReqInput,
++    ReleaseProgramReqInput,
++    ReleaseProgramReqOutput,
+     RemoveExternalCorpusReqInput,
+     RemoveExternalCorpusReqOutput,
+     ResumeMemoryOccupationReqInput,
+@@ -283,6 +289,7 @@ from sglang.srt.managers.utils import (
+ )
+ from sglang.srt.mem_cache import kv_cache_builder
+ from sglang.srt.mem_cache.base_prefix_cache import CacheRequestOutcome
++from sglang.srt.mem_cache.mori import PROGRAM_TYPES
+ from sglang.srt.mem_cache.common import (
+     maybe_cache_unfinished_req,
+     release_kv_cache,
+@@ -1889,6 +1896,9 @@ class Scheduler(
+                 (BatchTokenizedGenerateReqInput, self.handle_batch_generate_request),
+                 (BatchTokenizedEmbeddingReqInput, self.handle_batch_embedding_request),
+                 (FlushCacheReqInput, self.flush_wrapper.handle),
++                (MarkProgramTypeReqInput, self.handle_mark_program_type),
++                (ReleaseProgramReqInput, self.handle_release_program),
++                (BatchProgramOpsReqInput, self.handle_batch_program_ops),
+                 (ClearHiCacheReqInput, self.clear_hicache_storage_wrapped),
+                 (AttachHiCacheStorageReqInput, self.attach_hicache_storage_wrapped),
+                 (DetachHiCacheStorageReqInput, self.detach_hicache_storage_wrapped),
+@@ -3001,6 +3011,7 @@ class Scheduler(
+                 time_stats=recv_req.time_stats,
+                 multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
+                 beliefkv_metadata=recv_req.beliefkv_metadata,
++                program_id=recv_req.program_id,
+             )
+             req.tokenizer = self.tokenizer
+ 
+@@ -3076,6 +3087,7 @@ class Scheduler(
+                 recv_req.sampling_params,
+                 vocab_size=self.model_config.vocab_size,
+                 http_worker_ipc=recv_req.http_worker_ipc,
++                program_id=recv_req.program_id,
+             )
+             req.tokenizer = self.tokenizer
+             req.set_finish_with_abort(error_msg)
+@@ -4359,6 +4371,12 @@ class Scheduler(
+                     req.host_hit_is_storage = False
+ 
+             req.init_next_round_input(self.tree_cache)
++            if req.program_id is not None:
++                mori = getattr(self.tree_cache, "mori", None)
++                if mori is not None:
++                    mori.stamp_program_metadata(
++                        req.last_node, self.tree_cache.root_node, req.program_id
++                    )
+             if self.enable_hicache_storage and (
+                 self._prefetch_after_device_hit_loss(req)
+             ):
+@@ -5536,6 +5554,49 @@ class Scheduler(
+             success = False
+         return success
+ 
++    def handle_mark_program_type(self, recv_req: MarkProgramTypeReqInput):
++        mori = getattr(self.tree_cache, "mori", None)
++        if mori is None:
++            return MarkProgramTypeReqOutput(success=False, message="MORI is disabled.")
++        program_type = PROGRAM_TYPES.get(recv_req.program_type.lower())
++        if program_type is None:
++            return MarkProgramTypeReqOutput(
++                success=False,
++                message=(
++                    f"Invalid type: {recv_req.program_type}. "
++                    "Must be 'interactive', 'async', or 'inactive'."
++                ),
++            )
++        mori.mark_program_type(recv_req.program_id, program_type)
++        return MarkProgramTypeReqOutput(
++            success=True,
++            message=f"Marked {recv_req.program_id} as {recv_req.program_type}",
++        )
++
++    def handle_release_program(self, recv_req: ReleaseProgramReqInput):
++        mori = getattr(self.tree_cache, "mori", None)
++        if mori is None:
++            return ReleaseProgramReqOutput(success=False, message="MORI is disabled.")
++        mori.release_program(recv_req.program_id)
++        return ReleaseProgramReqOutput(
++            success=True, message=f"Released {recv_req.program_id}"
++        )
++
++    def handle_batch_program_ops(self, recv_req: BatchProgramOpsReqInput):
++        mori = getattr(self.tree_cache, "mori", None)
++        if mori is None:
++            return BatchProgramOpsReqOutput(success=False, message="MORI is disabled.")
++        errors = []
++        for program_id, name in recv_req.marks:
++            program_type = PROGRAM_TYPES.get(name.lower())
++            if program_type is None:
++                errors.append(f"invalid type {name!r} for {program_id}")
++            else:
++                mori.mark_program_type(program_id, program_type)
++        for program_id in recv_req.releases:
++            mori.release_program(program_id)
++        return BatchProgramOpsReqOutput(success=not errors, message="; ".join(errors))
++
+     def get_internal_state(self, recv_req: GetInternalStateReq):
+         # Resolved config (pristine server_args + post-publish overrides) so a
+         # readback reflects values changed via /set_internal_state, not startup.
+@@ -5561,6 +5622,17 @@ class Scheduler(
+         )
+         ret["startup_time"] = self.startup_time
+         ret["effective_max_running_requests_per_dp"] = self.max_running_requests
++        mori = getattr(self.tree_cache, "mori", None)
++        if mori is not None:
++            ret["mori"] = {
++                "enabled": True,
++                "cache_class": type(self.tree_cache).__name__,
++                "write_policy": self.tree_cache.cache_controller.write_policy,
++                "write_back_batch_cap": self.tree_cache.mori_write_back_cap or None,
++                "registered_programs": len(mori.program_types),
++                "pending_h2d_host_releases": len(mori.load_sources),
++                "host_tokens_freed_on_h2d_ack": mori.host_tokens_freed_on_h2d_ack,
++            }
+ 
+         if get_exec().moe.elastic_ep_backend is not None:
+             from sglang.srt.elastic_ep.elastic_ep import ElasticEPStateManager
+diff --git a/python/sglang/srt/managers/tokenizer_control_mixin.py b/python/sglang/srt/managers/tokenizer_control_mixin.py
+index 69ef868..2e870f9 100644
+--- a/python/sglang/srt/managers/tokenizer_control_mixin.py
++++ b/python/sglang/srt/managers/tokenizer_control_mixin.py
+@@ -15,6 +15,8 @@ from sglang.srt.managers.io_struct import (
+     AddExternalCorpusReqOutput,
+     AttachHiCacheStorageReqInput,
+     AttachHiCacheStorageReqOutput,
++    BatchProgramOpsReqInput,
++    BatchProgramOpsReqOutput,
+     ChecksumInfo,
+     CheckWeightsReqInput,
+     CheckWeightsReqOutput,
+@@ -47,12 +49,16 @@ from sglang.srt.managers.io_struct import (
+     LoadLoRAAdapterReqInput,
+     LoadLoRAAdapterReqOutput,
+     LoRAUpdateOutput,
++    MarkProgramTypeReqInput,
++    MarkProgramTypeReqOutput,
+     OpenSessionReqInput,
+     ProfileReq,
+     ProfileReqOutput,
+     ProfileReqType,
+     ReleaseMemoryOccupationReqInput,
+     ReleaseMemoryOccupationReqOutput,
++    ReleaseProgramReqInput,
++    ReleaseProgramReqOutput,
+     RemoveExternalCorpusReqInput,
+     RemoveExternalCorpusReqOutput,
+     ResumeMemoryOccupationReqInput,
+@@ -116,6 +122,9 @@ _COMMUNICATOR_SPECS = [
+     ("check_weights", CheckWeightsReqOutput),
+     ("slow_down", SlowDownReqOutput),
+     ("flush_cache", FlushCacheReqOutput),
++    ("mark_program_type", MarkProgramTypeReqOutput),
++    ("release_program", ReleaseProgramReqOutput),
++    ("batch_program_ops", BatchProgramOpsReqOutput),
+     ("add_external_corpus", AddExternalCorpusReqOutput),
+     ("remove_external_corpus", RemoveExternalCorpusReqOutput),
+     ("list_external_corpora", ListExternalCorporaReqOutput),
+@@ -309,6 +318,27 @@ class TokenizerControlMixin:
+             self.mm_processor.clear_preprocess_cache()
+         return result
+ 
++    async def _program_op(self: TokenizerManager, communicator, obj):
++        self.auto_create_handle_loop()
++        # A disconnected HTTP caller must not leave its reply for the next call.
++        results = await asyncio.shield(communicator(obj))
++        return next((result for result in results if not result.success), results[0])
++
++    async def mark_program_type(
++        self: TokenizerManager, obj: MarkProgramTypeReqInput
++    ) -> MarkProgramTypeReqOutput:
++        return await self._program_op(self.mark_program_type_communicator, obj)
++
++    async def release_program(
++        self: TokenizerManager, obj: ReleaseProgramReqInput
++    ) -> ReleaseProgramReqOutput:
++        return await self._program_op(self.release_program_communicator, obj)
++
++    async def batch_program_ops(
++        self: TokenizerManager, obj: BatchProgramOpsReqInput
++    ) -> BatchProgramOpsReqOutput:
++        return await self._program_op(self.batch_program_ops_communicator, obj)
++
+     async def clear_hicache_storage(self: TokenizerManager) -> ClearHiCacheReqOutput:
+         """Clear the hierarchical cache storage."""
+         self.auto_create_handle_loop()
+diff --git a/python/sglang/srt/managers/tokenizer_manager.py b/python/sglang/srt/managers/tokenizer_manager.py
+index 385711b..b3261c7 100644
+--- a/python/sglang/srt/managers/tokenizer_manager.py
++++ b/python/sglang/srt/managers/tokenizer_manager.py
+@@ -1503,6 +1503,7 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
+                 session_id=obj.session_id,
+                 session_params=session_params,
+                 beliefkv_metadata=obj.beliefkv_metadata,
++                program_id=obj.program_id,
+                 custom_logit_processor=obj.custom_logit_processor,
+                 require_reasoning=obj.require_reasoning,
+                 return_hidden_states=obj.return_hidden_states,
+diff --git a/python/sglang/srt/mem_cache/base_prefix_cache.py b/python/sglang/srt/mem_cache/base_prefix_cache.py
+index 0bafbf9..316ea11 100644
+--- a/python/sglang/srt/mem_cache/base_prefix_cache.py
++++ b/python/sglang/srt/mem_cache/base_prefix_cache.py
+@@ -99,6 +99,7 @@ class InsertParams:
+     # values belong to (stamped onto new tree nodes; None when sharding is
+     # off). See UnifiedTreeNode.rotation_base.
+     rotation_base: Optional[int] = None
++    program_id: Optional[str] = None
+ 
+ 
+ @dataclasses.dataclass
+diff --git a/python/sglang/srt/mem_cache/hiradix_cache.py b/python/sglang/srt/mem_cache/hiradix_cache.py
+index 9c2e95b..f6f86ff 100644
+--- a/python/sglang/srt/mem_cache/hiradix_cache.py
++++ b/python/sglang/srt/mem_cache/hiradix_cache.py
+@@ -14,6 +14,7 @@ import torch
+ 
+ from sglang.srt.disaggregation.kv_events import StorageMedium
+ from sglang.srt.distributed.communication_tags import P2PTag
++from sglang.srt.environ import envs
+ from sglang.srt.managers.cache_controller import HiCacheController, PrefetchOperation
+ from sglang.srt.mem_cache.base_prefix_cache import (
+     CacheRequestHandle,
+@@ -49,6 +50,7 @@ from sglang.srt.mem_cache.memory_pool import (
+     MiniMaxSparseKVPool,
+     MLATokenToKVPool,
+ )
++from sglang.srt.mem_cache.mori import MoriPolicy
+ from sglang.srt.mem_cache.pool_host.common import get_allocator_type
+ from sglang.srt.mem_cache.pool_host.mha import get_mha_host_pool_cls
+ from sglang.srt.mem_cache.pool_host.mla import MLATokenToKVPoolHost
+@@ -81,8 +83,19 @@ logger = logging.getLogger(__name__)
+ 
+ 
+ class HiRadixCache(RadixCache):
+-    def __init__(self, params: CacheInitParams, server_args: ServerArgs):
++    def __init__(
++        self,
++        params: CacheInitParams,
++        server_args: ServerArgs,
++        *,
++        enable_mori: bool = False,
++    ):
+         self._enable_metrics_flag = params.enable_metrics
++        self.mori_write_back_cap = (
++            envs.BELIEFKV_MORI_WRITE_BACK_CAP.get() if enable_mori else 0
++        )
++        if self.mori_write_back_cap not in (0, 1):
++            raise ValueError("MORI replay supports the author or single-node write-back mode")
+ 
+         self.page_size = params.page_size
+         self.kv_cache = params.token_to_kv_pool_allocator.get_kvcache()
+@@ -215,6 +228,8 @@ class HiRadixCache(RadixCache):
+         self.evictable_host_leaves = set()
+ 
+         super().__init__(params=params)
++        if enable_mori:
++            self.mori = MoriPolicy(self.eviction_strategy)
+ 
+     def _all_reduce_attn_groups(self, tensor: torch.Tensor, op):
+         reduced = False
+@@ -370,6 +385,9 @@ class HiRadixCache(RadixCache):
+         prefetch/backup paths. Caller must ensure there are no running/queued
+         requests to avoid races.
+         """
++        if self.mori is not None:
++            return False, "MORI paper mode supports only the Device and Host tiers."
++
+         # Validate inputs first (no side effects).
+         if hicache_storage_prefetch_policy is not None:
+             allowed = ["best_effort", "wait_complete", "timeout"]
+@@ -797,6 +815,9 @@ class HiRadixCache(RadixCache):
+         # Clear per-request tracking dicts
+         self.prefetch_loaded_tokens_by_reqid.clear()
+         self.evictable_host_leaves.clear()
++        if self.mori is not None:
++            self.ongoing_load_back.clear()
++            self.mori = MoriPolicy(self.eviction_strategy)
+         super().reset()
+ 
+     def release_host_resources(self) -> None:
+@@ -878,6 +899,8 @@ class HiRadixCache(RadixCache):
+         if host_indices is not None:
+             node.host_value = host_indices.clone()
+             assert len(node.host_value) > 0
++            if self.mori is not None:
++                node.write_back_epoch = self.mori.pass_epoch
+             self._track_write_through_node(node, len(node.key))
+             if not write_back:
+                 self.inc_lock_ref(node)
+@@ -1116,6 +1139,8 @@ class HiRadixCache(RadixCache):
+             ack.finish_event.synchronize()
+             for ack_id in ack.node_ids:
+                 end_node = self.ongoing_load_back.pop(ack_id)
++                if self.mori is not None:
++                    self._finish_mori_load(ack_id)
+                 self.dec_lock_ref(end_node)
+ 
+             if self.metrics_collector is not None:
+@@ -1133,6 +1158,19 @@ class HiRadixCache(RadixCache):
+                     )
+             finish_count -= 1
+ 
++    def _finish_mori_load(self, ack_id: int) -> None:
++        for node in self.mori.load_sources.pop(ack_id, ()):
++            del node.mori_load_ack_id
++            node.release_host()
++            if node.evicted or not node.backuped or node.host_ref_counter > 0:
++                continue
++            self.kv_events.record_remove(node, medium=StorageMedium.CPU)
++            self.mori.host_tokens_freed_on_h2d_ack += (
++                self.cache_controller.evict_host(node.host_value)
++            )
++            node.host_value = None
++            self._update_host_leaf_status(node)
++
+     def is_load_back_event_done(self, consumer_index: int) -> bool:
+         """Return True after the local load-back event is complete."""
+         if consumer_index < 0:
+@@ -1194,11 +1232,15 @@ class HiRadixCache(RadixCache):
+                 self.evictable_host_leaves.remove(node)
+             return
+ 
+-        for child in node.children.values():
+-            if child.backuped:
+-                if node in self.evictable_host_leaves:
+-                    self.evictable_host_leaves.remove(node)
++        if self.mori is not None:
++            if node.children or not node.backuped:
++                self.evictable_host_leaves.discard(node)
+                 return
++        else:
++            for child in node.children.values():
++                if child.backuped:
++                    self.evictable_host_leaves.discard(node)
++                    return
+ 
+         if node not in self.evictable_host_leaves:
+             self.evictable_host_leaves.add(node)
+@@ -1206,13 +1248,51 @@ class HiRadixCache(RadixCache):
+     def evict(self, params: EvictParams) -> EvictResult:
+         start_time = time.perf_counter()
+         num_tokens = params.num_tokens
+-        if self.cache_controller.write_policy == "write_back":
++        if self.mori is not None:
++            num_evicted = self._evict_mori_write_back(num_tokens)
++        elif self.cache_controller.write_policy == "write_back":
+             num_evicted = self._evict_write_back(num_tokens)
+         else:
+             num_evicted = self._evict_write_through(num_tokens)
+         self.update_eviction_metrics(num_evicted, start_time)
+         return EvictResult(num_tokens_evicted=num_evicted)
+ 
++    def _evict_mori_write_back(self, num_tokens: int) -> int:
++        priority = self.mori.gpu_priority
++        heap = [(priority(node), node) for node in self.evictable_leaves]
++        heapq.heapify(heap)
++        staged: dict[TreeNode, None] = {}
++        num_evicted = 0
++
++        while num_evicted < num_tokens and heap:
++            _, node = heapq.heappop(heap)
++            if node.evicted or node.lock_ref > 0 or node in staged:
++                continue
++
++            if node.backuped:
++                num_evicted += self._evict_backuped(node)
++            else:
++                written = self.write_backup(node, write_back=True)
++                if written:
++                    num_evicted += written
++                    staged[node] = None
++                    if self.mori_write_back_cap == 1:
++                        self.writing_check(write_back=True)
++                elif not node.children:
++                    num_evicted += self._evict_regular(node)
++
++            parent = node.parent
++            if parent is not self.root_node and all(
++                child.evicted or child in staged for child in parent.children.values()
++            ):
++                heapq.heappush(heap, (priority(parent), parent))
++
++        # A staged node stays resident until its D2H write completes.
++        self.writing_check(write_back=True)
++        for node in staged:
++            self._evict_backuped(node)
++        return num_evicted
++
+     def _make_eviction_heap(self):
+         heap = [
+             (self.eviction_strategy.get_priority(node), node)
+@@ -1355,9 +1435,12 @@ class HiRadixCache(RadixCache):
+ 
+     def evict_host(self, num_tokens: int):
+         leaves = list(self.evictable_host_leaves)
+-        eviction_heap = [
+-            (self.eviction_strategy.get_priority(node), node) for node in leaves
+-        ]
++        priority = (
++            self.mori.host_priority
++            if self.mori is not None
++            else self.eviction_strategy.get_priority
++        )
++        eviction_heap = [(priority(node), node) for node in leaves]
+         heapq.heapify(eviction_heap)
+ 
+         num_evicted = 0
+@@ -1372,12 +1455,19 @@ class HiRadixCache(RadixCache):
+             if x.host_ref_counter > 0:
+                 continue
+ 
++            key = x.key.child_key(self.page_size)
++            if self.mori is not None:
++                if x.lock_ref > 0:
++                    continue
++                if not x.backuped or x.children or x.parent.children.get(key) is not x:
++                    self.evictable_host_leaves.discard(x)
++                    continue
++
+             # Block deleted entirely (GPU already evicted, now CPU freed) --
+             # emit remove(CPU) so the router drops the host-tier entry.
+             self.kv_events.record_remove(x, medium=StorageMedium.CPU)
+             num_evicted += self.cache_controller.evict_host(x.host_value)
+ 
+-            key = x.key.child_key(self.page_size)
+             v = x.parent.children.pop(key, None)
+             assert v == x, f"parent does not have child key, {key}"
+             if x in self.evictable_host_leaves:
+@@ -1385,7 +1475,7 @@ class HiRadixCache(RadixCache):
+             self._update_host_leaf_status(x.parent)
+ 
+             if len(x.parent.children) == 0 and x.parent.evicted:
+-                new_priority = self.eviction_strategy.get_priority(x.parent)
++                new_priority = priority(x.parent)
+                 heapq.heappush(eviction_heap, (new_priority, x.parent))
+ 
+     def load_back(
+@@ -1446,8 +1536,15 @@ class HiRadixCache(RadixCache):
+             )
+             return None
+ 
+-        for n in nodes_to_load:
+-            n.release_host()
++        if self.mori is not None and self.mori.program_types:
++            # Keep the H2D sources pinned until the transfer ACK, even if the
++            # initiating program is released or a source segment is split.
++            self.mori.load_sources[last_hit_node.id] = nodes_to_load
++            for n in nodes_to_load:
++                n.mori_load_ack_id = last_hit_node.id
++        else:
++            for n in nodes_to_load:
++                n.release_host()
+         self.ongoing_load_back[last_hit_node.id] = last_hit_node
+         offset = 0
+         for node in nodes_to_load:
+@@ -1543,6 +1640,8 @@ class HiRadixCache(RadixCache):
+         return self.cache_controller.start_loading()
+ 
+     def check_hicache_events(self):
++        if self.mori is not None:
++            self.mori.pass_epoch += 1
+         # Reap the previous round's PP-sync sends before issuing new ones.
+         self._drain_async_work()
+ 
+@@ -1758,6 +1857,8 @@ class HiRadixCache(RadixCache):
+         last_host_node = last_node
+         while last_node.evicted:
+             host_hit_length += len(last_node.host_value)
++            if self.mori is not None:
++                last_node.load_need_epoch = self.mori.pass_epoch
+             last_node = last_node.parent
+         while not last_host_node.backuped:
+             last_host_node = last_host_node.parent
+@@ -1896,6 +1997,16 @@ class HiRadixCache(RadixCache):
+     def _split_node(self, key: RadixKey, child: TreeNode, split_len: int):
+         # child node split into new_node -> child
+         new_node = TreeNode(priority=child.priority)
++        if self.mori is not None:
++            new_node.program_id = getattr(child, "program_id", None)
++            for attr in ("write_back_epoch", "load_need_epoch"):
++                if hasattr(child, attr):
++                    setattr(new_node, attr, getattr(child, attr))
++            ack_id = getattr(child, "mori_load_ack_id", None)
++            if ack_id is not None:
++                new_node.mori_load_ack_id = ack_id
++                new_node.protect_host()
++                self.mori.load_sources[ack_id].append(new_node)
+         new_node.children = {key[split_len:].child_key(self.page_size): child}
+         new_node.parent = child.parent
+         new_node.lock_ref = child.lock_ref
+@@ -1995,10 +2106,14 @@ class HiRadixCache(RadixCache):
+             new_node.parent = node
+             new_node.key = key
+             new_node.value = value.clone()
++            if self.mori is not None:
++                new_node.program_id = params.program_id
+             node.children[child_key] = new_node
+             self.evictable_size_ += len(value)
+             self._update_leaf_status(node)
+             self._update_leaf_status(new_node)
++            if self.mori is not None:
++                self._update_host_leaf_status(node)
+ 
+             # Compute hash_value if storage or kv events are enabled
+             if self.enable_storage or self.kv_events.enabled:
+diff --git a/python/sglang/srt/mem_cache/mori.py b/python/sglang/srt/mem_cache/mori.py
+new file mode 100644
+index 0000000..fb2ec52
+--- /dev/null
++++ b/python/sglang/srt/mem_cache/mori.py
+@@ -0,0 +1,97 @@
++"""MORI's program metadata and eviction keys (author release b4f6a1d)."""
++
++from __future__ import annotations
++
++from enum import IntEnum
++from typing import TYPE_CHECKING, Optional
++
++if TYPE_CHECKING:
++    from sglang.srt.mem_cache.evict_policy import EvictionStrategy
++    from sglang.srt.mem_cache.radix_cache import TreeNode
++
++
++class ProgramType(IntEnum):
++    INACTIVE = 0
++    ASYNC = 1
++    INTERACTIVE = 2
++    SHARED = 3
++
++
++SHARED_PROGRAM_ID = "__sglang_shared__"
++
++_GPU_EVICTION_ORDER = {
++    ProgramType.INACTIVE: 0,
++    ProgramType.ASYNC: 1,
++    ProgramType.INTERACTIVE: 2,
++    ProgramType.SHARED: 3,
++}
++
++_CPU_EVICTION_ORDER = {
++    ProgramType.INACTIVE: 0,
++    ProgramType.INTERACTIVE: 1,
++    ProgramType.ASYNC: 2,
++    ProgramType.SHARED: 3,
++}
++
++PROGRAM_TYPES = {
++    "interactive": ProgramType.INTERACTIVE,
++    "async": ProgramType.ASYNC,
++    "inactive": ProgramType.INACTIVE,
++}
++
++
++class MoriPolicy:
++    """Program placement state owned by the scheduler's HiRadixCache."""
++
++    def __init__(self, base_strategy: EvictionStrategy):
++        self._base = base_strategy
++        self.program_types: dict[str, ProgramType] = {}
++        self.pass_epoch = 0
++        self.load_sources: dict[int, list[TreeNode]] = {}
++        self.host_tokens_freed_on_h2d_ack = 0
++
++    def get_program_type(self, program_id: Optional[str]) -> ProgramType:
++        if program_id == SHARED_PROGRAM_ID:
++            return ProgramType.SHARED
++        return self.program_types.get(program_id, ProgramType.INACTIVE)
++
++    def mark_program_type(self, program_id: str, program_type: ProgramType) -> None:
++        self.program_types[program_id] = program_type
++
++    def release_program(self, program_id: str) -> None:
++        self.program_types.pop(program_id, None)
++
++    def stamp_program_metadata(
++        self, node: TreeNode, root: TreeNode, program_id: str
++    ) -> None:
++        self.program_types.setdefault(program_id, ProgramType.INTERACTIVE)
++        while node is not root:
++            owner = getattr(node, "program_id", None)
++            if owner is None:
++                node.program_id = program_id
++            elif owner != program_id and owner != SHARED_PROGRAM_ID:
++                node.program_id = (
++                    SHARED_PROGRAM_ID if owner in self.program_types else program_id
++                )
++            node = node.parent
++
++    def gpu_priority(self, node: TreeNode) -> tuple:
++        base = self._base.get_priority(node)
++        program_type = self.get_program_type(getattr(node, "program_id", None))
++        return (_GPU_EVICTION_ORDER[program_type],) + (
++            base if isinstance(base, tuple) else (base,)
++        )
++
++    def host_priority(self, node: TreeNode) -> tuple:
++        base = self._base.get_priority(node)
++        if not isinstance(base, tuple):
++            base = (base,)
++        program_type = self.get_program_type(getattr(node, "program_id", None))
++        type_key = _CPU_EVICTION_ORDER[program_type]
++        if not self.program_types:
++            return (0, type_key, 0) + base
++        if program_type == ProgramType.INTERACTIVE and node.evicted:
++            type_key = _CPU_EVICTION_ORDER[ProgramType.ASYNC] + 0.5
++        need = int(getattr(node, "load_need_epoch", -1) == self.pass_epoch)
++        written = int(getattr(node, "write_back_epoch", -1) == self.pass_epoch)
++        return (need, type_key, written) + base
+diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
+index 41abf6b..49de838 100644
+--- a/python/sglang/srt/mem_cache/radix_cache.py
++++ b/python/sglang/srt/mem_cache/radix_cache.py
+@@ -357,6 +357,8 @@ class TreeNode:
+ 
+ 
+ class RadixCache(BasePrefixCache):
++    mori = None
++
+     def __init__(self, params: CacheInitParams):
+         self.disable = params.disable
+         self.req_to_token_pool = params.req_to_token_pool
+@@ -550,7 +552,12 @@ class RadixCache(BasePrefixCache):
+         if is_insert:
+             priority = getattr(req, "priority", 0) or 0
+             result = self.insert(
+-                InsertParams(key=radix_key, value=values, priority=priority)
++                InsertParams(
++                    key=radix_key,
++                    value=values,
++                    priority=priority,
++                    program_id=req.program_id if self.mori is not None else None,
++                )
+             )
+             # A request that was never cached while unfinished can add its
+             # whole prompt and generated output as one leaf. Split that leaf at
+@@ -563,7 +570,8 @@ class RadixCache(BasePrefixCache):
+                 is_bigram=self.is_eagle,
+                 cache_salt=req.cache_salt,
+             ).page_aligned(self.page_size)
+-            if 0 < len(prompt_key) < key_len:
++            # MORI's author inserts a single leaf for the residual KV.
++            if self.mori is None and 0 < len(prompt_key) < key_len:
+                 self.insert(
+                     InsertParams(
+                         key=prompt_key,
+@@ -621,6 +629,7 @@ class RadixCache(BasePrefixCache):
+                 value=values,
+                 chunked=chunked,
+                 priority=getattr(req, "priority", 0) or 0,
++                program_id=req.program_id if self.mori is not None else None,
+             )
+         )
+         new_prefix_len = result.prefix_len
+diff --git a/python/sglang/srt/mem_cache/registry.py b/python/sglang/srt/mem_cache/registry.py
+index 75afef7..ad01efc 100644
+--- a/python/sglang/srt/mem_cache/registry.py
++++ b/python/sglang/srt/mem_cache/registry.py
+@@ -228,7 +228,40 @@ def _create_unified_radix_cache(
+ def create_tree_cache(ctx: TreeCacheBuildContext) -> BasePrefixCache:
+     """Route to the matching factory to construct Radix Cache."""
+     name = get_memory().radix_cache_backend
+-    if name:
++    if envs.SGLANG_ENABLE_MORI.get():
++        memory = get_memory()
++        if (
++            name
++            or ctx.disable_radix_cache
++            or not ctx.enable_hierarchical_cache
++            or memory.hicache_write_policy != "write_back"
++            or memory.hicache_host_memory_mode != "cache"
++            or memory.hicache_storage_backend is not None
++            or memory.enable_unified_cache_external_linker
++            or memory.enable_lmcache
++            or memory.enable_flexkv
++            or envs.SGLANG_EXPERIMENTAL_CPP_RADIX_TREE.get()
++            or envs.SGLANG_RUST_SERVER.get()
++            or get_disagg().disaggregation_mode != "null"
++            or get_serving().enable_streaming_session
++            or ctx.is_hybrid_swa
++            or ctx.is_hybrid_ssm
++            or ctx.is_dsa
++            or ctx.params.is_eagle
++        ):
++            raise ValueError(
++                "SGLANG_ENABLE_MORI=1 requires the built-in full-attention "
++                "HiCache in write_back cache mode, without L3, disaggregation, "
++                "EAGLE, or another radix backend."
++            )
++        from sglang.srt.mem_cache.hiradix_cache import HiRadixCache
++
++        cache = HiRadixCache(ctx.params, ctx.server_args, enable_mori=True)
++        ctx.tp_worker.register_hicache_layer_transfer_counter(
++            cache.cache_controller.layer_done_counter
++        )
++        source = "mori"
++    elif name:
+         factory = get_radix_cache_factory(name)
+         if factory is None:
+             raise ValueError(
+diff --git a/python/sglang/srt/session/session_controller.py b/python/sglang/srt/session/session_controller.py
+index 73ad611..da0d851 100644
+--- a/python/sglang/srt/session/session_controller.py
++++ b/python/sglang/srt/session/session_controller.py
+@@ -310,6 +310,7 @@ class Session:
+             top_logprobs_num=req.top_logprobs_num,
+             token_ids_logprob=req.token_ids_logprob,
+             beliefkv_metadata=req.beliefkv_metadata,
++            program_id=req.program_id,
+             return_sampling_mask=req.return_sampling_mask,
+             vocab_size=vocab_size,
+             eos_token_ids=eos_token_ids,

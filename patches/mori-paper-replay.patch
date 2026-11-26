@@ -1,0 +1,146 @@
+diff --git a/ThunderAgent/ThunderAgent/scheduler/router.py b/ThunderAgent/ThunderAgent/scheduler/router.py
+index 54e549e..1ce84cc 100644
+--- a/ThunderAgent/ThunderAgent/scheduler/router.py
++++ b/ThunderAgent/ThunderAgent/scheduler/router.py
+@@ -341,7 +341,11 @@ class MultiBackendRouter:
+             return self.backends[state.backend_url]
+         return self.get_default_backend()
+ 
+-    async def update_program_before_request(self, program_id: str, state: Program, payload: Dict[str, Any]) -> bool:
++    async def update_program_before_request(
++        self, program_id: str, state: Program, payload: Dict[str, Any], *,
++        replay_prompt_tokens: Optional[int] = None,
++        replay_prefix_group: Optional[str] = None,
++    ) -> bool:
+         """Update program state before sending request to vLLM.
+         
+         If scheduling_enabled=False (default mode): pure proxy, no capacity checks.
+@@ -353,11 +357,16 @@ class MultiBackendRouter:
+         is_new_program = state.step_count == 1
+         
+         # Update context_len and estimate total_tokens using char_to_token_ratio
+-        state.context_len = len(json.dumps(payload, ensure_ascii=False))
+-        state.total_tokens = int(state.context_len / self.char_to_token_ratio)
++        if replay_prompt_tokens is None:
++            state.context_len = len(json.dumps(payload, ensure_ascii=False))
++            state.total_tokens = int(state.context_len / self.char_to_token_ratio)
++        else:
++            # Tokenized replay already knows the current input length.
++            state.context_len = 0
++            state.total_tokens = replay_prompt_tokens
+ 
+         if state.prefix_group_key is None:
+-            state.prefix_group_key = _prefix_group_key(payload)
++            state.prefix_group_key = replay_prefix_group or _prefix_group_key(payload)
+         
+         # ---------------------------------------------------------------------
+         # Default mode: pure proxy, no scheduling
+diff --git a/sglang/python/sglang/srt/layers/sampler.py b/sglang/python/sglang/srt/layers/sampler.py
+index e947a48..9c543c3 100644
+--- a/sglang/python/sglang/srt/layers/sampler.py
++++ b/sglang/python/sglang/srt/layers/sampler.py
+@@ -720,6 +720,12 @@ def apply_custom_logit_processor(
+     tokens. By default, we assume each batch contains only 1 token.
+     """
+ 
++    if hasattr(sampling_batch_info, "_beliefkv_causal_output_positions"):
++        from beliefkv.experiments.causal_replay_sampling import apply_position_logits
++        return apply_position_logits(
++            None, logits, sampling_batch_info, num_tokens_in_batch,
++        )
++
+     assert logits.shape[0] == len(sampling_batch_info) * num_tokens_in_batch, (
+         f"The batch size of logits ({logits.shape[0]}) does not match the batch size of "
+         f"sampling_batch_info ({len(sampling_batch_info)}) x num_tokens_in_batch "
+diff --git a/sglang/python/sglang/srt/managers/scheduler_output_processor_mixin.py b/sglang/python/sglang/srt/managers/scheduler_output_processor_mixin.py
+index 496cd96..456135b 100644
+--- a/sglang/python/sglang/srt/managers/scheduler_output_processor_mixin.py
++++ b/sglang/python/sglang/srt/managers/scheduler_output_processor_mixin.py
+@@ -1144,6 +1144,17 @@ class SchedulerOutputProcessorMixin:
+                             v[send_token_offset : len(output_ids_)]
+                         )
+ 
++                if getattr(self.tree_cache, "beliefkv_replay_write_back_cap", 0):
++                    from beliefkv.experiments.paper_baseline_native import (
++                        MORI_RECEIPT_KEY,
++                        mori_output_evidence,
++                    )
++                    customized_info.setdefault(MORI_RECEIPT_KEY, []).append(
++                        mori_output_evidence(
++                            req, self.tree_cache, len(output_ids_) - send_token_offset,
++                        )
++                    )
++
+             if (
+                 req.finished()
+                 and self.attn_tp_rank == 0
+diff --git a/sglang/python/sglang/srt/managers/tokenizer_manager.py b/sglang/python/sglang/srt/managers/tokenizer_manager.py
+index dbc3e50..2c75029 100644
+--- a/sglang/python/sglang/srt/managers/tokenizer_manager.py
++++ b/sglang/python/sglang/srt/managers/tokenizer_manager.py
+@@ -1178,6 +1178,14 @@ class TokenizerManager(TokenizerCommunicatorMixin, TokenizerManagerScoreMixin):
+                     ]
+                 if "text" in out:
+                     out["text"] = "".join(chunk["text"] for chunk in out_list)
++                key = "beliefkv_baseline_native_output"
++                if out["meta_info"].get(key) is not None:
++                    evidence = dict(out["meta_info"][key])
++                    evidence["deltas"] = [
++                        delta for chunk in out_list
++                        for delta in chunk["meta_info"][key]["deltas"]
++                    ]
++                    out["meta_info"] = {**out["meta_info"], key: evidence}
+             else:
+                 out = out_list[-1]
+ 
+diff --git a/sglang/python/sglang/srt/mem_cache/hiradix_cache.py b/sglang/python/sglang/srt/mem_cache/hiradix_cache.py
+index 14a3835..0d26488 100644
+--- a/sglang/python/sglang/srt/mem_cache/hiradix_cache.py
++++ b/sglang/python/sglang/srt/mem_cache/hiradix_cache.py
+@@ -59,6 +59,11 @@ class HiRadixCache(RadixCache):
+ 
+     def __init__(self, params: CacheInitParams, server_args: ServerArgs):
+         self._enable_metrics_flag = params.enable_metrics
++        self.beliefkv_replay_write_back_cap = int(
++            os.environ.get("BELIEFKV_MORI_WRITE_BACK_CAP", "0")
++        )
++        if self.beliefkv_replay_write_back_cap not in (0, 1):
++            raise ValueError("MORI replay only supports the single-node write-back cap")
+ 
+         self.page_size = params.page_size
+         self.kv_cache = params.token_to_kv_pool_allocator.get_kvcache()
+@@ -832,6 +837,8 @@ class HiRadixCache(RadixCache):
+                     if written > 0:
+                         num_evicted += written
+                         write_back_nodes.append(x)
++                        if self.beliefkv_replay_write_back_cap == 1:
++                            self.writing_check(write_back=True)
+                     else:
+                         num_evicted += self._evict_regular(x)
+                 else:
+diff --git a/sglang/python/sglang/srt/model_executor/model_runner.py b/sglang/python/sglang/srt/model_executor/model_runner.py
+index a59742b..5d8610c 100644
+--- a/sglang/python/sglang/srt/model_executor/model_runner.py
++++ b/sglang/python/sglang/srt/model_executor/model_runner.py
+@@ -2885,6 +2885,21 @@ class ModelRunner(ModelRunnerKVCacheMixin):
+         self,
+         logits_output: LogitsProcessorOutput,
+         forward_batch: ForwardBatch,
++    ) -> torch.Tensor:
++        if (
++            os.environ.get("BELIEFKV_MORI_WRITE_BACK_CAP") == "1"
++            and forward_batch.sampling_info.custom_params
++        ):
++            from beliefkv.experiments.causal_replay_sampling import sample_with_positions
++            return sample_with_positions(
++                ModelRunner._sample_native, self, logits_output, forward_batch,
++            )
++        return self._sample_native(logits_output, forward_batch)
++
++    def _sample_native(
++        self,
++        logits_output: LogitsProcessorOutput,
++        forward_batch: ForwardBatch,
+     ) -> torch.Tensor:
+         """Sample and compute logprobs and update logits_output.
+ 

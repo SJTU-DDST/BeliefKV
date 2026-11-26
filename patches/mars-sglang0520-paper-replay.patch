@@ -1,0 +1,151 @@
+diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
+index a838452..a7de8b1 100644
+--- a/python/sglang/srt/managers/scheduler.py
++++ b/python/sglang/srt/managers/scheduler.py
+@@ -735,6 +735,12 @@ class Scheduler(
+ 
+         self.init_beliefkv_runtime()
+ 
++        self._paper_mars_schedule = None
++        if os.environ.get("BELIEFKV_MARS_AUTHOR_SOURCE"):
++            from beliefkv.experiments.paper_mars_sglang import resolve_mars_schedule
++
++            self._paper_mars_schedule = resolve_mars_schedule(self)
++
+         self.is_initializing = False
+         self.init_startup_timing_summary()
+ 
+@@ -3861,6 +3867,12 @@ class Scheduler(
+     def get_next_batch_to_run(
+         self, running_batch: ScheduleBatch, last_batch: Optional[ScheduleBatch]
+     ) -> NextBatchPlan:
++        if getattr(self, "_paper_mars_schedule", None) is not None:
++            batch, running = self._paper_mars_schedule.next_batch(
++                abort_message=_make_abort_req, set_schedule_time=set_schedule_time_batch,
++                last_batch=last_batch,
++            )
++            return NextBatchPlan(batch_to_run=batch, running_batch=running)
+         self.process_pending_chunked_abort()
+         self._process_hicache_events()
+         defer_waiting_control = False
+@@ -5561,6 +5573,8 @@ class Scheduler(
+         )
+         ret["startup_time"] = self.startup_time
+         ret["effective_max_running_requests_per_dp"] = self.max_running_requests
++        if getattr(self, "_paper_mars_schedule", None) is not None:
++            ret["mars_kv_cache_stats"] = self._paper_mars_schedule.stats()
+ 
+         if get_exec().moe.elastic_ep_backend is not None:
+             from sglang.srt.elastic_ep.elastic_ep import ElasticEPStateManager
+diff --git a/python/sglang/srt/managers/scheduler_components/output_streamer.py b/python/sglang/srt/managers/scheduler_components/output_streamer.py
+index 15659cf..c4fa08d 100644
+--- a/python/sglang/srt/managers/scheduler_components/output_streamer.py
++++ b/python/sglang/srt/managers/scheduler_components/output_streamer.py
+@@ -176,7 +176,7 @@ class SchedulerOutputStreamer:
+             current_weight_version=get_serving().weight_version,
+         )
+         for req in reqs:
+-            if req is skip_req:
++            if req is skip_req or getattr(req, "_paper_mars_middle_chunk", False):
+                 continue
+             if req.finished() and req.finished_output:
+                 # With the overlap schedule, a request will try to output twice and hit this line twice
+diff --git a/python/sglang/srt/mem_cache/allocation.py b/python/sglang/srt/mem_cache/allocation.py
+index 0032a8c..d5d039e 100644
+--- a/python/sglang/srt/mem_cache/allocation.py
++++ b/python/sglang/srt/mem_cache/allocation.py
+@@ -190,7 +190,8 @@ def alloc_paged_token_slots_extend(
+     num_tokens = extend_num_tokens + len(seq_lens_cpu) * (
+         allocator.page_size * page_interleave_shard_size(allocator)
+     )
+-    evict_from_tree_cache(tree_cache, num_tokens)
++    if not getattr(batch, "_paper_mars_planned", False):
++        evict_from_tree_cache(tree_cache, num_tokens)
+ 
+     is_dsv4 = req_pool_indices is not None and hasattr(allocator, "c128_attn_allocator")
+     extra_alloc_kwargs = {}
+@@ -544,7 +545,8 @@ def alloc_paged_token_slots_decode(
+     allocator = tree_cache.token_to_kv_pool_allocator
+     # Over estimate the number of tokens: assume each request needs a new page.
+     num_tokens = len(seq_lens) * allocator.page_size
+-    evict_from_tree_cache(tree_cache, num_tokens)
++    if not getattr(batch, "_paper_mars_planned", False):
++        evict_from_tree_cache(tree_cache, num_tokens)
+ 
+     # DSV4-NPU allocator also needs req_pool_indices for C128 KV allocation and
+     # returns a DSV4OutCacheLoc bundle; hasattr-gated so others stay unchanged.
+diff --git a/python/sglang/srt/mem_cache/base_prefix_cache.py b/python/sglang/srt/mem_cache/base_prefix_cache.py
+index 0bafbf9..3646451 100644
+--- a/python/sglang/srt/mem_cache/base_prefix_cache.py
++++ b/python/sglang/srt/mem_cache/base_prefix_cache.py
+@@ -145,6 +145,7 @@ class EvictParams:
+     num_tokens: int = 0
+     swa_num_tokens: int = 0
+     mamba_num: int = 0
++    page_exact: bool = False
+ 
+ 
+ @dataclasses.dataclass
+diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
+index 41abf6b..96a73d2 100644
+--- a/python/sglang/srt/mem_cache/radix_cache.py
++++ b/python/sglang/srt/mem_cache/radix_cache.py
+@@ -688,6 +688,12 @@ class RadixCache(BasePrefixCache):
+         num_evicted = 0
+         while num_evicted < num_tokens and len(eviction_heap):
+             _priority, x = heapq.heappop(eviction_heap)
++            remaining = num_tokens - num_evicted
++            if params.page_exact and remaining < len(x.key):
++                assert remaining % self.page_size == 0
++                last_access_time = x.last_access_time
++                kept = self._split_node(x.key, x, len(x.key) - remaining)
++                kept.last_access_time = last_access_time
+ 
+             # Tree values are page-aligned copies of a kv row: page-exact segment.
+             self.token_to_kv_pool_allocator.free_segment(x.value, start_pos=0)
+diff --git a/python/sglang/srt/mem_cache/registry.py b/python/sglang/srt/mem_cache/registry.py
+index 75afef7..c19d223 100644
+--- a/python/sglang/srt/mem_cache/registry.py
++++ b/python/sglang/srt/mem_cache/registry.py
+@@ -11,6 +11,7 @@ To plug in a custom backend, register it under a string name via
+ from __future__ import annotations
+ 
+ import logging
++import os
+ from dataclasses import dataclass
+ from typing import TYPE_CHECKING, Any, Callable, Optional
+ 
+@@ -227,8 +228,31 @@ def _create_unified_radix_cache(
+ 
+ def create_tree_cache(ctx: TreeCacheBuildContext) -> BasePrefixCache:
+     """Route to the matching factory to construct Radix Cache."""
+-    name = get_memory().radix_cache_backend
+-    if name:
++    memory = get_memory()
++    name = memory.radix_cache_backend
++    if os.environ.get("BELIEFKV_MARS_AUTHOR_SOURCE"):
++        if (
++            name
++            or ctx.disable_radix_cache
++            or ctx.enable_hierarchical_cache
++            or memory.enable_unified_cache_external_linker
++            or memory.enable_lmcache
++            or memory.enable_flexkv
++            or envs.SGLANG_EXPERIMENTAL_CPP_RADIX_TREE.get()
++            or envs.SGLANG_RUST_SERVER.get()
++            or get_disagg().disaggregation_mode != "null"
++            or get_serving().enable_streaming_session
++            or ctx.is_hybrid_swa
++            or ctx.is_hybrid_ssm
++            or ctx.is_dsa
++            or ctx.params.is_eagle
++        ):
++            raise ValueError("MARS replay requires the built-in HBM-only text radix cache")
++        from sglang.srt.mem_cache.radix_cache import RadixCache
++
++        cache = RadixCache(ctx.params)
++        source = "mars"
++    elif name:
+         factory = get_radix_cache_factory(name)
+         if factory is None:
+             raise ValueError(

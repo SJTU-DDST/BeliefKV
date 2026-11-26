@@ -62,6 +62,25 @@ def test_git_source_state_can_exclude_generated_manifest(tmp_path: Path) -> None
     assert state["excluded_provenance_paths"] == ["environment.json"]
 
 
+def test_canonical_patch_can_exclude_tracked_build_metadata(tmp_path):
+    root = _repository(tmp_path)
+    generated = root / "_version.py"
+    generated.write_text("version = 1\n")
+    _git(root, "add", "_version.py")
+    _git(root, "commit", "-qm", "track the release version")
+    (root / "runtime.py").write_text("value = 2\n")
+    patch = tmp_path / "runtime.patch"
+    patch.write_bytes(subprocess.check_output(("git", "diff"), cwd=root))
+    generated.write_text("version = 2\n")
+    _git(root, "add", "_version.py")
+    index = root / ".git/index"
+    original_index = index.read_bytes()
+    state = git_source_state(root, canonical_patch=patch, exclude_paths=("_version.py",))
+    assert state["canonical_patch"]["matches_worktree"]
+    assert state["tracked_change_paths"] == ["runtime.py"]
+    assert index.read_bytes() == original_index
+
+
 def test_patch_validation_preserves_staged_additions_and_the_real_index(tmp_path):
     root = _repository(tmp_path)
     (root / "new_runtime.py").write_text("value = 2\n")
