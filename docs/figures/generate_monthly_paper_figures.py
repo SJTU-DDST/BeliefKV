@@ -1677,7 +1677,7 @@ class PowerPointExporter:
         offset_y = (self.presentation.slide_height / self.unit - figure.height) / 2
         root = ET.parse(directory / figure.filename).getroot()
         for element in root:
-            if element.tag.rsplit("}", 1)[-1] in ("title", "defs", "style"):
+            if element.tag.rsplit("}", 1)[-1] in ("title", "desc", "defs", "style"):
                 continue
             self.add_primitive(slide, element, figure, offset_y)
         slide.notes_slide.notes_text_frame.text = slide_notes(figure)

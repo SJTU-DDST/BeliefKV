@@ -1,3 +1,12 @@
+# 回复写作要求
+
+- 直接陈述结论、事实和适用条件。「不是 A 而是 B」这类句式仅在绝对必要时使用。
+- 仅在用户明确询问边界时，才可用「不能」「不等于」「不把」「不是」「不能看作」等表达限定边界。
+
+# 绘图约定
+
+- 后续新绘或改版的图统一使用无衬线字体，覆盖标题、正文、图例、坐标轴、公式和标注。可编辑 PowerPoint 与导出的 PDF、SVG、PNG 均遵循此约定。
+
 # Experiment Invariants
 
 - 2026-11-15 CPU prefill chunk/query-tile reference screen; fullgoalACTIVE.

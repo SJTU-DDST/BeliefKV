@@ -1,5 +1,11 @@
 # BeliefKV 当前系统设计
 
+2026-11-24，MigraGate 按三个设计点组织 ICML 论文。新 root 和新 child 在首次物化前共用
+Host 与 HBM 的有效预算。父子依赖路径在 `SPAWN` 或 `WAIT_JOIN` 增量备份父 KV，
+按需释放设备页，并在最后一个未返回 child 的有效 final EOS 后尝试提前回载。工具
+等待路径复用增量备份和页释放检查，预测满足条件时提前让位，2 秒周期控制处理剩余压力。
+[三个设计点](design/three_design_synthesis_20261123_zh.md) · [英文图和图注](figures/icml/README.md)
+
 2026-11-07 英文图更新：D1 显式展开剩余工作概率、短任务权重、JOIN 集合比较与
 执行反馈；D2 显式展开工具残余时间/成本判断、增量 PREPARE_HOST、
 ACK 后卸载和 parent JOIN 预取。机制及当前实现边界见下述设计梳理与图说明；
@@ -9,7 +15,7 @@ ACK 后卸载和 parent JOIN 预取。机制及当前实现边界见下述设计
 **执行需求绑定的 KV 容量周转**两个设计点组织当前实现。预测是输入，
 缓存生命周期是容量依据，原生准入保留最终权限；不再将三者各自包装成独立贡献。
 详见[问题与设计的一一对应及实现边界](design/two_design_synthesis_20261104_zh.md)、
-[英文系统与机制图](figures/two_designs/README.md)。
+[两设计点历史图](archive/presentations/beliefkv_two_designs_20261120/README.md)。
 R5 分布/组合及 v7 分子目标仍需区分于已完成的非排序 Full 结果；
 本轮没有改动调度策略或实验，以下 10 月记录保持原有时点含义。
 

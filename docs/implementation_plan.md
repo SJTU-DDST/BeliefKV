@@ -1,5 +1,200 @@
 # BeliefKV Current Execution Plan
 
+## Paper Evaluation Runbook
+
+更新于 2026-11-25。GPU 实验处于暂停状态。接手后先完成下列归档核验、配置准备和
+CPU 检查，再从待补项安排 GPU。论文依次验证父 KV 在 spawn 与 join 之间的备份和恢复、
+基于工具剩余等待预测的按需 KV 卸载，以及两级 KV 预算与依赖感知的 agent 准入（D3）。
+短 workflow 排序、Oracle 和 sibling 共同准入的结果保留在历史调度研究中。
+[三个设计点](design/three_design_synthesis_20261123_zh.md) ·
+[实验报告规范](experiments/README_zh.md)
+
+### 评测合同
+
+| 项目 | 冻结设置与统计口径 |
+| --- | --- |
+| 负载 | 133 个原项目的因果回放，20 个初始 workflow，seed 35 的泊松到达表，使用同一 TraceLab 工具时长 overlay。原始任务、模型请求、依赖关系和 token 来源逐项绑定。在同一到达率下各臂使用同一份到达表和测量声明。 |
+| 到达率 | 平均间隔 80、65、55 秒，图上使用配置的到达率 0.750、0.923、1.091 workflow/min。扫点只改变平均间隔，保持同一项目顺序、随机流和资源设置。 |
+| 执行资源 | 已资格化的 Qwen3-Coder-30B-A3B / H200 NVL profile，200 GB Host（2,034,506 个 FULL KV 槽位），805,198 个 HBM KV 槽位和 24 个运行请求上限。请求超时 3,600 秒。记录实际容量、引擎树、NUMA 绑定和页面放置。 |
+| 公平设置 | 现有主曲线使用原生写回上限 1。上限 32 的对照单列，同点各系统使用同一上限。由运行时遥测核验 `write_back_batch.max_nodes`，同时核验 prefill/decode、原生缓存、兜底与各消融中共享的设置。 |
+| 固定 JCT | 论文统一使用固定 38 条，由 20 条初始 workflow 和随后到达的 18 条组成，包含 `python_desktop_development_021`。逐条从计划到达计至自然完成。此批共 6,519 个请求、834,692 个输出 token，按原生回执核对。 |
+| 停止与覆盖 | 论文使用固定 38 条全部自然完成、可逐条配对的运行。从回执核验完整性，记录截尾背景、未提交背景及测量尾部的覆盖范围。历史停止器由随后到达的 18 条触发。 |
+| 共同吞吐窗口 | 原三档沿用初始批次后首次到达至本组末次到达的半开区间。只计固定 38 条成员在窗内产出的 token。80、65、55 秒档的窗口分别约为 `[63.65, 1873.09)`、`[51.71, 1521.89)`、`[43.76, 1287.75)` 秒，三档的首条组外到达均在窗口结束后。新 trace 同样预先冻结窗口并核对成员归属。 |
+| 重算与传输 | 按固定 38 条请求或前缀归属统计实际执行的 Host 丢失重算 token / 实际执行的原生 prefill token，保留分子、分母，并注明全生命周期或共同窗口。D2H、H2D、首次 prefill 和重处理分别计数。 |
+
+负载、位置/采样资格、模型及 kernel profile 的路径和哈希以归档计划为准。
+测量成员只交给离线审计与停止器。记录应用 commit、原生引擎 tree、launch 参数、
+工具时长哈希、源 token 哈希、到达表和固定组哈希，以及各臂生效的恢复、排序和长等待
+保护设置。以有效配置和逐请求服务记录解释 `Full` 标签。历史 Full 可能带有组合准入
+或 sibling packing，单机制消融须对齐其余策略。 [冻结扫点计划][paper-sweep-plan] ·
+[测量与截尾样例][paper-sweep-report]
+
+### 归档核验与系统对比
+
+| 对比 | 已有证据 | 接手动作 |
+| --- | --- | --- |
+| 80 / 65 / 55 秒，cap 1，Full + D3 对 ThunderAgent acting-decay | 三档完成。55 秒档存在积压增长和未被背景到达覆盖的尾段。 [执行证明与数表][paper-sweep-report] | 先复核各点的注册、回执、排空、实际退出、匹配写回上限及输入哈希，再生成主曲线。记录每种方法在三档实际使用的应用和引擎版本。 |
+| 65 秒，cap 32，Full + D3 对 ThunderAgent | 同上限配对完成，固定 38 平均 JCT 降低 14.04%，共同窗口输出吞吐提高 7.70%。 [同上限配对][paper-cap32] | 作为单点写回敏感性对比。若以后采用 cap 32 主曲线，按同上限补齐各需要的对比点。 |
+| 55 秒，cap 1，原生 SGLang | 同到达表、资源和工具时长的基线已归档。 [基线复用证据][paper-mean55-baselines] | 按现有决定复用该点，新增 SGLang 运行暂缓。 |
+| 55 秒，cap 1，D3 开关 | `bb4705d6` 的 D3 整体包配对完成。固定 38 平均 JCT 降低 36.13%，共同窗口 Host 丢失重算 token 减少 77.83%，输出吞吐提高 8.59%，两个方向的迁移量均增加。 [D3 配对读数][paper-d3-pair] | 复用为组合效果。配置从 `off` 改为 `pressure_v2`，需核对该开关连带启用的保护。 [双臂配置与命令][paper-d3-plan] |
+| `57538b72` 的 55 秒 Full / Oracle / R5 | Full 停止时仅完成 17/18，Oracle 和 R5 未启动。 [停止记录][paper-stopped] | 保留为中断记录，诊断只用有共同时间范围的前缀。论文主图使用已完成的可比运行。 |
+
+归档复用优先。先用 `inputs_sha256`、启动证据、回执封存和原生资源记录重建每点证据链。
+部分历史注册引用在仓库外。路径失效时先查归档副本及已验证的复用报告，记录缺失项和
+证据等级。需要原始记录才能支持的读数，等找到对应记录或补齐缺失运行后入图。同档保留
+所有固定成员，汇报均值、P50/P95、最大值和逐 workflow 配对差值。用包含 `021` 的
+完整结果作主值，逐项留一仅用来诊断尾部影响。结合稳定窗口的积压趋势和尾部覆盖解释
+到达率曲线。 [既有固定组读数][paper-sweep-report]
+
+### 待补的机制实验
+
+先从完整归档确认触发机会和缺失字段，再准备单机制对照。下表描述需要验证的比较，
+每个候选使用与控制相同的在途容量、执行路径和观察设置。可复用的控制通过配置和源码
+核验后，GPU 只执行缺失臂。D3 优先用重算机会明确的 55 秒档，备份和 JOIN 先查
+65 秒档和 55 秒档的可用样本，同一对照的两侧选同一档。
+
+| 待补比较 | 假设与唯一变化 | 对照与准备状态 |
+| --- | --- | --- |
+| D3 root＋child vs. 仅 root | 在两侧相同的有效 KV 预算、增长预留、保护和进展规则下，额外门控新 child 可减少仍有用的旧 KV 丢失。 | 优先复用已核验的 D3 开启臂，补同预算的 root-only。当前 `pressure_v1` 是 child-only。root-only 需验证独立配置或补最小开关。 |
+| D3 完整 vs. 仅配套保护，及仅配套保护 vs. D3 关闭 | 保留原生写回、Host 驱逐、按需恢复一侧的 D3 配套保护，关闭 root/child 首次物化门控，分别估计门控和保护的贡献。 | 复用 55 秒 D3 开/关两端。guards-only 需要独立构造并核验运行时生效，记录各具体保护。它和 root-only 可与同一完整臂比较。 |
+| 主动备份 vs. 仅需求发生时备份 | 保持需求侧备份、卸载和恢复，去掉主动 `SPAWN`、`WAIT_JOIN` 和 idle 准备，测量主动准备跨过多少需求等待。 | 从同版本 Full 构造 `no_background_prepare`，`BELIEFKV_ENABLE_BACKGROUND_PREPARE=0`。核验实际上禁用的路径及镜像回收依赖。D3 和 JOIN 策略保持相同，记录备份变化造成的可用 Host 副本差异。 |
+| 2 秒周期回收＋预测提前让位 vs. 仅 2 秒周期回收 | 固定周期、`PREPARE_HOST`、JOIN 恢复、写回上限和长等待保护，切换工具预测卸载及其准入前替换入口。测量受益请求首次 GPU 服务、供体回载和重复搬运。 | 核验 `BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD` 与 `BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION` 在各臂的实际生效状态。两臂保留原生回收与按需恢复。 |
+| 最后 child 的 final EOS vs. confirmed JOIN | 保留父备份、传输上限、父准入与原生校验，仅把 H2D 触发推迟至 JOIN 确认，测量 EOS 提示多覆盖的暴露等待。 | 现有 confirmed-JOIN canary 有独立条件和传输范围。先读回并对齐两臂的容量、锁、ticket 绑定、失败回退和事务行为。需要时加一个只改触发时点的测试配置。 |
+| confirmed JOIN vs. 父请求提交后恢复 | 同一父备份和原生 H2D 路径下，估计从依赖满足到父请求提交这段 lead time 的作用。 | 构造提交后按需异步恢复臂，检查关闭提前 H2D 时父请求仍能正常恢复及排空。Full 到提交后恢复给出两段提前恢复的总效果。 |
+
+**D3 验证。** 按 `held → grant → native enqueue → first prefill` 绑定首次 root/child。
+按时间统计已有 KV 的 ready-paused、可放行首次请求、held 首次请求、tool-paused 和
+JOIN-paused，并核查 decode 宽度、GPU 空转、Host-only 有用状态和可回收镜像。
+将驱逐关联至受影响的请求及实际执行的旧前缀 prefill，记录触发者是首次物化、续接、
+后台写回，还是缺少证据。D3 需要减少实际重算并维持共同窗 decode 吞吐，同时报告
+固定组 JCT 和 root/child 门控等待。 [D3 设计和供给审计](design/subagent_materialization_pressure_20261116_zh.md)
+
+**MORI 准入对照。** 首选已有两条系统对照的 55 秒档，复用 133 个项目、原到达表、
+200 GB Host、相同 HBM 槽位和写回上限 1。MORI 使用作者调度器与配套引擎，每个
+并发 agent 对应独立 `program_id`。回放器照原依赖触发和等待 child，在会话结束时
+释放 program。核验策略实际启用、两级容量、写回上限、输入输出回执及引擎版本。
+如需移植，记录与作者实现的差异。报告固定 38 条完整 JCT、共同窗输出吞吐和
+首次准入等待。把已有 KV 的 agent 从逻辑 Waiting 跟踪到实际逐页驱逐、再次请求
+和执行的旧前缀 prefill，覆盖从未写入 Host 的前缀与 Host 副本丢失的前缀。
+[MORI 论文 §§4、6](https://arxiv.org/html/2606.00866v2) · [作者调度器](https://github.com/cblmemo/mori/blob/b4f6a1d50fe50a09b522f85333fa432871533690/ThunderAgent/ThunderAgent/scheduler/router.py#L949-L986)
+
+**MARS 与 MORI 作者基线。** 在同一 55 秒因果回放上使用共用 SGLang v0.5.20 引擎。
+MARS 使用作者 root 准入和请求选择规则，保留纯 HBM 前缀缓存及 16-token 页。
+MORI 使用作者路由器与 program 两级放置，200 GB Host，并提供作者批写回与匹配单节点写回
+两套设置。保留原生 vLLM MARS 和 v0.5.10 系 MORI 的回放入口。固定 38 条、原生回执、
+容量及移植差异见[作者基线适配](experiments/mars_mori_replay_20261123_zh.md)。
+
+为测量依赖优先的独立效果，先在同一决策快照上比较能单独放下、合起来放不下的新增
+child。两侧按同一可见上下文大小排序，其中一侧将真实阻塞 CALL/JOIN 的 child 提前。
+核对不同选择能否改变首次 GPU 服务，以及父 agent 何时真正解除阻塞。存在此类机会时，
+用相同候选、两级预算、物理策略和进展规则做单变量比较，并保留被推迟 workflow 的 JCT。
+冻结负载有 804 个 child，首次输入为 2,316 至 7,137 token，133 个 root 为 9,121 至
+241,025 token；按真实大小排序本身就偏向新 child。MORI 在线用估算值，应记录其实际排序。
+[完整轨迹的请求回执](../experiments/raw/workflow_original133_host200_mean55_guarded_path_full_bb4705d6_mean55_guarded_gpu_bb4705d6_r1/full/replay/native_requests.jsonl)
+
+55 秒档 CPU 核对按 `request_id` 将首次原生服务的 HBM、Host 命中数与已验证回执配对。
+`a7b698e2` Full+D3 与 `28b32285` ThunderAgent 的固定 18 条均有 2,991 个请求和
+112,676,935 个输入 token，分别命中 108,653,171（96.43%）和 106,700,040（94.70%）。
+固定 38 条的 6,519 个请求共有 231,062,659 个输入 token，分别命中 96.39% 和 94.41%。
+按原生完成时刻取共同窗内全部请求，两臂分别命中 95.64%（3,447 个请求）和 94.94%
+（3,163 个请求）。命中率按 token 加权，吞吐沿用窗口内实际输出 token/s。
+[固定组与吞吐](../experiments/reports/d3_reclaim_r5_20261118/host200_arrival_rate_80_65_55_r1/progress_zh.md#固定-host-容量的到达率实验) · [原生命中计数](../beliefkv/runtime/v0520_native_telemetry.py#L1314)
+
+**父 KV 增量备份与按需释放验证。** 按稳定 FULL 页、session generation 和
+radix 节点把准备触发、当时已有副本、实际写入的缺失 extent、D2H ACK 和安全释放连起来。
+把释放与受益请求的首次 GPU 服务关联。按 `SPAWN`、`WAIT_JOIN`、idle 和压力触发分组，
+报告复用副本、重复 D2H、备份后释放和复用的页、到运行结束仍未确认使用的页、额外 Host
+驱逐及控制 CPU。对同一稳定前缀核对缺失段写回字节和全量写回字节，覆盖完整已有副本、
+部分缺失和副本失效重建。 [备份运行时](../beliefkv/runtime/sglang_v0520_runtime.py)
+
+**JOIN 恢复验证。** 按 workflow/invocation/JOIN、session generation 与 native
+request 对齐最后 child 的 final EOS、RETURN、JOIN 满足、父请求提交、H2D
+提交/ACK 与父首次有效 GPU 服务。记录正缺页需求、启动提前量、ACK 与 native
+可服务时点的关系、实际消费页、晚到 ACK、取消及容量拒绝。分开报告父请求提交到
+首服务、其中仍暴露的 H2D 等待，以及其他 ready 请求的等待和 decode 吞吐。
+保留所有符合恢复条件的 JOIN，另列提前命中样本。历史 V128 观察到 61/66 次 JOIN
+在完成等待前启动恢复并确认复用，可用于核对事件口径。当前冻结负载的暴露等待降幅
+由上述同配置对照验证。CPU 覆盖早到和迟到绑定、无有效 EOS、在途 D2H、版本失效、
+部分 ACK、无容量和正常需求回退。 [历史 JOIN 证据](experiments/v128_full_complete_20261023_zh.md#join-与工具提前恢复) ·
+[物理恢复实现](../beliefkv/runtime/join_physical_recovery.py)
+
+**工具卸载验证。** 按工具条件剩余等待与迁移成本分层，核对预测和周期控制当时可见的
+容量缺口、候选、备份 ACK 与实际释放。将释放关联到受益请求的首次 GPU 服务和供体
+返回后的 H2D，报告重复写回、额外回载、控制 CPU、固定组 JCT 和共同窗口吞吐。
+逐次核对预测备份在途时的周期回收和 ACK 重验，检查同一缺口是否触发重复迁移。
+[事件与周期的交接](design/event_tool_replacement_window2s_20261031_zh.md) ·
+[迁移成本模型](design/adaptive_tool_offload_and_timing_20261027_zh.md)
+
+### 相关工作与补跑顺序
+
+1. **归档和 CPU。** 先核验主曲线、D3 组合包和已有基线，产出负载画像和三项机制
+   的事件覆盖表。画像从原轨迹和 overlay 统计模型工作量分位数、上下文长度、root/child
+   工作量、工具关键路径、JOIN fanout 和 ready 供给。对只看得到单臂实际选择的日志，
+   将反事实机会、已改变的准入和实际服务分列。优先补判定所需的日志字段、配置和测试。
+2. **匹配消融。** 优先补 D3 的仅保护和仅 root 两臂，以及备份/卸载和 JOIN 的关键
+   触发对照。合并排程同一批已通过 CPU 的配置。先跑有界正确性检查，核对出现预期机制
+   事件且实际 cap、容量、采样证据和配对开关一致，再跑完整测量。若历史控制与新臂结论
+   所需的设置一致，直接复用。仅为无法复用的控制或论文关键结论的复验安排重复运行。
+3. **最相近基线。** 为首次物化记录 MARS 的 root 准入、MORI 的分级驻留、EfficientAgent
+   的写回保护与本方案首次物化控制的差别。为工具路径检查 TokenCake 的论文机制、公开
+   实现与本地适配，并核对 MORI 的可比迁移策略。为 JOIN 对齐 Nalar 的依赖时间预取、
+   SGLang RFC #27574 的生命周期触发和本方案 EOS/confirmed/submit 对照。锁定论文
+   版本、源码 commit、所需在线信息和实际启用策略。需要补实验时，优先对能忠实实现且
+   同资源回放的最相近策略做单点对照。分别标明作者实现、适配复现或可运行机制参考。
+   [三项机制对应的文献](design/three_design_synthesis_20261123_zh.md) ·
+   [基线对照记录](related_work_comparison_2026-07-21_zh.md) ·
+   [TokenCake 本地接线](research/tokencake_native_hooks_20261028_zh.md)
+4. **稳健性。** 主比较和机制归因成立后，预先固定另一份随机排列/种子，选择最关键的
+   系统比较和消融进行匹配复验，先检查背景覆盖与有效压力。报告各轮及配对变化范围。
+   同一轮 workflow 的留一或重采样用于评估样本敏感性，运行间波动用独立轮次测量。
+   如需确认另一 workload 或模型上的适用性，单独建立匹配评测和资格，在该组内使用
+   相同容量、模型与到达表。Host 容量或写回上限的敏感性按独立配置报告。
+
+### 执行入口与交付
+
+| 阶段 | 入口与产物 |
+| --- | --- |
+| 配置准备 | 从已验证注册和扫点计划提取源、overlay、到达表、固定组及资源。`prepare_subagent_materialization.py --config ... --output-dir ... --host-gb 200 --mean-interval-s 55 --pressure-policy pressure_v2` 可生成 D3 开关模板，显式设置本次需要的策略。核对有效配置 diff、保护依赖及源码，使用新路径写入配置与 `plan.json`。 [生成器](../scripts/prepare_subagent_materialization.py) |
+| CPU 资格 | 以各臂真实生产构造和固定组停止合同为准。`qualify_materialization_protocol.py` 接收准备好的四臂配置，`qualify_subagent_materialization_cpu.py` 和 `bind_materialization_campaign_cpu.py` 绑定各自声明的前驱及源码。自定义消融使用现有生产 preflight 并补对应构造回归。复用 `tests/test_spawn_full_prepare.py`、`tests/test_prepare_ack_engine.py`、`tests/test_predicted_tool_offload.py`、`tests/test_join_physical_recovery.py`。 [协议资格](../scripts/qualify_materialization_protocol.py) · [CPU 资格](../scripts/qualify_subagent_materialization_cpu.py) · [证据绑定](../scripts/bind_materialization_campaign_cpu.py) |
+| 运行 | 复用匹配注册中的 `run_causal_comparison.py` 参数并替换本次新配置与路径。55 秒/200 GB 的标准压力单臂可走 `run_materialization_campaign.py --pressure-only`，继承已完成的匹配控制。该启动器的 `--pair-only` 还绑定历史 Oracle 完整对照。机制消融使用已资格化的单臂入口，按表构造。固定组停止使用 `stop_after_measured_cohort.py --watch <registration>`。 [回放入口](../scripts/run_causal_comparison.py) · [物化启动器](../scripts/run_materialization_campaign.py) · [停止器](../scripts/stop_after_measured_cohort.py) |
+| 收尾与比较 | 核对固定组逐请求工作、原生排空、完成回执和实际进程退出。运行 `review_materialization_runtime.py` 以及下方固定组对比。保存吞吐、重算、迁移和服务链原始输入及派生读数。 [运行评审入口](../scripts/review_materialization_runtime.py) · [固定组对比](../scripts/compare_reported_workflow_cohorts.py) |
+
+已有注册和审计输出时，从仓库根目录运行以下离线对比。
+
+```bash
+python scripts/compare_reported_workflow_cohorts.py \
+  --arm control "$EVAL_CONTROL_REGISTRATION" "$EVAL_CONTROL_COHORT_REPORT" \
+  --arm candidate "$EVAL_CANDIDATE_REGISTRATION" "$EVAL_CANDIDATE_COHORT_REPORT" \
+  --require-verified-write-back-cap \
+  --output "$EVAL_COMPARISON_JSON"
+```
+
+- 每个比较用新的 artifact key。在 `experiments/reports/` 下本次证据目录用 `plan.json`
+  绑定启动命令、假设、控制来源、唯一变化、路径和哈希、指标、验收与停止条件和输出位置。
+  监督器发布运行状态。原始日志进入 `experiments/raw/`，注册沿用 `../ops/`。
+  每次完成或中断后按规范在 `docs/experiments/` 新建一份结果记录，列出归档入口。
+- 正式结论要求匹配输入、实际资源和 cap、预期机制有原生证据、固定组完整，以及
+  allocator/Radix、锁、事务、ACK、排空和退出检查通过。按当前共享 GPU 预约机制串行
+  移交，下一臂以实际退出和新鲜资源证据为启动条件。发现回执不匹配、KV 正确性异常、
+  资源或设置漂移、机制未接通时停止该臂，保存原因与能复核的前缀。性能差的正确运行
+  按预定窗口完成并记录，截尾与错误运行保留独立状态。
+- 论文结果提交固定 38 条的 JCT 表与逐工作流配对差值、到达率主图、同窗吞吐与
+  重算表、每项机制的因果事件与成本摘要。保留完整长尾、自然完成和截尾数、实际 GPU
+  idle、HBM/Host 峰值和控制开销。可选交互性图沿用请求级 E2E normalized
+  interactivity P90 口径。给出每项设计获得支持的结论及适用范围，分别保留尚待验证
+  的问题和负结果。 [交互性口径](research/interactivity_metric_definition_20261104_zh.md) ·
+  [结果报告规范](experiments/README_zh.md)
+
+[paper-sweep-plan]: ../experiments/reports/d3_reclaim_r5_20261118/host200_arrival_rate_80_65_55_r1/plan.json
+[paper-sweep-report]: ../experiments/reports/d3_reclaim_r5_20261118/host200_arrival_rate_80_65_55_r1/progress_zh.md
+[paper-cap32]: ../experiments/reports/d3_reclaim_r5_20261118/host200_arrival_rate_80_65_55_r1/mean65_thunderagent_native_writeback_batch32/matched_cap32_guard_recheck.json
+[paper-mean55-baselines]: ../experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/mean55_guarded_gpu_bb4705d6_r1/baseline_reuse_comparison.json
+[paper-d3-pair]: ../experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/mean55_d3_pair_reuse_bb4705d6_r1/paired_runtime_and_supply.json
+[paper-d3-plan]: ../experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/mean55_d3_pair_reuse_bb4705d6_r1/plan.json
+[paper-stopped]: ../experiments/reports/d3_reclaim_r5_20261118/scheduling_screen/mean55_mixed_admission_57538b72_r1/state.json
+
+## Historical Execution Plans
+
 Status date: 2026-10-25 (Asia/Shanghai).
 
 V181 completed all18 workflows and2071 requests,with36 JOINs and one nested JOIN;

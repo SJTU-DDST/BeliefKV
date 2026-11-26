@@ -9,7 +9,8 @@ D1 补齐“任务与已获服务进度 → short/mid/long → 短任务权重 �
 
 2026-11-04，北京时间。本文依据当前 main 的实际源码和近期审计收敛论文表述，
 更新英文论文图，不修改运行时、冻结配置或实验。图源、代码指纹和实现边界见
-[图文件说明](../figures/two_designs/README.md)及同目录 `manifest.json`。
+[归档的图文件说明](../archive/presentations/beliefkv_two_designs_20261120/README.md)
+及同目录 `manifest.json`。当前投稿配图见 [ICML 图集](../figures/icml/README.md)。
 此前三设计点和中文图保留为历史版本，后续仅更新英文图。
 
 ## 论文主线

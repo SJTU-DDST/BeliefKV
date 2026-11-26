@@ -1,0 +1,771 @@
+{
+  "architecture_date": "2026-11-07",
+  "language": "en",
+  "design_points": 2,
+  "d2_revision_date": "2026-11-20",
+  "revision": "d2-narrow-timeline-and-sidebar",
+  "source_revision": "a79d156aa9a7bbbead2aef26693fb109264e8c5a",
+  "source_scope": "Current main-tree bytes, including existing uncommitted changes",
+  "architecture_source_sha256": {
+    "beliefkv/control/causal_graph.py": "fb999b42537da7f9230064926509bee134e8b277328c78f567d35d1b2cced988",
+    "beliefkv/policy/workflow_combination.py": "ef4850c7742fb430689ba571c637611cad3d6e55eee64b470eaafe0ec6519f15",
+    "beliefkv/predictor/workflow_work.py": "eaef56a6f70e56ca79e367efd977832b6f445908982dc83f3447e87c66fe2b22",
+    "beliefkv/predictor/project_tool_history.py": "b8bea4451e90ab04180acc8a72a043e091bb767d358a4133ec0da073aeaeee8b",
+    "beliefkv/predictor/tool_survival.py": "9e45390f9daf844cdf7ae9b76988b5d8f8bc4fe9b34cf6e40d70156eba2126bc",
+    "beliefkv/runtime/workflow_combination.py": "751469e077eeb9585945bad016f7d4084f11b40b96ad745e0ec7742b556569c4",
+    "beliefkv/runtime/workflow_work_worker.py": "e72ca0db99040c83a56091ae770711521bdccec5b41ccce11aef06dc73414bc7",
+    "beliefkv/runtime/workflow_size_admission.py": "6adf482c842c183be28d5c61368da412d9c376aa058dc5e098ae5315bf0880eb",
+    "beliefkv/runtime/reference_thunder_admission.py": "9875873b3413649c175ea21714e469aa83eb47b8227a4316e8a75c6573a2a1c3",
+    "beliefkv/runtime/reference_tool_replacement.py": "5949408728feffa3cca9e610d7448bdf0daffb30f6f4a6f50f35c19c87294b72",
+    "beliefkv/runtime/predicted_tool_offload.py": "14f5042180ec4fd7c831a2d16d03561a7baff95b8c91c20f0c424d380a93d410",
+    "beliefkv/runtime/join_blocked_handoff.py": "96b56bf4ba46d1e251f49ab88567c56c64e79484ae95127ca5617280f570dc0c",
+    "beliefkv/runtime/join_physical_recovery.py": "0ab37a88c91696657ac2a4f26fa3daef980c344285d667bc9d99319fc4c2e796",
+    "beliefkv/runtime/demand_prefill_pipeline.py": "7154f202ddf7bcf47d029d387fc0e1ddb24fc784851ee26a0364e4354a554611",
+    "beliefkv/runtime/full_prefix_migration.py": "0ebaee5304178037406ead35871ac02e83961b42b8cf8efd8d519ee84f4576b5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "c8338d9e766c2992ee870d89c49442b3f846df1427d81ba0aa058d8fba2ea4c1",
+    "beliefkv/runtime/sglang_v0520_prediction.py": "c5cc2d48c68c6a3b8f314c655cf687408c5e927ca06972945bd4456717b9f5ec",
+    "beliefkv/runtime/sglang_v0520_physical.py": "a67dac914a96901e946439a4783a593307bcb54b259cff4d88ec058f83c3d13f",
+    "patches/sglang-v0.5.20-native-session-close-staging.patch": "dc8b07ac714210f9c0aeae643df6bbcef26cbdf98a330d5a9612fe8c55d321af"
+  },
+  "generator_sha256": "1d1a4a3c466303660b942bfddc8eda841c89524bd0fde78040e1fea41db3116c",
+  "drawing_helper_sha256": "9f32e07febf5c6b5b8da62e3dd00c2dbd627a058311495f156e1cbe7582e043b",
+  "palette_sha256": "4d56434c7b9c2ac9f2b1cf3b4c612b17a75443a83cf9585cd86e9445b5dc0c01",
+  "palette": {
+    "name": "BeliefKV / Paul Tol semantic diagram palette",
+    "checked_date": "2026-11-04",
+    "sources": [
+      {
+        "url": "https://sronpersonalpages.nl/~pault/",
+        "use": "Primary source for exact bright, light, pale, medium-contrast and dark colors."
+      },
+      {
+        "url": "https://github.com/nsgrantham/disco",
+        "use": "GitHub implementation and guidance on labeled fills versus lines."
+      },
+      {
+        "url": "https://github.com/K-Dense-AI/scientific-agent-skills/blob/main/skills/scientific-visualization/references/color_palettes.md",
+        "use": "Scientific palette selection, consistent roles and redundant encoding."
+      }
+    ],
+    "scope": "A semantic diagram theme combining named Tol colors, not one unmodified qualitative data series or an accessibility certification.",
+    "exact_colors": {
+      "blue": {
+        "hex": "#4477AA",
+        "scheme": "bright"
+      },
+      "light_blue": {
+        "hex": "#77AADD",
+        "scheme": "light"
+      },
+      "pale_blue": {
+        "hex": "#AACCEE",
+        "scheme": "pale"
+      },
+      "teal": {
+        "hex": "#117788",
+        "scheme": "dark"
+      },
+      "mint": {
+        "hex": "#44BB99",
+        "scheme": "light"
+      },
+      "pale_green": {
+        "hex": "#BBDDBB",
+        "scheme": "pale"
+      },
+      "orange": {
+        "hex": "#EE8866",
+        "scheme": "light"
+      },
+      "purple": {
+        "hex": "#AA3377",
+        "scheme": "bright"
+      },
+      "pale_purple": {
+        "hex": "#EEBBDD",
+        "scheme": "pale"
+      },
+      "yellow": {
+        "hex": "#EEDD88",
+        "scheme": "light"
+      },
+      "transfer_yellow": {
+        "hex": "#EECC66",
+        "scheme": "medium-contrast"
+      },
+      "ochre": {
+        "hex": "#997700",
+        "scheme": "medium-contrast"
+      },
+      "grey": {
+        "hex": "#BBBBBB",
+        "scheme": "bright"
+      },
+      "pale_grey": {
+        "hex": "#DDDDDD",
+        "scheme": "light"
+      }
+    },
+    "roles": {
+      "ink": "#000000",
+      "paper": "#FFFFFF",
+      "control_edge": "#4477AA",
+      "control_header": "#AACCEE",
+      "control_background": "#F0F4F8",
+      "data_edge": "#117788",
+      "data_header": "#BBDDBB",
+      "data_background": "#ECF4F5",
+      "hbm_edge": "#AA3377",
+      "hbm_page": "#EEBBDD",
+      "hbm_background": "#FBF5F8",
+      "host_edge": "#997700",
+      "host_page": "#EEDD88",
+      "host_background": "#FCF8E7",
+      "parent": "#77AADD",
+      "child_1": "#44BB99",
+      "child_2": "#EE8866",
+      "donor": "#DDDDDD",
+      "other_workflow": "#BBBBBB",
+      "neutral_background": "#F5F5F5",
+      "neutral_edge": "#BBBBBB",
+      "execution_arrow": "#4477AA",
+      "control_arrow": "#117788",
+      "transfer_fill": "#EECC66",
+      "transfer_edge": "#997700",
+      "d2_workflow_a_edge": "#275A8A",
+      "d2_a_children": "#77AADD",
+      "d2_a_idle": "#E2EDF8",
+      "d2_workflow_b_edge": "#216C61",
+      "d2_b_children": "#69B9AD",
+      "d2_b_idle": "#E0F0EE",
+      "d2_hbm_edge": "#3D5261",
+      "d2_hbm_body": "#D6DBDE",
+      "d2_hbm_grid": "#9EA8B0",
+      "d2_host_edge": "#875335",
+      "d2_host_body": "#F1EAE7",
+      "d2_host_grid": "#CAB3A6",
+      "d2_dma_edge": "#80550C",
+      "d2_dma_body": "#F7F5F0",
+      "d2_copy_fill": "#EAB044",
+      "d2_copy_tail": "#F6DEB0",
+      "d2_trigger": "#365170"
+    },
+    "derived_backgrounds": {
+      "control_background": {
+        "base": "#4477AA",
+        "white_fraction": 0.92
+      },
+      "data_background": {
+        "base": "#117788",
+        "white_fraction": 0.92
+      },
+      "hbm_background": {
+        "base": "#AA3377",
+        "white_fraction": 0.95
+      },
+      "host_background": {
+        "base": "#EEDD88",
+        "white_fraction": 0.8
+      },
+      "neutral_background": {
+        "base": "#BBBBBB",
+        "white_fraction": 0.85
+      },
+      "d2_a_idle": {
+        "base": "#77AADD",
+        "white_fraction": 0.79
+      },
+      "d2_b_idle": {
+        "base": "#69B9AD",
+        "white_fraction": 0.79
+      },
+      "d2_hbm_body": {
+        "base": "#3D5261",
+        "white_fraction": 0.79
+      },
+      "d2_hbm_grid": {
+        "base": "#3D5261",
+        "white_fraction": 0.5
+      },
+      "d2_host_body": {
+        "base": "#875335",
+        "white_fraction": 0.88
+      },
+      "d2_host_grid": {
+        "base": "#875335",
+        "white_fraction": 0.56
+      },
+      "d2_dma_body": {
+        "base": "#80550C",
+        "white_fraction": 0.94
+      },
+      "d2_copy_tail": {
+        "base": "#EAB044",
+        "white_fraction": 0.58
+      }
+    },
+    "d2_custom_accents": {
+      "d2_workflow_a_edge": "Deep blue for A's solid parent and its children's pattern marks",
+      "d2_workflow_b_edge": "Deep teal for B's solid parent and its children's pattern marks",
+      "d2_b_children": "Mid teal for all three B children",
+      "d2_hbm_edge": "Steel gray for the HBM stack",
+      "d2_host_edge": "Clay brown for the Host DIMM",
+      "d2_dma_edge": "Ochre for DMA and its copy outlines",
+      "d2_copy_fill": "Gold for in-flight KV copies and the pre-JOIN interval",
+      "d2_trigger": "Dark blue for runtime triggers and inset control"
+    },
+    "derivation": "For each RGB channel: round(base * (1 - white_fraction) + 255 * white_fraction). The tint recipes and custom accents are BeliefKV color choices. Exact Tol swatches are listed in exact_colors.",
+    "redundant_encoding": [
+      "Agent name and persistent page ID accompany owner color.",
+      "HBM/Host have direct tier labels and fixed positions.",
+      "Data transfers use broad curved ribbons; control uses thin notched arrows.",
+      "Allocator capacity uses a grey block arrow, never a KV transfer ribbon.",
+      "Missing pages are dashed; resident pages are solid.",
+      "Execution numbers are black circles on action paths."
+    ]
+  },
+  "layout": "One overview plus dedicated D1 and D2. D2 aligns two concurrent workflows with DMA and occupancy histories for one HBM pool and one Host pool. The right sidebar shows RadixAttention ownership and the tool offload decision.",
+  "schematic_not_empirical_performance": true,
+  "d1_example": {
+    "probabilities_short_mid_long": {
+      "A": [
+        0.7,
+        0.2,
+        0.1
+      ],
+      "B": [
+        0.1,
+        0.2,
+        0.7
+      ]
+    },
+    "weight": {
+      "A": 0.825,
+      "B": 0.375
+    },
+    "gain": {
+      "C1+B": 0.58125,
+      "C1+C2": 0.825
+    },
+    "scope": "two free slots, equal footprints, zero prior active coverage; explanatory only"
+  },
+  "d1_state": "R5/v7 opt-in candidate; stable additional JCT benefit unproven",
+  "d2_state": "A backs its private FULL while a1 and a2 start together. B spawns later and takes A's backed capacity for b1 and b2. b3 uses a1's pages after tool-aware write-back. b3 retires to make room for demand H2D to a1. a2 retires before a1's final EOS triggers A's pre-JOIN H2D. b1 and b2 continue throughout A's recovery.",
+  "figures": [
+    {
+      "stem": "01_system_overview_en",
+      "language": "en",
+      "title": "BeliefKV architecture",
+      "canvas": [
+        1680,
+        740
+      ],
+      "png_pixels": [
+        4320,
+        1903
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 65,
+      "editable_math_text_objects": 2,
+      "panel_styles": [
+        {
+          "title": "Control plane",
+          "header": "#4477aa",
+          "body": "#f0f4f8",
+          "border": "#4477aa",
+          "position": [
+            28,
+            82
+          ],
+          "size": [
+            870,
+            630
+          ],
+          "radius": 8,
+          "role": "control_plane"
+        },
+        {
+          "title": "SGLang data plane",
+          "header": "#117788",
+          "body": "#ecf4f5",
+          "border": "#117788",
+          "position": [
+            922,
+            82
+          ],
+          "size": [
+            730,
+            630
+          ],
+          "radius": 8,
+          "role": "data_plane"
+        },
+        {
+          "title": "D1  Short-workflow + JOIN selection",
+          "header": "#aaccee",
+          "body": "#ffffff",
+          "border": "#4477aa",
+          "position": [
+            48,
+            134
+          ],
+          "size": [
+            830,
+            238
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "D2  Predict wait \u2192 prepare / offload \u2192 prefetch",
+          "header": "#bbddbb",
+          "body": "#ffffff",
+          "border": "#4477aa",
+          "position": [
+            48,
+            392
+          ],
+          "size": [
+            830,
+            296
+          ],
+          "radius": 8,
+          "role": null
+        }
+      ],
+      "flow_types": {
+        "execution": 6,
+        "hint": 1,
+        "action": 9,
+        "transfer": 2
+      },
+      "flow_geometry": {
+        "rounded": 7,
+        "straight": 8,
+        "bezier": 1,
+        "curved_ribbon": 2
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 2,
+      "execution_steps": [
+        {
+          "number": 1,
+          "position": [
+            801,
+            442
+          ],
+          "meaning": "D1 supplies real consumer demand to the tool offload cost decision"
+        },
+        {
+          "number": 2,
+          "position": [
+            916,
+            558
+          ],
+          "meaning": "Final-child evidence requests safe missing-parent H2D"
+        },
+        {
+          "number": 3,
+          "position": [
+            1402,
+            218
+          ],
+          "meaning": "Native KV and slot dependencies govern actual GPU service"
+        }
+      ],
+      "memory_tiers": [
+        {
+          "tier": "HBM",
+          "position": [
+            948,
+            142
+          ],
+          "size": [
+            410,
+            150
+          ],
+          "header": "#eebbdd",
+          "body": "#fbf5f8",
+          "border": "#aa3377",
+          "role": "peer_storage_tier"
+        },
+        {
+          "tier": "Host",
+          "position": [
+            948,
+            545
+          ],
+          "size": [
+            410,
+            150
+          ],
+          "header": "#eedd88",
+          "body": "#fcf8e7",
+          "border": "#997700",
+          "role": "peer_storage_tier"
+        }
+      ],
+      "storage_pages": [
+        {
+          "tier": "HBM",
+          "owner": "#44bb99",
+          "missing": true,
+          "position": [
+            807,
+            243.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#44bb99",
+          "missing": true,
+          "position": [
+            830,
+            243.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#ee8866",
+          "missing": false,
+          "position": [
+            807,
+            298.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#ee8866",
+          "missing": false,
+          "position": [
+            830,
+            298.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#dddddd",
+          "missing": false,
+          "position": [
+            973,
+            203
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#dddddd",
+          "missing": false,
+          "position": [
+            1023,
+            203
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#77aadd",
+          "missing": false,
+          "position": [
+            1103,
+            203
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#77aadd",
+          "missing": false,
+          "position": [
+            1153,
+            203
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#44bb99",
+          "missing": false,
+          "position": [
+            1233,
+            203
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#44bb99",
+          "missing": false,
+          "position": [
+            1283,
+            203
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#dddddd",
+          "missing": false,
+          "position": [
+            973,
+            606
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#dddddd",
+          "missing": false,
+          "position": [
+            1023,
+            606
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#77aadd",
+          "missing": false,
+          "position": [
+            1103,
+            606
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#77aadd",
+          "missing": false,
+          "position": [
+            1153,
+            606
+          ]
+        }
+      ],
+      "layout": "overview"
+    },
+    {
+      "stem": "02_dependency_working_set_en",
+      "language": "en",
+      "title": "D1: dependency-aware working-set admission",
+      "canvas": [
+        1680,
+        650
+      ],
+      "png_pixels": [
+        4320,
+        1671
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 82,
+      "editable_math_text_objects": 24,
+      "panel_styles": [],
+      "flow_types": {
+        "execution": 4,
+        "action": 5,
+        "hint": 1
+      },
+      "flow_geometry": {
+        "rounded": 7,
+        "straight": 3
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 0,
+      "execution_steps": [
+        {
+          "number": 1,
+          "position": [
+            385,
+            327
+          ],
+          "meaning": "Update conditional model-work distributions from task and attained service"
+        },
+        {
+          "number": 2,
+          "position": [
+            1330,
+            335
+          ],
+          "meaning": "Prefer the supported short-workflow/JOIN gain within capacity"
+        }
+      ],
+      "memory_tiers": [],
+      "storage_pages": [
+        {
+          "tier": "HBM",
+          "owner": "#44bb99",
+          "missing": true,
+          "position": [
+            1573,
+            219.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#44bb99",
+          "missing": true,
+          "position": [
+            1596,
+            219.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#ee8866",
+          "missing": false,
+          "position": [
+            1573,
+            282.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#ee8866",
+          "missing": false,
+          "position": [
+            1596,
+            282.0
+          ]
+        }
+      ],
+      "layout": "compact_algorithm"
+    },
+    {
+      "stem": "03_execution_kv_turnover_en",
+      "language": "en",
+      "title": "D2: KV turnover across workflows",
+      "canvas": [
+        1380,
+        1096
+      ],
+      "png_pixels": [
+        4320,
+        3431
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 68,
+      "editable_math_text_objects": 0,
+      "panel_styles": [
+        {
+          "title": "RadixAttention KV",
+          "header": "#d6dbde",
+          "body": "#ffffff",
+          "border": "#3d5261",
+          "position": [
+            1056,
+            163
+          ],
+          "size": [
+            300,
+            307
+          ],
+          "radius": 8,
+          "role": "radix_kv"
+        },
+        {
+          "title": "Tool-aware offload",
+          "header": "#e2edf8",
+          "body": "#ffffff",
+          "border": "#365170",
+          "position": [
+            1056,
+            509
+          ],
+          "size": [
+            300,
+            442
+          ],
+          "radius": 8,
+          "role": "tool_offload"
+        }
+      ],
+      "flow_types": {
+        "workflow": 13,
+        "hint": 4,
+        "transfer_band": 5,
+        "action": 2
+      },
+      "flow_geometry": {
+        "wide_block": 5
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 0,
+      "execution_steps": [
+        {
+          "number": 2,
+          "position": [
+            480,
+            558
+          ],
+          "meaning": "Reclaim backed A for b1 and b2"
+        },
+        {
+          "number": 1,
+          "position": [
+            310.0,
+            859
+          ],
+          "meaning": "PREPARE_HOST"
+        },
+        {
+          "number": 3,
+          "position": [
+            556.0,
+            859
+          ],
+          "meaning": "Tool offload"
+        },
+        {
+          "number": 4,
+          "position": [
+            701.0,
+            859
+          ],
+          "meaning": "Demand H2D"
+        },
+        {
+          "number": 5,
+          "position": [
+            869.5,
+            859
+          ],
+          "meaning": "JOIN prefetch"
+        }
+      ],
+      "memory_tiers": [
+        {
+          "tier": "HBM",
+          "position": [
+            24,
+            578
+          ],
+          "size": [
+            1008,
+            188
+          ],
+          "header": "#3d5261",
+          "body": "#d6dbde",
+          "border": "#3d5261",
+          "role": "pool_occupancy"
+        },
+        {
+          "tier": "Host DRAM",
+          "position": [
+            24,
+            914
+          ],
+          "size": [
+            1008,
+            129
+          ],
+          "header": "#875335",
+          "body": "#f1eae7",
+          "border": "#875335",
+          "role": "pool_occupancy"
+        }
+      ],
+      "storage_pages": [],
+      "layout": "compact_algorithm"
+    }
+  ],
+  "powerpoints": [
+    "01_system_overview_en_editable.pptx",
+    "02_dependency_working_set_en_editable.pptx",
+    "03_execution_kv_turnover_en_editable.pptx",
+    "beliefkv_two_designs_en.pptx"
+  ]
+}

@@ -1,5 +1,11 @@
 # BeliefKV 当前架构与实现状态
 
+2026-11-23 ICML 总览和三张机制图展示新 root 与新 child 的共同容量预算、
+`PREPARE_HOST` 增量备份与按需释放，以及最后一个 child 的有效最终 EOS 触发的
+父 KV 恢复。后两图沿用同一组稳定 KV 段，分别标明 Host ACK、HBM 释放、真实 JOIN
+与父请求提交的位置。[三个设计点](design/three_design_synthesis_20261123_zh.md) ·
+[ICML 总览、机制图和可编辑 PPT](figures/icml/README.md)
+
 2026-11-18 D3 首次 KV 物化：`pressure_v2` 用同一份有效 KV 预算控制
 新 workflow 的 root 和新 child。压力下先推进真实阻塞 CALL 或 ALL-JOIN
 的 child，再考虑其他 child，最后用剩余容量启动新 workflow。已提交请求
@@ -66,7 +72,7 @@ R5/v7 是显式候选，不能把已实现的分子选择或历史 Full 整体�
 原有三点及下列带日期记录保留历史语义；本轮仅更新文档与英文图，不改变运行配置。
 问题对应、当前源码及边界见
 [两设计点梳理](design/two_design_synthesis_20261104_zh.md)，
-[英文可编辑图](figures/two_designs/README.md)。
+[历史英文可编辑图](archive/presentations/beliefkv_two_designs_20261120/README.md)。
 
 更新日期：2026-11-04（北京时间；下文历史结果保留各自日期）。
 

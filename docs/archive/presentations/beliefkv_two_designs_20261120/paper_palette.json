@@ -1,0 +1,113 @@
+{
+  "name": "BeliefKV / Paul Tol semantic diagram palette",
+  "checked_date": "2026-11-04",
+  "sources": [
+    {
+      "url": "https://sronpersonalpages.nl/~pault/",
+      "use": "Primary source for exact bright, light, pale, medium-contrast and dark colors."
+    },
+    {
+      "url": "https://github.com/nsgrantham/disco",
+      "use": "GitHub implementation and guidance on labeled fills versus lines."
+    },
+    {
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills/blob/main/skills/scientific-visualization/references/color_palettes.md",
+      "use": "Scientific palette selection, consistent roles and redundant encoding."
+    }
+  ],
+  "scope": "A semantic diagram theme combining named Tol colors, not one unmodified qualitative data series or an accessibility certification.",
+  "exact_colors": {
+    "blue": {"hex": "#4477AA", "scheme": "bright"},
+    "light_blue": {"hex": "#77AADD", "scheme": "light"},
+    "pale_blue": {"hex": "#AACCEE", "scheme": "pale"},
+    "teal": {"hex": "#117788", "scheme": "dark"},
+    "mint": {"hex": "#44BB99", "scheme": "light"},
+    "pale_green": {"hex": "#BBDDBB", "scheme": "pale"},
+    "orange": {"hex": "#EE8866", "scheme": "light"},
+    "purple": {"hex": "#AA3377", "scheme": "bright"},
+    "pale_purple": {"hex": "#EEBBDD", "scheme": "pale"},
+    "yellow": {"hex": "#EEDD88", "scheme": "light"},
+    "transfer_yellow": {"hex": "#EECC66", "scheme": "medium-contrast"},
+    "ochre": {"hex": "#997700", "scheme": "medium-contrast"},
+    "grey": {"hex": "#BBBBBB", "scheme": "bright"},
+    "pale_grey": {"hex": "#DDDDDD", "scheme": "light"}
+  },
+  "roles": {
+    "ink": "#000000",
+    "paper": "#FFFFFF",
+    "control_edge": "#4477AA",
+    "control_header": "#AACCEE",
+    "control_background": "#F0F4F8",
+    "data_edge": "#117788",
+    "data_header": "#BBDDBB",
+    "data_background": "#ECF4F5",
+    "hbm_edge": "#AA3377",
+    "hbm_page": "#EEBBDD",
+    "hbm_background": "#FBF5F8",
+    "host_edge": "#997700",
+    "host_page": "#EEDD88",
+    "host_background": "#FCF8E7",
+    "parent": "#77AADD",
+    "child_1": "#44BB99",
+    "child_2": "#EE8866",
+    "donor": "#DDDDDD",
+    "other_workflow": "#BBBBBB",
+    "neutral_background": "#F5F5F5",
+    "neutral_edge": "#BBBBBB",
+    "execution_arrow": "#4477AA",
+    "control_arrow": "#117788",
+    "transfer_fill": "#EECC66",
+    "transfer_edge": "#997700",
+    "d2_workflow_a_edge": "#275A8A",
+    "d2_a_children": "#77AADD",
+    "d2_a_idle": "#E2EDF8",
+    "d2_workflow_b_edge": "#216C61",
+    "d2_b_children": "#69B9AD",
+    "d2_b_idle": "#E0F0EE",
+    "d2_hbm_edge": "#3D5261",
+    "d2_hbm_body": "#D6DBDE",
+    "d2_hbm_grid": "#9EA8B0",
+    "d2_host_edge": "#875335",
+    "d2_host_body": "#F1EAE7",
+    "d2_host_grid": "#CAB3A6",
+    "d2_dma_edge": "#80550C",
+    "d2_dma_body": "#F7F5F0",
+    "d2_copy_fill": "#EAB044",
+    "d2_copy_tail": "#F6DEB0",
+    "d2_trigger": "#365170"
+  },
+  "derived_backgrounds": {
+    "control_background": {"base": "#4477AA", "white_fraction": 0.92},
+    "data_background": {"base": "#117788", "white_fraction": 0.92},
+    "hbm_background": {"base": "#AA3377", "white_fraction": 0.95},
+    "host_background": {"base": "#EEDD88", "white_fraction": 0.80},
+    "neutral_background": {"base": "#BBBBBB", "white_fraction": 0.85},
+    "d2_a_idle": {"base": "#77AADD", "white_fraction": 0.79},
+    "d2_b_idle": {"base": "#69B9AD", "white_fraction": 0.79},
+    "d2_hbm_body": {"base": "#3D5261", "white_fraction": 0.79},
+    "d2_hbm_grid": {"base": "#3D5261", "white_fraction": 0.50},
+    "d2_host_body": {"base": "#875335", "white_fraction": 0.88},
+    "d2_host_grid": {"base": "#875335", "white_fraction": 0.56},
+    "d2_dma_body": {"base": "#80550C", "white_fraction": 0.94},
+    "d2_copy_tail": {"base": "#EAB044", "white_fraction": 0.58}
+  },
+  "d2_custom_accents": {
+    "d2_workflow_a_edge": "Deep blue for A's solid parent and its children's pattern marks",
+    "d2_workflow_b_edge": "Deep teal for B's solid parent and its children's pattern marks",
+    "d2_b_children": "Mid teal for all three B children",
+    "d2_hbm_edge": "Steel gray for the HBM stack",
+    "d2_host_edge": "Clay brown for the Host DIMM",
+    "d2_dma_edge": "Ochre for DMA and its copy outlines",
+    "d2_copy_fill": "Gold for in-flight KV copies and the pre-JOIN interval",
+    "d2_trigger": "Dark blue for runtime triggers and inset control"
+  },
+  "derivation": "For each RGB channel: round(base * (1 - white_fraction) + 255 * white_fraction). The tint recipes and custom accents are BeliefKV color choices. Exact Tol swatches are listed in exact_colors.",
+  "redundant_encoding": [
+    "Agent name and persistent page ID accompany owner color.",
+    "HBM/Host have direct tier labels and fixed positions.",
+    "Data transfers use broad curved ribbons; control uses thin notched arrows.",
+    "Allocator capacity uses a grey block arrow, never a KV transfer ribbon.",
+    "Missing pages are dashed; resident pages are solid.",
+    "Execution numbers are black circles on action paths."
+  ]
+}
