@@ -206,6 +206,14 @@ def arm_environment(
     ):
         raise ValueError("residency pause requires bounded reference Full continuation admission")
     residency_pause = residency_pause if mode == "full" else "0"
+    tool_start_offload = common.get("BELIEFKV_TOOL_START_OFFLOAD", "0")
+    if tool_start_offload not in ("0", "1") or (
+        mode == "full" and tool_start_offload == "1" and (
+            residency_pause != "1" or early_tool_offload != "1" or layer_handoff == "1"
+        )
+    ):
+        raise ValueError("tool-start offload requires Full demand-cost residency pause")
+    tool_start_offload = tool_start_offload if mode == "full" else "0"
     control_interval = common.get(
         "BELIEFKV_AGENT_CONTROL_INTERVAL_MS", common.get("AGENT_CONTROL_INTERVAL_MS", "5000"),
     )
@@ -418,6 +426,7 @@ def arm_environment(
         "BELIEFKV_ENABLE_PREDICTED_TOOL_OFFLOAD": tool_offload,
         "TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
         "BELIEFKV_TOOL_OFFLOAD_BEFORE_ADMISSION": early_tool_offload,
+        "BELIEFKV_TOOL_START_OFFLOAD": tool_start_offload,
         "DEMAND_PREFILL_PIPELINE": demand_pipeline,
         "BELIEFKV_DEMAND_PREFILL_PIPELINE": demand_pipeline,
         "LAYER_HANDOFF": layer_handoff,

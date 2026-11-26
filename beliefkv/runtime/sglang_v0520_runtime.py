@@ -1184,6 +1184,20 @@ class NativeAdmissionRuntime:
         ):
             raise ValueError("residency pause requires bounded reference Full continuation admission")
         self.agent_residency_pause = residency_pause == "1"
+        tool_start_offload = os.environ.get("BELIEFKV_TOOL_START_OFFLOAD", "0")
+        if tool_start_offload not in ("0", "1") or (
+            tool_start_offload == "1" and (
+                not self.agent_residency_pause or not self.tool_offload_before_admission
+                or self.layer_handoff_enabled
+            )
+        ):
+            raise ValueError("tool-start offload requires Full demand-cost residency pause")
+        self.tool_start_offload = tool_start_offload == "1"
+        self._tool_start_offload = None
+        if self.tool_start_offload:
+            from beliefkv.runtime.tool_start_offload import ToolStartOffload
+
+            self._tool_start_offload = ToolStartOffload(self, self._predicted_tool_offload)
         recall_selection = os.environ.get("BELIEFKV_AGENT_RECALL_SELECTION", "largest")
         if recall_selection not in ("largest", "cold_fit") or (
             recall_selection != "largest" and blocked_lending != "backed_demand_recall"
@@ -1349,6 +1363,8 @@ class NativeAdmissionRuntime:
             self.join_wait_hints[hint.join_id] = hint
 
     def close(self) -> None:
+        if (tool_start := getattr(self, "_tool_start_offload", None)) is not None:
+            tool_start.clear_allocation_offer()
         if (advice := getattr(self, "_planning_advice", None)) is not None:
             advice.close()
         if (pipeline := getattr(self, "_demand_prefill_pipeline", None)) is not None:
@@ -1628,6 +1644,8 @@ class NativeAdmissionRuntime:
             self._maintain_wait_predictions(time.monotonic() * 1000.)
         if self.enable_frontier_restore:
             self.dispatch_frontier_restore(waiting_queue, running_batch=running_batch)
+        if self._tool_start_offload is not None:
+            self._tool_start_offload.run(waiting_queue, running_batch=running_batch)
         if self._tool_ticket is not None or self._tool_inflight_tickets or (
             self.enable_tool_prefetch and self.tool_wait_hints
         ):
@@ -3117,6 +3135,10 @@ class NativeAdmissionRuntime:
                 ),
                 "predicted_tool_offload": self.enable_predicted_tool_offload,
                 "tool_offload_before_admission": self.tool_offload_before_admission,
+                "tool_start_offload": self.tool_start_offload,
+                "tool_start_nonblocking_allocations": getattr(
+                    self._native_cache, "_beliefkv_tool_start_nonblocking_allocations", None,
+                ),
                 "layer_handoff_enabled": self.layer_handoff_enabled,
                 "layer_handoff_free_extent": self.layer_handoff_free_extent,
                 "layer_handoff_d2h_layers": self.layer_handoff_d2h_layers,
@@ -5437,6 +5459,8 @@ class NativeAdmissionRuntime:
                     previous, hint, now_ms=time.monotonic() * 1000.,
                 )
         self.tool_wait_hints[key.context_id] = hint
+        if self._tool_start_offload is not None:
+            self._tool_start_offload.note_hint(hint)
         self._refresh_prefetch_service_leases(context_id=key.context_id)
         self.counts["tool_wait_accepted"] += 1
         if (
@@ -7217,11 +7241,19 @@ class NativeAdmissionRuntime:
         self, step: ShadowBackupStep, *, source: str = "tool_wait",
         _selection_candidate: ActionLocalShadowCandidate | None = None,
         _authorization: Callable[[], bool] | None = None,
+        _revalidate_steps: Callable[[], tuple[ShadowBackupStep, ...]] | None = None,
     ) -> tuple[tuple[ShadowBackupStep, str], ...]:
         """Reserve one FULL prefix burst; each extent retains its own ACK."""
         cache = self._native_cache
+        tool_start = source == "tool_start"
+        if tool_start and (
+            self._tool_start_offload is None or _authorization is None or _revalidate_steps is None
+        ):
+            return ()
         burst = getattr(cache, "prepare_host_session_nodes", None)
         if not callable(burst):
+            if tool_start:
+                return ()
             command = self.issue_shadow_backup_step(
                 step, source=source,
                 **({"_authorization": _authorization} if _authorization is not None else {}),
@@ -7242,7 +7274,10 @@ class NativeAdmissionRuntime:
             return ()
         # Only the first native attempt in this synchronous dispatch may reuse
         # its selection. Control delivery or an earlier attempt invalidates it.
-        if (
+        if tool_start:
+            steps = _revalidate_steps()
+            candidate = None
+        elif (
             type(deliveries) is tuple and not deliveries
             and isinstance(_selection_candidate, ActionLocalShadowCandidate)
             and _selection_candidate.anchors.key == step.key
@@ -7261,12 +7296,13 @@ class NativeAdmissionRuntime:
                     tail_leaves if self._resident_parent_prepare_supported(cache) else None
                 ),
             )
-        else:
+        elif not tool_start:
             steps = ()
         if not steps or steps[0] != step:
             self.counts["shadow_step_stale"] += 1
             return ()
-        commands = tuple(self._next_physical_command_id("shadow") for _ in steps)
+        command_kind = "tool-start" if tool_start else "shadow"
+        commands = tuple(self._next_physical_command_id(command_kind) for _ in steps)
         planned = dict(zip(commands, steps))
         registered = set()
 
@@ -7274,7 +7310,8 @@ class NativeAdmissionRuntime:
             command = getattr(operation, "beliefkv_command_id", None)
             planned_step = planned.get(command)
             if (
-                planned_step is None or not self._live_parent_pressure_key(step.key)
+                planned_step is None
+                or (not tool_start and not self._live_parent_pressure_key(step.key))
                 or _authorization is not None and not _authorization()
             ):
                 self.counts["shadow_causal_invalidated_before_enqueue"] += 1
@@ -12590,6 +12627,10 @@ class NativeAdmissionRuntime:
     ) -> NativePrefillPlan:
         if (paper := getattr(self, "_paper_baseline", None)) is not None:
             return paper.plan(native_order, running_batch=running_batch, adder=adder)
+        if self._tool_start_offload is not None:
+            self._tool_start_offload.run(
+                native_order, running_batch=running_batch, adder=adder,
+            )
         if self._subagent_materialization is not None:
             self._subagent_materialization.prepare(
                 native_order, running_batch=running_batch, adder=adder,
@@ -13810,6 +13851,8 @@ class NativeAdmissionRuntime:
             if native_service is not None:
                 native_service(batch, completed_ids or ())
             self._agent_admission.completed(batch, completed_ids or ())
+        if self._tool_start_offload is not None and completed_ids:
+            self._tool_start_offload.completed(completed_ids)
         if self._full_prefix_migration is not None:
             self._full_prefix_migration.completed(batch, completed_ids or ())
         return tuple(completed_ids) if completed_ids is not None else ()

@@ -13,12 +13,16 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from beliefkv.experiments.causal_replay_tokens import CapturedTokenCorpus
 from beliefkv.experiments.source_provenance import sha256_file
+from beliefkv.experiments.workflow_source_work import reconstruct_work
 from scripts.audit_free_dispatch_service import identity
 from scripts.audit_native_system_costs import distribution
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 from scripts.audit_tool_reentry_service import tool_reentries
+from scripts.run_causal_gpu_replay import source_plan
 from scripts.train_workflow_work import write
+from scripts.verify_measured_execution import review_matches_execution, verify_execution
 
 
 def next_stage(stream, request_id, work, rounds, join_ready, coefficient, long_tool_ms):
@@ -95,21 +99,45 @@ def matching_choice(choices, replacement):
     return eligible[0] if eligible else None
 
 
-def inspect(registration, cohort_path, prior_path, *, long_tool_ms):
-    plan = json.loads(registration.read_bytes())
-    cohort = json.loads(cohort_path.read_bytes())
-    previous = json.loads(prior_path.read_bytes())
-    for filename, digest in previous["inputs_sha256"].items():
-        if sha256_file(Path(filename)) != digest:
-            raise ValueError("prior completed window evidence changed")
+def work_inventory(plan, registration, cohort_path, execution_review):
     artifact_path = Path(plan["reference_environment"]["WORKFLOW_WORK_MODEL"])
     artifact = json.loads(artifact_path.read_bytes())
     if sha256_file(artifact_path) != plan["reference_environment"]["WORKFLOW_WORK_MODEL_SHA256"]:
         raise ValueError("frozen work inventory differs from the control declaration")
     if artifact["remaining_work_ranking_enabled"] is not False:
         raise ValueError("use the retained non-ranking control only")
-    work = artifact["requests"]
-    coefficient = artifact["model_seconds_per_work_token"]
+    if execution_review is None:
+        return artifact["requests"], artifact["model_seconds_per_work_token"], (artifact_path,)
+
+    # Ranking-disabled controls may retain a predictor without a source request inventory.
+    review = json.loads(execution_review.read_bytes())
+    proof = verify_execution(registration, cohort_path)
+    review_matches_execution(review, proof)
+    if review["analysis_arm"] != "full" or plan["order"] != ["full"]:
+        raise ValueError("calibration must describe the completed Full execution")
+    calibration = review["model_cost_calibration"]
+    if calibration["prefill_equivalent_weight"] != .01:
+        raise ValueError("calibration uses a different work unit")
+    source = Path(plan["source_arm"])
+    compiled, expected, evidence = source_plan(source)
+    token_path = source / "server/request_tokens.jsonl"
+    if sha256_file(token_path) != plan["token_source_sha256"]:
+        raise ValueError("source inventory changed from the registered tokens")
+    with CapturedTokenCorpus(token_path, expected) as corpus:
+        work, _ = reconstruct_work(compiled, corpus)
+    paths = (artifact_path, execution_review, Path(proof["certificate"]),
+             token_path, source / "expected.json", ROOT / "beliefkv/experiments/workflow_source_work.py")
+    return work, calibration["model_seconds_per_work_token"], paths
+
+
+def inspect(registration, cohort_path, prior_path, *, long_tool_ms, execution_review=None):
+    plan = json.loads(registration.read_bytes())
+    cohort = json.loads(cohort_path.read_bytes())
+    previous = json.loads(prior_path.read_bytes())
+    for filename, digest in previous["inputs_sha256"].items():
+        if sha256_file(Path(filename)) != digest:
+            raise ValueError("prior completed window evidence changed")
+    work, coefficient, work_sources = work_inventory(plan, registration, cohort_path, execution_review)
     arm, reader = Path(plan["run_root"]) / "full", SealedRecords()
     measured = set(cohort["measured_workflow_ids"])
     events = list(reader(arm / "replay/runtime_events.replay.jsonl"))
@@ -320,7 +348,7 @@ def inspect(registration, cohort_path, prior_path, *, long_tool_ms):
         },
         "inputs_sha256": {
             str(path.resolve()): sha256_file(path) for path in (
-                registration, cohort_path, prior_path, artifact_path, Path(__file__),
+                registration, cohort_path, prior_path, *work_sources, Path(__file__),
                 ROOT / "scripts/audit_tool_reentry_service.py",
                 ROOT / "scripts/audit_free_dispatch_service.py",
                 ROOT / "scripts/audit_sealed_wait_prefetch.py",
@@ -345,6 +373,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("registration", "cohort", "prior", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--execution-review", type=Path,
+                        help="use completed Full calibration and reconstruct work from its source trace")
     parser.add_argument("--long-tool-ms", type=float, default=2000.)
     args = parser.parse_args()
     if (
@@ -353,7 +383,8 @@ def main():
         or os.getpriority(os.PRIO_PROCESS, 0) != 19
     ):
         parser.error("preserve evidence and use bounded nice19 CPU-only analysis")
-    result = inspect(args.registration, args.cohort, args.prior, long_tool_ms=args.long_tool_ms)
+    result = inspect(args.registration, args.cohort, args.prior, long_tool_ms=args.long_tool_ms,
+                     execution_review=args.execution_review)
     write(args.output, result)
     print(json.dumps({key: result[key] for key in (
         "counts", "stage_boundary_counts", "phase_fit_switch_scope", "consumer_phase_cost_proxy_ms",

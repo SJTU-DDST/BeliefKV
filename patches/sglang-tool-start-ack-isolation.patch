@@ -1,0 +1,176 @@
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index f5986f6a7b3125ad0b2b28dec917f668f8af6ba3..020e11018b1394cd923476197299225a426793a4 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -307,6 +307,9 @@ class UnifiedRadixCache(BasePrefixCache):
+ 
+         # HiCache D↔H defaults (overridden by init_hicache)
+         self.cache_controller: Optional[HybridCacheController] = None
++        self._beliefkv_tool_start_nonblocking_allocations = 0
++        # Scheduler policy may demote settled FULL leaves inside an allocation.
++        self._beliefkv_tool_start_settled_shortfall: Optional[Callable[[int], None]] = None
+         # Optional observer of native cache-mode D2H/H2D ACK commits.
+         # Observers must not mutate the cache or initiate transfers.
+         self.on_hicache_transfer_commit: Optional[
+@@ -773,6 +776,75 @@ class UnifiedRadixCache(BasePrefixCache):
+             return self.req_to_token_pool.mamba_allocator.schedulable_available_size()
+         raise ValueError(f"Unsupported cache component: {component_type}")
+ 
++    def _beliefkv_tool_start_full_alloc_target(
++        self, available_size_targets: dict[ComponentType, tuple[ComponentType, int]]
++    ) -> Optional[int]:
++        target = available_size_targets.get(ComponentType.FULL)
++        if (
++            self.tree_components != (ComponentType.FULL,)
++            or len(available_size_targets) != 1
++            or target is None
++            or target[0] != ComponentType.FULL
++            or self.host_memory_mode != "cache"
++            or self.buffer_pipeline is not None
++            or self.enable_storage
++            or self.linker is not None
++            or self.tp_world_size != 1
++            or self.pp_size != 1
++            or (
++                torch.distributed.is_initialized()
++                and torch.distributed.get_world_size() != 1
++            )
++        ):
++            return None
++        return target[1]
++
++    def _can_defer_tool_start_acks(
++        self, available_size_targets: dict[ComponentType, tuple[ComponentType, int]]
++    ) -> bool:
++        """Leave submitted ToolStart writes for the regular HiCache poll."""
++        pending = self.ongoing_write_through
++        if not pending or self.cache_controller.write_queue:
++            return False
++        target = self._beliefkv_tool_start_full_alloc_target(available_size_targets)
++        if (
++            target is None
++            or self._component_available_size(ComponentType.FULL) < target
++        ):
++            return False
++
++        seen: set[NodeId] = set()
++        for ack in self.cache_controller.ack_write_queue:
++            receipts = getattr(ack, "child_receipts", ())
++            if not receipts or len(receipts) != len(ack.node_ids):
++                return False
++            for node_id, receipt in zip(ack.node_ids, receipts):
++                write = pending.get(node_id)
++                command = getattr(receipt, "command_id", None)
++                if (
++                    node_id in seen
++                    or write is None
++                    or write.node_id != node_id
++                    or write.lock_params is None
++                    or getattr(receipt, "node_id", None) != node_id
++                    or type(command) is not str
++                    or not command.startswith("beliefkv-tool-start-")
++                ):
++                    return False
++                try:
++                    node = self.tree_core.node_by_id(node_id)
++                except (KeyError, RuntimeError, ValueError):
++                    return False
++                full = node.component_data[ComponentType.FULL]
++                if (
++                    node.write_through_pending_id != node_id
++                    or full.value is None
++                    or full.lock_ref <= 0
++                ):
++                    return False
++                seen.add(node_id)
++        return len(seen) == len(pending)
++
+     def _evict(
+         self,
+         params: EvictParams,
+@@ -796,17 +868,23 @@ class UnifiedRadixCache(BasePrefixCache):
+             self.cache_controller is not None
+             and self.cache_controller.write_policy == "write_back"
+         ):
+-            self.writing_check(write_back=True)
+             if (
+-                getattr(self, "_beliefkv_incremental_full_enabled", False) is True
+-                and any(tracker[ct] < request_by_type[ct] for ct in self.tree_components)
++                available_size_targets is not None
++                and self._can_defer_tool_start_acks(available_size_targets)
+             ):
+-                # PREPARE ACKs can unlock cold leaves after the first walk.
+-                self._evict_components(
+-                    request_by_type,
+-                    tracker,
+-                    available_size_targets=available_size_targets,
+-                )
++                self._beliefkv_tool_start_nonblocking_allocations += 1
++            else:
++                self.writing_check(write_back=True)
++                if (
++                    getattr(self, "_beliefkv_incremental_full_enabled", False) is True
++                    and any(tracker[ct] < request_by_type[ct] for ct in self.tree_components)
++                ):
++                    # PREPARE ACKs can unlock cold leaves after the first walk.
++                    self._evict_components(
++                        request_by_type,
++                        tracker,
++                        available_size_targets=available_size_targets,
++                    )
+ 
+         # Report full-layer tokens only
+         self.update_eviction_metrics(tracker[BASE_COMPONENT_TYPE], start_time)
+@@ -2370,12 +2448,19 @@ class UnifiedRadixCache(BasePrefixCache):
+                 continue
+             if ct == ComponentType.MAMBA:
+                 self._preserve_mamba_reentry_candidates(request_cnt - tracker[ct])
++            revisit_after_offer = False
+             self.tree_core.evict_device_start(ct, request_cnt)
+             try:
+                 while True:
+                     node_id, made_progress = self._evict_device_next_node(ct, tracker)
+                     if node_id is None:
+                         if not made_progress:
++                            if revisit_after_offer and not target_reached(ct):
++                                # The partial offer may have exposed a new leaf.
++                                self.tree_core.evict_device_end(ct)
++                                self.tree_core.evict_device_start(ct, request_cnt)
++                                revisit_after_offer = False
++                                continue
+                             break
+                     else:
+                         # A FULL allocation does not need independent state freed.
+@@ -2390,6 +2475,32 @@ class UnifiedRadixCache(BasePrefixCache):
+                         else:
+                             backup_kv = self._evict_device_leaf(node_id, tracker)
+                     if node_id is not None and backup_kv is not None:
++                        settled_shortfall = getattr(
++                            self, "_beliefkv_tool_start_settled_shortfall", None
++                        )
++                        tool_target = None
++                        if (
++                            callable(settled_shortfall)
++                            and ct == ComponentType.FULL
++                            and available_size_targets is not None
++                            and self.is_write_back
++                            and self.cache_controller is not None
++                            and self.cache_controller.write_policy == "write_back"
++                        ):
++                            tool_target = self._beliefkv_tool_start_full_alloc_target(
++                                available_size_targets
++                            )
++                        if tool_target is not None:
++                            before = self._component_available_size(ct)
++                            if before >= tool_target:
++                                break
++                            settled_shortfall(tool_target - before)
++                            after = self._component_available_size(ct)
++                            released = max(0, after - before)
++                            tracker[ct] += released
++                            if after >= tool_target:
++                                break
++                            revisit_after_offer |= released > 0
+                         if (
+                             ct == BASE_COMPONENT_TYPE
+                             and getattr(self, "write_back_batch_nodes", 1) > 1
