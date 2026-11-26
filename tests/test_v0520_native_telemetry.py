@@ -619,6 +619,18 @@ def test_admission_observation_has_distinct_provenance(tmp_path: Path) -> None:
     assert ready["collection_mode"] == "admission_observation"
 
 
+def test_decode_turnover_probe_is_configured_by_native_telemetry(tmp_path, monkeypatch):
+    monkeypatch.setenv("BELIEFKV_DECODE_TURNOVER_PROBE", "1")
+    audit = NativeReactiveTelemetry(tmp_path / "decode")
+    try:
+        assert audit.prefill_turnover_probe.observe_decode
+    finally:
+        audit.close()
+    monkeypatch.setenv("BELIEFKV_DECODE_TURNOVER_PROBE", "unknown")
+    with pytest.raises(ValueError, match="BELIEFKV_DECODE_TURNOVER_PROBE"):
+        NativeReactiveTelemetry(tmp_path / "invalid")
+
+
 def test_targeted_pair_first_crossing_has_decode_ordinal(tmp_path: Path) -> None:
     audit = NativeReactiveTelemetry(tmp_path / "pair")
     emitted: list[dict] = []

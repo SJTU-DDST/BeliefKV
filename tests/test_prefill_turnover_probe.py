@@ -11,7 +11,7 @@ from beliefkv.runtime.prefill_turnover_probe import PrefillTurnoverProbe
 def batch(*, extend=True, forward=0, request="r"):
     return NS(
         reqs=[NS(rid=request)],
-        forward_mode=NS(is_extend=lambda: extend),
+        forward_mode=NS(is_extend=lambda: extend, is_decode=lambda: not extend),
         forward_iter=forward, launch_ts=0.,
         extend_num_tokens=80, prefix_lens=[256],
     )
@@ -128,6 +128,50 @@ def test_next_decode_cannot_overwrite_a_pending_prefill_forward():
     probe.on_processed(result, NS(can_run_cuda_graph=True))
     assert len(records) == 1
     assert records[0][1]["gpu_run_batch_span_ms"] is None
+
+
+def test_decode_transition_sampling_is_opt_in():
+    probe = PrefillTurnoverProbe(lambda *_: pytest.fail("unexpected decode observation"), every=1)
+    assert launch(probe, batch(extend=False), forward=1, device=Device()) is None
+    assert not probe.snapshot()["counts"].get("eligible_decodes")
+
+
+@pytest.mark.parametrize("change", [None, "request", "stream", "forward"])
+def test_decode_device_gap_requires_exact_same_stream_successor(change):
+    records = []
+    probe = PrefillTurnoverProbe(lambda _stream, row: records.append(row), every=2, observe_decode=True)
+    device, stream = Device(), object()
+    first = batch(extend=False)
+    probe.on_selected(first, probe.begin_selection(), loop="overlap")
+    handle = probe.begin_forward(first, device, stream)
+    first.forward_iter = 10
+    probe.on_launch(first)
+    probe.end_forward(handle)
+
+    successor = batch(extend=False, request="other" if change == "request" else "r")
+    probe.on_selected(successor, probe.begin_selection(), loop="overlap")
+    assert probe.begin_forward(successor, device, object() if change == "stream" else stream) is None
+    successor.forward_iter = 12 if change == "forward" else 11
+    probe.on_launch(successor)
+    probe.on_processed(probe.begin_phase(first, "result_processing"), NS())
+    assert not records
+    device.ready = True
+    if change is None:
+        successor_event = handle[0].successor_gpu_start
+        ready = successor_event.query
+        successor_event.query = lambda: False
+        probe.poll()
+        assert not records
+        successor_event.query = ready
+    probe.poll()
+
+    [row] = records
+    assert row["event"] == "decode_turnover_sample"
+    assert row["adjacent_transition"]["forward_stream_successor_gap_ms"] == (
+        12.5 if change is None else None
+    )
+    assert probe.counts["completed_samples"] == 0
+    assert probe.counts["completed_decode_samples"] == 1
 
 
 def test_changed_request_identity_does_not_authorize_phase_pairing():

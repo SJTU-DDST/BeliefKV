@@ -100,16 +100,19 @@ class _Sample:
     adjacent_metadata: dict = field(default_factory=dict)
     successor_batch_id: int | None = None
     successor_observed: tuple[int, int] | None = None
+    decode: bool = False
+    successor_gpu_start: object | None = None
 
 
 class PrefillTurnoverProbe:
-    """Keep one in 16 prefills, with no request/tensor ownership or synchronization."""
+    """Sample prefill timing and opt-in decode transitions without synchronization."""
 
-    def __init__(self, emit, *, every: int = 16, limit: int = 32) -> None:
+    def __init__(self, emit, *, every: int = 16, limit: int = 32, observe_decode: bool = False) -> None:
         if every < 1 or limit < 1:
             raise ValueError("positive sampling interval and queue bound required")
         self.emit = emit
         self.every, self.limit = every, limit
+        self.observe_decode = observe_decode
         self.counts: Counter = Counter()
         self._selected: _Sample | None = None
         self._samples: dict[int, _Sample] = {}
@@ -138,10 +141,14 @@ class PrefillTurnoverProbe:
         if self._selected is not None:
             self.counts["selected_without_launch"] += 1
             self._selected = None
-        if batch is None or not batch.forward_mode.is_extend():
+        if batch is None:
             return
-        self.counts["eligible_prefills"] += 1
-        if (self.counts["eligible_prefills"] - 1) % self.every:
+        decode = not batch.forward_mode.is_extend()
+        if decode and not (self.observe_decode and loop == "overlap" and batch.forward_mode.is_decode()):
+            return
+        eligibility = "eligible_decodes" if decode else "eligible_prefills"
+        self.counts[eligibility] += 1
+        if (self.counts[eligibility] - 1) % self.every:
             return
         if len(self._samples) >= self.limit:
             self.counts["bounded_queue_skips"] += 1
@@ -158,8 +165,8 @@ class PrefillTurnoverProbe:
             ),
             "loop": loop,
             "sampling_interval": self.every,
-        }, {"selection": (started, ended)})
-        self.counts["selected_samples"] += 1
+        }, {"selection": (started, ended)}, decode=decode)
+        self.counts["selected_decode_samples" if decode else "selected_samples"] += 1
 
     def on_launch(self, batch) -> None:
         if self._adjacent is not None:
@@ -171,7 +178,7 @@ class PrefillTurnoverProbe:
         if (
             sample.batch_id != id(batch)
             or sample.metadata["request_ids"] != tuple(req.rid for req in batch.reqs)
-            or not batch.forward_mode.is_extend()
+            or not (batch.forward_mode.is_decode() if sample.decode else batch.forward_mode.is_extend())
             or type(batch.forward_iter) is not int
             or batch.forward_iter in self._samples
         ):
@@ -193,6 +200,7 @@ class PrefillTurnoverProbe:
             or batch.forward_iter != sample.metadata["forward_iter"] + 1
             or sample.adjacent_metadata["successor_request_ids"] != tuple(req.rid for req in batch.reqs)
         ):
+            sample.successor_gpu_start = None
             sample.adjacent_metadata["successor_status"] = "identity_or_order_unknown"
             self.counts["adjacent_successor_unknown"] += 1
             return
@@ -251,6 +259,8 @@ class PrefillTurnoverProbe:
                 handle[3].adjacent_phases["predecessor_result_processing"] = span
 
     def begin_forward(self, batch, device, stream):
+        if self.observe_decode:
+            self._record_successor_gpu_start(batch, device, stream)
         if self._selected is None or self._selected.batch_id != id(batch):
             return None
         handle = self.begin_phase(batch, "run_batch")
@@ -278,6 +288,25 @@ class PrefillTurnoverProbe:
             sample.gpu_status = "unavailable"
             self.counts["gpu_event_unavailable"] += 1
         return handle
+
+    def _record_successor_gpu_start(self, batch, device, stream) -> None:
+        sample = self._adjacent
+        if (
+            sample is None or not sample.decode or sample.gpu_events is None
+            or stream is None or stream is not sample.gpu_events[2] or device is None
+            or sample.adjacent_metadata.get("successor_status") != "selected"
+            or sample.successor_batch_id != id(batch) or not batch.forward_mode.is_decode()
+            or sample.metadata["request_ids"] != sample.adjacent_metadata["successor_request_ids"]
+        ):
+            return
+        try:
+            if device.is_current_stream_capturing():
+                return
+            event = device.Event(enable_timing=True)
+            event.record(stream=stream)
+            sample.successor_gpu_start = event
+        except (AttributeError, TypeError, ValueError, RuntimeError):
+            self.counts["decode_successor_gpu_event_unavailable"] += 1
 
     def end_forward(self, handle) -> None:
         if handle is None:
@@ -313,9 +342,13 @@ class PrefillTurnoverProbe:
         sample.metadata["cuda_graph_replayed"] = getattr(result, "can_run_cuda_graph", None)
         self.poll()
 
-    def _record(self, sample: _Sample, gpu_ms: float | None, *, complete: bool) -> None:
+    def _record(
+        self, sample: _Sample, gpu_ms: float | None, *, complete: bool,
+        successor_gap_ms: float | None = None,
+    ) -> None:
         phases = _phase_records(sample.phases)
         run, result = phases.get("run_batch"), phases.get("result_processing")
+        phase = "decode" if sample.decode else "prefill"
         transition = {
             **sample.adjacent_metadata,
             "phases": _phase_records(sample.adjacent_phases),
@@ -329,7 +362,7 @@ class PrefillTurnoverProbe:
             ),
             "attribution": _adjacent_attribution(sample),
             "boundary_semantics": (
-                "Sampled prefill run_batch return to the exact successor's "
+                f"Sampled {phase} run_batch return to the exact successor's "
                 "launch-telemetry observer, not CUDA launch. Predecessor result "
                 "processing and successor selection retain their own identities. "
                 "Absolute thread CPU endpoints belong only to this scheduler thread. "
@@ -338,8 +371,11 @@ class PrefillTurnoverProbe:
                 "Wall minus thread CPU does not identify GPU idle or GIL interference."
             ),
         }
+        state = "sample" if complete else "incomplete"
+        if sample.decode:
+            transition["forward_stream_successor_gap_ms"] = successor_gap_ms
         self.emit("audit", {
-            "event": "prefill_turnover_sample" if complete else "prefill_turnover_incomplete",
+            "event": f"{phase}_turnover_{state}",
             "ts_ms": time.time() * 1000.,
             **sample.metadata, "phases": phases,
             "adjacent_transition": transition,
@@ -385,15 +421,28 @@ class PrefillTurnoverProbe:
                 except (AttributeError, TypeError, ValueError, RuntimeError):
                     sample.gpu_status = "unavailable"
                     self.counts["gpu_event_unavailable"] += 1
-            self._record(sample, gpu_ms, complete=True)
+            successor_gap_ms = None
+            successor = sample.successor_gpu_start
+            if gpu_ms is not None and successor is not None:
+                try:
+                    if not successor.query():
+                        continue
+                    gap = float(finish.elapsed_time(successor))
+                    if math.isfinite(gap) and gap >= 0.:
+                        successor_gap_ms = gap
+                except (AttributeError, TypeError, ValueError, RuntimeError):
+                    self.counts["decode_successor_gpu_event_unavailable"] += 1
+            self._record(sample, gpu_ms, complete=True, successor_gap_ms=successor_gap_ms)
             del self._samples[forward]
-            self.counts["completed_samples"] += 1
+            self.counts["completed_decode_samples" if sample.decode else "completed_samples"] += 1
 
     def close(self) -> None:
         self.poll()
         for sample in self._samples.values():
             self._record(sample, None, complete=False)
-        self.counts["shutdown_incomplete_samples"] += len(self._samples)
+            name = "shutdown_incomplete_decode_samples" if sample.decode else "shutdown_incomplete_samples"
+            self.counts[name] += 1
+        self.counts.setdefault("shutdown_incomplete_samples", 0)
         self._samples.clear()
         self._adjacent = None
         if self._selected is not None:

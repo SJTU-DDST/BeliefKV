@@ -69,6 +69,9 @@ class NativeReactiveTelemetry:
         if prefix_diagnostics not in ("0", "1"):
             raise ValueError("BELIEFKV_PREFETCH_PREFIX_DIAGNOSTICS must be 0 or 1")
         self._prefetch_prefix_diagnostics = prefix_diagnostics == "1"
+        decode_turnover = os.environ.get("BELIEFKV_DECODE_TURNOVER_PROBE", "0")
+        if decode_turnover not in ("0", "1"):
+            raise ValueError("BELIEFKV_DECODE_TURNOVER_PROBE must be 0 or 1")
         self.collection_mode = collection_mode
         self.directory = Path(directory).resolve()
         self.scheduler_path = (
@@ -166,7 +169,9 @@ class NativeReactiveTelemetry:
         self._native_session_close_reclaim_stats: dict[str, Any] | None = None
         self._cache: object | None = None
         self._restore_wait_probe = RestoreWaitProbe()
-        self.prefill_turnover_probe = PrefillTurnoverProbe(self._emit)
+        self.prefill_turnover_probe = PrefillTurnoverProbe(
+            self._emit, observe_decode=decode_turnover == "1",
+        )
         self._restore_wait_device: object | None = None
         self._error: str | None = None
         self._closed = False
