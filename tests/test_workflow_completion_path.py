@@ -164,17 +164,87 @@ def test_worker_uses_receipt_clock_and_refreshes_elapsed_wait_without_new_events
         worker.process_pending()
         assert worker.prediction("wf").remaining_path_s == pytest.approx(20.)
         assert worker.counts["inferences"] == 2
-        worker.submit("wf", "event", event(
+        clock[0] = 106.2
+        returned = event(
             Kind.TOOL_END, invocation_id="root", attributes={"tool_call_id": "a"},
-        ))
+        )
+        worker.submit("wf", "event", returned)
+        worker.submit("wf", "event", returned)
         assert worker.prediction("wf") is None
-        clock[0] = 108.
+        clock[0] = 106.4
         worker.process_pending()
-        assert worker._tool_clocks["wf"].completed_seconds == 6.
+        assert isinstance(worker.prediction("wf"), CompletionPathPrediction)
+        assert worker.counts["inferences"] == 3
+        assert worker.counts["tool_return_expedited_refreshes"] == 1
+        assert worker._tool_clocks["wf"].completed_seconds == pytest.approx(6.2)
         assert "wf" not in worker._dirty
+        another = event(
+            Kind.TOOL_START, invocation_id="root", attributes={"tool_call_id": "b"},
+        )
+        clock[0] = 106.5
+        worker.submit("wf", "event", another)
+        worker.submit("wf", "event", replace(another, kind=Kind.TOOL_END))
+        worker.submit("wf", "event", returned)
+        clock[0] = 106.8
+        worker.process_pending()
+        assert worker._tool_clocks["wf"].completed_count == 2
+        assert worker.counts["inferences"] == 3
+        assert worker.counts["tool_return_expedited_refreshes"] == 1
+        clock[0] = 107.
+        worker.process_pending()
+        assert isinstance(worker.prediction("wf"), CompletionPathPrediction)
+        assert worker.counts["inferences"] == 4
         worker.submit("wf", "event", event(Kind.WORKFLOW_END))
         worker.process_pending()
         assert "wf" not in worker._tool_clocks and worker.prediction("wf") is None
+    finally:
+        worker.close()
+
+
+def test_rejected_tool_return_forecast_does_not_move_normal_refresh(monkeypatch):
+    from beliefkv.runtime import workflow_work_worker as module
+
+    clock = [100.]
+    monkeypatch.setattr(module.time, "monotonic", lambda: clock[0])
+    model = path_model()
+    worker = WorkflowWorkWorker("", "", model=model, autostart=False)
+    tool = event(
+        Kind.TOOL_START, invocation_id="root", attributes={"tool_call_id": "a"},
+    )
+    try:
+        for value in (start(), root(), tool):
+            worker.submit("wf", "event", value)
+        worker.process_pending()
+        due = worker._next_inference["wf"]
+        assert due == 101.
+        clock[0] = 100.2
+        worker.submit("wf", "event", replace(tool, kind=Kind.TOOL_END))
+        predict = model.predict
+
+        def predict_with_new_tool(*args, **kwargs):
+            result = predict(*args, **kwargs)
+            worker.submit("wf", "event", replace(tool, attributes={"tool_call_id": "b"}))
+            return result
+
+        monkeypatch.setattr(model, "predict", predict_with_new_tool)
+        worker.process_pending()
+        assert worker.prediction("wf") is None
+        assert worker.counts["inferences"] == 2
+        assert worker.counts["tool_return_expedited_refreshes"] == 0
+        assert worker._next_inference["wf"] == due
+
+        monkeypatch.setattr(model, "predict", predict)
+        clock[0] = 100.4
+        worker.submit("wf", "event", replace(
+            tool, kind=Kind.TOOL_END, attributes={"tool_call_id": "b"},
+        ))
+        worker.process_pending()
+        assert worker.prediction("wf") is None
+        assert worker.counts["inferences"] == 2
+        clock[0] = due
+        worker.process_pending()
+        assert isinstance(worker.prediction("wf"), CompletionPathPrediction)
+        assert worker.prediction("wf").structural_revision == 5
     finally:
         worker.close()
 

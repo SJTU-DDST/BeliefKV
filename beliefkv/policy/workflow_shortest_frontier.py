@@ -1,5 +1,6 @@
 """CPU candidate: retain a shortest feasible frontier before bounded JOIN packing."""
 
+from dataclasses import replace
 import math
 import time
 
@@ -95,8 +96,8 @@ def choose_shortest_work_first(
         result["reference_evaluation"] = baseline
         if strict_remaining_work:
             result["reference_metadata_complete"] = complete_reference
-        selected = [by_id[owner] for owner in required]
-        if selected and _evaluate(selected, resources, costs) is None:
+        forced = [by_id[owner] for owner in required]
+        if forced and _evaluate(forced, resources, costs) is None:
             result["reason"] = "required_JOIN_resource_fallback"
             return result
         ordered = sorted(
@@ -109,32 +110,35 @@ def choose_shortest_work_first(
 
         for row in ordered:
             groups.setdefault(group_key(row), []).append(row)
-        seen = set(required)
-        for row in ordered:
-            peers = [
-                peer for peer in groups[group_key(row)] if peer.identity not in seen
-            ]
-            if not peers:
-                continue
-            if group_ready_siblings and len(peers) > 1:
-                if expired():
-                    result["reason"] = "shortest_work_soft_deadline_reference_fallback"
-                    return result
-                if _evaluate([*selected, *peers], resources, costs) is not None:
-                    selected.extend(peers)
-                    seen.update(peer.identity for peer in peers)
-                    result["evaluated_candidates"] += len(peers)
+
+        def pack(limits):
+            selected = list(forced)
+            seen = set(required)
+            for row in ordered:
+                peers = [peer for peer in groups[group_key(row)] if peer.identity not in seen]
+                if not peers:
                     continue
-            for peer in peers:
-                if peer.identity in seen:
-                    continue
-                if expired():
-                    result["reason"] = "shortest_work_soft_deadline_reference_fallback"
-                    return result
-                seen.add(peer.identity)
-                result["evaluated_candidates"] += 1
-                if _evaluate([*selected, peer], resources, costs) is not None:
-                    selected.append(peer)
+                if group_ready_siblings and len(peers) > 1:
+                    if expired():
+                        return None
+                    if _evaluate([*selected, *peers], limits, costs) is not None:
+                        selected.extend(peers)
+                        seen.update(peer.identity for peer in peers)
+                        result["evaluated_candidates"] += len(peers)
+                        continue
+                for peer in peers:
+                    if expired():
+                        return None
+                    seen.add(peer.identity)
+                    result["evaluated_candidates"] += 1
+                    if _evaluate([*selected, peer], limits, costs) is not None:
+                        selected.append(peer)
+            return selected
+
+        selected = pack(resources)
+        if selected is None:
+            result["reason"] = "shortest_work_soft_deadline_reference_fallback"
+            return result
         evaluated = _evaluate(selected, resources, costs)
         if evaluated is None:
             result["reason"] = "no_feasible_shortest_work_reference_fallback"
@@ -148,6 +152,37 @@ def choose_shortest_work_first(
                 and evaluated.get("current_device_summary_fits") is False
             ):
                 reason = "shortest_work_reference_immediate_fit_preserved"
+            elif reference and baseline is None and evaluated.get("current_device_summary_fits") is False:
+                reason = "shortest_work_reference_fit_unobserved"
+            elif (
+                baseline is not None and baseline.get("current_device_summary_fits") is False
+                and evaluated.get("current_device_summary_fits") is False
+                and evaluated["required_device_tokens"] > baseline["required_device_tokens"]
+            ):
+                reason = "shortest_work_reference_device_deficit_preserved"
+            if reason and baseline is not None and resources.device_capacity_tokens is not None:
+                # A shorter group may fit under the incumbent's service budget
+                # even when the original pool-sized greedy choice does not.
+                ceiling = max(
+                    resources.device_tokens + resources.cold_device_tokens,
+                    baseline["required_device_tokens"],
+                )
+                if ceiling < resources.device_capacity_tokens:
+                    retry = pack(replace(resources, device_capacity_tokens=ceiling))
+                    if retry is None or expired():
+                        result["reason"] = "shortest_work_soft_deadline_reference_fallback"
+                        return result
+                    if len(retry) >= len(reference):
+                        retry_order = sorted((row.weight for row in retry), reverse=True)
+                        reference_order = sorted((by_id[owner].weight for owner in reference), reverse=True)
+                        if retry_order > reference_order:
+                            selected = retry
+                            evaluated = _evaluate(selected, resources, costs)
+                            result.update(
+                                service_capacity_retry=reason,
+                                service_capacity_retry_device_tokens=ceiling,
+                            )
+                            reason = None
             if reason:
                 result.update(
                     reason=reason, selected_evaluation=baseline, search_complete=True,

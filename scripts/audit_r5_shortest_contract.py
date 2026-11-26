@@ -2,6 +2,7 @@
 
 import argparse
 from collections import Counter, defaultdict
+from dataclasses import replace
 import json
 import math
 import os
@@ -47,6 +48,10 @@ def inspect_choice(row, costs):
     if row["resources"] is None or not result["metadata_complete"]:
         return result
     resources = CombinationResources(**row["resources"])
+    retry_ceiling = decision.get("service_capacity_retry_device_tokens")
+    limits = resources if retry_ceiling is None else replace(
+        resources, device_capacity_tokens=retry_ceiling,
+    )
     for shorter in rows:
         if shorter.identity in selected:
             continue
@@ -55,7 +60,7 @@ def inspect_choice(row, costs):
                 peer.identity in required or peer.weight >= shorter.weight
             )
         ]
-        if _evaluate([*earlier, shorter], resources, costs) is None:
+        if _evaluate([*earlier, shorter], limits, costs) is None:
             continue
         for longer in rows:
             if (
@@ -87,7 +92,7 @@ def inspect_choice(row, costs):
             and (peer.workflow, peer.group) != (workflow, group)
             and (peer.identity in required or group_order[peer.workflow, peer.group] < position)
         ]
-        if _evaluate([*anchors, *peers], resources, costs) is not None:
+        if _evaluate([*anchors, *peers], limits, costs) is not None:
             result["feasible_incomplete_sibling_groups"].append({
                 "workflow": workflow, "group": group, "omitted": omitted,
                 "ready_members_in_window": len(peers),

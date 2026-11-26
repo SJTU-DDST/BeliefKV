@@ -77,6 +77,7 @@ class WorkflowWorkWorker:
         self._projection_texts = {}
         self._task_coverage = {}
         self._next_inference = {}
+        self._early_tool_refresh_used = set()
         self._structural_submitted = Counter()
         self._structural_consumed = Counter()
         self._dirty = set()
@@ -169,6 +170,7 @@ class WorkflowWorkWorker:
         return 1 if prediction is None else prediction.bucket
 
     def _consume(self, rows):
+        tool_returns = set()
         for workflow, action, args, observed_at in rows:
             if action == "event" and args[0].kind is Kind.WORKFLOW_END:
                 self._progress.pop(workflow, None)
@@ -177,6 +179,7 @@ class WorkflowWorkWorker:
                 self._projection_texts.pop(workflow, None)
                 self._task_coverage.pop(workflow, None)
                 self._next_inference.pop(workflow, None)
+                self._early_tool_refresh_used.discard(workflow)
                 self._structural_submitted.pop(workflow, None)
                 self._structural_consumed.pop(workflow, None)
                 self._revisions.pop(workflow, None)
@@ -198,8 +201,11 @@ class WorkflowWorkWorker:
             progress = self._progress[workflow]
             if action == "event":
                 progress.event(args[0])
-                if workflow in self._tool_clocks:
-                    self._tool_clocks[workflow].event(args[0], observed_at)
+                if (clock := self._tool_clocks.get(workflow)) is not None:
+                    completed = clock.completed_count
+                    clock.event(args[0], observed_at)
+                    if clock.completed_count != completed:
+                        tool_returns.add(workflow)
                 if self._r5 and args[0].kind in self._structural_events:
                     self._structural_consumed[workflow] += 1
                 if args[0].kind is Kind.WORKFLOW_START and not self._r5:
@@ -228,6 +234,7 @@ class WorkflowWorkWorker:
                 raise ValueError("unknown workflow progress operation")
             self._revisions[workflow] += 1
             self._dirty.add(workflow)
+        return tool_returns
 
     def process_pending(self):
         """Also used by deterministic CPU lifecycle checks, without a live thread."""
@@ -245,12 +252,13 @@ class WorkflowWorkWorker:
             self._queue.clear()
             self._first_queued_observation.clear()
         self.counts["worker_observations_processed"] += len(rows)
-        self._consume(rows)
+        tool_returns = self._consume(rows)
         for workflow in tuple(self._dirty):
             if self._stopped:
                 return
             now = time.monotonic()
-            if self._r5 and now < self._next_inference.get(workflow, 0.):
+            early = self._r5 and now < self._next_inference.get(workflow, 0.)
+            if early and (workflow not in tool_returns or workflow in self._early_tool_refresh_used):
                 self.counts["per_workflow_refresh_coalesced"] += 1
                 continue
             self._dirty.discard(workflow)
@@ -342,7 +350,14 @@ class WorkflowWorkWorker:
                             )
                         if self._tool_clocks[workflow].started:
                             self._dirty.add(workflow)
-                self._next_inference[workflow] = published + self.model.distribution_contract["minimum_refresh_s"]
+                if early:
+                    # Spend at most one extra inference per regular refresh period.
+                    self._early_tool_refresh_used.add(workflow)
+                else:
+                    self._early_tool_refresh_used.discard(workflow)
+                    self._next_inference[workflow] = (
+                        published + self.model.distribution_contract["minimum_refresh_s"]
+                    )
                 self.counts["distribution_" + support] += 1
             self.counts["inferences"] += 1
             self.counts["model_rank" if supported else "uncertain_medium"] += 1
@@ -354,6 +369,8 @@ class WorkflowWorkWorker:
                 if not self._stopped and workflow not in self._closed_workflows and (
                     not self._r5 or self._structural_consumed[workflow] == self._structural_submitted[workflow]
                 ):
+                    if early:
+                        self.counts["tool_return_expedited_refreshes"] += 1
                     self._predictions[workflow] = prediction
                     if prediction.revision == self._submitted_revisions[workflow]:
                         self._pending_since.pop(workflow, None)
@@ -444,4 +461,5 @@ class WorkflowWorkWorker:
             self._thread.join(timeout=2.)
         self._predictions.clear()
         self._tool_clocks.clear()
+        self._early_tool_refresh_used.clear()
         self._queue.clear()

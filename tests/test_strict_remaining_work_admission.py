@@ -18,6 +18,7 @@ from beliefkv.runtime.subagent_materialization import (
     MaterializationHeadroom, SubagentMaterialization, _InitialRequest,
 )
 from beliefkv.core.events import RuntimeEventKind as Kind
+from scripts.audit_r5_shortest_contract import inspect_choice
 from scripts.audit_workflow_combination_choices import replay_choice, validate_selection_policy
 from scripts.audit_strict_workflow_priority import compare
 from scripts.finish_model_work_oracle import verify_same_objective
@@ -80,6 +81,93 @@ def test_service_capacity_guard_keeps_immediately_fitting_reference():
     fitting = call(resources=replace(resources, device_tokens=20))
     assert fitting["selected"] == ("short",)
     assert fitting["reason"] == "shortest_work_set_changed"
+
+
+def test_service_capacity_guard_needs_immediate_fit_to_replace_unpriced_reference():
+    rows, resources, costs = fixture()
+    short = replace(rows[0], missing_extents=((("short", 1.), 20),))
+    reference = ("long-a",)
+    call = partial(choose, [short], reference, costs=costs, preserve_reference_service_capacity=True)
+    guarded = call(resources=replace(resources, device_tokens=19))
+    assert guarded["selected"] == reference
+    assert guarded["ranked_selected"] == ("short",)
+    assert guarded["reference_metadata_complete"] is False
+    assert guarded["reason"] == "shortest_work_reference_fit_unobserved"
+    fitting = call(resources=replace(resources, device_tokens=20))
+    assert fitting["selected"] == ("short",)
+
+
+@pytest.mark.parametrize("missing", (19, 20, 21))
+def test_service_capacity_guard_does_not_increase_an_existing_hbm_deficit(missing):
+    rows, resources, costs = fixture()
+    short = replace(rows[0], missing_extents=((("short", 1.), missing),))
+    incumbent = replace(rows[1], missing_extents=((("long-a", 1.), 20),))
+    options = [short, incumbent], ("long-a",), replace(resources, device_tokens=10), costs
+    unguarded = choose(*options)
+    assert unguarded["selected"] == ("short",)
+    assert unguarded["reference_evaluation"]["current_device_summary_fits"] is False
+    assert unguarded["selected_evaluation"]["current_device_summary_fits"] is False
+    guarded = choose(*options, preserve_reference_service_capacity=True)
+    assert guarded["selected"] == (("long-a",) if missing > 20 else ("short",))
+    if missing > 20:
+        assert guarded["ranked_selected"] == ("short",)
+        assert guarded["reason"] == "shortest_work_reference_device_deficit_preserved"
+
+
+def test_service_capacity_retry_preserves_count_with_a_fitting_shorter_candidate():
+    rows, resources, costs = fixture()
+    rows[0] = replace(rows[0], missing_extents=((("short", 1.), 90),))
+    medium = replace(
+        rows[0], identity="medium", workflow="medium", group="medium", logical_tokens=110,
+        weight=.4, missing_extents=((("medium", 1.), 12),),
+    )
+    candidates = [*rows, medium]
+    reference = ("long-a", "long-b")
+    resources = replace(resources, device_tokens=20)
+    assert choose(candidates, reference, resources, costs)["selected"] == ("short",)
+    result = choose(candidates, reference, resources, costs, preserve_reference_service_capacity=True)
+    assert result["selected"] == ("medium", "long-a")
+    assert result["selected_evaluation"]["current_device_summary_fits"]
+    assert result["service_capacity_retry"] == "shortest_work_reference_count_preserved"
+    audit = inspect_choice({
+        "monotonic_s": 1., "source": "periodic_decay_resume", "decision": result,
+        "candidates": [asdict(row) for row in candidates], "resources": asdict(resources),
+        "preserve_reference_service_capacity": True,
+    }, costs)
+    assert not audit["short_priority_inversions"]
+    assert not audit["unlimited_CPU_choice_changed"]
+
+    ticks = iter((0, 0, 0, 0, 0, 500_000, 500_001))
+    expired = choose_shortest_work_first(
+        candidates, reference, resources, costs, strict_remaining_work=True,
+        preserve_reference_service_capacity=True, clock=lambda: next(ticks),
+    )
+    assert expired["selected"] == reference
+    assert expired["reason"] == "shortest_work_soft_deadline_reference_fallback"
+    assert not expired["search_complete"]
+
+
+@pytest.mark.parametrize("free", (10, 20))
+def test_service_capacity_retry_keeps_join_rights_and_counts_shared_sibling_kv_once(free):
+    rows, resources, costs = fixture()
+    rows[0] = replace(rows[0], logical_tokens=50, missing_extents=((("short", 1.), 90),))
+    rows[2] = replace(rows[2], missing_extents=((("long-b", 1.), 20),))
+    first = replace(
+        rows[0], identity="first", workflow="peer", group="join", logical_tokens=30, category=1,
+        weight=.4, missing_extents=((("shared", 1.), 16),), unfinished_members=2,
+    )
+    second = replace(first, identity="second", category=0)
+    result = choose(
+        [*rows, first, second], ("long-a", "long-b"), replace(resources, device_tokens=free), costs,
+        required=("long-a",), preserve_reference_service_capacity=True,
+    )
+    assert set(result["selected"]) == {"long-a", "first", "second"}
+    assert result["selected_evaluation"]["required_device_tokens"] == 16
+    assert result["reference_evaluation"]["required_device_tokens"] == 20
+    assert result["service_capacity_retry"] == (
+        "shortest_work_reference_immediate_fit_preserved" if free == 20 else
+        "shortest_work_reference_device_deficit_preserved"
+    )
 
 
 @pytest.mark.parametrize("options", (
