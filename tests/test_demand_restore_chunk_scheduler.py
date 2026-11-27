@@ -45,7 +45,7 @@ def full_native(base_full_native, monkeypatch, request):
     return base_full_native
 
 
-@pytest.mark.parametrize("blocker", (None, "session_ref", "prefetch_lease", "sole_copy"))
+@pytest.mark.parametrize("blocker", (None, "session_ref", "prefetch_lease"))
 def test_guarded_restore_can_use_unreferenced_host_leaf(constrained_cache, monkeypatch, blocker):
     from test_beliefkv_terminal_capacity import insert_session
 
@@ -64,7 +64,7 @@ def test_guarded_restore_can_use_unreferenced_host_leaf(constrained_cache, monke
     assert host.available_size() == 0
     assert observe_materialization_headroom(
         cache, protected_host_nodes=protected,
-    ).reclaimable_host_tokens == 4 * (blocker in (None, "sole_copy"))
+    ).reclaimable_host_tokens == 4 * expected
 
     losses = []
 
@@ -79,7 +79,6 @@ def test_guarded_restore_can_use_unreferenced_host_leaf(constrained_cache, monke
     try:
         assert ensure_device_capacity_preserving_live_kv(
             cache, available + 4, protected_nodes=protected,
-            preserve_host_only=blocker == "sole_copy",
         ) is expected
         assert allocator.available_size() == available + 4 * expected
         assert neighbor.component_data[0].host_value is neighbor_slots
@@ -271,36 +270,20 @@ def test_d3_first_prefill_uses_bound_checkpoint_during_restore_ack(staged_native
 
 
 @pytest.mark.parametrize(
-    ("staged_native", "full_native", "base_full_native", "creditless_member"),
+    ("staged_native", "full_native", "base_full_native"),
     (
         pytest.param(
-            {"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96, False,
+            {"members": 2, "select": False, "prefix_sizes": (16, 18)}, 56, 96,
             id="staged_native0-56-96",
         ),
         pytest.param(
-            {"members": 3, "select": False, "prefix_sizes": (8, 8, 18)}, 56, 96, False,
+            {"members": 3, "select": False, "prefix_sizes": (8, 8, 18)}, 56, 96,
             id="merged-native-loads",
         ),
-        pytest.param(
-            {"members": 3, "select": False, "prefix_sizes": (14, 2, 18)}, 56, 96, True,
-            id="merged-native-loads-with-protected-anchor",
-        ),
     ),
-    indirect=("staged_native", "full_native", "base_full_native"),
+    indirect=True,
 )
-@pytest.mark.parametrize(
-    ("mirror_wait", "service_guard"),
-    (
-        pytest.param(False, None, id="False"),
-        pytest.param(True, None, id="True"),
-        pytest.param(True, "fit", id="fit"),
-        pytest.param(False, "timeout", id="timeout"),
-        pytest.param(False, "join", id="join"),
-    ),
-)
-def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
-    staged_native, monkeypatch, mirror_wait, service_guard, creditless_member,
-):
+def test_d3_selected_load_uses_native_batch_when_total_headroom_fits(staged_native, monkeypatch):
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
@@ -311,77 +294,28 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
     host = cache.host_pool_group.anchor_entry.host_pool
     held_host = host.alloc(host.available_size() - 24)
     reusable, _ = insert_session(cache, range(100, 124), "reusable")
-    reusable_slots = _backup(cache, reusable, demote=True)
+    _backup(cache, reusable, demote=True)
     cache.release_radix_session("reusable")
     for start in range(200, 350, 10):
         insert_session(cache, range(start, start + 4), str(start))
     held_device = allocator.alloc(allocator.available_size() - 16)
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
-    if creditless_member:
-        f.runtime._prefetch_service_leases["protected"] = NS(node_id=f.leaves[1].id)
     key = f.runtime.visible[consumer.rid]
     gate.materialized.add(gate._context(key))
     f.runtime._native_chunk_input_reserve = scheduler.chunked_prefill_size = 6
     scheduler.max_prefill_tokens = 32
     assert host.available_size() == 0 and allocator.available_size() == 16
-    if service_guard == "fit":
-        gate.admission._ready_service_guard = ReadyServiceGuard(gate.admission, fit_after_s=600)
-        gate.admission._ready_service_guard.fit_target = key
-    elif service_guard == "timeout":
-        gate.admission._ready_service_guard = ReadyServiceGuard(gate.admission, fit_after_s=600)
-        gate.admission._ready_service_guard.target = key
-    elif service_guard == "join":
-        f.runtime._join_priority_pending = {key.invocation_id: "observed-join"}
-    elif not mirror_wait:
-        def pooled_headroom(*args, **kwargs):
-            # Reproduce the previous pressure decision while keeping actual reclaim.
-            return replace(observe_materialization_headroom(*args, **kwargs), reclaimable_host_only_tokens=0)
-
-        monkeypatch.setattr(
-            "beliefkv.runtime.subagent_materialization.observe_materialization_headroom", pooled_headroom,
-        )
     try:
         assert invoke() == (None, f.running)
         assert not construction
-        expected = tuple(producers) if mirror_wait else tuple(f.members)
-        assert tuple(member.request for member in f.pipeline.pending.members) == expected
-        assert [len(load.host_indices) for load in f.loads] == (
-            producer_loads if mirror_wait else [*producer_loads, 18]
-        )
+        assert tuple(member.request for member in f.pipeline.pending.members) == tuple(f.members)
+        assert [len(load.host_indices) for load in f.loads] == [*producer_loads, 18]
         ack, = controller.ack_load_queue
-        assert ack.node_ids == [request.last_node for request in expected]
-        if mirror_wait:
-            receipt_keys = consumer._beliefkv_d3_restore_credit[2].keys()
-            assert receipt_keys == set(ack.node_ids)
+        assert ack.node_ids == [request.last_node for request in f.members]
+        assert getattr(consumer, "_beliefkv_d3_restore_credit", None) is None
         f.complete.ready = True
         cache.loading_check()
-        if not mirror_wait:
-            assert reusable.id not in cache.tree_core._node_arena
-            return
-        deferred, = [
-            call.args[0] for call in f.runtime._opportunity_writer.record.call_args_list
-            if call.args[0]["event"] == "subagent_materialization_restore_pressure_deferred"
-        ]
-        assert deferred["sole_host_capacity_excluded"]
-        assert deferred["reclaimable_after_ack_tokens"] == sum(
-            producer_loads[:-1] if creditless_member else producer_loads
-        )
-        assert gate._peer_restore_retry is None
-        with pytest.raises(BatchConstructionReached):
-            invoke()
-        assert construction == [tuple(producers)]
-        assert scheduler.waiting_queue == [consumer]
-        assert [len(load.host_indices) for load in f.loads] == [*producer_loads, 9]
-        cache.loading_check()
-        with pytest.raises(BatchConstructionReached):
-            invoke()
-        assert construction == [tuple(producers), (consumer,)]
-        assert [len(load.host_indices) for load in f.loads] == [*producer_loads, 9, 9]
-        assert reusable.component_data[0].host_value is reusable_slots
-        cache.loading_check()
-        for request in f.members:
-            cache.dec_lock_ref(request.last_node, request.lock_receipt)
-        cache.sanity_check()
+        assert reusable.id not in cache.tree_core._node_arena
     finally:
         gate.close()
         f.pipeline.cancel("test_complete")
@@ -390,10 +324,7 @@ def test_d3_selected_load_publishes_mirrors_before_spending_sole_host(
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
-@pytest.mark.parametrize("funding", ("old-check", "new-mirrors", "cold-device"))
-def test_d3_does_not_spend_host_only_headroom_before_first_ack(
-    staged_native, monkeypatch, funding,
-):
+def test_d3_uses_native_whole_restore_when_total_headroom_fits(staged_native, monkeypatch):
     from test_beliefkv_terminal_capacity import insert_session
 
     f = staged_native
@@ -404,11 +335,9 @@ def test_d3_does_not_spend_host_only_headroom_before_first_ack(
     _backup(cache, mirror)
     mirror_hold = cache.inc_lock_ref(mirror.id).to_dec_params()
     reusable, _ = insert_session(cache, range(111, 119), "reusable")
-    reusable_slots = _backup(cache, reusable, demote=True)
+    _backup(cache, reusable, demote=True)
     cache.release_radix_session("reusable")
     insert_session(cache, range(201, 233), "device-donor")
-    if funding == "cold-device":
-        cache.release_radix_session("device-donor")
     held = f.allocator.alloc(f.allocator.available_size())
     req.origin_input_ids = array("q", range(1, 15))
 
@@ -416,51 +345,180 @@ def test_d3_does_not_spend_host_only_headroom_before_first_ack(
     headroom = observe_materialization_headroom(cache, protected_host_nodes=(f.leaf.id,))
     assert headroom.host_free_tokens == headroom.device_free_tokens == 0
     assert (headroom.reclaimable_host_tokens, headroom.reclaimable_host_only_tokens) == (15, 8)
-    if funding == "new-mirrors":
-        assert invoke() == (None, f.running)
-        assert not construction and scheduler.waiting_queue == [req]
-        pending = gate._demand_restore_chunk.pending
-        assert pending.key == f.key and pending.tokens == 4
-        f.complete.ready = True
-        cache.loading_check(finish_count=1)
-        expected_loads = [4, 4]
-    elif funding == "old-check":
-        # The old headroom test sent the whole hit to native reclaim.
-        monkeypatch.setattr(
-            "beliefkv.runtime.subagent_materialization.observe_materialization_headroom",
-            lambda *args, **kwargs: replace(headroom, reclaimable_host_only_tokens=0),
-        )
-        f.complete.ready = True
-        expected_loads = [8]
-    else:
-        f.complete.ready = True
-        expected_loads = [8]
+    f.complete.ready = True
     with pytest.raises(BatchConstructionReached):
         invoke()
     assert construction == [(req,)] and scheduler.chunked_req is req
-    assert [len(load.host_indices) for load in f.loads] == expected_loads
-    assert (reusable.component_data[0].host_value is reusable_slots) is (funding != "old-check")
-    assert (reusable.id in tree._node_arena) is (funding != "old-check")
-    assert f.runtime.counts["subagent_materialization_demand_restore_whole_hit_funded"] == (
-        funding == "cold-device"
+    assert [len(load.host_indices) for load in f.loads] == [8]
+    assert reusable.id not in tree._node_arena and gate._demand_restore_chunk.pending is None
+    assert _restore_declines(f.runtime)[-1]["reason"] == (
+        "headroom_expected_to_cover_native_restore"
     )
     cache.loading_check()
     cache.dec_lock_ref(req.last_node, req.lock_receipt)
     cache.dec_lock_ref(mirror.id, mirror_hold)
     f.allocator.free(held)
     host.free(held_host)
+    gate.close()
     cache.sanity_check()
 
 
 @pytest.mark.parametrize(
     ("staged_native", "full_native", "base_full_native"),
-    (({"members": 1, "select": False, "prefix_sizes": (20,)}, 40, 96),),
+    (({"members": 1, "select": False, "prefix_sizes": (12,)}, 36, 64),),
     indirect=True,
 )
-@pytest.mark.parametrize("native_refuses_preference", (False, True))
-def test_d3_restore_suffix_preserves_reusable_host_when_mirrors_can_fund_progress(
-    staged_native, monkeypatch, native_refuses_preference,
+@pytest.mark.parametrize(
+    "mode",
+    (
+        "control", "recycle", "hbm_seed", "no_seed", "host_lock", "lease",
+        "abort", "stale_epoch", "different_receipt",
+    ),
+)
+def test_d3_returns_only_acked_source_slots_under_two_tier_pressure(
+    staged_native, base_full_native, monkeypatch, mode,
 ):
+    from test_beliefkv_terminal_capacity import insert_session
+
+    f = staged_native
+    cache, req, allocator = f.cache, f.req, f.allocator
+    tree, controller = cache.tree_core, cache.cache_controller
+    host = cache.host_pool_group.anchor_entry.host_pool
+    source_slots = f.leaf.component_data[0].host_value.tolist()
+    _, _, writes, _, _ = base_full_native
+    free_device = 7 if mode == "hbm_seed" else 0
+    free_host = 0 if mode in ("hbm_seed", "no_seed") else 7
+    held_host = host.alloc(host.available_size() - 12 - free_host)
+    neighbor, _ = insert_session(cache, range(101, 113), "sole-host")
+    neighbor_slots = _backup(cache, neighbor, demote=True)
+    cache.release_radix_session("sole-host")
+    donor, _ = insert_session(cache, range(201, 233), "sole-device")
+    held_device = allocator.alloc(allocator.available_size() - free_device)
+    assert (allocator.available_size(), host.available_size()) == (free_device, free_host)
+    assert donor.component_data[0].host_value is None
+    assert neighbor.component_data[0].value is f.leaf.component_data[0].value is None
+    assert not any(map(tree._is_settled_full_host_duplicate, tree.full_host_duplicates.values()))
+
+    if mode == "control":
+        def pooled_headroom(*args, **kwargs):
+            return replace(
+                observe_materialization_headroom(*args, **kwargs),
+                reclaimable_host_only_tokens=0,
+            )
+
+        monkeypatch.setattr(
+            "beliefkv.runtime.subagent_materialization.observe_materialization_headroom", pooled_headroom,
+        )
+
+    gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
+    restore = gate._demand_restore_chunk
+    metric = "subagent_materialization_restore_recycled_Host_tokens"
+    start_writes = len(writes)
+    try:
+        if mode == "control":
+            f.complete.ready = True
+            with pytest.raises(BatchConstructionReached):
+                invoke()
+            assert construction == [(req,)]
+            assert [load.host_indices.tolist() for load in f.loads] == [source_slots]
+            assert restore.pending is None and restore.mirror_return is None
+            assert neighbor.id not in tree._node_arena
+            cache.loading_check()
+            assert f.runtime.counts[metric] == 0
+            cache.dec_lock_ref(req.last_node, req.lock_receipt)
+            cache.sanity_check()
+            return
+
+        assert invoke() == (None, f.running)
+        pending = restore.pending
+        if mode == "no_seed":
+            assert pending is not None and not pending.recycle_mirrors
+            assert restore.mirror_return is None
+            assert neighbor.id not in tree._node_arena
+            f.complete.ready = True
+            cache.loading_check()
+            assert f.runtime.counts[metric] == 0
+            cache.sanity_check()
+            return
+        assert pending.tokens == 4 and pending.recycle_mirrors
+        prefix = tree.node_by_id(pending.prefix_node)
+        data = prefix.component_data[0]
+        assert [len(write.host_indices) for write in writes[start_writes:]] == (
+            [] if free_device else [7]
+        )
+        assert f.loads[-1].host_indices.tolist() == source_slots[:4]
+        assert host.available_size() == 0
+        ack, = controller.ack_load_queue
+        cache.loading_check()
+        ack.finish_event.synchronize.assert_not_called()
+        assert data.host_value is not None and host.slot_used[data.host_value].all()
+        assert f.runtime.counts[metric] == 0
+
+        hold = None
+        if mode == "host_lock":
+            hold = cache.inc_host_lock_ref(prefix.id).to_dec_params()
+        elif mode == "lease":
+            f.runtime._prefetch_service_leases["existing"] = NS(node_id=prefix.id)
+        elif mode == "abort":
+            gate.abort_demand_restore(NS(rid=req.rid, abort_all=False))
+            assert restore.pending is None and restore.mirror_return is None
+        elif mode == "stale_epoch":
+            req.beliefkv_metadata["context_epoch"] += 1
+        elif mode == "different_receipt":
+            receipt = cache.ongoing_load_back[prefix.id]
+            cache.ongoing_load_back[prefix.id] = type(receipt)(*receipt)
+        f.complete.ready = True
+        cache.loading_check()
+        ack.finish_event.synchronize.assert_called_once_with()
+        assert restore.mirror_return is None
+        if mode in ("host_lock", "lease", "abort", "stale_epoch", "different_receipt"):
+            assert data.host_value.tolist() == source_slots[:4]
+            assert host.available_size() == 0 and f.runtime.counts[metric] == 0
+            if hold is not None:
+                cache.dec_host_lock_ref(prefix.id, hold)
+            restore.release()
+            assert data.lock_ref == data.host_lock_ref == 0
+            cache.sanity_check()
+            return
+
+        assert data.host_value is None and host.available_size() == 4
+        assert f.runtime.counts[metric] == 4
+        for offset in (4, 8):
+            f.complete.ready = False
+            assert invoke() == (None, f.running)
+            assert not construction
+            assert (restore.pending is None) is (offset == 8)
+            assert (f.pipeline.pending is not None) is (offset == 8)
+            assert writes[-1].host_indices.tolist() == source_slots[offset - 4:offset]
+            assert f.loads[-1].host_indices.tolist() == source_slots[offset:offset + 4]
+            assert host.available_size() == 0
+            f.complete.ready = True
+            cache.loading_check()
+            assert host.available_size() == 4 and f.runtime.counts[metric] == offset + 4
+            assert neighbor.component_data[0].host_value is neighbor_slots
+            assert host.slot_used[neighbor_slots].all()
+
+        with pytest.raises(BatchConstructionReached):
+            invoke()
+        assert construction == [(req,)] and not scheduler.waiting_queue
+        assert req.extend_range.start == len(source_slots)
+        assert not any(map(tree._is_settled_full_host_duplicate, tree.full_host_duplicates.values()))
+        assert f.runtime.counts["subagent_materialization_demand_restore_suffix_funded"] == 1
+        cache.dec_lock_ref(req.last_node, req.lock_receipt)
+        cache.sanity_check()
+    finally:
+        gate.close()
+        f.pipeline.cancel("test_complete")
+        allocator.free(held_device)
+        host.free(held_host)
+
+
+@pytest.mark.parametrize(
+    ("staged_native", "full_native", "base_full_native"),
+    (({"members": 1, "select": False, "prefix_sizes": (21,)}, 40, 96),),
+    indirect=True,
+)
+def test_d3_restore_suffix_uses_total_headroom_for_the_remainder(staged_native, monkeypatch):
     from sglang.srt.mem_cache.base_prefix_cache import MatchPrefixParams
     from sglang.srt.mem_cache.radix_cache import RadixKey
     from test_beliefkv_terminal_capacity import insert_session
@@ -468,59 +526,32 @@ def test_d3_restore_suffix_preserves_reusable_host_when_mirrors_can_fund_progres
     f = staged_native
     cache, req = f.cache, f.req
     tree, host = cache.tree_core, cache.host_pool_group.anchor_entry.host_pool
-    held_host = host.alloc(host.available_size() - 20)
+    held_host = host.alloc(host.available_size() - 14)
     mirror, _ = insert_session(cache, range(101, 108), "mirror")
     _backup(cache, mirror)
     mirror_hold = cache.inc_lock_ref(mirror.id).to_dec_params()
-    reusable, _ = insert_session(cache, range(111, 124), "reusable")
+    reusable, _ = insert_session(cache, range(111, 118), "reusable")
     reusable_slots = _backup(cache, reusable, demote=True)
     cache.release_radix_session("reusable")
     insert_session(cache, range(201, 241), "device-donor")
-    held_device = f.allocator.alloc(f.allocator.available_size() - 3)
+    held_device = f.allocator.alloc(f.allocator.available_size() - 6)
     gate, scheduler, construction, invoke = _d3_scheduler(f, monkeypatch)
     try:
         assert invoke() == (None, f.running)
-        assert [len(load.host_indices) for load in f.loads] == [7]
+        assert [len(load.host_indices) for load in f.loads] == [10]
         assert reusable.component_data[0].host_value is reusable_slots
         f.complete.ready = True
         cache.loading_check()
 
-        if native_refuses_preference:
-            attempts = []
-
-            def fund(*args, preserve_host_only, **kwargs):
-                attempts.append(preserve_host_only)
-                if preserve_host_only:
-                    return False
-                return ensure_device_capacity_preserving_live_kv(
-                    *args, preserve_host_only=False, **kwargs,
-                )
-
-            monkeypatch.setattr(
-                "beliefkv.runtime.demand_restore_chunk.ensure_device_capacity_preserving_live_kv", fund,
-            )
-        else:
-            assert invoke() == (None, f.running)
-            assert [len(load.host_indices) for load in f.loads] == [7, 7]
-            assert gate._demand_restore_chunk.pending.preserve_host_only
-            assert reusable.component_data[0].host_value is reusable_slots
-            cache.loading_check()
         with pytest.raises(BatchConstructionReached):
             invoke()
         assert construction == [(req,)] and not scheduler.waiting_queue
-        expected_loads = [7, 13] if native_refuses_preference else [7, 7, 6]
-        assert [len(load.host_indices) for load in f.loads] == expected_loads
-        assert req.extend_range.start == 20
+        assert [len(load.host_indices) for load in f.loads] == [10, 11]
+        assert req.extend_range.start == 21
         cache.loading_check()
         cache.dec_lock_ref(req.last_node, req.lock_receipt)
-        matched = cache.match_prefix(MatchPrefixParams(key=RadixKey(array("q", range(111, 124)))))
-        if native_refuses_preference:
-            assert attempts == [True, False]
-            assert matched.host_hit_length < len(reusable_slots)
-        else:
-            assert reusable.component_data[0].host_value is reusable_slots
-            assert host.slot_used[reusable_slots].all()
-            assert matched.host_hit_length == len(reusable_slots)
+        matched = cache.match_prefix(MatchPrefixParams(key=RadixKey(array("q", range(111, 118)))))
+        assert matched.host_hit_length < len(reusable_slots)
         cache.sanity_check()
     finally:
         gate.close()
@@ -1049,15 +1080,11 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     source_slots = f.leaf.component_data[0].host_value
     mode = getattr(request, "param", None)
     idle = mode == "idle"
-    mirror_tokens = {
-        "join-backed-whole-restore": 11, "join-partial-backed-capacity": 5,
-        "ordinary-partial-backed-capacity": 5,
-    }.get(mode, 0)
-    host_slots = {"idle": 19, "two-write-acks": 22, "join-free-first-slice": 16}.get(
-        mode, 16 + mirror_tokens if mirror_tokens else 21,
-    )
-    if mode == "ordinary-partial-backed-capacity":
-        host_slots += 4
+    mirror_tokens = 11 if mode == "backed-whole-restore" else 0
+    host_slots = {
+        "idle": 19, "two-write-acks": 22, "join-free-first-slice": 16,
+        "backed-whole-restore": 27,
+    }.get(mode, 21)
     held_host = host.alloc(host.size - host_slots)
     neighbor, _ = insert_session(cache, range(101, 105), "neighbor")
     neighbor_slots = _backup(cache, neighbor, demote=True)
@@ -1084,8 +1111,7 @@ def resident_restore_pressure(staged_native, full_native, monkeypatch, request):
     insert_session(cache, range(201, 233), "device-victim")
     free_device, free_host = {
         "idle": (0, 7), "join-free-first-slice": (5, 0),
-        "join-backed-whole-restore": (0, 0), "join-partial-backed-capacity": (0, 0),
-        "ordinary-partial-backed-capacity": (0, 4),
+        "backed-whole-restore": (0, 0),
     }.get(mode, (3, 5))
     held_device = allocator.alloc(allocator.available_size() - free_device)
     assert (allocator.available_size(), host.available_size()) == (free_device, free_host)
@@ -1547,184 +1573,56 @@ def test_d3_write_ack_retry_preserves_native_guards(resident_restore_pressure, g
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
-@pytest.mark.parametrize("resident_restore_pressure", ("join-free-first-slice",), indirect=True)
-@pytest.mark.parametrize("write_ack_order", ("before-load", "after-load", "after-retry"))
-def test_d3_promoted_join_uses_free_pages_before_a_write_ack(
-    resident_restore_pressure, write_ack_order,
+@pytest.mark.parametrize(
+    ("resident_restore_pressure", "join_parent"),
+    (
+        ("join-free-first-slice", True),
+        ("backed-whole-restore", True),
+        ("backed-whole-restore", False),
+    ),
+    indirect=("resident_restore_pressure",),
+)
+def test_d3_leaves_protected_or_fitting_restore_to_native(
+    resident_restore_pressure, join_parent,
 ):
     case = resident_restore_pressure
     f = case.f
     cache, req = f.cache, f.req
     controller = cache.cache_controller
-    f.runtime._join_priority_promoted = req.rid
-    case.scheduler.waiting_queue.remove(case.resident)
-
-    assert case.invoke() == (None, f.running)
-    assert case.scheduler.waiting_queue == [req] and not case.construction
-    case.native_load.assert_not_called()
-    case.evict.assert_not_called()
-    case.query.assert_not_called()
-    case.writing_check.assert_not_called()
-    assert controller.ack_write_queue == [case.write_ack]
-    pending = case.gate._demand_restore_chunk.pending
-    assert pending.key == f.key and pending.tokens == 2
-    assert f.allocator.available_size() == 3 and case.host.available_size() == 0
-    assert f.loads[-1].host_indices.tolist() == case.source_slots[:2].tolist()
-
-    if write_ack_order == "before-load":
-        case.query.return_value = True
-        cache.writing_check(finish_count=1)
-    f.complete.ready = True
-    cache.loading_check(finish_count=1)
-    if write_ack_order != "before-load":
-        assert case.invoke() == (None, f.running)
-        assert case.scheduler.waiting_queue == [req] and not case.construction
-        assert _restore_declines(f.runtime)[-1]["reason"] == DEFER_WRITE_ACK
-        case.native_load.assert_not_called()
-        case.write_ack.finish_event.synchronize.assert_not_called()
-    if write_ack_order == "after-retry":
-        with pytest.raises(BatchConstructionReached):
-            case.invoke()
-        assert case.construction == [(req,)] and [len(load.host_indices) for load in f.loads] == [2, 6]
-        assert f.runtime.counts["subagent_materialization_demand_restore_ack_retries"] == 1
-        case.native_load.assert_called_once()
-        cache.loading_check(finish_count=1)
-        cache.dec_lock_ref(req.last_node, req.lock_receipt)
-        cache.sanity_check()
+    if join_parent:
+        f.runtime._join_priority_promoted = req.rid
     else:
         case.query.return_value = True
-        _assert_native_batch(case, (req,), [2, 6])
-
-
-@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
-@pytest.mark.parametrize(("mode", "resident_restore_pressure"), (
-    ("settled", "join-backed-whole-restore"),
-    ("insufficient", "join-partial-backed-capacity"),
-    ("prefetch-protected", "join-backed-whole-restore"),
-    ("locked", "join-backed-whole-restore"),
-    ("native-load-continuation", "join-backed-whole-restore"),
-), indirect=("resident_restore_pressure",))
-def test_d3_promoted_join_requires_a_whole_restore_from_settled_mirrors(
-    resident_restore_pressure, mode,
-):
-    case = resident_restore_pressure
-    f = case.f
-    cache, req = f.cache, f.req
-    controller = cache.cache_controller
-    f.runtime._join_priority_promoted = req.rid
+        cache.writing_check(finish_count=1)
     case.scheduler.waiting_queue.remove(case.resident)
-    mirror = case.backed.component_data[0]
-    host_copy = mirror.host_value
-    assert controller.ack_write_queue == [case.write_ack] and mirror.value is not None
-    writes_before = len(case.writes)
-    if mode == "prefetch-protected":
-        f.runtime._prefetch_service_leases["protected"] = NS(node_id=case.backed.id)
-    elif mode == "native-load-continuation":
-        controller._beliefkv_load_continuation = object()
-    lock = cache.inc_lock_ref(case.backed.id).to_dec_params() if mode == "locked" else None
-    try:
-        if mode == "settled":
-            device_slots = set(mirror.value.tolist())
-            pending_write_slots = set(case.donor.component_data[0].value.tolist())
-            f.complete.ready = True
-            with pytest.raises(BatchConstructionReached):
-                case.invoke()
-            assert case.construction == [(req,)] and case.gate._demand_restore_chunk.pending is None
-            assert mirror.value is None and f.allocator.available_size() == 3
-            first_load, = f.loads
-            assert first_load.host_indices.tolist() == case.source_slots.tolist()
-            assert set(first_load.device_indices.tolist()) <= device_slots
-            assert pending_write_slots.isdisjoint(first_load.device_indices.tolist())
-            assert f.runtime.counts["subagent_materialization_join_backed_device_whole_restores"] == 1
-            grant, = (
-                event.args[0] for event in f.runtime._opportunity_writer.record.call_args_list
-                if event.args[0]["event"] == "subagent_materialization_join_backed_device_restore"
-            )
-            assert grant["key"] == asdict(f.key) and grant["device_reserve_tokens"] == 3
-            case.native_load.assert_called_once()
-            cache.loading_check(finish_count=1)
-            cache.dec_lock_ref(req.last_node, req.lock_receipt)
-        else:
-            def fallback(_params):
-                assert mirror.value is not None and f.allocator.available_size() == 0
-                return None
+    acks = list(controller.ack_write_queue)
+    free = f.allocator.available_size()
+    mirror = case.backed.component_data[0] if case.backed is not None else None
 
-            case.native_load.side_effect = fallback
-            assert case.invoke() == (None, f.running)
-            case.native_load.assert_called_once()
-            reason = "restore_not_available" if mode == "native-load-continuation" else "protected_service"
-            assert _restore_declines(f.runtime)[-1]["reason"] == reason
-            assert case.gate._demand_restore_chunk.pending is None and not f.loads
+    def fallback(_params):
+        assert f.allocator.available_size() == free
+        assert controller.ack_write_queue == acks
+        if mirror is not None:
+            assert mirror.value is not None and mirror.host_value is not None
+        return None
+
+    case.native_load.side_effect = fallback
+    try:
+        assert case.invoke() == (None, f.running)
+        case.native_load.assert_called_once()
         case.evict.assert_not_called()
-        case.query.assert_not_called()
-        case.writing_check.assert_not_called()
-        assert len(case.writes) == writes_before and controller.ack_write_queue == [case.write_ack]
-        assert mirror.host_value is host_copy and case.host.slot_used[host_copy].all()
+        decline, = _restore_declines(f.runtime)
+        assert decline["reason"] == (
+            "protected_service" if join_parent else "headroom_expected_to_cover_native_restore"
+        )
+        assert case.gate._demand_restore_chunk.pending is None and not f.loads
+        assert controller.ack_write_queue == acks
         assert case.neighbor.component_data[0].host_value is case.neighbor_slots
     finally:
-        if lock is not None:
-            cache.dec_lock_ref(case.backed.id, lock)
         if controller.ack_write_queue:
             case.query.return_value = True
             cache.writing_check(finish_count=1)
         cache.sanity_check()
-
-
-@pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
-@pytest.mark.parametrize(
-    ("mode", "resident_restore_pressure"),
-    (
-        ("settled", "join-backed-whole-restore"),
-        ("insufficient", "join-partial-backed-capacity"),
-        ("aggregate-only", "ordinary-partial-backed-capacity"),
-    ),
-    indirect=("resident_restore_pressure",),
-)
-def test_d3_ordinary_native_restore_uses_whole_settled_capacity(resident_restore_pressure, mode):
-    case = resident_restore_pressure
-    f = case.f
-    cache, req = f.cache, f.req
-    case.scheduler.waiting_queue.remove(case.resident)
-    case.query.return_value = True
-    cache.writing_check(finish_count=1)
-    assert not cache.cache_controller.ack_write_queue
-    mirror = case.backed.component_data[0]
-    mirror_host = mirror.host_value
-    writes_before = len(case.writes)
-
-    if mode == "settled":
-        f.complete.ready = True
-        with pytest.raises(BatchConstructionReached):
-            case.invoke()
-        assert case.construction == [(req,)]
-        assert f.runtime.counts["subagent_materialization_backed_device_whole_restores"] == 1
-        assert not f.runtime.counts["subagent_materialization_join_backed_device_whole_restores"]
-        assert mirror.value is None and f.allocator.available_size() >= 3
-        load, = f.loads
-        assert load.host_indices.tolist() == case.source_slots.tolist()
-        cache.loading_check(finish_count=1)
-        cache.dec_lock_ref(req.last_node, req.lock_receipt)
-    else:
-        def fallback(_params):
-            assert mirror.value is not None and f.allocator.available_size() == 0
-            return None
-
-        case.native_load.side_effect = fallback
-        assert case.invoke() == (None, f.running)
-        assert not case.construction and not f.loads
-        assert not f.runtime.counts["subagent_materialization_backed_device_whole_restores"]
-        decline, = _restore_declines(f.runtime)
-        assert decline["reason"] == {
-            "insufficient": "headroom_expected_to_cover_native_restore",
-            "aggregate-only": "backed_device_capacity_not_funded",
-        }[mode]
-
-    case.native_load.assert_called_once()
-    case.evict.assert_not_called()
-    assert len(case.writes) == writes_before
-    assert mirror.host_value is mirror_host and case.host.slot_used[mirror_host].all()
-    assert case.neighbor.component_data[0].host_value is case.neighbor_slots
-    cache.sanity_check()
 
 
 @pytest.mark.parametrize("staged_native", ({"members": 1, "select": False},), indirect=True)
@@ -2137,8 +2035,7 @@ def test_d3_waits_for_unrelated_submitted_restore_ack(
         pytest.param(True, "fit_target", 2, id="fit-target-producer-partial-credit"),
         pytest.param(True, "both_protected", 2, id="protected-producer-and-consumer"),
         pytest.param(True, "both_join", 2, id="two-released-join-parents"),
-        pytest.param(True, "consumer_join", 2, id="join-after-ordinary-stage"),
-        pytest.param(True, "consumer_join", 3, id="join-after-stage-insufficient-capacity"),
+        pytest.param(True, "consumer_join", 2, id="join-priority-fallback"),
     ),
 )
 def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
@@ -2306,7 +2203,9 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
                     cache.dec_lock_ref(req.last_node, req.lock_receipt)
             cache.sanity_check()
             return
-        if decode_growth and (producer_protection == "both_protected" or decode_growth == 3):
+        if decode_growth and (
+            producer_protection in {"both_protected", "consumer_join"} or decode_growth == 3
+        ):
             runtime.on_prefill_candidate_result.assert_called_with(
                 consumer, admitted=False, result="RESTORE_STAGED",
             )
@@ -2347,9 +2246,6 @@ def test_d3_staged_producer_yields_ack_credit_to_live_consumer(
             )
             assert deferred["key"] == asdict(consumer_key) and deferred["already_submitted"]
             assert deferred["native_node_ids"] == first_ack.node_ids
-            assert deferred.get("join_after_ordinary_stage", False) is (
-                producer_protection == "consumer_join"
-            )
             assert (deferred["reclaimable_after_ack_tokens"], deferred["unfunded_restore_tokens"]) == (
                 6, 5 + decode_growth,
             )

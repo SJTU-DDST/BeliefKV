@@ -1,6 +1,6 @@
 """Capacity checks for a synchronous FULL demand restore."""
 
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from heapq import heapify, heappop, heappush
 from itertools import islice
 
@@ -97,7 +97,7 @@ def _cold_host_reclaim_plan(tree, protected, needed):
 
 def ensure_device_capacity_preserving_live_kv(
     cache, tokens: int, *, minimum_tokens: int | None = None, protected_nodes=(),
-    retry_pending_write=False, preserve_host_only=False,
+    retry_pending_write=False, free_host_only=False,
 ) -> bool | None:
     """Try to make ``tokens`` absolute FULL slots free on the scheduler thread.
 
@@ -107,7 +107,8 @@ def ensure_device_capacity_preserving_live_kv(
     Return None without mutation when a single unfinished ACK can be retried.
     With a minimum, preflight may fund a smaller target. True still requires
     the original target, and a partial caller must recheck the allocator.
-    With preserve_host_only, even unreferenced Host-only extents are retained.
+    With free_host_only, backups spend only free Host slots and neither tier
+    discards a sole copy to fund the restore.
     """
     controller = getattr(cache, "cache_controller", None)
     minimum = tokens if minimum_tokens is None else minimum_tokens
@@ -157,7 +158,8 @@ def ensure_device_capacity_preserving_live_kv(
     shortfall = min(shortfall, evictable)
     # D3 installs its device-leaf callback on the cache instance.
     can_discard_cold = (
-        callable(vars(cache).get("_evict_device_leaf"))
+        not free_host_only
+        and callable(vars(cache).get("_evict_device_leaf"))
         and getattr(cache, "enable_session_radix_cache", False) is True
         and callable(getattr(tree, "discard_terminated_leaf", None))
     )
@@ -165,12 +167,16 @@ def ensure_device_capacity_preserving_live_kv(
     possible_slots = controller.mem_pool_host.available_size()
     mirrors = tree.full_host_duplicates
     cold_host_leaves, cold_host_ancestors = (), set()
-    if can_discard_cold and not preserve_host_only and possible_slots < shortfall:
+    if can_discard_cold and possible_slots < shortfall:
         cold_host_leaves, cold_host_ancestors, cold_host_slots = _cold_host_reclaim_plan(
             tree, protected, shortfall - possible_slots,
         )
         possible_slots += cold_host_slots
-    if possible_slots < shortfall and len(mirrors) <= _MAX_PREFLIGHT_LEAVES:
+    if free_host_only:
+        if possible_slots < minimum_shortfall:
+            return False
+        shortfall = min(shortfall, possible_slots)
+    elif possible_slots < shortfall and len(mirrors) <= _MAX_PREFLIGHT_LEAVES:
         # Each dual slot can either fund a device demotion or be reused for
         # a fresh backup. Count both pinned and usable mirrors as an upper bound.
         for node in mirrors.values():
@@ -237,7 +243,13 @@ def ensure_device_capacity_preserving_live_kv(
             raise _BackupUnavailable
         return native_release(node, medium, *args)
 
+    backup_guard = nullcontext()
+    if free_host_only:
+        # Native backup asks evict_host only after its free-slot check.
+        backup_guard = _override_hook(cache, "evict_host", lambda *_args, **_kwargs: 0)
+
     with (
+        backup_guard,
         _override_hook(full, "drive_host_eviction", reclaim_cold_host),
         _override_hook(cache, "_evict_device_leaf", evict_leaf),
         _override_hook(cache, "_drop_subtree_no_host", _stop_eviction),

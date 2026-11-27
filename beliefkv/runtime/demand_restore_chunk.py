@@ -1,5 +1,6 @@
 """Stage part of an admitted native demand restore under Host pressure."""
 
+from collections import defaultdict
 from dataclasses import dataclass
 
 from beliefkv.runtime.demand_restore_capacity import ensure_device_capacity_preserving_live_kv
@@ -20,8 +21,18 @@ class _Pending:
     prefix_receipt: object
     suffix_node: int
     suffix_receipt: object
-    preserve_host_only: bool
+    recycle_mirrors: bool = False
     credit_waiter: tuple[object, tuple] | None = None
+
+
+@dataclass(frozen=True)
+class _MirrorReturn:
+    request: object
+    key: object
+    base_node: int
+    anchor: int
+    tokens: int
+    native_receipt: object
 
 
 class DemandRestoreChunk:
@@ -32,6 +43,7 @@ class DemandRestoreChunk:
         self.max_source_nodes = max_source_nodes
         self.pending = None
         self.parked = None
+        self.mirror_return = None
 
     def pinned_prefix_tokens(self, req, key):
         """Return the matched checkpoint while this request owns both pins."""
@@ -49,7 +61,7 @@ class DemandRestoreChunk:
         committed = getattr(req, "_beliefkv_d3_committed_restore", None)
         if committed is None:
             return False
-        prior_key, prefix, suffix, remaining = committed
+        prior_key, prefix, suffix, remaining, _ = committed
         hit = params.host_hit_length
         if key != prior_key or params.best_match_node != suffix or not 0 < hit <= remaining:
             return False
@@ -75,8 +87,7 @@ class DemandRestoreChunk:
 
     def start(
         self, params, key, tokens, *, device_reserve, protected_nodes,
-        minimum_tokens=1, replace_pending=None, preserve_host_only=False,
-        fund_from_backed_device=None, preferred_suffix_tokens=0,
+        minimum_tokens=1, replace_pending=None, recycle_mirrors=False,
     ):
         """Stage a slice, fund the final native load, or return a decline reason."""
         cache, req = self.cache, params.req
@@ -94,7 +105,7 @@ class DemandRestoreChunk:
             or controller.load_queue or controller.ack_load_queue
             or getattr(controller, "_beliefkv_load_continuation", None) is not None
             or not 0 < tokens <= hit
-            or (tokens == hit and not (continuation or preserve_host_only))
+            or (tokens == hit and not continuation)
         ):
             return "restore_not_available"
 
@@ -134,31 +145,12 @@ class DemandRestoreChunk:
         # move settled state, but may not discard any referenced checkpoint.
         allocator = cache.token_to_kv_pool_allocator
         free_before = allocator.available_size()
-        proposed_tokens = tokens
-        if fund_from_backed_device is not None:
-            funded = fund_from_backed_device(tokens + device_reserve, protected_nodes)
-            if not funded:
-                return "protected_service"
-        else:
-            def fund(target, *, preserve):
-                return ensure_device_capacity_preserving_live_kv(
-                    cache, target + device_reserve, protected_nodes=protected_nodes,
-                    minimum_tokens=minimum_tokens + device_reserve,
-                    retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
-                    preserve_host_only=preserve,
-                )
-
-            prefer = continuation and minimum_tokens <= preferred_suffix_tokens <= tokens
-            funded = fund(
-                preferred_suffix_tokens if prefer else tokens,
-                preserve=preserve_host_only or prefer,
-            )
-            if prefer:
-                if funded is False and allocator.available_size() < minimum_tokens + device_reserve:
-                    funded = fund(tokens, preserve=preserve_host_only)
-                else:
-                    tokens = preferred_suffix_tokens
-                    preserve_host_only = True
+        funded = ensure_device_capacity_preserving_live_kv(
+            cache, tokens + device_reserve, protected_nodes=protected_nodes,
+            minimum_tokens=minimum_tokens + device_reserve,
+            retry_pending_write=getattr(req, "_beliefkv_d3_write_ack_retry_key", None) != key,
+            free_host_only=recycle_mirrors,
+        )
         if funded is None:
             req._beliefkv_d3_write_ack_retry_key = key
             return DEFER_WRITE_ACK
@@ -182,14 +174,14 @@ class DemandRestoreChunk:
                     )
                 ):
                     return "device_capacity_not_funded"
+            # The original source walk validated every node in the shorter slice.
+            trim = tokens - smaller
+            while trim >= prefix_tokens:
+                trim -= prefix_tokens
+                prefix = prefix.parent
+                prefix_tokens = len(prefix.key)
+            prefix_tokens -= trim
             tokens = smaller
-        # The original source walk validated every node in the funded slice.
-        trim = proposed_tokens - tokens
-        while trim >= prefix_tokens:
-            trim -= prefix_tokens
-            prefix = prefix.parent
-            prefix_tokens = len(prefix.key)
-        prefix_tokens -= trim
         prefix_id = prefix.id
         if prefix_tokens < len(prefix.key):
             split = tree.split_host_only_full_prefix(prefix.id, prefix.creation_time, prefix_tokens)
@@ -205,7 +197,7 @@ class DemandRestoreChunk:
             prefix_receipt = cache.inc_lock_ref(prefix_id).to_dec_params()
             self.pending = _Pending(
                 req, key, checkpoint_tokens, tokens, hit - tokens, prefix_id,
-                prefix_receipt, suffix_id, suffix_receipt, preserve_host_only,
+                prefix_receipt, suffix_id, suffix_receipt, recycle_mirrors,
             )
             if replace_pending is not None:
                 # Keep one settled producer pinned while the borrower stages its suffix.
@@ -221,6 +213,8 @@ class DemandRestoreChunk:
         ack = controller.ack_load_queue[-1]
         if tuple(ack.node_ids) != (prefix_id,) or dict(ack.num_tokens_by_pool).get("kv") != tokens:
             raise RuntimeError("staged demand restore differs from its native allocation")
+        if recycle_mirrors:
+            self.watch_mirror_return(req, key, prefix_id, tokens)
         return None
 
     def defer_until_ack(self, req):
@@ -242,14 +236,68 @@ class DemandRestoreChunk:
     def _commit(self, pending):
         pending.request._beliefkv_d3_committed_restore = (
             pending.key, pending.prefix_node, pending.suffix_node, pending.remaining_tokens,
+            pending.recycle_mirrors,
         )
         self._release_pins(pending)
+
+    def watch_mirror_return(self, req, key, anchor, tokens):
+        receipt = self.cache.ongoing_load_back.get(anchor)
+        if receipt is not None:
+            self.mirror_return = _MirrorReturn(req, key, req.last_node, anchor, tokens, receipt)
+
+    def recycle_mirrors(self, watch, protected_nodes):
+        """Return the just-loaded, device-pinned extents after native publication."""
+        cache = self.cache
+        tree = cache.tree_core
+        remaining = watch.tokens
+        nodes = []
+        try:
+            node = tree.node_by_id(watch.anchor)
+        except KeyError:
+            return 0
+        for _ in range(self.max_source_nodes):
+            if node.id == watch.base_node:
+                break
+            size = len(node.key)
+            if node is tree.root_node or not 0 < size <= remaining:
+                return 0
+            full = node.component_data[0]
+            if (
+                node.id not in protected_nodes
+                and full.lock_ref > 0
+                and tree._can_reclaim_full_host_duplicate(node)
+                and len(full.value) == len(full.host_value) == size
+            ):
+                nodes.append(node)
+            remaining -= size
+            node = node.parent
+        if remaining or node.id != watch.base_node or not nodes:
+            return 0
+
+        tracker, device_frees, host_frees = defaultdict(int), defaultdict(list), defaultdict(list)
+        for node in nodes:
+            tree._release_full_host_duplicate(node, tracker, device_frees, host_frees)
+            tree._update_duplicate_tracking(node)
+        cache._free_values(device_frees, host_frees)
+        observer = tree.beliefkv_full_resident_observer
+        if observer is not None:
+            for node in nodes:
+                observer(node)
+        callback = cache.on_hicache_host_eviction
+        if callback is not None:
+            try:
+                callback(0, tracker)
+            except Exception:
+                pass
+        return tracker[0]
 
     def _release_pins(self, pending):
         self.cache.dec_lock_ref(pending.prefix_node, pending.prefix_receipt)
         self.cache.dec_host_lock_ref(pending.suffix_node, pending.suffix_receipt)
 
     def release_if(self, predicate):
+        if self.mirror_return is not None and predicate(self.mirror_return):
+            self.mirror_return = None
         if self.pending is not None and predicate(self.pending):
             pending, self.pending = self.pending, None
             self._release_pins(pending)

@@ -1,5 +1,12 @@
 # BeliefKV paper figures
 
+The November 27 manuscript groups its figures around parent KV migration,
+first-prefill admission, and segmented KV migration. The review artwork
+below illustrates earlier groupings. The segmented migration figure should
+trace the demand restore, the GPU write-back it triggers, and the reuse of
+host pages after the corresponding H2D acknowledgment. The historical main
+experiments used `a7b698e2`.
+
 **ARCO system overview under review.** [PNG](review/arco_system_overview_en.png) · [Editable PowerPoint](review/arco_system_overview_en_editable.pptx) · [PDF](review/arco_system_overview_en.pdf) · [SVG](review/arco_system_overview_en.svg). The slide uses [Comic Neue](../assets/comic_neue/). Regenerate it with `python docs/figures/generate_arco_system_overview.py`.
 
 [Four-page paper PDF](beliefkv_icml_figures.pdf) · [Editable PowerPoint deck](beliefkv_icml_editable.pptx)

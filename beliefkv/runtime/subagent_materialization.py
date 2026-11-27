@@ -494,16 +494,24 @@ class SubagentMaterialization:
             return
 
         native_loading_check = getattr(cache, "loading_check", None)
-        self._demand_restore_chunk = DemandRestoreChunk(cache, max_source_nodes=self.max_nodes)
+        restore = self._demand_restore_chunk = DemandRestoreChunk(
+            cache, max_source_nodes=self.max_nodes,
+        )
 
         def loading_check(finish_count=None):
+            if finish_count == 0:
+                return native_loading_check(finish_count=finish_count)
+            watch = restore.mirror_return
             retry = self._peer_restore_retry
-            if retry is None or retry.committed or finish_count == 0:
+            check_peer = retry is not None and not retry.committed
+            if not check_peer and watch is None:
                 return native_loading_check(finish_count=finish_count)
             acks = cache.cache_controller.ack_load_queue
-            ack = acks[0] if acks else None
+            ack = acks[0] if check_peer and acks else None
             ongoing = cache.ongoing_load_back
             matches = ack is not None and retry.matches_ack(ack, ongoing)
+            if watch is not None and ongoing.get(watch.anchor) is not watch.native_receipt:
+                restore.mirror_return = watch = None
             result = native_loading_check(finish_count=finish_count)
             if (
                 matches and self._peer_restore_retry is retry
@@ -520,6 +528,9 @@ class SubagentMaterialization:
                 ):
                     # Keep the proof even if the first ordering preference is spent.
                     req._beliefkv_d3_first_peer_ack = key, retry.node_ids
+            if watch is not None and restore.mirror_return is watch and watch.anchor not in ongoing:
+                restore.mirror_return = None
+                self._recycle_restore_mirrors(watch)
             return result
 
         def init_load_back(params):
@@ -551,9 +562,19 @@ class SubagentMaterialization:
             previous = getattr(cache, "_beliefkv_demand_restore_request_id", None)
             cache._beliefkv_demand_restore_request_id = getattr(params.req, "rid", None)
             try:
-                if self._stage_demand_restore_chunk(cache, params, selected_h2d):
+                staged = self._stage_demand_restore_chunk(cache, params, selected_h2d)
+                if staged is True:
                     return None
-                return native_load(params)
+                loaded = native_load(params)
+                # A funded suffix uses the normal native prefill path and ACK.
+                if (
+                    staged == FULL_RESTORE_FUNDED and loaded is not None
+                    and loaded[1] == params.best_match_node and len(loaded[0]) == hit
+                ):
+                    key = self.runtime.visible.get(params.req.rid)
+                    if key is not None:
+                        restore.watch_mirror_return(params.req, key, loaded[1], hit)
+                return loaded
             finally:
                 cache._beliefkv_demand_restore_request_id = previous
 
@@ -565,6 +586,7 @@ class SubagentMaterialization:
         )
 
     def _stage_demand_restore_chunk(self, cache, params, selected_h2d=None):
+        """Defer a staged slice or mark a funded native load for Host recycling."""
         runtime = self.runtime
         chunk = getattr(runtime, "_native_chunk_input_reserve", None)
         if not chunk:
@@ -573,12 +595,16 @@ class SubagentMaterialization:
         req = params.req
         key = runtime.visible.get(req.rid)
         continuation = self._demand_restore_chunk.continues(params, key)
+        recycling = (
+            continuation and req._beliefkv_d3_committed_restore[-1]
+            and not getattr(runtime, "physical_disabled", False)
+        )
         threshold = max(1, cache.load_back_threshold)
         if hit < (threshold if continuation else 2 * chunk):
             return False
         device_free = cache.token_to_kv_pool_allocator.available_size()
         if device_free >= hit:
-            return False
+            return FULL_RESTORE_FUNDED if recycling else False
 
         controller = cache.cache_controller
         writer = getattr(runtime, "_opportunity_writer", None)
@@ -657,11 +683,11 @@ class SubagentMaterialization:
             return decline("continuation_not_eligible")
         if getattr(req, "_beliefkv_d3_staged_restore_key", None) == key and not continuation:
             return decline("already_attempted")
-        pending_join_write = (
-            key.request_id == getattr(runtime, "_join_priority_promoted", None)
-            and (writes_at_trial or controller.write_queue or cache.ongoing_write_through)
+        # A promoted JOIN parent may try a guarded slice without a write ACK retry.
+        protect_join_parent = bool(
+            writes_at_trial or controller.write_queue or cache.ongoing_write_through
         )
-        if self._restore_has_service_priority(key, protect_join_parent=False):
+        if self._restore_has_service_priority(key, protect_join_parent=protect_join_parent):
             return decline("protected_service")
         page = runtime._native_page_size
         selected_slots = 0
@@ -674,21 +700,6 @@ class SubagentMaterialization:
         if selected_slots > chunk:
             return decline("prefill_batch_already_constrained")
         reserve = chunk + page * len(self._running_batch.reqs)
-        minimum_tokens = max(chunk, threshold)
-        fund_join_from_backed_device = (
-            pending_join_write and not continuation and device_free - reserve < minimum_tokens
-        )
-        if pending_join_write and (
-            writes_at_trial != 1 or controller.write_queue or len(cache.ongoing_write_through) != 1
-            or len(controller.ack_write_queue[0].node_ids) != 1
-            or controller.ack_write_queue[0].node_ids[0] not in cache.ongoing_write_through
-        ):
-            return decline("protected_service")
-        if fund_join_from_backed_device and (
-            self._native_device_eviction is None or not cache.tree_core.full_host_duplicates
-            or hit % page or device_free + cache.full_evictable_size() < hit + reserve
-        ):
-            return decline("protected_service")
         protected_nodes = (
             params.best_match_node,
             *(lease.node_id for lease in runtime._prefetch_service_leases.values()),
@@ -701,57 +712,40 @@ class SubagentMaterialization:
         safe_tokens = headroom.available_tokens - reserve
         if not headroom.observable:
             return decline("headroom_unobservable", observation=headroom.reason)
-        mirror_safe_tokens = safe_tokens - headroom.reclaimable_host_only_tokens
-        tokens = min(hit if continuation else hit // 2, safe_tokens)
-        preserve_host_only = False
-        fund_from_backed_device = None
-        preferred_suffix_tokens = 0
+        minimum_tokens = max(chunk, threshold)
         if continuation:
             # Require a native chunk of progress unless the whole remainder fits.
             minimum_tokens = min(hit, minimum_tokens)
-            if pending_join_write:
-                # A settled write can fund the suffix. Reuse the per-key ACK retry.
-                tokens = hit
-                preserve_host_only = True
-            elif headroom.reclaimable_host_only_tokens:
-                # After each ACK, try the suffix size funded by free slots and mirrors.
-                preferred_suffix_tokens = max(0, min(
-                    tokens, mirror_safe_tokens, device_free + cache.full_evictable_size() - reserve,
-                )) // page * page
-        elif fund_join_from_backed_device:
-            # A whole restore funded by settled mirrors can leave the write in flight.
-            tokens = hit
-            preserve_host_only = True
-            fund_from_backed_device = self._fund_from_backed_device
-        elif pending_join_write:
-            if mirror_safe_tokens + chunk >= hit:
-                return decline("protected_service")
-            safe_tokens = device_free - reserve
-            tokens = min(hit // 2, safe_tokens)
-            preserve_host_only = True
-        elif safe_tokens + chunk >= hit:
-            # An unreferenced Host-only extent can still be reused later.
-            # A first slice funded without those extents can publish new mirrors.
-            if (
-                mirror_safe_tokens >= hit and hit % page == 0
-                and self._native_device_eviction is not None and cache.tree_core.full_host_duplicates
-                and not (writes_at_trial or controller.write_queue or cache.ongoing_write_through)
-                and device_free + cache.full_evictable_size() >= hit + reserve
-            ):
-                # Fund the already selected native load with settled mirrors before
-                # its allocator has to choose a new write-back victim.
-                fund_from_backed_device = self._fund_from_backed_device
-            elif mirror_safe_tokens < minimum_tokens or mirror_safe_tokens + chunk >= hit:
-                return decline(
-                    "headroom_expected_to_cover_native_restore",
-                    safe_tokens=safe_tokens, mirror_safe_tokens=mirror_safe_tokens,
+        slice_limit = hit if continuation else hit // 2
+        tokens = min(slice_limit, safe_tokens) // page * page
+        ordinary_whole = not continuation and safe_tokens + chunk >= hit
+        free_tokens = headroom.device_free_tokens + headroom.host_free_tokens - reserve
+        free_slice = min(slice_limit, free_tokens) // page * page
+        sole_host_tokens = headroom.reclaimable_host_only_tokens
+        safe_without_sole = safe_tokens - sole_host_tokens
+        needs_sole_host = sole_host_tokens > 0 and (
+            safe_without_sole + reserve < hit if ordinary_whole else tokens > safe_without_sole
+        )
+        # Keep the existing slice when it can use current mirrors safely.
+        # Bootstrap recycling when the normal choice counts sole Host copies.
+        recycle_mirrors = (
+            free_slice >= minimum_tokens and replace_pending is None
+            and not getattr(runtime, "physical_disabled", False)
+            and (
+                recycling
+                or (
+                    not continuation and not selected and needs_sole_host
+                    and not (writes_at_trial or controller.write_queue or cache.ongoing_write_through)
+                    and device_free + cache.full_evictable_size() >= hit + reserve
                 )
-            safe_tokens = mirror_safe_tokens
-            preserve_host_only = True
-            # A cold device leaf may fund the entire restore. Native reclaim
-            # can prove this without dropping a sole Host copy.
-            tokens = hit
-        tokens = tokens // page * page
+            )
+            and not self._staged_peer_protected(key)
+        )
+        if recycle_mirrors:
+            safe_tokens = free_tokens
+            tokens = free_slice
+        elif ordinary_whole:
+            return decline("headroom_expected_to_cover_native_restore", safe_tokens=safe_tokens)
         if tokens < minimum_tokens:
             return decline(
                 "no_safe_slice", headroom=headroom, safe_tokens=safe_tokens,
@@ -762,27 +756,12 @@ class SubagentMaterialization:
         reason = self._demand_restore_chunk.start(
             params, key, tokens, device_reserve=reserve, protected_nodes=protected_nodes,
             minimum_tokens=minimum_tokens, replace_pending=replace_pending,
-            preserve_host_only=preserve_host_only,
-            fund_from_backed_device=fund_from_backed_device,
-            preferred_suffix_tokens=preferred_suffix_tokens,
+            recycle_mirrors=recycle_mirrors,
         )
         if reason == FULL_RESTORE_FUNDED:
-            stage = "suffix" if continuation else "whole_hit"
-            runtime.counts[f"subagent_materialization_demand_restore_{stage}_funded"] += 1
-            if fund_from_backed_device is not None:
-                source = "join_backed_device" if fund_join_from_backed_device else "backed_device"
-                runtime.counts[f"subagent_materialization_{source}_whole_restores"] += 1
-                if writer is not None:
-                    writer.record({
-                        "event": f"subagent_materialization_{source}_restore",
-                        "ts_ms": time.time() * 1000., "key": asdict(key),
-                        "host_hit_tokens": hit, "device_free_before_tokens": device_free,
-                        "device_reserve_tokens": reserve,
-                    })
-            return False
+            runtime.counts["subagent_materialization_demand_restore_suffix_funded"] += 1
+            return FULL_RESTORE_FUNDED if recycle_mirrors else False
         if reason is not None:
-            if reason == "protected_service" and fund_from_backed_device is not None and not fund_join_from_backed_device:
-                reason = "backed_device_capacity_not_funded"
             decline(
                 reason, proposed_tokens=tokens, device_reserve_tokens=reserve,
                 headroom=headroom,
@@ -804,10 +783,29 @@ class SubagentMaterialization:
                 "proposed_tokens": tokens, "staged_tokens": pending.tokens,
                 "observed_safe_tokens": safe_tokens, "prefix_node_id": pending.prefix_node,
                 "selected_prefill_reserved_tokens": selected_slots,
-                "continuation": continuation,
-                "preserve_host_only": pending.preserve_host_only,
+                "continuation": continuation, "recycle_Host_mirrors": recycle_mirrors,
             })
         return True
+
+    def _recycle_restore_mirrors(self, watch):
+        req, key = watch.request, watch.key
+        runtime = self.runtime
+        restore = self._demand_restore_chunk
+        pending = restore.pending
+        retry = self._peer_restore_retry
+        if (
+            getattr(runtime, "physical_disabled", False)
+            or not self._restore_stage_matches_live(req, key)
+            or req.finished() or getattr(req, "to_finish", None) is not None
+            or self._staged_peer_protected(key)
+            or (pending is not None and pending.request is req and pending.credit_waiter is not None)
+            or (retry is not None and watch.anchor in retry.node_ids)
+        ):
+            return
+        protected = {lease.node_id for lease in runtime._prefetch_service_leases.values()}
+        returned = restore.recycle_mirrors(watch, protected)
+        if returned:
+            runtime.counts["subagent_materialization_restore_recycled_Host_tokens"] += returned
 
     def _restore_stage_matches_live(self, req, key):
         return (
@@ -863,7 +861,7 @@ class SubagentMaterialization:
             or (guard is not None and guard.elapsed_service_timeout(key, time.monotonic()))
         )
 
-    def _staged_peer_protected(self, key, *, protect_fit_target=True):
+    def _staged_peer_protected(self, key):
         runtime = self.runtime
         guard = getattr(self.admission, "_ready_service_guard", None)
         last_child = getattr(runtime, "_last_join_child_has_waiting_parent", None)
@@ -876,9 +874,7 @@ class SubagentMaterialization:
                 getattr(runtime, "_prefetch_priority_promoted", None),
                 getattr(runtime, "_parent_handoff_priority_promoted", None),
             )
-            or (guard is not None and (
-                key == guard.target or (protect_fit_target and key == guard.fit_target)
-            ))
+            or (guard is not None and key in (guard.target, guard.fit_target))
             or (stage is not None and not stage.semantic_only and runtime._live_final_stage(stage))
         )
 
@@ -891,17 +887,6 @@ class SubagentMaterialization:
             and (previous is None or previous[0] != key or previous[1] == producer_key)
             and not self._restore_has_service_priority(key, protect_join_parent=False)
             and (guard is None or key not in (guard.target, guard.fit_target))
-        )
-
-    def _join_can_wait_for_ordinary_stage(self, req, key, producer):
-        return (
-            producer is not None and producer.request is not req
-            and producer.credit_waiter is None
-            and key.request_id == getattr(self.runtime, "_join_priority_promoted", None)
-            and not self._restore_has_service_priority(key, protect_join_parent=False)
-            and not self._staged_peer_protected(producer.key)
-            and self._restore_stage_matches_live(producer.request, producer.key)
-            and self._restore_stage_matches_live(req, key)
         )
 
     def _live_second_peer_waiter(self, cache, req, key):
@@ -985,7 +970,6 @@ class SubagentMaterialization:
         stage_receipt = None
         join_peer = False
         ordinary_stage_peer = False
-        join_after_stage = False
         if (
             staged is not None and staged.request is not params.req
             and chunk and hit >= 2 * chunk
@@ -999,18 +983,13 @@ class SubagentMaterialization:
                 if join_peer or not self._staged_peer_protected(key):
                     stage_receipt = cache.ongoing_load_back.get(staged.prefix_node)
             elif (
-                submitted
-                and getattr(params.req, "_beliefkv_d3_indexed_restore_defer_key", None) != key
-            ):
-                join_after_stage = self._join_can_wait_for_ordinary_stage(params.req, key, staged)
-            elif (
                 not submitted and len(queue) == 1
                 and getattr(params.req, "_beliefkv_d3_ordinary_stage_wait_key", None) != key
                 and not self._staged_peer_protected(key)
             ):
                 stage_receipt = cache.ongoing_load_back.get(staged.prefix_node)
                 ordinary_stage_peer = stage_receipt is not None
-        if stage_receipt is None and not join_after_stage and self._restore_has_service_priority(key):
+        if stage_receipt is None and self._restore_has_service_priority(key):
             return False
         leading_tagged = submitted and bool(acks[0].child_receipts)
         own_join_receipts = None
@@ -1099,45 +1078,10 @@ class SubagentMaterialization:
             selected_h2d["headroom_observation"] = headroom.reason
             if headroom.observable:
                 selected_h2d["unfunded_restore_tokens"] = max(0, shortfall)
-        if not headroom.observable:
+        if not headroom.observable or shortfall <= 0:
             return False
-        if join_after_stage:
-            headroom = replace(
-                headroom, reclaimable_host_tokens=headroom.reclaimable_host_tokens
-                - headroom.reclaimable_host_only_tokens,
-                reclaimable_host_only_tokens=0,
-            )
-            shortfall = hit - headroom.available_tokens
         req = params.req
-        mirror_wait = shortfall <= 0
-        if mirror_wait:
-            # The selected ordinary loads publish one merged native ACK.
-            if (
-                submitted or acks or staged is not None or controller.write_queue
-                or controller.ack_write_queue or cache.ongoing_write_through
-                or not chunk or credit < chunk
-                or len(set(native_node_ids)) != len(native_node_ids)
-                or headroom.reclaimable_host_only_tokens < -shortfall + chunk
-                or self._peer_restore_retry is not None
-                or getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
-                or self._staged_peer_protected(key, protect_fit_target=False)
-            ):
-                return False
         identity_matches = _request_key(req, known_keys=self.runtime.visible) == key
-        if mirror_wait:
-            # Let an already selected load publish its mirrors before dropping sole Host copies.
-            headroom = replace(
-                headroom, reclaimable_host_tokens=headroom.reclaimable_host_tokens
-                - headroom.reclaimable_host_only_tokens,
-                reclaimable_host_only_tokens=0,
-            )
-            if not identity_matches or not self._can_slice_after_restore_ack(
-                cache, params, key, headroom, credit, expected_acks=0,
-            ):
-                return False
-            shortfall = hit - headroom.available_tokens
-            # ACK membership is independent of which anchors provide usable mirrors.
-            receipts = {anchor: cache.ongoing_load_back[anchor] for anchor in native_node_ids}
         # A settled slice can still own the stage during this selection.
         # Let one already selected load publish its ACK if it funds the next slice.
         settled_stage_peer = (
@@ -1186,7 +1130,7 @@ class SubagentMaterialization:
             return True
         wait_for_join = bool(own_join_receipts and shortfall > credit)
         small_peer_retry = bool(chunk and 0 < credit < chunk and shortfall > credit)
-        bounded_retry = mirror_wait or submitted or not headroom.census_complete or small_peer_retry
+        bounded_retry = submitted or not headroom.census_complete or small_peer_retry
         second_peer = bounded_retry and getattr(req, "_beliefkv_d3_indexed_restore_defer_key", None) == key
         staged_producer = None
         if (
@@ -1199,8 +1143,6 @@ class SubagentMaterialization:
             and callable(getattr(cache, "loading_check", None))
         ):
             staged_producer = staged
-        if join_after_stage and (staged_producer is None or credit < chunk):
-            return False
         if submitted:
             if not identity_matches or (
                 shortfall > credit and not self._can_slice_after_restore_ack(
@@ -1210,7 +1152,7 @@ class SubagentMaterialization:
                 )
             ):
                 return False
-        elif mirror_wait or (headroom.census_complete and not small_peer_retry):
+        elif headroom.census_complete and not small_peer_retry:
             if shortfall > credit and not chunk:
                 return False
         else:
@@ -1262,7 +1204,7 @@ class SubagentMaterialization:
                 and staged.prefix_node in receipts and staged.credit_waiter is None
             ):
                 staged.credit_waiter = req, wait
-            elif exact_peer and not mirror_wait and (
+            elif exact_peer and (
                 second_peer or getattr(req, "_beliefkv_d3_peer_retry_key", None) != key
             ):
                 req._beliefkv_d3_peer_retry_key = key
@@ -1285,9 +1227,7 @@ class SubagentMaterialization:
                 "headroom_observation": headroom.reason,
                 "already_submitted": submitted,
                 "own_join_ack": wait_for_join,
-                **({"sole_host_capacity_excluded": True} if mirror_wait else {}),
                 **({"staged_peer_slice": True} if staged_producer is not None else {}),
-                **({"join_after_ordinary_stage": True} if join_after_stage else {}),
                 **({"second_peer_ack": True} if second_peer else {}),
             })
         return True
@@ -1404,12 +1344,6 @@ class SubagentMaterialization:
                 and self._restore_stage_matches_live(req, key)
                 if waiting_on_join else not self._restore_has_service_priority(key)
             )
-            retry = self._peer_restore_retry
-            if (
-                not permitted and retry is not None and retry.credit is credit
-                and retry.staged_producer is restore.pending
-            ):
-                permitted = self._join_can_wait_for_ordinary_stage(req, key, retry.staged_producer)
             if (
                 permitted and not waiting_on_join
                 and getattr(req, "_beliefkv_d3_ordinary_stage_wait_key", None) == key
@@ -1418,6 +1352,7 @@ class SubagentMaterialization:
                 permitted = False
             cache = restore.cache
             if permitted and cache.token_to_kv_pool_allocator.available_size() < hit:
+                retry = self._peer_restore_retry
                 if retry is not None and retry.second_peer and retry.credit is credit:
                     waiting = (
                         retry.awaiting_ack(cache)
@@ -1483,28 +1418,10 @@ class SubagentMaterialization:
         component.drive_host_eviction = drive_host_eviction
         self._native_host_eviction = component, drive_native, drive_host_eviction
 
-    def _fund_from_backed_device(self, target, protected_nodes):
-        cache, native_evict, _ = self._native_device_eviction
-        allocator = cache.token_to_kv_pool_allocator
-        needed = target - allocator.available_size()
-        if needed <= 0:
-            return True
-        component = cache.components[0]
-        if component.is_evict_device_ongoing or not cache.tree_core.full_host_duplicates:
-            return False
-        return self._use_backed_device_leaves(
-            component, cache.tree_core, native_evict, {0: 0}, needed,
-            protected_nodes=protected_nodes,
-        ) and allocator.available_size() >= target
-
-    def _use_backed_device_leaves(
-        self, component, tree, native_evict, tracker, needed, *, protected_nodes=(),
-    ):
+    def _use_backed_device_leaves(self, component, tree, native_evict, tracker, needed):
         # Plan the entire shortfall before demoting anything. Otherwise the
         # ensuing write-back could evict the newly created Host-only copies.
-        plan = self._plan_backed_device_demotions(
-            component, tree, needed, protected_nodes=protected_nodes,
-        )
+        plan = self._plan_backed_device_demotions(component, tree, needed)
         if not plan:
             return False
         before = tracker[0]
@@ -1513,31 +1430,25 @@ class SubagentMaterialization:
             native_evict(node.id, tracker)
         return tracker[0] - before >= needed
 
-    def _plan_backed_device_demotions(self, component, tree, needed, *, protected_nodes=()):
+    def _plan_backed_device_demotions(self, component, tree, needed):
         duplicates = tree.full_host_duplicates
         leaves = tree.evictable_device_leaves
-        in_eviction = component.is_evict_device_ongoing
-        native_heap = component._evict_device_heap if in_eviction else ()
+        native_heap = component._evict_device_heap
         limit = self.max_candidates
-        protected = frozenset(protected_nodes)
 
         def settled(node):
             if not (
-                node.id not in protected and duplicates.get(node.id) is node
+                duplicates.get(node.id) is node
                 and tree._can_reclaim_full_host_duplicate(node)
             ):
                 return False
             data = node.component_data[0]
-            return data.lock_ref == 0 and len(data.value) == len(data.host_value)
+            return len(data.value) == len(data.host_value)
 
-        if not in_eviction or len(duplicates) < len(native_heap):
-            candidates = duplicates.values()
-            if not in_eviction:
-                # The Device-leaf index can be smaller than the lazy duplicate index.
-                candidates = leaves if len(leaves) < len(duplicates) else reversed(candidates)
+        if len(duplicates) < len(native_heap):
             heap = [
                 (component.session_ref_eviction_strategy(node), node)
-                for node in islice(candidates, limit)
+                for node in islice(duplicates.values(), limit)
                 if node in leaves and settled(node)
             ]
         else:
